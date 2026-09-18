@@ -1,111 +1,147 @@
 {
-  "schemaVersion": 2,
-  "updatedDate": "2026-09-18",
+  "schemaVersion": 3,
+  "updatedAt": "2026-09-18T23:48:00+09:00",
   "pr": 273,
   "branch": "claude/overhaul-lounge-my",
-  "previousHead": "08c36d4bbaba736b67fb8e386a50e3bc843cc758",
-  "implementationCommit": "6aeafef2d14f4a5171450f390a466a60f54448ac",
-  "integrationMain": "44eb6a9a09c09276968a6dd885183a7650cf18fa",
-  "testedProductTree": "e73bdb655b6d8cec712f88facea90d6b93593e97",
-  "status": "draft-full-ci-passed-targeted-visual-review-full-design-incomplete",
-  "execution": {
-    "mode": "direct implementation with isolated GitHub Actions and real Chromium",
-    "subagentsStarted": 0,
-    "copilotIssue": 296,
-    "copilotResult": "Assignment accepted but session start rejected for insufficient GitHub AI Credits; no active agent and no budget change",
-    "remoteDesktopCommander": "Connection suggested; owner authorization not completed",
-    "validationBranch": "codex/design-validation-20260918-273",
-    "validationSupportExcludedFromProduct": [".design-validation/", ".github/workflows/design-validation-isolated.yml", ".github/workflows/design-visual-isolated.yml"],
-    "productionChanged": false,
-    "productionDatabaseUsed": false,
-    "productionSecretsUsed": false,
-    "newSubscriptionPurchased": false
-  },
-  "canon": {
-    "rules": "docs/design/README.md",
-    "numbers": "docs/design/handoff/tokens.json",
-    "shapes": "docs/design/figma-export/",
-    "exceptions": ["Pretendard", "gutter 24", "Kakao + Apple", "home/search/Pick/wedding/MY"],
-    "inventoryAudit": {
-      "source": "docs/design/handoff/screens.json",
-      "listedIds": 208,
-      "uniqueIds": 208,
-      "listedExclusions": 16,
-      "remainingListedIds": 192,
-      "exclusionMissingFromList": ["WP-SHT-001-old"],
-      "note": "Metadata totals 189/202/186 disagree with the list. IDs include assets/navigation/state variants and are not all separate app routes. No completion percentage is inferred."
+  "status": "draft-final-validation-passed-cleanup-complete-latest-main-integrated",
+  "sourceOfTruth": {
+    "latestMainIntegrated": "1a17da5be0d4f927bbcd5585525e2bf22ac6b9d4",
+    "mainIntegrationCommit": "c2bb8fb8e2438a34118d00eea18f340081f67d90",
+    "validatedProductHead": "36c2a437a14ad6647328dabb12ea78f033c8cd50",
+    "validationBaseMain": "920597cf085f5f7b3862779b10339bc332df36bc",
+    "mainDeltaAfterValidation": {
+      "pr": 396,
+      "changedFiles": [
+        ".github/workflows/repair-kakao-runner.yml"
+      ],
+      "productFileOverlapWith273": 0
     }
   },
-  "implementedThisPass": [
-    "Home: at most four pending preparation cards, excluding completed categories and promoting subsequent categories",
-    "Home: separate budget summary, zero/invalid budget and overspend handling, no duplicate hero budget",
-    "Home: persistent lounge entry even with empty content, separate loading/failure/empty states",
-    "Recommendations: distinguish response failure, insufficient information and all-preparations-complete; retain retry/search/wedding-note actions",
-    "Home/recommendations: focus reload, request generations and candidate refresh; correct D-DAY/D+ display",
-    "Recommendation cards: real proof caption/count and server-provided reason; no sparse-data guide-price replacement; prevent Pick click from opening detail",
-    "Canonical values: gutter/pageX/grid 24, two/three-column formulas, control radius 6",
-    "CI-discovered fixes: picking state, actual rendered text rather than SVG coordinates, file-local Node test types, inquiries fixture contract"
-  ],
-  "preservedEarlierWork": [
-    "Claude lounge/MY/profile/report designs and public feed detail integration from PR 271",
-    "Root-only tab bar and feed request lifetime/depth-back handling",
-    "Browser confirmation A/B/C/E queue, stale action protection, focus/scroll restore and Pretendard CSS",
-    "Pinned main deployment/worker/image/vendor-admin changes; no rollback of infrastructure work",
-    "Prior implementation and targeted-verification history remains in Git and docs/sync/design-recovery-2026-09-18.md"
-  ],
-  "verification": {
-    "runId": 35310626253,
-    "validationSha": "97b484b6914575811ca64a95ea1a1c3e1d64961b",
-    "fullWorkspaceTypecheck": true,
-    "lint": true,
-    "copyRules": true,
-    "seedTokens": true,
-    "expoWebExport": true,
-    "fullJest": true,
-    "workspaces": {
-      "api": {"suites": 99, "tests": 1174, "failed": 0, "shards": 3},
-      "mobile": {"suites": 37, "tests": 375, "failed": 0},
-      "domain": {"suites": 66, "tests": 991, "failed": 0},
-      "web": {"suites": 9, "tests": 73, "failed": 0},
-      "api-contract": {"suites": 2, "tests": 49, "failed": 0},
-      "db": {"suites": 2, "tests": 89, "failed": 0}
+  "validation": {
+    "fullCurrentHead": {
+      "runId": 35357364891,
+      "headSha": "36c2a437a14ad6647328dabb12ea78f033c8cd50",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "Full Regression and Missing Design Captures",
+          "conclusion": "success"
+        },
+        {
+          "name": "API Tests (1/2)",
+          "conclusion": "success"
+        },
+        {
+          "name": "API Tests (2/2)",
+          "conclusion": "success"
+        }
+      ],
+      "artifact": {
+        "id": 10552696573,
+        "name": "pr273-current-head-missing-design-captures"
+      }
     },
-    "total": {"suites": 215, "tests": 2751, "failed": 0},
-    "environment": "Ubuntu GitHub runner, Node 22, npm ci using repository lockfile, disposable PostgreSQL 16",
-    "sourceBinding": "Successful CI stored 46 product-delta Git blobs; all 46 match local file hashes. Product tree reconstructed on pinned main. Only this status document changes after code tests.",
-    "testCounting": "Final run only; original Claude reports and earlier isolated counts are not added. Existing Jest --forceExit does not prove absence of open handles.",
-    "visual": {
-      "runs": [35310726726, 35311149312],
-      "engine": "Chromium via Playwright 1.57.0",
-      "mode": "Actual Expo web bundle with fixture API interception and blocked production access",
-      "screens": ["home", "recommendations", "search", "Pick", "wedding-note", "MY", "profile", "lounge-review", "lounge-feed", "login", "vendor-detail"],
-      "viewports": ["390x844", "320x740"],
-      "notes": [
-        "Initial home capture was covered by the benefit sheet; followup used the real dismiss action",
-        "Initial dynamic vendor URL returned capture-server 404; followup added SPA fallback to the temporary fixture server only and rendered vendor detail successfully",
-        "Expanded home capture changes scroll layout for diagnostics and is not native/full-canvas pixel evidence",
-        "Targeted visual review and successful rendering are not complete pixel parity or full end-to-end interaction verification"
-      ]
+    "designSessions": {
+      "session1": {
+        "runId": 35357367924,
+        "headSha": "36c2a437a14ad6647328dabb12ea78f033c8cd50",
+        "conclusion": "success",
+        "artifact": {
+          "id": 10552761309,
+          "name": "design-session1-captures"
+        },
+        "canonGroups": [
+          "01-home",
+          "08-recommendations"
+        ]
+      },
+      "session2": {
+        "runId": 35357364764,
+        "headSha": "36c2a437a14ad6647328dabb12ea78f033c8cd50",
+        "conclusion": "success",
+        "artifact": {
+          "id": 10553375261,
+          "name": "design-session2-captures"
+        },
+        "canonGroups": [
+          "04-wedding-note",
+          "07-lounge-my"
+        ]
+      },
+      "session3": {
+        "runId": 35357055920,
+        "headSha": "430268a2a61685a373360145425337fee7f75dfa",
+        "conclusion": "success",
+        "artifact": {
+          "id": 10553015621,
+          "name": "design-session3-captures"
+        },
+        "canonGroups": [
+          "03-pick",
+          "09-dialogs"
+        ],
+        "productTreeEquivalentToValidatedHead": true,
+        "equivalenceReason": "Between the Session 3 head and validatedProductHead, only .github/workflows/validate-pr273-current-head.yml changed."
+      }
     },
-    "liveProviderLogin": false,
-    "nativeDevices": false,
-    "fullCanonPixelParity": false
+    "checks": [
+      "workspace typecheck",
+      "lint",
+      "root pretests",
+      "mobile tests",
+      "web tests",
+      "api-contract tests",
+      "db tests",
+      "domain tests",
+      "API tests 1/2 and 2/2",
+      "Expo web export",
+      "browser-native dialog guard",
+      "Chromium fixture rendering"
+    ],
+    "visualEvidence": {
+      "01-home": "actual + canonical",
+      "02-search": "actual + canonical",
+      "03-pick": "actual + canonical",
+      "04-wedding-note": "actual + canonical",
+      "05-vendor-detail": "corrected dynamic-route actual + canonical",
+      "06-onboarding-login": "corrected setup/login actual + canonical",
+      "07-lounge-my": "actual + canonical",
+      "08-recommendations": "actual + canonical",
+      "09-dialogs": "actual + canonical",
+      "automatedPixelParity": false
+    },
+    "falseGreenDefectsFoundAndFixed": [
+      "Vendor-detail capture previously stored a successful screenshot whose body was only 'not found'. The capture harness now supports dynamic document-route fallback and fails closed on non-2xx or exact not-found bodies.",
+      "Setup capture previously redirected to Home because fixture setupComplete was true. Final validation runs /setup with FIXTURE_SETUP_COMPLETE=false.",
+      "Earlier API shard 1 detected a hardcoded community review lineHeight. The code now uses LineHeight.lh22 and both final API shards pass."
+    ],
+    "correctedArtifactInspection": [
+      "Vendor detail renders 강남 A 웨딩홀 instead of a 404 body.",
+      "Setup renders onboarding step 01/03 instead of Home."
+    ]
   },
-  "designCoverage": [
-    {"group": "01-home", "status": "structure-and-states-implemented-ci-passed", "remaining": "Exact canonical shape/typography/category icons and all data states; screenshots are fixture states"},
-    {"group": "02-search", "status": "captured-not-completely-verified", "remaining": "Full latest-canon filtering, states and interactions"},
-    {"group": "03-pick", "status": "captured-not-completely-verified", "remaining": "Comparison/decision flows, long content and complete visual parity"},
-    {"group": "04-wedding-note", "status": "captured-not-completely-verified", "remaining": "Calendar/budget/consultation interactions and full canonical parity"},
-    {"group": "05-vendor-detail", "status": "dynamic-route-render-verified-with-fixtures", "remaining": "All tabs/actions, real data and canonical parity"},
-    {"group": "06-onboarding-login", "status": "login-captured-provider-unverified", "remaining": "Full onboarding and real Kakao/Apple/device verification; PR 274 separate"},
-    {"group": "07-lounge-my", "status": "integrated-ci-passed-captured", "remaining": "Global review API/filter, scrapbook persistence, profile layout discrepancies; issue 296 agent did not start"},
-    {"group": "08-recommendations", "status": "state-and-card-fixes-ci-passed", "remaining": "All canonical shapes/data states and full end-to-end comparison/decision flow"},
-    {"group": "09-dialogs", "status": "web-ABCE-included-in-passing-ci", "remaining": "Destructive-call impact wording audit, native behavior, D/F coordination and full pixel parity"}
-  ],
-  "releaseBlockers": [
-    "Remaining product functions and complete nine-group canonical verification are not complete",
-    "Authentication PR 274 integration, legacy WebView compatibility and rollback need separate validation",
-    "Real provider login and Android/iOS device testing not performed",
-    "Any main changes after pinned 44eb6a9 require a new integration review before release"
+  "cleanup": {
+    "temporaryValidationWorkflowsRemoved": [
+      ".github/workflows/validate-design-session1.yml",
+      ".github/workflows/validate-design-session2.yml",
+      ".github/workflows/validate-design-session3.yml",
+      ".github/workflows/validate-pr273-current-head.yml"
+    ],
+    "removedThroughCommits": [
+      "81c3177a1fbd9a00a16b0dc48e72393f569f420d",
+      "b75e22182614871537785535e418c94e7a8cd515",
+      "76ed2b6dabebe81f797eb6fd7f2fbcdc2b6ba03b",
+      "19d637827aa4888051bed910d427cfacd38bafe4"
+    ],
+    "productionChanged": false,
+    "productionDatabaseUsed": false,
+    "productionSecretsChanged": false,
+    "forcePushUsed": false
+  },
+  "remainingBeforeProduction": [
+    "Real Kakao/Apple provider-login verification is not established by fixture-based browser validation.",
+    "Android/iOS native-device verification is not established by Expo web validation.",
+    "Automated pixel-for-pixel comparison against every canonical panel is not part of the current gate.",
+    "Any product-code change after validatedProductHead requires fresh relevant validation."
   ]
 }
