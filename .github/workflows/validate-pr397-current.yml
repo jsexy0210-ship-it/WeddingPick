@@ -1,0 +1,23 @@
+name: Validate PR397 current
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    if: github.head_ref == 'chatgpt/naver-render-callback-retire-20260918'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Validate retired Naver build env removal
+        run: |
+          node -e "JSON.parse(require('fs').readFileSync('apps/mobile/eas.json','utf8'))"
+          ! grep -R "EXPO_PUBLIC_NAVER_" apps/mobile/eas.json .github/workflows/android-apk.yml
+          ! grep -R "weddingpickl-sg.onrender.com/v1/auth/naver/callback" apps/mobile/eas.json .github/workflows/android-apk.yml
+          grep -Fq "actions/upload-artifact@v6" .github/workflows/android-apk.yml
