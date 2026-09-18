@@ -71,7 +71,7 @@ function callSites(needle: string, paths: string[]): string[] {
     return out
       .split('\n')
       .filter(Boolean)
-      .filter((line) => !line.includes('stay-in-app.test.ts'))
+      .filter((line) => !/\.(test|spec)\.(ts|tsx)$/.test(line.split(':', 1)[0] ?? ''))
       .filter((line) => {
         /* `path:line:내용`에서 내용만 떼어 본다. */
         const body = line.split(':').slice(2).join(':').trim();
@@ -118,7 +118,7 @@ describe('앱 밖으로 나가지 않는다', () => {
     const files = [...new Set(callSites('handOff: true', ['apps/mobile/src']).map(fileOf))].sort();
 
     expect(files).toEqual([
-      'apps/mobile/src/app/(tabs)/search/[vendorId]/index.tsx',
+      'apps/mobile/src/features/search/vendor-location.tsx',
       'apps/mobile/src/app/(tabs)/search/expo/[expoId]/calendar.tsx',
       'apps/mobile/src/app/(tabs)/wedding/[id]/map.tsx',
     ]);
