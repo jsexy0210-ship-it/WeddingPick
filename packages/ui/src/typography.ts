@@ -67,7 +67,7 @@ export const FontSize = {
   /** 관리자 사이드바 그룹 제목 11/15. adminNavGroup. */
   adminNavGroup: 11,
   /*
-   * 피그마 규격서(`docs/figma-spec/*.txt` · 2026-09-15 대표 지시 「규격서의 수를 그대로」)의
+   * 피그마 규격서(`docs/design/figma-export/*.txt` · 2026-09-15 대표 지시 「규격서의 수를 그대로」)의
    * 글자 크기. 이름이 곧 값이다 — 규격서 줄의 «14/700 · lh 19»를 f14 + fontWeight 700 +
    * LineHeight.lh19로 옮긴다. 8단계 스케일(t1~t7)과 겹치는 값도 따로 두는 이유는 줄높이가
    * 다르기 때문이다(피그마는 Tailwind 기본 줄높이). 출처는 spec/tokens.json `typography.figma`.
@@ -194,7 +194,7 @@ export const LetterSpacing = {
   /*
    * 2.2 · 2.4는 영문 eyebrow(`JUST FOR YOU` · `WEDDING, LESS OVERWHELMING`) 전용이었다.
    * 2026-09-15 대표 지시로 그 줄들을 지우면서 쓰는 곳이 없어졌다 — 같이 뺀다.
-   * 다시 필요해지면 규격서(`docs/figma-spec/login.txt` · `onboarding.txt`)에서 재서 넣는다.
+   * 다시 필요해지면 규격서(`docs/design/figma-export/06-onboarding-login.dc.html` · `onboarding.txt`)에서 재서 넣는다.
    */
 } as const;
 

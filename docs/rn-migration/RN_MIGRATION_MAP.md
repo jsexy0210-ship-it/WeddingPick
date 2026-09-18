@@ -116,7 +116,7 @@ Figma는 상세 + 좋아요 + 댓글 입력을 그렸다. → 댓글은 새 기�
 |---|---|
 | E1 | `CLAUDE.md` v3.24절 「날짜 선택은 WP-APP-023(연월 셀렉트 + 달력)」이 **낡았다.** 현행은 휠 3열(2026-09-11 대표 지시, PR #217). CLAUDE.md 갱신이 필요하다 — **이번 단계에서는 고치지 않았다**(코드·규칙 파일 수정 범위 밖) |
 | E2 | `CLAUDE.md` 「폰트는 시스템 서체 유지(Pretendard 미적용)」 vs `packages/ui/src/tokens.css`가 이미 웹에서 Pretendard를 1순위로 둔다. 2026-09-14 대표 확정(Pretendard 단일)이 이 충돌을 해소한다 |
-| E3 | MASTER 브리핑의 「`docs/design-handoff/root/`」 경로가 **존재하지 않는다.** 실제는 `docs/design-handoff/current/`이고 화면 총계는 **189**(app 155 · web 8 · admin 26), 194가 아니다 |
+| E3 | MASTER 브리핑의 「`docs/design/figma-export/`」 경로가 **존재하지 않는다.** 실제는 `docs/design/handoff/`이고 화면 총계는 **189**(app 155 · web 8 · admin 26), 194가 아니다 |
 | E4 | MASTER 브리핑의 「`#FF6F61` 하드코딩 0건」은 관리자 제외 시 **거의** 맞으나 정확히 0은 아니다: `packages/ui/src/theme.ts:35`(팔레트 원본, 정상) · **`packages/ui/src/wedding-mark.tsx:38` `color = '#ff6f61'` 기본 인자(토큰 교체로 안 바뀜)** · `apps/mobile/src/app/admin/` 50곳(범위 밖) |
 | E5 | MASTER 브리핑은 「`spec/tokens.json` → `packages/ui/src/theme.ts` 단일 진입점」이라 했으나, `theme.ts`는 **생성물이 아니라 손으로 옮겨 적은 파일**이다(파일 주석 「값을 여기 적어 든다」). `gen-tokens.js`는 ios/android/web만 생성하고 `theme.ts`는 만들지 않는다. **토큰 교체는 두 파일을 손으로 맞춰야 한다** |
 

@@ -36,7 +36,7 @@ jobs:
     runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
@@ -72,7 +72,7 @@ jobs:
     runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.sha }}
           persist-credentials: false

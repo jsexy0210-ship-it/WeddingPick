@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Layout, Radius, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
 
 /**
- * 온보딩 머리 — 규격서 docs/figma-spec/onboarding.txt(2026-09-15 대표 지시 「규격서의 수를 그대로」).
+ * 온보딩 머리 — 규격서 docs/design/figma-export/06-onboarding-login.dc.html(2026-09-15 대표 지시 「규격서의 수를 그대로」).
  *
  *   div 382×20  flex · justify space-between · align center
  *     button "나중에" · 14/500 #868B94 · lh 20        (둘째 질문부터는 «이전»)

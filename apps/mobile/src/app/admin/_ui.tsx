@@ -1,8 +1,8 @@
 /**
  * 관리자 콘솔 공용 부품.
  *
- * 시안은 `docs/design-handoff/current/html/22-admin-ops.dc.html`(v3.27)이고 규칙은
- * `docs/design-handoff/current/ADMIN.md`의 「공통 규칙」이다. 화면마다 배너·카드·표를
+ * 시안은 `docs/design/handoff/html/22-admin-ops.dc.html`(v3.27)이고 규칙은
+ * `docs/design/handoff/ADMIN.md`의 「공통 규칙」이다. 화면마다 배너·카드·표를
  * 따로 그리면 여섯 규칙 중 무엇 하나는 반드시 어긋난다 — 여기 한 곳에서만 그린다.
  *
  *   1. 상단 배너가 상태를 먼저 말한다 — `StatusBanner` (초록 · 주황 · 빨강)
@@ -197,7 +197,8 @@ export type AdminTabDef = {
    * 눌러야 아는 것이 아니라 옆 탭을 스치기 전에 먼저 보여야 한다. */
   danger?: boolean;
   /** 「조회만」 딱지. 사이드바에 그 표시가 없어졌으므로(그룹이 화면 하나가 됐다)
-   * 탭에서 대신 보여준다 — `_layout.tsx`의 `readOnly`와 같은 다섯 화면이 대상이다. */
+   * 탭에서 대신 보여준다 — `_layout.tsx`의 `readOnly`와 같은 넷이 대상이다.
+   * (2026-09-16에 약관·방침이 빠졌다 — 편집·공개가 열렸다. 0422) */
   readOnly?: boolean;
 };
 

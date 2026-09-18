@@ -1,7 +1,7 @@
 # 패딩 · 간격 대조 (2026-09-09)
 
 사용자 오더 「디자인 기준 전체 패딩 위치값 안맞는거 전면 재검토」의 대조 결과다. 시안
-(`docs/design-handoff/current/html/*.dc.html`의 `renderVals()`와 템플릿 리터럴) · 토큰
+(`docs/design/handoff/html/*.dc.html`의 `renderVals()`와 템플릿 리터럴) · 토큰
 (`spec/tokens.json` · `packages/ui/src/theme.ts`) · 구현(`apps/mobile/src/**`)을 맞춰 봤다.
 
 **좌우 Gutter 24는 모든 화면이 지키고 있다.** 어긋난 것은 헤더 오른쪽 광학 보정과 토큰 오용이다.
