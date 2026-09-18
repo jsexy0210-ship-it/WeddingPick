@@ -1,7 +1,7 @@
 /**
- * Pick — 저장한 업체 목록. WP-PICK-001.
+ * Pick — Pick한 업체 목록. WP-PICK-001.
  *
- * 피그마 `Pick.tsx`(2026-09-14 정본 · 최상위 규칙 1)대로 그린다. 헤더(«Pick» + «N개 저장»
+ * 피그마 `Pick.tsx`(2026-09-14 정본 · 최상위 규칙 1)대로 그린다. 헤더(«Pick» + «N곳»
  * 배지 + 부제 + 배우자 함께-보기 상자) → 비교 배너(2곳 이상 고르면) → 업종 칩 → 카드 목록.
  * 카드는 검색 결과와 같은 틀(썸네일 104×116 · 정보 안쪽 14)이고 아래에 CTA 띠가 붙는다.
  *
@@ -10,11 +10,11 @@
  * 업종 칩이 그 역할(업종으로 걸러 보기)을 이 화면 안에서 한다.
  *
  * **피그마를 그대로 옮기지 않은 것.**
- * - 카드의 해시태그 · 별점 · 저장 수 · 금액은 서버가 후보에 주지 않는다
+ * - 카드의 해시태그 · 별점 · 인기 수 · 금액은 서버가 후보에 주지 않는다
  *   (`vendorCandidateSchema`) — 만들어 넣지 않는다. 그 자리에는 후보 메모(`note`)가 있으면 적는다.
  * - 배지 «인기 · 신규»는 우리 값이 없다. 같은 자리에 **«함께»**(배우자도 고른 곳)를 세운다.
- * - «Pick하기»는 우리 말로 **«결정하기»**다 — 이 화면의 카드는 이미 Pick(저장)한 곳이고,
- *   용어집이 Pick을 저장 행동으로 정해 두었다. 결정은 확인 시트(`/pick/confirm`)가 한다.
+ * - «Pick하기»는 우리 말로 **«결정하기»**다 — 이 화면의 카드는 이미 Pick한 곳이고,
+ *   용어집이 Pick을 후보 담기 행동으로 정해 두었다. 결정은 확인 시트(`/pick/confirm`)가 한다.
  * - 결정한 카드의 «상담하기»는 만들지 않는다 — 이용약관 제3조, 고지 후 구현 대기.
  *   «상담취소» 자리는 «결정 취소»이고 한 번 더 묻는다(위험한 조작).
  * - «업체 탐색하기»는 «업체 검색하기»다(«탐색»은 금지어).
@@ -44,7 +44,6 @@ import {
   Spacing,
   ThemedText,
   ThemedView,
-  Toast,
   VendorImage,
   readWebInteractionState,
   useTheme,
@@ -52,6 +51,7 @@ import {
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { getCurrentUser, listCandidates, removeCandidate, removeDecision } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
+import { DialogToast } from '@/components/confirm-alert-toast';
 import {
   PICK_COMPARE_ADD_LABEL,
   PICK_COMPARE_BANNER_HINT,
@@ -135,7 +135,7 @@ export default function PickScreen() {
       isDecided: group.decidedVendorId === candidate.vendorId,
     }))
   );
-  /* 칩은 후보가 있는 업종만, 그룹 순서대로(피그마 `categories` — 저장 목록에서 뽑는다). */
+  /* 칩은 후보가 있는 업종만, 그룹 순서대로(피그마 `categories` — Pick 목록에서 뽑는다). */
   const categories = (page?.groups ?? [])
     .filter((group) => group.candidates.length > 0)
     .map((group) => group.category);
@@ -157,7 +157,7 @@ export default function PickScreen() {
     router.push({ pathname: '/search/compare', params: { ids: Array.from(compare).join(',') } });
   }
 
-  /** 최종 결정은 확인 시트(WP-PICK-005)가 한다 — 여기서 먼저 저장하지 않는다. */
+  /** 최종 결정은 확인 시트(WP-PICK-005)가 한다 — 여기서 먼저 결정 기록을 만들지 않는다. */
   function goDecide(candidate: VendorCandidate) {
     router.push({
       pathname: '/pick/confirm',
@@ -319,7 +319,7 @@ export default function PickScreen() {
         </View>
       </SafeAreaView>
 
-      <Toast message={toast} onHidden={() => setToast(null)} />
+      <DialogToast message={toast} onHidden={() => setToast(null)} />
     </ThemedView>
   );
 }
@@ -350,8 +350,8 @@ function Header({ me, partner, total }: { me: CurrentUser; partner: string | nul
 
       {/*
         함께-보기 상자는 배우자가 연결됐을 때만 선다 — 피그마의 «준혁님과 함께 보고 있어요»는
-        배우자가 있는 시안값이다. «가격 제보»는 업체 무관 전역 진입이라 Pick 인증 동의 화면으로
-        바로 보낸다(폐기된 가격 제보 화면을 거치지 않는다).
+        배우자가 있는 시안값이다. «Pick 인증»는 업체 무관 전역 진입이라 Pick 인증 동의 화면으로
+        바로 보낸다(폐기된 별도 제보 화면을 거치지 않는다).
       */}
       {partner ? (
         <View style={[styles.partnerBox, { backgroundColor: theme.backgroundElement }]}>
@@ -385,7 +385,7 @@ function Header({ me, partner, total }: { me: CurrentUser; partner: string | nul
               ];
             }}>
             <ProductSymbol name="link" size={Layout.iconSmall} color={theme.tint} />
-            {/* 규격서: «가격 제보» 12/700 키 컬러 lh 16 · 고리 14. */}
+            {/* 규격서: «Pick 인증» 12/700 키 컬러 lh 16 · 고리 14. */}
             <ThemedText type="f12" themeColor="tint" style={styles.bold}>
               {PRICE_REPORT}
             </ThemedText>
@@ -761,7 +761,7 @@ const styles = StyleSheet.create({
   },
   /* `-space-x-2` — 둘째가 8 겹친다. */
   avatarOverlap: { marginLeft: -Spacing.two },
-  /* «가격 제보» `flex items-center gap-1`. */
+  /* «Pick 인증» `flex items-center gap-1`. */
   priceReportLink: {
     flexDirection: 'row',
     alignItems: 'center',
