@@ -87,7 +87,7 @@ jobs:
             git merge-base --is-ancestor "$GITHUB_SHA" "$latest_main" || return 1
 
             paths="$(git diff --name-only "$GITHUB_SHA" "$latest_main")"
-            if grep -Eq '^(apps/api/|packages/(api-contract|db|domain)/|package(-lock)?\.json$|Dockerfile$|\.dockerignore$|scripts/update-kakao-worker\.sh$|\.github/workflows/deploy-kakao-api\.yml$)' <<< "$paths"; then
+            if grep -Eq '^(apps/api/|packages/(api-contract|db|domain)/|package(-lock)?\.json$|Dockerfile$|\.dockerignore$|scripts/update-kakao-worker\.sh$|\.github/workflows/(main|repair-kakao-runner|deploy-kakao-api)\.yml$)' <<< "$paths"; then
               echo "A newer main commit changes API runtime/deploy files: $latest_main" >&2
               return 1
             fi
