@@ -15,6 +15,7 @@ sudo -n systemctl reload nginx
 
 for i in $(seq 1 20); do
   if curl --fail --silent --show-error --connect-timeout 5 --max-time 10     https://210.109.82.212/health >/dev/null 2>&1; then
+    rm -f "$ROOT/static-live-app"
     echo 'App-web cutover rolled back; API-only 443 restored.'
     exit 0
   fi
