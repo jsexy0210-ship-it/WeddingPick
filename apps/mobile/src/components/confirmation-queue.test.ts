@@ -1,4 +1,4 @@
-import { createConfirmationQueue, type Confirmation } from './confirmation-queue';
+import { createConfirmationQueue } from './confirmation-queue';
 
 describe('createConfirmationQueue', () => {
   it('다이얼로그를 겹치지 않고 순서대로 연다', () => {
