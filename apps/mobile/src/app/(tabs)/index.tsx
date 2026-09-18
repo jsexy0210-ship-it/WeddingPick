@@ -3,8 +3,6 @@ import type {
   CandidateListResponse,
   CategoryRecommendation,
   CurrentUser,
-  ExpoItem,
-  MyMonthlyDrawResponse,
   VendorCandidate,
   VendorSummary,
 } from '@weddingpick/api-contract';
@@ -16,23 +14,17 @@ import {
   type VendorCategory,
 } from '@weddingpick/domain';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import {
-  getAppBootstrap,
-  getCategoryRecommendations,
-  getMyMonthlyDraw,
-  listExpos,
-} from '@/api/client';
+import { getAppBootstrap, getCategoryRecommendations } from '@/api/client';
 import {
   ActionButton,
   ErrorView,
   Layout,
   LetterSpacing,
   MaxContentWidth,
-  Motion,
   Radius,
   SeedIcon,
   Spacing,
@@ -43,17 +35,12 @@ import {
 } from '@weddingpick/ui';
 import { DelayedLoader, DelayedRecommendingView } from '@/features/loading/delayed-loader';
 import { takeFullScreenLoading } from '@/features/loading/first-run';
-import { BenefitSheet } from '@/features/home/benefit-sheet';
-import { hasSeenBenefitSheet, markBenefitSheetSeen } from '@/features/home/benefit-sheet-seen';
 import { listWeddingContent, type WeddingContentItem } from '@/features/home/content';
-import { EventBanner } from '@/features/home/event-banner';
-import { ExpoStrip } from '@/features/home/expo-strip';
 import { HomeBudget, PendingPreparation } from '@/features/home/home-summary';
 import strings from '../../../../../spec/strings.ko.json';
 
 import { Hero } from '@/features/home/hero';
-import { PickRecommend } from '@/features/home/pick-recommend';
-import { useOpenCategory } from '@/features/home/use-open-category';
+import { HomeRecommendations } from '@/features/home/pick-recommend';
 import { categoryStatuses } from '@/features/home/state';
 import { WeddingContent } from '@/features/home/wedding-content';
 import { PickDoneSheet, UnpickSheet } from '@/features/pick/pick-sheets';
@@ -71,9 +58,6 @@ const S = strings.home;
 /** 홈이 웨딩피드에서 보여주는 카드 수(§17 「홈 최대 3건」). */
 const HOME_FEED_PREVIEW_COUNT = 3;
 
-/** 홈이 박람회에서 보여주는 카드 수(§16 「홈 최대 3건」). */
-const HOME_EXPO_COUNT = 3;
-
 type HomeData = {
   me: CurrentUser | null;
   candidates: CandidateListResponse | null;
@@ -83,9 +67,7 @@ type HomeData = {
   groups: readonly CategoryRecommendation[];
   remaining: number;
   remainingCategories: readonly VendorCategory[];
-  expos: readonly ExpoItem[];
   content: readonly WeddingContentItem[];
-  draw: MyMonthlyDrawResponse | null;
   /** 안 읽은 알림 수. 벨의 점이 이 값을 본다. */
   unread: number;
 };
@@ -99,13 +81,12 @@ const EMPTY: HomeData = {
   groups: [],
   remaining: 0,
   remainingCategories: [],
-  expos: [],
   content: [],
-  draw: null,
   unread: 0,
 };
 
 export default function HomeScreen() {
+  const theme = useTheme();
   const loadVersion = useRef(0);
   const [bootError, setBootError] = useState(false);
   const [recommendationStatus, setRecommendationStatus] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -117,18 +98,11 @@ export default function HomeScreen() {
    * 영원히 로더가 돈다.
    */
   const [settled, setSettled] = useState(() => isWebShellScreen('home'));
-  const [benefitOpen, setBenefitOpen] = useState(false);
-  const benefitChecked = useRef(false);
   /*
    * 이 홈이 전체 화면 로딩을 써도 되는가. 마운트 때 한 번만 묻는다 — 렌더마다 물으면
    * 첫 렌더가 예산을 쓰고 두 번째 렌더가 못 받아 로더가 도중에 바뀐다.
    */
   const [fullScreen] = useState(takeFullScreenLoading);
-  /*
-   * 지금 펼쳐진 업종. **한 번에 하나만 펼쳐진다**(§5) — 기본은 첫 업종이고, 업종을 정해
-   * 목록이 바뀌면 다음 업종이 자동으로 펼쳐진다(§8). 규칙은 훅 하나에 있다.
-   */
-  const { open, toggle } = useOpenCategory(data.groups);
   const candidates = useMyCandidates();
   const reloadCandidates = candidates.reload;
   const [pickDoneOpen, setPickDoneOpen] = useState(false);
@@ -151,14 +125,6 @@ export default function HomeScreen() {
       })
       .catch(() => { if (current()) setContentStatus('error'); });
 
-    void listExpos({ sort: 'date' })
-      .then(({ items }) => {
-        if (current()) setData((previous) => ({
-          ...previous,
-          expos: items.filter((expo) => expo.status !== 'closed').slice(0, HOME_EXPO_COUNT),
-        }));
-      })
-      .catch(() => { if (current()) setData((previous) => ({ ...previous, expos: [] })); });
 
     void getAppBootstrap()
       .then((boot) => {
@@ -186,49 +152,6 @@ export default function HomeScreen() {
     void reloadCandidates().catch(() => undefined);
     return () => { loadVersion.current += 1; };
   }, [load, reloadCandidates]));
-
-  useEffect(() => {
-    if (!settled || data.me?.setupComplete !== true || benefitChecked.current) return;
-    benefitChecked.current = true;
-
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    let alive = true;
-
-    void hasSeenBenefitSheet().then(async (seen) => {
-      try {
-        const draw = await getMyMonthlyDraw();
-        if (!alive) return;
-        /* 이벤트 배너가 이 값을 쓴다 — 시트를 이미 봤어도 배너는 계속 선다. */
-        setData((current) => ({ ...current, draw }));
-
-        if (seen) return;
-        if (draw.remaining === 0) {
-          // 조건을 다 채웠다 — 시트 대신 응모 완료 알림. 다시 묻지 않는다.
-          void markBenefitSheetSeen();
-          return;
-        }
-        timer = setTimeout(() => setBenefitOpen(true), Motion.benefitSheetDelay.duration);
-      } catch {
-        // 혜택 현황을 못 받았으면 시트도 배너도 없다. 다음 진입에 한 번 더 본다.
-      }
-    });
-
-    return () => {
-      alive = false;
-      if (timer !== null) clearTimeout(timer);
-    };
-  }, [settled, data.me?.setupComplete]);
-
-  const dismissBenefit = useCallback(() => {
-    setBenefitOpen(false);
-    void markBenefitSheetSeen();
-  }, []);
-
-  const openBenefit = useCallback(() => {
-    setBenefitOpen(false);
-    void markBenefitSheetSeen();
-    router.push('/my/rewards');
-  }, []);
 
   /** 카드의 하트. Pick 전이면 후보에 담고 완료 시트, Pick 후면 해제 시트. 로그인 전이면 로그인으로. */
   async function onPressPick(vendor: VendorSummary) {
@@ -286,7 +209,7 @@ export default function HomeScreen() {
             bracketAnswered={data.bracketAnswered}
             partnerInvitePending={data.partnerInvitePending}
             onPressDate={() => router.push('/my/wedding-settings')}
-            onPressVenue={() => openHall(data.groups, toggle, open)}
+            onPressVenue={() => router.push('/search?category=hall')}
             onPressBudget={() =>
               router.push(
                 data.me?.weddingId == null
@@ -311,17 +234,12 @@ export default function HomeScreen() {
             </View>
           ) : recommendationStatus === 'loading' ? (
             <View style={styles.block}><DelayedLoader size={28} /></View>
-          ) : <PickRecommend
+          ) : <HomeRecommendations
             groups={data.groups}
-            open={open}
-            onToggle={toggle}
-            remaining={data.remaining}
-            remainingCategories={data.remainingCategories}
             isPicked={(vendorId) => candidates.candidateFor(vendorId) !== null}
             onPressVendor={(vendorId) => router.push(`/search/${vendorId}`)}
             onPressPick={(vendor) => void onPressPick(vendor)}
             onPressCompare={(category) => router.push(`/pick/${category}`)}
-            onPressSearchMore={(category) => router.push(`/search?category=${category}`)}
             onPressMore={() => router.push('/recommendations')}
           />}
 
@@ -330,32 +248,22 @@ export default function HomeScreen() {
             onOpen={() => router.push(data.me?.weddingId == null ? '/my/wedding-settings' : `/wedding/${data.me.weddingId}/expenses`)}
           />
 
-          <ExpoStrip
-            items={data.expos}
-            onPressExpo={(expoId) => router.push(`/search/expo/${expoId}`)}
-            onPressMore={() => router.push('/search/expo')}
-          />
-
           {/* 콘텐츠가 없어도 라운지 진입은 유지한다. */}
           {(
             <View style={styles.block}>
               <View style={styles.sectionHead}>
-                <View style={styles.sectionHeadText}>
-                  <ThemedText type="f14" style={styles.semibold}>
-                    {S['section.news']}
-                  </ThemedText>
-                  <ThemedText type="f12" themeColor="textAssistive" style={styles.sub}>
-                    {S['news.body']}
-                  </ThemedText>
-                </View>
+                <ThemedText type="f20" style={styles.bold}>
+                  웨딩피드
+                </ThemedText>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={S.lounge}
+                  accessibilityLabel="웨딩피드 자세히"
                   onPress={() => router.push('/community')}
-                  style={({ pressed }) => pressed && styles.pressed}>
-                  <ThemedText type="f12" style={styles.semibold}>
-                    {S.lounge}
+                  style={({ pressed }) => [styles.feedMore, pressed && styles.pressed]}>
+                  <ThemedText type="f13" themeColor="textAssistive">
+                    {S.more}
                   </ThemedText>
+                  <SeedIcon name="chevronRightRegular" size={Layout.iconField} color={theme.textAssistive} />
                 </Pressable>
               </View>
               {contentStatus === 'loading' ? <DelayedLoader size={28} /> : contentStatus === 'error' ? (
@@ -369,18 +277,9 @@ export default function HomeScreen() {
             </View>
           )}
 
-          <EventBanner draw={data.draw} onPress={() => router.push('/my/rewards')} />
         </ScrollView>
       </SafeAreaView>
 
-      {data.draw ? (
-        <BenefitSheet
-          visible={benefitOpen}
-          draw={data.draw}
-          onDismiss={dismissBenefit}
-          onOpenBenefit={openBenefit}
-        />
-      ) : null}
 
       <PickDoneSheet visible={pickDoneOpen} onDismiss={() => setPickDoneOpen(false)} />
       <UnpickSheet
@@ -412,30 +311,8 @@ function venueName(candidates: CandidateListResponse | null, me: CurrentUser | n
 }
 
 /**
- * 「예식장 미정」을 눌렀을 때 — 웨딩홀 추천으로 잇는다(§3-2).
- *
- * 홈을 떠나지 않는다. 웨딩홀이 아직 목록에 있으면 그 아코디언을 펼치는 것이 가장 짧은
- * 길이고, 거기에 이미 추천 업체가 들어 있다. 목록에 없으면(정했거나 목록 밖) 검색으로 간다.
- */
-function openHall(
-  groups: readonly CategoryRecommendation[],
-  toggle: (category: VendorCategory) => void,
-  open: VendorCategory | null
-): void {
-  if (groups.some((group) => group.category === 'hall')) {
-    /* 이미 펼쳐져 있으면 그대로 둔다 — 여기서 toggle을 부르면 도리어 접힌다. */
-    if (open !== 'hall') toggle('hall');
-    return;
-  }
-
-  router.push('/search?category=hall');
-}
-
-/**
- * 헤더 — 브랜드 · 검색 · 알림(§2).
- *
- * 검색 단추가 검색의 유일한 입구다(2026-09-14 대표 지시 — 검색은 탭에서 내렸다).
- * **전체 업종 목록은 홈에 나열하지 않는다**(§19) — 그 길이 이 단추다.
+ * 홈 헤더 — 브랜드와 알림만 둔다.
+ * 검색은 현재 루트 내비게이션 정책의 별도 진입점을 사용하며 홈 헤더에 중복 노출하지 않는다.
  */
 function Header({ unread, onPressBell }: { unread: number; onPressBell: () => void }) {
   const theme = useTheme();
@@ -447,13 +324,6 @@ function Header({ unread, onPressBell }: { unread: number; onPressBell: () => vo
       </ThemedText>
 
       <View style={styles.headerButtons}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="업체 검색"
-          onPress={() => router.push('/search')}
-          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
-          <SeedIcon name="searchRegular" size={Layout.iconRow} color={theme.text} />
-        </Pressable>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={hasUnread({ unread, total: unread }) ? `알림 ${formatCount(unread)}건` : '알림'}
@@ -475,12 +345,11 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
 
   header: {
+    minHeight: Layout.navBar,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: Spacing.four,
-    paddingHorizontal: Layout.pageX,
-    paddingBottom: Spacing.three,
+    paddingHorizontal: Layout.gutter,
   },
   brand: { fontWeight: 700, letterSpacing: LetterSpacing.n052 },
   headerButtons: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
@@ -496,7 +365,7 @@ const styles = StyleSheet.create({
   content: { paddingBottom: Spacing.three },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  block: { paddingHorizontal: Layout.pageX, marginBottom: Spacing.four },
+  block: { paddingHorizontal: Layout.gutter, marginBottom: Layout.sectionGap },
   sectionHead: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -504,8 +373,8 @@ const styles = StyleSheet.create({
     marginBottom: Layout.sectionHeadGapCompact,
     gap: Spacing.two,
   },
-  sectionHeadText: { flex: 1, minWidth: 0 },
-  sub: { marginTop: Spacing.half },
+  bold: { fontWeight: 700 },
+  feedMore: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   semibold: { fontWeight: 600 },
 
   pressed: { opacity: 0.8 },
