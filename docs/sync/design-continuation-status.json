@@ -1,0 +1,147 @@
+{
+  "schemaVersion": 3,
+  "updatedAt": "2026-09-18T23:48:00+09:00",
+  "pr": 273,
+  "branch": "claude/overhaul-lounge-my",
+  "status": "draft-final-validation-passed-cleanup-complete-latest-main-integrated",
+  "sourceOfTruth": {
+    "latestMainIntegrated": "1a17da5be0d4f927bbcd5585525e2bf22ac6b9d4",
+    "mainIntegrationCommit": "c2bb8fb8e2438a34118d00eea18f340081f67d90",
+    "validatedProductHead": "36c2a437a14ad6647328dabb12ea78f033c8cd50",
+    "validationBaseMain": "920597cf085f5f7b3862779b10339bc332df36bc",
+    "mainDeltaAfterValidation": {
+      "pr": 396,
+      "changedFiles": [
+        ".github/workflows/repair-kakao-runner.yml"
+      ],
+      "productFileOverlapWith273": 0
+    }
+  },
+  "validation": {
+    "fullCurrentHead": {
+      "runId": 35357364891,
+      "headSha": "36c2a437a14ad6647328dabb12ea78f033c8cd50",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "Full Regression and Missing Design Captures",
+          "conclusion": "success"
+        },
+        {
+          "name": "API Tests (1/2)",
+          "conclusion": "success"
+        },
+        {
+          "name": "API Tests (2/2)",
+          "conclusion": "success"
+        }
+      ],
+      "artifact": {
+        "id": 10552696573,
+        "name": "pr273-current-head-missing-design-captures"
+      }
+    },
+    "designSessions": {
+      "session1": {
+        "runId": 35357367924,
+        "headSha": "36c2a437a14ad6647328dabb12ea78f033c8cd50",
+        "conclusion": "success",
+        "artifact": {
+          "id": 10552761309,
+          "name": "design-session1-captures"
+        },
+        "canonGroups": [
+          "01-home",
+          "08-recommendations"
+        ]
+      },
+      "session2": {
+        "runId": 35357364764,
+        "headSha": "36c2a437a14ad6647328dabb12ea78f033c8cd50",
+        "conclusion": "success",
+        "artifact": {
+          "id": 10553375261,
+          "name": "design-session2-captures"
+        },
+        "canonGroups": [
+          "04-wedding-note",
+          "07-lounge-my"
+        ]
+      },
+      "session3": {
+        "runId": 35357055920,
+        "headSha": "430268a2a61685a373360145425337fee7f75dfa",
+        "conclusion": "success",
+        "artifact": {
+          "id": 10553015621,
+          "name": "design-session3-captures"
+        },
+        "canonGroups": [
+          "03-pick",
+          "09-dialogs"
+        ],
+        "productTreeEquivalentToValidatedHead": true,
+        "equivalenceReason": "Between the Session 3 head and validatedProductHead, only .github/workflows/validate-pr273-current-head.yml changed."
+      }
+    },
+    "checks": [
+      "workspace typecheck",
+      "lint",
+      "root pretests",
+      "mobile tests",
+      "web tests",
+      "api-contract tests",
+      "db tests",
+      "domain tests",
+      "API tests 1/2 and 2/2",
+      "Expo web export",
+      "browser-native dialog guard",
+      "Chromium fixture rendering"
+    ],
+    "visualEvidence": {
+      "01-home": "actual + canonical",
+      "02-search": "actual + canonical",
+      "03-pick": "actual + canonical",
+      "04-wedding-note": "actual + canonical",
+      "05-vendor-detail": "corrected dynamic-route actual + canonical",
+      "06-onboarding-login": "corrected setup/login actual + canonical",
+      "07-lounge-my": "actual + canonical",
+      "08-recommendations": "actual + canonical",
+      "09-dialogs": "actual + canonical",
+      "automatedPixelParity": false
+    },
+    "falseGreenDefectsFoundAndFixed": [
+      "Vendor-detail capture previously stored a successful screenshot whose body was only 'not found'. The capture harness now supports dynamic document-route fallback and fails closed on non-2xx or exact not-found bodies.",
+      "Setup capture previously redirected to Home because fixture setupComplete was true. Final validation runs /setup with FIXTURE_SETUP_COMPLETE=false.",
+      "Earlier API shard 1 detected a hardcoded community review lineHeight. The code now uses LineHeight.lh22 and both final API shards pass."
+    ],
+    "correctedArtifactInspection": [
+      "Vendor detail renders 강남 A 웨딩홀 instead of a 404 body.",
+      "Setup renders onboarding step 01/03 instead of Home."
+    ]
+  },
+  "cleanup": {
+    "temporaryValidationWorkflowsRemoved": [
+      ".github/workflows/validate-design-session1.yml",
+      ".github/workflows/validate-design-session2.yml",
+      ".github/workflows/validate-design-session3.yml",
+      ".github/workflows/validate-pr273-current-head.yml"
+    ],
+    "removedThroughCommits": [
+      "81c3177a1fbd9a00a16b0dc48e72393f569f420d",
+      "b75e22182614871537785535e418c94e7a8cd515",
+      "76ed2b6dabebe81f797eb6fd7f2fbcdc2b6ba03b",
+      "19d637827aa4888051bed910d427cfacd38bafe4"
+    ],
+    "productionChanged": false,
+    "productionDatabaseUsed": false,
+    "productionSecretsChanged": false,
+    "forcePushUsed": false
+  },
+  "remainingBeforeProduction": [
+    "Real Kakao/Apple provider-login verification is not established by fixture-based browser validation.",
+    "Android/iOS native-device verification is not established by Expo web validation.",
+    "Automated pixel-for-pixel comparison against every canonical panel is not part of the current gate.",
+    "Any product-code change after validatedProductHead requires fresh relevant validation."
+  ]
+}
