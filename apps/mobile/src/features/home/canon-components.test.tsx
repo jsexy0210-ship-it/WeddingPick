@@ -2,6 +2,7 @@ import type { CategoryRecommendation, VendorSummary } from '@weddingpick/api-con
 import React from 'react';
 import { act, create, type ReactTestRenderer, type ReactTestRendererJSON } from 'react-test-renderer';
 import { PendingPreparation, HomeBudget } from './home-summary';
+import { ceremonyLine } from './hero';
 import { HomeRecommendations, PickRecommend } from './pick-recommend';
 import { VendorCard } from './vendor-card';
 
@@ -39,6 +40,11 @@ const groupWithVendor: CategoryRecommendation = {
 };
 
 describe('최신 홈·추천 연결', () => {
+  it('예식 날짜는 handoff의 유일한 표기 YYYY.MM.DD(요일)를 쓴다', () => {
+    expect(ceremonyLine('2027-04-17', '테스트 웨딩홀')).toBe('2027.04.17(토) · 테스트 웨딩홀');
+    expect(ceremonyLine(null, null)).toBe('예식일 · 예식장 미정');
+  });
+
   it('별점 검사는 SVG 좌표를 제외하되 실제 표시된 별점은 탐지한다', () => {
     const icon: ReactTestRendererJSON = { type: 'RNSVGPath', props: { d: 'M2 4.80739' }, children: null };
     const rating: ReactTestRendererJSON = { type: 'Text', props: {}, children: ['4.8'] };
@@ -57,6 +63,16 @@ describe('최신 홈·추천 연결', () => {
     expect(text(view)).toContain('테스트 업체');
     expect(text(view)).toContain('선호하는 분위기가 같아요');
     expect(view.root.findAllByProps({ accessibilityState: { expanded: true } })).toHaveLength(0);
+  });
+
+  it('홈 추천은 업체가 넷이어도 정본대로 세 곳까지만 보여준다', () => {
+    const vendors = [1, 2, 3, 4].map((n) => ({ ...vendor, id: `vendor-${n}`, name: `테스트 업체 ${n}` }));
+    const view = mount(<HomeRecommendations groups={[{ ...group, vendors }]} isPicked={() => false}
+      onPressVendor={jest.fn()} onPressPick={jest.fn()} onPressCompare={jest.fn()} onPressMore={jest.fn()} />);
+    expect(text(view)).toContain('테스트 업체 1');
+    expect(text(view)).toContain('테스트 업체 3');
+    expect(text(view)).not.toContain('테스트 업체 4');
+    expect(text(view)).toContain('3곳 비교하기');
   });
 
   it('추천 전체는 기본 카드에서 이유를 숨기고 카드를 누르면 이유 확장 상태로 교체한다', () => {
