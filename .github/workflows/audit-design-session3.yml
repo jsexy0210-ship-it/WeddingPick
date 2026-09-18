@@ -1,0 +1,108 @@
+name: Audit Design Session 3
+
+on:
+  push:
+    branches:
+      - claude/overhaul-lounge-my
+
+permissions:
+  contents: read
+
+concurrency:
+  group: audit-design-session3-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Pick Dialog Navigation Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      EXPO_PUBLIC_API_URL: https://example.invalid
+      EXPO_PUBLIC_WEB_URL: https://example.invalid
+      EXPO_PUBLIC_KAKAO_CLIENT_ID: validation-only
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - id: typecheck
+        name: Typecheck
+        continue-on-error: true
+        run: npm run typecheck
+
+      - id: lint
+        name: Lint
+        continue-on-error: true
+        run: npm run lint
+
+      - id: pretest
+        name: Root pretests
+        continue-on-error: true
+        run: npm run pretest
+
+      - id: mobile_tests
+        name: Mobile tests
+        continue-on-error: true
+        run: npm run test --workspace @weddingpick/mobile -- --runInBand
+
+      - id: export_web
+        name: Expo web export
+        continue-on-error: true
+        run: npm run export:web --workspace @weddingpick/mobile
+
+      - id: browser
+        name: Install capture browser
+        continue-on-error: true
+        run: |
+          npm install -g playwright
+          playwright install --with-deps chromium
+
+      - id: capture_banner
+        name: Capture Pick compare banner
+        continue-on-error: true
+        run: |
+          node scripts/screenshot-screens.mjs \
+            --viewport 430x1200 \
+            --out validation-artifacts/pick-banner \
+            --route "/(tabs)/pick/" \
+            --tap "강남 A 웨딩홀 비교에 담기" \
+            --tap "강남 B 웨딩홀 비교에 담기"
+
+      - id: capture_dialog
+        name: Capture Pick removal dialog
+        continue-on-error: true
+        run: |
+          node scripts/screenshot-screens.mjs \
+            --viewport 430x1200 \
+            --out validation-artifacts/pick-dialog \
+            --route "/(tabs)/pick/" \
+            --tap "강남 A 웨딩홀 빼기"
+
+      - name: Write audit status
+        if: always()
+        run: |
+          mkdir -p validation-artifacts
+          cat > validation-artifacts/status.txt <<'EOF'
+          typecheck=${{ steps.typecheck.outcome }}
+          lint=${{ steps.lint.outcome }}
+          pretest=${{ steps.pretest.outcome }}
+          mobile_tests=${{ steps.mobile_tests.outcome }}
+          expo_web_export=${{ steps.export_web.outcome }}
+          browser_install=${{ steps.browser.outcome }}
+          capture_banner=${{ steps.capture_banner.outcome }}
+          capture_dialog=${{ steps.capture_dialog.outcome }}
+          head=${{ github.sha }}
+          EOF
+
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: design-session3-audit
+          path: validation-artifacts/
+          if-no-files-found: error
+          retention-days: 7
