@@ -2,6 +2,7 @@ name: Validate Design Session 3
 # final-verification-sha-4
 # final-verification-sha-3
 # final-current-head-rerun-2
+# rerun-after-typography-token-fix
 
 on:
   push:
