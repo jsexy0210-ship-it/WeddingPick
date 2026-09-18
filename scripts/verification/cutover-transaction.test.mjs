@@ -311,6 +311,8 @@ shellTest('missing live marker fails closed before mutating the currently served
   try {
     const first = run(h.installPath, [h.releaseSha], h.env);
     assert.equal(first.status, 0, first.stderr || first.stdout);
+    const finalized = run(h.finalizePath, [], h.env);
+    assert.equal(finalized.status, 0, finalized.stderr || finalized.stdout);
 
     const liveMarker = path.join(h.root, 'static-live-app');
     rmSync(liveMarker, { force: true });
@@ -332,6 +334,8 @@ shellTest('stale rollback marker fails closed before mutating the live release',
   try {
     const first = run(h.installPath, [h.releaseSha], h.env);
     assert.equal(first.status, 0, first.stderr || first.stdout);
+    const finalized = run(h.finalizePath, [], h.env);
+    assert.equal(finalized.status, 0, finalized.stderr || finalized.stdout);
 
     const marker = path.join(h.root, '.app-web-cutover-backup');
     const missingBackup = readFileSync(marker, 'utf8').trim();
@@ -357,7 +361,7 @@ shellTest('successful install clears rollback-on-exit and keeps app-web live', (
     const result = run(h.installPath, [h.releaseSha], h.env);
     assert.equal(result.status, 0, result.stderr || result.stdout);
     const live = readFileSync(h.conf, 'utf8');
-    assert.match(live, /static-releases\/release-a\/app/);
+    assert.match(live, /releases\/release-a\/app/);
     assert.equal(
       readFileSync(path.join(h.root, 'static-live-app'), 'utf8').trim(),
       h.releaseSha,
