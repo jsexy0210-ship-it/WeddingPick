@@ -29,6 +29,7 @@ export type VendorCardProps = {
   accessibilityLabel?: string;
   showTags?: boolean;
   showReason?: boolean;
+  variant?: 'home' | 'recommendations';
 };
 
 const MAX_TAGS = 2;
@@ -41,6 +42,7 @@ export function VendorCard({
   accessibilityLabel,
   showTags = true,
   showReason = true,
+  variant = 'home',
 }: VendorCardProps) {
   const theme = useTheme();
   const price = priceLine(vendor.paidPrice, null);
@@ -53,10 +55,14 @@ export function VendorCard({
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,
-        { backgroundColor: theme.background, borderColor: theme.border },
+        variant === 'recommendations' && styles.recommendationCard,
+        {
+          backgroundColor: variant === 'recommendations' ? theme.backgroundElement : theme.background,
+          borderColor: theme.border,
+        },
         pressed && styles.pressed,
       ]}>
-      <View style={styles.image}>
+      <View style={[styles.image, variant === 'recommendations' && styles.recommendationImage]}>
         <CategoryImage uri={vendor.imageUrl} label={vendor.name} category={vendor.category} />
         <Pressable
           accessibilityRole="button"
@@ -64,7 +70,11 @@ export function VendorCard({
           accessibilityState={{ selected: picked }}
           onPress={(event) => { event.stopPropagation(); onPressPick(); }}
           hitSlop={Spacing.two}
-          style={({ pressed }) => [styles.heart, pressed && styles.pressed]}>
+          style={({ pressed }) => [
+            styles.heart,
+            variant === 'recommendations' && styles.recommendationHeart,
+            pressed && styles.pressed,
+          ]}>
           <View
             style={[
               styles.heartFill,
@@ -83,11 +93,15 @@ export function VendorCard({
         </Pressable>
       </View>
 
-      <View style={styles.info}>
-        <ThemedText type="f10" themeColor="textAssistive" style={styles.category} numberOfLines={1}>
+      <View style={[styles.info, variant === 'recommendations' && styles.recommendationInfo]}>
+        <ThemedText
+          type={variant === 'recommendations' ? 'f11' : 'f10'}
+          themeColor="textAssistive"
+          style={styles.category}
+          numberOfLines={1}>
           {VENDOR_CATEGORY_LABEL[vendor.category]}
         </ThemedText>
-        <ThemedText type="f14" style={styles.name} numberOfLines={1}>
+        <ThemedText type={variant === 'recommendations' ? 'f16' : 'f14'} style={styles.name} numberOfLines={1}>
           {vendor.name}
         </ThemedText>
 
@@ -101,7 +115,11 @@ export function VendorCard({
         {showTags && tags.length > 0 ? (
           <View style={styles.tags}>
             {tags.map((tag) => (
-              <ThemedText key={tag} type="f10" themeColor="textAssistive" numberOfLines={1}>
+              <ThemedText
+                key={tag}
+                type={variant === 'recommendations' ? 'f11' : 'f10'}
+                themeColor={variant === 'recommendations' ? 'tint' : 'textAssistive'}
+                numberOfLines={1}>
                 #{WEDDING_STYLE_LABEL[tag]}
               </ThemedText>
             ))}
@@ -142,7 +160,15 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...Elevation.figmaCard,
   },
+  recommendationCard: {
+    width: 204,
+    borderWidth: 0,
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
+  },
   image: { height: Layout.imageRecommendHeight, position: 'relative' },
+  recommendationImage: { height: 150 },
   heart: {
     position: 'absolute',
     top: Layout.cardGap,
@@ -154,8 +180,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
+  recommendationHeart: { width: Layout.chip, height: Layout.chip },
   heartFill: { ...StyleSheet.absoluteFill },
   info: { padding: Layout.inlineGap },
+  recommendationInfo: { padding: Layout.fieldPaddingX },
   category: { fontWeight: 600, letterSpacing: LetterSpacing.p05 },
   name: { fontWeight: 700, marginTop: Spacing.half },
   place: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one, marginTop: Spacing.one },
