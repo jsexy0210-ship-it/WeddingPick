@@ -139,7 +139,7 @@ function RootLayoutContent() {
    * 커플 앱의 첫 화면 규칙 밖에 있다. 주소가 바뀌면 페이지가 다시 뜨는 정적
    * export라 매 렌더 계산해도 값이 흔들리지 않는다.
    */
-  const isAdminPath = Platform.OS === 'web' && pathname.startsWith('/admin');
+  const isAdminPath = Platform.OS === 'web' && (pathname === '/admin' || pathname.startsWith('/admin/'));
   const theme = useTheme();
   const stackScreenOptions = useStackScreenOptions();
   /*
