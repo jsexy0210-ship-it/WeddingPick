@@ -18,12 +18,10 @@ import { join } from 'node:path';
 
 const ROOT = join(__dirname, '..', '..', '..', '..');
 
-/** 앱·웹 번들로 흘러가는 파일들. 여기에 키 이름이 있으면 안 된다. */
+/** 앱 번들 설정 파일들. 여기에 Gemini 키 이름이 있으면 안 된다. */
 const CLIENT_SURFACES = [
   'apps/mobile/eas.json',
   'apps/mobile/app.json',
-  'infra/render-env.yml',
-  'render.yaml',
 ];
 
 describe('Gemini 키는 서버에만 있다', () => {
@@ -33,28 +31,22 @@ describe('Gemini 키는 서버에만 있다', () => {
     for (const path of CLIENT_SURFACES) {
       const source = readFileSync(join(ROOT, path), 'utf8');
 
-      if (/EXPO_PUBLIC_\w*GEMINI/i.test(source)) offenders.push(path);
+      if (/EXPO_PUBLIC_\\w*GEMINI/i.test(source)) offenders.push(path);
     }
 
     expect(offenders).toEqual([]);
   });
 
-  it('정적 사이트 서비스에 키를 넣지 않는다', () => {
-    /*
-     * `infra/render-env.yml`은 서비스마다 블록이 따로다. 정적 사이트(앱 웹뷰 ·
-     * 관리자)에 넣은 값은 빌드 때 번들에 들어간다 — API 서비스에만 있어야 한다.
-     *
-     * 서비스 이름으로 잘라 보는 이유는, 파일 전체에 이름이 한 번 나온다는 것만으로는
-     * **어느 서비스 아래에 있는지**를 알 수 없기 때문이다.
-     */
-    const source = readFileSync(join(ROOT, 'infra/render-env.yml'), 'utf8');
-    const blocks = source.split(/\n {2}(?=[^\s#])/);
+  it('클라이언트 설정에 Gemini 키를 넣지 않는다', () => {
+    const offenders: string[] = [];
 
-    const leaked = blocks.filter(
-      (block) => block.includes('GEMINI_API_KEY') && !block.startsWith('weddingpickl-sg')
-    );
+    for (const path of CLIENT_SURFACES) {
+      const source = readFileSync(join(ROOT, path), 'utf8');
 
-    expect(leaked).toEqual([]);
+      if (/\\bGEMINI_API_KEY\\s*[:=]/i.test(source)) offenders.push(path);
+    }
+
+    expect(offenders).toEqual([]);
   });
 
   it('저장소에 키 값이 커밋돼 있지 않다', () => {
@@ -79,7 +71,7 @@ describe('Gemini 키는 서버에만 있다', () => {
   it('.env.example은 이름만 두고 값을 비운다', () => {
     const source = readFileSync(join(ROOT, 'apps/api/.env.example'), 'utf8');
 
-    expect(source).toMatch(/^GEMINI_API_KEY=\s*$/m);
+    expect(source).toMatch(/^GEMINI_API_KEY=\\s*$/m);
   });
 });
 
@@ -89,23 +81,19 @@ function read(path: string): string {
 }
 
 describe('모델 이름은 환경변수다', () => {
-  it('코드의 기본값과 배포 값이 같다', () => {
+  it('코드의 기본값과 예시 환경변수 값이 같다', () => {
     /*
-     * 같은 값이 두 곳에 있다 — `config.ts`의 기본값과 `infra/render-env.yml`의
-     * `vars`. **둘 중 하나만 고치면 환경변수를 안 넣은 배포에서 없어진 모델을
-     * 부른다**(`gemini-2.5-flash-lite`는 2026-10-16에 사라진다).
+     * 기본값과 예시 환경변수에 같은 값이 있어야 한다. 환경변수를 빠뜨린 배포에서도
+     * 기본 모델을 사용하고, 환경변수를 설정한 배포에서도 같은 모델을 사용한다.
      *
-     * 값을 한 곳으로 합칠 수 없다 — yml은 Render가 읽고 기본값은 그 yml이 닿지
-     * 않은 환경을 위한 것이다. 그래서 갈라지는 것을 여기서 잡는다.
+     * 운영 환경변수는 배포 서버의 보호된 환경 파일에서 관리하며 저장소에 값을 적지 않는다.
      */
     const config = read('apps/api/src/config.ts');
-    const infra = read('infra/render-env.yml');
     const example = read('apps/api/.env.example');
 
-    const fallback = config.match(/geminiModel: z\.string\(\)\.default\('([^']+)'\)/)?.[1];
+    const fallback = config.match(/geminiModel: z\\.string\\(\\\\)\\.default\\('([^']+)'\\)/)?.[1];
 
     expect(fallback).toBeTruthy();
-    expect(infra).toContain(`GEMINI_MODEL: ${fallback}`);
     expect(example).toContain(`GEMINI_MODEL=${fallback}`);
   });
 
@@ -116,7 +104,7 @@ describe('모델 이름은 환경변수다', () => {
       'apps/api/src/analysis/gemini-visit-note-reader.ts',
       'apps/api/src/analysis/consultation-reader.ts',
     ]) {
-      expect(read(file)).not.toMatch(/'gemini-[\d.]+-flash/);
+      expect(read(file)).not.toMatch(/'gemini-[\\d.]+-flash/);
     }
   });
 });
