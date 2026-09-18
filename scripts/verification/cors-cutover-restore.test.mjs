@@ -158,7 +158,11 @@ case "$cmd" in
         ;;
       '{{range .Config.Env}}{{println .}}{{end}}')
         if [ "$kind" = new ]; then
-          echo "RUN_WORKER_IN_API=$(get worker_in_api)"
+          if [ "$FAIL" = worker-env ]; then
+            echo "RUN_WORKER_IN_API=true"
+          else
+            echo "RUN_WORKER_IN_API=$(get worker_in_api)"
+          fi
         fi
         ;;
       *org.opencontainers.image.revision*)
@@ -319,7 +323,7 @@ shellTest('CORS preflight inspect failure leaves the production env and old API 
   }
 });
 
-for (const stage of ['stop', 'rename', 'run', 'health-new']) {
+for (const stage of ['stop', 'rename', 'run', 'worker-env', 'health-new']) {
   shellTest(`CORS cutover ${stage} failure restores the original API container by id`, () => {
     const h = makeHarness();
     try {
@@ -339,6 +343,7 @@ shellTest('successful CORS cutover keeps the new API and retains the old recover
     assert.equal(result.status, 0, result.stderr || result.stdout);
     assert.equal(state(path.join(h.dockerState, 'prod_owner')), 'new');
     assert.equal(state(path.join(h.dockerState, 'new_exists')), '1');
+    assert.equal(state(path.join(h.dockerState, 'worker_in_api')), 'false');
     assert.match(state(path.join(h.dockerState, 'old_name')), /^\/weddingpick-api-cors-previous-/);
     assert.equal(state(path.join(h.dockerState, 'removed_old')), '0');
     assert.match(readFileSync(h.envFile, 'utf8'), /https:\/\/210\.109\.82\.212:8443/);
