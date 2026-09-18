@@ -282,7 +282,16 @@ async function captureRoute(context, origin, route, opts) {
    * 나쁘다. 시트가 안 열린 화면을 시트라고 믿게 된다.
    */
   for (const label of opts.taps) {
-    const target = page.getByLabel(label).or(page.getByText(label, { exact: true })).first();
+    /*
+     * 버튼 이름을 먼저 **정확히** 찾는다. getByLabel의 기본 부분일치는
+     * "빼기"를 찾을 때 뒤에 깔린 "강남 A 웨딩홀 빼기"까지 잡아, 열린 dialog 대신
+     * 배경 버튼을 다시 누르는 거짓 캡처를 만들었다.
+     */
+    const target = page
+      .getByRole('button', { name: label, exact: true })
+      .or(page.getByLabel(label, { exact: true }))
+      .or(page.getByText(label, { exact: true }))
+      .first();
 
     /*
      * `locator.click()`은 다른 요소가 겹치면 재시도만 하다 타임아웃으로 죽는다 —
