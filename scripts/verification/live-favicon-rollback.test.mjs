@@ -65,7 +65,7 @@ function makeHarness({ existingFavicon }) {
     path.join(bin, 'sudo'),
     `#!/usr/bin/env bash
 set -euo pipefail
-if [ "${1:-}" = "-n" ]; then shift; fi
+if [ "\${1:-}" = "-n" ]; then shift; fi
 exec "$@"
 `,
   );
@@ -74,7 +74,7 @@ exec "$@"
     path.join(bin, 'curl'),
     `#!/usr/bin/env bash
 set -euo pipefail
-if [ "${MOCK_CURL_FAIL:-0}" = "1" ]; then
+if [ "\${MOCK_CURL_FAIL:-0}" = "1" ]; then
   exit 22
 fi
 
@@ -101,19 +101,19 @@ done
 
 case "$url" in
   */favicon.png*)
-    src="${MOCK_RELEASE_ROOT}/app/favicon.png"
+    src="\${MOCK_RELEASE_ROOT}/app/favicon.png"
     ;;
   */admin/login)
-    src="${MOCK_RELEASE_ROOT}/admin/admin/login.html"
+    src="\${MOCK_RELEASE_ROOT}/admin/admin/login.html"
     ;;
   */website.html)
-    src="${MOCK_RELEASE_ROOT}/web/index.html"
+    src="\${MOCK_RELEASE_ROOT}/web/index.html"
     ;;
   */login)
-    src="${MOCK_RELEASE_ROOT}/app/login.html"
+    src="\${MOCK_RELEASE_ROOT}/app/login.html"
     ;;
   */)
-    src="${MOCK_RELEASE_ROOT}/app/index.html"
+    src="\${MOCK_RELEASE_ROOT}/app/index.html"
     ;;
   *)
     exit 22
