@@ -136,7 +136,7 @@ async function main(): Promise<void> {
   const appKey = process.env.KAKAO_APP_KEY;
 
   if (!appKey) {
-    console.error('KAKAO_APP_KEY(카카오 REST API 키)가 필요하다 — infra/render-env.yml과 같은 값.');
+    console.error('KAKAO_APP_KEY(카카오 REST API 키)가 필요하다 — GitHub Secret에 저장한 값.');
     process.exitCode = 1;
     return;
   }
