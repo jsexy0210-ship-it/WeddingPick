@@ -60,7 +60,7 @@ on:
         #
         # 이 워크플로는 `workflow_dispatch`뿐이라 스스로 돌지 않는다. 그래서 급하지는 않지만,
         # 누군가 손으로 한 번 돌리는 순간 되살릴 길은 요약에 적히는 SHA 하나뿐이다.
-        default: 'claude/weddingpick-master-bootstrap-6j1c7o,claude/rn-tokens,claude/rn-components,claude/rn-nav-auth,claude/rn-screens-core,claude/rn-screens-vendor,claude/rn-screens-plan,claude/rn-migration-plan,claude/rn-preview,claude/policy-gemini-audio,claude/activity-ledger,claude/image-no-hotlink,claude/public-data-unify,claude/admin-console,claude/webview-design,claude/inapp-browser,claude/admin-accounts,claude/admin-split,claude/badge-clipping,claude/retention-3,release/public-data-sbiz-key-guard,claude/figma-integration,claude/figma-pixel-parity,claude/design-policy-audit,claude/identity-purge,claude/figma-missing-screens,claude/public-data-resume,claude/report-manual-entry,claude/approval-queue,claude/perf-audit,claude/alimtalk-channel,claude/data-collect-refine-d1d3,claude/weddingpick-data-collection-q72atr'
+        default: 'ops/kakao-runtime-smoke,backup/main-history-reset-2026-09-16,claude/weddingpick-master-bootstrap-6j1c7o,claude/rn-tokens,claude/rn-components,claude/rn-nav-auth,claude/rn-screens-core,claude/rn-screens-vendor,claude/rn-screens-plan,claude/rn-migration-plan,claude/rn-preview,claude/policy-gemini-audio,claude/activity-ledger,claude/image-no-hotlink,claude/public-data-unify,claude/admin-console,claude/webview-design,claude/inapp-browser,claude/admin-accounts,claude/admin-split,claude/badge-clipping,claude/retention-3,release/public-data-sbiz-key-guard,claude/figma-integration,claude/figma-pixel-parity,claude/design-policy-audit,claude/identity-purge,claude/figma-missing-screens,claude/public-data-resume,claude/report-manual-entry,claude/approval-queue,claude/perf-audit,claude/alimtalk-channel,claude/data-collect-refine-d1d3,claude/weddingpick-data-collection-q72atr'
 
 permissions:
   contents: write
@@ -93,6 +93,7 @@ jobs:
       - name: 세고 지운다
         env:
           GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
           DRY_RUN: ${{ github.event.inputs.dry_run }}
           MIN_AGE_DAYS: ${{ github.event.inputs.min_age_days }}
           EXTRA_PROTECT: ${{ github.event.inputs.protect }}
@@ -123,6 +124,10 @@ jobs:
 
           for ref in $(git for-each-ref --format='%(refname:short)' refs/remotes/origin \
                        | grep -v '^origin/HEAD$' | sed 's|^origin/||'); do
+            case "$ref" in
+              backup/*)
+                echo "지킴(보호 prefix) $ref" >> /tmp/keep.txt; continue ;;
+            esac
             if grep -Fxq "$ref" /tmp/protect.txt; then
               echo "지킴(보호 목록)  $ref" >> /tmp/keep.txt; continue
             fi
@@ -193,6 +198,37 @@ jobs:
 
           while read -r sha ref; do
             [ -z "${ref:-}" ] && continue
+
+            # 스캔 뒤 상태가 바뀌었으면 삭제하지 않는다. 목록을 만든 시각과 실제 삭제
+            # 사이에 PR/Action/새 커밋이 생길 수 있기 때문이다.
+            if [ "$(gh pr list --state open --head "$ref" --limit 1 --json number --jq 'length')" -ne 0 ]; then
+              echo "보류(삭제 직전 열린 PR 발견) $ref"
+              continue
+            fi
+
+            active_runs="$(gh api --method GET "repos/$REPOSITORY/actions/runs"               -f branch="$ref" -f per_page=100               --jq '[.workflow_runs[] | select(.status != "completed")] | length')"
+            if [ "$active_runs" -ne 0 ]; then
+              echo "보류(미완료 Actions $active_runs개) $ref"
+              continue
+            fi
+
+            encoded_ref="$(python3 -c 'import sys,urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$ref")"
+            protected="$(gh api --method GET "repos/$REPOSITORY/branches/$encoded_ref" --jq '.protected')"
+            if [ "$protected" = "true" ]; then
+              echo "보류(보호 브랜치) $ref"
+              continue
+            fi
+
+            current_sha="$(git ls-remote --heads origin "refs/heads/$ref" | awk '{print $1}')"
+            if [ -z "$current_sha" ]; then
+              echo "보류(이미 없음) $ref"
+              continue
+            fi
+            if [ "$current_sha" != "$sha" ]; then
+              echo "보류(스캔 뒤 HEAD 변경) $ref expected=$sha current=$current_sha"
+              continue
+            fi
+
             echo "지움 $ref ($sha)"
-            git push origin --delete "$ref"
+            git push               --force-with-lease="refs/heads/$ref:$sha"               origin ":refs/heads/$ref"
           done < /tmp/delete.txt
