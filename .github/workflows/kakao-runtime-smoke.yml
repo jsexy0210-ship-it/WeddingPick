@@ -35,6 +35,22 @@ jobs:
             if command -v "$cmd" >/dev/null 2>&1; then echo "$cmd=installed"; else echo "$cmd=absent"; fi
           done
 
+      - name: Inspect active Nginx site and certbot method
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '### enabled nginx files'
+          find /etc/nginx/sites-enabled -maxdepth 1 -type l -printf '%f -> %l\n' 2>/dev/null || true
+          echo '### nginx file markers'
+          sudo -n grep -RIl '127.0.0.1:3001' /etc/nginx/sites-enabled /etc/nginx/conf.d 2>/dev/null || true
+          echo '### certbot renewal method'
+          sudo -n awk -F= '
+            /^[[:space:]]*(authenticator|installer|server|webroot_path)[[:space:]]*=/ {
+              gsub(/^[[:space:]]+|[[:space:]]+$/, "", $1);
+              gsub(/^[[:space:]]+|[[:space:]]+$/, "", $2);
+              print $1 "=" $2
+            }' /etc/letsencrypt/renewal/*.conf 2>/dev/null || true
+
       - name: Kakao Object Storage presigned smoke
         shell: bash
         run: |
