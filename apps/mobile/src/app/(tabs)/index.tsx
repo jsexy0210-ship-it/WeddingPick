@@ -52,8 +52,7 @@ import { HomeBudget, PendingPreparation } from '@/features/home/home-summary';
 import strings from '../../../../../spec/strings.ko.json';
 
 import { Hero } from '@/features/home/hero';
-import { PickRecommend } from '@/features/home/pick-recommend';
-import { useOpenCategory } from '@/features/home/use-open-category';
+import { HomeRecommendations } from '@/features/home/pick-recommend';
 import { categoryStatuses } from '@/features/home/state';
 import { WeddingContent } from '@/features/home/wedding-content';
 import { PickDoneSheet, UnpickSheet } from '@/features/pick/pick-sheets';
@@ -124,11 +123,6 @@ export default function HomeScreen() {
    * 첫 렌더가 예산을 쓰고 두 번째 렌더가 못 받아 로더가 도중에 바뀐다.
    */
   const [fullScreen] = useState(takeFullScreenLoading);
-  /*
-   * 지금 펼쳐진 업종. **한 번에 하나만 펼쳐진다**(§5) — 기본은 첫 업종이고, 업종을 정해
-   * 목록이 바뀌면 다음 업종이 자동으로 펼쳐진다(§8). 규칙은 훅 하나에 있다.
-   */
-  const { open, toggle } = useOpenCategory(data.groups);
   const candidates = useMyCandidates();
   const reloadCandidates = candidates.reload;
   const [pickDoneOpen, setPickDoneOpen] = useState(false);
@@ -286,7 +280,7 @@ export default function HomeScreen() {
             bracketAnswered={data.bracketAnswered}
             partnerInvitePending={data.partnerInvitePending}
             onPressDate={() => router.push('/my/wedding-settings')}
-            onPressVenue={() => openHall(data.groups, toggle, open)}
+            onPressVenue={() => router.push('/search?category=hall')}
             onPressBudget={() =>
               router.push(
                 data.me?.weddingId == null
@@ -311,17 +305,12 @@ export default function HomeScreen() {
             </View>
           ) : recommendationStatus === 'loading' ? (
             <View style={styles.block}><DelayedLoader size={28} /></View>
-          ) : <PickRecommend
+          ) : <HomeRecommendations
             groups={data.groups}
-            open={open}
-            onToggle={toggle}
-            remaining={data.remaining}
-            remainingCategories={data.remainingCategories}
             isPicked={(vendorId) => candidates.candidateFor(vendorId) !== null}
             onPressVendor={(vendorId) => router.push(`/search/${vendorId}`)}
             onPressPick={(vendor) => void onPressPick(vendor)}
             onPressCompare={(category) => router.push(`/pick/${category}`)}
-            onPressSearchMore={(category) => router.push(`/search?category=${category}`)}
             onPressMore={() => router.push('/recommendations')}
           />}
 
@@ -330,32 +319,22 @@ export default function HomeScreen() {
             onOpen={() => router.push(data.me?.weddingId == null ? '/my/wedding-settings' : `/wedding/${data.me.weddingId}/expenses`)}
           />
 
-          <ExpoStrip
-            items={data.expos}
-            onPressExpo={(expoId) => router.push(`/search/expo/${expoId}`)}
-            onPressMore={() => router.push('/search/expo')}
-          />
-
           {/* 콘텐츠가 없어도 라운지 진입은 유지한다. */}
           {(
             <View style={styles.block}>
               <View style={styles.sectionHead}>
-                <View style={styles.sectionHeadText}>
-                  <ThemedText type="f14" style={styles.semibold}>
-                    {S['section.news']}
-                  </ThemedText>
-                  <ThemedText type="f12" themeColor="textAssistive" style={styles.sub}>
-                    {S['news.body']}
-                  </ThemedText>
-                </View>
+                <ThemedText type="f20" style={styles.bold}>
+                  웨딩피드
+                </ThemedText>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={S.lounge}
+                  accessibilityLabel="웨딩피드 자세히"
                   onPress={() => router.push('/community')}
-                  style={({ pressed }) => pressed && styles.pressed}>
-                  <ThemedText type="f12" style={styles.semibold}>
-                    {S.lounge}
+                  style={({ pressed }) => [styles.feedMore, pressed && styles.pressed]}>
+                  <ThemedText type="f13" themeColor="textAssistive">
+                    {S.more}
                   </ThemedText>
+                  <SeedIcon name="chevronRightRegular" size={Layout.iconField} color={useTheme().textAssistive} />
                 </Pressable>
               </View>
               {contentStatus === 'loading' ? <DelayedLoader size={28} /> : contentStatus === 'error' ? (
@@ -412,26 +391,6 @@ function venueName(candidates: CandidateListResponse | null, me: CurrentUser | n
 }
 
 /**
- * 「예식장 미정」을 눌렀을 때 — 웨딩홀 추천으로 잇는다(§3-2).
- *
- * 홈을 떠나지 않는다. 웨딩홀이 아직 목록에 있으면 그 아코디언을 펼치는 것이 가장 짧은
- * 길이고, 거기에 이미 추천 업체가 들어 있다. 목록에 없으면(정했거나 목록 밖) 검색으로 간다.
- */
-function openHall(
-  groups: readonly CategoryRecommendation[],
-  toggle: (category: VendorCategory) => void,
-  open: VendorCategory | null
-): void {
-  if (groups.some((group) => group.category === 'hall')) {
-    /* 이미 펼쳐져 있으면 그대로 둔다 — 여기서 toggle을 부르면 도리어 접힌다. */
-    if (open !== 'hall') toggle('hall');
-    return;
-  }
-
-  router.push('/search?category=hall');
-}
-
-/**
  * 헤더 — 브랜드 · 검색 · 알림(§2).
  *
  * 검색 단추가 검색의 유일한 입구다(2026-09-14 대표 지시 — 검색은 탭에서 내렸다).
@@ -447,13 +406,6 @@ function Header({ unread, onPressBell }: { unread: number; onPressBell: () => vo
       </ThemedText>
 
       <View style={styles.headerButtons}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="업체 검색"
-          onPress={() => router.push('/search')}
-          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
-          <SeedIcon name="searchRegular" size={Layout.iconRow} color={theme.text} />
-        </Pressable>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={hasUnread({ unread, total: unread }) ? `알림 ${formatCount(unread)}건` : '알림'}
@@ -475,12 +427,11 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
 
   header: {
+    minHeight: Layout.navBar,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: Spacing.four,
-    paddingHorizontal: Layout.pageX,
-    paddingBottom: Spacing.three,
+    paddingHorizontal: Layout.gutter,
   },
   brand: { fontWeight: 700, letterSpacing: LetterSpacing.n052 },
   headerButtons: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
@@ -496,7 +447,7 @@ const styles = StyleSheet.create({
   content: { paddingBottom: Spacing.three },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  block: { paddingHorizontal: Layout.pageX, marginBottom: Spacing.four },
+  block: { paddingHorizontal: Layout.gutter, marginBottom: Layout.sectionGap },
   sectionHead: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -504,8 +455,8 @@ const styles = StyleSheet.create({
     marginBottom: Layout.sectionHeadGapCompact,
     gap: Spacing.two,
   },
-  sectionHeadText: { flex: 1, minWidth: 0 },
-  sub: { marginTop: Spacing.half },
+  bold: { fontWeight: 700 },
+  feedMore: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   semibold: { fontWeight: 600 },
 
   pressed: { opacity: 0.8 },
