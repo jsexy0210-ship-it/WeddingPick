@@ -44,6 +44,7 @@ function makeHarness({ hadOld = true } = {}) {
   writeFileSync(path.join(dockerState, 'old_running'), hadOld ? '1\n' : '0\n', 'utf8');
   writeFileSync(path.join(dockerState, 'new_exists'), '0\n', 'utf8');
   writeFileSync(path.join(dockerState, 'new_running'), '0\n', 'utf8');
+  writeFileSync(path.join(dockerState, 'removed_old'), '0\n', 'utf8');
 
   const script = path.join(base, 'update-kakao-worker.sh');
   writeExecutable(
@@ -259,7 +260,7 @@ function assertOldRestored(h) {
   assert.equal(state(path.join(h.dockerState, 'prod_owner')), 'old');
   assert.equal(state(path.join(h.dockerState, 'old_name')), '/weddingpick-worker');
   assert.equal(state(path.join(h.dockerState, 'old_running')), '1');
-  assert.equal(state(path.join(h.dockerState, 'removed_old'), '0');
+  assert.equal(state(path.join(h.dockerState, 'removed_old')), '0');
 }
 
 for (const stage of ['stop', 'rename', 'run', 'running', 'logs', 'revision']) {
