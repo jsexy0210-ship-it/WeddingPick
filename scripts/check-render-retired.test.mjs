@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -49,6 +49,17 @@ test('allows protected Kakao deployment and an explicit retired API response', (
     { path: 'apps/api/src/routes/site-meta.ts', content: "app.post('/v1/admin/site-meta/publish', auth, async () => { throw new ApiError('conflict', 'deployment retired'); });" },
   ]), []);
 });
+test('Kakao API revision guard runs before and after candidate build', () => {
+  const workflow = readFileSync(
+    join(process.cwd(), '.github', 'workflows', 'deploy-kakao-api.yml'),
+    'utf8'
+  );
+
+  const guardCalls = workflow.match(/^\s+deploy_revision_is_current \|\|/gm) ?? [];
+  assert.equal(guardCalls.length, 2);
+  assert.doesNotMatch(workflow, /^\s+current_main \|\|/m);
+});
+
 test('repository scan does not read untracked secret files', () => {
   const root = mkdtempSync(join(tmpdir(), 'deployment-policy-'));
   try {

@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { router } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import { StyleSheet } from 'react-native';
 import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 
 import { Layout, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { clearTokenIfMatches, loadToken, subscribeToken } from '@/api/session';
+import { openExternal as openExternalUrl } from '@/features/open-external';
 
 import { WEB_SHELL_URL } from './config';
 import { isTrustedWebShellUrl, parseWebShellMessage, sessionInjection, webShellTarget } from './session-protocol';
@@ -74,7 +74,7 @@ export function WebShellView({ path }: Props) {
       const parsed = new URL(url);
       if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password ||
           parsed.searchParams.has('wp_token')) return;
-      void WebBrowser.openBrowserAsync(parsed.href).catch(() => setError(true));
+      void openExternalUrl(parsed.href).catch(() => setError(true));
     } catch { /* 앱 스킴·파일·스크립트 주소는 웹뷰에서 실행하지 않는다. */ }
   }
 

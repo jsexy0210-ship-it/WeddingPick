@@ -20,6 +20,7 @@ jobs:
 
   publish:
     name: Publish staged app web on 443
+    environment: production
     needs: [precheck]
     runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
     timeout-minutes: 10

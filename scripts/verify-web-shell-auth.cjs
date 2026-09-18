@@ -65,7 +65,7 @@ function component(sequence = [token]) {
       useMemo: fn => fn(), useEffect: fn => effects.push(fn()), useState: initial => [initial, () => {}] },
     'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
     'expo-router': { router: { replace: value => { route = value; } } },
-    'expo-web-browser': { openBrowserAsync: async value => { external = value; } },
+    '@/features/open-external': { openExternal: async value => { external = value; } },
     'react-native': { StyleSheet: { create: value => value } },
     'react-native-webview': { WebView: 'WebView' },
     '@weddingpick/ui': { Layout: {}, MaxContentWidth: 500, Spacing: {}, ThemedText: 'Text', ThemedView: 'View' },
