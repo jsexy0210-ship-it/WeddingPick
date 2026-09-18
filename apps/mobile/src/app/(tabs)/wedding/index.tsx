@@ -2,8 +2,8 @@
  * 웨딩노트 — WP-OUR-001.
  *
  * 피그마 `OurWedding.tsx`(2026-09-14 정본 · 최상위 규칙 1)대로 그린다. 제목 → 세 칸 탭
- * (캘린더 · 상담기록 · 예산현황) → 탭마다 패널 하나(radius 26 · 테두리 · 안쪽 20) → 오른쪽
- * 아래 FAB. 그 앞에는 루트 시안의 D-Day 히어로 · 다음 일정 · 지출 상자 · 우리둘 카드가
+ * (캘린더 · 상담기록 · 예산현황) → 탭마다 패널 하나(radius 26 · 테두리 · 안쪽 20).
+ * 추가 동작은 정본대로 헤더 우측 텍스트 액션에 둔다. 우하단 FAB는 쓰지 않는다. 그 앞에는 루트 시안의 D-Day 히어로 · 다음 일정 · 지출 상자 · 우리둘 카드가
  * 있었다 — 피그마가 그 자리를 이긴다. 예식 뒤 화면(`WeddingCompleteView`)은 피그마에
  * 없으므로 기존 정본 그대로다(최상위 규칙 3).
  *
@@ -37,7 +37,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Border,
   Elevation,
-  Fab,
   Layout,
   ProductSymbol,
   Radius,
@@ -80,7 +79,7 @@ const CONSULT_EMPTY_TITLE = '녹음 파일을 선택해 주세요';
 const CONSULT_EMPTY_BODY = '스마트폰 녹음앱에서 저장한 파일을 올릴 수 있어요';
 const CONSULT_SAVED = '저장됨';
 const CONSULT_PENDING = '확인 필요';
-const FAB_LABEL: Record<Tab, string> = { calendar: '일정 추가', budget: '지출 추가', consult: '녹음 파일 추가' };
+const ADD_LABEL: Record<Tab, string> = { calendar: '추가', budget: '추가', consult: '녹음 올리기' };
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
 
 /** 진행바 값 — 피그마 `h-2`(8). 예산 정본은 원형 그래프를 쓰지 않는다. */
@@ -138,6 +137,18 @@ export default function WeddingScreen() {
       <ThemedText type="f28" style={styles.bold}>
         {TERMS.ourWedding}
       </ThemedText>
+      {!weddingOver && weddingId ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={ADD_LABEL[tab]}
+          onPress={onAddAction}
+          hitSlop={Spacing.two}
+          style={({ pressed }) => (pressed ? styles.pressed : null)}>
+          <ThemedText type="f15" themeColor="tint" style={styles.bold}>
+            {ADD_LABEL[tab]}
+          </ThemedText>
+        </Pressable>
+      ) : null}
     </View>
   );
 
@@ -152,7 +163,7 @@ export default function WeddingScreen() {
     );
   }
 
-  function onFab() {
+  function onAddAction() {
     if (!weddingId) return;
     if (tab === 'calendar') router.push(`/wedding/${weddingId}/events/new` as never);
     else if (tab === 'budget') router.push(`/wedding/${weddingId}/expenses/add` as never);
@@ -219,8 +230,6 @@ export default function WeddingScreen() {
           )}
         </ScrollView>
 
-        {/* FAB — 피그마 56 원 · 키 컬러 · «+». 탭마다 하는 일이 다르다. 자리는 기존 Fab 그대로다. */}
-        {weddingId ? <Fab label={FAB_LABEL[tab]} onPress={onFab} /> : null}
       </SafeAreaView>
       <Toast message={toast} onHidden={() => setToast(null)} />
     </ThemedView>
@@ -570,10 +579,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: Layout.pageX,
     paddingTop: Spacing.four,
     paddingBottom: Layout.listGap,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Layout.inlineGap,
   },
   scroll: { flex: 1 },
-  /* 바깥 `pb-24` = 96 — FAB 자리. 사다리에 없어 five(32) + six(64)로 적는다. */
-  scrollContent: { paddingBottom: Spacing.five + Spacing.six },
+  /* 우하단 FAB가 없으므로 탭바 앞의 일반 문서 여백만 둔다. */
+  scrollContent: { paddingBottom: Spacing.four },
 
   bold: { fontWeight: 700 },
   regular: { fontWeight: 400 },
@@ -582,6 +595,7 @@ const styles = StyleSheet.create({
   medium: { fontWeight: 500 },
   grow: { flex: 1, minWidth: 0 },
   strike: { textDecorationLine: 'line-through' },
+  pressed: { opacity: 0.6 },
 
   /* 탭 `mx-5 rounded-2xl p-1`, 칸 `h-11 rounded-xl`. */
   /* 규격서 「nav 390×52 pad 4 · mar 0 20 0 20 · bg #F7F8F9 · r16」, 칸 «127×44 · r22 · 14/700 · 켠 칸 흰 면 + shadow». */
