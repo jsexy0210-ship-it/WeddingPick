@@ -183,7 +183,7 @@ function splitFixture(script,role,missingAdmin=false) {
   });
   await check('lounge category filters preserve clickable detail',async()=>{
     const l=loungeHarness();l.render();l.h.commit();await flush();find(l.render(),'SegmentedTabs')[0].props.onChange('feed');
-    find(l.render(),'FilterChip')[1].props.onPress();const buttons=find(l.render(),'Pressable');
+    find(l.render(),'FilterChip').find(chip=>chip.props.label==='예산').props.onPress();const buttons=find(l.render(),'Pressable');
     assert.equal(buttons.length,1);assert.equal(buttons[0].props.accessibilityLabel,'첫 글');
   });
   await check('lounge verified review action is restricted to review tab',async()=>{
