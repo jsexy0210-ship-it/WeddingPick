@@ -105,7 +105,7 @@ export default function ExpenseDetailScreen() {
 
         <View style={styles.rows}>
           <KeyValueRow label="업체" value={current.label} />
-          <KeyValueRow label="카테고리" value={categoryLabel} />
+          <KeyValueRow label="업종" value={categoryLabel} />
           <KeyValueRow
             label="낸 날짜"
             value={current.spentOn ? formatDateDot(current.spentOn) : '아직 없어요'}

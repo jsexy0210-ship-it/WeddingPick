@@ -4,7 +4,7 @@ import type {
   WeddingFeedListResponse,
 } from '@weddingpick/api-contract';
 import { VENDOR_CATEGORY_LABEL, daysUntil } from '@weddingpick/domain';
-import { Redirect, router, useFocusEffect } from 'expo-router';
+import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -48,12 +48,13 @@ type LoungeReview = LoungeReviewListResponse['reviews'][number];
 /**
  * 라운지 — docs/design/figma-export/07-lounge-my.dc.html 1~3.
  *
- * Root 탭이 아니다. 홈/MY에서 들어오는 하위 화면이고, 헤더 Back은 History 우선이다.
+ * Root 탭이 아니다. 홈/MY에서 들어오는 하위 화면이고, 헤더 Back은 진입한 화면으로 돌아간다.
  * 후기에는 별점/평점 숫자를 노출하지 않는다. 서버의 과거 후기 계약에 정본 3축 값이
  * 아직 전부 없으므로 실제로 의미가 대응되는 축만 정본 답변 칩으로 바꿔 보여준다.
  */
 export default function CommunityScreen() {
   const { state, refresh } = useSession();
+  const params = useLocalSearchParams<{ from?: string }>();
   const [tab, setTab] = useState<Tab>('review');
   const [category, setCategory] = useState<CategoryLabel>('전체');
   const [reviews, setReviews] = useState<Loaded<LoungeReviewListResponse>>({ status: 'loading' });
@@ -98,6 +99,7 @@ export default function CommunityScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <NavBar
           title={S.title}
+          onBack={() => router.replace(params.from === 'my' ? '/my' : '/')}
           right={{ label: S.write, brand: true, onPress: () => router.push('/my/reviews' as never) }}
         />
 

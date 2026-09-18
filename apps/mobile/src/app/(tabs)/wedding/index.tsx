@@ -490,10 +490,10 @@ function BudgetPanel({ expenses }: { expenses: ExpenseSummaryResponse | null }) 
       <View style={[styles.proofInvite, { borderTopColor: theme.border }]}>
         <View style={styles.grow}>
           <ThemedText type="f14" style={styles.bold}>
-            실제 낸 금액을 인증해볼까요?
+            등록한 지출을 Pick 인증해볼까요?
           </ThemedText>
           <ThemedText type="f12" themeColor="textAssistive">
-            인증하면 다음 사람에게 보여요
+            인증되면 실 제보에 반영돼요
           </ThemedText>
         </View>
         <Pressable

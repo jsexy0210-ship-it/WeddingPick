@@ -174,7 +174,7 @@ export default function MyScreen() {
     {
       title: S['group.browse'],
       rows: [
-        { key: 'lounge', label: S['item.lounge'], icon: 'twoPeople', onPress: () => guestPush('/community') },
+        { key: 'lounge', label: S['item.lounge'], icon: 'twoPeople', onPress: () => guestPush('/community?from=my') },
       ],
     },
     {
