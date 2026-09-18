@@ -1,3 +1,4 @@
+import { loungeReviewListResponseSchema } from '@weddingpick/api-contract';
 import { MINIMUM_REVIEW_COUNT } from '@weddingpick/domain';
 
 import { createTestApp, createWedding, resetDatabase, signInAs, type TestApp } from './helpers';
@@ -100,6 +101,175 @@ describeWithDb('이용 후기', () => {
       },
     });
   }
+
+  describe('라운지 전체 후기', () => {
+    it('공개 가능한 후기가 없으면 빈 목록과 null cursor를 준다', async () => {
+      const response = await test.app.inject({ method: 'GET', url: '/v1/reviews?limit=20' });
+
+      expect(response.statusCode).toBe(200);
+      expect(loungeReviewListResponseSchema.parse(response.json())).toMatchObject({
+        reviews: [],
+        nextCursor: null,
+      });
+    });
+
+    async function insertReview(input: {
+      vendorId: string;
+      authorId: string;
+      title: string;
+      createdAt: string;
+      status?: 'published' | 'under_objection' | 'removed';
+    }) {
+      const { rows } = await test.pool.query<{ id: string }>(
+        `INSERT INTO structured.reviews
+           (vendor_id, author_user_id, role, overall, title, body, verification, status,
+            objection_hold_until, created_at)
+         VALUES ($1, $2, 'contractor', 4, $3, $4, 'reported',
+                 $5::review_status,
+                 CASE WHEN $5::review_status = 'under_objection'
+                      THEN now() + interval '1 day' ELSE NULL END,
+                 $6::timestamptz)
+         RETURNING id`,
+        [input.vendorId, input.authorId, input.title, BODY, input.status ?? 'published', input.createdAt]
+      );
+
+      return rows[0]!.id;
+    }
+
+    it('게시 가능한 후기만 보이고 작성자 식별정보는 내보내지 않는다', async () => {
+      const hall = await createVendor('hall', '가온홀');
+      const studio = await createVendor('studio', '가온스튜디오');
+      const publishedAuthor = await signInAs(test, 'lounge-published');
+      const heldAuthor = await signInAs(test, 'lounge-held');
+      const removedAuthor = await signInAs(test, 'lounge-removed');
+
+      const visibleId = await insertReview({
+        vendorId: hall,
+        authorId: publishedAuthor.userId,
+        title: '공개 후기',
+        createdAt: '2026-09-18T02:00:00.000Z',
+      });
+      await insertReview({
+        vendorId: studio,
+        authorId: heldAuthor.userId,
+        title: '확인 중 후기',
+        createdAt: '2026-09-18T01:00:00.000Z',
+        status: 'under_objection',
+      });
+      await insertReview({
+        vendorId: hall,
+        authorId: removedAuthor.userId,
+        title: '내려간 후기',
+        createdAt: '2026-09-18T00:00:00.000Z',
+        status: 'removed',
+      });
+
+      const response = await test.app.inject({ method: 'GET', url: '/v1/reviews' });
+
+      expect(response.statusCode).toBe(200);
+      const parsed = loungeReviewListResponseSchema.parse(response.json());
+      expect(parsed.reviews).toHaveLength(1);
+      expect(parsed.reviews[0]).toMatchObject({
+        id: visibleId,
+        title: '공개 후기',
+        mine: false,
+        vendor: { id: hall, name: '가온홀', category: 'hall' },
+      });
+      const raw = response.body;
+      expect(raw).not.toContain(publishedAuthor.userId);
+      expect(raw).not.toContain(heldAuthor.userId);
+      expect(raw).not.toContain(removedAuthor.userId);
+      expect(raw).not.toContain('verified_payment_proof_id');
+      expect(raw).not.toContain('author_user_id');
+    });
+
+    it('업종으로 거르고 잘못된 업종은 받지 않는다', async () => {
+      const hall = await createVendor('hall', '필터홀');
+      const studio = await createVendor('studio', '필터스튜디오');
+      const author = await signInAs(test, 'lounge-filter');
+
+      await insertReview({
+        vendorId: hall,
+        authorId: author.userId,
+        title: '홀 후기',
+        createdAt: '2026-09-18T02:00:00.000Z',
+      });
+      await insertReview({
+        vendorId: studio,
+        authorId: author.userId,
+        title: '스튜디오 후기',
+        createdAt: '2026-09-18T01:00:00.000Z',
+      });
+
+      const filtered = await test.app.inject({
+        method: 'GET',
+        url: '/v1/reviews?category=studio',
+      });
+      const parsed = loungeReviewListResponseSchema.parse(filtered.json());
+
+      expect(filtered.statusCode).toBe(200);
+      expect(parsed.reviews.map((review) => review.vendor.category)).toEqual(['studio']);
+
+      const invalid = await test.app.inject({
+        method: 'GET',
+        url: '/v1/reviews?category=not-a-category',
+      });
+      expect(invalid.statusCode).toBe(400);
+    });
+
+    it('형식이 잘못된 cursor는 DB cast 오류 없이 첫 페이지로 되돌린다', async () => {
+      const malformedCursor = Buffer.from(
+        JSON.stringify(['not-a-date', 'not-a-uuid']),
+        'utf8'
+      ).toString('base64url');
+
+      const response = await test.app.inject({
+        method: 'GET',
+        url: `/v1/reviews?cursor=${encodeURIComponent(malformedCursor)}`,
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(loungeReviewListResponseSchema.parse(response.json())).toMatchObject({
+        reviews: [],
+        nextCursor: null,
+      });
+    });
+
+    it('cursor로 다음 쪽을 이어도 후기 중복이 없다', async () => {
+      const author = await signInAs(test, 'lounge-cursor');
+      const vendors = await Promise.all([
+        createVendor('hall', '커서홀1'),
+        createVendor('hall', '커서홀2'),
+        createVendor('hall', '커서홀3'),
+      ]);
+
+      for (const [index, vendorId] of vendors.entries()) {
+        await insertReview({
+          vendorId,
+          authorId: author.userId,
+          title: `커서 후기 ${index + 1}`,
+          createdAt: `2026-09-18T0${3 - index}:00:00.000Z`,
+        });
+      }
+
+      const first = await test.app.inject({ method: 'GET', url: '/v1/reviews?limit=2' });
+      const firstPage = loungeReviewListResponseSchema.parse(first.json());
+      expect(firstPage.reviews).toHaveLength(2);
+      expect(firstPage.nextCursor).not.toBeNull();
+
+      const second = await test.app.inject({
+        method: 'GET',
+        url: `/v1/reviews?limit=2&cursor=${encodeURIComponent(firstPage.nextCursor!)}`,
+      });
+      const secondPage = loungeReviewListResponseSchema.parse(second.json());
+
+      expect(secondPage.reviews).toHaveLength(1);
+      expect(secondPage.nextCursor).toBeNull();
+
+      const ids = [...firstPage.reviews, ...secondPage.reviews].map((review) => review.id);
+      expect(new Set(ids).size).toBe(3);
+    });
+  });
 
   describe('위험정보', () => {
     /*
