@@ -29,6 +29,7 @@ import { useSession } from '@/features/auth/use-session';
 import { FullScreenError } from '@/features/errors/full-screen-error';
 import { CategoryImage } from '@/features/home/category-image';
 import { DelayedLoader, DelayedLoadingView } from '@/features/loading/delayed-loader';
+import { appendLoungeReviewPage, loungeReviewCategory } from '@/features/community/lounge-reviews';
 import { NavBar } from '@/features/wedding/screen-kit';
 import strings from '../../../../../../spec/strings.ko.json';
 
@@ -59,19 +60,64 @@ export default function CommunityScreen() {
   const [tab, setTab] = useState<Tab>('review');
   const [category, setCategory] = useState<CategoryLabel>('전체');
   const [reviews, setReviews] = useState<Loaded<LoungeReviewListResponse>>({ status: 'loading' });
+  const [reviewMoreLoading, setReviewMoreLoading] = useState(false);
+  const [reviewMoreError, setReviewMoreError] = useState(false);
   const [feed, setFeed] = useState<Loaded<WeddingFeedListResponse>>({ status: 'loading' });
   const [expos, setExpos] = useState<Loaded<ExpoItem[]>>({ status: 'loading' });
   const loadVersion = useRef(0);
+  const reviewVersion = useRef(0);
+  const reviewLoadingMore = useRef(false);
+  const categoryRef = useRef<CategoryLabel>('전체');
   const isSignedIn = state.status === 'signedIn';
+
+  const loadReviews = useCallback((label: CategoryLabel, cursor?: string) => {
+    if (!isSignedIn) return;
+    const version = ++reviewVersion.current;
+    const append = Boolean(cursor);
+
+    if (append) {
+      if (reviewLoadingMore.current) return;
+      reviewLoadingMore.current = true;
+      setReviewMoreLoading(true);
+      setReviewMoreError(false);
+    } else {
+      reviewLoadingMore.current = false;
+      setReviewMoreLoading(false);
+      setReviewMoreError(false);
+      setReviews({ status: 'loading' });
+    }
+
+    void listLoungeReviews({
+      category: loungeReviewCategory(label),
+      cursor,
+      limit: 20,
+    })
+      .then((response) => {
+        if (version !== reviewVersion.current) return;
+        setReviews((current) => {
+          if (append && current.status === 'ready') {
+            return { status: 'ready', value: appendLoungeReviewPage(current.value, response) };
+          }
+          return { status: 'ready', value: response };
+        });
+      })
+      .catch(() => {
+        if (version !== reviewVersion.current) return;
+        if (append) setReviewMoreError(true);
+        else setReviews({ status: 'error' });
+      })
+      .finally(() => {
+        if (version !== reviewVersion.current) return;
+        reviewLoadingMore.current = false;
+        setReviewMoreLoading(false);
+      });
+  }, [isSignedIn]);
 
   const load = useCallback(() => {
     const version = ++loadVersion.current;
     if (!isSignedIn) return;
 
-    setReviews({ status: 'loading' });
-    void listLoungeReviews()
-      .then((response) => { if (version === loadVersion.current) setReviews({ status: 'ready', value: response }); })
-      .catch(() => { if (version === loadVersion.current) setReviews({ status: 'error' }); });
+    loadReviews(categoryRef.current);
 
     setFeed({ status: 'loading' });
     void getWeddingFeed()
@@ -82,11 +128,21 @@ export default function CommunityScreen() {
     void listExpos({ sort: 'date' })
       .then((response) => { if (version === loadVersion.current) setExpos({ status: 'ready', value: response.items }); })
       .catch(() => { if (version === loadVersion.current) setExpos({ status: 'error' }); });
-  }, [isSignedIn]);
+  }, [isSignedIn, loadReviews]);
+
+  const loadMoreReviews = useCallback(() => {
+    if (reviews.status !== 'ready' || reviewMoreLoading || reviewMoreError) return;
+    if (!reviews.value.nextCursor) return;
+    loadReviews(categoryRef.current, reviews.value.nextCursor);
+  }, [loadReviews, reviewMoreError, reviewMoreLoading, reviews]);
 
   useFocusEffect(useCallback(() => {
     load();
-    return () => { loadVersion.current += 1; };
+    return () => {
+      loadVersion.current += 1;
+      reviewVersion.current += 1;
+      reviewLoadingMore.current = false;
+    };
   }, [load]));
 
   if (state.status === 'error') return <FullScreenError kind={state.kind} onRetry={() => void refresh()} />;
@@ -109,8 +165,11 @@ export default function CommunityScreen() {
             items={TABS}
             value={tab}
             onChange={(next) => {
-              setTab(next as Tab);
+              const nextTab = next as Tab;
+              setTab(nextTab);
+              categoryRef.current = '전체';
               setCategory('전체');
+              if (nextTab === 'review') loadReviews('전체');
             }}
             accessibilityLabel={S.title}
           />
@@ -127,16 +186,39 @@ export default function CommunityScreen() {
                 key={label}
                 label={label}
                 selected={category === label}
-                onPress={() => setCategory(label)}
+                onPress={() => {
+                  categoryRef.current = label;
+                  setCategory(label);
+                  if (tab === 'review') loadReviews(label);
+                }}
                 role="radio"
               />
             ))}
           </ScrollView>
         ) : null}
 
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          scrollEventThrottle={160}
+          onScroll={({ nativeEvent }) => {
+            if (tab !== 'review') return;
+            const distanceToEnd =
+              nativeEvent.contentSize.height -
+              nativeEvent.layoutMeasurement.height -
+              nativeEvent.contentOffset.y;
+            if (distanceToEnd < 240) loadMoreReviews();
+          }}>
           {tab === 'review' ? (
-            <ReviewList state={reviews} category={category} onRetry={load} />
+            <ReviewList
+              state={reviews}
+              category={category}
+              onRetry={() => loadReviews(categoryRef.current)}
+              moreLoading={reviewMoreLoading}
+              moreError={reviewMoreError}
+              onRetryMore={loadMoreReviews}
+            />
           ) : tab === 'feed' ? (
             <FeedList state={feed} category={category} onRetry={load} />
           ) : (
@@ -152,10 +234,16 @@ function ReviewList({
   state,
   category,
   onRetry,
+  moreLoading,
+  moreError,
+  onRetryMore,
 }: {
   state: Loaded<LoungeReviewListResponse>;
   category: CategoryLabel;
   onRetry: () => void;
+  moreLoading: boolean;
+  moreError: boolean;
+  onRetryMore: () => void;
 }) {
   const theme = useTheme();
 
@@ -247,6 +335,8 @@ function ReviewList({
           </Pressable>
         );
       })}
+      {moreLoading ? <DelayedLoader size={24} /> : null}
+      {moreError ? <LoadFailed onRetry={onRetryMore} /> : null}
       <ThemedText type="f12" themeColor="textAssistive" style={styles.caveat}>
         {state.value.caveat}
       </ThemedText>
