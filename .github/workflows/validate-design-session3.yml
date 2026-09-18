@@ -122,6 +122,16 @@ jobs:
             src/features/navigation/depth-back-buttons.test.tsx \
             src/features/navigation/design-recovery.test.ts
 
+      - name: Browser native dialog guard
+        id: browser_dialog_guard
+        run: |
+          set -euo pipefail
+          if grep -RInE --include='*.ts' --include='*.tsx' \
+            'window\.(alert|confirm|prompt)\(' apps/mobile/src packages/ui/src; then
+            echo "Browser-native dialog call remains." >&2
+            exit 1
+          fi
+
       - name: Expo web export
         id: web_export
         continue-on-error: true
@@ -203,6 +213,7 @@ jobs:
           test "${{ steps.owned_typecheck.outcome }}" = "success"
           test "${{ steps.owned_lint.outcome }}" = "success"
           test "${{ steps.owned_tests.outcome }}" = "success"
+          test "${{ steps.browser_dialog_guard.outcome }}" = "success"
           test "${{ steps.web_export.outcome }}" = "success"
           test "${{ steps.capture_root.outcome }}" = "success"
           test "${{ steps.capture_compare.outcome }}" = "success"
