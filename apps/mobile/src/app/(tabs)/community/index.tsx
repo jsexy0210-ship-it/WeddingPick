@@ -335,7 +335,7 @@ function ReviewList({
           </Pressable>
         );
       })}
-      {moreLoading ? <DelayedLoader size={24} /> : null}
+      {moreLoading ? <DelayedLoader size={20} /> : null}
       {moreError ? <LoadFailed onRetry={onRetryMore} /> : null}
       <ThemedText type="f12" themeColor="textAssistive" style={styles.caveat}>
         {state.value.caveat}
