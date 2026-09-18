@@ -11,7 +11,7 @@ const baseReview = {
   body: '충분히 긴 후기 본문입니다.',
   pros: null,
   cons: null,
-  verification: 'contract_verified' as const,
+  verification: 'contract' as const,
   verificationLabel: '계약 확인',
   aspects: [],
   createdAt: '2026-09-18T00:00:00.000Z',
