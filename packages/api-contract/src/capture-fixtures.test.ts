@@ -35,6 +35,7 @@ import {
   vendorSearchResponseSchema,
 } from './vendors';
 import { currentUserSchema, weddingInviteListResponseSchema } from './weddings';
+import { ENDPOINTS } from './endpoints';
 import { withdrawalNoticeSchema } from './withdrawal';
 
 /*
@@ -54,6 +55,8 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/me/recommendations', categoryRecommendationsResponseSchema],
   ['GET /v1/auth/providers', authProvidersResponseSchema],
   ['GET /v1/weddings/:weddingId/candidates', candidateListResponseSchema],
+  ['POST /v1/weddings/:weddingId/candidates', ENDPOINTS.addCandidate.response],
+  ['DELETE /v1/weddings/:weddingId/candidates/:candidateId', ENDPOINTS.removeCandidate.response],
   ['GET /v1/me/monthly-draw', myMonthlyDrawResponseSchema],
   ['POST /v1/weddings/:weddingId/comparisons', z.null()],
   ['GET /v1/review-report-reasons', reportReasonListResponseSchema],
