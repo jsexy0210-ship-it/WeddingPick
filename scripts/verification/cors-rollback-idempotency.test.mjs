@@ -59,19 +59,19 @@ function harness({ backupExists = true, markerExists = true } = {}) {
   executable(script, source.replace('ROOT=/home/ubuntu/WeddingPick', `ROOT="${root}"`));
   executable(path.join(bin, 'sudo'), `#!/usr/bin/env bash
 set -euo pipefail
-if [ "${1:-}" = "-n" ]; then shift; fi
+if [ "\${1:-}" = "-n" ]; then shift; fi
 exec "$@"
 `);
   executable(path.join(bin, 'sleep'), '#!/usr/bin/env bash\nexit 0\n');
   executable(path.join(bin, 'docker'), `#!/usr/bin/env bash
 set -euo pipefail
-S="${MOCK_STATE_DIR:?}"
-cmd="${1:-}"; shift || true
+S="\${MOCK_STATE_DIR:?}"
+cmd="\${1:-}"; shift || true
 case "$cmd" in
   inspect)
     fmt=''
-    if [ "${1:-}" = -f ]; then fmt="$2"; shift 2; fi
-    target="${1:-}"
+    if [ "\${1:-}" = -f ]; then fmt="$2"; shift 2; fi
+    target="\${1:-}"
     if [ "$target" = weddingpick-api-cors-previous-100-1 ]; then
       [ "$(cat "$S/backup_exists")" = 1 ] || exit 1
       [ -z "$fmt" ] && echo '{}' || echo old123
@@ -85,8 +85,8 @@ case "$cmd" in
     exit 1
     ;;
   rm)
-    [ "${1:-}" != -f ] || shift
-    target="${1:-}"
+    [ "\${1:-}" != -f ] || shift
+    target="\${1:-}"
     if [ "$target" = new123 ] || [ "$target" = weddingpick-api ]; then
       printf '1\n' > "$S/removed_prod"
       n="$(cat "$S/rm_count")"; n=$((n+1)); printf '%s\n' "$n" > "$S/rm_count"
@@ -112,8 +112,8 @@ esac
 `);
   executable(path.join(bin, 'curl'), `#!/usr/bin/env bash
 set -euo pipefail
-S="${MOCK_STATE_DIR:?}"
-if [ "${MOCK_HEALTH_FAIL:-0}" = 1 ]; then exit 22; fi
+S="\${MOCK_STATE_DIR:?}"
+if [ "\${MOCK_HEALTH_FAIL:-0}" = 1 ]; then exit 22; fi
 [ "$(cat "$S/prod_id")" = old123 ] || exit 22
 printf '%s' '{"ok":true}'
 `);
