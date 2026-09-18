@@ -150,3 +150,37 @@ jobs:
           test "$(sudo -n docker inspect -f '{{.State.Running}}' "$name")" = true
           sudo -n docker logs "$name" 2>&1 | grep -F '분석 워커 시작'
           echo 'worker_startup=ok'
+
+      - name: Enable separate production worker
+        if: ${{ contains(github.event.head_commit.message || '', '[enable-worker]') }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          name=weddingpick-worker
+
+          if sudo -n docker inspect "$name" >/dev/null 2>&1; then
+            if [ "$(sudo -n docker inspect -f '{{.State.Running}}' "$name")" = true ]; then
+              echo 'worker_already_running=ok'
+              exit 0
+            fi
+            sudo -n docker rm -f "$name" >/dev/null
+          fi
+
+          image="$(sudo -n docker inspect -f '{{.Config.Image}}' weddingpick-api)"
+          sudo -n docker run -d --pull=never --name "$name" --restart=unless-stopped             --env-file /home/ubuntu/WeddingPick/.env.kakao-prod             "$image" npm run worker --workspace @weddingpick/api >/dev/null
+
+          cleanup_on_failure() {
+            status=$?
+            if [ "$status" -ne 0 ]; then
+              sudo -n docker logs "$name" 2>&1 | tail -80 || true
+              sudo -n docker rm -f "$name" >/dev/null 2>&1 || true
+            fi
+            exit "$status"
+          }
+          trap cleanup_on_failure EXIT
+
+          sleep 8
+          test "$(sudo -n docker inspect -f '{{.State.Running}}' "$name")" = true
+          sudo -n docker logs "$name" 2>&1 | grep -F '분석 워커 시작'
+          trap - EXIT
+          echo 'production_worker=enabled'
