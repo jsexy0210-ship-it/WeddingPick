@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
@@ -39,7 +39,7 @@ export function DialogToast(props: DialogToastProps) {
 
   return (
     <VisibleDialogToast
-      key={`${message}:${Boolean(props.actionLabel && props.onAction)}`}
+      key={`${message}:${props.actionLabel ?? ''}`}
       {...props}
       message={message}
     />
@@ -56,15 +56,20 @@ function VisibleDialogToast({
   const theme = useTheme();
   const [visible, setVisible] = useState(true);
   const hasAction = Boolean(actionLabel && onAction);
+  const onHiddenRef = useRef(onHidden);
+
+  useEffect(() => {
+    onHiddenRef.current = onHidden;
+  }, [onHidden]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setVisible(false);
-      onHidden?.();
+      onHiddenRef.current?.();
     }, dialogToastDuration(hasAction));
 
     return () => clearTimeout(timer);
-  }, [hasAction, onHidden]);
+  }, [hasAction]);
 
   if (!visible) return null;
 
