@@ -14,11 +14,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { createInquiry, listMyInquiries } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { formatDateDot } from '@/features/common/format-date';
-import { useFaq } from '@/features/faq/use-faq';
 import { useDepthBack } from '@/features/navigation/depth-back';
 import { BackBar } from '@/components/back-bar';
 import {
-  Accordion,
   ActionButton,
   FilterChip,
   FontSize,
@@ -61,10 +59,8 @@ export default function ContactScreen() {
   const [error, setError] = useState<string | null>(null);
   const [acknowledgement, setAcknowledgement] = useState<string | null>(null);
   const [mine, setMine] = useState<Inquiry[]>([]);
-  // 「돌아가기」는 Depth Back이다 — 알림·링크로 곧장 들어와도 MY로 올라간다.
+  // 완료 화면의 「돌아가기」도 Depth Back이다 — 알림·링크로 곧장 들어와도 MY로 올라간다.
   const depthBack = useDepthBack();
-  /* 자주 묻는 것은 운영자가 고친다(2026-09-16 대표 지시) — 서버에서 받아 온다. */
-  const faq = useFaq();
 
   const subject =
     params.subjectKind && params.subjectId
@@ -115,7 +111,7 @@ export default function ContactScreen() {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
-          <BackBar />
+          <BackBar title="문의하기" />
           <ThemedView style={styles.content}>
             <ThemedText type="subtitle">보냈어요</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
@@ -136,38 +132,34 @@ export default function ContactScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <BackBar />
-        <ScrollView contentContainerStyle={styles.content}>
+        <BackBar title="문의하기" />
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+          {mine.length > 0 ? (
+            <ThemedView style={styles.section}>
+              <ThemedText type="smallBold">지난 문의 {mine.length}건</ThemedText>
+              {mine.map((inquiry) => (
+                <ThemedView key={inquiry.id} type="backgroundElement" style={styles.card}>
+                  <ThemedText type="smallBold">
+                    {INQUIRY_CATEGORY_RULES[inquiry.category].label} ·{' '}
+                    {INQUIRY_STATUS_LABEL[inquiry.status]}
+                  </ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {formatDateDot(inquiry.receivedAt)}
+                  </ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {inquiry.body}
+                  </ThemedText>
+                  {inquiry.resolution ? <ThemedText type="small">답변: {inquiry.resolution}</ThemedText> : null}
+                </ThemedView>
+              ))}
+            </ThemedView>
+          ) : null}
+
           <ThemedView style={styles.section}>
-            <ThemedText type="subtitle">문의하기</ThemedText>
+            <ThemedText type="subtitle">어떤 점이 궁금하세요?</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
               사람이 직접 읽고 답해요. 이름이나 주소 없이 보낼 수 있어요.
             </ThemedText>
-          </ThemedView>
-
-          {/*
-            FAQ를 문의 앞에 둔다. 핸드오프 20번.
-
-            **문의를 줄이려는 것이 아니라, 답이 이미 있는 질문에 하루를 기다리지
-            않게 하려는 것이다.** 그래서 답은 사람이 답할 말과 같아야 한다 —
-            다르면 문의창구가 FAQ를 부정하는 자리가 된다.
-          */}
-          <ThemedView style={styles.section}>
-            <ThemedText type="smallBold">자주 묻는 것</ThemedText>
-            {faq.loading ? null : (
-              <Accordion
-                items={faq.items.map((item) => ({
-                  key: item.key,
-                  title: item.question,
-                  body: item.answer,
-                }))}
-              />
-            )}
-            {!faq.loading && faq.items.length === 0 ? (
-              <ThemedText type="small" themeColor="textSecondary">
-                지금은 자주 묻는 것을 불러오지 못했어요. 아래로 바로 문의하실 수 있어요.
-              </ThemedText>
-            ) : null}
           </ThemedView>
 
           {!isServerConfigured ? (
@@ -252,46 +244,23 @@ export default function ContactScreen() {
             </ThemedView>
           ) : null}
 
-          <ThemedView style={styles.section}>
-            <ActionButton
-              variant="primary"
-              label={busy ? '보내는 중…' : '보내기'}
-              hint={
-                ready
-                  ? undefined
-                  : rule.requiresSubject && !subject
-                    ? '해당 화면에서 눌러 들어와주세요'
-                    : '내용을 적어주세요'
-              }
-              disabled={busy || !ready || !isServerConfigured}
-              onPress={submit}
-            />
-            <ActionButton label="돌아가기" onPress={depthBack} />
-          </ThemedView>
-
-          {mine.length > 0 ? (
-            <ThemedView style={styles.section}>
-              <ThemedText type="smallBold">보낸 문의</ThemedText>
-              {mine.map((inquiry) => (
-                <ThemedView key={inquiry.id} type="backgroundElement" style={styles.card}>
-                  <ThemedText type="smallBold">
-                    {INQUIRY_CATEGORY_RULES[inquiry.category].label} ·{' '}
-                    {INQUIRY_STATUS_LABEL[inquiry.status]}
-                  </ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {formatDateDot(inquiry.receivedAt)}
-                  </ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {inquiry.body}
-                  </ThemedText>
-                  {inquiry.resolution ? (
-                    <ThemedText type="small">답변: {inquiry.resolution}</ThemedText>
-                  ) : null}
-                </ThemedView>
-              ))}
-            </ThemedView>
-          ) : null}
         </ScrollView>
+        <ThemedView style={[styles.dock, { borderTopColor: theme.border }]}>
+          <ActionButton
+            variant="primary"
+            size="xlarge"
+            label={busy ? '보내는 중…' : '문의 보내기'}
+            hint={
+              ready
+                ? undefined
+                : rule.requiresSubject && !subject
+                  ? '해당 화면에서 눌러 들어와주세요'
+                  : '내용을 적어주세요'
+            }
+            disabled={busy || !ready || !isServerConfigured}
+            onPress={submit}
+          />
+        </ThemedView>
       </SafeAreaView>
     </ThemedView>
   );
@@ -306,7 +275,9 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     maxWidth: MaxContentWidth,
+    width: '100%',
   },
+  scroll: { flex: 1 },
   content: {
     paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.five,
@@ -337,5 +308,11 @@ const styles = StyleSheet.create({
   body: {
     minHeight: 120,
     textAlignVertical: 'top',
+  },
+  dock: {
+    borderTopWidth: 1,
+    paddingHorizontal: Layout.gutter,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.two,
   },
 });
