@@ -32,7 +32,7 @@ export function VendorLocationSection({
   const [mapFailed, setMapFailed] = useState(false);
   const apiBase = API_URL?.replace(/\/$/, '') ?? '';
   const mapUri =
-    apiBase && coordinates
+    apiBase && (coordinates || address)
       ? `${apiBase}/v1/vendors/${encodeURIComponent(vendorId)}/static-map`
       : null;
 
