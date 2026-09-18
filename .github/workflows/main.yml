@@ -198,6 +198,13 @@ jobs:
       contents: read
     uses: ./.github/workflows/cutover-kakao-admin-web.yml
 
+  unify-live-favicon:
+    name: Unify Live Favicon
+    if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[unify-favicon-live]') }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/unify-live-favicon.yml
+
   preview-kakao-admin-web:
     name: Preview Kakao Admin and Website
     if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[preview-admin-web]') }}
