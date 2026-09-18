@@ -15,6 +15,7 @@ import {
   Border,
   FilterChip,
   Layout,
+  LineHeight,
   MaxContentWidth,
   Radius,
   SegmentedTabs,
@@ -485,7 +486,7 @@ const styles = StyleSheet.create({
   reviewNameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   reviewAnswers: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   reviewChip: { height: 26, borderRadius: Radius.pill, paddingHorizontal: Layout.chipPaddingX, justifyContent: 'center' },
-  reviewBody: { lineHeight: 22 },
+  reviewBody: { lineHeight: LineHeight.lh22 },
   rebuttal: { borderRadius: Radius.medium, padding: Spacing.three, gap: Spacing.one },
   caveat: { paddingHorizontal: Layout.gutter, paddingTop: Spacing.three },
 
