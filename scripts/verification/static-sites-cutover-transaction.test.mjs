@@ -178,6 +178,13 @@ function run(h, env = h.env) {
   });
 }
 
+function runLatest(h, env = h.env) {
+  return spawnSync('bash', [h.installPath], {
+    env,
+    encoding: 'utf8',
+  });
+}
+
 test('automatic cutover refuses mtime fallback when latest-candidate is missing', () => {
   const h = makeHarness();
   try {
