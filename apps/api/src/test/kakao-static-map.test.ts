@@ -46,4 +46,28 @@ describe('fetchKakaoStaticMap', () => {
       })
     ).rejects.toThrow('non-image');
   });
+  it('aborts a slow static map request at the configured timeout', async () => {
+    await expect(
+      fetchKakaoStaticMap({
+        restApiKey: 'server-secret',
+        lat: 37.3955,
+        lng: 127.1105,
+        timeoutMs: 1,
+        fetchImpl: async (_input, init) =>
+          await new Promise<Response>((_resolve, reject) => {
+            const signal = init?.signal;
+            if (!signal) {
+              reject(new Error('missing timeout signal'));
+              return;
+            }
+            if (signal.aborted) {
+              reject(signal.reason);
+              return;
+            }
+            signal.addEventListener('abort', () => reject(signal.reason), { once: true });
+          }),
+      })
+    ).rejects.toMatchObject({ name: 'TimeoutError' });
+  });
+
 });
