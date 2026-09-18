@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const ROOT = join(__dirname, '..', '..', '..', '..');
-const HTML = join(ROOT, 'docs', 'design-handoff', 'current', 'html');
+const HTML = join(ROOT, 'docs', 'design/handoff', 'current', 'html');
 
 /**
  * 목업 파일의 CSS 문자열과 토큰을 직접 대조한다.
@@ -14,7 +14,7 @@ const HTML = join(ROOT, 'docs', 'design-handoff', 'current', 'html');
  * 그래서 이 시험은 SPEC 문장이 아니라 `.dc.html` 안의 선언을 읽는다. 목업이 바뀌면
  * 여기서 먼저 깨지고, 토큰을 목업과 다르게 고쳐도 여기서 깨진다.
  *
- * `docs/design-handoff/current/`는 전달 ZIP에서 그대로 추출한 원본이라 읽기만 한다.
+ * `docs/design/handoff/`는 전달 ZIP에서 그대로 추출한 원본이라 읽기만 한다.
  */
 
 type Tokens = Record<string, any>;

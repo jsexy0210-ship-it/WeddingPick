@@ -131,7 +131,7 @@ MASTER가 따로 고치고 계셨다면 이 커밋(`afa1f7e`)은 버려도 된�
 
 ### T-1. 「시안은 못 찍는다」는 절반만 맞다 (해결됨)
 
-`screenshot-screens.mjs` 머리말의 「시안은 찍지 않는다」는 `docs/design-handoff/`의
+`screenshot-screens.mjs` 머리말의 「시안은 찍지 않는다」는 `docs/design/handoff/`의
 `.dc.html`에만 맞다(`_ds/`·`support.js`가 저장소에 안 들어온다). **피그마 저장소는 그냥 도는
 Vite 앱이라 빌드하면 찍힌다.** 이 전제를 넓혀 읽은 채로 2026-09-14까지 왔다.
 
@@ -202,9 +202,9 @@ RN 웹의 `ScrollView`는 높이가 고정이라 playwright의 `fullPage`가 늘
 
 ```bash
 # 시안 (처음 한 번만 clone + build)
-git clone --depth 1 https://github.com/jsexy0210-ship-it/weddingpick_figma \
-  /home/user/jsexy0210-ship-it/weddingpick_figma
-cd /home/user/jsexy0210-ship-it/weddingpick_figma && npm install && npx vite build
+git clone --depth 1 https://github.com/jsexy0210-ship-it/docs/design/figma-export \
+  /home/user/jsexy0210-ship-it/docs/design/figma-export
+cd /home/user/jsexy0210-ship-it/docs/design/figma-export && npm install && npx vite build
 node scripts/screenshot-figma.mjs --out /tmp/figma
 
 # 앱 — 폭을 맞추고, 홈처럼 긴 화면은 뷰포트를 키운다
@@ -277,7 +277,7 @@ Primary는 키 컬러) · 탭 바 아이콘 24/라벨 12(피그마 20/10 — 기
 
 같은 브랜치 · 같은 PR(#235). 이 세션 중에 MASTER 지시 셋이 왔고 방법이 바뀌었다.
 
-1. **규격서대로만.** `docs/figma-spec/<화면>.txt`(피그마를 브라우저에서 잰 노드 수)를 그대로 옮긴다 — 판단 없이.
+1. **규격서대로만.** `docs/design/figma-export/<화면>.txt`(피그마를 브라우저에서 잰 노드 수)를 그대로 옮긴다 — 판단 없이.
    값은 여전히 토큰을 거친다(`spec/tokens.json` `$figmaNote` · `packages/ui` `FontSize.f*` · `LineHeight.lh*` ·
    `LetterSpacing.*`). 규격서와 다르게 둔 자리는 **근거를 적어야** 끝난 것이다.
 2. **말만 정본, 나머지는 피그마.** 용어(업종 이름 · 지역 아홉 · Npay · 실 제보) · 금지어 · 주소(`/wedding` `/community`)만

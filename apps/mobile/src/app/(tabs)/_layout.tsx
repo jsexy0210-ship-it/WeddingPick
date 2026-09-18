@@ -9,7 +9,7 @@ import { useTabScreenOptions } from '@/features/navigation/screen-options';
  * 하나가 정한다 — 여기는 그 목록을 라우터에 옮겨 놓기만 하고, 탭을 더하거나 빼는
  * 일은 그 파일 한 줄이다.
  *
- * 근거는 **2026-09-14 대표 확정**과 피그마 `weddingpick_figma`
+ * 근거는 **2026-09-14 대표 확정**과 피그마 `docs/design/figma-export`
  * `src/app/components/Root.tsx:26-32` `NAV_ITEMS`다. 예전 주석이 근거로 적던
  * 「통합정책 v3.2 §1 — 홈/검색/Pick/웨딩일정/MY」는 이 결정이 대체했다.
  *

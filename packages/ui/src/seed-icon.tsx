@@ -3,7 +3,7 @@ import Svg, { Path } from 'react-native-svg';
 /**
  * SEED 아이콘(`@seed-design/icon` 0.6.2 `svg/icon_*.svg`) — 피그마가 그린 아이콘 그대로다.
  *
- * 2026-09-15 대표 지시 「전체 이모지 SEED 걸로 사용, 선 아이콘 X」. 피그마(`weddingpick_figma`)가
+ * 2026-09-15 대표 지시 「전체 이모지 SEED 걸로 사용, 선 아이콘 X」. 피그마(`docs/design/figma-export`)가
  * `Icon*Regular` · `Icon*Fill`로 부르는 자리는 우리 선 아이콘(`ProductSymbol`)이 아니라 이 파일로
  * 그린다. path는 SEED SVG(viewBox 24 · fill currentColor)에서 그대로 옮겼다 — 손으로 고치지 않는다.
  * 새 아이콘이 필요하면 같은 폴더의 SVG를 같은 방식으로 더한다(`d` · `fill-rule` 둘뿐이다).
