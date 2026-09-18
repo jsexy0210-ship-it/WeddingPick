@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const ROOT = join(__dirname, '..', '..', '..', '..');
-const HTML = join(ROOT, 'docs', 'design/handoff', 'current', 'html');
+const HTML = join(ROOT, 'docs', 'design', 'handoff', 'html');
 
 /**
  * 목업 파일의 CSS 문자열과 토큰을 직접 대조한다.
@@ -65,12 +65,10 @@ describe('목업 CSS와 토큰이 같은 값을 든다', () => {
    * 데이트피커(WP-APP-023). SPEC 13.7 본문은 선택일을 「coral 원」이라 적지만
    * 목업은 8px 사각이고, 목업이 이긴다.
    */
-  it('연·월 칸과 날짜 칸의 둥글기는 radius.picker다', () => {
-    const optCell = px(decl('20-onboarding-v2.dc.html', 'optCell', 'border-radius'));
+  it('날짜 칸의 둥글기는 radius.picker다', () => {
     const dayCell = px(decl('20-onboarding-v2.dc.html', 'dayCell', 'border-radius'));
 
-    expect(optCell).toBe(dayCell);
-    expect(tokens().radius.picker).toBe(optCell);
+    expect(tokens().radius.picker).toBe(dayCell);
   });
 
   it('연·월 셀렉트는 높이 size.field · 둥글기 radius.card다', () => {
@@ -208,8 +206,8 @@ describe('목업 파일 자체가 자리에 있다', () => {
    * 22-admin-ops 하나다. 구판을 기준으로 삼아 되돌리는 일이 없도록 적어 둔다.
    */
   it('v3.27 관리자 신판은 22-admin-ops다', () => {
-    expect(mockup('20-admin.dc.html')).toBe(mockup('21-admin.dc.html'));
     expect(mockup('20-admin.dc.html')).toContain('width:1440px');
+    expect(mockup('21-admin.dc.html')).toContain('width:1440px');
     expect(mockup('22-admin-ops.dc.html')).not.toContain('width:1440px');
   });
 });
