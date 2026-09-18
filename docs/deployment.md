@@ -8,14 +8,15 @@
 
 ## 유효한 API 배포 경로
 
-`main push / 수동 CI 실행 → CI / Deploy → 동일 커밋 CI 성공 → production 승인 → KakaoCloud API`
+`main push / 수동 CI 실행 → CI / Deploy → CI 성공 → live API revision 대비 누적 변경 확인 → 필요 시 production 승인 → KakaoCloud API + worker`
 
 - 호출자는 `.github/workflows/main.yml`, 배포 구현은 `.github/workflows/deploy-kakao-api.yml`이다.
 - 카카오 VM의 `weddingpick-kakao` 러너를 사용한다. 집·사무실 PC는 일상 배포에 필요하지 않다.
 - 운영 환경파일은 `/home/ubuntu/WeddingPick/.env.kakao-prod`에만 둔다. 출력·커밋·아티팩트 업로드를 하지 않는다.
 - 대상 API는 `https://210.109.82.212`다. 도메인을 구매하거나 연결하는 작업은 포함하지 않는다.
 - 기존 production 승인 규칙, main 제한, 후보 health 검사, 이전 컨테이너 복구를 유지한다.
-- `RUN_WORKER_IN_API`, 운영 DB 스키마, 기존 Render API 상태는 이번 정리로 변경하지 않는다.
+- DB migration은 이 자동배포에 포함하지 않는다. `.github/workflows/db-migrate.yml` 수동 실행으로 분리돼 있다.
+- 운영 API 컨테이너는 `RUN_WORKER_IN_API=false`를 명시적으로 강제하고, 같은 이미지의 별도 `weddingpick-worker`를 함께 갱신한다.
 - 공개 저장소의 상주 self-hosted runner에는 잔여 보안 위험이 있다. PR·외부 브랜치 코드를 이 러너에 배정하지 않으며, 승인 규칙만으로 완전한 격리를 보장한다고 간주하지 않는다.
 
 ## 제거한 실행 진입점
@@ -41,15 +42,18 @@
 - 저장된 설정은 정적 사이트를 별도로 배포한 뒤 반영된다. 자동 반영·예상 소요시간·배포 성공을 안내하지 않는다.
 - API 변경은 카카오 배포 후, 관리자 화면 변경은 관리자 정적 사이트의 새 번들 배포 후 실제 화면에 반영된다.
 
-## Render 정적 사이트는 전환 전 임시 공개본
+## 정적 사이트 전환 상태
 
-| 서비스 | 유지할 공개 주소 | 별도 배포 시 필요한 API 환경변수 |
+| 서비스 | 현재 공개 상태 | Kakao 목표 |
 | --- | --- | --- |
-| 앱웹 | `https://weddingpick-app-web.onrender.com` | `EXPO_PUBLIC_API_URL=https://210.109.82.212` |
-| 관리자 | `https://weddingpick-admin.onrender.com` | `EXPO_PUBLIC_API_URL=https://210.109.82.212` |
-| 웹사이트 | `https://weddingpick-web.onrender.com` | `WEDDINGPICK_API_URL=https://210.109.82.212` |
+| 앱웹 | `https://210.109.82.212/` 공개 확인(#1006) | 443 유지 |
+| 관리자 | Render 임시 공개본 유지 | `https://210.109.82.212:8443` 외부 포트 허용 후 전환 |
+| 웹사이트 | Render 임시 공개본 유지 | `https://210.109.82.212:9443` 외부 포트 허용 후 전환 |
 
-이 세 서비스의 주소·CORS·개인정보처리방침 링크를 일괄 제거하지 않는다. 기존 `EXPO_PUBLIC_WEB_URL`, OAuth client ID 및 법적 고지 환경변수도 그대로 보존한다. 현재 서비스 환경변수나 실제 라이브 번들이 위 표와 일치하는지는 콘솔·브라우저로 별도 확인해야 한다.
+Render 정적 서비스에는 새 변경을 배포하지 않는다. 관리자·웹사이트는 Kakao 비표준 포트가 외부에서
+열리기 전까지만 기존 공개본을 임시 유지한다. 앱웹은 2026-09-18 #1006에서 Kakao 443의 루트·
+`/login`과 같은 origin의 `/health`·`/v1/auth/providers`를 외부 runner에서 확인했다.
+OAuth redirect와 실제 로그인 완료는 별도 기능 검증으로 남긴다.
 
 ### 카카오 정적 후보 배포
 
