@@ -17,6 +17,7 @@ import {
   computePriceStat,
   discloseAmounts,
   displayableImageCondition,
+  displayableImageUrlCondition,
   hasDeepData,
   isWeddingStyle,
   narrowedLabel,
@@ -171,7 +172,7 @@ export async function loadVendorSummaries(pool: Pool, ids: readonly string[]) {
             v.style_tags::text[] AS style_tags, v.guide_price_from, v.guide_price_source,
             (SELECT i.source_url FROM structured.vendor_images i
                WHERE i.vendor_id = v.id AND i.status = 'approved' AND i.copyright_basis <> 'unknown'
-                 AND i.source_url IS NOT NULL
+                 AND ${displayableImageUrlCondition('i.source_url')}
                ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url,
             (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
               AS comparable_quote_count,
@@ -296,7 +297,7 @@ async function loadVendorDetail(pool: Pool, vendorId: string, viewerId: string |
               v.style_tags::text[] AS style_tags, v.guide_price_from, v.guide_price_source,
               (SELECT i.source_url FROM structured.vendor_images i
                  WHERE i.vendor_id = v.id AND ${displayableImageCondition('i', { preview })}
-                   AND i.source_url IS NOT NULL
+                   AND ${displayableImageUrlCondition('i.source_url')}
                  ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url,
             (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
               AS comparable_quote_count
@@ -632,7 +633,7 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
               v.style_tags::text[] AS style_tags, v.guide_price_from, v.guide_price_source,
               (SELECT i.source_url FROM structured.vendor_images i
                  WHERE i.vendor_id = v.id AND ${displayableImageCondition('i', { preview })}
-                   AND i.source_url IS NOT NULL
+                   AND ${displayableImageUrlCondition('i.source_url')}
                  ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url,
               (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
                 AS comparable_quote_count,
@@ -756,7 +757,7 @@ async function loadSponsored(
     `SELECT picked.vendor_id, picked.name, picked.category, picked.region,
             (SELECT i.source_url FROM structured.vendor_images i
              WHERE i.vendor_id = picked.vendor_id AND ${displayableImageCondition('i')}
-               AND i.source_url IS NOT NULL
+               AND ${displayableImageUrlCondition('i.source_url')}
              ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url
      FROM (
        SELECT DISTINCT ON (p.vendor_id)
@@ -935,10 +936,14 @@ async function loadConditionStats(
    * 못 미친 것이라 사용자에게 보이면 안 된다. 대표 이미지가 맨 앞에 오도록
    * `is_representative DESC`로 정렬하고, 그다음은 수집 순서(created_at ASC)다.
    *
-   * URL은 source_url이 있으면 그대로 쓴다 — 외부 출처를 우리 저장소를 거치지
-   * 않고 직접 보여줄 수 있는 경우다. storage_key만 있으면 스토리지에 서명된
-   * 조회 URL을 그때그때 발급한다 — 영구 URL을 내려주면 만료 시각을 관리할
-   * 방법이 없다.
+   * URL은 storage_key가 먼저다 — 우리 저장소에 받아둔 것이면 스토리지에 서명된
+   * 조회 URL을 그때그때 발급한다. 영구 URL을 내려주면 만료 시각을 관리할 방법이
+   * 없다. storage_key가 없을 때만 외부 출처를 그대로 보여준다.
+   *
+   * 그 외부 주소도 「떠야」 내려간다. 핫링킹을 막는 호스트는 우리 화면에서
+   * 403이라, 담아 보내면 브라우저가 요청을 보내고 실패한다 — 화면의 onError는
+   * 그 요청이 나간 **뒤에** 도는 것이라 콘솔의 403을 못 막는다. 거르는 자리는
+   * 도메인이다(`displayableImageUrlCondition`).
    */
   app.get<{ Params: { vendorId: string } }>(
     '/v1/vendors/:vendorId/images',
@@ -969,26 +974,34 @@ async function loadConditionStats(
                 copyright_note, verified_at
          FROM structured.vendor_images
          WHERE vendor_id = $1 AND ${displayableImageCondition('vendor_images', { preview })}
+           /*
+            * 가리킬 곳이 있어야 한다. 우리 저장소에 받아둔 것(storage_key)이거나,
+            * 그것이 없다면 실제로 뜨는 외부 주소여야 한다 — 핫링킹 차단 호스트는
+            * 우리 화면에서 403이라 담아 보내면 깨진 그림만 남는다.
+            */
+           AND (vendor_images.storage_key IS NOT NULL
+                OR (${displayableImageUrlCondition('vendor_images.source_url')}))
          ORDER BY is_representative DESC, created_at ASC`,
         [vendorId]
       );
 
       /*
-       * 둘 다 없는 줄은 거른다. 가리킬 곳이 없는 사진이라 화면에 빈 칸만 남는데,
-       * 예전에는 `storage_key!`가 그 경우를 「있다」로 단정하고 있었다. 판정 전
-       * 사진까지 열리면서 지나가는 줄이 늘었으므로 여기서 먼저 막는다.
+       * 가리킬 곳이 없는 줄은 질의가 이미 걸렀다. 그래서 여기서는 둘 중 무엇으로
+       * 가리킬지만 고른다 — `storage_key`가 먼저다. 우리 저장소에 받아둔 것이면
+       * 원본 주소가 뜨든 말든 우리 주소로 잘 뜨기 때문이다. 그것이 없을 때만
+       * 외부 주소를 쓰고, 그 외부 주소는 뜨는 것임이 질의에서 보장된다.
        */
       const photos = await Promise.all(
-        rows
-          .filter((row) => row.source_url !== null || row.storage_key !== null)
-          .map(async (row) => ({
-            id: row.id,
-            url: row.source_url ?? (await context.storage.getPublicUrl(row.storage_key!, 3600)),
-            isRepresentative: row.is_representative,
-            useContain: row.use_contain,
-            sourceNote: row.copyright_note,
-            verifiedAt: row.verified_at ? row.verified_at.toISOString() : null,
-          }))
+        rows.map(async (row) => ({
+          id: row.id,
+          url: row.storage_key
+            ? await context.storage.getPublicUrl(row.storage_key, 3600)
+            : row.source_url!,
+          isRepresentative: row.is_representative,
+          useContain: row.use_contain,
+          sourceNote: row.copyright_note,
+          verifiedAt: row.verified_at ? row.verified_at.toISOString() : null,
+        }))
       );
 
       return { photos };
