@@ -108,6 +108,28 @@ export const weddingFeedListResponseSchema = z.object({
 
 export type WeddingFeedListResponse = z.infer<typeof weddingFeedListResponseSchema>;
 
+/**
+ * 글 하나. 카드를 눌러 들어가는 자리.
+ *
+ * **목록이 주지 않는 둘이 여기 있다 — `body`와 `publishedAt`.** 목록이 본문까지
+ * 실어 보내면 여덟 편의 본문(각 4,000자까지)이 카드 여덟 장을 그리려고 통째로
+ * 건너온다. 읽는 사람은 그중 한 편만 연다.
+ *
+ * **공개된 글만 나간다.** 초안과 내림은 없는 것으로 본다 — 주소를 아는 사람에게만
+ * 검토 전 글이 보이는 자리를 만들지 않는다.
+ */
+export const weddingFeedDetailSchema = weddingFeedPostSchema.pick({
+  id: true,
+  categoryLabel: true,
+  title: true,
+  summary: true,
+  body: true,
+  imageUrl: true,
+  publishedAt: true,
+});
+
+export type WeddingFeedDetail = z.infer<typeof weddingFeedDetailSchema>;
+
 export const weddingFeedGenerateResponseSchema = z.object({
   created: z.number().int(),
   /** 왜 아무것도 안 나왔는지. 만들어졌으면 null. */
