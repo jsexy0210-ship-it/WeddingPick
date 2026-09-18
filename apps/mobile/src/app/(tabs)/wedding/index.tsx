@@ -21,6 +21,7 @@
  */
 import { FullScreenError } from '@/features/errors/full-screen-error';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
+import { confirmAlert } from '@/components/confirm-alert';
 import type {
   ConsultationRecord,
   CurrentUser,
@@ -44,7 +45,6 @@ import {
   ThemedText,
   ThemedView,
   Toast,
-  showAlert,
   useTheme,
 } from '@weddingpick/ui';
 import {
@@ -203,7 +203,7 @@ export default function WeddingScreen() {
               }
               onEdit={(event) => (weddingId ? router.push(`/wedding/${weddingId}/events/${event.id}` as never) : null)}
               onDelete={(event) =>
-                showAlert(DELETE_TITLE, `"${event.title}" 일정을 삭제합니다.`, [
+                confirmAlert(DELETE_TITLE, `"${event.title}" 일정을 삭제합니다.`, [
                   { text: '취소', style: 'cancel' },
                   { text: '삭제하기', style: 'destructive', onPress: () => void deleteEvent(event) },
                 ])
