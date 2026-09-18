@@ -1,5 +1,5 @@
 /**
- * 홈 준비 현황 2×2 — 규격서 docs/figma-spec/home.txt(2026-09-15 대표 지시 「규격서의 수를 그대로」).
+ * 홈 준비 현황 2×2 — 규격서 docs/design/figma-export/01-home.dc.html(2026-09-15 대표 지시 「규격서의 수를 그대로」).
  *
  *   div 390×216  grid · cols 191px 191px · gap 8
  *     div 191×104  pad 14 · bg #F7F8F9 · r16 · border 1 #000000 6%

@@ -84,7 +84,7 @@ WebView는 `apps/mobile/src/features/webshell/WebShellView.tsx` 한 곳뿐이다
 | 그중 `_layout.tsx`/`_api.ts` (화면 아님) | 11 | |
 | 그중 관리자 (범위 밖) | 27 | `src/app/admin/` |
 | **사용자 화면 라우트 파일** | **87** | (`map.web.tsx`는 `map.tsx`의 플랫폼 변형이라 고유 화면은 86) |
-| 정본 화면 목록 | **189** (app 155 · web 8 · admin 26) | `docs/design-handoff/current/screens.json` v3.22 (2026-09-09) |
+| 정본 화면 목록 | **189** (app 155 · web 8 · admin 26) | `docs/design/handoff/screens.json` v3.22 (2026-09-09) |
 
 ## 4. 상태(로딩·빈·오류)에 대한 결론 — 중요
 
@@ -117,4 +117,4 @@ WebView는 `apps/mobile/src/features/webshell/WebShellView.tsx` 한 곳뿐이다
 
 ---
 출처는 모두 2026-09-14 KST 기준 두 저장소의 작업 트리에서 직접 읽었다.
-Figma 저장소: `github.com/jsexy0210-ship-it/weddingpick_figma` (읽기 전용) · WeddingPickl: `main` `f8cd22c`
+Figma 저장소: `github.com/jsexy0210-ship-it/docs/design/figma-export` (읽기 전용) · WeddingPickl: `main` `f8cd22c`

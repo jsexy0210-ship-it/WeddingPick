@@ -54,7 +54,7 @@ export function PickStatusBadge({ status }: PickStatusBadgeProps) {
 /**
  * 상태 배지 공통 상자 — `Badge` · `VerificationBadge`도 같은 값을 쓴다.
  *
- * **높이는 `minHeight`다.** 핸드오프의 배지(`docs/design-handoff/current/html` 22곳 전부)는
+ * **높이는 `minHeight`다.** 핸드오프의 배지(`docs/design/handoff/html` 22곳 전부)는
  * `padding:4px 9px; line-height:19px`뿐이고 height를 적지 않는다 — 실제로 그려지는 높이는
  * 4+19+4=27이다. 웹(`apps/web/src/site-styles.ts` `.badge`)도 같다. 여기에 `height: 22`를
  * 박아두면 안쪽이 14로 줄어 19줄이 상하 2.5씩 비어져 나오고, 배지는 바탕색 상자라

@@ -17,7 +17,7 @@ Figma 신규 디자인이 요구하는 공용 컴포넌트와 저장소가 가�
 | C 무시 | 라우팅 안 되는 8개(Budget · Checklist · Community · Honeymoon · More · Proposal · Schedule · Studio) | 보지 않는다 |
 
 `src/imports/`의 `#EF5DA8` · `#F09A59` · `#371B34`은 **다른 세대 색이라 쓰지 않는다.**
-저장소의 정본 시안은 `docs/design-handoff/root/` 36장이고, Figma 자료는 그 아래다.
+저장소의 정본 시안은 `docs/design/figma-export/` 36장이고, Figma 자료는 그 아래다.
 
 ## 대조표
 

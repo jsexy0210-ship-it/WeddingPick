@@ -5,7 +5,7 @@
 ## 2026-09-10 검수 자료
 
 - [앱·관리자 기능 검수](INFORMATION_AUDIT_2026-09-10.md)
-- [최신 디자인 ZIP 검수](DESIGN_ZIP_AUDIT_2026-09-10.md) · [접수 기록과 적용 경계](design-handoff/INTAKE-2026-09-10.md)
+- [최신 디자인 ZIP 검수](DESIGN_ZIP_AUDIT_2026-09-10.md) · [접수 기록과 적용 경계](design/handoff/INTAKE-2026-09-10.md)
 - [인프라 접근·연결 점검](INFRA_ACCESS_AUDIT_2026-09-10.md)
 - [저장소 정리 기록](REPOSITORY_CLEANUP_2026-09-10.md)
 
@@ -35,8 +35,8 @@
 
 ```
 1  CLAUDE.md                                   저장소 고정 규칙
-2  design-handoff/current/CHANGELOG.md 맨 위    화면 · 값 · 용어의 현행
-3  design-handoff/current/  SPEC · PROJECT_RULES · screens.json · tokens.json
+2  design/handoff/CHANGELOG.md 맨 위    화면 · 값 · 용어의 현행
+3  design/handoff/  SPEC · PROJECT_RULES · screens.json · tokens.json
 4  통합정책 v3.15                                운영 · 제품 · 데이터 정책
 ```
 
@@ -61,7 +61,7 @@
 | [archive/통합정책 v3.10](archive/통합정책%20v3.10) | 과거본 — 코드 16곳이 `v3.10 §…`로 인용해서 남긴다 | 기준이 아니다 |
 | [05-product-spec.md](05-product-spec.md) | 개발용 — Phase 1 범위·화면·데이터 모델 | 과거 범위 기준. 통합정책이 우선한다 |
 | [05a-screen-data-spec.md](05a-screen-data-spec.md) | 개발용 — 화면·데이터 구조 스펙 | 과거 범위 기준. 통합정책이 우선한다 |
-| [design-handoff](design-handoff) | Git 반영본은 [current/](design-handoff/current) — 현행 판은 [CHANGELOG.md](design-handoff/current/CHANGELOG.md) 맨 위가 정한다(이 줄에 적힌 번호가 아니라). 최신 ZIP의 추가·충돌은 [접수 기록](design-handoff/INTAKE-2026-09-10.md) 참조. 화면 수를 완료율로 사용하지 않음 | 운영 정책과 시각 디자인의 적용 범위를 구분함 |
+| [design/handoff](design/handoff) | Git 반영본은 [current/](design/handoff/current) — 현행 판은 [CHANGELOG.md](design/handoff/CHANGELOG.md) 맨 위가 정한다(이 줄에 적힌 번호가 아니라). 최신 ZIP의 추가·충돌은 [접수 기록](design/handoff/INTAKE-2026-09-10.md) 참조. 화면 수를 완료율로 사용하지 않음 | 운영 정책과 시각 디자인의 적용 범위를 구분함 |
 | [AI_HANDOFF.md](AI_HANDOFF.md) | 작업 인수인계 서식 | — |
 
 ## 과거 버전 번호를 어떻게 읽을 것인가
@@ -83,7 +83,7 @@
 
 ## 폐기된 색인
 
-이 표에 예전에는 `01-business-plan.md`부터 `07-design-handoff-gap.md`까지가 있었다.
+이 표에 예전에는 `01-business-plan.md`부터 `07-design/handoff-gap.md`까지가 있었다.
 그 파일들은 저장소에 없다. 없는 문서를 기준 문서로 적어두면, 읽는 사람은 자기가 못
 찾는 것이라고 생각하고 그 자리에서 멈춘다. 그래서 지웠다.
 

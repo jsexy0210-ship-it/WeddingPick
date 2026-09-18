@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * **시안을 찍는다.** 피그마 저장소(`weddingpick_figma`)를 빌드해 화면을 PNG로 낸다.
+ * **시안을 찍는다.** 피그마 저장소(`docs/design/figma-export`)를 빌드해 화면을 PNG로 낸다.
  *
  * **왜 생겼는가.** 2026-09-14에 대표님이 앱을 열어 보시고 「피그마랑 아예 다르다」고
  * 하셨다. 그때까지 규칙은 「시안은 찍지 않는다 — 대조는 사람이 한다」였다. 그 규칙은
- * `docs/design-handoff/`의 `.dc.html`이 자산(`_ds/`·`support.js`) 없이는 렌더되지 않아서
+ * `docs/design/handoff/`의 `.dc.html`이 자산(`_ds/`·`support.js`) 없이는 렌더되지 않아서
  * 생긴 것인데, **피그마 저장소는 사정이 다르다** — 그냥 도는 Vite 앱이라 빌드해서 찍힌다.
  * 못 찍는 줄 알고 사람 눈에 맡긴 동안 홈·검색·Pick이 통째로 어긋나 있었다.
  *
@@ -16,7 +16,7 @@
  *
  * 처음 한 번은 저장소를 받아 빌드해야 한다(`--repo`로 받은 자리를 알려준다):
  *
- *   git clone --depth 1 https://github.com/jsexy0210-ship-it/weddingpick_figma <자리>
+ *   git clone --depth 1 https://github.com/jsexy0210-ship-it/docs/design/figma-export <자리>
  *   cd <자리> && npm install && npx vite build
  *
  * 앱 쪽은 `scripts/screenshot-screens.mjs`로 찍는다. **크기를 맞춰 찍는다** —
@@ -74,7 +74,7 @@ function parseArgs(argv) {
   const opts = {
     routes: [],
     out: join(tmpdir(), 'weddingpick-figma'),
-    repo: '/home/user/jsexy0210-ship-it/weddingpick_figma',
+    repo: '/home/user/jsexy0210-ship-it/docs/design/figma-export',
     wait: 2500,
   };
 
@@ -140,7 +140,7 @@ async function main() {
     throw new Error(
       `빌드된 시안이 없다: ${dist}\n` +
         `먼저 받아서 빌드한다:\n` +
-        `  git clone --depth 1 https://github.com/jsexy0210-ship-it/weddingpick_figma ${opts.repo}\n` +
+        `  git clone --depth 1 https://github.com/jsexy0210-ship-it/docs/design/figma-export ${opts.repo}\n` +
         `  cd ${opts.repo} && npm install && npx vite build`,
     );
   }
