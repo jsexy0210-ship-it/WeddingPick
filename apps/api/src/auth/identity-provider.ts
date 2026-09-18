@@ -45,7 +45,7 @@ export type IdentityProvider = {
    */
   isDevelopmentStandIn?: boolean;
 } & (
-  | { flow: 'id_token'; verify(idToken: string): Promise<VerifiedIdentity> }
+  | { flow: 'id_token'; verify(idToken: string, nonce?: string): Promise<VerifiedIdentity> }
   | { flow: 'authorization_code'; verify(credential: AuthorizationCodeCredential): Promise<VerifiedIdentity> }
 );
 
@@ -54,7 +54,14 @@ type OidcOptions = {
   issuer: string | string[];
   jwksUrl: string;
   audience: string | string[];
+  nonceRequired?: boolean;
 };
+
+export function assertOidcNonce(actual: unknown, expected: string | undefined): void {
+  if (!expected || typeof actual !== 'string' || actual !== expected) {
+    throw new Error('id_token nonce가 일치하지 않는다.');
+  }
+}
 
 /**
  * OIDC id_token을 제공자의 공개키로 검증하는 함수를 만든다.
@@ -64,7 +71,7 @@ type OidcOptions = {
  * 받아오는 제공자(`createOidcProvider`)와 서버가 인가 코드를 교환해서 받는 제공자
  * (카카오)가 같은 검증을 쓴다.
  */
-function createIdTokenVerifier(options: OidcOptions): (idToken: string) => Promise<VerifiedIdentity> {
+function createIdTokenVerifier(options: OidcOptions): (idToken: string, nonce?: string) => Promise<VerifiedIdentity> {
   // jose는 ESM 전용이라 실행 시점에 불러온다. 공개키 묶음은 한 번만 만들어 재사용한다.
   let jwks: Awaited<ReturnType<typeof loadJwks>> | undefined;
 
@@ -73,7 +80,7 @@ function createIdTokenVerifier(options: OidcOptions): (idToken: string) => Promi
     return createRemoteJWKSet(new URL(options.jwksUrl));
   }
 
-  return async (idToken) => {
+  return async (idToken, expectedNonce) => {
     const { jwtVerify } = await import('jose');
     jwks ??= await loadJwks();
 
@@ -84,6 +91,9 @@ function createIdTokenVerifier(options: OidcOptions): (idToken: string) => Promi
 
     if (!payload.sub) {
       throw new Error('id_token에 sub이 없다.');
+    }
+    if (options.nonceRequired) {
+      assertOidcNonce(payload.nonce, expectedNonce);
     }
 
     return {
@@ -185,6 +195,7 @@ export function createAppleProvider(clientId: string): IdentityProvider {
     issuer: 'https://appleid.apple.com',
     jwksUrl: 'https://appleid.apple.com/auth/keys',
     audience: clientId,
+    nonceRequired: true,
   });
 }
 

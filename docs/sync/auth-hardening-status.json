@@ -12,7 +12,12 @@
     "baseMain": "e0060059d67c938b300dcf44dc599fea2ba43ff5",
     "status": "superseded-by-selective-port-not-merged-as-original-pr",
     "verificationDate": "2026-09-17",
-    "productionMutations": { "merged": false, "deployed": false, "secretsChanged": false, "databaseChanged": false }
+    "productionMutations": {
+      "merged": false,
+      "deployed": false,
+      "secretsChanged": false,
+      "databaseChanged": false
+    }
   },
   "integration": {
     "mergeCommit": "a24ac9c189f92e338c11dc26c03c790d60524011",
@@ -32,11 +37,16 @@
     "관리자 로그아웃의 캡처된 서버 세션 폐기 요청",
     "부팅 effect 재실행 시 동일 OAuth 교환 Promise 재사용",
     "탈퇴 시 탭별 OAuth 임시 저장소도 삭제",
-    "기존 npm test pretest에 인증 회귀 검사 연결; PR별 CI 미추가"
+    "기존 npm test pretest에 인증 회귀 검사 연결; PR별 CI 미추가",
+    "Apple 로그인 단일사용 nonce 생성과 id_token nonce 일치 검증"
   ],
   "verification": {
     "scope": "historical-source-pr-274-not-rerun-by-status-reconciliation",
-    "secondPhaseStandalone": { "passed": 75, "failed": 0, "command": "npm run test:web-shell-auth" },
+    "secondPhaseStandalone": {
+      "passed": 75,
+      "failed": 0,
+      "command": "npm run test:web-shell-auth"
+    },
     "typeScriptSyntaxFiles": 7,
     "strictTypecheckedModules": [
       "apps/mobile/src/features/webshell/session-protocol.ts",
@@ -53,15 +63,20 @@
   "rolloutBlockers": [
     "구버전 네이티브 셸의 wp_token 방식과 새 웹은 자동 호환하지 않음. 버전 일치와 복구 절차 검증",
     "Android/iOS 메시지·이동·새로고침·로그아웃 실제 검증",
-    "포팅 후 대상 SHA의 전체 타입·lint·Jest·분리 DB·웹 번들 검사 근거 확인"
+    "포팅 후 대상 SHA의 전체 타입·lint·Jest·분리 DB·웹 번들 검사 근거 확인",
+    "iOS 실제 Apple 로그인에서 nonce 포함 성공·취소·재시도 검증"
   ],
   "remaining": [
     "네이티브 SecureStore 전환과 lockfile/이전/탈퇴 삭제",
     "일반 웹·관리자 HttpOnly/Secure 쿠키 및 CORS/CSRF/SameSite 설계",
-    "Apple nonce/재생 방어",
     "운영 관리자 해시 전용 설정 전환과 기존 세션 정책"
   ],
-  "productionMutations": { "merged": true, "deployed": null, "secretsChanged": null, "databaseChanged": null },
+  "productionMutations": {
+    "merged": true,
+    "deployed": null,
+    "secretsChanged": null,
+    "databaseChanged": null
+  },
   "reconciliation": {
     "scope": "documentation-and-issue-dependencies-only",
     "productCodeChanged": false,

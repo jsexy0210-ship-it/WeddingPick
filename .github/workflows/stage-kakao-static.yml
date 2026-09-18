@@ -28,7 +28,7 @@ jobs:
 
       - name: Checkout runtime audit
         if: steps.current.outputs.current == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
