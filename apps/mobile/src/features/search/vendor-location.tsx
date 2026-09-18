@@ -51,7 +51,7 @@ export function VendorLocationSection({
           <ThemedText type="t6" themeColor="textAssistive">
             주소
           </ThemedText>
-          <ThemedText type="t6" style={styles.addressValue}>
+          <ThemedText type="t6" style={styles.addressValue} selectable>
             {address}
           </ThemedText>
         </View>
