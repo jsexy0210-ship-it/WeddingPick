@@ -538,6 +538,15 @@ const routes = {
   'GET /v1/weddings/:weddingId/candidates/removed': {
     groups: [],
   },
+  /*
+   * Pick DLG-F 캡처가 실제 삭제 → 되돌리기 흐름을 타도록 mutation도 성공시킨다.
+   * 캡처 스크립트는 프로덕션 API를 절대 호출하지 않으므로 이 fixture가 없으면
+   * 제품 오류가 아니라 fixture 404를 찍게 된다.
+   */
+  'DELETE /v1/weddings/:weddingId/candidates/:candidateId': null,
+  'POST /v1/weddings/:weddingId/candidates': {
+    candidateId: 'c1111111-1111-4111-8111-111111111111',
+  },
   /* 응답 본문이 없다(z.null()) — Pick 비교 로그. */
   'POST /v1/weddings/:weddingId/comparisons': null,
   'GET /v1/me/rewards/payout': {
