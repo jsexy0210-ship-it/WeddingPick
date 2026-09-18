@@ -2,7 +2,7 @@ import type { CategoryRecommendation, VendorCandidate, VendorSummary } from '@we
 import { nextStepsCountLine, type VendorCategory } from '@weddingpick/domain';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getCategoryRecommendations } from '@/api/client';
@@ -11,15 +11,19 @@ import { useDepthBack } from '@/features/navigation/depth-back';
 import { recommendationsAreComplete } from '@/features/home/canon-state';
 import strings from '../../../../../../spec/strings.ko.json';
 import {
+  Border,
   EmptyView,
   ErrorView,
   Layout,
   MaxContentWidth,
+  Radius,
+  SeedIcon,
   SkeletonView,
   Spacing,
   ThemedText,
   ThemedView,
   Toast,
+  useTheme,
 } from '@weddingpick/ui';
 import { PickRecommend } from '@/features/home/pick-recommend';
 import { useOpenCategory } from '@/features/home/use-open-category';
@@ -114,12 +118,15 @@ export default function RecommendationsScreen() {
           </View>
 
           {state.groups.length === 0 ? (
-            <EmptyView
-              title={recommendationsAreComplete(state) ? S['recommend.done'] : S['recommend.empty']}
-              description={recommendationsAreComplete(state) ? S['done.body'] : undefined}
-              actionLabel={recommendationsAreComplete(state) ? S['note.open'] : S['recommend.more']}
-              onAction={() => router.push(recommendationsAreComplete(state) ? '/wedding' : '/search')}
-            />
+            recommendationsAreComplete(state) ? (
+              <RecommendationsDone onOpenNote={() => router.push('/wedding')} />
+            ) : (
+              <EmptyView
+                title={S['recommend.empty']}
+                actionLabel={S['recommend.more']}
+                onAction={() => router.push('/search')}
+              />
+            )
           ) : (
             <PickRecommend
               groups={state.groups}
@@ -158,6 +165,35 @@ export default function RecommendationsScreen() {
   );
 }
 
+function RecommendationsDone({ onOpenNote }: { onOpenNote: () => void }) {
+  const theme = useTheme();
+
+  return (
+    <View style={styles.doneSection}>
+      <ThemedView type="backgroundElement" style={styles.doneCard}>
+        <View style={[styles.doneMark, { backgroundColor: theme.positiveBackground }]}>
+          <SeedIcon name="checkFlowerFill" size={Layout.iconTab} color={theme.positive} />
+        </View>
+        <ThemedText type="f16" style={styles.bold}>{S['recommend.done']}</ThemedText>
+        <ThemedText type="f13" themeColor="textAssistive" style={styles.doneBody}>
+          {S['done.body']}
+        </ThemedText>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={S['note.open']}
+          onPress={onOpenNote}
+          style={({ pressed }) => [
+            styles.doneButton,
+            { backgroundColor: theme.background, borderColor: theme.border },
+            pressed && styles.pressed,
+          ]}>
+          <ThemedText type="f14" style={styles.bold}>{S['note.open']}</ThemedText>
+        </Pressable>
+      </ThemedView>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
@@ -165,4 +201,30 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionHeadGap },
   bold: { fontWeight: 700 },
   sub: { marginTop: Spacing.half },
+  doneSection: { paddingHorizontal: Layout.gutter, paddingTop: Spacing.two },
+  doneCard: {
+    borderRadius: Radius.medium,
+    paddingHorizontal: Layout.cardPadding,
+    paddingVertical: Layout.sectionGap,
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  doneMark: {
+    width: 48,
+    height: 48,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  doneBody: { textAlign: 'center' },
+  doneButton: {
+    minHeight: Layout.ctaInCard,
+    marginTop: Spacing.one,
+    paddingHorizontal: Layout.cardPadding,
+    borderRadius: Radius.control,
+    borderWidth: Border.hairline,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pressed: { opacity: 0.8 },
 });
