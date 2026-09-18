@@ -152,4 +152,85 @@ describeWithDb('업체 정적 지도 라우트', () => {
 
     expect(response.statusCode).toBe(502);
   });
+  it('위치가 있어도 카카오 키가 없으면 외부 API 없이 503이다', async () => {
+    const vendorId = await createVendor({
+      name: '키없는홀',
+      lat: 37.523,
+      lng: 127.035,
+    });
+    let called = false;
+    global.fetch = (async () => {
+      called = true;
+      throw new Error('외부 API를 부르면 안 된다');
+    }) as typeof fetch;
+
+    const response = await test.app.inject({
+      method: 'GET',
+      url: `/v1/vendors/${vendorId}/static-map`,
+    });
+
+    expect(response.statusCode).toBe(503);
+    expect(called).toBe(false);
+  });
+
+  it('주소를 카카오에서 찾지 못하면 깨진 지도 대신 404다', async () => {
+    const vendorId = await createVendor({
+      name: '주소못찾는홀',
+      address: '검색되지 않는 주소',
+    });
+    test.context.config.kakaoAppKey = 'server-secret';
+
+    global.fetch = (async () =>
+      new Response(JSON.stringify({ documents: [] }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })) as typeof fetch;
+
+    const response = await test.app.inject({
+      method: 'GET',
+      url: `/v1/vendors/${vendorId}/static-map`,
+    });
+
+    expect(response.statusCode).toBe(404);
+  });
+
+  it('정적 지도 upstream 오류는 500이 아니라 502다', async () => {
+    const vendorId = await createVendor({
+      name: '정적지도장애홀',
+      lat: 37.523,
+      lng: 127.035,
+    });
+    test.context.config.kakaoAppKey = 'server-secret';
+
+    global.fetch = (async () => new Response('upstream unavailable', { status: 503 })) as typeof fetch;
+
+    const response = await test.app.inject({
+      method: 'GET',
+      url: `/v1/vendors/${vendorId}/static-map`,
+    });
+
+    expect(response.statusCode).toBe(502);
+  });
+
+  it('카카오 응답 timeout은 앱 전체 실패 대신 504로 닫는다', async () => {
+    const vendorId = await createVendor({
+      name: '타임아웃홀',
+      lat: 37.523,
+      lng: 127.035,
+    });
+    test.context.config.kakaoAppKey = 'server-secret';
+
+    const timeout = Object.assign(new Error('request timed out'), { name: 'TimeoutError' });
+    global.fetch = (async () => {
+      throw timeout;
+    }) as typeof fetch;
+
+    const response = await test.app.inject({
+      method: 'GET',
+      url: `/v1/vendors/${vendorId}/static-map`,
+    });
+
+    expect(response.statusCode).toBe(504);
+  });
+
 });
