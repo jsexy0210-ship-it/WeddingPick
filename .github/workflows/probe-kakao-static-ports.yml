@@ -1,0 +1,58 @@
+name: Probe Kakao Static Ports
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  install:
+    name: Install temporary HTTPS probes
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: \${{ github.sha }}
+          persist-credentials: false
+      - run: ./scripts/probe-kakao-static-ports.sh
+
+  public-probe:
+    name: Probe public 8443 and 9443
+    needs: [install]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Probe admin candidate port
+        run: |
+          set -euo pipefail
+          headers="$(mktemp)"
+          code="$(curl --silent --show-error --fail --connect-timeout 5 --max-time 12 \
+            --dump-header "$headers" --output /dev/null --write-out '%{http_code}' \
+            https://210.109.82.212:8443/)"
+          test "$code" = 204
+          grep -qi '^X-WeddingPick-Probe: static-admin' "$headers"
+
+      - name: Probe web candidate port
+        run: |
+          set -euo pipefail
+          headers="$(mktemp)"
+          code="$(curl --silent --show-error --fail --connect-timeout 5 --max-time 12 \
+            --dump-header "$headers" --output /dev/null --write-out '%{http_code}' \
+            https://210.109.82.212:9443/)"
+          test "$code" = 204
+          grep -qi '^X-WeddingPick-Probe: static-web' "$headers"
+
+  cleanup:
+    name: Remove temporary HTTPS probes
+    if: always()
+    needs: [install, public-probe]
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: \${{ github.sha }}
+          persist-credentials: false
+      - run: ./scripts/cleanup-kakao-static-port-probes.sh
