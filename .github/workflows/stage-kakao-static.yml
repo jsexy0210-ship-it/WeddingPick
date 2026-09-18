@@ -2,6 +2,10 @@ name: Stage Kakao Static
 
 on:
   workflow_call:
+    outputs:
+      candidate_sha:
+        description: Validated static candidate published by this run
+        value: ${{ jobs.stage.outputs.candidate_sha }}
 
 permissions:
   contents: read
@@ -12,6 +16,8 @@ jobs:
     name: Stage static candidates on Kakao VM
     runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
     timeout-minutes: 10
+    outputs:
+      candidate_sha: ${{ steps.publish_candidate.outputs.candidate_sha }}
     steps:
       - name: Check current main
         id: current
@@ -124,6 +130,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish validated static candidate
+        id: publish_candidate
         if: steps.current.outputs.current == 'true'
         shell: bash
         run: |
@@ -149,6 +156,7 @@ jobs:
 
           printf '%s\n' "$GITHUB_SHA" > "$candidate_marker_tmp"
           mv -f "$candidate_marker_tmp" "$candidate_marker"
+          echo "candidate_sha=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
 
           trap - EXIT
           echo "Latest validated candidate: $GITHUB_SHA"
