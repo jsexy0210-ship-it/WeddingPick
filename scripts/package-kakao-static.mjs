@@ -41,10 +41,20 @@ for (const role of ['app', 'admin']) {
 
 cpSync(WEB_DIST, join(OUT, 'web'), { recursive: true });
 
+/*
+ * 브라우저 탭 파비콘 정본은 Expo app export의 favicon.ico 하나다.
+ * admin은 같은 mobile dist를 깎아 만들므로 이미 같은 파일을 가진다.
+ * web 후보에도 **그 바이트 그대로** 복사해 세 출처가 다른 아이콘을 가질 여지를 없앤다.
+ */
+requirePath(join(OUT, 'app', 'favicon.ico'), '공통 파비콘');
+cpSync(join(OUT, 'app', 'favicon.ico'), join(OUT, 'web', 'favicon.ico'));
+
 requirePath(join(OUT, 'app', 'index.html'), '앱 후보');
 requirePath(join(OUT, 'admin', 'index.html'), '관리자 후보');
 requirePath(join(OUT, 'admin', 'admin', 'login.html'), '관리자 로그인 후보');
+requirePath(join(OUT, 'admin', 'favicon.ico'), '관리자 공통 파비콘');
 requirePath(join(OUT, 'web', 'index.html'), '웹사이트 후보');
+requirePath(join(OUT, 'web', 'favicon.ico'), '웹사이트 공통 파비콘');
 
 const manifest = {
   commit: process.env.GITHUB_SHA || null,
