@@ -51,6 +51,13 @@ jobs:
               print $1 "=" $2
             }' /etc/letsencrypt/renewal/*.conf 2>/dev/null || true
 
+      - name: Inspect sanitized active Nginx config
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo -n cat /etc/nginx/sites-available/weddingpick-api |
+            sed -E 's#(ssl_certificate(_key)?[[:space:]]+).*#\1[redacted];#'
+
       - name: Kakao Object Storage presigned smoke
         shell: bash
         run: |
