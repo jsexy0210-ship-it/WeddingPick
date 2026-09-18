@@ -471,6 +471,14 @@ shellTest('explicit rollback is repeatable and returns 443 to the preserved base
   }
 });
 
+shellTest('app-web proxy does not trust client-supplied X-Forwarded-For values', () => {
+  assert.doesNotMatch(appInstallSource, /X-Forwarded-For \\\$proxy_add_x_forwarded_for/);
+  const xff = appInstallSource.match(/proxy_set_header X-Forwarded-For \\\$remote_addr;/g) ?? [];
+  const real = appInstallSource.match(/proxy_set_header X-Real-IP \\\$remote_addr;/g) ?? [];
+  assert.equal(xff.length, 2);
+  assert.equal(real.length, 2);
+});
+
 shellTest('workflow rollback ownership prevents double rollback after a successful local cutover', () => {
   assert.match(
     appCutoverWorkflow,
