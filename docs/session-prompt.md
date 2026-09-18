@@ -21,12 +21,7 @@ docs/design/handoff/        핸드오프 v3.28 — 수치와 규칙의 원본(to
 docs/design/figma-export/   정본 시안 9장 — 화면의 모양
 ```
 
-**이 경로 밖을 근거로 쓰지 않는다.** 아래 1번이 가리키는 `weddingpick_figma` ·
-`docs/figma-spec/`도, `docs/design-handoff/current/` · `root/`도 더 이상 근거가 아니다.
-
-**`.dc.html`은 열리지 않는다**(2026-09-17 실측) — React · Babel을 unpkg에서 받는데
-프록시가 막고, `_ds/` 번들이 zip에 없다. 화면을 눈으로 봐야 하면 `weddingpick_figma`를
-빌드해 찍고(`scripts/screenshot-figma.mjs`), **값은 `docs/design/`에서 읽는다.**
+**이 경로 밖을 근거로 쓰지 않는다.** 화면의 모양은 `docs/design/figma-export/`, 수치·규칙·문구는 `docs/design/handoff/`만 사용한다.
 
 **어긋나던 넷은 2026-09-17에 대표님이 정하셨다 — 둘만 새 패키지로 간다.**
 
@@ -47,7 +42,7 @@ docs/design/figma-export/   정본 시안 9장 — 화면의 모양
 
 **이 다섯이 아래 어떤 줄보다 앞선다.** 충돌하면 이쪽이 이긴다.
 
-1. **모든 디자인 · UX · UI는 피그마(`weddingpick_figma`) 기준이고, SEED 디자인 토큰으로
+1. **모든 디자인 · UX · UI는 피그마(`docs/design/figma-export`) 기준이고, SEED 디자인 토큰으로
    픽셀 단위로 맞춘다.** 값은 `spec/seed-tokens.json` → `spec/tokens.json`으로만 온다.
    화면 코드에 hex · px를 직접 적지 않는다.
 2. **폰트는 Pretendard만 쓴다.** 피그마 `fonts.css`가 Noto Sans KR · Playfair Display ·
@@ -106,34 +101,34 @@ SEED 아이콘을 쓴 자리(탭 바 · 헤더 · 상태)는 SEED 아이콘. **�
 작업에서 PR로 main에 반영한 뒤 병합 결과를 확인한다. 세부 기준은 `AGENTS.md`를 따른다.
 
 - 저장소 뿌리의 `CLAUDE.md`를 **먼저 읽고** 그대로 지킨다.
-- **화면에 손대기 전에 매번 `docs/design-handoff/current/CHANGELOG.md` 맨 위를 읽는다.**
+- **화면에 손대기 전에 매번 `docs/design/handoff/CHANGELOG.md` 맨 위를 읽는다.**
   기억하고 있는 버전이 아니라 그때 파일에 적힌 것이 현행이다.
 - **코드·문서·이전 규칙이 최신 핸드오프 md와 충돌하면 묻지 않고 md 쪽으로 맞춘다.**
   되묻는 것은 md끼리 어긋날 때뿐이고, 그때도 CHANGELOG 상단이 이긴다.
 - **통합정책과 디자인 핸드오프는 다른 계열이다.** 번호가 둘 다 v3.x라 같은 줄로 보이지만
   아니다. 화면·값·용어는 핸드오프가, 서비스 범위·운영 원칙·데이터 정책·광고·탈퇴는
   통합정책이 정한다. 번호가 크다고 이기는 것이 아니라 무엇을 정하는 문서인지로 가른다.
-- `docs/design-handoff/current/`는 **읽기 전용**이다. 전달 ZIP에서 그대로 뽑은 원본이라
+- `docs/design/handoff/`는 **읽기 전용**이다. 전달 ZIP에서 그대로 뽑은 원본이라
   고치지 않는다.
 
 ## 화면은 목업과 1:1
 
-- **[폐기 — 2026-09-15] 정본은 `docs/design-handoff/root/`다**(2026-09-11 대표).
+- **[폐기 — 2026-09-15] 정본은 `docs/design/figma-export/`다**(2026-09-11 대표).
   **더 이상 따르지 않는다** — 대표 지시 「기존 정본은 잊어. **피그마가 곧 정본이다**」 ·
   「기존 정책이 막히는 거면 싹 없애고 피그마 기준으로 만들라」.
   
-  **지금 정본은 피그마 하나다**(`weddingpick_figma`). 그림이 없는 화면은 피그마의 규칙으로
-  만든다 — 기존 화면을 근거로 쓰지 않는다. 값은 `docs/figma-spec/*.txt`(전 노드 실측) ·
+  **지금 정본은 피그마 하나다**(`docs/design/figma-export`). 그림이 없는 화면은 피그마의 규칙으로
+  만든다 — 기존 화면을 근거로 쓰지 않는다. 값은 `docs/design/figma-export/*.txt`(전 노드 실측) ·
   `spec/tokens.json` · `spec/seed-tokens.json`에서만 온다.
   
   아래 옛 사고 기록은 지우지 않고 남긴다 — 교훈(「나란히 놓고 보지 않으면 모른다」)은
-  피그마 기준에서도 그대로다. `root/`를 `weddingpick_figma`로 바꿔 읽으면 된다.
+  피그마 기준에서도 그대로다. `root/`를 `docs/design/figma-export`로 바꿔 읽으면 된다.
 
   대표님이 직접 그린 원본 36장이다. 같은 화면을 `current/`와 다르게 그리는 자리가 있고,
   **그럴 때는 루트가 이긴다.** 화면에 손대기 전에 `root/`부터 연다 — `root/README.md`에
   파일 이름과 화면 ID 대조표가, `IA-전체 IA.dc.html`에 화면 194개 목록이 있다.
   저장소에 `current/`만 있던 동안 세션 셋이 없어진 검색 홈 위에 계속 쌓았다.
-- **그 위에 2026-09-14 대표 지시가 있다 — 화면의 정본은 피그마(`weddingpick_figma`)이고
+- **그 위에 2026-09-14 대표 지시가 있다 — 화면의 정본은 피그마(`docs/design/figma-export`)이고
   픽셀 단위로 똑같이 만든다.** 대표님 말씀 그대로다: 「픽셀 단위로 토시 하나 틀리지 않고
   똑같이」. `root/`보다 **이 지시가 앞선다.** 2026-09-14에 대표님이 앱을 열어 보시고
   「피그마랑 아예 다르잖아」라고 하셨고, 실제로 홈 · 검색 · Pick · 웨딩노트가 통째로 다른
@@ -310,7 +305,7 @@ SEED 아이콘을 쓴 자리(탭 바 · 헤더 · 상태)는 SEED 아이콘. **�
   2026-09-11에 세션 셋이 그렇게 하고 검색 화면이 시안과 전혀 다른 채로 배포됐다.
 - **피그마 시안도 같이 찍어 나란히 붙인다** — `node scripts/screenshot-figma.mjs`.
   처음 한 번은 받아서 빌드한다(`docs/screen-capture.md`). 「시안은 못 찍는다」는
-  `docs/design-handoff/`의 `.dc.html`에만 해당하고 **피그마 저장소는 찍힌다.**
+  `docs/design/handoff/`의 `.dc.html`에만 해당하고 **피그마 저장소는 찍힌다.**
   **폭을 맞춰 찍는다**(둘 다 430) — 폭이 다르면 없는 차이가 보이고 있는 차이가 묻힌다.
 - **`main`을 먼저 브랜치에 머지한다.** 일을 시작하기 전에도 한 번 한다.
 - 본문에 **무엇이 어떻게 달랐고 무엇으로 고쳤는지**를 적는다. 못 고친 것과 판단이 필요한

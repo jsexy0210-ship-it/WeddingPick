@@ -61,7 +61,7 @@ MASTER다. `main`이 2026-09-16 23:58 KST 초기화로 **내용이 되돌아갔�
 ```
 피그마 정본 감시 3주기다. 순서대로 한다.
 
-1. **재기 전에 먼저 `main`을 받는다.** `git -C /home/user/weddingpick fetch origin main` → 브랜치에 머지 → `npm ci` → 재빌드. (클론이 없으면 add_repo 후 다시 받는다. 피그마는 `/home/user/jsexy0210-ship-it/weddingpick_figma`.)
+1. **재기 전에 먼저 `main`을 받는다.** `git -C /home/user/weddingpick fetch origin main` → 브랜치에 머지 → `npm ci` → 재빌드. (클론이 없으면 add_repo 후 다시 받는다. 피그마는 `/home/user/jsexy0210-ship-it/docs/design/figma-export`.)
 
 2. **PR #241 상태 확인.** CI·리뷰·충돌. gh CLI 없음 — `GH_TOKEN`으로 REST API.
 
@@ -70,7 +70,7 @@ MASTER다. `main`이 2026-09-16 23:58 KST 초기화로 **내용이 되돌아갔�
    - **등급 체계:** `docs/rn-migration/FIGMA_DESIGN_SYSTEM.md`의 A/B등급과 이를 근거로 값을 안 옮긴다는 코드 주석 넷 — `community/index.tsx:34` · `community/feed/[id].tsx:10` · `search/index.tsx:677` · `search/compare.tsx:41` · `HANDOFF_screens-plan.md:14` · `FIGMA_DESIGN_SYSTEM.md:96`.
    - **낡은 규칙 인용:** `step-frame.tsx:31-32` · `region-picker.tsx:15` · `login/index.tsx:56,306`이 바뀌기 전 CLAUDE.md 3번을 가리킨다.
    - **규칙 파일 잔여:** `CLAUDE.md:19-21`(규칙 5 「기존 정본을 확인해」) · `:81` · `:100` · `:133` · `session-prompt.md:29,102,129` · `codex-handoff.md:27,103,144` · `root/README.md:3,24` · `COMPONENT_PARITY.md:20` · `RN_MIGRATION_MAP.md:80` · `VENDOR_SCREEN_PARITY.md:37` · `admin-mockup-parity-v3.27.md:127` · `design-policy-audit.md:21` · 주석 5곳.
-   - **피그마 저장소 브랜드색**이 코랄로 바뀌었는지(`weddingpick_figma`의 `#E7898D`). 바뀌었으면 `extract-figma-spec.mjs`로 규격서를 다시 뽑아야 한다.
+   - **피그마 저장소 브랜드색**이 코랄로 바뀌었는지(`docs/design/figma-export`의 `#E7898D`). 바뀌었으면 `extract-figma-export.mjs`로 규격서를 다시 뽑아야 한다.
 
 4. **2주기에 못 잰 것을 잰다.**
    - 업체 상세의 해시태그·소개 본문이 데이터 차이인지 구조 차이인지.
@@ -259,7 +259,7 @@ MASTER입니다. **색 토큰 작업은 제가 이미 끝냈습니다. 손대지
 | `rounded-xl` | **22px** | |
 | `rounded-[22px]` | 22px | 홈 히어로 |
 
-**토큰에 더하고 `$note`에 근거를 적으십시오**(예: `radius.card: 16` ← `weddingpick_figma` `Home.tsx` `rounded-2xl` = `--radius-2xl` = 1rem). 가까운 값으로 때우지 마십시오.
+**토큰에 더하고 `$note`에 근거를 적으십시오**(예: `radius.card: 16` ← `docs/design/figma-export` `Home.tsx` `rounded-2xl` = `--radius-2xl` = 1rem). 가까운 값으로 때우지 마십시오.
 
 기존 지시(피그마가 못 이기는 것 · PR 필수 · 초록으로 · 스크린샷 나란히)는 그대로입니다.
 ```
@@ -301,7 +301,7 @@ MASTER 추가 전달입니다. 대표님이 「SEED 디자인시스템 적용된
 
 ` ` `bash
 grep -o -- "--seed-color-palette-gray-[0-9]*:[^;]*" \
-  /home/user/jsexy0210-ship-it/weddingpick_figma/dist/assets/*.css | sort -u
+  /home/user/jsexy0210-ship-it/docs/design/figma-export/dist/assets/*.css | sort -u
 ` ` `
 
 ## 3. 라운드 — 카드가 6px 작습니다
@@ -546,7 +546,7 @@ PR #211(claude/admin-overhaul) 상태를 다시 확인한다. CI 결과 · 머�
 ```
 **범위를 줄인다 — 시안 쪽 렌더는 하지 마라.**
 
-`docs/design-handoff/root/*.dc.html`이 참조하는 자산(`support.js` · `image-slot.js` · `doc-page.js` · `_ds/` 폴더)은 **저장소에 들어오지 않는다.** 대표님이 용량 때문에 올릴 수 없다고 하셨다(2026-09-11). 그러니 시안 HTML은 브라우저에서 스타일 없이 뜬다 — 그것을 찍어 봐야 쓸모가 없다.
+`docs/design/figma-export/*.dc.html`이 참조하는 자산(`support.js` · `image-slot.js` · `doc-page.js` · `_ds/` 폴더)은 **저장소에 들어오지 않는다.** 대표님이 용량 때문에 올릴 수 없다고 하셨다(2026-09-11). 그러니 시안 HTML은 브라우저에서 스타일 없이 뜬다 — 그것을 찍어 봐야 쓸모가 없다.
 
 **「시안 ↔ 실제 나란히 붙이기」를 빼라.** 자산을 구하려 애쓰지 말고, 시안 파일을 고쳐서 열리게 만들려 하지도 마라(읽기 전용이다).
 
@@ -800,7 +800,7 @@ if (!name || !body) continue;
 - `trig_01PvtGMHxfVe5eArb93vacVc` · 주기 없음(쪽지형) · 켜짐 · 만든 때 2026-09-10T08:14:37
 
 ```
-MASTER다. 사용자 지침 추가다. **최신 디자인 md를 항시 확인한다** — 화면에 손대기 전에 매번 `docs/design-handoff/current/CHANGELOG.md` 맨 위를 읽는다. **현 기준 최신은 v3.27(2026-09-10)이다.**
+MASTER다. 사용자 지침 추가다. **최신 디자인 md를 항시 확인한다** — 화면에 손대기 전에 매번 `docs/design/handoff/CHANGELOG.md` 맨 위를 읽는다. **현 기준 최신은 v3.27(2026-09-10)이다.**
 
 네가 만들 계정관리 화면에 그대로 걸린다. v3.27의 관리자 규칙을 따른다.
 
@@ -824,7 +824,7 @@ MASTER다. 사용자 지침 추가다. **최신 디자인 md를 항시 확인한
 - `trig_01WrBMoBgQqRJPeTqCDU1L62` · 주기 없음(쪽지형) · 켜짐 · 만든 때 2026-09-10T08:14:18
 
 ```
-MASTER다. 사용자 지침 추가다. **최신 디자인 md를 항시 확인한다** — 화면에 손대기 전에 매번 `docs/design-handoff/current/CHANGELOG.md` 맨 위를 읽는다. 기억하고 있는 버전이 아니라 그때 파일에 적힌 것이 현행이다. **현 기준 최신은 v3.27(2026-09-10)이다.**
+MASTER다. 사용자 지침 추가다. **최신 디자인 md를 항시 확인한다** — 화면에 손대기 전에 매번 `docs/design/handoff/CHANGELOG.md` 맨 위를 읽는다. 기억하고 있는 버전이 아니라 그때 파일에 적힌 것이 현행이다. **현 기준 최신은 v3.27(2026-09-10)이다.**
 
 앞서 보낸 5건(데이트피커 · 온보딩 v2 · 얼굴 잘림 · 로더 · 검색 UX)은 그대로 진행하되, 각 항목을 손대기 직전에 CHANGELOG 상단부터 그 항목까지를 다시 읽고 최신 사양인지 확인한 뒤 고친다.
 
@@ -838,7 +838,7 @@ v3.27 자체는 관리자 화면 변경이라 네 5건과 직접 겹치지 않�
 - `trig_0147LjAFLaCfhwSximZUKvLB` · 주기 없음(쪽지형) · 켜짐 · 만든 때 2026-09-10T08:13:58
 
 ```
-MASTER다. 사용자 지침이 추가됐다. **최신 디자인 md를 항시 확인한다** — 화면에 손대기 전에 매번 `docs/design-handoff/current/CHANGELOG.md` 맨 위를 읽는다. 기억하고 있는 버전이 아니라 그때 파일에 적힌 것이 현행이다. **현 기준 최신은 v3.27(2026-09-10)이다.**
+MASTER다. 사용자 지침이 추가됐다. **최신 디자인 md를 항시 확인한다** — 화면에 손대기 전에 매번 `docs/design/handoff/CHANGELOG.md` 맨 위를 읽는다. 기억하고 있는 버전이 아니라 그때 파일에 적힌 것이 현행이다. **현 기준 최신은 v3.27(2026-09-10)이다.**
 
 이게 네 과제를 바꾼다. v3.27이 관리자에 셋을 바꿨다.
 
@@ -855,7 +855,7 @@ MASTER다. 사용자 지침이 추가됐다. **최신 디자인 md를 항시 확
               위험한 조작은 무엇이 바뀌는지 항목으로 보여준 뒤 한 번 더
 ` ` `
 
-**대조표를 「32화면 대 26화면」으로 짜지 마라.** v3.27로 시안이 늘었으니 지금 `docs/design-handoff/current/screens.json`과 `html/`을 다시 세어 그 수를 쓴다. 신설 11화면은 코드에 아예 없을 가능성이 높다 — 있는지 없는지부터 확인한다.
+**대조표를 「32화면 대 26화면」으로 짜지 마라.** v3.27로 시안이 늘었으니 지금 `docs/design/handoff/screens.json`과 `html/`을 다시 세어 그 수를 쓴다. 신설 11화면은 코드에 아예 없을 가능성이 높다 — 있는지 없는지부터 확인한다.
 
 `ADMIN.md`와 `20-admin.dc.html` · `21-admin.dc.html` · `22-admin-ops.dc.html`도 v3.27 기준으로 다시 읽는다.
 
@@ -869,7 +869,7 @@ CHANGELOG는 최신이 위다. 같은 항목이 여러 버전에 나오면 위�
 ```
 MASTER다. 사용자 오더 5건을 전담 배정한다. 앞서 보낸 1차 보고 요청보다 **이것이 우선**이고, 보고는 이 5건 기준으로 낸다.
 
-기준 문서는 `docs/design-handoff/current/`다. 코드·이전 규칙과 충돌하면 묻지 않고 최신 md 쪽으로 코드를 맞춘다. CHANGELOG는 최신이 위다 — 같은 항목이 여러 번 나오면 **위쪽 버전이 이긴다**(예: 데이트피커는 v3.19의 휠 3열이 아니라 v3.21의 WP-APP-023이 현행이다).
+기준 문서는 `docs/design/handoff/`다. 코드·이전 규칙과 충돌하면 묻지 않고 최신 md 쪽으로 코드를 맞춘다. CHANGELOG는 최신이 위다 — 같은 항목이 여러 번 나오면 **위쪽 버전이 이긴다**(예: 데이트피커는 v3.19의 휠 3열이 아니라 v3.21의 WP-APP-023이 현행이다).
 
 ## 1. 데이트피커가 목업과 다르다
 현행 사양은 **WP-APP-023 연월 셀렉트 + 일 달력**(CHANGELOG v3.21 · `SPEC.md` 13.7). v3.19의 「휠 3열」은 폐기된 것이니 그쪽으로 되돌리지 마라.
@@ -885,7 +885,7 @@ CTA          56 · width 100%
 코드의 실제 값과 위를 항목별로 대조해 어긋난 것만 고친다. **색·크기·간격·문구는 `spec/tokens.json` · `spec/strings.ko.json`에서만 가져온다. 하드코딩 금지** — 위 수치는 대조용이지 코드에 그대로 적으라는 뜻이 아니다. tokens에 해당 값이 없으면 임의로 만들지 말고 시안의 어느 값을 쓸지 근거와 함께 보고한다.
 
 ## 2. 온보딩이 변경된 시안으로 반영 안 됨
-`docs/design-handoff/current/html/20-onboarding-v2.dc.html`가 기준이다. 1/5~5/5 전 단계를 코드와 1:1로 대조하고 차이를 표로 만든 뒤 고친다.
+`docs/design/handoff/html/20-onboarding-v2.dc.html`가 기준이다. 1/5~5/5 전 단계를 코드와 1:1로 대조하고 차이를 표로 만든 뒤 고친다.
 
 ## 3. 5/5 스타일 이미지에서 사람 얼굴이 잘린다
 네 장(도시적인 · 자연스러운 · 로맨틱한 · 화려한) 모두 얼굴이 프레임 밖으로 나간다. 이미지를 바꾸지 말고 **표시 위치를 조정**한다(`object-position` / `resizeMode` + 정렬). 사진마다 얼굴 위치가 달라 한 값으로 넷을 다 맞출 수 없으면 장별로 따로 준다. 스타일은 `WeddingStyle` 넷뿐이고 라벨은 도시적인 · 자연스러운 · 로맨틱한 · 화려한이다.
