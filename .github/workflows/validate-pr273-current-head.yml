@@ -2,6 +2,7 @@ name: Validate PR 273 Current Head
 # final-verification-sha-4
 # final-verification-sha-3
 # rerun-after-navigation-harness-fix
+# rerun-after-typography-token-fix
 
 on:
   push:
