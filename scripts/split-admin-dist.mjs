@@ -46,7 +46,8 @@ const ADMIN_ORIGIN = (process.env.ADMIN_ORIGIN || 'https://weddingpick-admin.onr
 const ADMIN_KEEP = new Set([
   'admin', // 관리자 화면 32장 + 모듈 산출물 2장(_api·_session)
   '_expo', // JS·CSS 번들 (사용자 화면과 같은 번들 하나다 — 갈라지지 않는다)
-  'assets', // 폰트·이미지
+  'assets', // 이미지·정적 자산
+  'fonts', // Pretendard 웹폰트는 dist/fonts에 따로 복사된다
   'favicon.ico',
   '+not-found.html',
 ]);
