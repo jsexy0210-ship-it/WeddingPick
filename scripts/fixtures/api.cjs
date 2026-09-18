@@ -186,7 +186,7 @@ const ME = {
   /* Pick 화면 캡처(배지·배너·가격 제보 링크)가 배우자 연결 상태를 필요로 한다. */
   spouseLinked: true,
   partnerDisplayName: '준호',
-  hasPaymentProof: false,
+  hasPaymentProof: process.env.FIXTURE_HAS_PAYMENT_PROOF === 'true',
   hasPick: false,
   hasCompared: false,
   tier: 'guest',
@@ -347,6 +347,29 @@ const routes = {
     imageUrl: null,
     publishedAt: '2026-09-15T02:00:00.000Z',
   },
+  /** 라운지 후기 — 07-lounge-my의 Pick 인증 + 3축 populated 상태를 캡처한다. */
+  'GET /v1/reviews': {
+    reviews: [
+      {
+        ...VENDOR_REVIEWS[0],
+        verification: 'contract',
+        verificationLabel: 'Pick 인증',
+        aspects: [
+          { key: 'progress', label: '진행', rating: 5 },
+          { key: 'result', label: '결과물', rating: 4 },
+          { key: 'extra_cost', label: '추가비용', rating: 5 },
+        ],
+        vendor: {
+          id: VENDORS[4].id,
+          name: VENDORS[4].name,
+          category: VENDORS[4].category,
+        },
+      },
+    ],
+    nextCursor: null,
+    caveat: 'Pick 인증이 있는 후기는 인증 배지가 함께 보여요.',
+  },
+
   'GET /v1/vendors/regions': {
     regions: [
       { name: '서울', vendorCount: 128 },
