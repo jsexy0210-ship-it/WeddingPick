@@ -46,7 +46,7 @@ jobs:
         env:
           DEFAULT_DATABASE_URL: ${{ secrets.DATABASE_URL }}
           STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
-          # 카카오 REST API 키. 로그인에 쓰는 앱의 키를 그대로 쓴다(웹문서 검색).
+          # 카카오 REST API 키. GitHub Actions Secret KAKAO_APP_KEY를 사용한다.
           KAKAO_APP_KEY: ${{ secrets.KAKAO_APP_KEY || vars.KAKAO_APP_KEY }}
           TARGET: ${{ github.event.inputs.target }}
           LIMIT: ${{ github.event.inputs.limit }}
@@ -61,7 +61,7 @@ jobs:
             exit 1
           fi
           if [ -z "${KAKAO_APP_KEY:-}" ]; then
-            echo "::error::KAKAO_APP_KEY가 없다. 저장소 Settings → Secrets and variables → Actions 에 같은 이름으로 넣는다(infra/render-env.yml의 값과 같다)."
+            echo "::error::KAKAO_APP_KEY가 없다. 저장소 Settings → Secrets and variables → Actions에 추가한다."
             exit 1
           fi
           echo "대상: ${TARGET:-default} · 업체 ${LIMIT:-300}곳"
