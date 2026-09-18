@@ -3,6 +3,7 @@ name: Validate PR 273 Current Head
 # final-verification-sha-3
 # rerun-after-navigation-harness-fix
 # rerun-after-typography-token-fix
+# rerun-after-dynamic-capture-and-setup-fixture-fix
 
 on:
   push:
@@ -92,7 +93,7 @@ jobs:
       - name: Capture setup onboarding
         run: |
           mkdir -p design-captures/setup
-          node scripts/screenshot-screens.mjs --route /setup --full --edges --wait 1800 --out design-captures/setup
+          FIXTURE_SETUP_COMPLETE=false node scripts/screenshot-screens.mjs --route /setup --full --edges --wait 1800 --out design-captures/setup
       - name: Capture canon 02 05 06
         run: |
           mkdir -p design-captures/canon
