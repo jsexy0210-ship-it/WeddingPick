@@ -21,7 +21,7 @@ describe('fetchKakaoStaticMap', () => {
     });
 
     expect(seenRequests).toHaveLength(1);
-    const [seen] = seenRequests;
+    const seen = seenRequests[0]!;
     expect(seen.url.origin).toBe('https://dapi.kakao.com');
     expect(seen.url.pathname).toBe('/v2/maps/staticmap');
     expect(seen.url.searchParams.get('center')).toBe('127.1105,37.3955');
