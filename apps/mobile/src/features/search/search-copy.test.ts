@@ -93,6 +93,15 @@ describe('검색·업체상세는 폐기된 지연 로그인을 되살리지 않
     expect(source).not.toContain('loadToken');
     expect(source).toContain("router.replace('/login')");
   });
+
+  it('비교 화면도 pending Pick만 남기고 로그인으로 복귀한다', () => {
+    const source = routeSource('compare.tsx');
+
+    expect(source).not.toContain('LoginSheet');
+    expect(source).toContain('savePendingAction');
+    expect(source).toContain("await savePendingAction({ kind: 'pick'");
+    expect(source).toContain("router.replace('/login')");
+  });
 });
 
 export {};
