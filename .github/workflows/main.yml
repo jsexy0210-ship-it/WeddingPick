@@ -107,9 +107,17 @@ jobs:
           echo "changed=$changed" >> "$GITHUB_OUTPUT"
           echo "API deployment required: $changed"
 
+  repair-kakao-runner:
+    name: Repair Kakao Runner
+    needs: [ci]
+    if: github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && needs.ci.outputs.deploy_api == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/repair-kakao-runner.yml
+
   deploy-kakao:
     name: KakaoCloud API
-    needs: [ci]
+    needs: [ci, repair-kakao-runner]
     if: github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && needs.ci.outputs.deploy_api == 'true'
     permissions:
       contents: read
