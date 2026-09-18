@@ -38,10 +38,25 @@ jobs:
 
       - name: Owned scope typecheck
         run: |
+          mkdir -p apps/mobile/.design-stubs
+          cat > apps/mobile/.design-stubs/webshell-config.ts <<'TS'
+          export const isWebShellScreen = (_id: string): boolean => false;
+          TS
+          cat > apps/mobile/.design-stubs/web-shell-view.ts <<'TS'
+          export const WebShellView = (_props: { path: string }): null => null;
+          TS
           cat > apps/mobile/tsconfig.design-session1.json <<'JSON'
           {
             "extends": "./tsconfig.json",
             "include": [],
+            "compilerOptions": {
+              "paths": {
+                "@/features/webshell/config": ["./.design-stubs/webshell-config.ts"],
+                "@/features/webshell/WebShellView": ["./.design-stubs/web-shell-view.ts"],
+                "@/*": ["./src/*"],
+                "@/assets/*": ["./assets/*"]
+              }
+            },
             "files": [
               "src/app/(tabs)/index.tsx",
               "src/app/(tabs)/(home)/recommendations.tsx",
