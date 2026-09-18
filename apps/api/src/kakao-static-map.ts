@@ -8,7 +8,7 @@ export type KakaoStaticMap = {
 /**
  * 카카오 정적 지도 REST API를 서버에서 호출한다.
  *
- * REST API 키는 앱으로 내보내지 않는다. 모바일/웹은 웨딩픽 API의 이미지 프록시만 본다.
+ * 정적 지도 인증 헤더는 서버가 조립한다. 모바일/웹은 웨딩픽 API의 이미지 프록시만 본다.
  */
 export async function fetchKakaoStaticMap({
   restApiKey,
