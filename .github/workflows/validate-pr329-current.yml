@@ -1,0 +1,26 @@
+name: Validate PR329 current head
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    if: github.head_ref == 'chatgpt/fix-app-web-cutover-rollback-20260918'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Shell and regression
+        run: |
+          bash -n scripts/install-kakao-app-web.sh
+          bash -n scripts/rollback-kakao-app-web.sh
+          bash -n scripts/rollback-kakao-app-web-update.sh
+          bash -n scripts/finalize-kakao-app-web-update.sh
+          node --test scripts/verification/cutover-transaction.test.mjs
+          node --test scripts/verification/app-web-live-marker-rollback.test.mjs
