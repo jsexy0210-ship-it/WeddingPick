@@ -31,7 +31,7 @@ describe('Gemini 키는 서버에만 있다', () => {
     for (const path of CLIENT_SURFACES) {
       const source = readFileSync(join(ROOT, path), 'utf8');
 
-      if (/EXPO_PUBLIC_\\w*GEMINI/i.test(source)) offenders.push(path);
+      if (/EXPO_PUBLIC_\w*GEMINI/i.test(source)) offenders.push(path);
     }
 
     expect(offenders).toEqual([]);
@@ -71,7 +71,7 @@ describe('Gemini 키는 서버에만 있다', () => {
   it('.env.example은 이름만 두고 값을 비운다', () => {
     const source = readFileSync(join(ROOT, 'apps/api/.env.example'), 'utf8');
 
-    expect(source).toMatch(/^GEMINI_API_KEY=\\s*$/m);
+    expect(source).toMatch(/^GEMINI_API_KEY=\s*$/m);
   });
 });
 
@@ -91,7 +91,7 @@ describe('모델 이름은 환경변수다', () => {
     const config = read('apps/api/src/config.ts');
     const example = read('apps/api/.env.example');
 
-    const fallback = config.match(/geminiModel: z\\.string\\(\\\\)\\.default\\('([^']+)'\\)/)?.[1];
+    const fallback = config.match(/geminiModel: z\.string\(\)\.default\('([^']+)'\)/)?.[1];
 
     expect(fallback).toBeTruthy();
     expect(example).toContain(`GEMINI_MODEL=${fallback}`);
@@ -104,7 +104,7 @@ describe('모델 이름은 환경변수다', () => {
       'apps/api/src/analysis/gemini-visit-note-reader.ts',
       'apps/api/src/analysis/consultation-reader.ts',
     ]) {
-      expect(read(file)).not.toMatch(/'gemini-[\\d.]+-flash/);
+      expect(read(file)).not.toMatch(/'gemini-[\d.]+-flash/);
     }
   });
 });
