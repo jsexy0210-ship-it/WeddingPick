@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 
@@ -29,9 +29,12 @@ export function VendorLocationSection({
   coordinates: Coordinates | null;
 }) {
   const theme = useTheme();
-  const [mapFailed, setMapFailed] = useState(false);
-  const [mapLoaded, setMapLoaded] = useState(false);
-  const [addressCopied, setAddressCopied] = useState(false);
+  const [mapStatus, setMapStatus] = useState<{
+    uri: string | null;
+    loaded: boolean;
+    failed: boolean;
+  }>({ uri: null, loaded: false, failed: false });
+  const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
   const apiBase = API_URL?.replace(/\/$/, '') ?? '';
   const normalizedAddress = address?.trim() || null;
   const hasMapSource = coordinates !== null || normalizedAddress !== null;
@@ -44,14 +47,9 @@ export function VendorLocationSection({
     ? `https://map.kakao.com/link/map/${encodeURIComponent(name)},${coordinates.lat},${coordinates.lng}`
     : `https://map.kakao.com/link/search/${encodeURIComponent(`${name} ${normalizedAddress ?? region}`)}`;
 
-  useEffect(() => {
-    setMapFailed(false);
-    setMapLoaded(false);
-  }, [mapUri]);
-
-  useEffect(() => {
-    setAddressCopied(false);
-  }, [normalizedAddress]);
+  const mapLoaded = mapStatus.uri === mapUri && mapStatus.loaded;
+  const mapFailed = mapStatus.uri === mapUri && mapStatus.failed;
+  const addressCopied = normalizedAddress !== null && copiedAddress === normalizedAddress;
 
   async function openMap() {
     try {
@@ -74,9 +72,9 @@ export function VendorLocationSection({
 
     try {
       const copied = await Clipboard.setStringAsync(normalizedAddress);
-      setAddressCopied(copied);
+      setCopiedAddress(copied ? normalizedAddress : null);
     } catch {
-      setAddressCopied(false);
+      setCopiedAddress(null);
     }
   }
 
@@ -106,8 +104,8 @@ export function VendorLocationSection({
               source={{ uri: mapUri }}
               style={[styles.mapImage, { backgroundColor: theme.backgroundElement }]}
               resizeMode="cover"
-              onLoad={() => setMapLoaded(true)}
-              onError={() => setMapFailed(true)}
+              onLoad={() => setMapStatus({ uri: mapUri, loaded: true, failed: false })}
+              onError={() => setMapStatus({ uri: mapUri, loaded: false, failed: true })}
             />
           </Pressable>
           {!mapLoaded ? (
