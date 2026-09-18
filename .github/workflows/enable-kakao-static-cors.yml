@@ -1,0 +1,52 @@
+name: Enable Kakao Static CORS
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  apply:
+    name: Add Kakao static origins to API CORS
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - run: bash ./scripts/add-kakao-static-cors.sh
+
+  verify:
+    name: Verify CORS from public runner
+    needs: [apply]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      matrix:
+        origin:
+          - https://210.109.82.212:8443
+          - https://210.109.82.212:9443
+    steps:
+      - name: Verify preflight
+        env:
+          ORIGIN: ${{ matrix.origin }}
+        run: |
+          set -euo pipefail
+          headers="$(mktemp)"
+          curl --fail --silent --show-error --connect-timeout 5 --max-time 15             --request OPTIONS             --header "Origin: $ORIGIN"             --header "Access-Control-Request-Method: GET"             --dump-header "$headers" --output /dev/null             https://210.109.82.212/v1/auth/providers
+          grep -Fqi "access-control-allow-origin: $ORIGIN" "$headers"
+
+  rollback:
+    name: Roll back CORS on verification failure
+    if: ${{ always() && needs.apply.result == 'success' && needs.verify.result != 'success' }}
+    needs: [apply, verify]
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - run: bash ./scripts/rollback-kakao-static-cors.sh
