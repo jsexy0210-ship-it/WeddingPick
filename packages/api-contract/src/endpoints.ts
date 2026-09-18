@@ -91,6 +91,7 @@ import {
   reportReasonListResponseSchema,
   reviewFormSchema,
   reviewListResponseSchema,
+  loungeReviewListResponseSchema,
   updateReviewRequestSchema,
 } from './reviews';
 import {
@@ -976,6 +977,13 @@ export const ENDPOINTS = {
     method: 'GET',
     path: '/v1/vendors/{vendorId}/reviews',
     response: reviewListResponseSchema,
+  },
+
+  /** 라운지 전체 후기. category·cursor·limit 쿼리 파라미터로 쪽을 넘긴다. */
+  listLoungeReviews: {
+    method: 'GET',
+    path: '/v1/reviews',
+    response: loungeReviewListResponseSchema,
   },
 
   /** 신고 사유 목록. */
