@@ -52,7 +52,11 @@ async function readNativeToken(): Promise<string | null> {
   if (legacy === null) return null;
 
   await SecureStore.setItemAsync(STORAGE_KEY, legacy);
-  await AsyncStorage.removeItem(STORAGE_KEY);
+  try {
+    await AsyncStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // SecureStore가 이미 정본이다. 다음 load에서 stale legacy cleanup을 다시 시도한다.
+  }
   return legacy;
 }
 
@@ -66,11 +70,12 @@ async function removeCurrent(): Promise<void> {
   if (isWebShellSession()) {
     clearWebShellToken();
   } else if (usesNativeSecureStore()) {
-    await Promise.all([
-      SecureStore.deleteItemAsync(STORAGE_KEY),
-      // 이전 앱에서 남았거나 이관 도중 남은 사본도 같이 제거한다.
-      AsyncStorage.removeItem(STORAGE_KEY),
-    ]);
+    /*
+     * legacy를 먼저 지운다. 반대로 SecureStore를 먼저 지운 뒤 legacy 삭제가 실패하면
+     * 다음 load가 옛 토큰을 다시 SecureStore로 이관해 로그아웃을 되돌릴 수 있다.
+     */
+    await AsyncStorage.removeItem(STORAGE_KEY);
+    await SecureStore.deleteItemAsync(STORAGE_KEY);
   } else {
     await AsyncStorage.removeItem(STORAGE_KEY);
   }
@@ -93,8 +98,12 @@ export async function saveToken(token: string): Promise<void> {
   await serial(async () => {
     if (usesNativeSecureStore()) {
       await SecureStore.setItemAsync(STORAGE_KEY, token);
-      // 새 저장이 성공한 뒤에만 구 저장소 사본을 없앤다.
-      await AsyncStorage.removeItem(STORAGE_KEY);
+      // 새 secure 토큰이 정본이다. legacy cleanup 실패는 다음 load에서 재시도한다.
+      try {
+        await AsyncStorage.removeItem(STORAGE_KEY);
+      } catch {
+        // stale legacy는 readNativeToken이 secure 값을 우선한 뒤 다시 정리한다.
+      }
     } else {
       await AsyncStorage.setItem(STORAGE_KEY, token);
     }
@@ -119,14 +128,22 @@ export async function clearTokenIfMatches(expected: string): Promise<boolean> {
 /** 탈퇴 시 영속 저장소뿐 아니라 탭별 OAuth 임시 정보도 제거한다. */
 export async function wipeDevice(): Promise<void> {
   await serial(async () => {
+    const nativeSecure = usesNativeSecureStore();
+
     if (isWebShellSession()) {
       clearWebShellToken();
-    } else if (usesNativeSecureStore()) {
-      await SecureStore.deleteItemAsync(STORAGE_KEY);
     }
 
+    /*
+     * 탈퇴도 legacy를 먼저 제거한다. AsyncStorage 정리가 실패하면 secure token을 남긴
+     * 채 실패해야, 다음 실행에서 오래된 token이 재이관되는 상태를 만들지 않는다.
+     */
     const keys = (await AsyncStorage.getAllKeys()).filter((key) => key.startsWith('weddingpick.'));
     await Promise.all(keys.map((key) => AsyncStorage.removeItem(key)));
+
+    if (nativeSecure) {
+      await SecureStore.deleteItemAsync(STORAGE_KEY);
+    }
 
     if (typeof window !== 'undefined' && typeof window.location?.href === 'string') {
       const storage = window.sessionStorage;
