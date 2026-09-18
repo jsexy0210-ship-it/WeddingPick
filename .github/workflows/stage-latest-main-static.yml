@@ -1,0 +1,104 @@
+name: Stage Latest Main Static
+
+on:
+  push:
+    branches:
+      - ops/kakao-runtime-smoke
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  build:
+    name: Build current main static only
+    if: ${{ contains(github.event.head_commit.message || '', '[stage-latest-static]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      sha: ${{ steps.source.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Pin current main
+        id: source
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Export app and admin source
+        env:
+          EXPO_PUBLIC_API_URL: https://210.109.82.212
+          EXPO_PUBLIC_KAKAO_CLIENT_ID: 8e9a14dd3a0aa1a420bff858460c415c
+          EXPO_PUBLIC_WEB_URL: https://210.109.82.212
+        run: npm run export:web --workspace @weddingpick/mobile
+
+      - name: Build website
+        env:
+          WEDDINGPICK_CONTACT_EMAIL: help.weddingpick@gmail.com
+          WEDDINGPICK_API_URL: https://210.109.82.212
+          LEGAL_TERMS_EFFECTIVE_ON: '2026-09-10'
+          LEGAL_PRIVACY_EFFECTIVE_ON: '2026-09-21'
+        run: npm run build --workspace @weddingpick/web
+
+      - name: Package candidates
+        env:
+          ADMIN_ORIGIN: https://210.109.82.212:8443
+        run: node scripts/package-kakao-static.mjs
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: latest-main-kakao-static
+          path: .kakao-static/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 3
+
+  stage:
+    name: Stage current main static on Kakao VM
+    needs: [build]
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 10
+    steps:
+      - name: Ensure main did not move
+        env:
+          SOURCE_SHA: ${{ needs.build.outputs.sha }}
+        run: |
+          set -euo pipefail
+          current="$(git ls-remote https://github.com/jsexy0210-ship-it/WeddingPick.git refs/heads/main | cut -f1)"
+          test "$current" = "$SOURCE_SHA"
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: latest-main-kakao-static
+          path: .kakao-static
+
+      - name: Validate and stage
+        env:
+          SOURCE_SHA: ${{ needs.build.outputs.sha }}
+        run: |
+          set -euo pipefail
+          test -f .kakao-static/app/index.html
+          test -f .kakao-static/admin/admin/login.html
+          test -f .kakao-static/web/privacy.html
+          if grep -RIl '<!--$!-->' .kakao-static/app .kakao-static/admin | grep -q .; then
+            echo 'unfinished React suspense boundary' >&2
+            exit 1
+          fi
+          release="/home/ubuntu/WeddingPick/static-releases/$SOURCE_SHA"
+          mkdir -p "$release"
+          rm -rf "$release/app" "$release/admin" "$release/web"
+          cp -a .kakao-static/app "$release/app"
+          cp -a .kakao-static/admin "$release/admin"
+          cp -a .kakao-static/web "$release/web"
+          cp .kakao-static/manifest.json "$release/manifest.json"
+          printf '%s\n' "$SOURCE_SHA" > /home/ubuntu/WeddingPick/static-releases/latest-candidate
+          echo "staged_static=$SOURCE_SHA"
