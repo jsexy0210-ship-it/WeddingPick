@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
@@ -32,39 +32,41 @@ export type DialogToastProps = {
  * 한 화면에 하나만 렌더하므로 새 message가 오면 이전 문구와 타이머를 즉시 교체한다.
  * 화면 이동 성공 뒤에는 쓰지 않고, 같은 화면에 남는 결과/제한/실패만 알려준다.
  */
-export function DialogToast({
+export function DialogToast(props: DialogToastProps) {
+  const { message } = props;
+
+  if (message === null) return null;
+
+  return (
+    <VisibleDialogToast
+      key={`${message}:${Boolean(props.actionLabel && props.onAction)}`}
+      {...props}
+      message={message}
+    />
+  );
+}
+
+function VisibleDialogToast({
   message,
   actionLabel = null,
   onAction = null,
   onHidden,
   docked = false,
-}: DialogToastProps) {
+}: Omit<DialogToastProps, 'message'> & { message: string }) {
   const theme = useTheme();
-  const [shown, setShown] = useState<string | null>(message);
-  const hiddenRef = useRef(onHidden);
-  const actionRef = useRef(onAction);
-
-  hiddenRef.current = onHidden;
-  actionRef.current = onAction;
+  const [visible, setVisible] = useState(true);
+  const hasAction = Boolean(actionLabel && onAction);
 
   useEffect(() => {
-    if (message === null) {
-      setShown(null);
-      return;
-    }
-
-    setShown(message);
     const timer = setTimeout(() => {
-      setShown(null);
-      hiddenRef.current?.();
-    }, dialogToastDuration(Boolean(actionLabel && onAction)));
+      setVisible(false);
+      onHidden?.();
+    }, dialogToastDuration(hasAction));
 
     return () => clearTimeout(timer);
-  }, [actionLabel, message, onAction]);
+  }, [hasAction, onHidden]);
 
-  if (shown === null) return null;
-
-  const hasAction = Boolean(actionLabel && onAction);
+  if (!visible) return null;
 
   return (
     <View
@@ -74,7 +76,7 @@ export function DialogToast({
         { backgroundColor: theme.backgroundInk, bottom: dialogToastBottom(docked) },
       ]}>
       <ThemedText type="t7" style={[styles.message, { color: theme.onInk }]}>
-        {shown}
+        {message}
       </ThemedText>
       {hasAction ? (
         <Pressable
@@ -82,9 +84,9 @@ export function DialogToast({
           accessibilityLabel={actionLabel ?? undefined}
           hitSlop={Spacing.two}
           onPress={() => {
-            actionRef.current?.();
-            setShown(null);
-            hiddenRef.current?.();
+            onAction?.();
+            setVisible(false);
+            onHidden?.();
           }}>
           <ThemedText type="t7" themeColor="tint" style={styles.action}>
             {actionLabel}
