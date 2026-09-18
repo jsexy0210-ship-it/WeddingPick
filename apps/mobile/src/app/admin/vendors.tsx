@@ -408,7 +408,7 @@ function VendorsPanel() {
 const TABS: AdminTabDef[] = [
   { key: 'vendors', label: '업체 관리' },
   { key: 'images', label: '이미지 관리' },
-  { key: 'biz-queue', label: '업체 문의', readOnly: true },
+  { key: 'biz-queue', label: '업체 소유 확인' },
   { key: 'email-matching', label: '이메일 회신', readOnly: true },
   { key: 'expos', label: '박람회 관리' },
 ];

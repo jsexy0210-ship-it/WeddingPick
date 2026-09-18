@@ -31,7 +31,7 @@
 | users | `GET /users` · `POST /users/:id/withdraw` · `POST /withdrawals/:id/retry` | 있음 | 실제 | 조작 |
 | report | `GET /reports?status=` | 있음 · 실제 집계 | 없음 | 조회 |
 | rebuttal | `GET /rebuttals` · `POST /rebuttals/:id/{publish,reject}` | 있음 | 실제 | 조작 |
-| biz-queue | `GET /biz-queue` · `POST /biz-queue/:id/:action` | GET **고정값** · 쓰기 **없음** | 없음 | **죽음** |
+| biz-queue | `GET /biz-queue` · `POST /biz-queue/:id/:action` | 있음 | 실제(승인 · 반려) | 조작 |
 | objections | `GET /objections` · `POST /objections/:id/...` | 있음 | 실제 | 조작 |
 | pii-reviews | `GET /pii-reviews` · `POST /pii-reviews/:id/{clean,redact}` | 있음 | 실제 | 조작 |
 | marketing | `GET /marketing` · `POST /marketing/:jobId/{retry,simulate}` | 있음 | 실제 | 조작 |
@@ -60,9 +60,21 @@
 PATCH · PUT · DELETE가 `reply.status(204)`. `context.pool`을 부르는 줄이 한 줄도 없다. FAQ 표도
 DB에 없다. **대표님이 직접 조작을 요구한 화면이라 이번 작업에서 실제로 만든다.**
 
-**biz-queue** — `routes/admin.ts:1329`. GET이 `{ items: [], total: 0 }` 리터럴. 쓰기 경로
-`POST /v1/admin/biz-queue/:id/:action`은 서버에 아예 없다(비슷한 `vendor-claims` 쪽은 따로 있고
-화면이 그것을 부르지 않는다). 이미 `READ_ONLY`에 들어 있다.
+**biz-queue** — **고쳤다**(2026-09-16). 「비슷한 `vendor-claims` 쪽은 따로 있고 화면이 그것을
+부르지 않는다」고 적어 뒀던 그 자리가 원인이었다. 둘은 비슷한 것이 아니라 **같은 것**이다 —
+`dashboard-admin.ts`가 진작부터 `biz-queue` 줄을 「업체 소유 확인 대기」로,
+`vendorClaims.length`로 세고 있었다. 숫자가 가리키는 표에 화면을 붙였다.
+
+그래서 **빈 목록이 감추고 있던 것이 하나 더 있었다.** 목록이 언제나 비어 있으니 아무도
+승인·반려를 눌러보지 않았고, 그 단추가 서버에 없다는 것도 함께 묻혀 있었다. 게다가
+대시보드는 「확인 대기 N건」을 빨갛게 띄우는데 눌러 들어오면 「접수 건이 없어요」였다 —
+**숫자와 화면이 서로를 부정하고 있었다.**
+
+화면의 `trustScore` · `legalRisk` · `autoClassification`과 `auto_approved` · `escalated`
+상태는 **뺐다.** 담을 칸이 DB에 없고 채점기도 없다. `auto_approved`는 그냥 없는 것이 아니라
+스키마가 일부러 막아 둔 것이다(`0038` — 「자동 승인이 없다. 도메인이 맞아도 그건 재료지
+결론이 아니다」). 명세 WP-ADM-023의 「저신뢰·법적 위험 건만 관리자 확인」은 **채점기가 붙는
+날 함께 돌아온다.** `BACKEND_PENDING`과 탭의 `readOnly`는 짝으로 걷어냈다.
 
 **terms** — `routes/admin.ts:1724`. 쓰기 셋이 모두 400 「…앱 약관·동의 기록에 연결한 뒤 열려요」로
 막혀 있고, 시험(`test/admin-pending-actions.test.ts`)이 그 거부를 지킨다. 이미 `READ_ONLY`에 있다.
@@ -70,17 +82,27 @@ DB에 없다. **대표님이 직접 조작을 요구한 화면이라 이번 작�
 
 **email-matching** — `routes/admin.ts:1415`. `summary`가 전부 0이고 `items`가 빈 배열인 리터럴.
 그 위 주석이 이유를 적어 뒀다 — 업체 회신 메일을 담는 표가 마이그레이션 0001~0121 어디에도 없다.
-상태가 없으므로 단추도 없다.
+상태가 없으므로 단추도 없다. 2026-09-16에 다시 재고 **표가 없는 것이 맞다**고 확인했다
+(0001~0230에 업체 회신 메일을 담는 표가 없다). 동작은 그대로 뒀다.
 
 **revenue** — `routes/admin.ts:1225`. `mrr` · `arr` · `activeSubscriptions` · `churnRate`가 0,
 `planBreakdown`이 빈 배열인 리터럴. 구독·결제 표가 없다. 화면은 언제나 0을 그린다.
+2026-09-16에 다시 재고 **표가 없는 것이 맞다**고 확인했다(0001~0230). `payment_proofs`가 이름
+때문에 헷갈리는데 그건 사용자가 **업체에 낸** 영수증이라 우리 매출이 아니다 — 가격 통계의
+재료지 수익의 재료가 아니다. 동작은 그대로 두고 **왜 0인지를 라우트에 적어 뒀다**
+(`email-matching`에는 있던 주석이 여기에만 없었다). 수익 현황은 결제 연동 뒤에 붙는다.
 
 ## 부분 고장
 
-**price-stats의 「다시 계산」** — `routes/admin.ts:1829`가 `202 { queued: true }`만 돌려준다.
-큐에 넣는 줄이 없고, `stats.price_stats`를 다시 계산하는 함수가 저장소 어디에도 없다
-(`0001_init.sql:319`에 표만 있다). 목록 조회는 실제 값이라 화면 전체가 죽은 것은 아니다.
-**단추만 잠근다** — 눌러도 아무 일이 없는 것이 가장 나쁘다.
+**price-stats의 「다시 계산」** — 단추는 이미 잠겨 있었고(`BACKEND_PENDING`), 2026-09-16에
+**서버도 같은 말을 하게 고쳤다.** 예전에는 `202 { queued: true }`를 돌려줬다 — 큐에 넣는 줄이
+없으면서 성공을 말하는 응답이라, 잠금이 풀리는 날 조용히 거짓말이 된다.
+
+다시 재 보니 **되살릴 것이 아니라 없어도 되는 자리였다.** `GET /v1/admin/data/price-stats`가
+읽을 때마다 `usable_payment_proofs`에서 평균·표준편차를 새로 구한다. 미리 계산해 둔 값을 담는
+`stats.price_stats`(`0001_init.sql:319`)는 표만 있고 **쓰는 코드가 저장소에 없다.** 목록의 숫자는
+늘 최신이고, 눌러서 새로 만들 것이 없다. 미리 계산해 두는 방식으로 바꾸는 날 이 라우트가 그
+작업을 걸면 된다.
 
 ## 화면이 부르지 않는 가짜 라우트
 
