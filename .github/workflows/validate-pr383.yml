@@ -1,0 +1,22 @@
+name: Validate PR383 CORS rollback
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    if: github.head_ref == 'chatgpt/cors-rollback-idempotency-20260918-2b'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Regression
+        run: |
+          bash -n scripts/rollback-kakao-static-cors.sh
+          node --test scripts/verification/cors-rollback-idempotency.test.mjs
