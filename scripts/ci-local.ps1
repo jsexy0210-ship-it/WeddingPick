@@ -19,4 +19,4 @@ if ($BuildWeb) {
   npm run build --workspace @weddingpick/web
 }
 
-Write-Host 'Local CI passed. Render 배포 후 /health를 확인하세요.'
+Write-Host 'Local CI passed. main 반영 후 KakaoCloud /health와 해당 CI / Deploy 실행을 확인하세요.'

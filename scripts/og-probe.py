@@ -5,13 +5,14 @@
 """
 
 import json
+import os
 import re
 import sys
 import urllib.error
 import urllib.request
 
-WEB = "https://weddingpick-web.onrender.com"
-API = "https://210.109.82.212"
+WEB = os.environ.get("WEDDINGPICK_WEB_ORIGIN", "https://210.109.82.212:9443").rstrip("/")
+API = os.environ.get("WEDDINGPICK_API_ORIGIN", "https://210.109.82.212").rstrip("/")
 
 # 카드가 뜨려면 넷이 다 있어야 한다. 하나라도 없으면 크롤러는 카드를 접는다.
 REQUIRED = ("og:title", "og:description", "og:image", "og:url")
