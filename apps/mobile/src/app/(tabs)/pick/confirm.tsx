@@ -36,8 +36,8 @@ import { useDepthBack } from '@/features/navigation/depth-back';
  *          «결정은 언제든 바꿀 수 있어요»
  *   버튼   «다시 볼게요»(gray · flex 1) + «최종 결정»(coral · flex 1.4) · 52(tokens size.ctaPrimary — 시안 56보다 토큰이 우선)
  *
- * 결정은 **여기서만** 저장한다 — 목록(WP-PICK-002)이 먼저 저장하고 이 화면이 또 저장하던 것을
- * 하나로 모았다. 저장이 끝나면 결정 완료(WP-PICK-006)로 바꿔 끼운다.
+ * 결정 기록은 **여기서만** 만든다 — 목록(WP-PICK-002)이 먼저 기록하고 이 화면이 또 기록하던 것을
+ * 하나로 모았다. 기록이 끝나면 결정 완료(WP-PICK-006)로 바꿔 끼운다.
  *
  * 문구는 spec/strings.ko.json pick.decideTitle · pick.decideNote1~3.
  */
