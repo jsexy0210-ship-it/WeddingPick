@@ -99,6 +99,11 @@ function backButtons() {
     .filter((node) => node.props.label === '돌아가기');
 }
 
+/** 문의 화면 헤더 Back. 현재 화면은 BackBar가 기본 출구다. */
+function contactBack() {
+  return tree.root.findByType('BackBar' as never).props.onBack as () => void;
+}
+
 describe('/my/contact — 문의 완료·목록 하단', () => {
   beforeEach(() => {
     jest.mocked(listMyInquiries).mockResolvedValue({ inquiries: [] } as never);
@@ -109,7 +114,7 @@ describe('/my/contact — 문의 완료·목록 하단', () => {
   it('정상 진입: 「돌아가기」가 MY로 올라간다', async () => {
     mockPathname = '/my/contact';
     await mount(<ContactScreen />);
-    await act(async () => backButtons()[0]!.props.onPress());
+    await act(async () => contactBack()());
     expect(landedOn()).toBe('/my');
     expect(router.dismissTo).toHaveBeenCalledWith('/my');
   });
@@ -120,10 +125,10 @@ describe('/my/contact — 문의 완료·목록 하단', () => {
     await mount(<ContactScreen />);
     const send = tree.root
       .findAllByType('ActionButton' as never)
-      .find((node) => node.props.label === '보내기')!;
+      .find((node) => node.props.label === '문의 보내기')!;
 
     await act(async () => { await send.props.onPress(); });
-    await act(async () => backButtons()[0]!.props.onPress());
+    await act(async () => contactBack()());
     expect(landedOn()).toBe('/my');
   });
 
@@ -131,7 +136,7 @@ describe('/my/contact — 문의 완료·목록 하단', () => {
     mockPathname = '/my/contact';
     asDeepLink();
     await mount(<ContactScreen />);
-    await act(async () => backButtons()[0]!.props.onPress());
+    await act(async () => contactBack()());
     expect(landedOn()).toBe('/my');
     expect(router.replace).toHaveBeenCalledWith('/my');
   });
@@ -140,7 +145,7 @@ describe('/my/contact — 문의 완료·목록 하단', () => {
     mockPathname = '/my/contact';
     jest.mocked(router.canGoBack).mockReturnValueOnce(true);
     await mount(<ContactScreen />);
-    await act(async () => backButtons()[0]!.props.onPress());
+    await act(async () => contactBack()());
     expect(router.back).toHaveBeenCalledTimes(1);
     expect(router.dismissTo).not.toHaveBeenCalled();
     expect(router.replace).not.toHaveBeenCalled();

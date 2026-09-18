@@ -13,7 +13,7 @@
       "key": "adminConsole",
       "label": "관리자 콘솔",
       "weight": 20,
-      "basis": "design-handoff/screens.md 관리자 표에서 ✅ 표시된 화면 수 (분모는 디자인 핸드오프의 WP-ADM 화면 수)"
+      "basis": "design/handoff/screens.md 관리자 표에서 ✅ 표시된 화면 수 (분모는 디자인 핸드오프의 WP-ADM 화면 수)"
     },
     {
       "key": "openQuestions",
@@ -36,7 +36,7 @@
   ],
   "outOfScope": [
     "Phase 4 이후 범위(박람회·외부 캘린더/지도·주차·방문 브리핑) — 05번 화면표에 행이 없어 세지 못한다.",
-    "앱 화면 중 05번 표에 없는 것 — 디자인 핸드오프는 앱 화면을 158개 그렸고 05번 표는 그중 핵심 흐름 18개만 추렸다. 두 표는 세는 대상이 다르다(design-handoff/screens.md).",
+    "앱 화면 중 05번 표에 없는 것 — 디자인 핸드오프는 앱 화면을 158개 그렸고 05번 표는 그중 핵심 흐름 18개만 추렸다. 두 표는 세는 대상이 다르다(design/handoff/screens.md).",
     "관리자 콘솔의 가중치 20은 잠정값이다 — 정해지기 전까지는 이 숫자가 전체 공정률을 그만큼 움직인다."
   ],
   "inventory": [
@@ -73,5 +73,5 @@
       "exclude": "\\.test\\.tsx$"
     }
   ],
-  "ledgerPath": "docs/design-handoff/screens.md"
+  "ledgerPath": "docs/design/handoff/screens.md"
 }

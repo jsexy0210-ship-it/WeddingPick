@@ -1,6 +1,6 @@
 # 업체 화면 대조표 — Figma 신규(`VendorFlows.tsx`) ↔ `(tabs)/search/[vendorId]/*`
 
-Figma 신규 디자인 저장소(`weddingpick_figma`)의 `src/app/components/VendorFlows.tsx`(824줄)가
+Figma 신규 디자인 저장소(`docs/design/figma-export`)의 `src/app/components/VendorFlows.tsx`(824줄)가
 그리는 화면과, 이 저장소의 담당 일곱 화면을 1:1로 맞춘 표다.
 
 - 기준은 **최신 `main`**이다(CLAUDE.md 「모든 규칙은 최신 main을 기준으로 한다」).
@@ -34,7 +34,7 @@ Figma 신규 디자인 저장소(`weddingpick_figma`)의 `src/app/components/Ven
 | A 픽셀정확 | `src/imports/` 3개 | 담당 화면 관련 자료 없음 |
 | B 낮음 | `src/app/components/VendorFlows.tsx` | Figma Make가 LLM으로 만든 근사치. **수치를 시안 값으로 믿지 않는다.** 의도만 참고 |
 
-담당 화면은 **전부 B등급**이다. 정본은 `docs/design-handoff/root/`의
+담당 화면은 **전부 B등급**이다. 정본은 `docs/design/figma-export/`의
 `WP-VEND-업체 상세 하위.dc.html`·`WP-RPT-제보·후기.dc.html`(대표님 직접 원본, 2026-09-11)이고,
 Figma는 그 아래 참고 자료다.
 

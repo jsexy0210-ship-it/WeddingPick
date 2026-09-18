@@ -133,6 +133,8 @@ function RootLayoutContent() {
    */
   const [inAppNotice] = useState(escapeInAppBrowser);
   const redirected = useRef(false);
+  /** 웹 OAuth 복귀에서 pending Pick을 끝낸 뒤 돌아갈 실제 제품 화면. */
+  const postSignInRoute = useRef<string | null>(null);
   const pathname = usePathname();
   /*
    * 지금 열린 것이 관리자 콘솔인가. 관리자는 웹 전용이고(`admin/_layout.tsx`),
@@ -205,6 +207,11 @@ function RootLayoutContent() {
 
               void rememberSignedIn({ provider: 'kakao', email: null }, next === '/setup');
 
+              // 웹 카카오 복귀는 RootLayout이 최종 라우팅을 맡는다. app/setup 두 값으로
+              // 뭉개기 전에 pending Pick의 실제 복귀 목적지를 한 번 보존한다.
+              postSignInRoute.current =
+                next !== '/setup' && next !== '/(tabs)' ? next : null;
+
               return next === '/setup' ? 'setup' : 'app';
             }
           } catch (caught) {
@@ -273,6 +280,14 @@ function RootLayoutContent() {
 
     if (entry !== 'app') {
       router.replace(ENTRY_ROUTE[entry]);
+
+      return;
+    }
+
+    const pendingRoute = postSignInRoute.current;
+    if (pendingRoute) {
+      postSignInRoute.current = null;
+      router.replace(pendingRoute as never);
 
       return;
     }

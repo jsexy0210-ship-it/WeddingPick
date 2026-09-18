@@ -18,7 +18,7 @@
 
 ## 대조 방법
 
-1. `docs/design-handoff/current/html/*.dc.html`의 **마크업과 `<script type="text/x-dc">`
+1. `docs/design/handoff/html/*.dc.html`의 **마크업과 `<script type="text/x-dc">`
    데이터 블록을 같이 읽어** 실제 픽셀값·문구를 뽑았다. 스타일이 `{{ name }}` 참조라
    마크업만 보면 값이 안 보인다.
 2. 각 값을 `spec/tokens.json` · `spec/strings.ko.json` · `spec/glossary.json`과 맞춰보고,

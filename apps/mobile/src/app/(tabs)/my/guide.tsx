@@ -1,5 +1,5 @@
 import { ANALYSIS_FACTS, formatAttribution, listDataSources } from '@weddingpick/domain';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -17,8 +17,58 @@ const SHOOTING_TIPS = [
 
 /** 촬영 요령, FAQ, 분석 안내. MY와 촬영 화면에서 들어온다. */
 export default function GuideScreen() {
+  const { mode } = useLocalSearchParams<{ mode?: string }>();
   /* 질문은 운영자가 관리자 화면에서 고치고 지운다(2026-09-16 대표 지시). */
   const faq = useFaq();
+
+  if (mode === 'faq') {
+    return (
+      <ThemedView style={styles.container}>
+        <SafeAreaView style={styles.safeArea}>
+          <BackBar title="FAQ" />
+          <ScrollView contentContainerStyle={styles.content}>
+            <ThemedView style={styles.section}>
+              <ThemedText type="subtitle">자주 찾는 질문</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                질문을 눌러 답을 확인할 수 있어요.
+              </ThemedText>
+            </ThemedView>
+
+            {faq.loading ? null : faq.items.length > 0 ? (
+              <ThemedView style={styles.section}>
+                {faq.items.map((item) => (
+                  <Pressable
+                    key={item.key}
+                    accessibilityRole="button"
+                    onPress={() => router.push(`/my/faq/${item.key}` as never)}>
+                    <ThemedView type="backgroundElement" style={styles.card}>
+                      <ThemedText type="smallBold">{item.question}</ThemedText>
+                    </ThemedView>
+                  </Pressable>
+                ))}
+              </ThemedView>
+            ) : (
+              <ThemedView type="backgroundElement" style={styles.card}>
+                <ThemedText type="small" themeColor="textSecondary">
+                  {faq.failed
+                    ? 'FAQ를 불러오지 못했어요. 잠시 뒤에 다시 열어주세요.'
+                    : '아직 등록된 FAQ가 없어요.'}
+                </ThemedText>
+              </ThemedView>
+            )}
+
+            <ThemedView style={styles.section}>
+              <ActionButton
+                variant="secondary"
+                label="문의하기"
+                onPress={() => router.push('/my/contact')}
+              />
+            </ThemedView>
+          </ScrollView>
+        </SafeAreaView>
+      </ThemedView>
+    );
+  }
 
   return (
     <ThemedView style={styles.container}>

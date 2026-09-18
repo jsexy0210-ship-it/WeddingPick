@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Border, Layout, LineHeight, ProductSymbol, Radius, ThemedText, useTheme } from '@weddingpick/ui';
 
 /**
- * 온보딩 보기 한 줄 — 규격서 docs/figma-spec/onboarding.txt(2026-09-15 대표 지시 「규격서의 수를 그대로」).
+ * 온보딩 보기 한 줄 — 규격서 docs/design/figma-export/06-onboarding-login.dc.html(2026-09-15 대표 지시 「규격서의 수를 그대로」).
  *
  *   button 382×65  flex · justify space-between · align center · pad 20 20 20 20 · mar 0 0 12 0 · r16
  *     고른 것   bg #E38E8E 7% · border 1 #E7898D    span "2027년 1월 15일" · 15/700 #E7898D · lh 23   svg 20×20(Check)
