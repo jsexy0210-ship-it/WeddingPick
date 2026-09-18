@@ -23,7 +23,6 @@ import {
   Spacing,
   ThemedText,
   ThemedView,
-  Toast,
   VendorImage,
   readWebInteractionState,
   useTheme,
@@ -31,6 +30,7 @@ import {
 import { getCurrentUser, listCandidates, removeCandidate } from '@/api/client';
 import { BackButton } from '@/components/back-button';
 import { confirmAlert } from '@/components/confirm-alert';
+import { DialogToast } from '@/components/confirm-alert-toast';
 import { useDepthBack } from '@/features/navigation/depth-back';
 import { PICK_COMPARE_MAX, PICK_COMPARE_MIN } from '@/features/pick/canonical-rules';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
@@ -147,7 +147,7 @@ export default function CategoryPickScreen() {
     });
   }
 
-  /** 최종 결정은 확인 시트(WP-PICK-005)가 한다 — 여기서 먼저 저장하지 않는다. */
+  /** 최종 결정은 확인 시트(WP-PICK-005)가 한다 — 여기서 먼저 결정 기록을 만들지 않는다. */
   function goDecide(candidate: VendorCandidate) {
     router.push({
       pathname: '/pick/confirm',
@@ -304,7 +304,7 @@ export default function CategoryPickScreen() {
         ) : null}
       </SafeAreaView>
 
-      <Toast message={toast} onHidden={() => setToast(null)} />
+      <DialogToast message={toast} onHidden={() => setToast(null)} />
     </ThemedView>
   );
 }
