@@ -52,14 +52,18 @@ export function classifyRetention(items, { retain = DEFAULT_RETAIN, protectedNam
   return result;
 }
 
-export function parseCorsMarker(content) {
+export function parseMarkerValue(content, key) {
   const values = {};
   for (const raw of String(content ?? '').split(/\r?\n/)) {
     const index = raw.indexOf('=');
     if (index <= 0) continue;
     values[raw.slice(0, index).trim()] = raw.slice(index + 1).trim();
   }
-  return values.container || null;
+  return values[key] || null;
+}
+
+export function parseCorsMarker(content) {
+  return parseMarkerValue(content, 'container');
 }
 
 export function classifyBackups(files, { retain = DEFAULT_RETAIN, protectedPaths = new Set() } = {}) {
@@ -139,9 +143,20 @@ function collectNginxBackups(root) {
   const dir = join(root, 'nginx-backups');
   const protectedPaths = new Set();
 
-  for (const markerName of ['.app-web-cutover-backup', '.weddingpick-static-sites-backup', '.preview-routes-backup']) {
+  for (const markerName of [
+    '.app-web-cutover-backup',
+    '.weddingpick-static-sites-backup',
+    '.preview-routes-backup',
+    '.static-port-probe-backup',
+  ]) {
     const marker = readMarker(root, markerName);
     if (marker && marker !== 'NONE') protectedPaths.add(resolve(marker));
+  }
+
+  const appWebUpdateMarker = readMarker(root, '.app-web-update-backup');
+  const appWebUpdateBackup = parseMarkerValue(appWebUpdateMarker, 'config');
+  if (appWebUpdateBackup && appWebUpdateBackup !== 'NONE') {
+    protectedPaths.add(resolve(appWebUpdateBackup));
   }
 
   if (!existsSync(dir)) return { files: [], protectedPaths };
