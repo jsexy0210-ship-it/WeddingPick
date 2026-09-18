@@ -153,6 +153,6 @@ release/public-data-sbiz-key-guard           흡수 전 (0건 수집을 초록�
 | 대상 | 왜 애매한가 |
 |---|---|
 | `docs/archive/통합정책 v3.10` (688K) | 판으로는 오래됐으나 코드 16곳이 인용 중 |
-| `docs/design-handoff/archive-toss-v7-README.md` | 세 세대 중 가장 오래됐지만 `README.md` 두 곳이 「역사적 맥락용」으로 의도해 남김 |
+| `docs/design/README.md` | 세 세대 중 가장 오래됐지만 `README.md` 두 곳이 「역사적 맥락용」으로 의도해 남김 |
 | `scripts/gen-store-screenshots.js` | 참조 0건이나 사람이 손으로 돌리는 자산 생성기. 대체품이 있는지 먼저 본다 |
 | `structured.vendor_change_log` | 위 참조 |

@@ -1,6 +1,6 @@
 # 관리자 운영 11화면 — v3.27 목업 1:1 대조표
 
-기준 시안 `docs/design-handoff/current/html/22-admin-ops.dc.html`(v3.27 · 2026-09-10 ·
+기준 시안 `docs/design/handoff/html/22-admin-ops.dc.html`(v3.27 · 2026-09-10 ·
 1920×1080 · 사이드바 240). 코드는 `apps/mobile/src/app/admin/`.
 
 ## 왜 이 문서가 있나

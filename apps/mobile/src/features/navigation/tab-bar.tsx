@@ -16,7 +16,7 @@ import {
 import { isRootTab, rootTab, type RootTabSpec } from './root-tabs';
 
 /**
- * Root 탭 바 — 규격서 docs/figma-spec/home.txt 맨 아래 `nav`(2026-09-15 대표 지시 「규격서의 수를 그대로」).
+ * Root 탭 바 — 규격서 docs/design/figma-export/01-home.dc.html 맨 아래 `nav`(2026-09-15 대표 지시 「규격서의 수를 그대로」).
  *
  *   nav 430×72  flex · align center · pad 0 8 0 8 · bg #FFFFFF · border 1 #000000 6%
  *     a 83×55   flex/column · gap 4 · justify center · align center · pad 8 0 8 0
