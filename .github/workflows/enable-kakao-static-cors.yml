@@ -9,6 +9,7 @@ permissions:
 jobs:
   apply:
     name: Add Kakao static origins to API CORS
+    environment: production
     runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
     timeout-minutes: 10
     steps:

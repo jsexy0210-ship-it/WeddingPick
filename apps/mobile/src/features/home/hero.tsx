@@ -19,7 +19,7 @@ import { Layout, LetterSpacing, Radius, Spacing, ThemedText, useTheme } from '@w
  * 만들지 않는다 — 이 앱에서 예식장이 정해지는 경로가 그것 하나다. 그래서 「예식장 미정」을
  * 누르면 웨딩홀 추천으로 가는 것이 말이 된다(§3-2).
  *
- * **예산 카드를 홈에 따로 두지 않는다**(§3) — 예산은 이 한 줄이 전부다.
+ * 최신 docs/design/01-home의 예산현황 사용 시 showBudget=false로 중복을 없앤다.
  */
 export type HeroProps = {
   me: CurrentUser | null;
@@ -31,6 +31,8 @@ export type HeroProps = {
   /** 예산 구간 질문에 답한 적이 있는가. 숫자 예산이 없어도 true일 수 있다. */
   bracketAnswered: boolean;
   partnerInvitePending: boolean;
+  /** 최신 홈은 별도 예산현황을 사용한다. */
+  showBudget?: boolean;
   onPressDate: () => void;
   onPressVenue: () => void;
   onPressBudget: () => void;
@@ -44,6 +46,7 @@ export function Hero({
   budget,
   bracketAnswered,
   partnerInvitePending,
+  showBudget = true,
   onPressDate,
   onPressVenue,
   onPressBudget,
@@ -69,7 +72,7 @@ export function Hero({
         </Pressable>
       ) : (
         <ThemedText type="f46" numeric themeColor="onTint" style={styles.dday}>
-          D-{formatCount(daysLeft)}
+          {daysLeft === 0 ? 'D-DAY' : `D${daysLeft > 0 ? '-' : '+'}${formatCount(Math.abs(daysLeft))}`}
         </ThemedText>
       )}
 
@@ -85,7 +88,7 @@ export function Hero({
       </Pressable>
 
       {/* 예산. 숫자 예산이 없으면 정하러 간다 — 구간만 고른 사람도 여기서 숫자를 정한다. */}
-      <Pressable
+      {showBudget ? <Pressable
         accessibilityRole="button"
         accessibilityLabel={budget === null ? '예산 정하기' : '예산'}
         onPress={onPressBudget}
@@ -93,7 +96,7 @@ export function Hero({
         <ThemedText type="f12" numeric themeColor="onTint" numberOfLines={1} style={styles.line}>
           {budgetLine(budget, bracketAnswered)}
         </ThemedText>
-      </Pressable>
+      </Pressable> : null}
 
       {/* 커플 연결. 연결돼 있으면 누를 것이 없다. */}
       <Pressable

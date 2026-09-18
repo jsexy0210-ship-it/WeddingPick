@@ -19,7 +19,11 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 
+import strings from '../../../../../spec/strings.ko.json';
+
 import { VendorCard } from './vendor-card';
+
+const S = strings.home;
 
 /**
  * Pick 추천 — 홈의 핵심 영역(2026-09-15 대표 사양 §4~§9).
@@ -97,7 +101,7 @@ export function PickRecommend({
       {heading ? (
         <View style={styles.head}>
           <ThemedText type="f14" style={styles.semibold}>
-            Pick 추천
+            {S['recommend.title']}
           </ThemedText>
           <ThemedText type="f12" themeColor="textAssistive" style={styles.sub}>
             지금 준비할 순서에 맞춰 골라봤어요
@@ -110,7 +114,7 @@ export function PickRecommend({
         <View style={styles.gutter}>
           <ThemedView type="backgroundElement" style={[styles.empty, { borderColor: theme.border }]}>
             <ThemedText type="f12" themeColor="textAssistive">
-              정할 준비를 다 끝냈어요
+              {remaining === 0 ? S['recommend.done'] : S['recommend.empty']}
             </ThemedText>
           </ThemedView>
         </View>
@@ -210,7 +214,9 @@ function CategoryRow({
         </View>
       </Pressable>
 
-      {!expanded ? null : group.vendors.length === 0 ? (
+      {!expanded ? null : (
+        <>
+        {group.vendors.length === 0 ? (
         <View style={styles.gutter}>
           <ThemedView type="backgroundElement" style={[styles.empty, { borderColor: theme.border }]}>
             <ThemedText type="f12" themeColor="textAssistive">
@@ -238,6 +244,9 @@ function CategoryRow({
             <View style={styles.tail} />
           </ScrollView>
 
+        </>
+      )}
+
           {/*
            * 아래 단추 줄. 「한눈에 비교」는 견줄 곳이 둘 이상일 때만(§7 COMPARING),
            * 「더 찾아보기」는 그것을 넘겨준 화면에서만 선다(§13 — 전체 페이지).
@@ -255,7 +264,7 @@ function CategoryRow({
                     pressed && styles.pressed,
                   ]}>
                   <ThemedText type="f12" themeColor="textAssistive" style={styles.semibold}>
-                    더 찾아보기
+                    {S['recommend.more']}
                   </ThemedText>
                 </Pressable>
               )}

@@ -25,3 +25,8 @@ iOS_액세스 토큰(중요)
 **/*.pem
 
 **/.ssh
+
+# 원본 폰트 배포 ZIP은 추출본만 사용하고 저장소/도커 컨텍스트에 다시 넣지 않는다.
+/public.zip
+/static.zip
+/variable.zip

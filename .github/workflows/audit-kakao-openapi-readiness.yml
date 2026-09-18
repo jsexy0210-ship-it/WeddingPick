@@ -1,0 +1,19 @@
+name: Audit Kakao OpenAPI Readiness
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Read-only OpenAPI readiness
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - run: bash ./scripts/audit-kakao-openapi-readiness.sh

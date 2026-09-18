@@ -1,5 +1,5 @@
 import type { VendorSummary } from '@weddingpick/api-contract';
-import { VENDOR_CATEGORY_LABEL, WEDDING_STYLE_LABEL, formatCount, priceLine } from '@weddingpick/domain';
+import { VENDOR_CATEGORY_LABEL, WEDDING_STYLE_LABEL, priceLine } from '@weddingpick/domain';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import {
@@ -17,30 +17,9 @@ import {
 import { CategoryImage } from './category-image';
 
 /**
- * 추천 업체 카드 — **홈과 「웨딩픽 추천」 전체 페이지가 이 파일 하나를 쓴다**
- * (2026-09-15 대표 사양 §12 「업체 카드는 홈과 동일 컴포넌트 재사용」 · §23 「홈용 ·
- * 추천 페이지용 둘로 중복 구현하지 않는다」).
- *
- *   ┌──────────────────────────────┐
- *   │ [썸네일]                   ♡ │
- *   │ 웨딩홀                        │
- *   │ 메종 웨딩                     │
- *   │ 📍 서울 영등포구               │
- *   │ #도시적인 #로맨틱한            │
- *   │ 350~520만원        ★4.7 (18) │
- *   └──────────────────────────────┘
- *
- * **없는 값은 줄째 그리지 않는다.** 이 카드에서 빠질 수 있는 것이 둘이다.
- *
- *   특징 태그   `styleTags`가 비면 그 줄이 없다. 시안의 «#채광맛집» 같은 자유 태그는
- *               저장소에 없어 스타일 넷(도시적인 · 자연스러운 · 로맨틱한 · 화려한)을 쓴다.
- *   별점        `rating`이 null이면 오른쪽이 빈다 — 확인된 후기 5건 미만이거나
- *               체크리스트 업종(결정사)이다. «★0.0»도 «★-»도 그리지 않는다. 그건
- *               「나쁜 업체」로 읽힌다(계약 `vendors.ts` `rating` 주석).
- *
- * **금액은 세 꼴이 다 들어온다.** `priceLine` 하나가 만든다(CLAUDE.md v3.24) —
- * 구간(`152~184만원`) · 업체 안내(`업체 안내 150만원~`, 회색) · `수집 중`. 카드 높이를
- * 금액 한 꼴에 맞춰 잠그지 않는다.
+ * 홈·추천이 공유하는 카드. docs/design/figma-export/01-home, 08-recommendations 기준.
+ * 별점 대신 실제 제보 건수/기준을 표시하고 서버가 제공한 추천 이유만 쓴다.
+ * 제보 부족 시 업체 안내 금액으로 대체하지 않는다.
  */
 export type VendorCardProps = {
   vendor: VendorSummary;
@@ -55,7 +34,7 @@ const MAX_TAGS = 2;
 
 export function VendorCard({ vendor, picked, onPress, onPressPick }: VendorCardProps) {
   const theme = useTheme();
-  const price = priceLine(vendor.paidPrice, vendor.guidePrice);
+  const price = priceLine(vendor.paidPrice, null);
   const tags = vendor.styleTags.slice(0, MAX_TAGS);
 
   return (
@@ -74,7 +53,7 @@ export function VendorCard({ vendor, picked, onPress, onPressPick }: VendorCardP
           accessibilityRole="button"
           accessibilityLabel={picked ? `${vendor.name} Pick 해제` : `${vendor.name} Pick`}
           accessibilityState={{ selected: picked }}
-          onPress={onPressPick}
+          onPress={(event) => { event.stopPropagation(); onPressPick(); }}
           hitSlop={Spacing.two}
           style={({ pressed }) => [styles.heart, pressed && styles.pressed]}>
           <View
@@ -131,19 +110,16 @@ export function VendorCard({ vendor, picked, onPress, onPressPick }: VendorCardP
             style={[styles.price, styles.shrink]}>
             {price.text}
           </ThemedText>
-          {/* 별점이 없으면 이 자리가 빈다. 「0.0」으로 채우지 않는다. */}
-          {vendor.rating === null ? null : (
-            <View style={styles.rating}>
-              <SeedIcon name="reviewStarFill" size={Layout.iconMicro} color={theme.textAssistive} />
-              <ThemedText type="f12" numeric themeColor="textAssistive" style={styles.price}>
-                {vendor.rating.average.toFixed(1)}
-              </ThemedText>
-              <ThemedText type="f10" numeric themeColor="textAssistive">
-                ({formatCount(vendor.rating.count)})
-              </ThemedText>
-            </View>
-          )}
+
         </View>
+        <ThemedText type="f12" themeColor="textAssistive" numeric style={styles.proof}>
+          {price.caption}
+        </ThemedText>
+        {vendor.reasons?.[0] ? (
+          <ThemedText type="f12" themeColor="tint" numberOfLines={2} style={styles.reason}>
+            {vendor.reasons[0]}
+          </ThemedText>
+        ) : null}
       </View>
     </Pressable>
   );
@@ -184,6 +160,7 @@ const styles = StyleSheet.create({
     marginTop: Layout.cardGap,
   },
   price: { fontWeight: 500 },
-  rating: { flexDirection: 'row', alignItems: 'center', gap: Spacing.half, flexShrink: 0 },
+  proof: { marginTop: Spacing.one },
+  reason: { marginTop: Spacing.two },
   pressed: { opacity: 0.8 },
 });

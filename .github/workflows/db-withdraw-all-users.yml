@@ -23,6 +23,7 @@ permissions:
 
 jobs:
   run:
+    environment: production
     runs-on: ubuntu-latest
     timeout-minutes: 20
 

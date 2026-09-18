@@ -61,3 +61,8 @@ packages/ui/dist/
 # CI가 만드는 마케팅 미리보기 산출물(main.yml의 MARKETING_PREVIEW_DIR).
 # 로컬에서 그 단계를 돌려 보면 생긴다 — 저장소에 넣지 않는다.
 .marketing-preview/
+
+# 원본 폰트 배포 ZIP은 추출본만 사용하고 저장소/도커 컨텍스트에 다시 넣지 않는다.
+/public.zip
+/static.zip
+/variable.zip

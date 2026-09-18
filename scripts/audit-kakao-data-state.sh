@@ -32,3 +32,35 @@ main().catch((error) => {
   process.exitCode = 1;
 });
 NODE
+
+
+echo '#### Kakao Object Storage read-only probe'
+sudo -n docker exec -i weddingpick-api node <<'NODE'
+const { S3Client, HeadBucketCommand, ListObjectsV2Command } = require('@aws-sdk/client-s3');
+
+async function main() {
+  const bucket = process.env.S3_BUCKET;
+  const region = process.env.S3_REGION;
+  const endpoint = process.env.S3_ENDPOINT;
+  if (!bucket || !region || !endpoint) throw new Error('storage config missing');
+
+  const client = new S3Client({
+    region,
+    endpoint,
+    forcePathStyle: true,
+    requestChecksumCalculation: 'WHEN_REQUIRED',
+    responseChecksumValidation: 'WHEN_REQUIRED',
+  });
+
+  await client.send(new HeadBucketCommand({ Bucket: bucket }));
+  console.log('kakao_storage_head=ok');
+
+  const result = await client.send(new ListObjectsV2Command({ Bucket: bucket, MaxKeys: 1 }));
+  console.log('kakao_storage_list=ok');
+  console.log('kakao_storage_sample_count=' + (result.KeyCount ?? 0));
+}
+main().catch((error) => {
+  console.error('kakao_storage_probe=failed:' + (error?.name || 'unknown'));
+  process.exitCode = 1;
+});
+NODE
