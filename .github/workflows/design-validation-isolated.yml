@@ -1,50 +1,33 @@
-# 검증 전용 브랜치에만 존재한다. main 병합 및 운영 배포 대상이 아니다.
+# 검증 전용 브랜치. 운영 배포 및 branch ref 변경을 하지 않는다.
 name: Design validation (isolated)
 on:
   push:
     branches: [codex/design-validation-20260918-273]
 permissions:
   contents: read
-concurrency:
-  group: weddingpick-isolated-design-validation
-  cancel-in-progress: false
+env:
+  INTEGRATION_MAIN: 44eb6a9a09c09276968a6dd885183a7650cf18fa
+  DATABASE_URL: postgres://weddingpick:weddingpick@localhost:5432/weddingpick_test
+  MARKETING_PREVIEW_DIR: .marketing-preview
+  EXPO_PUBLIC_API_URL: http://127.0.0.1:9
+  EXPO_PUBLIC_WEB_URL: http://127.0.0.1:9
 jobs:
-  verify:
+  checks:
     if: contains(github.event.head_commit.message, '[verify-design]')
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: weddingpick
-          POSTGRES_PASSWORD: weddingpick
-          POSTGRES_DB: weddingpick_test
-        ports: ['5432:5432']
-        options: >-
-          --health-cmd pg_isready --health-interval 10s
-          --health-timeout 5s --health-retries 5
-    env:
-      DATABASE_URL: postgres://weddingpick:weddingpick@localhost:5432/weddingpick_test
-      MARKETING_PREVIEW_DIR: .marketing-preview
-      EXPO_PUBLIC_API_URL: http://127.0.0.1:9
-      EXPO_PUBLIC_WEB_URL: http://127.0.0.1:9
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           persist-credentials: false
-      - name: Archive exact tracked source for reproducible inspection
+      - name: Integrate pinned main and apply hash-checked source changes
         run: |
-          git rev-parse HEAD > "$RUNNER_TEMP/source-revision.txt"
-          git archive --format=tar.gz --output="$RUNNER_TEMP/weddingpick-source.tgz" HEAD
-      - uses: actions/upload-artifact@v4
-        with:
-          name: design-source-snapshot
-          path: |
-            ${{ runner.temp }}/weddingpick-source.tgz
-            ${{ runner.temp }}/source-revision.txt
-          retention-days: 1
-          if-no-files-found: error
+          git config user.name 'Design validation'
+          git config user.email 'noreply@users.noreply.github.com'
+          git merge --no-commit --no-ff "$INTEGRATION_MAIN"
+          python .design-validation/apply.py
+          git diff --check
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -66,14 +49,18 @@ jobs:
         id: seed
         continue-on-error: true
         run: node scripts/sync-seed-tokens.mjs --check
-      - name: Tests with disposable database
-        id: tests
-        continue-on-error: true
-        run: npm test
-      - name: Export web without production API access
+      - name: Export actual Expo web application
         id: web
         continue-on-error: true
         run: npm run export:web --workspace @weddingpick/mobile
+      - name: Archive web build for visual inspection
+        if: steps.web.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: design-web-preview
+          path: apps/mobile/dist/
+          retention-days: 1
+          if-no-files-found: error
       - name: Aggregate actual outcomes
         if: always()
         env:
@@ -81,14 +68,110 @@ jobs:
           LINT_RESULT: ${{ steps.lint.outcome }}
           COPY_RESULT: ${{ steps.copy.outcome }}
           SEED_RESULT: ${{ steps.seed.outcome }}
-          TEST_RESULT: ${{ steps.tests.outcome }}
           WEB_RESULT: ${{ steps.web.outcome }}
         run: |
           node - <<'NODE'
-          const names = ['TYPE', 'LINT', 'COPY', 'SEED', 'TEST', 'WEB'];
-          const results = Object.fromEntries(names.map(name => [name, process.env[name + '_RESULT']]));
-          console.log(JSON.stringify({ revision: process.env.GITHUB_SHA, results }, null, 2));
-          require('node:fs').appendFileSync(process.env.GITHUB_STEP_SUMMARY,
-            '## Isolated design validation\n\n' + Object.entries(results).map(([k,v]) => `- ${k}: ${v}`).join('\n') + '\n\nNo production deployment or production credentials.\n');
-          if (Object.values(results).some(value => value !== 'success')) process.exit(1);
+          const results = Object.fromEntries(['TYPE','LINT','COPY','SEED','WEB'].map(name => [name,process.env[name+'_RESULT']]));
+          console.log(JSON.stringify({revision:process.env.GITHUB_SHA,main:process.env.INTEGRATION_MAIN,results}));
+          if(Object.values(results).some(value=>value!=='success'))process.exit(1);
           NODE
+  tests:
+    if: contains(github.event.head_commit.message, '[verify-design]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        workspace: [api, mobile, domain, web, api-contract, db]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: weddingpick
+          POSTGRES_PASSWORD: weddingpick
+          POSTGRES_DB: weddingpick_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Integrate pinned main and apply hash-checked source changes
+        run: |
+          git config user.name 'Design validation'
+          git config user.email 'noreply@users.noreply.github.com'
+          git merge --no-commit --no-ff "$INTEGRATION_MAIN"
+          python .design-validation/apply.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Test workspace with disposable database
+        run: |
+          set -o pipefail
+          npm test --workspace '@weddingpick/${{ matrix.workspace }}' 2>&1 | tee "$RUNNER_TEMP/tests-${{ matrix.workspace }}.log"
+      - name: Preserve test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: design-test-${{ matrix.workspace }}
+          path: ${{ runner.temp }}/tests-${{ matrix.workspace }}.log
+          retention-days: 1
+          if-no-files-found: warn
+  tested-objects:
+    needs: [checks, tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Recreate exact tested source without generated build files
+        run: |
+          git config user.name 'Design validation'
+          git config user.email 'noreply@users.noreply.github.com'
+          git merge --no-commit --no-ff "$INTEGRATION_MAIN"
+          python .design-validation/apply.py
+          python - <<'PY'
+          import json,subprocess
+          paths=[entry['path'] for entry in json.load(open('.design-validation/manifest.json'))]
+          subprocess.run(['git','add','--',*paths],check=True)
+          PY
+      - name: Store verified Git blobs only; do not commit, move refs, merge or deploy
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs=require('node:fs'), cp=require('node:child_process'), crypto=require('node:crypto');
+            const root=process.env.GITHUB_WORKSPACE;
+            const paths=cp.execFileSync('git',['diff','--name-only',process.env.INTEGRATION_MAIN],{encoding:'utf8'}).trim().split('\n').filter(Boolean);
+            const entries=[];
+            for(const path of paths){
+              if(path.startsWith('.design-validation/') || path==='.github/workflows/design-validation-isolated.yml')continue;
+              if(!/^(apps\/|packages\/|spec\/|scripts\/|docs\/)/.test(path))throw Error('Unexpected changed path: '+path);
+              if(!fs.existsSync(path)) {entries.push({path,mode:'100644',type:'blob',sha:null});continue;}
+              const content=fs.readFileSync(path);
+              if(content.length>2_000_000 || content.includes(0))throw Error('Not an expected text source: '+path);
+              const expected=crypto.createHash('sha1').update(Buffer.from(`blob ${content.length}\0`)).update(content).digest('hex');
+              const {data}=await github.rest.git.createBlob({...context.repo,content:content.toString('base64'),encoding:'base64'});
+              if(data.sha!==expected)throw Error('Blob mismatch: '+path);
+              const mode=cp.execFileSync('git',['ls-files','--stage','--',path],{encoding:'utf8'}).split(' ')[0];
+              if(!['100644','100755'].includes(mode))throw Error('Unexpected file mode: '+path);
+              entries.push({path,mode,type:'blob',sha:data.sha});
+            }
+            if(!entries.length)throw Error('No product changes found');
+            const report={run:context.runId,validationSha:context.sha,main:process.env.INTEGRATION_MAIN,designParent:'08c36d4bbaba736b67fb8e386a50e3bc843cc758',checks:'success',tests:'success',entries};
+            fs.writeFileSync(process.env.RUNNER_TEMP+'/design-tested-objects.json',JSON.stringify(report,null,2));
+            core.info('Stored '+entries.length+' verified blobs. Branch references were not changed.');
+      - uses: actions/upload-artifact@v4
+        with:
+          name: design-tested-objects
+          path: ${{ runner.temp }}/design-tested-objects.json
+          retention-days: 1
+          if-no-files-found: error
