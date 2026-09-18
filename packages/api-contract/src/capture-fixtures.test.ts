@@ -20,7 +20,7 @@ import { inquiryListResponseSchema } from './inquiries';
 import { myReportListResponseSchema } from './my-reports';
 import { categoryRecommendationsResponseSchema } from './recommendations';
 import { myMonthlyDrawResponseSchema, myRewardPayoutResponseSchema, myRewardsResponseSchema } from './rewards';
-import { reportReasonListResponseSchema, reviewListResponseSchema } from './reviews';
+import { loungeReviewListResponseSchema, reportReasonListResponseSchema, reviewListResponseSchema } from './reviews';
 import { settingsSchema } from './settings';
 import { signupStateSchema } from './signup';
 import { weddingFeedDetailSchema, weddingFeedListResponseSchema } from './wedding-feed';
@@ -57,6 +57,7 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/me/monthly-draw', myMonthlyDrawResponseSchema],
   ['POST /v1/weddings/:weddingId/comparisons', z.null()],
   ['GET /v1/review-report-reasons', reportReasonListResponseSchema],
+  ['GET /v1/reviews', loungeReviewListResponseSchema],
   ['GET /v1/expos', expoListResponseSchema],
   ['GET /v1/me/reports', myReportListResponseSchema],
   ['GET /v1/inquiries', inquiryListResponseSchema],
