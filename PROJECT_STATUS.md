@@ -1,17 +1,18 @@
 # WeddingPick 프로젝트 상태
 
-## 현재 기준 — 2026-09-18 12:25 KST
+## 현재 기준 — 2026-09-18 13:54 KST
 
 - 운영 API는 `https://210.109.82.212`의 KakaoCloud VM이다. 첫 자동배포 성공 기준은 **CI / Deploy #979 / `4adc950`**이며 Render SG API는 사용자 중지 상태로 되살리지 않는다.
-- **CI / Deploy #983 / `2dcf0b5` 성공**: 앱웹·관리자·웹사이트 정적 산출물을 빌드·검사한 뒤 카카오 VM의 `static-releases/<SHA>` 후보 폴더까지 전달했다. API 재배포와 Runner 복구는 둘 다 Skip됐다.
-- Kakao VM은 Nginx가 80/443을 받고 443에서 `127.0.0.1:3001` API로 프록시한다. IP 인증서는 Let's Encrypt이며 SAN에 `210.109.82.212`가 있고 `snap.certbot.renew.timer`가 활성 상태다.
-- **정적 별도 origin 포트 사전검증 #987**: VM 내부에서 8443/9443 Nginx 설정·`nginx -t`·reload는 성공했지만 외부 GitHub runner의 8443 연결은 5초 timeout으로 실패했다. 임시 설정은 cleanup에서 정상 제거했다. 현재 카카오 보안그룹에서 비표준 포트가 막힌 상태로 본다.
-- 관리자 출처 분리 정책을 되돌리지 않는다. 따라서 8443/9443 보안그룹 허용 전에는 관리자·웹사이트 라이브 cutover를 진행하지 않는다.
-- Render는 빌드 분 복구 여부와 무관하게 더 이상 사용하지 않는다. 기존 정적 3개는 카카오 전환 검증 전 임시 공개본일 뿐이며 Render 재배포는 하지 않는다.
-- 새 파일 저장소 운영 설정은 KakaoCloud Object Storage `weddingpick-prod-media` / `kr-central-2` / `https://objectstorage.kr-central-2.kakaocloud.com`이다.
-- **운영 DB 읽기 전용 감사 #988**: 분석 pending 0, 30분 이상 running 0, `raw_document_pages.storage_key` 0, 내부 업체 이미지 0, 상담 음성 원본 0, 기한 초과 음성 0, 파기 예정 원본 0, 파기 일정 미정 원본 0. 따라서 현재 운영 DB가 참조하는 NCP→Kakao 이관 대상 파일은 **0개**다. NCP 버킷은 삭제하지 않고 보존하며 불필요한 전체 egress 복사는 하지 않는다.
-- 런타임은 `RUN_WORKER_IN_API=false`, `RETENTION_MODE=automatic`이다. 현재 backlog·파기 대상이 모두 0이므로 즉시 데이터 적체는 없지만, 향후 신규 업로드 분석/파기에는 워커 활성화 또는 역할 분리가 필요하다. 비용·자동삭제를 함께 켜지 않도록 별도 검증 전에는 활성화하지 않는다.
-- 사용자 앱 443 cutover는 카카오 개발자 Redirect URI `https://210.109.82.212/setup` 등록과 CORS/정책 링크 변경을 같은 전환에서 처리한다.
+- **앱웹 확인용 443 공개 #1006 성공**: staged app-web을 `https://210.109.82.212/`에 공개했고 외부 GitHub runner에서 루트·`/login` HTML을 확인했다. 같은 443의 `/health`와 `/v1/auth/providers`도 정상이라 정적 화면과 API가 공존한다.
+- 현재 직접 확인 가능한 주소: 앱웹 `https://210.109.82.212/`, 로그인 `https://210.109.82.212/login`, API health `https://210.109.82.212/health`.
+- 카카오 로그인 실제 완료 검증은 남아 있다. 브라우저 앱웹 origin이 IP로 바뀌었으므로 Kakao Developers Redirect URI에 `https://210.109.82.212/setup` 등록 여부를 확인해야 한다.
+- 관리자 `:8443`·웹사이트 `:9443`은 VM 내부 Nginx 설정·`nginx -t`는 성공하지만 외부 GitHub runner에서 둘 다 5초 timeout이다. 현재 KakaoCloud Security Group이 비표준 포트를 막고 있는 상태로 본다. 임시 probe 설정은 매번 cleanup으로 정상 제거했다.
+- 관리자 출처 분리 정책을 유지하므로 8443을 열기 전 관리자를 앱웹 443에 합치지 않는다. 웹사이트 9443도 보안그룹 허용 후 공개한다.
+- Kakao VM IP 인증서는 Let's Encrypt이며 SAN에 `210.109.82.212`가 있고 `snap.certbot.renew.timer`가 활성 상태다.
+- 새 파일 저장소 운영 설정은 KakaoCloud Object Storage `weddingpick-prod-media` / `kr-central-2`다. 운영 컨테이너에서 HeadBucket·ListObjectsV2 읽기 검증이 성공했다.
+- 운영 DB 읽기 전용 감사 결과 분석 pending 0, stuck running 0, raw document pages 0, 내부 업체 이미지 0, 상담 음성 0, 파기 대상 0이다. 현재 DB가 참조하는 NCP→Kakao 이관 대상 파일은 **0개**라 불필요한 전체 egress 복사는 하지 않는다.
+- 런타임은 `RUN_WORKER_IN_API=false`, `RETENTION_MODE=automatic`이다. 현재 backlog는 0이지만 신규 업로드 운영 전 워커 활성화 방식은 별도 검증해야 한다.
+- Render는 더 이상 빌드·배포하지 않는다. 기존 Render 정적 서비스는 전환 검증 중 임시 잔존일 뿐이며 새 변경을 올리지 않는다.
 - `claude/rn-preview`는 최신 디자인 정본이 아니며 배포 소스로 사용하지 않는다.
 - 보고 시 **코드 반영 / CI 통과 / API 배포 / 화면 후보 스테이징 / 화면 공개 / 실제 기능 검증**을 서로 다른 상태로 기록한다.
 
