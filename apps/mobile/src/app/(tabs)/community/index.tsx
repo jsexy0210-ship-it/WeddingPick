@@ -72,11 +72,11 @@ export default function CommunityScreen() {
 
   const loadReviews = useCallback((label: CategoryLabel, cursor?: string) => {
     if (!isSignedIn) return;
-    const version = ++reviewVersion.current;
     const append = Boolean(cursor);
+    if (append && reviewLoadingMore.current) return;
+    const version = ++reviewVersion.current;
 
     if (append) {
-      if (reviewLoadingMore.current) return;
       reviewLoadingMore.current = true;
       setReviewMoreLoading(true);
       setReviewMoreError(false);
