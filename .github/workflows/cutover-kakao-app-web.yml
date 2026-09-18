@@ -1,0 +1,77 @@
+name: Cutover Kakao App Web
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_sha:
+        description: staged static release SHA; blank uses newest staged release
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  precheck:
+    name: Verify public dependencies
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Website must already be live on Kakao
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --connect-timeout 5 --max-time 15             https://210.109.82.212:9443/privacy.html | grep -qi '<html'
+
+      - name: API health must be green
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --connect-timeout 5 --max-time 15             https://210.109.82.212/health |
+            python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get("ok") is True and d.get("database")=="ok" else 1)'
+
+  cutover:
+    name: Enable app web on 443
+    needs: [precheck]
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Cut over with local smoke
+        env:
+          RELEASE_SHA: ${{ inputs.release_sha }}
+        run: bash ./scripts/install-kakao-app-web.sh "$RELEASE_SHA"
+
+  verify:
+    name: Verify public app and API routes
+    needs: [cutover]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: App login HTML
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --connect-timeout 5 --max-time 15             https://210.109.82.212/login > /tmp/login.html
+          grep -qi '<html' /tmp/login.html
+
+      - name: API routes remain proxied
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --connect-timeout 5 --max-time 15             https://210.109.82.212/health |
+            python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get("ok") is True else 1)'
+          curl --fail --silent --show-error --connect-timeout 5 --max-time 15             https://210.109.82.212/v1/auth/providers |
+            python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if isinstance(d.get("providers"), list) else 1)'
+
+  rollback:
+    name: Roll back app-web if public verify fails
+    if: ${{ always() && needs.cutover.result == 'success' && needs.verify.result != 'success' }}
+    needs: [cutover, verify]
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - run: bash ./scripts/rollback-kakao-app-web.sh
