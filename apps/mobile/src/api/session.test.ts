@@ -94,6 +94,19 @@ describe('native session secure storage', () => {
     expect(legacyValues.has(KEY)).toBe(false);
   });
 
+  it('신규 secure 저장 후 legacy cleanup 실패는 로그인 성공을 되돌리지 않는다', async () => {
+    legacyValues.set(KEY, 'old-token');
+    (AsyncStorage.removeItem as jest.Mock).mockRejectedValueOnce(new Error('legacy cleanup failed'));
+
+    await expect(saveToken('new-token')).resolves.toBeUndefined();
+
+    expect(secureValues.get(KEY)).toBe('new-token');
+    expect(legacyValues.get(KEY)).toBe('old-token');
+
+    await expect(loadToken()).resolves.toBe('new-token');
+    expect(legacyValues.has(KEY)).toBe(false);
+  });
+
   it('네이티브 신규 로그인은 SecureStore에 저장하고 구 사본을 제거한다', async () => {
     legacyValues.set(KEY, 'old-token');
 
@@ -111,6 +124,18 @@ describe('native session secure storage', () => {
 
     expect(secureValues.has(KEY)).toBe(false);
     expect(legacyValues.has(KEY)).toBe(false);
+  });
+
+  it('legacy 삭제 실패 시 secure 토큰을 먼저 지우지 않아 세션 부활을 막는다', async () => {
+    secureValues.set(KEY, 'secure-token');
+    legacyValues.set(KEY, 'legacy-token');
+    (AsyncStorage.removeItem as jest.Mock).mockRejectedValueOnce(new Error('legacy cleanup failed'));
+
+    await expect(clearToken()).rejects.toThrow('legacy cleanup failed');
+
+    expect(secureValues.get(KEY)).toBe('secure-token');
+    expect(legacyValues.get(KEY)).toBe('legacy-token');
+    expect(SecureStore.deleteItemAsync).not.toHaveBeenCalled();
   });
 
   it('다른 토큰을 대상으로 한 오래된 로그아웃 메시지는 현재 세션을 지우지 않는다', async () => {
