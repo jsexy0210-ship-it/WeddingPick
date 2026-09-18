@@ -24,25 +24,33 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Probe admin candidate port
+      - name: Probe both candidate ports independently
+        shell: bash
         run: |
-          set -euo pipefail
-          headers="$(mktemp)"
-          code="$(curl --silent --show-error --fail --connect-timeout 5 --max-time 12 \
-            --dump-header "$headers" --output /dev/null --write-out '%{http_code}' \
-            https://210.109.82.212:8443/)"
-          test "$code" = 204
-          grep -qi '^X-WeddingPick-Probe: static-admin' "$headers"
+          set +e
+          failures=0
 
-      - name: Probe web candidate port
-        run: |
-          set -euo pipefail
-          headers="$(mktemp)"
-          code="$(curl --silent --show-error --fail --connect-timeout 5 --max-time 12 \
-            --dump-header "$headers" --output /dev/null --write-out '%{http_code}' \
-            https://210.109.82.212:9443/)"
-          test "$code" = 204
-          grep -qi '^X-WeddingPick-Probe: static-web' "$headers"
+          probe() {
+            local port="$1" expected="$2" label="$3"
+            local headers code status
+            headers="$(mktemp)"
+            code="$(curl --silent --show-error --connect-timeout 5 --max-time 12 \
+              --dump-header "$headers" --output /dev/null --write-out '%{http_code}' \
+              "https://210.109.82.212:${port}/")"
+            status=$?
+
+            if [ "$status" -eq 0 ] && [ "$code" = 204 ] && grep -qi "^X-WeddingPick-Probe: ${expected}" "$headers"; then
+              echo "${label}_port=${port}:open"
+            else
+              echo "${label}_port=${port}:blocked_or_failed"
+              failures=$((failures + 1))
+            fi
+          }
+
+          probe 8443 static-admin admin
+          probe 9443 static-web web
+
+          exit "$failures"
 
   cleanup:
     name: Remove temporary HTTPS probes
