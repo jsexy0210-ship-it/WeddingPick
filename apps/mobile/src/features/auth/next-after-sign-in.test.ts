@@ -25,4 +25,34 @@ describe('로그인 뒤 다음 화면', () => {
   it('기기에 적어둔 예식일을 방금 올렸으면 홈으로 보낸다', () => {
     expect(nextAfterSignIn({ setupComplete: false, savedWedding: true })).toBe('/(tabs)');
   });
+
+  it('로그인 때문에 멈춘 Pick을 완료했으면 해당 업체 상세로 돌아간다', () => {
+    expect(
+      nextAfterSignIn({
+        setupComplete: true,
+        savedWedding: false,
+        completedVendorId: 'vendor-1',
+      })
+    ).toBe('/search/vendor-1');
+  });
+
+  it('가입/최소 설정이 남아 있으면 pending Pick보다 setup을 우선한다', () => {
+    expect(
+      nextAfterSignIn({
+        setupComplete: false,
+        savedWedding: false,
+        completedVendorId: 'vendor-1',
+      })
+    ).toBe('/setup');
+  });
+
+  it('pending 업체 식별자는 경로 밖으로 탈출하지 못하게 인코딩한다', () => {
+    expect(
+      nextAfterSignIn({
+        setupComplete: true,
+        completedVendorId: '../login?x=1',
+      })
+    ).toBe('/search/..%2Flogin%3Fx%3D1');
+  });
+
 });
