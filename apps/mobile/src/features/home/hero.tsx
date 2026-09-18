@@ -49,7 +49,7 @@ export function Hero({
           두근두근
         </ThemedText>
         <View style={[styles.more, { backgroundColor: theme.onTint }]}>
-          <SeedIcon name="moreHorizRegular" size={Layout.iconField} color={theme.tint} />
+          <SeedIcon name="moreHorizRegular" size={Layout.iconSmall} color={theme.tint} />
         </View>
       </View>
 
@@ -98,7 +98,7 @@ export function Hero({
           </View>
         </View>
         <ThemedText type="f13" themeColor="onTint" numberOfLines={1} style={styles.peopleText}>
-          {partner ? `${meName} · ${partner}` : partnerLine(me, partnerInvitePending)}
+          {partner ? `${meName} · ${partner} · 함께 준비 중` : partnerLine(me, partnerInvitePending)}
         </ThemedText>
       </Pressable>
     </View>
@@ -108,7 +108,15 @@ export function Hero({
 export function ceremonyLine(weddingDate: string | null, venueName: string | null): string {
   const venue = venueName ?? '예식장 미정';
   if (weddingDate === null) return '예식일 · 예식장 미정';
-  return `${weddingDate.replace(/-/g, '.')} · ${venue}`;
+  return `${formatWeddingDate(weddingDate)} · ${venue}`;
+}
+
+/** handoff/SPEC의 유일한 날짜 표기: YYYY.MM.DD(요일). 저장된 달력 날짜 자체로 요일을 계산한다. */
+function formatWeddingDate(iso: string): string {
+  const [year, month, day] = iso.split('-').map(Number);
+  if (!year || !month || !day) return iso.replace(/-/g, '.');
+  const weekday = ['일', '월', '화', '수', '목', '금', '토'][new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
+  return `${String(year).padStart(4, '0')}.${String(month).padStart(2, '0')}.${String(day).padStart(2, '0')}(${weekday})`;
 }
 
 export function budgetLine(
@@ -132,7 +140,8 @@ const styles = StyleSheet.create({
     marginHorizontal: Layout.gutter,
     marginBottom: Layout.sectionGap,
     borderRadius: Radius.medium,
-    padding: Layout.cardPadding,
+    paddingHorizontal: Layout.cardPadding,
+    paddingVertical: Layout.cardPaddingCompactY,
     overflow: 'hidden',
   },
   decor: {
@@ -148,12 +157,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: Spacing.three,
+    marginBottom: Spacing.two,
   },
   kicker: { fontWeight: 700, opacity: 0.88 },
   more: {
-    width: Layout.touchTarget,
-    height: Layout.touchTarget,
+    width: 24,
+    height: 24,
     borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
