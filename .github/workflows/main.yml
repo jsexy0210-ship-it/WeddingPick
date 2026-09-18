@@ -163,7 +163,7 @@ jobs:
             changed=false
           elif [ "$EVENT_NAME" = push ] && [[ "$BEFORE_SHA" =~ ^[0-9a-f]{40}$ ]] && git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
             paths=$(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA")
-            if ! grep -Eq '^(apps/api/|packages/(api-contract|db|domain)/|package(-lock)?\.json$|Dockerfile$|\.dockerignore$|\.github/workflows/deploy-kakao-api\.yml$)' <<< "$paths"; then
+            if ! grep -Eq '^(apps/api/|packages/(api-contract|db|domain)/|package(-lock)?\.json$|Dockerfile$|\.dockerignore$|scripts/update-kakao-worker\.sh$|\.github/workflows/deploy-kakao-api\.yml$)' <<< "$paths"; then
               changed=false
             fi
           fi
@@ -183,6 +183,27 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/probe-kakao-static-ports.yml
+
+  enable-kakao-static-cors:
+    name: Enable Kakao Static CORS
+    if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[enable-static-cors]') }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/enable-kakao-static-cors.yml
+
+  cutover-kakao-admin-web:
+    name: Cutover Kakao Admin Web
+    if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[cutover-admin-web]') }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/cutover-kakao-admin-web.yml
+
+  cutover-kakao-app-web:
+    name: Cutover Kakao App Web
+    if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[cutover-app-web]') }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/cutover-kakao-app-web.yml
 
   stage-kakao-static:
     name: Stage Kakao Static
