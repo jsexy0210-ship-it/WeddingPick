@@ -519,14 +519,15 @@ export async function signIn(
   provider: 'apple' | 'google',
   idToken: string,
   profileName?: string,
-  ageAcknowledged?: boolean
+  ageAcknowledged?: boolean,
+  nonce?: string
 ): Promise<SessionEntry> {
   const session = await request(
     '/v1/auth/sessions',
     createSessionResponseSchema,
     {
       method: 'POST',
-      body: JSON.stringify({ provider, idToken, profileName, ageAcknowledged }),
+      body: JSON.stringify({ provider, idToken, profileName, ageAcknowledged, nonce }),
       auth: false,
     }
   );

@@ -32,7 +32,12 @@ export function marketingFooter(): string {
 }
 
 export function faviconTags(): string {
-  return `<link rel="icon" type="image/png" href="/assets/favicon-32.png" sizes="32x32"><link rel="icon" type="image/png" href="/assets/favicon-16.png" sizes="16x16"><link rel="icon" type="image/png" href="/assets/favicon-48.png" sizes="48x48"><link rel="apple-touch-icon" href="/assets/apple-touch-icon.png"><link rel="manifest" href="/assets/site.webmanifest"><meta name="theme-color" content="${C.brand.primary.value}">`;
+  /*
+   * 브라우저 탭 파비콘은 앱웹·관리자·웹사이트가 **같은 /favicon.ico 하나**만 본다.
+   * PNG 세트를 rel=icon으로 함께 적으면 브라우저마다 다른 후보를 골라 세 서비스가
+   * 미묘하게 달라 보일 수 있다. apple-touch-icon과 manifest는 설치용이라 별도 유지한다.
+   */
+  return `<link rel="icon" href="/favicon.ico" sizes="any"><link rel="apple-touch-icon" href="/assets/apple-touch-icon.png"><link rel="manifest" href="/assets/site.webmanifest"><meta name="theme-color" content="${C.brand.primary.value}">`;
 }
 
 export const MARKETING_CHROME = `
