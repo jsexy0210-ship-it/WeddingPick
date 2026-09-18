@@ -64,7 +64,7 @@ jobs:
           if [[ "$staged_sha" =~ ^[0-9a-f]{40}$ ]] && git cat-file -e "$staged_sha^{commit}" 2>/dev/null; then
             if git merge-base --is-ancestor "$staged_sha" "$GITHUB_SHA"; then
               paths="$(git diff --name-only "$staged_sha" "$GITHUB_SHA")"
-              if ! grep -Eq '^(apps/(mobile|web)/|packages/(domain|ui)/|spec/|package(-lock)?\.json$|scripts/(split-admin-dist|package-kakao-static)\.mjs$|scripts/audit-kakao-runtime\.sh$|\.github/workflows/(main|stage-kakao-static)\.yml$)' <<< "$paths"; then
+              if ! grep -Eq '^(apps/(mobile|web)/|packages/(api-contract|domain|ui)/|spec/|package(-lock)?\.json$|scripts/(ensure-modules|split-admin-dist|package-kakao-static)\.mjs$|scripts/audit-kakao-runtime\.sh$|\.github/workflows/(main|stage-kakao-static)\.yml$)' <<< "$paths"; then
                 changed=false
               fi
             fi
@@ -131,6 +131,7 @@ jobs:
           retention-days: 7
 
       - name: Bundle (web)
+        if: steps.static_changes.outputs.changed == 'true'
         env:
           EXPO_PUBLIC_API_URL: https://210.109.82.212
           EXPO_PUBLIC_KAKAO_CLIENT_ID: 8e9a14dd3a0aa1a420bff858460c415c
@@ -138,6 +139,7 @@ jobs:
         run: npm run export:web --workspace @weddingpick/mobile
 
       - name: Build landing
+        if: steps.static_changes.outputs.changed == 'true'
         env:
           WEDDINGPICK_CONTACT_EMAIL: help.weddingpick@gmail.com
           WEDDINGPICK_API_URL: https://210.109.82.212
