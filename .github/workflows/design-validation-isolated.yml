@@ -1,0 +1,94 @@
+# 검증 전용 브랜치에만 존재한다. main 병합 및 운영 배포 대상이 아니다.
+name: Design validation (isolated)
+on:
+  push:
+    branches: [codex/design-validation-20260918-273]
+permissions:
+  contents: read
+concurrency:
+  group: weddingpick-isolated-design-validation
+  cancel-in-progress: false
+jobs:
+  verify:
+    if: contains(github.event.head_commit.message, '[verify-design]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: weddingpick
+          POSTGRES_PASSWORD: weddingpick
+          POSTGRES_DB: weddingpick_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+    env:
+      DATABASE_URL: postgres://weddingpick:weddingpick@localhost:5432/weddingpick_test
+      MARKETING_PREVIEW_DIR: .marketing-preview
+      EXPO_PUBLIC_API_URL: http://127.0.0.1:9
+      EXPO_PUBLIC_WEB_URL: http://127.0.0.1:9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Archive exact tracked source for reproducible inspection
+        run: |
+          git rev-parse HEAD > "$RUNNER_TEMP/source-revision.txt"
+          git archive --format=tar.gz --output="$RUNNER_TEMP/weddingpick-source.tgz" HEAD
+      - uses: actions/upload-artifact@v4
+        with:
+          name: design-source-snapshot
+          path: |
+            ${{ runner.temp }}/weddingpick-source.tgz
+            ${{ runner.temp }}/source-revision.txt
+          retention-days: 1
+          if-no-files-found: error
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        id: types
+        continue-on-error: true
+        run: npm run typecheck
+      - name: Lint
+        id: lint
+        continue-on-error: true
+        run: npm run lint
+      - name: Copy rules
+        id: copy
+        continue-on-error: true
+        run: node lint-copy.js spec/strings.ko.json apps packages
+      - name: SEED tokens
+        id: seed
+        continue-on-error: true
+        run: node scripts/sync-seed-tokens.mjs --check
+      - name: Tests with disposable database
+        id: tests
+        continue-on-error: true
+        run: npm test
+      - name: Export web without production API access
+        id: web
+        continue-on-error: true
+        run: npm run export:web --workspace @weddingpick/mobile
+      - name: Aggregate actual outcomes
+        if: always()
+        env:
+          TYPE_RESULT: ${{ steps.types.outcome }}
+          LINT_RESULT: ${{ steps.lint.outcome }}
+          COPY_RESULT: ${{ steps.copy.outcome }}
+          SEED_RESULT: ${{ steps.seed.outcome }}
+          TEST_RESULT: ${{ steps.tests.outcome }}
+          WEB_RESULT: ${{ steps.web.outcome }}
+        run: |
+          node - <<'NODE'
+          const names = ['TYPE', 'LINT', 'COPY', 'SEED', 'TEST', 'WEB'];
+          const results = Object.fromEntries(names.map(name => [name, process.env[name + '_RESULT']]));
+          console.log(JSON.stringify({ revision: process.env.GITHUB_SHA, results }, null, 2));
+          require('node:fs').appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+            '## Isolated design validation\n\n' + Object.entries(results).map(([k,v]) => `- ${k}: ${v}`).join('\n') + '\n\nNo production deployment or production credentials.\n');
+          if (Object.values(results).some(value => value !== 'success')) process.exit(1);
+          NODE
