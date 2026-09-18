@@ -1,0 +1,30 @@
+name: Validate PR410 lounge pagination
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    if: github.head_ref == 'chatgpt/lounge-review-pagination-20260918'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Mobile typecheck
+        run: npm run typecheck --workspace @weddingpick/mobile
+      - name: Mobile lint
+        run: npm run lint --workspace @weddingpick/mobile
+      - name: Lounge review pagination tests
+        run: npm exec --workspace @weddingpick/mobile -- jest src/features/community/lounge-reviews.test.ts --runInBand
+      - name: Expo web export
+        run: npm run export:web --workspace @weddingpick/mobile
