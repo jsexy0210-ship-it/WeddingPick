@@ -188,7 +188,7 @@ export default function MyScreen() {
       title: S['group.terms'],
       rows: [
         { key: 'terms', label: S['item.terms'], icon: 'file', onPress: () => router.push('/my/policies' as never) },
-        { key: 'privacy', label: S['item.privacy'], icon: 'file', onPress: () => router.push('/my/policies' as never) },
+        { key: 'privacy', label: S['item.privacy'], icon: 'file', onPress: () => router.push('/my/privacy' as never) },
       ],
     },
   ];
