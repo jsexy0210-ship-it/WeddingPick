@@ -1,0 +1,53 @@
+# 검증 브랜치 전용. 제품/운영 배포와 분리한다.
+name: Design visual inspection (isolated)
+on:
+  push:
+    branches: [codex/design-validation-20260918-273]
+permissions:
+  contents: read
+jobs:
+  capture:
+    if: contains(github.event.head_commit.message, '[visual-check]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      EXPO_PUBLIC_API_URL: http://127.0.0.1:9
+      EXPO_PUBLIC_WEB_URL: http://127.0.0.1:9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 97b484b6914575811ca64a95ea1a1c3e1d64961b
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Reproduce exact source used by validation run 35310626253
+        run: |
+          git config user.name 'Design validation'
+          git config user.email 'noreply@users.noreply.github.com'
+          git merge --no-commit --no-ff 44eb6a9a09c09276968a6dd885183a7650cf18fa
+          python .design-validation/apply.py
+          python .design-validation/fixups.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install pinned browser tooling on temporary runner only
+        run: |
+          npm install --global playwright@1.57.0
+          playwright install --with-deps chromium
+      - run: npm run export:web --workspace @weddingpick/mobile
+      - name: Capture actual app with intercepted fixture responses; no production API
+        run: |
+          mkdir -p "$RUNNER_TEMP/design-captures"
+          node scripts/screenshot-screens.mjs --wait 2500 --edges --out "$RUNNER_TEMP/design-captures/default" --route / --route /recommendations --route /my --route /my/profile --route /community --route /search --route /pick --route /wedding --route /search/11111111-1111-4111-8111-111111111111 2>&1 | tee "$RUNNER_TEMP/design-captures/default.log"
+          node scripts/screenshot-screens.mjs --wait 2500 --out "$RUNNER_TEMP/design-captures/feed" --route /community --tap 웨딩정보 2>&1 | tee "$RUNNER_TEMP/design-captures/feed.log"
+          node scripts/screenshot-screens.mjs --wait 2500 --viewport 320x740 --out "$RUNNER_TEMP/design-captures/narrow" --route / --route /recommendations 2>&1 | tee "$RUNNER_TEMP/design-captures/narrow.log"
+          node scripts/screenshot-screens.mjs --wait 2500 --guest --out "$RUNNER_TEMP/design-captures/login" --route /login 2>&1 | tee "$RUNNER_TEMP/design-captures/login.log"
+      - name: Preserve screenshots and console diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: design-app-captures
+          path: ${{ runner.temp }}/design-captures/
+          retention-days: 1
+          if-no-files-found: warn
