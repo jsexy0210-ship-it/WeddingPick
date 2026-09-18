@@ -1,8 +1,8 @@
 /**
  * Pick — Pick한 업체 목록. WP-PICK-001.
  *
- * 피그마 `Pick.tsx`(2026-09-14 정본 · 최상위 규칙 1)대로 그린다. 헤더(«Pick» + «N곳»
- * 배지 + 부제 + 배우자 함께-보기 상자) → 비교 배너(2곳 이상 고르면) → 업종 칩 → 카드 목록.
+ * 피그마 `Pick.tsx`(2026-09-14 정본 · 최상위 규칙 1)대로 그린다. 헤더(«Pick» + «N곳» 회색 텍스트
+ * + 부제 + 배우자 함께-보기 상자) → 비교 배너(2곳 이상 고르면) → 업종 칩 → 카드 목록.
  * 카드는 검색 결과와 같은 틀(썸네일 104×116 · 정보 안쪽 14)이고 아래에 CTA 띠가 붙는다.
  *
  * 그 앞에는 루트 시안 07-pick #17a의 «13개 중 N개를 결정했어요» 진행바 + 업종별 행 목록이
@@ -747,10 +747,10 @@ const styles = StyleSheet.create({
     gap: Layout.iconTextGap,
     marginBottom: Spacing.one,
   },
-  /* 배우자 상자 `mt-4 rounded-2xl px-4 py-3` — 위 16 · radius 16 · 안쪽 16/12. */
+  /* 03-pick shareBar: mt 16 · radius 10 · 안쪽 16/12. */
   partnerBox: {
     marginTop: Spacing.three,
-    borderRadius: Radius.cardLarge,
+    borderRadius: Radius.medium,
     paddingHorizontal: Spacing.three,
     paddingVertical: Layout.inlineGap,
     flexDirection: 'row',
@@ -788,12 +788,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // ── 비교 배너 `mx-5 mb-4 rounded-2xl px-4 py-3.5` ──
+  // ── 03-pick 비교 배너: mx 24 · mb 16 · radius 10 · px 16 · py 14 ──
   compareBanner: {
     marginHorizontal: Layout.gutter,
     borderWidth: Border.hairline,
     marginBottom: Spacing.three,
-    borderRadius: Radius.cardLarge,
+    borderRadius: Radius.medium,
     paddingHorizontal: Spacing.three,
     /* 상하 14 — 같은 값의 fieldPaddingX. */
     paddingVertical: Layout.fieldPaddingX,
@@ -805,14 +805,14 @@ const styles = StyleSheet.create({
   compareText: { flex: 1, minWidth: 0 },
   /* 부제 `mt-0.5 text-white/50`. */
   compareHint: { marginTop: Spacing.half, opacity: 0.5 },
-  /* «전체 비교하기» `rounded-full px-4 py-2.5 gap-1.5` — 좌우 16 · 상하 10 · 아이콘↔글 6. */
+  /* 03-pick bannerBtn: height 36 · radius 6 · px 16. */
   compareBtn: {
+    height: Layout.chip,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Layout.menuGroupGap,
-    borderRadius: Radius.pill,
+    justifyContent: 'center',
+    borderRadius: Radius.small,
     paddingHorizontal: Spacing.three,
-    paddingVertical: Layout.iconTextGap,
   },
 
   // ── 업종 칩 `gap-2 px-5 pb-4` ──
@@ -839,7 +839,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Layout.pageX,
     gap: Layout.inlineGap,
   },
-  /* 규격서 「div 390×212 … r16 · border 1 #000000 6% · shadow」. */
+  /* 03-pick card: radius 10 · hairline border · shadow 없음. */
   card: {
     borderRadius: Radius.medium,
     borderWidth: Border.hairline,
