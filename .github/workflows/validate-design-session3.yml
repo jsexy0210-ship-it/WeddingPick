@@ -1,0 +1,72 @@
+name: Validate Design Session 3
+
+on:
+  push:
+    branches:
+      - claude/overhaul-lounge-my
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Pick Dialog Navigation Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      EXPO_PUBLIC_API_URL: https://example.invalid
+      EXPO_PUBLIC_WEB_URL: https://example.invalid
+      EXPO_PUBLIC_KAKAO_CLIENT_ID: validation-only
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Root pretests
+        run: npm run pretest
+
+      - name: Mobile tests
+        run: npm run test --workspace @weddingpick/mobile -- --runInBand
+
+      - name: Expo web export
+        run: npm run export:web --workspace @weddingpick/mobile
+
+      - name: Install capture browser
+        run: |
+          npm install -g playwright
+          playwright install --with-deps chromium
+
+      - name: Capture Pick compare banner
+        run: |
+          node scripts/screenshot-screens.mjs \
+            --viewport 430x1200 \
+            --out validation-artifacts/pick-banner \
+            --route "/(tabs)/pick/" \
+            --tap "강남 A 웨딩홀 비교에 담기" \
+            --tap "강남 B 웨딩홀 비교에 담기"
+
+      - name: Capture Pick removal dialog
+        run: |
+          node scripts/screenshot-screens.mjs \
+            --viewport 430x1200 \
+            --out validation-artifacts/pick-dialog \
+            --route "/(tabs)/pick/" \
+            --tap "강남 A 웨딩홀 빼기"
+
+      - name: Upload visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: design-session3-captures
+          path: validation-artifacts/
+          if-no-files-found: error
+          retention-days: 7
