@@ -96,7 +96,13 @@ jobs:
 
       - name: Capture home and recommendations
         run: |
-          mkdir -p design-captures
+          mkdir -p design-captures/viewport
+          node scripts/screenshot-screens.mjs \
+            --route / \
+            --wait 2200 \
+            --out design-captures/viewport
+          mv design-captures/viewport/root.png design-captures/root-viewport.png
+          rmdir design-captures/viewport
           node scripts/screenshot-screens.mjs \
             --route / \
             --route /recommendations \
