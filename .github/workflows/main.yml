@@ -10,12 +10,16 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# 승인 대기가 다음 커밋의 CI를 막지 않도록 실행 전체에는 concurrency를 걸지 않는다.
+# 실행 전체를 취소하지 않는다. CI job만 최신 main을 남기고 오래된 검증은 취소한다.
+# 이미 시작된 운영 배포는 reusable workflow 자체의 concurrency가 끝까지 보호한다.
 jobs:
   ci:
     name: CI
     if: ${{ !contains(github.event.head_commit.message || '', '[probe-only]') }}
     runs-on: ubuntu-latest
+    concurrency:
+      group: weddingpick-main-ci-${{ github.ref }}
+      cancel-in-progress: true
     outputs:
       deploy_api: ${{ steps.api_changes.outputs.changed }}
       stage_static: ${{ steps.static_changes.outputs.changed }}
