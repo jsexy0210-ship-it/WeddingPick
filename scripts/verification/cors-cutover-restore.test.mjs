@@ -72,6 +72,18 @@ exit 0
   );
 
   writeExecutable(
+    path.join(bin, 'python3'),
+    `#!/usr/bin/env bash
+set -euo pipefail
+body="$(cat)"
+[ -n "$body" ] || exit 1
+grep -Fq '"ok":true' <<< "$body"
+grep -Fq '"database":"ok"' <<< "$body"
+grep -Fq '"pending":[]' <<< "$body"
+`,
+  );
+
+  writeExecutable(
     path.join(bin, 'docker'),
     `#!/usr/bin/env bash
 set -euo pipefail
@@ -309,7 +321,7 @@ shellTest('successful CORS cutover keeps the new API and retains the old recover
     assert.equal(state(path.join(h.dockerState, 'prod_owner')), 'new');
     assert.equal(state(path.join(h.dockerState, 'new_exists')), '1');
     assert.match(state(path.join(h.dockerState, 'old_name')), /^\/weddingpick-api-cors-previous-/);
-    assert.equal(state(path.join(h.dockerState, 'removed_old'), '0');
+    assert.equal(state(path.join(h.dockerState, 'removed_old')), '0');
     assert.match(readFileSync(h.envFile, 'utf8'), /https:\/\/210\.109\.82\.212:8443/);
     assert.match(readFileSync(h.envFile, 'utf8'), /https:\/\/210\.109\.82\.212:9443/);
     assert.equal(existsSync(path.join(h.root, '.cors-cutover-backup')), true);
