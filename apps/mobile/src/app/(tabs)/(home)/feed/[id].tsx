@@ -4,11 +4,13 @@ import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BackBar } from '@/components/back-bar';
+import { getWeddingFeedScrapState, removeWeddingFeedScrap, saveWeddingFeedScrap } from '@/api/client';
 import { CategoryImage } from '@/features/home/category-image';
 import { getWeddingFeedDetail, type WeddingContentDetail } from '@/features/home/content';
 import { formatDateDot } from '@/features/common/format-date';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { useSession } from '@/features/auth/use-session';
 import {
   ActionButton,
   Badge,
@@ -37,8 +39,11 @@ export default function WeddingFeedDetailScreen() {
   const params = useLocalSearchParams<{ id: string | string[] }>();
   const id = typeof params.id === 'string' ? params.id : '';
   const back = useDepthBack();
+  const { state: sessionState } = useSession();
   const version = useRef(0);
   const [state, setState] = useState<DetailState>({ id, status: 'loading' });
+  const [scrapSaved, setScrapSaved] = useState<boolean | null>(null);
+  const [scrapBusy, setScrapBusy] = useState(false);
 
   const load = useCallback(() => {
     const requestVersion = ++version.current;
@@ -64,6 +69,27 @@ export default function WeddingFeedDetailScreen() {
     load();
     return () => { version.current += 1; };
   }, [load]);
+
+  useEffect(() => {
+    if (sessionState.status !== 'signedIn' || !id.trim()) {
+      setScrapSaved(null);
+      return;
+    }
+    let active = true;
+    void getWeddingFeedScrapState(id)
+      .then(({ saved }) => { if (active) setScrapSaved(saved); })
+      .catch(() => { if (active) setScrapSaved(null); });
+    return () => { active = false; };
+  }, [id, sessionState.status]);
+
+  const toggleScrap = useCallback(() => {
+    if (scrapSaved === null || scrapBusy) return;
+    setScrapBusy(true);
+    const operation = scrapSaved ? removeWeddingFeedScrap(id) : saveWeddingFeedScrap(id);
+    void operation
+      .then(({ saved }) => setScrapSaved(saved))
+      .finally(() => setScrapBusy(false));
+  }, [id, scrapBusy, scrapSaved]);
 
   // 주소가 바뀐 렌더에서 이전 글을 한 프레임도 표시하지 않는다.
   if (state.id !== id || state.status === 'loading') return <DelayedLoadingView />;
@@ -109,6 +135,14 @@ export default function WeddingFeedDetailScreen() {
             <ThemedText type="body" themeColor={post.body ? undefined : 'textSecondary'}>
               {post.body || S['detail.emptyBody']}
             </ThemedText>
+            {sessionState.status === 'signedIn' && scrapSaved !== null ? (
+              <ActionButton
+                variant="secondary"
+                label={scrapSaved ? '스크랩 해제' : '스크랩 저장'}
+                disabled={scrapBusy}
+                onPress={toggleScrap}
+              />
+            ) : null}
             <ActionButton label={S['detail.back']} onPress={back} />
           </ThemedView>
         </ScrollView>
