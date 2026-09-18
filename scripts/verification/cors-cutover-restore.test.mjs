@@ -47,6 +47,7 @@ function makeHarness() {
   writeFileSync(path.join(dockerState, 'old_running'), '1\n', 'utf8');
   writeFileSync(path.join(dockerState, 'new_exists'), '0\n', 'utf8');
   writeFileSync(path.join(dockerState, 'new_running'), '0\n', 'utf8');
+  writeFileSync(path.join(dockerState, 'worker_in_api'), 'unset\n', 'utf8');
 
   const script = path.join(base, 'add-kakao-static-cors.sh');
   writeExecutable(
@@ -124,6 +125,11 @@ case "$cmd" in
       '{{.Name}}')
         if [ "$kind" = old ]; then get old_name; else echo '/weddingpick-api'; fi
         ;;
+      '{{range .Config.Env}}{{println .}}{{end}}')
+        if [ "$kind" = new ]; then
+          echo "RUN_WORKER_IN_API=$(get worker_in_api)"
+        fi
+        ;;
       *org.opencontainers.image.revision*)
         echo 'old-revision'
         ;;
@@ -164,6 +170,12 @@ case "$cmd" in
           shift 2
           ;;
         --label|--env-file|-p)
+          shift 2
+          ;;
+        -e)
+          if [ "$2" = RUN_WORKER_IN_API=false ]; then
+            put worker_in_api false
+          fi
           shift 2
           ;;
         --restart=*)
