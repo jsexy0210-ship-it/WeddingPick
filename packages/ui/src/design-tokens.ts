@@ -1,4 +1,4 @@
-// 원래 scripts/sync-design-tokens.mjs가 docs/design-handoff/current/tokens.json에서 뽑던 스냅샷이다.
+// 원래 scripts/sync-design-tokens.mjs가 docs/design/handoff/tokens.json에서 뽑던 스냅샷이다.
 // **그 생성기는 지금 이 저장소에 없다.** 그리고 이 파일을 import 하는 곳도 없다(git grep DesignTokens).
 //
 // 2026-09-14 대표님이 키 컬러를 코랄 #FF6F61에서 #FF6F61로 바꾸셨고, 핸드오프 tokens.json은 아직

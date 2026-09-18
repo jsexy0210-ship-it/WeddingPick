@@ -28,7 +28,7 @@ import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
 
 /**
- * 상담 예약 — 규격서 docs/figma-spec/vendor-1-consult.txt(= vendor-1-booking.txt · 2026-09-15 대표 지시
+ * 상담 예약 — 규격서 docs/design/figma-export/05-vendor-detail.dc.html(= vendor-1-booking.txt · 2026-09-15 대표 지시
  * 「규격서의 수를 그대로」 · 「고지가 먼저」 파기 — 상담 · 예약 화면을 만든다).
  *
  *   header 430×56  flex · align center · pad 0 16 · bg #FFFFFF 95%
