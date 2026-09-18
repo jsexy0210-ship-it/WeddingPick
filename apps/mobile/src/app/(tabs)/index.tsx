@@ -3,8 +3,6 @@ import type {
   CandidateListResponse,
   CategoryRecommendation,
   CurrentUser,
-  ExpoItem,
-  MyMonthlyDrawResponse,
   VendorCandidate,
   VendorSummary,
 } from '@weddingpick/api-contract';
@@ -16,23 +14,17 @@ import {
   type VendorCategory,
 } from '@weddingpick/domain';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import {
-  getAppBootstrap,
-  getCategoryRecommendations,
-  getMyMonthlyDraw,
-  listExpos,
-} from '@/api/client';
+import { getAppBootstrap, getCategoryRecommendations } from '@/api/client';
 import {
   ActionButton,
   ErrorView,
   Layout,
   LetterSpacing,
   MaxContentWidth,
-  Motion,
   Radius,
   SeedIcon,
   Spacing,
@@ -43,11 +35,7 @@ import {
 } from '@weddingpick/ui';
 import { DelayedLoader, DelayedRecommendingView } from '@/features/loading/delayed-loader';
 import { takeFullScreenLoading } from '@/features/loading/first-run';
-import { BenefitSheet } from '@/features/home/benefit-sheet';
-import { hasSeenBenefitSheet, markBenefitSheetSeen } from '@/features/home/benefit-sheet-seen';
 import { listWeddingContent, type WeddingContentItem } from '@/features/home/content';
-import { EventBanner } from '@/features/home/event-banner';
-import { ExpoStrip } from '@/features/home/expo-strip';
 import { HomeBudget, PendingPreparation } from '@/features/home/home-summary';
 import strings from '../../../../../spec/strings.ko.json';
 
@@ -70,9 +58,6 @@ const S = strings.home;
 /** 홈이 웨딩피드에서 보여주는 카드 수(§17 「홈 최대 3건」). */
 const HOME_FEED_PREVIEW_COUNT = 3;
 
-/** 홈이 박람회에서 보여주는 카드 수(§16 「홈 최대 3건」). */
-const HOME_EXPO_COUNT = 3;
-
 type HomeData = {
   me: CurrentUser | null;
   candidates: CandidateListResponse | null;
@@ -82,9 +67,7 @@ type HomeData = {
   groups: readonly CategoryRecommendation[];
   remaining: number;
   remainingCategories: readonly VendorCategory[];
-  expos: readonly ExpoItem[];
   content: readonly WeddingContentItem[];
-  draw: MyMonthlyDrawResponse | null;
   /** 안 읽은 알림 수. 벨의 점이 이 값을 본다. */
   unread: number;
 };
@@ -98,13 +81,12 @@ const EMPTY: HomeData = {
   groups: [],
   remaining: 0,
   remainingCategories: [],
-  expos: [],
   content: [],
-  draw: null,
   unread: 0,
 };
 
 export default function HomeScreen() {
+  const theme = useTheme();
   const loadVersion = useRef(0);
   const [bootError, setBootError] = useState(false);
   const [recommendationStatus, setRecommendationStatus] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -116,8 +98,6 @@ export default function HomeScreen() {
    * 영원히 로더가 돈다.
    */
   const [settled, setSettled] = useState(() => isWebShellScreen('home'));
-  const [benefitOpen, setBenefitOpen] = useState(false);
-  const benefitChecked = useRef(false);
   /*
    * 이 홈이 전체 화면 로딩을 써도 되는가. 마운트 때 한 번만 묻는다 — 렌더마다 물으면
    * 첫 렌더가 예산을 쓰고 두 번째 렌더가 못 받아 로더가 도중에 바뀐다.
@@ -145,14 +125,6 @@ export default function HomeScreen() {
       })
       .catch(() => { if (current()) setContentStatus('error'); });
 
-    void listExpos({ sort: 'date' })
-      .then(({ items }) => {
-        if (current()) setData((previous) => ({
-          ...previous,
-          expos: items.filter((expo) => expo.status !== 'closed').slice(0, HOME_EXPO_COUNT),
-        }));
-      })
-      .catch(() => { if (current()) setData((previous) => ({ ...previous, expos: [] })); });
 
     void getAppBootstrap()
       .then((boot) => {
@@ -180,49 +152,6 @@ export default function HomeScreen() {
     void reloadCandidates().catch(() => undefined);
     return () => { loadVersion.current += 1; };
   }, [load, reloadCandidates]));
-
-  useEffect(() => {
-    if (!settled || data.me?.setupComplete !== true || benefitChecked.current) return;
-    benefitChecked.current = true;
-
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    let alive = true;
-
-    void hasSeenBenefitSheet().then(async (seen) => {
-      try {
-        const draw = await getMyMonthlyDraw();
-        if (!alive) return;
-        /* 이벤트 배너가 이 값을 쓴다 — 시트를 이미 봤어도 배너는 계속 선다. */
-        setData((current) => ({ ...current, draw }));
-
-        if (seen) return;
-        if (draw.remaining === 0) {
-          // 조건을 다 채웠다 — 시트 대신 응모 완료 알림. 다시 묻지 않는다.
-          void markBenefitSheetSeen();
-          return;
-        }
-        timer = setTimeout(() => setBenefitOpen(true), Motion.benefitSheetDelay.duration);
-      } catch {
-        // 혜택 현황을 못 받았으면 시트도 배너도 없다. 다음 진입에 한 번 더 본다.
-      }
-    });
-
-    return () => {
-      alive = false;
-      if (timer !== null) clearTimeout(timer);
-    };
-  }, [settled, data.me?.setupComplete]);
-
-  const dismissBenefit = useCallback(() => {
-    setBenefitOpen(false);
-    void markBenefitSheetSeen();
-  }, []);
-
-  const openBenefit = useCallback(() => {
-    setBenefitOpen(false);
-    void markBenefitSheetSeen();
-    router.push('/my/rewards');
-  }, []);
 
   /** 카드의 하트. Pick 전이면 후보에 담고 완료 시트, Pick 후면 해제 시트. 로그인 전이면 로그인으로. */
   async function onPressPick(vendor: VendorSummary) {
@@ -334,7 +263,7 @@ export default function HomeScreen() {
                   <ThemedText type="f13" themeColor="textAssistive">
                     {S.more}
                   </ThemedText>
-                  <SeedIcon name="chevronRightRegular" size={Layout.iconField} color={useTheme().textAssistive} />
+                  <SeedIcon name="chevronRightRegular" size={Layout.iconField} color={theme.textAssistive} />
                 </Pressable>
               </View>
               {contentStatus === 'loading' ? <DelayedLoader size={28} /> : contentStatus === 'error' ? (
@@ -348,18 +277,9 @@ export default function HomeScreen() {
             </View>
           )}
 
-          <EventBanner draw={data.draw} onPress={() => router.push('/my/rewards')} />
         </ScrollView>
       </SafeAreaView>
 
-      {data.draw ? (
-        <BenefitSheet
-          visible={benefitOpen}
-          draw={data.draw}
-          onDismiss={dismissBenefit}
-          onOpenBenefit={openBenefit}
-        />
-      ) : null}
 
       <PickDoneSheet visible={pickDoneOpen} onDismiss={() => setPickDoneOpen(false)} />
       <UnpickSheet
@@ -391,10 +311,8 @@ function venueName(candidates: CandidateListResponse | null, me: CurrentUser | n
 }
 
 /**
- * 헤더 — 브랜드 · 검색 · 알림(§2).
- *
- * 검색 단추가 검색의 유일한 입구다(2026-09-14 대표 지시 — 검색은 탭에서 내렸다).
- * **전체 업종 목록은 홈에 나열하지 않는다**(§19) — 그 길이 이 단추다.
+ * 홈 헤더 — 브랜드와 알림만 둔다.
+ * 검색은 현재 루트 내비게이션 정책의 별도 진입점을 사용하며 홈 헤더에 중복 노출하지 않는다.
  */
 function Header({ unread, onPressBell }: { unread: number; onPressBell: () => void }) {
   const theme = useTheme();
