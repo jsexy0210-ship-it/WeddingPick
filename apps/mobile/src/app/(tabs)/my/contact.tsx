@@ -111,7 +111,7 @@ export default function ContactScreen() {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
-          <BackBar title="문의하기" />
+          <BackBar title="문의하기" onBack={depthBack} />
           <ThemedView style={styles.content}>
             <ThemedText type="subtitle">보냈어요</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
@@ -132,7 +132,7 @@ export default function ContactScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <BackBar title="문의하기" />
+        <BackBar title="문의하기" onBack={depthBack} />
         <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
           {mine.length > 0 ? (
             <ThemedView style={styles.section}>
