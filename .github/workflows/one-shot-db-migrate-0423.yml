@@ -22,10 +22,49 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Apply pending migrations
+      - name: Verify exactly 0423 is pending
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          test -n "${DATABASE_URL:-}"
+
+          status="$(npm run migrate --workspace @weddingpick/db -- --status)"
+          printf '%s\n' "$status"
+
+          if grep -q '^조회 오류:' <<<"$status"; then
+            echo 'DB migration status 조회에 실패했습니다.' >&2
+            exit 1
+          fi
+
+          mapfile -t pending < <(
+            awk '
+              /^밀린 것 [0-9]+개:$/ { in_pending=1; next }
+              /^밀린 것 없음$/ { in_pending=0; next }
+              /^저장소에 없는 것 [0-9]+개:$/ { in_pending=0; next }
+              in_pending && /^  - / { sub(/^  - /, ""); print }
+            ' <<<"$status"
+          )
+
+          if [ "${#pending[@]}" -ne 1 ] || [ "${pending[0]:-}" != '0423_admin_login_throttle' ]; then
+            echo '운영 DB pending migration이 정확히 0423 하나가 아니므로 중단합니다.' >&2
+            printf 'pending=%s\n' "${pending[*]:-none}" >&2
+            exit 1
+          fi
+
+      - name: Apply 0423 migration
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           set -euo pipefail
           test -n "${DATABASE_URL:-}"
           npm run migrate --workspace @weddingpick/db
+
+      - name: Verify no migration remains pending
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          status="$(npm run migrate --workspace @weddingpick/db -- --status)"
+          printf '%s\n' "$status"
+          grep -qx '밀린 것 없음' <<<"$status"
