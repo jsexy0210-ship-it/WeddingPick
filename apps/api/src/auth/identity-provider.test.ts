@@ -1,4 +1,18 @@
-import { createKakaoProvider, createNaverProvider } from './identity-provider';
+import { assertOidcNonce, createKakaoProvider, createNaverProvider } from './identity-provider';
+
+describe('Apple OIDC nonce', () => {
+  const nonce = 'a'.repeat(64);
+
+  it('요청 nonce와 토큰 nonce가 같아야 통과한다', () => {
+    expect(() => assertOidcNonce(nonce, nonce)).not.toThrow();
+  });
+
+  it('nonce가 없거나 다르면 재생 가능한 토큰으로 보고 거부한다', () => {
+    expect(() => assertOidcNonce(undefined, nonce)).toThrow(/nonce/);
+    expect(() => assertOidcNonce('b'.repeat(64), nonce)).toThrow(/nonce/);
+    expect(() => assertOidcNonce(nonce, undefined)).toThrow(/nonce/);
+  });
+});
 
 describe('createKakaoProvider', () => {
   it('인가 코드를 REST API 키로 교환하고 응답의 id_token을 검증한다', async () => {
