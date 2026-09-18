@@ -41,10 +41,15 @@ else
   printf '%s\n' "$backup" > "$BACKUP_MARKER"
 fi
 
+tmp=""
+
 rollback_on_error() {
   status=$?
+  if [ -n "${tmp:-}" ]; then
+    rm -f "$tmp" || true
+  fi
   if [ "$status" -ne 0 ] && [ -r "$BACKUP_MARKER" ]; then
-    echo 'App-web smoke failed; restoring previous 443 Nginx config.' >&2
+    echo 'App-web cutover failed; restoring previous 443 Nginx config.' >&2
     bash "$(dirname "$0")/rollback-kakao-app-web.sh" || true
   fi
   exit "$status"
@@ -52,7 +57,6 @@ rollback_on_error() {
 trap rollback_on_error EXIT
 
 tmp="$(mktemp)"
-trap 'rm -f "$tmp"' EXIT
 cat >"$tmp" <<EOF
 server {
     listen 80 default_server;
@@ -114,13 +118,7 @@ server {
 EOF
 
 sudo -n install -m 0644 "$tmp" "$CONF"
-if ! sudo -n nginx -t; then
-  sudo -n cp "$backup" "$CONF"
-  sudo -n nginx -t
-  sudo -n systemctl reload nginx
-  exit 1
-fi
-
+sudo -n nginx -t
 sudo -n systemctl reload nginx
 
 health="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 10 https://210.109.82.212/health)"
@@ -135,5 +133,7 @@ rm -f "$login_smoke"
 curl --fail --silent --show-error --connect-timeout 5 --max-time 10   https://210.109.82.212/v1/auth/providers | python3 -c 'import json,sys; json.load(sys.stdin)'
 
 printf '%s\n' "$release_sha" > "$ROOT/static-live-app"
+rm -f "$tmp"
+tmp=""
 trap - EXIT
 echo "Kakao app web enabled on 443 from release $release_sha"
