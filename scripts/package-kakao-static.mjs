@@ -18,7 +18,7 @@ const OUT = join(ROOT, '.kakao-static');
 
 function requirePath(path, label) {
   if (!existsSync(path)) {
-    console.error(\`!! \${label}가 없다: \${path}\`);
+    console.error(`!! ${label}가 없다: ${path}`);
     process.exit(1);
   }
 }
@@ -54,4 +54,4 @@ const manifest = {
 };
 
 writeFileSync(join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
-console.log(\`Kakao static candidate packaged: \${OUT}\`);
+console.log(`Kakao static candidate packaged: ${OUT}`);
