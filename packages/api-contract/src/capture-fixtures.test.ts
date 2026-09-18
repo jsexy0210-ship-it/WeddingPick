@@ -16,13 +16,14 @@ import { candidateListResponseSchema } from './candidates';
 import { expoListResponseSchema } from './expos';
 import { faqListResponseSchema } from './faq';
 import { consultationListResponseSchema } from './consultations';
+import { inquiryListResponseSchema } from './inquiries';
 import { myReportListResponseSchema } from './my-reports';
 import { categoryRecommendationsResponseSchema } from './recommendations';
 import { myMonthlyDrawResponseSchema, myRewardPayoutResponseSchema, myRewardsResponseSchema } from './rewards';
-import { reportReasonListResponseSchema, reviewListResponseSchema } from './reviews';
+import { loungeReviewListResponseSchema, reportReasonListResponseSchema, reviewListResponseSchema } from './reviews';
 import { settingsSchema } from './settings';
 import { signupStateSchema } from './signup';
-import { weddingFeedListResponseSchema } from './wedding-feed';
+import { weddingFeedDetailSchema, weddingFeedListResponseSchema } from './wedding-feed';
 import { weddingEventListResponseSchema } from './wedding-events';
 import { expenseSummaryResponseSchema } from './wedding-plan';
 import {
@@ -34,6 +35,7 @@ import {
   vendorSearchResponseSchema,
 } from './vendors';
 import { currentUserSchema, weddingInviteListResponseSchema } from './weddings';
+import { ENDPOINTS } from './endpoints';
 import { withdrawalNoticeSchema } from './withdrawal';
 
 /*
@@ -53,11 +55,15 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/me/recommendations', categoryRecommendationsResponseSchema],
   ['GET /v1/auth/providers', authProvidersResponseSchema],
   ['GET /v1/weddings/:weddingId/candidates', candidateListResponseSchema],
+  ['POST /v1/weddings/:weddingId/candidates', ENDPOINTS.addCandidate.response],
+  ['DELETE /v1/weddings/:weddingId/candidates/:candidateId', ENDPOINTS.removeCandidate.response],
   ['GET /v1/me/monthly-draw', myMonthlyDrawResponseSchema],
   ['POST /v1/weddings/:weddingId/comparisons', z.null()],
   ['GET /v1/review-report-reasons', reportReasonListResponseSchema],
+  ['GET /v1/reviews', loungeReviewListResponseSchema],
   ['GET /v1/expos', expoListResponseSchema],
   ['GET /v1/me/reports', myReportListResponseSchema],
+  ['GET /v1/inquiries', inquiryListResponseSchema],
   ['GET /v1/me/rewards', myRewardsResponseSchema],
   ['GET /v1/me/rewards/payout', myRewardPayoutResponseSchema],
   ['GET /v1/me/settings', settingsSchema],
@@ -75,6 +81,7 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/vendors/:vendorId/reviews', reviewListResponseSchema],
   ['GET /v1/faq', faqListResponseSchema],
   ['GET /v1/wedding-feed', weddingFeedListResponseSchema],
+  ['GET /v1/wedding-feed/:id', weddingFeedDetailSchema],
 ]);
 
 /**

@@ -150,6 +150,39 @@ function startStaticServer(root) {
       }
     }
 
+    /*
+     * Expo의 static export는 generateStaticParams가 없는 동적 URL을 파일로 만들지 않는다.
+     * 캡처 도구는 운영 정적 호스팅을 흉내 내는 것이 아니라 **브라우저에서 실제 라우트
+     * 컴포넌트를 검증**하는 도구다. 문서 탐색 요청만 가장 가까운 정적 부모 HTML로
+     * 되돌리고 URL은 그대로 둔다. 그러면 Expo Router가 location.pathname을 읽어
+     * /search/:vendorId 같은 동적 화면을 클라이언트에서 렌더한다.
+     *
+     * 자산·API 요청까지 index.html로 덮으면 진짜 404를 숨기므로 Accept: text/html인
+     * 문서 탐색에만 적용한다.
+     */
+    const wantsHtml = String(req.headers.accept ?? '').includes('text/html');
+
+    if (wantsHtml) {
+      const parts = pathname.split('/').filter(Boolean);
+
+      for (let end = parts.length - 1; end >= 0; end -= 1) {
+        const fallback = join(root, ...parts.slice(0, end), 'index.html');
+
+        if (!fallback.startsWith(root) || !existsSync(fallback)) continue;
+
+        try {
+          const body = await readFile(fallback);
+
+          res.writeHead(200, { 'content-type': MIME['.html'] });
+          res.end(body);
+
+          return;
+        } catch {
+          /* 읽을 수 없는 후보면 더 위 부모를 본다. */
+        }
+      }
+    }
+
     res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
     res.end('not found');
   });
@@ -272,8 +305,17 @@ async function captureRoute(context, origin, route, opts) {
     }
   }, 'weddingpick.sessionToken.v1');
 
-  await page.goto(`${origin}${route}`, { waitUntil: 'networkidle' });
+  const response = await page.goto(`${origin}${route}`, { waitUntil: 'networkidle' });
+
+  if (!response?.ok()) {
+    throw new Error(`캡처 경로가 HTTP ${response?.status() ?? '응답 없음'}를 돌려줬다: ${route}`);
+  }
+
   await page.waitForTimeout(opts.wait);
+
+  if ((await page.locator('body').innerText()).trim() === 'not found') {
+    throw new Error(`캡처 경로가 not found 본문을 돌려줬다: ${route}`);
+  }
 
   /*
    * 눌러야 나오는 화면 — 바텀시트 · 펼침 · 탭. 순서대로 누르고 매번 기다린다.
@@ -282,7 +324,16 @@ async function captureRoute(context, origin, route, opts) {
    * 나쁘다. 시트가 안 열린 화면을 시트라고 믿게 된다.
    */
   for (const label of opts.taps) {
-    const target = page.getByLabel(label).or(page.getByText(label, { exact: true })).first();
+    /*
+     * 버튼 이름을 먼저 **정확히** 찾는다. getByLabel의 기본 부분일치는
+     * "빼기"를 찾을 때 뒤에 깔린 "강남 A 웨딩홀 빼기"까지 잡아, 열린 dialog 대신
+     * 배경 버튼을 다시 누르는 거짓 캡처를 만들었다.
+     */
+    const target = page
+      .getByRole('button', { name: label, exact: true })
+      .or(page.getByLabel(label, { exact: true }))
+      .or(page.getByText(label, { exact: true }))
+      .first();
 
     /*
      * `locator.click()`은 다른 요소가 겹치면 재시도만 하다 타임아웃으로 죽는다 —
