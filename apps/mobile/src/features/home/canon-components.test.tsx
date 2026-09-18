@@ -147,10 +147,12 @@ describe('최신 홈·추천 연결', () => {
     const view = mount(<PendingPreparation statuses={[
       { category: 'hall', label: '웨딩홀', state: 'decided', pickCount: 1, decidedName: '정한 업체' },
       { category: 'studio', label: '스튜디오', state: 'picking', pickCount: 2, decidedName: null },
+      { category: 'dress', label: '드레스', state: 'before', pickCount: 0, decidedName: null },
     ]} onOpen={jest.fn()} onMore={jest.fn()} onComplete={jest.fn()} />);
     expect(text(view)).not.toContain('정한 업체');
     expect(text(view)).toContain('후보 2곳 담김');
     expect(view.root.findAllByProps({ accessibilityLabel: '웨딩홀' })).toHaveLength(0);
+    expect(view.root.findAllByProps({ name: 'clockRegular' })).toHaveLength(1);
   });
 
   it('예산이 0이면 0%로 오해시키지 않고 설정 행동을 준다', () => {
