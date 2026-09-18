@@ -1,10 +1,11 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Alert, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton, Layout, MaxContentWidth, Radius, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
+import { confirmAlert } from '@/components/confirm-alert';
 import { useCaptureDraft } from '@/features/capture/capture-draft';
 import { createPage } from '@/features/capture/pickers';
 
@@ -94,7 +95,7 @@ export default function CameraScreen() {
         }
       }
     } catch {
-      Alert.alert('촬영 실패', '다시 시도해주세요.');
+      confirmAlert('촬영 실패', '다시 시도해주세요.', [{ text: '확인' }]);
     } finally {
       setShooting(false);
     }

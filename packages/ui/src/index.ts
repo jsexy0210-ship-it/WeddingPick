@@ -68,7 +68,6 @@ export { CircleLoader, buildSpinKeyframes, type CircleLoaderProps, type CircleLo
 export { useDelayedVisible } from './use-delayed-visible';
 export { CategoryIcon, CATEGORY_CYCLE_ORDER, CATEGORY_ICON_LABEL, type CategoryIconKind } from './category-icon';
 export { StepList, type Step, type StepState } from './step-list';
-export { showAlert, type ShowAlertButton } from './show-alert';
 export { ListSkeleton, type ListSkeletonProps } from './list-skeleton';
 export { PickStatusBadge, STATUS_BADGE_STYLE, type PickStatusBadgeProps, type PickStatus } from './pick-status-badge';
 export { Badge, type BadgeProps, type BadgeKind } from './badge';

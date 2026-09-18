@@ -32,8 +32,8 @@ import {
 
 /** `spec/strings.ko.json` `couple.*` · 시안 14-couple #1 · #6. */
 const S = {
-  inviteNav: '배우자 초대',
-  linkedNav: '배우자 연결',
+  inviteNav: '연결관리',
+  linkedNav: '연결관리',
   unlinkNav: '연결 해제',
   inviteTitle: '둘이 같이 보면 결정이 빨라져요',
   inviteSub: `${TERMS.picked} · 일정 · 지출이 함께 보여요`,

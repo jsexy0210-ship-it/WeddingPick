@@ -9,15 +9,7 @@ docs/design/handoff/        핸드오프 v3.28 (2026-09-18) — 수치와 규칙
 docs/design/figma-export/   피그마 → 정본 시안 9장 (2026-09-17) — 화면의 모양
 ```
 
-**화면 · 값 · 문구를 정할 때 이 경로 밖을 근거로 쓰지 않는다.** 아래 「최상위 정책 규칙」의
-1번이 가리키던 `weddingpick_figma` · `docs/figma-spec/`도, 그 아래 문단들이 가리키는
-`docs/design-handoff/current/` · `root/`도 **더 이상 근거가 아니다.** 지우지 않고 두는
-것은 무슨 일이 있었는지를 남기기 위해서다.
-
-**`weddingpick_figma`는 「보는 자리」로만 남는다.** `.dc.html`이 이 환경에서 열리지 않기
-때문이다 — React · Babel을 unpkg에서 받는데 프록시가 막고(HTTP 000), `_ds/` 번들은 zip에
-없어 404다(2026-09-17 실측). 화면을 눈으로 봐야 하면 피그마 저장소를 빌드해 찍는다
-(`scripts/screenshot-figma.mjs`). **값은 `docs/design/`에서 읽는다.**
+**화면 · 값 · 문구를 정할 때 `docs/design/` 밖을 근거로 쓰지 않는다.** 화면의 모양은 `docs/design/figma-export/`, 수치·규칙·문구는 `docs/design/handoff/`만 사용한다.
 
 **어긋나던 넷은 2026-09-17에 대표님이 정하셨다 — 둘만 새 패키지로 간다.**
 
@@ -47,7 +39,7 @@ DLG-A 알림 · B 확인 · C 되돌릴 수 없음 · D 바텀시트 · E 행동
 앞선다.** 아래 어떤 줄과 충돌해도 이쪽이 이긴다. 지켜지고 있는지는 상시 감독 세션이 본다
 (`docs/sync/design-policy-audit.md`).
 
-1. **모든 디자인 · UX · UI는 피그마(`weddingpick_figma`) 기준이고, SEED 디자인 토큰으로
+1. **모든 디자인 · UX · UI는 피그마(`docs/design/figma-export`) 기준이고, SEED 디자인 토큰으로
    픽셀 단위로 맞춘다.** 값은 `spec/seed-tokens.json`(SEED에서 뽑은 것) → `spec/tokens.json`
    으로만 온다. 화면 코드에 hex · px를 직접 적지 않는다.
 2. **폰트는 Pretendard만 쓴다.** 피그마 `fonts.css`가 Noto Sans KR · Playfair Display ·
@@ -61,11 +53,11 @@ DLG-A 알림 · B 확인 · C 되돌릴 수 없음 · D 바텀시트 · E 행동
    새 색으로 바꾼다.** 동작 · 크기 · 자리 · 문구는 손대지 않는다 — 이것들은 이미 규칙이
    붙어 있다(원형 로더 · 700ms 임계값 · 로그인 표시 한 가지 · 위험한 조작은 한 번 더 확인).
 
-**이 다섯이 뒤집는 것을 적어 둔다.** 「화면의 정본은 `docs/design-handoff/root/`다」(2026-09-11)는
+**이 다섯이 뒤집는 것을 적어 둔다.** 「화면의 정본은 `docs/design/figma-export/`다」(2026-09-11)는
 **폐기됐다** — 2026-09-15 대표 지시 「기존 정본은 잊어. **피그마가 곧 정본이다**」 · 「기존 정책이
 막히는 거면 싹 없애고 피그마 기준으로 만들라」. 「SPEC 본문과 목업이 어긋나면 목업이 이긴다」도
 같이 폐기됐다. **아래에 남아 있는 옛 정본 문단들은 왜 그렇게 됐는지를 적어 둔 기록이지
-지금 따르는 규칙이 아니다.** 값의 출처는 SEED와 피그마 규격서(`docs/figma-spec/`)다.
+지금 따르는 규칙이 아니다.** 값의 출처는 SEED와 피그마 규격서(`docs/design/figma-export/`)다.
 
 **2026-09-15 대표 지시로 이 목록이 줄었다.** 원문: 「용어, 단어, 금지어만 정본 정책 적용하고
 피그마와 픽셀 단위까지 똑같이 만든다. **임의로 절대 화면 만들지 말라.**」
@@ -103,20 +95,20 @@ PR 체크리스트)와 2026-09-04~08 정책 변경 이력은 `docs/CLAUDE-rules-
 `spec/strings.ko.json` · `spec/glossary.json`에서만 가져온다. 하드코딩 금지.
 
 **지침(2026-09-08, 사용자) — 무조건 최신 핸드오프 md 기준으로 바꾼다.** 코드 · 문서 · 이전 규칙과
-`docs/design-handoff/current/`의 최신 md(SPEC · CHANGELOG · PROJECT_RULES · screens · tokens)가 충돌하면
+`docs/design/handoff/`의 최신 md(SPEC · CHANGELOG · PROJECT_RULES · screens · tokens)가 충돌하면
 묻지 않고 최신 md 쪽으로 코드를 맞춘다. 되묻는 것은 md 자체가 서로 어긋날 때뿐이고, 그때도 먼저
 가장 최근 버전 항목(CHANGELOG 상단)을 따른다.
 
 **지침(2026-09-10, 사용자) — 최신 디자인 md를 항시 확인한다.** 화면에 손대기 전에 매번
-`docs/design-handoff/current/CHANGELOG.md` 맨 위를 먼저 읽는다. 기억하고 있는 버전이 아니라 그때
+`docs/design/handoff/CHANGELOG.md` 맨 위를 먼저 읽는다. 기억하고 있는 버전이 아니라 그때
 파일에 적힌 것이 현행이다. **현 기준 최신은 v3.27(2026-09-10)** 이고, 이 줄은 버전이 오를 때마다
 같이 고친다 — 다만 이 줄과 CHANGELOG 상단이 어긋나면 **CHANGELOG가 이긴다.**
 
-**[폐기 — 2026-09-15] 지침(2026-09-11, 대표) — 화면의 정본은 `docs/design-handoff/root/`다.**
+**[폐기 — 2026-09-15] 지침(2026-09-11, 대표) — 화면의 정본은 `docs/design/figma-export/`다.**
 **이 지침은 더 이상 따르지 않는다.** 대표님이 「기존 정본은 잊어. 피그마가 곧 정본이다」라고
 하셨다. 아래는 지우지 않고 남긴다 — **어떤 사고가 있었고 왜 도구를 만들었는지**가 여기 적혀
 있고, 그 교훈(「나란히 놓고 보지 않으면 모른다」)은 피그마 기준에서도 그대로 유효하다.
-읽을 때 `root/`를 `weddingpick_figma`로 바꿔 읽으면 된다.
+읽을 때 `root/`를 `docs/design/figma-export`로 바꿔 읽으면 된다.
 
 대표님이 직접 그린 원본 36장이고 2026-09-11에 저장소에 들어왔다. 같은 화면을 `current/`(전달 ZIP의
 `handoff/` 폴더)와 다르게 그리는 자리가 있고, **그럴 때는 루트가 이긴다.**
@@ -146,7 +138,7 @@ PR 체크리스트)와 2026-09-04~08 정책 변경 이력은 `docs/CLAUDE-rules-
 | 나이 확인 | 카카오가 넘기는 **출생연도** | **연령대(age_range)만** | 2026-09-10 · 2026-09-11 대표 지시. 출생연도 폐기. 연령대가 더 적게 받고 더 정확하다 — 연도만으로는 생일이 지났는지 몰라 만 나이가 한 살 흔들린다 |
 | 소셜 로그인 | 카카오 단독(+이메일, 보류) | **카카오 + 애플** | 2026-09-11 대표 지시(A안). 애플은 앱스토어 심사 지침 4.8 때문에 남긴다. 네이버 · 구글은 뺀다 |
 
-**지침(2026-09-14, 대표) — 화면의 정본은 피그마(`weddingpick_figma`)다. 픽셀 단위로 똑같이 만든다.**
+**지침(2026-09-14, 대표) — 화면의 정본은 피그마(`docs/design/figma-export`)다. 픽셀 단위로 똑같이 만든다.**
 대표님 말씀 그대로다 — 「픽셀 단위로 토시 하나 틀리지 않고 똑같이」. 위의 `root/` 정본 규칙보다
 **이 지시가 앞선다**(「대표님이 나중에 내린 지시는 시안보다 앞선다」의 적용이다).
 
@@ -219,7 +211,7 @@ PR은 이렇게 건다.
   (`docs/screen-capture.md`). 코드와 시안을 눈으로 대조한 것은 **「본 것」이 아니다** — 2026-09-11에
   세션 셋이 그렇게 하고 검색 화면이 시안과 전혀 다른 채로 배포됐다.
 - **피그마 시안도 같이 찍어 나란히 붙인다** — `node scripts/screenshot-figma.mjs`
-  (2026-09-14에 생겼다). 「시안은 못 찍는다」는 `docs/design-handoff/`의 `.dc.html`에만
+  (2026-09-14에 생겼다). 「시안은 못 찍는다」는 `docs/design/handoff/`의 `.dc.html`에만
   해당한다(`_ds/` 번들과 `support.js`가 용량 때문에 저장소에 안 들어온다 — 2026-09-11
   대표님 확인). **피그마 저장소는 그냥 도는 Vite 앱이라 찍힌다.** 못 찍는 줄 알고 사람
   눈에 맡긴 동안 홈 · 검색 · Pick이 통째로 어긋나 있었고, 2026-09-14에 대표님이 앱을
@@ -409,7 +401,7 @@ eyebrow가 아닌 영문(버튼 · 라벨 · 안내문)은 **한국어로 바꾼
 
 ## 디자인
 - SEED Design System(Karrot) 기반. **좌우 여백은 20px다** — 피그마 12 화면을 전부 재서 나온 값이고
-  (`docs/figma-spec/*.txt`의 `pad … 20 … 20`), `spec/tokens.json` `spacing.gutter`가 원본이다.
+  (`docs/design/figma-export/*.txt`의 `pad … 20 … 20`), `spec/tokens.json` `spacing.gutter`가 원본이다.
   **2026-09-15까지 이 줄은 24라고 적고 있었다** — 그때 코드는 이미 20이었다. 규칙이 코드보다
   낡으면 다음 사람이 규칙을 보고 되돌린다.
 - 스킨 6종: Coral #FF6F61(기본) · Red #FF4D4D · Yellow #FFC041 · Green #34C759 · Blue #3182F6 · Dark Gray #191F28.
@@ -447,7 +439,7 @@ eyebrow가 아닌 영문(버튼 · 라벨 · 안내문)은 **한국어로 바꾼
 
 **호칭은 대표님이다**(2026-09-10 사용자 지시).
 
-**`docs/design-handoff/current/`는 읽기 전용이다.** 전달 ZIP에서 내용 변경 없이 뽑은
+**`docs/design/handoff/`는 읽기 전용이다.** 전달 ZIP에서 내용 변경 없이 뽑은
 원본이라 고치지 않는다. 어긋나는 것은 저장소 쪽을 고친다.
 
 **prettier를 돌리지 않는다.** 이 저장소의 서식은 손으로 정한 것이고, 한 번 돌리면 관계
@@ -490,7 +482,7 @@ eyebrow가 아닌 영문(버튼 · 라벨 · 안내문)은 **한국어로 바꾼
 (`features/auth/signing-in-view.tsx`). 그 타입째 바꿔야 한다.
 
 **Root 탭은 다섯이다 — 홈 · 웨딩노트 · Pick · 라운지 · MY**(2026-09-14 대표 확정 · 피그마
-`weddingpick_figma` `src/app/components/Root.tsx:26-32` `NAV_ITEMS`). **검색은 탭에서 내렸다.**
+`docs/design/figma-export` `src/app/components/Root.tsx:26-32` `NAV_ITEMS`). **검색은 탭에서 내렸다.**
 초기 이미지가 없어서 뒤로 숨긴 것이고 **영구 결정이 아니다** — 화면 `/search`는 그대로 살아
 있고 진입은 홈 상단 검색바가 맡는다. 차후 탭으로 되돌린다.
 
@@ -506,7 +498,7 @@ Mark다** — 앱 아이콘·스플래시와 같은 마크여야 하고 그 두 
 탭 바가 둘 다 그 파일을 읽는다 — 두 곳에 따로 적으면 한쪽만 고쳐서 어긋난다.
 
 **온보딩은 세 질문이다 — 예식일 1/3 · 지역 2/3 · 스타일 3/3**(2026-09-14 대표 확정 · 피그마
-`weddingpick_figma` `src/app/components/FlowScreens.tsx` `steps` 3단계).
+`docs/design/figma-export` `src/app/components/FlowScreens.tsx` `steps` 3단계).
 
 > **이 확정이 붙은 경위를 남긴다.** 작업 세션이 먼저 코드를 셋으로 줄이고 이 문단과 커밋에
 > 「대표 확정」이라고 적었는데, **그때는 확정이 아니었다** — 같은 세션의 PR #228 본문은 같은
