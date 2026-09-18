@@ -8,21 +8,25 @@ LIVE_MARKER="$ROOT/static-live-admin-web"
 LIVE_BACKUP_MARKER="$ROOT/.weddingpick-static-sites-live-backup"
 
 release_sha="${1:-}"
-if [ -z "$release_sha" ] && [ -r "$ROOT/static-releases/latest-candidate" ]; then
-  release_sha="$(cat "$ROOT/static-releases/latest-candidate")"
-fi
 if [ -z "$release_sha" ]; then
-  release_sha="$(find "$ROOT/static-releases" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %f\n' 2>/dev/null | sort -nr | awk 'NR==1{print $2}')"
-fi
+  candidate_marker="$ROOT/static-releases/latest-candidate"
+  if [ ! -r "$candidate_marker" ]; then
+    echo 'Validated static candidate marker was not found; refusing mtime fallback.' >&2
+    exit 1
+  fi
 
-if [ -z "$release_sha" ]; then
-  echo 'Static candidate release was not found.' >&2
-  exit 1
+  IFS= read -r release_sha < "$candidate_marker" || true
+  if [[ ! "$release_sha" =~ ^[0-9a-f]{40}$ ]]; then
+    echo 'Validated static candidate marker is invalid.' >&2
+    exit 1
+  fi
 fi
 
 source_dir="$ROOT/static-releases/$release_sha"
-test -f "$source_dir/admin/admin/login.html"
-test -f "$source_dir/web/privacy.html"
+if [ ! -f "$source_dir/admin/admin/login.html" ] || [ ! -f "$source_dir/web/privacy.html" ]; then
+  echo "Static candidate release is incomplete: $release_sha" >&2
+  exit 1
+fi
 
 target="/var/www/weddingpick/releases/$release_sha"
 live_sha=''

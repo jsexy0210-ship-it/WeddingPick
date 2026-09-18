@@ -47,7 +47,7 @@ function makeHarness({ includePrivacy = true, previousLiveSha = null } = {}) {
   const scripts = path.join(base, 'scripts');
   const bin = path.join(base, 'bin');
   const state = path.join(base, 'state');
-  const releaseSha = 'release-static-a';
+  const releaseSha = 'a'.repeat(40);
   const releaseRoot = path.join(root, 'static-releases', releaseSha);
   const servedReleaseRoot = path.join(root, 'var', 'www', 'weddingpick', 'releases', releaseSha);
   const liveMarker = path.join(root, 'static-live-admin-web');
@@ -178,6 +178,92 @@ function run(h, env = h.env) {
   });
 }
 
+function runLatest(h, env = h.env) {
+  return spawnSync('bash', [h.installPath], {
+    env,
+    encoding: 'utf8',
+  });
+}
+
+test('automatic cutover refuses mtime fallback when latest-candidate is missing', () => {
+  const h = makeHarness();
+  try {
+    const unvalidatedSha = 'b'.repeat(40);
+    const unvalidatedRoot = path.join(h.root, 'static-releases', unvalidatedSha);
+    mkdirSync(path.join(unvalidatedRoot, 'admin', 'admin'), { recursive: true });
+    mkdirSync(path.join(unvalidatedRoot, 'web'), { recursive: true });
+    writeFileSync(path.join(unvalidatedRoot, 'admin', 'admin', 'login.html'), '<html>newer</html>', 'utf8');
+    writeFileSync(path.join(unvalidatedRoot, 'web', 'privacy.html'), '<html>newer</html>', 'utf8');
+
+    const result = runLatest(h);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /refusing mtime fallback/);
+    assert.equal(readFileSync(h.conf, 'utf8'), h.baseline);
+  } finally {
+    h.cleanup();
+  }
+});
+
+test('automatic cutover rejects an invalid latest-candidate marker', () => {
+  const h = makeHarness();
+  try {
+    writeFileSync(
+      path.join(h.root, 'static-releases', 'latest-candidate'),
+      '../unvalidated-release\n',
+      'utf8',
+    );
+
+    const result = runLatest(h);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /marker is invalid/);
+    assert.equal(readFileSync(h.conf, 'utf8'), h.baseline);
+  } finally {
+    h.cleanup();
+  }
+});
+
+test('automatic cutover rejects an incomplete release selected by latest-candidate', () => {
+  const h = makeHarness();
+  try {
+    const incompleteSha = 'b'.repeat(40);
+    const incompleteRoot = path.join(h.root, 'static-releases', incompleteSha);
+    mkdirSync(path.join(incompleteRoot, 'admin', 'admin'), { recursive: true });
+    writeFileSync(path.join(incompleteRoot, 'admin', 'admin', 'login.html'), '<html>admin</html>', 'utf8');
+    writeFileSync(
+      path.join(h.root, 'static-releases', 'latest-candidate'),
+      `${incompleteSha}\n`,
+      'utf8',
+    );
+
+    const result = runLatest(h);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /release is incomplete/);
+    assert.equal(readFileSync(h.conf, 'utf8'), h.baseline);
+  } finally {
+    h.cleanup();
+  }
+});
+
+test('automatic cutover installs the release named by a valid latest-candidate marker', () => {
+  const h = makeHarness();
+  try {
+    writeFileSync(
+      path.join(h.root, 'static-releases', 'latest-candidate'),
+      `${h.releaseSha}\n`,
+      'utf8',
+    );
+
+    const result = runLatest(h);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+    const liveConfig = readFileSync(h.conf, 'utf8');
+    assert.ok(liveConfig.includes(`${h.releaseSha}/admin`));
+    assert.ok(liveConfig.includes(`${h.releaseSha}/web`));
+    assert.equal(readFileSync(h.liveMarker, 'utf8').trim(), h.releaseSha);
+  } finally {
+    h.cleanup();
+  }
+});
+
 test('candidate preparation failure leaves previous static config untouched', () => {
   const h = makeHarness({ includePrivacy: false });
   try {
@@ -267,8 +353,8 @@ test('successful install keeps new static config and release marker without roll
     const result = run(h);
     assert.equal(result.status, 0, result.stderr || result.stdout);
     const liveConfig = readFileSync(h.conf, 'utf8');
-    assert.match(liveConfig, /release-static-a\/admin/);
-    assert.match(liveConfig, /release-static-a\/web/);
+    assert.ok(liveConfig.includes(`${h.releaseSha}/admin`));
+    assert.ok(liveConfig.includes(`${h.releaseSha}/web`));
     assert.equal(
       readFileSync(h.liveMarker, 'utf8').trim(),
       h.releaseSha,
@@ -282,7 +368,7 @@ test('successful install keeps new static config and release marker without roll
 
 
 test('re-running the same live static release does not replace served files', () => {
-  const h = makeHarness({ previousLiveSha: 'release-static-a' });
+  const h = makeHarness({ previousLiveSha: 'a'.repeat(40) });
   try {
     const result = run(h);
     assert.equal(result.status, 0, result.stderr || result.stdout);
