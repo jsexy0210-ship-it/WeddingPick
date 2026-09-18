@@ -109,7 +109,7 @@ jobs:
           node scripts/screenshot-screens.mjs --route /my/scraps --full --edges --wait 1800 --out design-captures/my-scraps
           node scripts/screenshot-screens.mjs --route /my/wedding-settings --full --edges --wait 1800 --out design-captures/my-settings
           node scripts/screenshot-screens.mjs --route /wedding/partner --full --edges --wait 1800 --out design-captures/my-connection
-          node scripts/screenshot-screens.mjs --route /my/guide --full --edges --wait 1800 --out design-captures/my-faq
+          node scripts/screenshot-screens.mjs --route '/my/guide?mode=faq' --full --edges --wait 1800 --out design-captures/my-faq
           node scripts/screenshot-screens.mjs --route /my/contact --full --edges --wait 1800 --out design-captures/my-contact
           node scripts/screenshot-screens.mjs --route /my/policies --full --edges --wait 1800 --out design-captures/my-policies
 
