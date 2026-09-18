@@ -63,9 +63,9 @@ jobs:
           set -euo pipefail
           {
             echo '### Kakao VM static staging'
-            printf -- '- Commit: \`%s\`\n' "$GITHUB_SHA"
+            printf -- '- Commit: `%s`\n' "$GITHUB_SHA"
             echo '- Live cutover: **not performed**'
-            echo '- Candidate path: \`/home/ubuntu/WeddingPick/static-releases/<sha>\`'
+            echo '- Candidate path: `/home/ubuntu/WeddingPick/static-releases/<sha>`'
             echo ''
             echo '#### Detected listeners'
             sudo -n ss -ltnp 2>/dev/null | awk 'NR==1 || /:80 |:443 |:3001 /' | sed -E 's/users:\(\([^)]*\)\)/users:(redacted)/g' || true
@@ -73,14 +73,14 @@ jobs:
             echo '#### Web server services'
             for unit in nginx caddy apache2; do
               state="$(systemctl is-active "$unit" 2>/dev/null || true)"
-              printf -- '- %s: \`%s\`\n' "$unit" "\${state:-not-found}"
+              printf -- '- %s: `%s`\n' "$unit" "${state:-not-found}"
             done
             echo ''
             echo '#### Sanitized routing directives'
             if command -v nginx >/dev/null 2>&1; then
               sudo -n nginx -T 2>/dev/null |
-                grep -E '^\s*(listen|server_name|root|location|proxy_pass|ssl_certificate)' |
-                sed -E 's#(ssl_certificate(_key)?\s+).*#\1[redacted];#' |
+                grep -E '^[[:space:]]*(listen|server_name|root|location|proxy_pass|ssl_certificate)' |
+                sed -E 's#(ssl_certificate(_key)?[[:space:]]+).*#\1[redacted];#' |
                 head -120 || true
             elif command -v caddy >/dev/null 2>&1; then
               sudo -n caddy adapt --config /etc/caddy/Caddyfile --pretty 2>/dev/null |
