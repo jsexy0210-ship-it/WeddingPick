@@ -30,7 +30,8 @@ import {
 } from '@weddingpick/ui';
 import { getCurrentUser, listCandidates, removeCandidate } from '@/api/client';
 import { BackButton } from '@/components/back-button';
-import { UnpickSheet } from '@/features/pick/pick-sheets';
+import { confirmAlert } from '@/components/confirm-alert';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import { PICK_COMPARE_MAX, PICK_COMPARE_MIN } from '@/features/pick/canonical-rules';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 
@@ -48,7 +49,7 @@ import { vendorImageCategory } from '@/features/search/vendor-image-category';
  * «편집»을 누르면 카드마다 «빼기»가 나오고, 빼기는 WP-SHT-003 시트로 한 번 묻는다.
  */
 
-/** 서버가 막는 값과 같아야 한다. 화면이 따로 세면 둘이 어긋난다 — `vendor-comparison.ts`가 원본이다. */
+/** 03-pick 정본은 한 화면 최대 3곳이다. API 상한과 별개로 UI는 이 값을 넘기지 않는다. */
 const MAX_COMPARE = PICK_COMPARE_MAX;
 const MIN_COMPARE = PICK_COMPARE_MIN;
 
@@ -81,6 +82,7 @@ export default function CategoryPickScreen() {
   const { category } = useLocalSearchParams<{ category: string }>();
   const colors = useTheme();
   const insets = useSafeAreaInsets();
+  const depthBack = useDepthBack();
 
   const [weddingId, setWeddingId] = useState<string | null>(null);
   const [partner, setPartner] = useState<string | null>(null);
@@ -91,8 +93,6 @@ export default function CategoryPickScreen() {
   /** 비교할 후보(vendorId). 시안: 체크 26. */
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [editing, setEditing] = useState(false);
-  const [unpickTarget, setUnpickTarget] = useState<VendorCandidate | null>(null);
-  const [removing, setRemoving] = useState(false);
 
   const load = useCallback(() => {
     setError(null);
@@ -126,7 +126,7 @@ export default function CategoryPickScreen() {
         message={error}
         onRetry={load}
         retryLabel="다시 시도"
-        onBack={() => router.back()}
+        onBack={depthBack}
         backLabel="돌아가기"
       />
     );
@@ -160,23 +160,33 @@ export default function CategoryPickScreen() {
     });
   }
 
-  async function confirmUnpick() {
-    if (!unpickTarget || !weddingId) return;
-    setRemoving(true);
-    try {
-      await removeCandidate(weddingId, unpickTarget.id);
-      setSelected((prev) => {
-        const next = new Set(prev);
-        next.delete(unpickTarget.vendorId);
-        return next;
-      });
-      load();
-    } catch {
-      setToast('후보를 빼지 못했어요. 잠시 후 다시 시도해주세요.');
-    } finally {
-      setRemoving(false);
-      setUnpickTarget(null);
-    }
+  function askUnpick(candidate: VendorCandidate) {
+    const who = partner && partner !== TERMS.spouse ? `${partner}님` : TERMS.spouse;
+    const message = candidate.addedByPartner
+      ? `${who} 목록에서도 함께 사라져요. 다시 담을 수 있어요.`
+      : '다시 담을 수 있어요.';
+
+    confirmAlert('후보에서 뺄까요?', message, [
+      { text: '그대로 둘게요', style: 'cancel' },
+      {
+        text: '빼기',
+        onPress: async () => {
+          if (!weddingId) return;
+          try {
+            await removeCandidate(weddingId, candidate.id);
+            setSelected((prev) => {
+              const next = new Set(prev);
+              next.delete(candidate.vendorId);
+              return next;
+            });
+            setToast('후보에서 뺐어요');
+            load();
+          } catch {
+            setToast('후보를 빼지 못했어요. 잠시 후 다시 시도해주세요.');
+          }
+        },
+      },
+    ]);
   }
 
   function startCompare() {
@@ -258,7 +268,7 @@ export default function CategoryPickScreen() {
                   partner={partner}
                   onToggle={() => toggleSelect(candidate)}
                   onDecide={() => goDecide(candidate)}
-                  onRemove={() => setUnpickTarget(candidate)}
+                  onRemove={() => askUnpick(candidate)}
                 />
               ))
             )}
@@ -295,13 +305,6 @@ export default function CategoryPickScreen() {
       </SafeAreaView>
 
       <Toast message={toast} onHidden={() => setToast(null)} />
-      <UnpickSheet
-        candidate={unpickTarget}
-        partnerName={partner === TERMS.spouse ? null : partner}
-        busy={removing}
-        onConfirm={() => void confirmUnpick()}
-        onDismiss={() => setUnpickTarget(null)}
-      />
     </ThemedView>
   );
 }

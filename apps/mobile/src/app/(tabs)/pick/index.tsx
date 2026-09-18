@@ -23,7 +23,6 @@ import type { CandidateListResponse, CurrentUser, VendorCandidate } from '@weddi
 import {
   TERMS,
   VENDOR_CATEGORY_LABEL,
-  formatCount,
   type VendorCategory,
 } from '@weddingpick/domain';
 import { router, useFocusEffect } from 'expo-router';
@@ -48,33 +47,41 @@ import {
   Toast,
   VendorImage,
   readWebInteractionState,
-  showAlert,
   useTheme,
 } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { getCurrentUser, listCandidates, removeCandidate, removeDecision } from '@/api/client';
-import { UnpickSheet } from '@/features/pick/pick-sheets';
-import { PICK_COMPARE_MAX } from '@/features/pick/canonical-rules';
+import { confirmAlert } from '@/components/confirm-alert';
+import {
+  PICK_COMPARE_ADD_LABEL,
+  PICK_COMPARE_BANNER_HINT,
+  PICK_COMPARE_MAX,
+  PICK_COMPARE_REMOVE_LABEL,
+  PICK_SUBTITLE,
+  PICK_VERIFY_LABEL,
+  compareBasketLabel,
+  pickCountLabel,
+} from '@/features/pick/canonical-rules';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import { isWebShellScreen } from '@/features/webshell/config';
 import { WebShellView } from '@/features/webshell/WebShellView';
 
 /* 문구 — spec/strings.ko.json `pick`. 피그마 `Pick.tsx`에서 왔다. */
-const SUBTITLE = '마음에 든 업체를 모아뒀어요. 하나씩 비교해봐요.';
-const PRICE_REPORT = '가격 제보';
-const COMPARE_HINT = '가격과 조건을 한눈에 볼 수 있어요';
-const COMPARE_ALL = '전체 비교하기';
+const SUBTITLE = PICK_SUBTITLE;
+const PRICE_REPORT = PICK_VERIFY_LABEL;
+const COMPARE_HINT = PICK_COMPARE_BANNER_HINT;
+const COMPARE_ALL = '비교하기';
 const CHIP_ALL = '전체';
-const ACTION_COMPARE = '비교하기';
-const ACTION_COMPARING = '비교 중';
+const ACTION_COMPARE = PICK_COMPARE_ADD_LABEL;
+const ACTION_COMPARING = PICK_COMPARE_REMOVE_LABEL;
 const ACTION_DECIDE = '결정하기';
 const ACTION_UNDECIDE = '결정 취소';
 const BADGE_SHARED = '함께';
 const EMPTY_TITLE = '아직 Pick한 업체가 없어요';
-const EMPTY_BODY = '검색에서 마음에 드는 업체를 저장해봐요';
+const EMPTY_BODY = '검색에서 마음에 드는 업체를 Pick해보세요';
 const EMPTY_CTA = `업체 ${TERMS.search}하기`;
 const UNDECIDE_TITLE = '결정을 취소할까요?';
-const UNDECIDE_BODY = '웨딩노트의 준비 현황과 지출에서도 빠져요';
+const UNDECIDE_BODY = '웨딩노트의 결정 상태가 풀려요. 언제든 다시 결정할 수 있어요.';
 const MIN_COMPARE = 2;
 
 type Filter = VendorCategory | 'all';
@@ -95,7 +102,6 @@ export default function PickScreen() {
   const [filter, setFilter] = useState<Filter>('all');
   /** 비교함에 담은 업체(vendorId). 최대 PICK_COMPARE_MAX. */
   const [compare, setCompare] = useState<ReadonlySet<string>>(new Set());
-  const [unpickTarget, setUnpickTarget] = useState<VendorCandidate | null>(null);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -164,11 +170,11 @@ export default function PickScreen() {
     });
   }
 
-  /** 결정 취소 — 위험한 조작이라 한 번 더 묻는다(CLAUDE.md 최상위 규칙 5). */
+  /** 결정 취소는 되돌릴 수 있는 조작이라 DLG-B 확인을 쓴다. */
   function askUndecide(candidate: VendorCandidate) {
-    showAlert(UNDECIDE_TITLE, UNDECIDE_BODY, [
-      { text: '돌아가기', style: 'cancel' },
-      { text: ACTION_UNDECIDE, style: 'destructive', onPress: () => void undecide(candidate.category) },
+    confirmAlert(UNDECIDE_TITLE, UNDECIDE_BODY, [
+      { text: '그대로 둘게요', style: 'cancel' },
+      { text: ACTION_UNDECIDE, onPress: () => undecide(candidate.category) },
     ]);
   }
 
@@ -177,6 +183,7 @@ export default function PickScreen() {
     setBusy(true);
     try {
       await removeDecision(weddingId, category);
+      setToast('결정을 취소했어요');
       load();
     } catch {
       setToast('결정을 취소하지 못했어요. 잠시 후 다시 시도해주세요.');
@@ -185,22 +192,34 @@ export default function PickScreen() {
     }
   }
 
-  async function confirmUnpick() {
-    if (!unpickTarget || !weddingId) return;
+  function askUnpick(candidate: VendorCandidate) {
+    const who = partner && partner !== TERMS.spouse ? `${partner}님` : TERMS.spouse;
+    const message = candidate.addedByPartner
+      ? `${who} 목록에서도 함께 사라져요. 다시 담을 수 있어요.`
+      : '다시 담을 수 있어요.';
+
+    confirmAlert('후보에서 뺄까요?', message, [
+      { text: '그대로 둘게요', style: 'cancel' },
+      { text: '빼기', onPress: () => confirmUnpick(candidate) },
+    ]);
+  }
+
+  async function confirmUnpick(candidate: VendorCandidate) {
+    if (!weddingId) return;
     setBusy(true);
     try {
-      await removeCandidate(weddingId, unpickTarget.id);
+      await removeCandidate(weddingId, candidate.id);
       setCompare((prev) => {
         const next = new Set(prev);
-        next.delete(unpickTarget.vendorId);
+        next.delete(candidate.vendorId);
         return next;
       });
+      setToast('후보에서 뺐어요');
       load();
     } catch {
       setToast('후보를 빼지 못했어요. 잠시 후 다시 시도해주세요.');
     } finally {
       setBusy(false);
-      setUnpickTarget(null);
     }
   }
 
@@ -228,13 +247,13 @@ export default function PickScreen() {
 
               {/* 비교 배너 — 피그마 `compareIds.length >= 2`: 잉크 면 · radius 16 · 안쪽 16/14. */}
               {compare.size >= MIN_COMPARE ? (
-                <View style={[styles.compareBanner, { backgroundColor: theme.backgroundInk }]}>
+                <View style={[styles.compareBanner, { backgroundColor: theme.tintSurface, borderColor: theme.tintBorder }]}>
                   <View style={styles.compareText}>
-                    <ThemedText type="t7" style={[styles.bold, { color: theme.onInk }]}>
-                      {`${formatCount(compare.size)}개 선택됨`}
+                    <ThemedText type="t7" themeColor="tint" style={styles.bold}>
+                      {compareBasketLabel(compare.size)}
                     </ThemedText>
                     <View style={styles.compareHint}>
-                      <ThemedText type="micro" style={[styles.regular, { color: theme.onInk }]}>
+                      <ThemedText type="micro" themeColor="textSecondary" style={styles.regular}>
                         {COMPARE_HINT}
                       </ThemedText>
                     </View>
@@ -288,7 +307,7 @@ export default function PickScreen() {
                         onCompare={() => toggleCompare(row.candidate.vendorId)}
                         onDecide={() => goDecide(row.candidate)}
                         onUndecide={() => askUndecide(row.candidate)}
-                        onRemove={() => setUnpickTarget(row.candidate)}
+                        onRemove={() => askUnpick(row.candidate)}
                       />
                     ))}
                   </View>
@@ -301,20 +320,13 @@ export default function PickScreen() {
       </SafeAreaView>
 
       <Toast message={toast} onHidden={() => setToast(null)} />
-      <UnpickSheet
-        candidate={unpickTarget}
-        partnerName={partner}
-        busy={busy}
-        onConfirm={() => void confirmUnpick()}
-        onDismiss={() => setUnpickTarget(null)}
-      />
     </ThemedView>
   );
 }
 
 /* ────────────────────────────────────────────
-   Header — 피그마 `px-5 pb-5 pt-6`: 제목 24/700 + «N개 저장» 배지 · 부제 14 ·
-   배우자 상자(radius 16 · 회색 면 · 안쪽 16/12 · 아바타 32 둘 · «가격 제보»)
+   Header — 피그마 `px-5 pb-5 pt-6`: 제목 24/700 + «N곳» 배지 · 부제 14 ·
+   배우자 상자(radius 16 · 회색 면 · 안쪽 16/12 · 아바타 32 둘 · «Pick 인증»)
 ──────────────────────────────────────────── */
 function Header({ me, partner, total }: { me: CurrentUser; partner: string | null; total: number }) {
   const theme = useTheme();
@@ -328,7 +340,7 @@ function Header({ me, partner, total }: { me: CurrentUser; partner: string | nul
         </ThemedText>
         <View style={[styles.countBadge, { backgroundColor: theme.text }]}>
           <ThemedText type="f12" style={[styles.bold, { color: theme.onInk }]}>
-            {`${formatCount(total)}개 저장`}
+            {pickCountLabel(total)}
           </ThemedText>
         </View>
       </View>
@@ -361,7 +373,7 @@ function Header({ me, partner, total }: { me: CurrentUser; partner: string | nul
           <Pressable
             onPress={() => router.push('/capture/payment/consent')}
             accessibilityRole="button"
-            accessibilityLabel="가격 제보하기"
+            accessibilityLabel={PICK_VERIFY_LABEL}
             style={(state) => {
               const { hovered, focused } = readWebInteractionState(state);
               return [
@@ -474,7 +486,7 @@ function CandidateCard({
     <View
       style={[
         styles.card,
-        { backgroundColor: theme.background, borderColor: isDecided ? theme.tintBorder : theme.border },
+        { backgroundColor: isDecided ? theme.tintSurface : theme.background, borderColor: isDecided ? theme.tintBorder : theme.border },
       ]}>
       <Pressable
         accessibilityRole="button"
@@ -711,7 +723,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: Spacing.one,
   },
-  /* «N개 저장» `rounded-full px-3 py-1` — 좌우 12(같은 값의 inlineGap) · 상하 4. */
+  /* «N곳» `rounded-full px-3 py-1` — 좌우 12(같은 값의 inlineGap) · 상하 4. */
   countBadge: {
     borderRadius: Radius.pill,
     paddingHorizontal: Layout.inlineGap,
@@ -761,6 +773,7 @@ const styles = StyleSheet.create({
   // ── 비교 배너 `mx-5 mb-4 rounded-2xl px-4 py-3.5` ──
   compareBanner: {
     marginHorizontal: Layout.gutter,
+    borderWidth: Border.hairline,
     marginBottom: Spacing.three,
     borderRadius: Radius.cardLarge,
     paddingHorizontal: Spacing.three,

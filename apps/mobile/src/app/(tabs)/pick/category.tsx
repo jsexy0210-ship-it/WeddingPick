@@ -1,4 +1,4 @@
-import type { CandidateListResponse } from '@weddingpick/api-contract';
+import type { CandidateListResponse, VendorCandidate } from '@weddingpick/api-contract';
 import { VENDOR_CATEGORY_LABEL, type VendorCategory } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -23,6 +23,7 @@ import {
   Spacing,
   ThemedText,
   ThemedView,
+  Toast,
   WeddingMark,
   useTheme,
 } from '@weddingpick/ui';
@@ -46,6 +47,7 @@ export default function PickCategoryScreen() {
   const [group, setGroup] = useState<CandidateListResponse['groups'][number] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   // 오류·목록 하단의 나가는 길은 Depth Back이다 — 딥링크로 들어와도 Pick 탭으로 간다.
   const depthBack = useDepthBack();
 
@@ -73,16 +75,21 @@ export default function PickCategoryScreen() {
     });
   }
 
-  function remove(candidateId: string, vendorName: string) {
+  function remove(candidate: VendorCandidate) {
     if (!weddingId) return;
-    confirmAlert('후보에서 뺄까요?', `${vendorName}을 후보에서 제외해요.`, [
-      { text: '취소', style: 'cancel' },
+    const message = candidate.addedByPartner
+      ? '배우자 목록에서도 함께 사라져요. 다시 담을 수 있어요.'
+      : '다시 담을 수 있어요.';
+    confirmAlert('후보에서 뺄까요?', message, [
+      { text: '그대로 둘게요', style: 'cancel' },
       {
         text: '빼기',
-        style: 'destructive',
         onPress: () =>
-          removeCandidate(weddingId, candidateId)
-            .then(load)
+          removeCandidate(weddingId, candidate.id)
+            .then(() => {
+              setToast('후보에서 뺐어요');
+              load();
+            })
             .catch((caught: Error) => setError(caught.message)),
       },
     ]);
@@ -166,7 +173,7 @@ export default function PickCategoryScreen() {
                     )}
                     <ActionButton
                       label="빼기"
-                      onPress={() => remove(candidate.id, candidate.vendorName)}
+                      onPress={() => remove(candidate)}
                     />
                   </View>
                 </ThemedView>
@@ -177,6 +184,7 @@ export default function PickCategoryScreen() {
           <ActionButton label="돌아가기" onPress={depthBack} />
         </ScrollView>
       </SafeAreaView>
+      <Toast message={toast} onHidden={() => setToast(null)} />
     </ThemedView>
   );
 }
