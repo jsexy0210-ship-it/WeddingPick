@@ -1,0 +1,25 @@
+name: Validate PR 395 stay-in-app
+
+on:
+  push:
+    branches:
+      - chatgpt/fix-stay-in-app-map-audit-20260918
+
+permissions:
+  contents: read
+
+jobs:
+  stay-in-app:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: API typecheck
+        run: npm run typecheck --workspace @weddingpick/api
+      - name: Stay-in-app regression
+        run: npm test --workspace @weddingpick/api -- src/test/stay-in-app.test.ts
