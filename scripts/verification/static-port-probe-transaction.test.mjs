@@ -55,30 +55,30 @@ function harness({ existingConf = null } = {}) {
 
   writeExecutable(path.join(bin, 'sudo'), `#!/usr/bin/env bash
 set -euo pipefail
-if [ "${1:-}" = "-n" ]; then shift; fi
+if [ "\${1:-}" = "-n" ]; then shift; fi
 exec "$@"
 `);
 
   writeExecutable(path.join(bin, 'nginx'), `#!/usr/bin/env bash
 set -euo pipefail
-state="${MOCK_STATE_DIR:?}"
-case "${1:-}" in
+state="\${MOCK_STATE_DIR:?}"
+case "\${1:-}" in
   -T)
     printf '%s\\n' 'ssl_certificate /tmp/cert.pem;' 'ssl_certificate_key /tmp/key.pem;'
     ;;
   -t)
     f="$state/nginx-count"; n=0; [ ! -f "$f" ] || n="$(cat "$f")"; n=$((n+1)); printf '%s' "$n" >"$f"
-    if [ "${MOCK_NGINX_FAIL_AT:-0}" = "$n" ]; then exit 1; fi
+    if [ "\${MOCK_NGINX_FAIL_AT:-0}" = "$n" ]; then exit 1; fi
     ;;
 esac
 `);
 
   writeExecutable(path.join(bin, 'systemctl'), `#!/usr/bin/env bash
 set -euo pipefail
-state="${MOCK_STATE_DIR:?}"
-if [ "${1:-}" = reload ] && [ "${2:-}" = nginx ]; then
+state="\${MOCK_STATE_DIR:?}"
+if [ "\${1:-}" = reload ] && [ "\${2:-}" = nginx ]; then
   f="$state/reload-count"; n=0; [ ! -f "$f" ] || n="$(cat "$f")"; n=$((n+1)); printf '%s' "$n" >"$f"
-  if [ "${MOCK_RELOAD_FAIL_AT:-0}" = "$n" ]; then exit 1; fi
+  if [ "\${MOCK_RELOAD_FAIL_AT:-0}" = "$n" ]; then exit 1; fi
 fi
 `);
 
