@@ -10,6 +10,7 @@ import { DialogToast } from '@/components/confirm-alert-toast';
 import { useDepthBack } from '@/features/navigation/depth-back';
 
 import {
+  addCandidate,
   getCurrentUser,
   listCandidates,
   removeCandidate,
@@ -48,6 +49,7 @@ export default function PickCategoryScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [undoCandidate, setUndoCandidate] = useState<VendorCandidate | null>(null);
   // 오류·목록 하단의 나가는 길은 Depth Back이다 — 딥링크로 들어와도 Pick 탭으로 간다.
   const depthBack = useDepthBack();
 
@@ -75,24 +77,42 @@ export default function PickCategoryScreen() {
     });
   }
 
-  function remove(candidate: VendorCandidate) {
+  function showToast(message: string, undo: VendorCandidate | null = null) {
+    setUndoCandidate(undo);
+    setToast(message);
+  }
+
+  function remove(candidate: VendorCandidate, isDecided: boolean) {
     if (!weddingId) return;
-    const message = candidate.addedByPartner
-      ? '배우자 목록에서도 함께 사라져요. 다시 담을 수 있어요.'
-      : '다시 담을 수 있어요.';
-    confirmAlert('후보에서 뺄까요?', message, [
+    const impacts = [
+      isDecided ? '최종 결정도 함께 취소돼요.' : null,
+      candidate.addedByPartner ? '배우자 목록에서도 함께 사라져요.' : null,
+      '다시 Pick할 수 있어요.',
+    ].filter(Boolean);
+    confirmAlert('후보에서 뺄까요?', impacts.join(' '), [
       { text: '그대로 둘게요', style: 'cancel' },
       {
         text: '빼기',
         onPress: () =>
           removeCandidate(weddingId, candidate.id)
             .then(() => {
-              setToast('후보에서 뺐어요');
+              showToast('후보에서 뺐어요', candidate);
               load();
             })
             .catch((caught: Error) => setError(caught.message)),
       },
     ]);
+  }
+
+  async function undoUnpick(candidate: VendorCandidate) {
+    if (!weddingId) return;
+    try {
+      await addCandidate(weddingId, candidate.vendorId, candidate.note ?? undefined);
+      showToast('다시 Pick했어요');
+      load();
+    } catch {
+      showToast('다시 Pick하지 못했어요. 잠시 후 다시 시도해주세요.');
+    }
   }
 
   if (error) {
@@ -173,7 +193,7 @@ export default function PickCategoryScreen() {
                     )}
                     <ActionButton
                       label="빼기"
-                      onPress={() => remove(candidate)}
+                      onPress={() => remove(candidate, isDecided)}
                     />
                   </View>
                 </ThemedView>
@@ -184,7 +204,15 @@ export default function PickCategoryScreen() {
           <ActionButton label="돌아가기" onPress={depthBack} />
         </ScrollView>
       </SafeAreaView>
-      <DialogToast message={toast} onHidden={() => setToast(null)} />
+      <DialogToast
+        message={toast}
+        actionLabel={undoCandidate ? '되돌리기' : null}
+        onAction={undoCandidate ? () => void undoUnpick(undoCandidate) : null}
+        onHidden={() => {
+          setToast(null);
+          setUndoCandidate(null);
+        }}
+      />
     </ThemedView>
   );
 }
