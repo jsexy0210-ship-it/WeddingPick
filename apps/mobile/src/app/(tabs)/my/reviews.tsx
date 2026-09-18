@@ -5,14 +5,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { ErrorView } from '@weddingpick/ui';
 import { listMyReports } from '@/api/client';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
-import { EmptyBox, Hero, NoteBox, Row, Rows, Section, SubScreen } from '@/features/settings/my-kit';
+import { EmptyBox, NoteBox, Row, Rows, Section, SubScreen } from '@/features/settings/my-kit';
 
 /** 시안 12b-remaining #10 «내 후기 · WP-REV-004»의 renderVals. */
 const S = {
   title: '내가 쓴 후기',
-  hero: (n: number) => [`${n}곳에`, '후기를 남겼어요'],
-  heroEmpty: ['아직 남긴 후기가', '없어요'],
   written: '쓴 후기',
+  emptyWritten: '아직 쓴 후기가 없어요',
   writable: '쓸 수 있는 곳',
   write: '쓰기',
   /** 시안 «Pick 인증 완료 · 3월 4일». `REPORT_KIND_LABEL`은 배지용이라 띄어쓰지 않아 여기서는 쓰지 않는다. */
@@ -88,10 +87,8 @@ export default function MyReviewsScreen() {
 
   return (
     <SubScreen title={S.title}>
-      <Hero lines={written.length > 0 ? S.hero(written.length) : S.heroEmpty} />
-
-      {written.length > 0 ? (
-        <Section title={S.written}>
+      <Section title={`${S.written} ${written.length}개`}>
+        {written.length > 0 ? (
           <Rows>
             {written.map((report) => (
               <Row
@@ -109,10 +106,12 @@ export default function MyReviewsScreen() {
               />
             ))}
           </Rows>
-        </Section>
-      ) : null}
+        ) : (
+          <EmptyBox>{S.emptyWritten}</EmptyBox>
+        )}
+      </Section>
 
-      <Section title={S.writable}>
+      <Section title={`${S.writable} ${writable.length}개`}>
         {writable.length > 0 ? (
           <Rows>
             {writable.map((report) => (
