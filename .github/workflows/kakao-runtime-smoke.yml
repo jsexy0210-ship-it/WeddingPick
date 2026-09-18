@@ -1,0 +1,152 @@
+name: Kakao Runtime Smoke
+
+on:
+  push:
+    branches:
+      - ops/kakao-runtime-smoke
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 10
+    steps:
+      - name: Firewall and control-plane hints
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '### guest firewall'
+          if command -v ufw >/dev/null 2>&1; then
+            sudo -n ufw status verbose || true
+          else
+            echo 'ufw=not-installed'
+          fi
+          echo '### nft/iptables rules mentioning static ports'
+          if command -v nft >/dev/null 2>&1; then
+            sudo -n nft list ruleset 2>/dev/null | grep -E '8443|9443' || echo 'nft:no-8443-9443-rule'
+          fi
+          if command -v iptables >/dev/null 2>&1; then
+            sudo -n iptables -S 2>/dev/null | grep -E '8443|9443' || echo 'iptables:no-8443-9443-rule'
+          fi
+          echo '### cloud cli'
+          for cmd in openstack kc kakaocloud; do
+            if command -v "$cmd" >/dev/null 2>&1; then echo "$cmd=installed"; else echo "$cmd=absent"; fi
+          done
+
+      - name: Kakao Object Storage presigned smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo -n docker exec -i weddingpick-api node <<'NODE'
+          const crypto = require('node:crypto');
+          const {
+            S3Client,
+            PutObjectCommand,
+            GetObjectCommand,
+            DeleteObjectCommand,
+          } = require('@aws-sdk/client-s3');
+          const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
+
+          async function main() {
+            const required = ['S3_BUCKET','S3_REGION','S3_ENDPOINT','AWS_ACCESS_KEY_ID','AWS_SECRET_ACCESS_KEY'];
+            for (const key of required) {
+              if (!process.env[key]) throw new Error(key + ' is missing');
+            }
+
+            const client = new S3Client({
+              region: process.env.S3_REGION,
+              endpoint: process.env.S3_ENDPOINT,
+              forcePathStyle: true,
+              requestChecksumCalculation: 'WHEN_REQUIRED',
+              responseChecksumValidation: 'WHEN_REQUIRED',
+            });
+
+            const bucket = process.env.S3_BUCKET;
+            const objectKey = 'ops-smoke/' + Date.now() + '-' + crypto.randomUUID() + '.txt';
+            const body = 'weddingpick-kakao-object-storage-smoke';
+            let created = false;
+
+            try {
+              const putUrl = await getSignedUrl(
+                client,
+                new PutObjectCommand({
+                  Bucket: bucket,
+                  Key: objectKey,
+                  ContentType: 'text/plain',
+                  Metadata: { 'max-file-size': String(10 * 1024 * 1024) },
+                }),
+                { expiresIn: 60 }
+              );
+
+              const put = await fetch(putUrl, {
+                method: 'PUT',
+                headers: { 'content-type': 'text/plain' },
+                body,
+              });
+              if (!put.ok) throw new Error('presigned PUT failed: ' + put.status);
+              created = true;
+              console.log('presigned_put=ok');
+
+              const getUrl = await getSignedUrl(
+                client,
+                new GetObjectCommand({ Bucket: bucket, Key: objectKey }),
+                { expiresIn: 60 }
+              );
+              const get = await fetch(getUrl);
+              if (!get.ok) throw new Error('presigned GET failed: ' + get.status);
+              const read = await get.text();
+              if (read !== body) throw new Error('downloaded smoke payload mismatch');
+              console.log('presigned_get=ok');
+            } finally {
+              if (created) {
+                await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: objectKey }));
+                console.log('delete=ok');
+              }
+            }
+          }
+
+          main().catch((error) => {
+            console.error(error instanceof Error ? error.message : String(error));
+            process.exitCode = 1;
+          });
+          NODE
+
+      - name: Separate worker startup smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          pending="$(sudo -n docker exec -i weddingpick-api node <<'NODE'
+          const { Pool } = require('pg');
+          (async () => {
+            const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+            try {
+              const { rows } = await pool.query("SELECT count(*)::int AS n FROM structured.analyses WHERE status IN ('pending','running')");
+              process.stdout.write(String(rows[0]?.n ?? 0));
+            } finally {
+              await pool.end();
+            }
+          })().catch(() => process.exit(1));
+          NODE
+          )"
+          test "$pending" = 0
+
+          grep -q '^GEMINI_API_KEY=.' /home/ubuntu/WeddingPick/.env.kakao-prod
+          image="$(sudo -n docker inspect -f '{{.Config.Image}}' weddingpick-api)"
+          name="weddingpick-worker-smoke-\${GITHUB_RUN_ID}-\${GITHUB_RUN_ATTEMPT}"
+
+          cleanup() {
+            sudo -n docker rm -f "$name" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          sudo -n docker run -d --pull=never --name "$name" --restart=no \
+            --env-file /home/ubuntu/WeddingPick/.env.kakao-prod \
+            "$image" npm run worker --workspace @weddingpick/api >/dev/null
+
+          sleep 8
+          test "$(sudo -n docker inspect -f '{{.State.Running}}' "$name")" = true
+          sudo -n docker logs "$name" 2>&1 | grep -F '분석 워커 시작'
+          echo 'worker_startup=ok'
