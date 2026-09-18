@@ -66,7 +66,7 @@ describe('최신 홈·추천 연결', () => {
       onPressSearchMore={jest.fn()} />);
     expect(text(view)).toContain('추천 이유');
     expect(text(view)).toContain('선호하는 분위기가 같아요');
-    expect(text(view)).toContain('실 제보 0건');
+    expect(text(view)).toMatch(/실 제보\s*0\s*건/);
   });
 
   it('업체가 없는 업종도 더 찾아보기를 열 수 있다', () => {
@@ -102,7 +102,7 @@ describe('최신 홈·추천 연결', () => {
     expect(text(view)).toContain('선호하는 분위기가 같아요');
     expect(text(view)).not.toContain('업체 안내 150만원');
     expect(text(view)).not.toContain('4.8');
-    expect(text(view)).toContain('0건');
+    expect(text(view)).toMatch(/0\s*건/);
   });
 
   it('Pick 버튼은 상위 상세 이동 이벤트를 차단한다', () => {
