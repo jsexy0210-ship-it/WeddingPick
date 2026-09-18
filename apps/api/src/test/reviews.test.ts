@@ -217,6 +217,24 @@ describeWithDb('이용 후기', () => {
       expect(invalid.statusCode).toBe(400);
     });
 
+    it('형식이 잘못된 cursor는 DB cast 오류 없이 첫 페이지로 되돌린다', async () => {
+      const malformedCursor = Buffer.from(
+        JSON.stringify(['not-a-date', 'not-a-uuid']),
+        'utf8'
+      ).toString('base64url');
+
+      const response = await test.app.inject({
+        method: 'GET',
+        url: `/v1/reviews?cursor=${encodeURIComponent(malformedCursor)}`,
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(loungeReviewListResponseSchema.parse(response.json())).toMatchObject({
+        reviews: [],
+        nextCursor: null,
+      });
+    });
+
     it('cursor로 다음 쪽을 이어도 후기 중복이 없다', async () => {
       const author = await signInAs(test, 'lounge-cursor');
       const vendors = await Promise.all([
