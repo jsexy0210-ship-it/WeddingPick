@@ -44,7 +44,7 @@ if (!url) {
 const kakaoKey = process.env.KAKAO_APP_KEY;
 
 if (!kakaoKey) {
-  console.error('::error::KAKAO_APP_KEY(카카오 REST API 키)가 없다 — infra/render-env.yml과 같은 이름이다.');
+  console.error('::error::KAKAO_APP_KEY(카카오 REST API 키)가 없다 — GitHub Secret에 추가한다.');
   process.exit(1);
 }
 
