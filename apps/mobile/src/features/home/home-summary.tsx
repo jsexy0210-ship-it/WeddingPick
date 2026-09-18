@@ -60,25 +60,28 @@ export function PendingPreparation({
                   pressed && styles.pressed,
                 ]}>
                 <View style={styles.cardTop}>
-                  <View style={[styles.categoryIcon, { backgroundColor: active ? theme.tintSurface : theme.background }]}>
-                    {icon ? (
-                      <CategoryIcon
-                        kind={icon}
-                        size={Layout.iconTab}
-                        color={active ? theme.tint : theme.textSecondary}
-                      />
-                    ) : null}
-                  </View>
-                  <SeedIcon
-                    name="clockRegular"
-                    size={Layout.iconField}
-                    color={active ? theme.tint : theme.textAssistive}
-                  />
+                  {icon ? (
+                    <CategoryIcon
+                      kind={icon}
+                      size={Layout.iconRow}
+                      color={active ? theme.tint : theme.textAssistive}
+                    />
+                  ) : (
+                    <View style={styles.categoryIconSpacer} />
+                  )}
+                  {active ? (
+                    <SeedIcon name="clockRegular" size={Layout.iconField} color={theme.tint} />
+                  ) : (
+                    <View style={[styles.todoMark, { borderColor: theme.track }]} />
+                  )}
                 </View>
                 <ThemedText type="f14" style={styles.bold} numberOfLines={1}>
                   {item.label}
                 </ThemedText>
-                <ThemedText type="f12" themeColor="textAssistive" numberOfLines={1}>
+                <ThemedText
+                  type="f12"
+                  themeColor={active ? 'tint' : 'textAssistive'}
+                  numberOfLines={1}>
                   {item.pickCount > 0
                     ? S['pending.count'].replace('{n}', formatCount(item.pickCount))
                     : S['pending.before']}
@@ -215,12 +218,12 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
     marginBottom: Spacing.one,
   },
-  categoryIcon: {
-    width: Layout.touchTarget,
-    height: Layout.touchTarget,
+  categoryIconSpacer: { width: Layout.iconRow, height: Layout.iconRow },
+  todoMark: {
+    width: Layout.iconField,
+    height: Layout.iconField,
     borderRadius: Radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderWidth: Border.selected,
   },
   spacer: { flex: 1 },
   bold: { fontWeight: 700 },
