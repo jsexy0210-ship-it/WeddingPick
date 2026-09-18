@@ -25,7 +25,7 @@ describe('geocodeKakaoAddress', () => {
     });
 
     expect(seenRequests).toHaveLength(1);
-    const [seen] = seenRequests;
+    const seen = seenRequests[0]!;
     expect(seen.url.origin).toBe('https://dapi.kakao.com');
     expect(seen.url.pathname).toBe('/v2/local/search/address.json');
     expect(seen.url.searchParams.get('query')).toBe('서울 강남구 도산대로 123');
