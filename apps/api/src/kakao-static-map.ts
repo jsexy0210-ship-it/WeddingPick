@@ -1,5 +1,11 @@
 type FetchLike = (input: string | URL, init?: RequestInit) => Promise<Response>;
 
+export const KAKAO_MAP_TIMEOUT_MS = 5_000;
+
+function timeoutSignal(timeoutMs: number): AbortSignal {
+  return AbortSignal.timeout(timeoutMs);
+}
+
 export type KakaoStaticMap = {
   body: Buffer;
   contentType: string;
@@ -20,15 +26,18 @@ export async function geocodeKakaoAddress({
   restApiKey,
   address,
   fetchImpl = fetch,
+  timeoutMs = KAKAO_MAP_TIMEOUT_MS,
 }: {
   restApiKey: string;
   address: string;
   fetchImpl?: FetchLike;
+  timeoutMs?: number;
 }): Promise<KakaoMapCoordinates | null> {
   const url = new URL('https://dapi.kakao.com/v2/local/search/address.json');
   url.searchParams.set('query', address);
 
   const response = await fetchImpl(url, {
+    signal: timeoutSignal(timeoutMs),
     headers: {
       authorization: `KakaoAK ${restApiKey}`,
       accept: 'application/json',
@@ -62,11 +71,13 @@ export async function fetchKakaoStaticMap({
   lat,
   lng,
   fetchImpl = fetch,
+  timeoutMs = KAKAO_MAP_TIMEOUT_MS,
 }: {
   restApiKey: string;
   lat: number;
   lng: number;
   fetchImpl?: FetchLike;
+  timeoutMs?: number;
 }): Promise<KakaoStaticMap> {
   const url = new URL('https://dapi.kakao.com/v2/maps/staticmap');
   url.searchParams.set('center', `${lng},${lat}`);
@@ -77,6 +88,7 @@ export async function fetchKakaoStaticMap({
   url.searchParams.set('lv', '3');
 
   const response = await fetchImpl(url, {
+    signal: timeoutSignal(timeoutMs),
     headers: {
       authorization: `KakaoAK ${restApiKey}`,
       accept: 'image/jpeg,image/png',
