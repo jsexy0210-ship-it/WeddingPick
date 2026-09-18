@@ -180,7 +180,14 @@ const MEMBER = {
 
 // 서버에 도착한 시점을 기다린다. 실제 네트워크나 운영 데이터는 사용하지 않는다.
 async function untilCalled(mock: jest.Mock, count = 1) {
-  for (let i = 0; i < 30 && mock.mock.calls.length < count; i += 1) await Promise.resolve();
+  /*
+   * Response.json() + AsyncStorage가 섞인 경로는 Promise microtask만 30번 비운다고
+   * CI에서 끝난다는 보장이 없다. 실제 이벤트 루프를 한 틱씩 넘기며 콜백 자체를
+   * 기다린다. 제품 지연을 흉내 내는 것이 아니라 테스트가 관찰 대상을 기다리는 자리다.
+   */
+  for (let i = 0; i < 100 && mock.mock.calls.length < count; i += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
   expect(mock).toHaveBeenCalledTimes(count);
 }
 
@@ -202,7 +209,7 @@ describe('재방문과 계정 변경 회귀', () => {
     await untilCalled(fetch);
     const updated = { ...SEARCH, total: 2 };
     network.resolve(response(updated));
-    for (let i = 0; i < 30; i += 1) await Promise.resolve();
+    await untilCalled(onValue);
     expect(onValue).toHaveBeenCalledWith(updated);
     expect(onRefreshing).toHaveBeenLastCalledWith(false);
     expect(onError).not.toHaveBeenCalled();
@@ -317,7 +324,7 @@ describe('최신 업체 응답의 경계', () => {
     respondWith({ error: { code: 'forbidden', message: '권한을 확인해 주세요.' } }, 403);
     const refresh = observer();
     await searchVendors({}, refresh);
-    for (let i = 0; i < 30; i += 1) await Promise.resolve();
+    await untilCalled(refresh.onError);
     expect(refresh.onError).toHaveBeenCalledWith(expect.objectContaining({ status: 403 }));
     expect(refresh.onValue).not.toHaveBeenCalled();
     respondWith({ ...SEARCH, total: 5 });
@@ -338,7 +345,7 @@ describe('최신 업체 응답의 경계', () => {
     await clearToken();
     clearReadCache();
     network.resolve(response({ ...SEARCH, total: 8 }));
-    for (let i = 0; i < 30; i += 1) await Promise.resolve();
+    await untilCalled(refresh.onError);
     expect(refresh.onValue).not.toHaveBeenCalled();
     expect(refresh.onError).toHaveBeenCalledWith(expect.objectContaining({ status: 401 }));
   });
