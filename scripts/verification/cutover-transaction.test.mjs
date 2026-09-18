@@ -374,7 +374,8 @@ shellTest('workflow rollback ownership prevents double rollback after a successf
     appCutoverWorkflow,
     /needs\.cutover\.result == 'success'\s*&&\s*needs\.verify\.result != 'success'/,
   );
-  assert.match(appCutoverWorkflow, /rollback-kakao-app-web\.sh/);
+  assert.match(appCutoverWorkflow, /rollback-kakao-app-web-failed-cutover\.sh/);
+  assert.match(appInstallSource, /rollback-kakao-app-web-failed-cutover\.sh/);
   assert.match(appInstallSource, /trap rollback_on_error EXIT/);
   assert.match(appInstallSource, /trap - EXIT/);
 });
