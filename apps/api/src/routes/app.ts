@@ -183,4 +183,14 @@ export function registerAppRoutes(app: FastifyInstance, context: AppContext): vo
       Number.isFinite(limit) && limit > 0 ? limit : WEDDING_FEED_TARGET_PUBLISHED
     );
   });
+
+  /*
+   * 글 하나 — 카드를 눌러 들어간 자리(`(tabs)/(home)/feed/[id].tsx`).
+   *
+   * 목록과 같은 조건(공개된 것만)이라 목록에 없는 글은 주소로도 안 열린다.
+   * 본문은 여기서만 나간다 — 목록에 실으면 읽지도 않을 본문 여덟 편이 같이 온다.
+   */
+  app.get<{ Params: { id: string } }>('/v1/wedding-feed/:id', async (request) =>
+    weddingFeed.getPublished(context.pool, context.storage, request.params.id)
+  );
 }

@@ -1,67 +1,40 @@
 import type { MyReport } from '@weddingpick/api-contract';
-import { MY_REPORTS_EMPTY, MY_REPORTS_EMPTY_CTA, formatCount, formatDateDot } from '@weddingpick/domain';
+import { formatCount, formatDateDot } from '@weddingpick/domain';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import {
-  ActionButton,
-  ErrorView,
-  Layout,
-  Radius,
-  Spacing,
-  ThemedText,
-  Toast,
-  useTheme,
-} from '@weddingpick/ui';
-import { deleteReview, listMyReports } from '@/api/client';
-import { confirmAlert } from '@/components/confirm-alert';
+import { ErrorView, Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { listMyReports } from '@/api/client';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { won } from '@/features/quotes/quote-result-view';
 import { Badge, Dock, EmptyBox, Hero, Section, SubScreen } from '@/features/settings/my-kit';
 
-/** 시안 11-report-review 12c WP-RPT-009. */
 const S = {
-  title: '내 제보 내역',
-  hero: (total: number, used: number) => [`${formatCount(total)}건 제보했고`, `${formatCount(used)}건이 반영됐어요`],
-  heroEmpty: ['아직 제보한 것이', '없어요'],
+  title: 'Pick 인증내역',
+  newProof: '새로 인증하기',
+  empty: '아직 Pick 인증내역이 없어요',
+  emptyCta: '첫 Pick 인증하기',
+  hero: (total: number, used: number) => [`${formatCount(total)}건 인증했고`, `${formatCount(used)}건이 반영됐어요`],
+  heroEmpty: ['아직 Pick 인증한 것이', '없어요'],
   inUse: '반영됨',
-  needsCheck: '확인 필요',
-  notInUse: '반영 전',
-  review: '후기',
-  deleteReview: '후기 지우기',
-  deleteTitle: '후기를 지울까요',
-  deleteBody: (vendor: string) => `${vendor}에 쓴 후기가 지워져요. 다시 되돌릴 수 없어요.`,
-  keep: '그대로 둘게요',
-  remove: '지우기',
-  removeFail: '지우지 못했어요',
+  checking: '확인 중',
+  needsCheck: '보완 필요',
 } as const;
 
 function badgeKind(report: MyReport): 'none' | 'ok' | 'wait' {
-  if (report.kind === 'review') return 'none';
-
   return report.inUse ? 'ok' : report.needsCheck ? 'wait' : 'none';
 }
 
 function badgeLabel(report: MyReport): string {
-  if (report.kind === 'review') return S.review;
-
-  return report.inUse ? S.inUse : report.needsCheck ? S.needsCheck : S.notInUse;
+  return report.inUse ? S.inUse : report.needsCheck ? S.needsCheck : S.checking;
 }
 
-/**
- * 내 제보 내역 · WP-RPT-009. 카드마다 상태 배지 + 날짜 · 업체명 ↔ 금액 · 사유. 행동 버튼은 할 일이
- * 남은 카드에만 둔다(rule «보완 필요에만 행동 버튼») — 지금은 후기 지우기가 그 자리다.
- *
- * **남아 있는 것과 쓰이는 것은 다르다.** 업체를 못 찾은 Pick 인증처럼 남아 있지만 쓰이지 않는 것은
- * «반영 전»으로 적고 서버가 보낸 사유를 붙인다.
- */
 export default function MyReportsScreen() {
   const theme = useTheme();
   const [reports, setReports] = useState<MyReport[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const loadVersion = useRef(0);
-  const [toast, setToast] = useState<string | null>(null);
 
   const load = useCallback(() => {
     const version = ++loadVersion.current;
@@ -72,7 +45,7 @@ export default function MyReportsScreen() {
         setReports(response.reports);
       })
       .catch((caught: Error) => {
-        if (version === loadVersion.current) setLoadError(caught.message ?? '제보 내역을 불러오지 못했어요');
+        if (version === loadVersion.current) setLoadError(caught.message ?? 'Pick 인증내역을 불러오지 못했어요');
       });
   }, []);
 
@@ -84,43 +57,53 @@ export default function MyReportsScreen() {
   if (loadError) return <ErrorView message={loadError} onRetry={load} />;
   if (reports === null) return <DelayedLoadingView />;
 
-  function confirmDelete(reviewId: string, vendor: string) {
-    confirmAlert(S.deleteTitle, S.deleteBody(vendor), [
-      { text: S.keep, style: 'cancel' },
-      {
-        text: S.remove,
-        style: 'destructive',
-        onPress: () => {
-          void deleteReview(reviewId)
-            .then(load)
-            .catch(() => setToast(S.removeFail));
-        },
-      },
-    ]);
-  }
-
-  const used = reports.filter((report) => report.inUse).length;
-  const empty = reports.length === 0;
+  const proofs = reports.filter((report) => report.kind !== 'review');
+  const used = proofs.filter((report) => report.inUse).length;
+  const empty = proofs.length === 0;
+  const stats = [
+    { label: S.inUse, value: used, color: theme.positive },
+    { label: S.checking, value: proofs.filter((report) => !report.inUse && !report.needsCheck).length, color: theme.text },
+    { label: S.needsCheck, value: proofs.filter((report) => !report.inUse && report.needsCheck).length, color: theme.cautionary },
+  ];
 
   return (
     <SubScreen
       title={S.title}
       dock={
-        empty ? (
-          <Dock primary={{ label: MY_REPORTS_EMPTY_CTA, onPress: () => router.push('/capture/payment/consent') }} />
-        ) : undefined
+        <Dock
+          primary={{
+            label: empty ? S.emptyCta : S.newProof,
+            onPress: () => router.push('/capture/payment/consent'),
+          }}
+        />
       }>
-      <Hero lines={empty ? S.heroEmpty : S.hero(reports.length, used)} />
+      <Hero lines={empty ? S.heroEmpty : S.hero(proofs.length, used)} />
+
+      {empty ? null : (
+        <Section gap="events">
+          <View style={styles.statRow}>
+            {stats.map((stat) => (
+              <View key={stat.label} style={[styles.statCell, { backgroundColor: theme.backgroundElement }]}>
+                <ThemedText type="f24" numeric style={[styles.statValue, { color: stat.color }]}>
+                  {formatCount(stat.value)}
+                </ThemedText>
+                <ThemedText type="f12" themeColor="textAssistive" numberOfLines={1}>
+                  {stat.label}
+                </ThemedText>
+              </View>
+            ))}
+          </View>
+        </Section>
+      )}
 
       <Section gap="events">
         {empty ? (
-          <EmptyBox>{MY_REPORTS_EMPTY}</EmptyBox>
+          <EmptyBox>{S.empty}</EmptyBox>
         ) : (
           <View style={styles.list}>
-            {reports.map((report) => (
+            {proofs.map((report) => (
               <View key={report.id} style={[styles.card, { borderColor: theme.track }]}>
                 <View style={styles.cardHead}>
-                  {/* 확인 필요는 자료를 아직 읽는 중일 때만이다(WP-RPT-008 · v3.24). */}
                   <Badge kind={badgeKind(report)}>{badgeLabel(report)}</Badge>
                   <ThemedText type="t7" themeColor="textAssistive" numeric>
                     {formatDateDot(report.reportedAt.slice(0, 10))}
@@ -139,31 +122,27 @@ export default function MyReportsScreen() {
                 <ThemedText type="t7" themeColor="textSecondary">
                   {report.note ?? report.use}
                 </ThemedText>
-                {/* 후기는 한 사람이 한 업체에 하나다. 지우는 길이 없으면 다시 쓸 수도 없다. */}
-                {report.kind === 'review' ? (
-                  <View style={styles.action}>
-                    <ActionButton
-                      variant="ghost"
-                      size="medium"
-                      label={S.deleteReview}
-                      onPress={() => confirmDelete(report.id, report.subject)}
-                    />
-                  </View>
-                ) : null}
               </View>
             ))}
           </View>
         )}
       </Section>
-
-      <Toast message={toast} onHidden={() => setToast(null)} />
     </SubScreen>
   );
 }
 
 const styles = StyleSheet.create({
   list: { gap: Layout.rowPaddingY },
-  /* 카드 radius 10 · 1 gray300 · 18 20 · gap 10 */
+  statRow: { flexDirection: 'row', gap: Layout.cardGap },
+  statCell: {
+    flex: 1,
+    borderRadius: Radius.medium,
+    paddingVertical: Spacing.three,
+    paddingHorizontal: Layout.rowPaddingY,
+    alignItems: 'center',
+    gap: Spacing.one,
+  },
+  statValue: { fontWeight: '700' },
   card: {
     borderRadius: Radius.medium,
     borderWidth: 1,
@@ -175,5 +154,4 @@ const styles = StyleSheet.create({
   nameRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: Layout.rowPaddingY },
   name: { flex: 1, minWidth: 0 },
   amount: { fontWeight: '700' },
-  action: { alignSelf: 'flex-start' },
 });

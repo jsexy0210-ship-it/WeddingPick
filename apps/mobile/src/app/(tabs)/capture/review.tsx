@@ -5,7 +5,8 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { ensureSignedIn } from '@/api/auth';
 import { ApiError } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
-import { ActionButton, Layout, Spacing, ThemedText, showAlert } from '@weddingpick/ui';
+import { ActionButton, Layout, Spacing, ThemedText } from '@weddingpick/ui';
+import { confirmAlert } from '@/components/confirm-alert';
 import { PageThumbnail } from '@/components/page-thumbnail';
 import { useCaptureDraft } from '@/features/capture/capture-draft';
 import type { CapturedPage } from '@/features/capture/types';
@@ -56,7 +57,7 @@ export default function ReviewScreen() {
         return;
       }
 
-      showAlert('정리를 시작하지 못했어요', (error as Error).message);
+      confirmAlert('정리를 시작하지 못했어요', (error as Error).message);
     } finally {
       setAnalyzing(false);
     }
@@ -72,7 +73,7 @@ export default function ReviewScreen() {
       clearDraft();
       router.replace(`/wedding/${saved.id}`);
     } catch {
-      showAlert('저장하지 못했어요', '다시 시도해주세요.');
+      confirmAlert('저장하지 못했어요', '다시 시도해주세요.');
     } finally {
       setSaving(false);
     }

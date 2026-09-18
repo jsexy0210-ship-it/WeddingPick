@@ -22,7 +22,7 @@ type BizItem = { name: string; meta: string; route: string };
  */
 const KINDS: readonly BizItem[] = [
   { name: '소속 확인 요청', meta: '사업자등록번호 · 업체 도메인 메일로 확인해요', route: '/my/biz/claim' },
-  { name: '내 인증 내역', meta: '소속 확인 요청과 처리 상태', route: '/my/vendor-claims' },
+  { name: '내 인증내역', meta: '소속 확인 요청과 처리 상태', route: '/my/vendor-claims' },
   { name: '정보 수정 · 자료 제공', meta: '주소 · 연락처 · 영업상태 · 대표 이미지 · 공식 소개자료', route: '/my/biz/data' },
   { name: '혜택 · 이벤트 등록', meta: '기간과 조건을 함께 알려주세요', route: '/my/biz/benefit' },
   { name: '후기 · 정보 반론', meta: '올라온 후기나 내용에 대한 업체 입장', route: '/my/rebuttals' },

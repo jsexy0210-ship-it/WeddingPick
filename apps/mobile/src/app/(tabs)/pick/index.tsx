@@ -1,8 +1,8 @@
 /**
- * Pick — 저장한 업체 목록. WP-PICK-001.
+ * Pick — Pick한 업체 목록. WP-PICK-001.
  *
- * 피그마 `Pick.tsx`(2026-09-14 정본 · 최상위 규칙 1)대로 그린다. 헤더(«Pick» + «N개 저장»
- * 배지 + 부제 + 배우자 함께-보기 상자) → 비교 배너(2곳 이상 고르면) → 업종 칩 → 카드 목록.
+ * 피그마 `Pick.tsx`(2026-09-14 정본 · 최상위 규칙 1)대로 그린다. 헤더(«Pick» + «N곳» 회색 텍스트
+ * + 부제 + 배우자 함께-보기 상자) → 비교 배너(2곳 이상 고르면) → 업종 칩 → 카드 목록.
  * 카드는 검색 결과와 같은 틀(썸네일 104×116 · 정보 안쪽 14)이고 아래에 CTA 띠가 붙는다.
  *
  * 그 앞에는 루트 시안 07-pick #17a의 «13개 중 N개를 결정했어요» 진행바 + 업종별 행 목록이
@@ -10,21 +10,19 @@
  * 업종 칩이 그 역할(업종으로 걸러 보기)을 이 화면 안에서 한다.
  *
  * **피그마를 그대로 옮기지 않은 것.**
- * - 카드의 해시태그 · 별점 · 저장 수 · 금액은 서버가 후보에 주지 않는다
+ * - 카드의 해시태그 · 별점 · 인기 수 · 금액은 서버가 후보에 주지 않는다
  *   (`vendorCandidateSchema`) — 만들어 넣지 않는다. 그 자리에는 후보 메모(`note`)가 있으면 적는다.
  * - 배지 «인기 · 신규»는 우리 값이 없다. 같은 자리에 **«함께»**(배우자도 고른 곳)를 세운다.
- * - «Pick하기»는 우리 말로 **«결정하기»**다 — 이 화면의 카드는 이미 Pick(저장)한 곳이고,
- *   용어집이 Pick을 저장 행동으로 정해 두었다. 결정은 확인 시트(`/pick/confirm`)가 한다.
+ * - «Pick하기»는 우리 말로 **«결정하기»**다 — 이 화면의 카드는 이미 Pick한 곳이고,
+ *   용어집이 Pick을 후보 담기 행동으로 정해 두었다. 결정은 확인 시트(`/pick/confirm`)가 한다.
  * - 결정한 카드의 «상담하기»는 만들지 않는다 — 이용약관 제3조, 고지 후 구현 대기.
  *   «상담취소» 자리는 «결정 취소»이고 한 번 더 묻는다(위험한 조작).
  * - «업체 탐색하기»는 «업체 검색하기»다(«탐색»은 금지어).
  */
 import type { CandidateListResponse, CurrentUser, VendorCandidate } from '@weddingpick/api-contract';
 import {
-  MAX_COMPARED_VENDORS,
   TERMS,
   VENDOR_CATEGORY_LABEL,
-  formatCount,
   type VendorCategory,
 } from '@weddingpick/domain';
 import { router, useFocusEffect } from 'expo-router';
@@ -35,7 +33,6 @@ import Svg, { Path } from 'react-native-svg';
 
 import {
   Border,
-  Elevation,
   Layout,
   LetterSpacing,
   LineHeight,
@@ -46,35 +43,51 @@ import {
   Spacing,
   ThemedText,
   ThemedView,
-  Toast,
   VendorImage,
   readWebInteractionState,
-  showAlert,
   useTheme,
 } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
-import { getCurrentUser, listCandidates, removeCandidate, removeDecision } from '@/api/client';
-import { UnpickSheet } from '@/features/pick/pick-sheets';
+import {
+  addCandidate,
+  decideCategory,
+  getCurrentUser,
+  listCandidates,
+  removeCandidate,
+  removeDecision,
+} from '@/api/client';
+import { confirmAlert } from '@/components/confirm-alert';
+import { DialogToast } from '@/components/confirm-alert-toast';
+import {
+  PICK_COMPARE_ADD_LABEL,
+  PICK_COMPARE_BANNER_HINT,
+  PICK_COMPARE_MAX,
+  PICK_COMPARE_REMOVE_LABEL,
+  PICK_SUBTITLE,
+  PICK_VERIFY_LABEL,
+  compareBasketLabel,
+  pickCountLabel,
+} from '@/features/pick/canonical-rules';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import { isWebShellScreen } from '@/features/webshell/config';
 import { WebShellView } from '@/features/webshell/WebShellView';
 
 /* 문구 — spec/strings.ko.json `pick`. 피그마 `Pick.tsx`에서 왔다. */
-const SUBTITLE = '마음에 든 업체를 모아뒀어요. 하나씩 비교해봐요.';
-const PRICE_REPORT = '가격 제보';
-const COMPARE_HINT = '가격과 조건을 한눈에 볼 수 있어요';
-const COMPARE_ALL = '전체 비교하기';
+const SUBTITLE = PICK_SUBTITLE;
+const PRICE_REPORT = PICK_VERIFY_LABEL;
+const COMPARE_HINT = PICK_COMPARE_BANNER_HINT;
+const COMPARE_ALL = '비교하기';
 const CHIP_ALL = '전체';
-const ACTION_COMPARE = '비교하기';
-const ACTION_COMPARING = '비교 중';
+const ACTION_COMPARE = PICK_COMPARE_ADD_LABEL;
+const ACTION_COMPARING = PICK_COMPARE_REMOVE_LABEL;
 const ACTION_DECIDE = '결정하기';
 const ACTION_UNDECIDE = '결정 취소';
 const BADGE_SHARED = '함께';
 const EMPTY_TITLE = '아직 Pick한 업체가 없어요';
-const EMPTY_BODY = '검색에서 마음에 드는 업체를 저장해봐요';
+const EMPTY_BODY = '검색에서 마음에 드는 업체를 Pick해보세요';
 const EMPTY_CTA = `업체 ${TERMS.search}하기`;
 const UNDECIDE_TITLE = '결정을 취소할까요?';
-const UNDECIDE_BODY = '웨딩노트의 준비 현황과 지출에서도 빠져요';
+const UNDECIDE_BODY = '웨딩노트의 결정 상태가 풀려요. 언제든 다시 결정할 수 있어요.';
 const MIN_COMPARE = 2;
 
 type Filter = VendorCategory | 'all';
@@ -87,17 +100,23 @@ type Row = {
   isDecided: boolean;
 };
 
+type UndoCandidate = {
+  candidate: VendorCandidate;
+  /** 후보 삭제의 FK cascade로 같이 풀린 최종 결정을 되살려야 하는가. */
+  wasDecided: boolean;
+};
+
 export default function PickScreen() {
   const theme = useTheme();
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [page, setPage] = useState<CandidateListResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
-  /** 비교함에 담은 업체(vendorId). 최대 MAX_COMPARED_VENDORS. */
+  /** 비교함에 담은 업체(vendorId). 최대 PICK_COMPARE_MAX. */
   const [compare, setCompare] = useState<ReadonlySet<string>>(new Set());
-  const [unpickTarget, setUnpickTarget] = useState<VendorCandidate | null>(null);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [undoCandidate, setUndoCandidate] = useState<UndoCandidate | null>(null);
 
   const load = useCallback(() => {
     // 하이브리드 웹뷰 쉘 POC로 이 화면을 대체할 때는 이 밑 자료를 안 쓴다 —
@@ -129,7 +148,7 @@ export default function PickScreen() {
       isDecided: group.decidedVendorId === candidate.vendorId,
     }))
   );
-  /* 칩은 후보가 있는 업종만, 그룹 순서대로(피그마 `categories` — 저장 목록에서 뽑는다). */
+  /* 칩은 후보가 있는 업종만, 그룹 순서대로(피그마 `categories` — Pick 목록에서 뽑는다). */
   const categories = (page?.groups ?? [])
     .filter((group) => group.candidates.length > 0)
     .map((group) => group.category);
@@ -137,12 +156,17 @@ export default function PickScreen() {
   const partner = me?.spouseLinked ? (me.partnerDisplayName ?? TERMS.spouse) : null;
   const weddingId = me?.weddingId ?? null;
 
+  function showToast(message: string, undo: UndoCandidate | null = null) {
+    setUndoCandidate(undo);
+    setToast(message);
+  }
+
   function toggleCompare(vendorId: string) {
     setCompare((prev) => {
       const next = new Set(prev);
       if (next.has(vendorId)) next.delete(vendorId);
-      else if (next.size < MAX_COMPARED_VENDORS) next.add(vendorId);
-      else setToast(`한 번에 ${MAX_COMPARED_VENDORS}곳까지 비교할 수 있어요`);
+      else if (next.size < PICK_COMPARE_MAX) next.add(vendorId);
+      else showToast(`한 번에 ${PICK_COMPARE_MAX}곳까지 비교할 수 있어요`);
       return next;
     });
   }
@@ -151,7 +175,7 @@ export default function PickScreen() {
     router.push({ pathname: '/search/compare', params: { ids: Array.from(compare).join(',') } });
   }
 
-  /** 최종 결정은 확인 시트(WP-PICK-005)가 한다 — 여기서 먼저 저장하지 않는다. */
+  /** 최종 결정은 확인 시트(WP-PICK-005)가 한다 — 여기서 먼저 결정 기록을 만들지 않는다. */
   function goDecide(candidate: VendorCandidate) {
     router.push({
       pathname: '/pick/confirm',
@@ -164,11 +188,11 @@ export default function PickScreen() {
     });
   }
 
-  /** 결정 취소 — 위험한 조작이라 한 번 더 묻는다(CLAUDE.md 최상위 규칙 5). */
+  /** 결정 취소는 되돌릴 수 있는 조작이라 DLG-B 확인을 쓴다. */
   function askUndecide(candidate: VendorCandidate) {
-    showAlert(UNDECIDE_TITLE, UNDECIDE_BODY, [
-      { text: '돌아가기', style: 'cancel' },
-      { text: ACTION_UNDECIDE, style: 'destructive', onPress: () => void undecide(candidate.category) },
+    confirmAlert(UNDECIDE_TITLE, UNDECIDE_BODY, [
+      { text: '그대로 둘게요', style: 'cancel' },
+      { text: ACTION_UNDECIDE, onPress: () => undecide(candidate.category) },
     ]);
   }
 
@@ -177,30 +201,73 @@ export default function PickScreen() {
     setBusy(true);
     try {
       await removeDecision(weddingId, category);
+      showToast('결정을 취소했어요');
       load();
     } catch {
-      setToast('결정을 취소하지 못했어요. 잠시 후 다시 시도해주세요.');
+      showToast('결정을 취소하지 못했어요. 잠시 후 다시 시도해주세요.');
     } finally {
       setBusy(false);
     }
   }
 
-  async function confirmUnpick() {
-    if (!unpickTarget || !weddingId) return;
+  function askUnpick(row: Row) {
+    const { candidate, isDecided } = row;
+    const who = partner && partner !== TERMS.spouse ? `${partner}님` : TERMS.spouse;
+    const impacts = [
+      isDecided ? '최종 결정도 함께 취소돼요.' : null,
+      candidate.addedByPartner ? `${who} 목록에서도 함께 사라져요.` : null,
+      '다시 Pick할 수 있어요.',
+    ].filter(Boolean);
+
+    confirmAlert('후보에서 뺄까요?', impacts.join(' '), [
+      { text: '그대로 둘게요', style: 'cancel' },
+      { text: '빼기', onPress: () => confirmUnpick(candidate, isDecided) },
+    ]);
+  }
+
+  async function confirmUnpick(candidate: VendorCandidate, wasDecided: boolean) {
+    if (!weddingId) return;
     setBusy(true);
     try {
-      await removeCandidate(weddingId, unpickTarget.id);
+      await removeCandidate(weddingId, candidate.id);
       setCompare((prev) => {
         const next = new Set(prev);
-        next.delete(unpickTarget.vendorId);
+        next.delete(candidate.vendorId);
         return next;
       });
+      showToast('후보에서 뺐어요', { candidate, wasDecided });
       load();
     } catch {
-      setToast('후보를 빼지 못했어요. 잠시 후 다시 시도해주세요.');
+      showToast('후보를 빼지 못했어요. 잠시 후 다시 시도해주세요.');
     } finally {
       setBusy(false);
-      setUnpickTarget(null);
+    }
+  }
+
+  async function undoUnpick(target: UndoCandidate) {
+    if (!weddingId) return;
+    const { candidate, wasDecided } = target;
+    let candidateRestored = false;
+    setBusy(true);
+    try {
+      await addCandidate(weddingId, candidate.vendorId, candidate.note ?? undefined);
+      candidateRestored = true;
+      if (wasDecided) {
+        await decideCategory(weddingId, {
+          category: candidate.category,
+          vendorId: candidate.vendorId,
+        });
+      }
+      showToast(wasDecided ? 'Pick과 결정을 되돌렸어요' : '다시 Pick했어요');
+    } catch {
+      showToast(
+        candidateRestored && wasDecided
+          ? '다시 Pick했지만 결정을 복구하지 못했어요.'
+          : '다시 Pick하지 못했어요. 잠시 후 다시 시도해주세요.'
+      );
+    } finally {
+      load();
+      setBusy(false);
     }
   }
 
@@ -228,13 +295,13 @@ export default function PickScreen() {
 
               {/* 비교 배너 — 피그마 `compareIds.length >= 2`: 잉크 면 · radius 16 · 안쪽 16/14. */}
               {compare.size >= MIN_COMPARE ? (
-                <View style={[styles.compareBanner, { backgroundColor: theme.backgroundInk }]}>
+                <View style={[styles.compareBanner, { backgroundColor: theme.tintSurface, borderColor: theme.tintBorder }]}>
                   <View style={styles.compareText}>
-                    <ThemedText type="t7" style={[styles.bold, { color: theme.onInk }]}>
-                      {`${formatCount(compare.size)}개 선택됨`}
+                    <ThemedText type="t7" themeColor="tint" style={styles.bold}>
+                      {compareBasketLabel(compare.size)}
                     </ThemedText>
                     <View style={styles.compareHint}>
-                      <ThemedText type="micro" style={[styles.regular, { color: theme.onInk }]}>
+                      <ThemedText type="micro" themeColor="textSecondary" style={styles.regular}>
                         {COMPARE_HINT}
                       </ThemedText>
                     </View>
@@ -248,7 +315,6 @@ export default function PickScreen() {
                       { backgroundColor: theme.tint },
                       pressed ? styles.pressed : null,
                     ]}>
-                    <ProductSymbol name="chart" size={Layout.iconField} color={theme.onTint} />
                     <ThemedText type="t7" style={[styles.bold, { color: theme.onTint }]}>
                       {COMPARE_ALL}
                     </ThemedText>
@@ -283,12 +349,12 @@ export default function PickScreen() {
                         key={row.candidate.id}
                         row={row}
                         comparing={compare.has(row.candidate.vendorId)}
-                        compareFull={compare.size >= MAX_COMPARED_VENDORS}
+                        compareFull={compare.size >= PICK_COMPARE_MAX}
                         busy={busy}
                         onCompare={() => toggleCompare(row.candidate.vendorId)}
                         onDecide={() => goDecide(row.candidate)}
                         onUndecide={() => askUndecide(row.candidate)}
-                        onRemove={() => setUnpickTarget(row.candidate)}
+                        onRemove={() => askUnpick(row)}
                       />
                     ))}
                   </View>
@@ -300,21 +366,23 @@ export default function PickScreen() {
         </View>
       </SafeAreaView>
 
-      <Toast message={toast} onHidden={() => setToast(null)} />
-      <UnpickSheet
-        candidate={unpickTarget}
-        partnerName={partner}
-        busy={busy}
-        onConfirm={() => void confirmUnpick()}
-        onDismiss={() => setUnpickTarget(null)}
+      <DialogToast
+        message={toast}
+        docked
+        actionLabel={undoCandidate ? '되돌리기' : null}
+        onAction={undoCandidate ? () => void undoUnpick(undoCandidate) : null}
+        onHidden={() => {
+          setToast(null);
+          setUndoCandidate(null);
+        }}
       />
     </ThemedView>
   );
 }
 
 /* ────────────────────────────────────────────
-   Header — 피그마 `px-5 pb-5 pt-6`: 제목 24/700 + «N개 저장» 배지 · 부제 14 ·
-   배우자 상자(radius 16 · 회색 면 · 안쪽 16/12 · 아바타 32 둘 · «가격 제보»)
+   Header — 피그마 `px-5 pb-5 pt-6`: 제목 24/700 + «N곳» 배지 · 부제 14 ·
+   배우자 상자(radius 16 · 회색 면 · 안쪽 16/12 · 아바타 32 둘 · «Pick 인증»)
 ──────────────────────────────────────────── */
 function Header({ me, partner, total }: { me: CurrentUser; partner: string | null; total: number }) {
   const theme = useTheme();
@@ -326,11 +394,9 @@ function Header({ me, partner, total }: { me: CurrentUser; partner: string | nul
         <ThemedText type="f24" style={[styles.bold, styles.title]}>
           {TERMS.pick}
         </ThemedText>
-        <View style={[styles.countBadge, { backgroundColor: theme.text }]}>
-          <ThemedText type="f12" style={[styles.bold, { color: theme.onInk }]}>
-            {`${formatCount(total)}개 저장`}
-          </ThemedText>
-        </View>
+        <ThemedText type="f14" themeColor="textAssistive" style={styles.bold}>
+          {pickCountLabel(total)}
+        </ThemedText>
       </View>
       <ThemedText type="f14" themeColor="textAssistive">
         {SUBTITLE}
@@ -338,8 +404,8 @@ function Header({ me, partner, total }: { me: CurrentUser; partner: string | nul
 
       {/*
         함께-보기 상자는 배우자가 연결됐을 때만 선다 — 피그마의 «준혁님과 함께 보고 있어요»는
-        배우자가 있는 시안값이다. «가격 제보»는 업체 무관 전역 진입이라 Pick 인증 동의 화면으로
-        바로 보낸다(폐기된 가격 제보 화면을 거치지 않는다).
+        배우자가 있는 시안값이다. «Pick 인증»는 업체 무관 전역 진입이라 Pick 인증 동의 화면으로
+        바로 보낸다(폐기된 별도 제보 화면을 거치지 않는다).
       */}
       {partner ? (
         <View style={[styles.partnerBox, { backgroundColor: theme.backgroundElement }]}>
@@ -361,7 +427,7 @@ function Header({ me, partner, total }: { me: CurrentUser; partner: string | nul
           <Pressable
             onPress={() => router.push('/capture/payment/consent')}
             accessibilityRole="button"
-            accessibilityLabel="가격 제보하기"
+            accessibilityLabel={PICK_VERIFY_LABEL}
             style={(state) => {
               const { hovered, focused } = readWebInteractionState(state);
               return [
@@ -373,7 +439,7 @@ function Header({ me, partner, total }: { me: CurrentUser; partner: string | nul
               ];
             }}>
             <ProductSymbol name="link" size={Layout.iconSmall} color={theme.tint} />
-            {/* 규격서: «가격 제보» 12/700 키 컬러 lh 16 · 고리 14. */}
+            {/* 규격서: «Pick 인증» 12/700 키 컬러 lh 16 · 고리 14. */}
             <ThemedText type="f12" themeColor="tint" style={styles.bold}>
               {PRICE_REPORT}
             </ThemedText>
@@ -474,7 +540,11 @@ function CandidateCard({
     <View
       style={[
         styles.card,
-        { backgroundColor: theme.background, borderColor: isDecided ? theme.tintBorder : theme.border },
+        {
+          backgroundColor: theme.background,
+          borderColor: isDecided ? theme.tint : theme.border,
+          borderWidth: isDecided ? 1.5 : Border.hairline,
+        },
       ]}>
       <Pressable
         accessibilityRole="button"
@@ -496,10 +566,10 @@ function CandidateCard({
               </ThemedText>
             </View>
           ) : null}
-          {/* 결정한 곳 — 피그마 `isConfirmed`: 썸네일 위 어두운 막 + 체크 원 28. */}
+          {/* 결정 완료 상태 — 03-pick 정본: 코랄 테두리 + 썸네일 우상단 체크. */}
           {isDecided ? (
-            <View style={[styles.decidedOverlay, { backgroundColor: theme.scrimLight }]}>
-              <ProductSymbol name="checkCircle" size={Layout.pickCircle} color={theme.onInk} />
+            <View style={[styles.decidedCheck, { backgroundColor: theme.tint }]}>
+              <ProductSymbol name="check" size={Layout.iconSmall} color={theme.onTint} />
             </View>
           ) : null}
         </View>
@@ -544,6 +614,27 @@ function CandidateCard({
       </Pressable>
 
       <View style={[styles.ctaStrip, { borderTopColor: theme.border }]}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ selected: comparing, disabled: compareDisabled }}
+          accessibilityLabel={`${candidate.vendorName} ${comparing ? ACTION_COMPARING : ACTION_COMPARE}`}
+          disabled={compareDisabled}
+          onPress={onCompare}
+          style={({ pressed }) => [
+            styles.compareLink,
+            compareDisabled ? styles.disabled : null,
+            pressed ? styles.pressed : null,
+          ]}>
+          <ThemedText
+            type="f12"
+            style={[
+              styles.bold,
+              { color: comparing ? theme.tint : compareDisabled ? theme.textDisabled : theme.textAssistive },
+            ]}>
+            {comparing ? ACTION_COMPARING : ACTION_COMPARE}
+          </ThemedText>
+        </Pressable>
+
         {isDecided ? (
           <Pressable
             accessibilityRole="button"
@@ -551,59 +642,30 @@ function CandidateCard({
             disabled={busy}
             onPress={onUndecide}
             style={({ pressed }) => [
-              styles.ctaSecondary,
-              styles.ctaFixed,
-              { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+              styles.decisionCta,
+              { backgroundColor: theme.tint, borderColor: theme.tint },
               pressed ? styles.pressed : null,
               busy ? styles.busy : null,
             ]}>
-            <ThemedText type="f12" themeColor="textAssistive" style={styles.bold}>
+            <ThemedText type="f12" style={[styles.bold, { color: theme.onTint }]}>
               {ACTION_UNDECIDE}
             </ThemedText>
           </Pressable>
-        ) : (
-          <>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ selected: comparing, disabled: compareDisabled }}
-              accessibilityLabel={`${candidate.vendorName} ${comparing ? ACTION_COMPARING : ACTION_COMPARE}`}
-              disabled={compareDisabled}
-              onPress={onCompare}
-              style={({ pressed }) => [
-                styles.ctaSecondary,
-                styles.ctaFlex,
-                comparing
-                  ? { backgroundColor: theme.text, borderColor: theme.text }
-                  : { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-                compareDisabled ? styles.disabled : null,
-                pressed ? styles.pressed : null,
-              ]}>
-              {/* 규격서: CTA 글자 «12/700 · lh 16». */}
-              <ThemedText
-                type="f12"
-                style={[styles.bold, { color: comparing ? theme.onInk : compareDisabled ? theme.textAssistive : theme.text }]}>
-                {comparing ? ACTION_COMPARING : ACTION_COMPARE}
-              </ThemedText>
-            </Pressable>
-            {/* 업종을 이미 다른 곳으로 결정했으면 이 카드에서는 결정을 권하지 않는다. */}
-            {!groupDecided ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`${candidate.vendorName} ${ACTION_DECIDE}`}
-                onPress={onDecide}
-                style={({ pressed }) => [
-                  styles.ctaPrimary,
-                  styles.ctaFlex,
-                  { backgroundColor: theme.tint },
-                  pressed ? styles.pressed : null,
-                ]}>
-                <ThemedText type="f12" style={[styles.bold, { color: theme.onTint }]}>
-                  {ACTION_DECIDE}
-                </ThemedText>
-              </Pressable>
-            ) : null}
-          </>
-        )}
+        ) : !groupDecided ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${candidate.vendorName} ${ACTION_DECIDE}`}
+            onPress={onDecide}
+            style={({ pressed }) => [
+              styles.decisionCta,
+              { backgroundColor: theme.background, borderColor: theme.border },
+              pressed ? styles.pressed : null,
+            ]}>
+            <ThemedText type="f12" style={[styles.bold, { color: theme.text }]}>
+              {ACTION_DECIDE}
+            </ThemedText>
+          </Pressable>
+        ) : null}
       </View>
     </View>
   );
@@ -704,23 +766,17 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.four,
     paddingBottom: Layout.listGap,
   },
-  /* 제목 ↔ 배지 `mb-1 flex items-center justify-between`. */
+  /* 정본: 제목 바로 옆에 N곳 회색 텍스트. */
   titleRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    gap: Layout.iconTextGap,
     marginBottom: Spacing.one,
   },
-  /* «N개 저장» `rounded-full px-3 py-1` — 좌우 12(같은 값의 inlineGap) · 상하 4. */
-  countBadge: {
-    borderRadius: Radius.pill,
-    paddingHorizontal: Layout.inlineGap,
-    paddingVertical: Spacing.one,
-  },
-  /* 배우자 상자 `mt-4 rounded-2xl px-4 py-3` — 위 16 · radius 16 · 안쪽 16/12. */
+  /* 03-pick shareBar: mt 16 · radius 10 · 안쪽 16/12. */
   partnerBox: {
     marginTop: Spacing.three,
-    borderRadius: Radius.cardLarge,
+    borderRadius: Radius.medium,
     paddingHorizontal: Spacing.three,
     paddingVertical: Layout.inlineGap,
     flexDirection: 'row',
@@ -749,7 +805,7 @@ const styles = StyleSheet.create({
   },
   /* `-space-x-2` — 둘째가 8 겹친다. */
   avatarOverlap: { marginLeft: -Spacing.two },
-  /* «가격 제보» `flex items-center gap-1`. */
+  /* «Pick 인증» `flex items-center gap-1`. */
   priceReportLink: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -758,11 +814,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // ── 비교 배너 `mx-5 mb-4 rounded-2xl px-4 py-3.5` ──
+  // ── 03-pick 비교 배너: mx 24 · mb 16 · radius 10 · px 16 · py 14 ──
   compareBanner: {
     marginHorizontal: Layout.gutter,
+    borderWidth: Border.hairline,
     marginBottom: Spacing.three,
-    borderRadius: Radius.cardLarge,
+    borderRadius: Radius.medium,
     paddingHorizontal: Spacing.three,
     /* 상하 14 — 같은 값의 fieldPaddingX. */
     paddingVertical: Layout.fieldPaddingX,
@@ -774,14 +831,14 @@ const styles = StyleSheet.create({
   compareText: { flex: 1, minWidth: 0 },
   /* 부제 `mt-0.5 text-white/50`. */
   compareHint: { marginTop: Spacing.half, opacity: 0.5 },
-  /* «전체 비교하기» `rounded-full px-4 py-2.5 gap-1.5` — 좌우 16 · 상하 10 · 아이콘↔글 6. */
+  /* 03-pick bannerBtn: height 36 · radius 6 · px 16. */
   compareBtn: {
+    height: Layout.chip,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Layout.menuGroupGap,
-    borderRadius: Radius.pill,
+    justifyContent: 'center',
+    borderRadius: Radius.small,
     paddingHorizontal: Spacing.three,
-    paddingVertical: Layout.iconTextGap,
   },
 
   // ── 업종 칩 `gap-2 px-5 pb-4` ──
@@ -808,11 +865,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: Layout.pageX,
     gap: Layout.inlineGap,
   },
-  /* 규격서 「div 390×212 … r16 · border 1 #000000 6% · shadow」. */
+  /* 03-pick card: radius 10 · hairline border · shadow 없음. */
   card: {
-    borderRadius: Radius.cardLarge,
+    borderRadius: Radius.medium,
     borderWidth: Border.hairline,
-    ...Elevation.figmaCard,
+    overflow: 'hidden',
   },
   cardBody: { flexDirection: 'row' },
   /* 왼쪽 열 `p-2` 안에 썸네일 104×116 — 열 폭 120. */
@@ -826,14 +883,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.half,
   },
-  /* 결정 막 `absolute inset-2 rounded-xl` — 썸네일과 같은 자리 · radius 22. */
-  decidedOverlay: {
+  /* 03-pick 정본: 결정 완료는 썸네일 우상단 24px 코랄 체크. */
+  decidedCheck: {
     position: 'absolute',
-    top: Spacing.two,
-    left: Spacing.two,
-    right: Spacing.two,
-    bottom: Spacing.two,
-    borderRadius: Radius.hero,
+    top: Layout.inlineGap,
+    right: Layout.inlineGap,
+    width: 24,
+    height: 24,
+    borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -869,31 +926,31 @@ const styles = StyleSheet.create({
   /* 메모 — 피그마 해시태그 줄 자리 `mt-2`. */
   note: { marginTop: Spacing.two },
 
-  /* CTA 띠 `border-t px-3 py-2.5 gap-2` — 안쪽 12/10. */
+  /* 03-pick 정본: 비교는 텍스트 링크, 오른쪽 행동만 버튼. */
   ctaStrip: {
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     gap: Spacing.two,
     borderTopWidth: Border.hairline,
-    paddingHorizontal: Layout.inlineGap,
-    paddingVertical: Layout.iconTextGap,
+    paddingHorizontal: Layout.fieldPaddingX,
+    paddingTop: Spacing.two,
+    paddingBottom: Layout.iconTextGap,
   },
-  /* 단추 `h-10 rounded-xl` — 40 · radius 22. */
-  ctaSecondary: {
+  compareLink: {
+    minHeight: Layout.controlMedium,
+    paddingHorizontal: Spacing.one,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  decisionCta: {
     height: Layout.controlMedium,
-    borderRadius: Radius.hero,
+    borderRadius: Radius.small,
     borderWidth: Border.hairline,
+    paddingHorizontal: Layout.toastPaddingX,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ctaPrimary: {
-    height: Layout.controlMedium,
-    borderRadius: Radius.hero,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ctaFlex: { flex: 1 },
-  /* «결정 취소» `flex-none px-4`. */
-  ctaFixed: { paddingHorizontal: Spacing.three },
 
   // ── 비어 있음 `py-20 gap-4` ──
   empty: {
