@@ -118,14 +118,11 @@ export function HomeBudget({ budget, onOpen }: {
           onPress={onOpen}
           style={({ pressed }) => [
             styles.budget,
-            { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+            { backgroundColor: theme.backgroundSelected },
             pressed && styles.pressed,
           ]}>
           <View style={styles.budgetTop}>
-            <View>
-              <ThemedText type="f12" themeColor="textAssistive">지금까지 쓴 금액</ThemedText>
-              <ThemedText type="f26" numeric style={styles.bold}>{manwon(budget.spent)}</ThemedText>
-            </View>
+            <ThemedText type="f26" numeric style={styles.bold}>{manwon(budget.spent)}</ThemedText>
             <ThemedText type="f13" numeric themeColor="textAssistive">
               {S['budget.total'].replace('{amount}', manwon(budget.total))}
             </ThemedText>
@@ -137,14 +134,11 @@ export function HomeBudget({ budget, onOpen }: {
             style={[styles.track, { backgroundColor: theme.track }]}>
             <View style={[styles.fill, { width: `${progress}%`, backgroundColor: theme.tint }]} />
           </View>
-          <View style={styles.budgetBottom}>
-            <ThemedText
-              type="f12"
-              themeColor={budget.spent > budget.total ? 'negative' : 'textAssistive'}>
-              {budget.spent > budget.total ? S['budget.exceeded'] : S['budget.note']}
-            </ThemedText>
-            <SeedIcon name="chevronRightRegular" size={Layout.iconField} color={theme.textAssistive} />
-          </View>
+          <ThemedText
+            type="f12"
+            themeColor={budget.spent > budget.total ? 'negative' : 'textAssistive'}>
+            {budget.spent > budget.total ? S['budget.exceeded'] : S['budget.note']}
+          </ThemedText>
         </Pressable>
       )}
     </View>
@@ -232,19 +226,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: Layout.cardPadding,
     paddingVertical: Layout.cardPaddingCompactY,
     borderRadius: Radius.medium,
-    borderWidth: Border.hairline,
     gap: Layout.cardGap,
   },
   budgetTop: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    gap: Spacing.two,
-  },
-  budgetBottom: {
-    flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
     gap: Spacing.two,
   },
