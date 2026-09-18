@@ -16,6 +16,7 @@ jobs:
     outputs:
       deploy_api: ${{ steps.api_changes.outputs.changed }}
       stage_static: ${{ steps.static_changes.outputs.changed }}
+      probe_static_ports: ${{ steps.port_probe_request.outputs.requested }}
 
     services:
       postgres:
@@ -58,6 +59,20 @@ jobs:
           fi
           echo "changed=$changed" >> "$GITHUB_OUTPUT"
           echo "Static staging required: $changed"
+
+      - name: 카카오 정적 포트 검사 요청 확인
+        id: port_probe_request
+        shell: bash
+        env:
+          HEAD_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          set -euo pipefail
+          requested=false
+          if grep -Fq '[probe-static-ports]' <<< "${HEAD_MESSAGE:-}"; then
+            requested=true
+          fi
+          echo "requested=$requested" >> "$GITHUB_OUTPUT"
+          echo "Static port probe requested: $requested"
 
       - uses: actions/setup-node@v4
         with:
@@ -147,6 +162,14 @@ jobs:
           fi
           echo "changed=$changed" >> "$GITHUB_OUTPUT"
           echo "API deployment required: $changed"
+
+  probe-kakao-static-ports:
+    name: Probe Kakao Static Ports
+    needs: [ci]
+    if: github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && needs.ci.outputs.probe_static_ports == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/probe-kakao-static-ports.yml
 
   stage-kakao-static:
     name: Stage Kakao Static
