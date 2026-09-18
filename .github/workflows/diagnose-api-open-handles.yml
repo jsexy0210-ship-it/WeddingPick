@@ -1,0 +1,49 @@
+name: Diagnose API open handles
+
+on:
+  push:
+    branches:
+      - chatgpt/api-open-handles-diagnostic-20260918
+
+permissions:
+  contents: read
+
+concurrency:
+  group: diagnose-api-open-handles-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: weddingpick
+          POSTGRES_PASSWORD: weddingpick
+          POSTGRES_DB: weddingpick_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U weddingpick -d weddingpick_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://weddingpick:weddingpick@localhost:5432/weddingpick_test
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: API tests without forceExit, with open-handle detection
+        run: npm exec --workspace @weddingpick/api -- jest --runInBand --detectOpenHandles
