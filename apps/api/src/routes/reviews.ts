@@ -252,7 +252,17 @@ function decodeCursor(cursor: string): [string, string] | null {
       typeof parsed[0] === 'string' &&
       typeof parsed[1] === 'string'
     ) {
-      return [parsed[0], parsed[1]];
+      const createdAt = new Date(parsed[0]);
+
+      // DB cast까지 잘못된 값을 넘기면 22P02/날짜 cast 오류가 500으로 번진다.
+      // encodeCursor가 만드는 정규 ISO 문자열과 UUID만 cursor로 인정한다.
+      if (
+        !Number.isNaN(createdAt.getTime()) &&
+        createdAt.toISOString() === parsed[0] &&
+        isUuid(parsed[1])
+      ) {
+        return [parsed[0], parsed[1]];
+      }
     }
   } catch {
     // 망가진 커서는 첫 쪽으로 되돌린다. 오류를 띄우느니 처음부터 보여주는 편이 낫다.
