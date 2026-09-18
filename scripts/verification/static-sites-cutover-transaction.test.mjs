@@ -23,6 +23,7 @@ const rollbackSource = readFileSync(
   path.join(repoRoot, 'scripts/rollback-kakao-static-sites.sh'),
   'utf8',
 );
+const TEST_RELEASE_SHA = 'a'.repeat(40);
 
 function replaceRuntimePaths(source, root, conf) {
   return source
@@ -47,7 +48,7 @@ function makeHarness({ includePrivacy = true, previousLiveSha = null } = {}) {
   const scripts = path.join(base, 'scripts');
   const bin = path.join(base, 'bin');
   const state = path.join(base, 'state');
-  const releaseSha = 'release-static-a';
+  const releaseSha = TEST_RELEASE_SHA;
   const releaseRoot = path.join(root, 'static-releases', releaseSha);
   const servedReleaseRoot = path.join(root, 'var', 'www', 'weddingpick', 'releases', releaseSha);
   const liveMarker = path.join(root, 'static-live-admin-web');
@@ -353,8 +354,8 @@ test('successful install keeps new static config and release marker without roll
     const result = run(h);
     assert.equal(result.status, 0, result.stderr || result.stdout);
     const liveConfig = readFileSync(h.conf, 'utf8');
-    assert.match(liveConfig, /release-static-a\/admin/);
-    assert.match(liveConfig, /release-static-a\/web/);
+    assert.ok(liveConfig.includes(`${h.releaseSha}/admin`));
+    assert.ok(liveConfig.includes(`${h.releaseSha}/web`));
     assert.equal(
       readFileSync(h.liveMarker, 'utf8').trim(),
       h.releaseSha,
@@ -398,7 +399,7 @@ test('missing live marker fails closed before mutating currently served static f
 });
 
 test('re-running the same live static release does not replace served files', () => {
-  const h = makeHarness({ previousLiveSha: 'release-static-a' });
+  const h = makeHarness({ previousLiveSha: TEST_RELEASE_SHA });
   try {
     const result = run(h);
     assert.equal(result.status, 0, result.stderr || result.stdout);
