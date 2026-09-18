@@ -46,11 +46,11 @@ import { BackButton } from '@/components/back-button';
 import { LoginSheet } from '@/features/auth/login-sheet';
 import { InfoDot, InfoSheet, type InfoTopic } from '@/features/common/info-sheet';
 import { savePendingAction } from '@/features/auth/pending-action';
-import { openExternal } from '@/features/open-external';
 import { readCurrentUserSnapshot } from '@/features/loading/current-user-snapshot';
 import { PickDoneSheet, UnpickSheet } from '@/features/pick/pick-sheets';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
 import { vendorBenefit } from '@/features/search/vendor-benefit';
+import { VendorLocationSection } from '@/features/search/vendor-location';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import {
   ActionButton,
@@ -99,7 +99,6 @@ const REPORT_ERROR = '정보가 틀렸나요? 제보하기';
 const GUIDE_PROVIDED = '업체가 제공한 정보예요';
 const EXPERIENCE_COUNT = (n: number) => `${n}명이 답했어요`;
 const REVIEW_VIEW_ALL = (n: number) => `${formatCount(n)}개 전체 보기`;
-const MAP_LINK = '지도에서 보기';
 /** 기준금액 ⓘ 설명 — SPEC §2 고정 문장. */
 const BASE_AMOUNT_NOTE = `${TERMS.baseAmount}은 실 제보의 중앙값이에요`;
 
@@ -912,20 +911,13 @@ export default function VendorDetailScreen() {
                   <View style={[styles.divider, { backgroundColor: theme.border }]} />
                 </View>
               ) : null}
-              <Pressable
-                accessibilityRole="link"
-                accessibilityLabel={MAP_LINK}
-                onPress={() => {
-                  const query = encodeURIComponent(`${vendor.name} ${vendor.region}`);
-                  /* 지도 앱에 넘기는 자리다 — 앱 안에 가두면 길 찾기를 못 한다(CLAUDE.md 「지도와 달력은 이 규칙의 예외다」). */
-                  void openExternal(`https://map.kakao.com/?q=${query}`, { handOff: true });
-                }}>
-                <View style={styles.row}>
-                  <ThemedText type="t6" style={styles.rowGrow}>{MAP_LINK}</ThemedText>
-                  <ProductSymbol name="chevronRight" size={Layout.iconInline} color={theme.textDisabled} />
-                </View>
-                <View style={[styles.divider, { backgroundColor: theme.border }]} />
-              </Pressable>
+              <VendorLocationSection
+                vendorId={vendor.id}
+                name={vendor.name}
+                region={vendor.region}
+                address={vendor.address}
+                coordinates={vendor.coordinates}
+              />
             </View>
             <Pressable
               accessibilityRole="button"
