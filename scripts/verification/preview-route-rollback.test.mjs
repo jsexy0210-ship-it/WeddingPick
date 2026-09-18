@@ -110,7 +110,7 @@ function makeHarness({ staleMarker = false, existingPreview = false } = {}) {
     path.join(bin, 'sudo'),
     `#!/usr/bin/env bash
 set -euo pipefail
-if [ "${1:-}" = "-n" ]; then shift; fi
+if [ "\${1:-}" = "-n" ]; then shift; fi
 exec "$@"
 `,
   );
@@ -119,8 +119,8 @@ exec "$@"
     path.join(bin, 'nginx'),
     `#!/usr/bin/env bash
 set -euo pipefail
-S="${MOCK_STATE_DIR:?}"
-case "${1:-}" in
+S="\${MOCK_STATE_DIR:?}"
+case "\${1:-}" in
   -T)
     printf '%s\\n' 'ssl_certificate /tmp/mock-cert.pem;' 'ssl_certificate_key /tmp/mock-key.pem;'
     ;;
@@ -130,10 +130,10 @@ case "${1:-}" in
     [ ! -f "$file" ] || count="$(cat "$file")"
     count=$((count + 1))
     printf '%s' "$count" > "$file"
-    if [ "${MOCK_NGINX_FAIL_FIRST:-0}" = 1 ] && [ "$count" -eq 1 ]; then
+    if [ "\${MOCK_NGINX_FAIL_FIRST:-0}" = 1 ] && [ "$count" -eq 1 ]; then
       exit 1
     fi
-    if [ "${MOCK_ROLLBACK_FAIL:-0}" = 1 ] && [ "$count" -gt 1 ]; then
+    if [ "\${MOCK_ROLLBACK_FAIL:-0}" = 1 ] && [ "$count" -gt 1 ]; then
       exit 1
     fi
     ;;
@@ -145,14 +145,14 @@ esac
     path.join(bin, 'systemctl'),
     `#!/usr/bin/env bash
 set -euo pipefail
-S="${MOCK_STATE_DIR:?}"
-if [ "${1:-}" = reload ] && [ "${2:-}" = nginx ]; then
+S="\${MOCK_STATE_DIR:?}"
+if [ "\${1:-}" = reload ] && [ "\${2:-}" = nginx ]; then
   file="$S/reload-count"
   count=0
   [ ! -f "$file" ] || count="$(cat "$file")"
   count=$((count + 1))
   printf '%s' "$count" > "$file"
-  if [ "${MOCK_RELOAD_FAIL_FIRST:-0}" = 1 ] && [ "$count" -eq 1 ]; then
+  if [ "\${MOCK_RELOAD_FAIL_FIRST:-0}" = 1 ] && [ "$count" -eq 1 ]; then
     exit 1
   fi
 fi
@@ -178,7 +178,7 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-if [ -n "${MOCK_CURL_FAIL_MATCH:-}" ] && [[ "$url" == *"${MOCK_CURL_FAIL_MATCH}"* ]]; then
+if [ -n "\${MOCK_CURL_FAIL_MATCH:-}" ] && [[ "$url" == *"\${MOCK_CURL_FAIL_MATCH}"* ]]; then
   exit 22
 fi
 
