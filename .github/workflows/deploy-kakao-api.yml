@@ -129,8 +129,10 @@ jobs:
           sudo -n docker rename "$OLD_ID" "$BACKUP_CONTAINER"
           sudo -n docker run -d --pull=never --name "$PROD_CONTAINER" --restart=unless-stopped \
             --label "org.opencontainers.image.revision=$GITHUB_SHA" \
-            --env-file "$ENV_FILE" -p 127.0.0.1:3001:3000 "$IMAGE" >/dev/null
+            --env-file "$ENV_FILE" -e RUN_WORKER_IN_API=false \
+            -p 127.0.0.1:3001:3000 "$IMAGE" >/dev/null
 
+          test "$(sudo -n docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' "$PROD_CONTAINER" | sed -n 's/^RUN_WORKER_IN_API=//p' | tail -n1)" = false
           health_ok http://127.0.0.1:3001/health 45 2
           health_ok "$PUBLIC_HEALTH_URL" 20 3
           sudo -n docker tag "$IMAGE" weddingpick-api:kakao-current
