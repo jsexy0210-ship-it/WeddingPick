@@ -762,14 +762,48 @@ const DOC_LABEL: Record<DocType, string> = {
  */
 export const isDocType = (value: string): value is DocType => Object.hasOwn(DOC_LABEL, value);
 
-export type TermsClause = { id: string; articleNumber: string; title: string; body: string };
-export type TermsVersion = { version: string; publishedAt: string | null; isDraft: boolean };
+/**
+ * 표 모양 조문.
+ *
+ * 방침의 세 절이 표다 — 목적·항목·보유기간 · 수탁자 · 국외 이전. 줄글로 펴면
+ * 어느 수탁자가 어느 항목을 받는지가 뭉개진다.
+ */
+export type TermsClauseTable = {
+  lead: string | null;
+  cols: { label: string }[];
+  rows: string[][];
+};
+
+export type TermsClause = {
+  id: string;
+  articleNumber: string;
+  title: string;
+  body: string;
+  /** 표가 있으면 표로 그린다. 없으면 `body`를 줄바꿈으로 갈라 조항 목록으로 그린다. */
+  bodyTable: TermsClauseTable | null;
+  /**
+   * 지우거나 비울 때 한 번 더 확인받을 절이면 그 사유. 막는 것이 아니라
+   * **알고 지우는 것과 모르고 지우는 것을 가르는** 표시다(0422).
+   */
+  removalWarning: string | null;
+};
+
+export type TermsVersion = {
+  version: string;
+  publishedAt: string | null;
+  /** 이 판이 효력을 갖기 시작하는 날. 공개한 시각과 다르다 — 미리 알리고 나중에 시행한다. */
+  effectiveOn: string | null;
+  isDraft: boolean;
+};
+
 export type TermsDoc = {
   type: DocType;
   label: string;
   currentVersion: string;
   latestDraftVersion: string | null;
   publishedAt: string | null;
+  /** 지금 효력인 판의 시행일. */
+  effectiveOn: string | null;
   versions: TermsVersion[];
   clauses: TermsClause[];
 };
@@ -777,26 +811,56 @@ export type TermsDoc = {
 /** 아직 아무 판도 없는 문서. 「없음」을 그대로 보인다 — 0판을 지어내지 않는다. */
 const NO_VERSION = '없음';
 
+type TermsVersionRow = {
+  id: string;
+  doc: DocType;
+  version: string;
+  published_at: Date | null;
+  effective_on: Date | string | null;
+};
+
+type TermsClauseRow = {
+  id: string;
+  article_number: string;
+  title: string;
+  body: string;
+  body_table: TermsClauseTable | null;
+  removal_warning: string | null;
+};
+
+/**
+ * 시행일은 «날»이지 시각이 아니다.
+ *
+ * `date` 칼럼이라 드라이버가 자정의 `Date`로 준다. `toISOString()`으로 찍으면
+ * 서버가 UTC가 아닌 곳에서 하루 어긋난다 — 시행일이 하루 밀린 약관이 나간다.
+ */
+const dateOnly = (value: Date | string | null): string | null => {
+  if (value === null) return null;
+  if (typeof value === 'string') return value.slice(0, 10);
+
+  const pad = (n: number) => String(n).padStart(2, '0');
+
+  return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`;
+};
+
+const toClause = (row: TermsClauseRow): TermsClause => ({
+  id: row.id,
+  articleNumber: row.article_number,
+  title: row.title,
+  body: row.body,
+  bodyTable: row.body_table,
+  removalWarning: row.removal_warning,
+});
+
 export async function termsDocuments(db: Queryable): Promise<{ documents: TermsDoc[] }> {
-  const { rows: versions } = await db.query<{
-    id: string;
-    doc: DocType;
-    version: string;
-    published_at: Date | null;
-  }>(
-    `SELECT id, doc, version, published_at
+  const { rows: versions } = await db.query<TermsVersionRow>(
+    `SELECT id, doc, version, published_at, effective_on
      FROM structured.terms_versions
      ORDER BY doc, created_at DESC`
   );
 
-  const { rows: clauses } = await db.query<{
-    id: string;
-    version_id: string;
-    article_number: string;
-    title: string;
-    body: string;
-  }>(
-    `SELECT id, version_id, article_number, title, body
+  const { rows: clauses } = await db.query<TermsClauseRow & { version_id: string }>(
+    `SELECT id, version_id, article_number, title, body, body_table, removal_warning
      FROM structured.terms_clauses
      ORDER BY version_id, position`
   );
@@ -820,21 +884,14 @@ export async function termsDocuments(db: Queryable): Promise<{ documents: TermsD
       currentVersion: current?.version ?? NO_VERSION,
       latestDraftVersion: draft?.version ?? null,
       publishedAt: current?.published_at?.toISOString() ?? null,
+      effectiveOn: dateOnly(current?.effective_on ?? null),
       versions: mine.map((v) => ({
         version: v.version,
         publishedAt: v.published_at?.toISOString() ?? null,
+        effectiveOn: dateOnly(v.effective_on),
         isDraft: v.published_at === null,
       })),
-      clauses: showing
-        ? clauses
-            .filter((c) => c.version_id === showing.id)
-            .map((c) => ({
-              id: c.id,
-              articleNumber: c.article_number,
-              title: c.title,
-              body: c.body,
-            }))
-        : [],
+      clauses: showing ? clauses.filter((c) => c.version_id === showing.id).map(toClause) : [],
     };
   });
 
@@ -847,22 +904,74 @@ export async function termsDocuments(db: Queryable): Promise<{ documents: TermsD
  * 공개된 판은 고칠 수 없다 — 사용자가 동의한 글이 나중에 바뀌면 무엇에
  * 동의했는지가 사라진다. 여기서 막고 0130의 트리거가 한 번 더 막는다.
  */
+export type ClauseEdit = { body: string; bodyTable?: TermsClauseTable | null };
+
+/**
+ * 저장하기 전에 한 번 더 물어야 하는 경우. 무엇이 사라지는지를 항목으로 들고 온다.
+ *
+ * 막는 것이 아니다 — 대표님이 고치실 수 있어야 한다(2026-09-16 지시). 가르는 것은
+ * 알고 지우는 것과 모르고 지우는 것이다.
+ */
+export type ClauseEditResult =
+  | { saved: true }
+  | { saved: false; warning: string; removing: string[] };
+
+/** 표의 첫 칸. 「이전받는 자」·「수탁자」라 그 줄이 무엇인지를 가장 짧게 말한다. */
+const rowLabel = (row: string[]): string => (row[0] ?? '').split('·')[0]!.trim() || '이름 없는 줄';
+
+/**
+ * 이번 수정으로 «사라지는 것»을 센다.
+ *
+ * 표는 줄 단위로 본다 — 수탁자 한 곳이 목록에서 빠지는 것이 가장 위험하고 가장
+ * 눈에 안 띈다. 줄글은 비는 것만 본다.
+ */
+function removedEntries(before: TermsClause, after: ClauseEdit): string[] {
+  const nextTable = after.bodyTable ?? null;
+
+  if (before.bodyTable) {
+    if (!nextTable) {
+      return before.bodyTable.rows.map(rowLabel);
+    }
+
+    const kept = new Set(nextTable.rows.map(rowLabel));
+
+    return before.bodyTable.rows.map(rowLabel).filter((label) => !kept.has(label));
+  }
+
+  const kept = new Set(
+    after.body
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+  );
+
+  return before.body
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0 && !kept.has(line))
+    .map((line) => (line.length > 40 ? `${line.slice(0, 40)}…` : line));
+}
+
 export async function editTermsClause(
   pool: Pool,
   doc: DocType,
   clauseId: string,
-  body: string,
-  by: string
-): Promise<void> {
-  const trimmed = body.trim();
+  edit: ClauseEdit,
+  by: string,
+  confirmed = false
+): Promise<ClauseEditResult> {
+  const trimmed = edit.body.trim();
 
   if (trimmed.length === 0) {
     throw new ApiError('invalid_request', '조문 내용이 비어 있습니다.');
   }
 
-  await withTransaction(pool, async (client) => {
-    const { rows } = await client.query<{ published_at: Date | null; doc: DocType }>(
-      `SELECT v.published_at, v.doc
+  return withTransaction(pool, async (client) => {
+    const { rows } = await client.query<
+      TermsClauseRow & { published_at: Date | null; doc: DocType }
+    >(
+      `SELECT c.id, c.article_number, c.title, c.body, c.body_table, c.removal_warning,
+              v.published_at, v.doc
        FROM structured.terms_clauses c
        JOIN structured.terms_versions v ON v.id = c.version_id
        WHERE c.id = $1`,
@@ -876,10 +985,22 @@ export async function editTermsClause(
       throw new ApiError('invalid_request', '공개된 판의 조문은 고칠 수 없습니다. 새 초안을 만들어주세요.');
     }
 
-    await client.query('UPDATE structured.terms_clauses SET body = $2 WHERE id = $1', [
-      clauseId,
-      trimmed,
-    ]);
+    /*
+     * 국외 이전 · 수탁자 목록은 지우기 전에 무엇이 사라지는지 보인다
+     * (CLAUDE.md · v3.27 「위험한 조작은 항목으로 보여준 뒤 한 번 더 확인」).
+     */
+    if (found.removal_warning && !confirmed) {
+      const removing = removedEntries(toClause(found), { ...edit, body: trimmed });
+
+      if (removing.length > 0) {
+        return { saved: false, warning: found.removal_warning, removing };
+      }
+    }
+
+    await client.query(
+      'UPDATE structured.terms_clauses SET body = $2, body_table = $3 WHERE id = $1',
+      [clauseId, trimmed, edit.bodyTable === undefined ? found.body_table : edit.bodyTable]
+    );
 
     await recordDecision(client, {
       eventId: newEventId(),
@@ -889,10 +1010,211 @@ export async function editTermsClause(
       subjectId: clauseId,
       decider: { kind: 'human', userId: by },
       decision: 'edited',
-      reasonCode: 'clause_edited',
+      reasonCode: found.removal_warning ? 'protected_clause_edited' : 'clause_edited',
       evidence: [{ kind: 'terms_clause', id: clauseId }],
     });
+
+    return { saved: true };
   });
+}
+
+/**
+ * 초안에 조문을 하나 더한다.
+ *
+ * **마케팅 정보 수신 동의가 이 길로 시작한다.** 저장소에 본문이 한 번도 없어서
+ * 0422이 빈 초안만 두었다 — 없는 법적 문서를 지어내지 않았다. 고칠 조문이 하나도
+ * 없으면 「수정 가능하도록」이 반만 열린 것이라, 더하는 자리를 같이 연다.
+ */
+export async function addTermsClause(
+  pool: Pool,
+  doc: DocType,
+  input: { title: string; body: string },
+  by: string
+): Promise<{ id: string }> {
+  const title = input.title.trim();
+  const body = input.body.trim();
+
+  if (title.length === 0) throw new ApiError('invalid_request', '조문 제목을 넣어주세요.');
+  if (body.length === 0) throw new ApiError('invalid_request', '조문 내용을 넣어주세요.');
+
+  return withTransaction(pool, async (client) => {
+    const { rows } = await client.query<{ id: string; next_position: number }>(
+      `SELECT v.id,
+              coalesce(
+                (SELECT max(position) + 1 FROM structured.terms_clauses WHERE version_id = v.id),
+                0
+              ) AS next_position
+       FROM structured.terms_versions v
+       WHERE v.doc = $1::terms_doc_kind AND v.published_at IS NULL
+       FOR UPDATE`,
+      [doc]
+    );
+
+    const draft = rows[0];
+    if (!draft) throw new ApiError('invalid_request', '고칠 초안이 없어요. 초안을 먼저 만들어주세요.');
+
+    /*
+     * 관리자 목록에서 줄을 부르는 번호다. 화면에 그려지는 제목은 `title`이고
+     * 「제1조 목적」처럼 번호가 그 안에 이미 들어 있다 — 두 번 적지 않는다.
+     */
+    const { rows: created } = await client.query<{ id: string }>(
+      `INSERT INTO structured.terms_clauses (version_id, article_number, title, body, position)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id`,
+      [draft.id, String(draft.next_position + 1), title, body, draft.next_position]
+    );
+
+    await recordDecision(client, {
+      eventId: newEventId(),
+      workflow: 'terms',
+      step: 'add_clause',
+      subjectKind: 'terms_clause',
+      subjectId: created[0]!.id,
+      decider: { kind: 'human', userId: by },
+      decision: 'added',
+      reasonCode: 'clause_added',
+      evidence: [{ kind: 'terms_clause', id: created[0]!.id }],
+    });
+
+    return { id: created[0]!.id };
+  });
+}
+
+/**
+ * 초안에서 조문을 지운다.
+ *
+ * **국외 이전 · 수탁자 절은 한 번 더 묻는다.** 고치는 것보다 지우는 쪽이 위험하다 —
+ * 절이 통째로 없어지면 그 순간부터 미고지 이전이 된다(개인정보보호법 제28조의8).
+ * 막지는 않는다. 무엇이 사라지는지 보이고 받는다.
+ */
+export async function deleteTermsClause(
+  pool: Pool,
+  doc: DocType,
+  clauseId: string,
+  by: string,
+  confirmed = false
+): Promise<ClauseEditResult> {
+  return withTransaction(pool, async (client) => {
+    const { rows } = await client.query<
+      TermsClauseRow & { published_at: Date | null; doc: DocType }
+    >(
+      `SELECT c.id, c.article_number, c.title, c.body, c.body_table, c.removal_warning,
+              v.published_at, v.doc
+       FROM structured.terms_clauses c
+       JOIN structured.terms_versions v ON v.id = c.version_id
+       WHERE c.id = $1`,
+      [clauseId]
+    );
+
+    const found = rows[0];
+    if (!found || found.doc !== doc) throw notFound('조문');
+
+    if (found.published_at !== null) {
+      throw new ApiError('invalid_request', '공개된 판의 조문은 지울 수 없습니다. 새 초안을 만들어주세요.');
+    }
+
+    if (found.removal_warning && !confirmed) {
+      const clause = toClause(found);
+      const removing = clause.bodyTable
+        ? clause.bodyTable.rows.map(rowLabel)
+        : clause.body
+            .split('\n')
+            .map((line) => line.trim())
+            .filter(Boolean)
+            .map((line) => (line.length > 40 ? `${line.slice(0, 40)}…` : line));
+
+      return { saved: false, warning: found.removal_warning, removing };
+    }
+
+    await client.query('DELETE FROM structured.terms_clauses WHERE id = $1', [clauseId]);
+
+    await recordDecision(client, {
+      eventId: newEventId(),
+      workflow: 'terms',
+      step: 'delete_clause',
+      subjectKind: 'terms_clause',
+      subjectId: clauseId,
+      decider: { kind: 'human', userId: by },
+      decision: 'deleted',
+      reasonCode: found.removal_warning ? 'protected_clause_deleted' : 'clause_deleted',
+      evidence: [{ kind: 'terms_clause', id: clauseId }],
+    });
+
+    return { saved: true };
+  });
+}
+
+/**
+ * 아직 초안이 없는 문서에 초안을 만든다.
+ *
+ * 마케팅 정보 수신 동의가 그렇다 — 저장소에 본문이 한 번도 없었다. 공개된 판이
+ * 있으면 그 조문을 복사해 오고, 없으면 빈 초안이 생긴다. 조문은 대표님이 더하신다.
+ */
+export async function createTermsDraft(
+  pool: Pool,
+  doc: DocType,
+  by: string
+): Promise<{ version: string }> {
+  return withTransaction(pool, async (client) => {
+    const { rows: existing } = await client.query<{ id: string; published_at: Date | null }>(
+      `SELECT id, published_at FROM structured.terms_versions
+       WHERE doc = $1::terms_doc_kind
+       ORDER BY created_at DESC
+       FOR UPDATE`,
+      [doc]
+    );
+
+    if (existing.some((v) => v.published_at === null)) {
+      throw new ApiError(
+        'invalid_request',
+        '이미 고칠 수 있는 초안이 있어요. 한 문서에 초안은 하나예요.'
+      );
+    }
+
+    const latest = existing[0];
+    const version = latest ? nextVersion(await versionOf(client, latest.id)) : 'v0.1';
+
+    const { rows: created } = await client.query<{ id: string }>(
+      `INSERT INTO structured.terms_versions (doc, version)
+       VALUES ($1::terms_doc_kind, $2)
+       RETURNING id`,
+      [doc, version]
+    );
+
+    if (latest) {
+      await client.query(
+        `INSERT INTO structured.terms_clauses
+           (version_id, article_number, title, body, position, body_table, removal_warning)
+         SELECT $2::uuid, article_number, title, body, position, body_table, removal_warning
+         FROM structured.terms_clauses
+         WHERE version_id = $1::uuid`,
+        [latest.id, created[0]!.id]
+      );
+    }
+
+    await recordDecision(client, {
+      eventId: newEventId(),
+      workflow: 'terms',
+      step: 'create_draft',
+      subjectKind: 'terms_version',
+      subjectId: created[0]!.id,
+      decider: { kind: 'human', userId: by },
+      decision: 'created',
+      reasonCode: 'draft_created',
+      evidence: [{ kind: 'terms_version', id: created[0]!.id }],
+    });
+
+    return { version };
+  });
+}
+
+async function versionOf(client: Queryable, versionId: string): Promise<string> {
+  const { rows } = await client.query<{ version: string }>(
+    'SELECT version FROM structured.terms_versions WHERE id = $1',
+    [versionId]
+  );
+
+  return rows[0]!.version;
 }
 
 /**
@@ -906,12 +1228,23 @@ export async function publishTerms(
   pool: Pool,
   doc: DocType,
   by: string,
-  reason: string | undefined
-): Promise<{ version: string; nextDraft: string }> {
+  reason: string | undefined,
+  effectiveOn: string
+): Promise<{ version: string; nextDraft: string; effectiveOn: string }> {
+  /*
+   * 시행일 없이 공개하지 않는다. 표의 CHECK가 막지만 여기서 먼저 막는다 —
+   * 제약 위반은 운영자에게 「내부 오류」로 보이고, 무엇을 해야 하는지 말하지 않는다.
+   */
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(effectiveOn.trim())) {
+    throw new ApiError('invalid_request', '시행일을 YYYY-MM-DD로 정해주세요.');
+  }
+
   return withTransaction(pool, async (client) => {
-    const { rows } = await client.query<{ id: string; version: string }>(
-      `SELECT id, version FROM structured.terms_versions
-       WHERE doc = $1::terms_doc_kind AND published_at IS NULL
+    const { rows } = await client.query<{ id: string; version: string; clause_count: string }>(
+      `SELECT v.id, v.version,
+              (SELECT count(*) FROM structured.terms_clauses WHERE version_id = v.id) AS clause_count
+       FROM structured.terms_versions v
+       WHERE v.doc = $1::terms_doc_kind AND v.published_at IS NULL
        FOR UPDATE`,
       [doc]
     );
@@ -919,11 +1252,19 @@ export async function publishTerms(
     const draft = rows[0];
     if (!draft) throw new ApiError('invalid_request', '공개할 초안이 없습니다.');
 
+    /*
+     * 조문이 없는 판은 공개하지 않는다. 공개하면 사용자에게 «빈 약관»이 나가고,
+     * 그 판은 얼어붙어 고칠 수도 없다.
+     */
+    if (Number(draft.clause_count) === 0) {
+      throw new ApiError('invalid_request', '조문이 하나도 없어요. 내용을 넣은 뒤 공개해주세요.');
+    }
+
     await client.query(
       `UPDATE structured.terms_versions
-       SET published_at = now(), published_by = $2::uuid
+       SET published_at = now(), published_by = $2::uuid, effective_on = $3::date
        WHERE id = $1`,
-      [draft.id, by]
+      [draft.id, by, effectiveOn.trim()]
     );
 
     const nextDraft = nextVersion(draft.version);
@@ -936,8 +1277,9 @@ export async function publishTerms(
     );
 
     await client.query(
-      `INSERT INTO structured.terms_clauses (version_id, article_number, title, body, position)
-       SELECT $2::uuid, article_number, title, body, position
+      `INSERT INTO structured.terms_clauses
+         (version_id, article_number, title, body, position, body_table, removal_warning)
+       SELECT $2::uuid, article_number, title, body, position, body_table, removal_warning
        FROM structured.terms_clauses
        WHERE version_id = $1::uuid`,
       [draft.id, created[0]!.id]
@@ -955,8 +1297,61 @@ export async function publishTerms(
       evidence: [{ kind: 'terms_version', id: draft.id }],
     });
 
-    return { version: draft.version, nextDraft };
+    return { version: draft.version, nextDraft, effectiveOn: effectiveOn.trim() };
   });
+}
+
+/**
+ * 공개된 판 하나. **웹이 빌드할 때 읽는 것이 이것이다.**
+ *
+ * 로그인이 없다 — 읽는 쪽이 브라우저가 아니라 정적 사이트 빌드라 로그인할 수 없고,
+ * 내보내는 것은 어차피 공개 페이지에 그대로 실릴 글이라 감출 것이 없다
+ * (`routes/site-meta.ts`의 공개 조회와 같은 이유다).
+ *
+ * **초안은 내보내지 않는다.** 아직 공개하지 않은 글이 사이트에 나가면, 공개라는
+ * 행위가 아무것도 가르지 않게 된다.
+ */
+export type PublishedLegalDocument = {
+  type: DocType;
+  label: string;
+  version: string;
+  publishedAt: string;
+  effectiveOn: string;
+  clauses: TermsClause[];
+};
+
+export async function publishedLegalDocument(
+  db: Queryable,
+  doc: DocType
+): Promise<PublishedLegalDocument | null> {
+  const { rows } = await db.query<TermsVersionRow & { published_at: Date }>(
+    `SELECT id, doc, version, published_at, effective_on
+     FROM structured.terms_versions
+     WHERE doc = $1::terms_doc_kind AND published_at IS NOT NULL
+     ORDER BY published_at DESC
+     LIMIT 1`,
+    [doc]
+  );
+
+  const version = rows[0];
+  if (!version) return null;
+
+  const { rows: clauses } = await db.query<TermsClauseRow>(
+    `SELECT id, article_number, title, body, body_table, removal_warning
+     FROM structured.terms_clauses
+     WHERE version_id = $1
+     ORDER BY position`,
+    [version.id]
+  );
+
+  return {
+    type: doc,
+    label: DOC_LABEL[doc],
+    version: version.version,
+    publishedAt: version.published_at.toISOString(),
+    effectiveOn: dateOnly(version.effective_on)!,
+    clauses: clauses.map(toClause),
+  };
 }
 
 /** `v1.3` → `v1.4`. 모양이 다르면 뒤에 하나를 붙여 겹치지 않게만 한다. */
