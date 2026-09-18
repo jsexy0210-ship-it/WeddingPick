@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Image, Pressable, StyleSheet, View } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 
 import { API_URL } from '@/api/config';
 import { openExternal } from '@/features/open-external';
@@ -30,6 +31,7 @@ export function VendorLocationSection({
 }) {
   const theme = useTheme();
   const [mapFailed, setMapFailed] = useState(false);
+  const [addressCopied, setAddressCopied] = useState(false);
   const apiBase = API_URL?.replace(/\/$/, '') ?? '';
   const hasMapSource = coordinates !== null || Boolean(address?.trim());
   const mapUri =
@@ -45,6 +47,18 @@ export function VendorLocationSection({
     void openExternal(mapUrl, { handOff: true });
   }
 
+  async function copyAddress() {
+    const value = address?.trim();
+    if (!value) return;
+
+    try {
+      const copied = await Clipboard.setStringAsync(value);
+      setAddressCopied(copied);
+    } catch {
+      setAddressCopied(false);
+    }
+  }
+
   return (
     <View style={styles.block}>
       {address ? (
@@ -55,6 +69,15 @@ export function VendorLocationSection({
           <ThemedText type="t6" style={styles.addressValue} selectable>
             {address}
           </ThemedText>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="주소 복사"
+            onPress={() => void copyAddress()}
+            style={({ pressed }) => [styles.copyButton, pressed ? styles.pressed : null]}>
+            <ThemedText type="t7" accessibilityLiveRegion="polite">
+              {addressCopied ? '복사됨' : '주소 복사'}
+            </ThemedText>
+          </Pressable>
         </View>
       ) : null}
 
@@ -105,6 +128,11 @@ const styles = StyleSheet.create({
   addressValue: {
     flex: 1,
     textAlign: 'right',
+  },
+  copyButton: {
+    minHeight: Layout.touchTarget,
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.two,
   },
   mapPressable: {
     borderRadius: Radius.medium,

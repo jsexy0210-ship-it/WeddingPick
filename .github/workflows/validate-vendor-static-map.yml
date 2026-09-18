@@ -1,0 +1,42 @@
+name: Validate vendor static map branch
+
+on:
+  push:
+    branches:
+      - 'chatgpt/vendor-static-map-20260918'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-vendor-static-map-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: API typecheck
+        run: npm run typecheck --workspace @weddingpick/api
+      - name: API contract typecheck
+        run: npm run typecheck --workspace @weddingpick/api-contract
+      - name: Mobile typecheck
+        run: npm run typecheck --workspace @weddingpick/mobile
+      - name: Mobile lint
+        run: npm run lint --workspace @weddingpick/mobile
+      - name: Kakao static map regressions
+        working-directory: apps/api
+        run: npx jest src/test/kakao-geocode.test.ts src/test/kakao-static-map.test.ts --runInBand --forceExit
+      - name: API contract regressions
+        run: npm run test --workspace @weddingpick/api-contract -- --runInBand
+      - name: Mobile regressions
+        run: npm run test --workspace @weddingpick/mobile -- --runInBand
+      - name: Expo web export
+        run: npm run export:web --workspace @weddingpick/mobile
