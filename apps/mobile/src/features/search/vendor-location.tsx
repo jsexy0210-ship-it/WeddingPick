@@ -1,5 +1,5 @@
-import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { useState } from 'react';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { API_URL } from '@/api/config';
 import { openExternal } from '@/features/open-external';
