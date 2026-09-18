@@ -57,7 +57,7 @@ function makeHarness() {
     path.join(bin, 'sudo'),
     `#!/usr/bin/env bash
 set -euo pipefail
-if [ "${1:-}" = "-n" ]; then shift; fi
+if [ "\${1:-}" = "-n" ]; then shift; fi
 exec "$@"
 `,
   );
@@ -68,7 +68,7 @@ exec "$@"
     path.join(bin, 'curl'),
     `#!/usr/bin/env bash
 set -euo pipefail
-if [ "${MOCK_HEALTH_FAIL:-0}" = 1 ]; then exit 22; fi
+if [ "\${MOCK_HEALTH_FAIL:-0}" = 1 ]; then exit 22; fi
 printf '%s' '{"ok":true}'
 `,
   );
