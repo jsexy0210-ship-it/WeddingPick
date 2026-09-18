@@ -1,85 +1,121 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { router } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { StyleSheet } from 'react-native';
-import { WebView } from 'react-native-webview';
+import { WebView, type WebViewMessageEvent } from 'react-native-webview';
 
 import { Layout, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
-import { loadToken } from '@/api/session';
+import { clearTokenIfMatches, loadToken, subscribeToken } from '@/api/session';
 
 import { WEB_SHELL_URL } from './config';
+import { isTrustedWebShellUrl, parseWebShellMessage, sessionInjection, webShellTarget } from './session-protocol';
 
-type Props = {
-  /** 웹 export 안에서 열 경로. 예: "/", "/pick". */
-  path: string;
-};
+type Props = { path: string };
 
-/**
- * 하이브리드 웹뷰 쉘.
- *
- * 네이티브 쉘(탭바 등 네비게이션 껍데기)은 그대로 두고, 화면 본문만 호스팅된
- * `apps/mobile` 웹 export(react-native-web)를 웹뷰로 띄운다.
- *
- * **로그인 세션은 최초 진입 URL에 한 번만 실어 보낸다.** 웹 export는 같은
- * 코드베이스(`@/api/session`)를 web 타깃으로 빌드한 것이라, 쿼리 파라미터로
- * 받은 토큰을 웹 쪽 루트 레이아웃(`app/_layout.tsx`)이 그대로 `saveToken`으로
- * 저장하고 주소창에서 지운다 — 새 저장소나 postMessage 프로토콜을 따로 만들지
- * 않는다. 이후 웹뷰 내부 이동에는 토큰을 다시 붙이지 않는다: 한 번 저장하면
- * 웹 쪽 스토리지(AsyncStorage의 web 폴리필, 즉 localStorage)에 남기 때문이다.
- */
+/** 세션은 신뢰한 메인 프레임의 일회성 요청에만 전달한다. source URI에는 토큰이 없다. */
 export function WebShellView({ path }: Props) {
-  const [uri, setUri] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    void loadToken().then((token) => {
-      if (cancelled) return;
-
-      const base = `${WEB_SHELL_URL ?? ''}${path}`;
-
-      setUri(token ? `${base}?wp_token=${encodeURIComponent(token)}` : base);
-    });
-
-    return () => {
-      cancelled = true;
-    };
+  // react-native-webview 14.0.1의 기본 제네릭(undefined)이 props를 never로 만드는 타입 버그 우회.
+  // 업스트림 수정이 안정판에 들어오면 명시 제네릭을 제거해도 된다.
+  const web = useRef<WebView<Record<never, never>>>(null);
+  const generation = useRef(0);
+  const offered = useRef<{ channel: string; token: string } | null>(null);
+  const [revision, setRevision] = useState(0);
+  const [error, setError] = useState(false);
+  const target = useMemo(() => {
+    try { return WEB_SHELL_URL ? webShellTarget(WEB_SHELL_URL, path) : null; }
+    catch { return null; }
   }, [path]);
 
-  if (!WEB_SHELL_URL) {
+  useEffect(() => {
+    const unsubscribe = subscribeToken(() => {
+      generation.current++;
+      offered.current = null;
+      setRevision((value) => value + 1);
+    });
+    return () => { generation.current++; offered.current = null; unsubscribe(); };
+  }, []);
+
+  async function onMessage(event: WebViewMessageEvent): Promise<void> {
+    if (!target) return;
+    const message = parseWebShellMessage(event.nativeEvent.data, event.nativeEvent.url, target.origin);
+    if (!message) return;
+    const current = generation.current;
+    try {
+      if (message.type === 'session:clear') {
+        const previous = offered.current;
+        if (!previous || previous.channel !== message.channel) return;
+        if (await clearTokenIfMatches(previous.token)) router.replace('/login');
+        return;
+      }
+      const token = await loadToken();
+      if (current !== generation.current) return;
+      if (token !== await loadToken() || current !== generation.current) return;
+      if (token === null) {
+        router.replace('/login');
+        return;
+      }
+      const script = sessionInjection(target.origin, message.channel, token);
+      offered.current = { channel: message.channel, token };
+      web.current?.injectJavaScript(script);
+    } catch {
+      if (current === generation.current) setError(true);
+    }
+  }
+
+  function openExternal(url: string): void {
+    try {
+      const parsed = new URL(url);
+      if (!['http:', 'https:'].includes(parsed.protocol) || parsed.username || parsed.password ||
+          parsed.searchParams.has('wp_token')) return;
+      void WebBrowser.openBrowserAsync(parsed.href).catch(() => setError(true));
+    } catch { /* 앱 스킴·파일·스크립트 주소는 웹뷰에서 실행하지 않는다. */ }
+  }
+
+  if (!target || error) {
     return (
       <Frame>
         <ThemedText type="t5">웹 화면을 열 수 없어요</ThemedText>
         <ThemedText type="t7" themeColor="textSecondary">
-          EXPO_PUBLIC_WEB_URL이 설정되지 않았어요.
+          {!target ? '웹 화면의 HTTPS 주소 설정을 확인해주세요.' : '앱에서 다시 로그인한 뒤 시도해주세요.'}
         </ThemedText>
       </Frame>
     );
   }
 
-  if (!uri) {
-    return (
-      <Frame>
-        <DelayedLoader size={40} />
-      </Frame>
-    );
-  }
-
   return (
-    <WebView
-      source={{ uri }}
+    <WebView<Record<never, never>>
+      key={`${target.uri}:${revision}`}
+      ref={web}
+      source={{ uri: target.uri }}
       style={styles.flex}
+      // '*'는 모든 이동을 아래 검사로 보내기 위한 값이다. 허용 판정은 정확한 origin으로 한다.
+      originWhitelist={['*']}
+      onShouldStartLoadWithRequest={(request) => {
+        if (isTrustedWebShellUrl(request.url, target.origin)) {
+          if (new URL(request.url).pathname === '/login') { router.replace('/login'); return false; }
+          return true;
+        }
+        if (request.isTopFrame !== false) openExternal(request.url);
+        return false;
+      }}
+      onOpenWindow={(event) => openExternal(event.nativeEvent.targetUrl)}
+      onLoadStart={() => { generation.current++; offered.current = null; }}
+      onMessage={(event) => { void onMessage(event); }}
+      javaScriptCanOpenWindowsAutomatically={false}
+      injectedJavaScriptForMainFrameOnly
+      mixedContentMode="never"
+      allowFileAccess={false}
+      allowFileAccessFromFileURLs={false}
+      allowUniversalAccessFromFileURLs={false}
+      thirdPartyCookiesEnabled={false}
+      sharedCookiesEnabled={false}
       startInLoadingState
-      renderLoading={() => (
-        <Frame>
-          <DelayedLoader size={40} />
-        </Frame>
-      )}
+      renderLoading={() => <Frame><DelayedLoader size={40} /></Frame>}
       renderError={() => (
         <Frame>
           <ThemedText type="t5">불러오지 못했어요</ThemedText>
-          <ThemedText type="t7" themeColor="textSecondary">
-            잠시 후 다시 시도해주세요.
-          </ThemedText>
+          <ThemedText type="t7" themeColor="textSecondary">잠시 후 다시 시도해주세요.</ThemedText>
         </Frame>
       )}
     />
@@ -93,16 +129,11 @@ function Frame({ children }: { children: React.ReactNode }) {
     </ThemedView>
   );
 }
-
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   center: {
-    flex: 1,
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.two,
-    paddingHorizontal: Layout.gutter,
+    flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center',
+    gap: Spacing.two, paddingHorizontal: Layout.gutter,
   },
 });

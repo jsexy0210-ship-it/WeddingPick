@@ -1,16 +1,31 @@
-# WeddingPickl AI 인수인계서
+# WeddingPick AI 인수인계서
 
 > 현재 운영 상태는 `PROJECT_STATUS.md`, 실제 구현은 최신 코드를 기준으로 한다.
 > 이 파일은 세션 인수인계와 작업 이력을 보관한다. 과거 기록보다 아래 최신 상태를 우선한다.
 > 새 세션이 시작되면 이 파일을 먼저 읽어라. 작업이 끝나면 이 파일을 업데이트하고 커밋해라.
+>
+> **현행 인프라 우선 규칙 — 2026-09-18:** API와 앱웹 443은 KakaoCloud가 운영 기준이다.
+> Render API는 중지됐고 Render 빌드·재배포 경로는 폐기됐다. 아래의 Render 장애·배포 절차는
+> 당시 이력으로만 읽고 실행 지침으로 재사용하지 않는다. 현재 상태는 `PROJECT_STATUS.md`,
+> 배포 절차는 `docs/deployment.md`, 실제 동작은 최신 `main`을 따른다.
+
+---
+
+## 2026-09-18 현행 인증·배포 보안 기준
+
+- PR #288이 main에 병합돼 신규 웹뷰는 URL query로 세션 토큰을 전달하지 않는다. 구버전 `wp_token`은 제거만 하고 인증에 사용하지 않는다.
+- 관리자 401은 세션 만료로 처리하고 403은 권한 부족으로 분리해 유효한 세션을 지우지 않는다. 로그아웃은 캡처한 관리자 서버 세션 폐기를 시도한다.
+- 운영 API는 KakaoCloud VM이 기준이며 Render API 배포 경로는 폐기됐다. main push 자동 CI/배포는 유지한다.
+- API 컨테이너는 `RUN_WORKER_IN_API=false`를 강제하고 별도 `weddingpick-worker`를 같은 이미지로 갱신한다. 운영 검증에서는 두 컨테이너의 revision 일치까지 확인한다.
+- 운영 DB 쓰기·정적 컷오버는 `production` environment 승인 게이트를 사용한다. 롤백은 실패 시 승인 대기로 막지 않는다.
 
 ---
 
 ## 메타
 
-- `updated_at`: 2026-09-09 (세션·루틴 전면 정리 — 역할 기준 5개 세션 + 루틴 2개)
-- `repository`: jsexy0210-ship-it/WeddingPickl
-- `verified_code_base`: eff6f59 (#88 squash merge 시점의 main; 최신 원격 상태는 작업 시작 시 재확인)
+- `updated_at`: 2026-09-18 (KakaoCloud 전환·인증 보안 통합·운영 게이트 반영)
+- `repository`: jsexy0210-ship-it/WeddingPick
+- `verified_code_base`: 최신 `main`을 매 작업 시작 시 재확인. 고정 SHA를 정본으로 재사용하지 않는다.
 - `policy_version`: 통합정책 v3.15
 - `dashboard`: https://claude.ai/code/artifact/a1307c11-f282-4cf2-a26d-e44bd083d7a9
 - `ios_handoff_artifact`: https://claude.ai/code/artifact/b8792fcd-fefe-4386-b24e-41d122e90a87

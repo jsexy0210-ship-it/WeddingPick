@@ -1,30 +1,74 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import {
+  clearWebShellToken, initializeWebShellSession, isWebShellSession, readWebShellToken,
+} from './web-shell-session';
+
 const STORAGE_KEY = 'weddingpick.sessionToken.v1';
+const listeners = new Set<() => void>();
+let tail: Promise<unknown> = Promise.resolve();
 
-/** 세션 토큰. 서버가 발급할 때 한 번만 내려오므로 기기에 둔다. */
-export async function loadToken(): Promise<string | null> {
-  return AsyncStorage.getItem(STORAGE_KEY);
+/** 저장·이전 응답·로그아웃이 비동기 저장소에서 서로 앞지르지 않게 직렬화한다. */
+function serial<T>(action: () => Promise<T>): Promise<T> {
+  const result = tail.then(action);
+  tail = result.catch(() => undefined);
+  return result;
 }
-
-export async function saveToken(token: string): Promise<void> {
-  await AsyncStorage.setItem(STORAGE_KEY, token);
+function changed(): void { for (const listener of listeners) listener(); }
+export function subscribeToken(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => { listeners.delete(listener); };
 }
-
-export async function clearToken(): Promise<void> {
+async function readCurrent(): Promise<string | null> {
+  return isWebShellSession() ? readWebShellToken() : AsyncStorage.getItem(STORAGE_KEY);
+}
+async function removeCurrent(): Promise<void> {
+  if (isWebShellSession()) clearWebShellToken();
   await AsyncStorage.removeItem(STORAGE_KEY);
+  changed();
 }
 
-/**
- * 이 기기에 남은 웨딩픽 흔적을 전부 지운다 — 회원탈퇴가 쓴다(2026-09-08).
- *
- * 토큰만 지우면 부족하다. 기억된 계정(로그인 유지 화면), 온보딩 초안, 미뤄둔
- * 행동, 카카오 인증 요청, 최근 검색어, 기기 저장 서류까지 남는다 — 탈퇴한
- * 사람의 것이 하나라도 남으면 다음 사람이 그걸 본다. 키 이름을 하나씩 나열하지
- * 않고 `weddingpick.` 접두어로 쓸어낸다 — 나중에 키가 늘어도 빠뜨리지 않게.
- */
-export async function wipeDevice(): Promise<void> {
-  const keys = (await AsyncStorage.getAllKeys()).filter((key) => key.startsWith('weddingpick.'));
+export async function loadToken(): Promise<string | null> {
+  await initializeWebShellSession();
+  return serial(readCurrent);
+}
+export async function saveToken(token: string): Promise<void> {
+  await initializeWebShellSession();
+  if (isWebShellSession()) {
+    // 네이티브와 웹이 다른 계정으로 로그인하는 것을 막는다. 재인증은 앱에서 한다.
+    clearWebShellToken();
+    throw new Error('앱에서 다시 로그인해주세요.');
+  }
+  await serial(async () => { await AsyncStorage.setItem(STORAGE_KEY, token); changed(); });
+}
+export async function clearToken(): Promise<void> {
+  // 전달 실패·저장소 장애 중에도 로그아웃을 시도할 수 있어야 한다.
+  await serial(removeCurrent);
+}
 
-  await Promise.all(keys.map((key) => AsyncStorage.removeItem(key)));
+/** 오래된 웹뷰의 로그아웃 메시지가 새 계정을 지우지 못하게 한다. */
+export async function clearTokenIfMatches(expected: string): Promise<boolean> {
+  return serial(async () => {
+    if (await readCurrent() !== expected) return false;
+    await removeCurrent();
+    return true;
+  });
+}
+
+/** 탈퇴 시 영속 저장소뿐 아니라 탭별 OAuth 임시 정보도 제거한다. */
+export async function wipeDevice(): Promise<void> {
+  await serial(async () => {
+    if (isWebShellSession()) clearWebShellToken();
+    const keys = (await AsyncStorage.getAllKeys()).filter((key) => key.startsWith('weddingpick.'));
+    await Promise.all(keys.map((key) => AsyncStorage.removeItem(key)));
+    if (typeof window !== 'undefined' && typeof window.location?.href === 'string') {
+      const storage = window.sessionStorage;
+      for (let i = storage.length - 1; i >= 0; i--) {
+        const key = storage.key(i);
+        if (key?.startsWith('weddingpick.')) storage.removeItem(key);
+      }
+      window.dispatchEvent(new Event('weddingpick:adminToken'));
+    }
+    changed();
+  });
 }

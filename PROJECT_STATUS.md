@@ -1,17 +1,18 @@
 # WeddingPick 프로젝트 상태
 
-## 현재 기준 — 2026-09-18 12:25 KST
+## 현재 기준 — 2026-09-18 13:58 KST
 
-- 운영 API는 `https://210.109.82.212`의 KakaoCloud VM이다. 첫 자동배포 성공 기준은 **CI / Deploy #979 / `4adc950`**이며 Render SG API는 사용자 중지 상태로 되살리지 않는다.
-- **CI / Deploy #983 / `2dcf0b5` 성공**: 앱웹·관리자·웹사이트 정적 산출물을 빌드·검사한 뒤 카카오 VM의 `static-releases/<SHA>` 후보 폴더까지 전달했다. API 재배포와 Runner 복구는 둘 다 Skip됐다.
-- Kakao VM은 Nginx가 80/443을 받고 443에서 `127.0.0.1:3001` API로 프록시한다. IP 인증서는 Let's Encrypt이며 SAN에 `210.109.82.212`가 있고 `snap.certbot.renew.timer`가 활성 상태다.
-- **정적 별도 origin 포트 사전검증 #987**: VM 내부에서 8443/9443 Nginx 설정·`nginx -t`·reload는 성공했지만 외부 GitHub runner의 8443 연결은 5초 timeout으로 실패했다. 임시 설정은 cleanup에서 정상 제거했다. 현재 카카오 보안그룹에서 비표준 포트가 막힌 상태로 본다.
-- 관리자 출처 분리 정책을 되돌리지 않는다. 따라서 8443/9443 보안그룹 허용 전에는 관리자·웹사이트 라이브 cutover를 진행하지 않는다.
-- Render는 빌드 분 복구 여부와 무관하게 더 이상 사용하지 않는다. 기존 정적 3개는 카카오 전환 검증 전 임시 공개본일 뿐이며 Render 재배포는 하지 않는다.
-- 새 파일 저장소 운영 설정은 KakaoCloud Object Storage `weddingpick-prod-media` / `kr-central-2` / `https://objectstorage.kr-central-2.kakaocloud.com`이다.
-- **운영 DB 읽기 전용 감사 #988**: 분석 pending 0, 30분 이상 running 0, `raw_document_pages.storage_key` 0, 내부 업체 이미지 0, 상담 음성 원본 0, 기한 초과 음성 0, 파기 예정 원본 0, 파기 일정 미정 원본 0. 따라서 현재 운영 DB가 참조하는 NCP→Kakao 이관 대상 파일은 **0개**다. NCP 버킷은 삭제하지 않고 보존하며 불필요한 전체 egress 복사는 하지 않는다.
-- 런타임은 `RUN_WORKER_IN_API=false`, `RETENTION_MODE=automatic`이다. 현재 backlog·파기 대상이 모두 0이므로 즉시 데이터 적체는 없지만, 향후 신규 업로드 분석/파기에는 워커 활성화 또는 역할 분리가 필요하다. 비용·자동삭제를 함께 켜지 않도록 별도 검증 전에는 활성화하지 않는다.
-- 사용자 앱 443 cutover는 카카오 개발자 Redirect URI `https://210.109.82.212/setup` 등록과 CORS/정책 링크 변경을 같은 전환에서 처리한다.
+- 운영 API와 앱웹은 KakaoCloud VM `https://210.109.82.212`의 443을 함께 사용한다. `/health`와 `/v1/*`는 API 프록시, 그 밖은 staged app-web 정적 파일이다.
+- **앱웹 443 공개 #1006 성공**: 외부 GitHub runner에서 `/`, `/login`, `/health`, `/v1/auth/providers` 모두 정상 확인했다.
+- **관리자·웹사이트 443 임시 확인 경로 #1012 성공**: 관리자 `https://210.109.82.212/admin/login`, 웹사이트 `https://210.109.82.212/website.html`, 개인정보처리방침 `/privacy.html`, 이용약관 `/terms.html`을 외부 runner에서 확인했고 API health도 유지됐다.
+- 관리자 443 노출은 **확인용 임시 경로**다. 최종 운영은 기존 결정대로 사용자 앱과 다른 origin으로 분리한다. 현재 `:8443`·`:9443`은 VM 내부 Nginx는 정상이나 KakaoCloud Security Group에서 외부 timeout이다.
+- 웹 카카오 로그인 코드는 `window.location.origin + /setup`을 Redirect URI로 사용한다. 현재 앱웹 origin에서는 `https://210.109.82.212/setup`이다. Kakao Developers의 REST API 키 Redirect URI에 이 값을 정확히 등록해야 실제 로그인 완료가 가능하다.
+- Kakao 공식 규칙상 Redirect URI는 요청값과 프로토콜·호스트·포트·경로·마지막 슬래시까지 일치해야 하며 미등록 값은 `KOE006`으로 거부된다.
+- Kakao VM IP 인증서는 Let's Encrypt이며 SAN에 `210.109.82.212`가 있고 `snap.certbot.renew.timer`가 활성 상태다.
+- Kakao Object Storage `weddingpick-prod-media` / `kr-central-2`는 운영 컨테이너에서 HeadBucket·ListObjectsV2 읽기 검증이 성공했다.
+- 운영 DB 읽기 전용 감사 결과 분석 pending 0, stuck running 0, raw document pages 0, 내부 업체 이미지 0, 상담 음성 0, 파기 대상 0이다. 현재 DB가 참조하는 NCP→Kakao 이관 대상 파일은 **0개**다.
+- 런타임은 `RUN_WORKER_IN_API=false`, `RETENTION_MODE=automatic`이다. 별도 `weddingpick-worker` 배포 경로와 기동 smoke는 구현·검증됐고, 다음 완료 배포에서는 API·worker가 같은 image revision으로 상주하는지 확인한다.
+- Render는 더 이상 빌드·배포하지 않는다. 기존 Render 정적 서비스는 전환 검증 중 임시 잔존일 뿐이며 새 변경을 올리지 않는다.
 - `claude/rn-preview`는 최신 디자인 정본이 아니며 배포 소스로 사용하지 않는다.
 - 보고 시 **코드 반영 / CI 통과 / API 배포 / 화면 후보 스테이징 / 화면 공개 / 실제 기능 검증**을 서로 다른 상태로 기록한다.
 
@@ -93,10 +94,10 @@ EAS 최근 5개 조회 기준이다. 실제 기기 설치 버전과 TestFlight �
 
 ## CI/CD와 속도 확인 범위
 
-- GitHub CI와 Render main 자동배포는 독립 경로다. Actions 승인 대기 중 Render가 같은 커밋을 배포한 사례를 확인했다. ‘CI → migration → 배포’ 순서가 강제된다고 보고하지 않는다.
+- Render API 자동배포는 폐기됐다. 현재 API는 `main → CI / Deploy → 운영 revision 누적 diff 확인 → KakaoCloud API/worker 배포` 경로를 사용한다. DB migration은 자동배포와 분리된 수동 production 승인 작업이다.
 - HTTP 200만으로 health를 통과시키는 검사와 실제 `schema.ok` 판정이 다를 수 있다. 배포 관문과 DB 검사 실패 전파를 함께 보완해야 한다.
 - 워크플로 목록과 트리거는 [.github/workflows/](.github/workflows/)의 현재 파일이 기준이다. 과거의 ‘10개·중복 없음’ 목록은 현황 근거에서 제외했다.
-- Render Free의 유휴 기동 지연 가능성을 콘솔에서 확인했다. 운영 API·DB·스토리지가 여러 리전에 분포한다. 실제 응답 시간·왕복 지연은 추가 계측 대상이다.
+- 운영 API는 KakaoCloud, DB는 Neon, 파일은 KakaoCloud Object Storage를 사용한다. 과거 Render/Ohio 성능 수치는 현재 수치로 재사용하지 않고 실제 응답 시간·DB 왕복 지연은 현행 구성에서 다시 계측한다.
 - 앱 진입의 장시간 요청 대기·인증 오류 구분과 관리자 요청 타임아웃 문제는 코드 검수 결과이며, 측정된 속도 수치가 아니다.
 
 ## 다음 작업 우선순위

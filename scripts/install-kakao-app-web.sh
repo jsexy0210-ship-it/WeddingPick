@@ -13,7 +13,12 @@ test -n "$release_sha"
 
 source_dir="$ROOT/static-releases/$release_sha/app"
 test -f "$source_dir/index.html"
-test -f "$source_dir/login.html"
+if [ ! -f "$source_dir/login.html" ] && [ ! -f "$source_dir/login/index.html" ]; then
+  echo "App login export was not found in release: $release_sha" >&2
+  find "$source_dir" -maxdepth 2 -type f -name 'login*.html' -o -path '*/login/index.html' 2>/dev/null | head -20 >&2 || true
+  exit 1
+fi
+echo "Using staged app release: $release_sha"
 
 target="/var/www/weddingpick/releases/$release_sha/app"
 sudo -n mkdir -p "$(dirname "$target")"
@@ -27,9 +32,24 @@ test -n "$cert"
 test -n "$key"
 
 mkdir -p "$ROOT/nginx-backups"
-backup="$ROOT/nginx-backups/weddingpick-api-$(date -u +%Y%m%dT%H%M%SZ).conf"
-sudo -n cp "$CONF" "$backup"
-printf '%s\n' "$backup" > "$BACKUP_MARKER"
+if [ -r "$BACKUP_MARKER" ] && grep -q '/var/www/weddingpick/releases/.*/app' "$CONF" 2>/dev/null; then
+  backup="$(cat "$BACKUP_MARKER")"
+  echo "Existing API-only rollback backup preserved: $backup"
+else
+  backup="$ROOT/nginx-backups/weddingpick-api-$(date -u +%Y%m%dT%H%M%SZ).conf"
+  sudo -n cp "$CONF" "$backup"
+  printf '%s\n' "$backup" > "$BACKUP_MARKER"
+fi
+
+rollback_on_error() {
+  status=$?
+  if [ "$status" -ne 0 ] && [ -r "$BACKUP_MARKER" ]; then
+    echo 'App-web smoke failed; restoring previous 443 Nginx config.' >&2
+    bash "$(dirname "$0")/rollback-kakao-app-web.sh" || true
+  fi
+  exit "$status"
+}
+trap rollback_on_error EXIT
 
 tmp="$(mktemp)"
 trap 'rm -f "$tmp"' EXIT
@@ -106,9 +126,14 @@ sudo -n systemctl reload nginx
 health="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 10 https://210.109.82.212/health)"
 printf '%s' "$health" | python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get("ok") is True and d.get("database")=="ok" else 1)'
 
-curl --fail --silent --show-error --connect-timeout 5 --max-time 10   https://210.109.82.212/login | grep -qi '<html'
+login_smoke="$(mktemp)"
+curl --fail --silent --show-error --connect-timeout 5 --max-time 10 \
+  https://210.109.82.212/login -o "$login_smoke"
+grep -qi '<html' "$login_smoke"
+rm -f "$login_smoke"
 
 curl --fail --silent --show-error --connect-timeout 5 --max-time 10   https://210.109.82.212/v1/auth/providers | python3 -c 'import json,sys; json.load(sys.stdin)'
 
 printf '%s\n' "$release_sha" > "$ROOT/static-live-app"
+trap - EXIT
 echo "Kakao app web enabled on 443 from release $release_sha"

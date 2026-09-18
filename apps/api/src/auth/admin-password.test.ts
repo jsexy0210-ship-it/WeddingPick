@@ -1,90 +1,53 @@
 import { hashAdminPassword, sameId, verifyAdminPassword } from './admin-password';
 
 describe('관리자 비밀번호', () => {
-  it('만든 해시로 원문을 되찾을 수 없고, 같은 원문은 통과한다', async () => {
-    const stored = hashAdminPassword('열글자넘는비밀번호');
-
-    expect(stored).not.toContain('열글자넘는비밀번호');
+  it('해시는 원문을 담지 않고 올바른 비밀번호만 허용한다', async () => {
+    const password = 'test-password-not-a-real-secret';
+    const stored = hashAdminPassword(password);
+    expect(stored).not.toContain(password);
     expect(stored.startsWith('scrypt$')).toBe(true);
-    await expect(verifyAdminPassword('열글자넘는비밀번호', stored)).resolves.toBe(true);
-  });
-
-  it('한 글자만 달라도 막는다', async () => {
-    const stored = hashAdminPassword('열글자넘는비밀번호');
-
-    await expect(verifyAdminPassword('열글자넘는비밀번혼', stored)).resolves.toBe(false);
+    await expect(verifyAdminPassword(password, stored)).resolves.toBe(true);
+    await expect(verifyAdminPassword('wrong', stored)).resolves.toBe(false);
     await expect(verifyAdminPassword('', stored)).resolves.toBe(false);
   });
-
-  it('같은 원문이라도 소금이 달라 해시가 매번 다르다', () => {
-    expect(hashAdminPassword('열글자넘는비밀번호')).not.toBe(hashAdminPassword('열글자넘는비밀번호'));
+  it('같은 비밀번호도 무작위 소금으로 다르게 저장한다', () => {
+    expect(hashAdminPassword('test-password')).not.toBe(hashAdminPassword('test-password'));
   });
-
-  /*
-   * 설정이 빠진 것을 「통과」로 읽으면 안 된다. 환경변수를 넣지 않은 서버가 아무
-   * 비밀번호나 받아들이는 것이 가장 나쁜 실패다.
-   */
   it.each([undefined, '', 'not-a-hash', 'scrypt$only-two', 'bcrypt$c2FsdA==$aGFzaA=='])(
-    '해시가 %p면 무엇을 넣어도 막는다',
-    async (stored) => {
-      await expect(verifyAdminPassword('아무거나', stored)).resolves.toBe(false);
+    '설정 %p를 유효한 비밀번호로 취급하지 않는다', async (stored) => {
+      await expect(verifyAdminPassword('test-password', stored)).resolves.toBe(false);
       await expect(verifyAdminPassword('', stored)).resolves.toBe(false);
     }
   );
-
-  /**
-   * 원문 비밀번호(2026-09-10 대표 지시).
-   *
-   * 해시를 만들어 옮기는 두 단계 없이 `ADMIN_PASSWORD`에 원문을 넣으면 통과한다.
-   * 열어 준 만큼 **열리지 말아야 할 자리**를 같이 못박는다 — 둘 다 비어 있는 서버가
-   * 아무 비밀번호나 받아들이는 것이 여전히 가장 나쁜 실패다.
-   */
-  describe('원문 비밀번호', () => {
-    it('해시가 없으면 원문으로 대조한다', async () => {
-      await expect(verifyAdminPassword('열글자넘는비밀번호', undefined, '열글자넘는비밀번호')).resolves.toBe(true);
-      await expect(verifyAdminPassword('열글자넘는비밀번혼', undefined, '열글자넘는비밀번호')).resolves.toBe(false);
-      await expect(verifyAdminPassword('', undefined, '열글자넘는비밀번호')).resolves.toBe(false);
-    });
-
-    it('둘 다 비어 있으면 무엇을 넣어도 막는다', async () => {
-      await expect(verifyAdminPassword('아무거나', undefined, undefined)).resolves.toBe(false);
-      await expect(verifyAdminPassword('아무거나', undefined, '')).resolves.toBe(false);
-      await expect(verifyAdminPassword('', undefined, '   ')).resolves.toBe(false);
-    });
-
-    it('둘 다 있으면 하나만 맞아도 통과한다', async () => {
-      const stored = hashAdminPassword('해시쪽비밀번호입니다');
-
-      await expect(verifyAdminPassword('해시쪽비밀번호입니다', stored, '원문쪽비밀번호입니다')).resolves.toBe(true);
-      await expect(verifyAdminPassword('원문쪽비밀번호입니다', stored, '원문쪽비밀번호입니다')).resolves.toBe(true);
-      await expect(verifyAdminPassword('어느쪽도아닌비밀번호', stored, '원문쪽비밀번호입니다')).resolves.toBe(false);
-    });
+  it('명시한 부트스트랩 원문만 허용하며 옛 해시로 우회할 수 없다', async () => {
+    const stored = hashAdminPassword('old-test-password');
+    await expect(verifyAdminPassword('new-test-password', stored, 'new-test-password')).resolves.toBe(true);
+    await expect(verifyAdminPassword('old-test-password', stored, 'new-test-password')).resolves.toBe(false);
+    await expect(verifyAdminPassword('wrong', stored, 'new-test-password')).resolves.toBe(false);
   });
-
-  it('길이가 맞아도 내용이 다른 해시는 막는다', async () => {
-    const stored = hashAdminPassword('열글자넘는비밀번호');
-    const [prefix, salt, hash] = stored.split('$');
+  it('원문만 설정한 기존 부트스트랩과 해시 전용 전환을 지원한다', async () => {
+    await expect(verifyAdminPassword('test-password', undefined, 'test-password')).resolves.toBe(true);
+    await expect(verifyAdminPassword('wrong', undefined, 'test-password')).resolves.toBe(false);
+    const stored = hashAdminPassword('test-password');
+    await expect(verifyAdminPassword('test-password', stored, '   ')).resolves.toBe(true);
+    await expect(verifyAdminPassword('', undefined, '   ')).resolves.toBe(false);
+  });
+  it('내용이 변조된 해시는 차단한다', async () => {
+    const [prefix, salt, hash] = hashAdminPassword('test-password').split('$');
     const flipped = Buffer.from(hash!, 'base64');
-
     flipped[0] = flipped[0]! ^ 0xff;
-
-    await expect(
-      verifyAdminPassword('열글자넘는비밀번호', `${prefix}$${salt}$${flipped.toString('base64')}`)
-    ).resolves.toBe(false);
+    await expect(verifyAdminPassword('test-password', `${prefix}$${salt}$${flipped.toString('base64')}`)).resolves.toBe(false);
   });
 });
 
 describe('관리자 아이디', () => {
-  it('정확히 같을 때만 통과한다', () => {
-    expect(sameId('jsexy0210', 'jsexy0210')).toBe(true);
-    expect(sameId('jsexy0211', 'jsexy0210')).toBe(false);
-    expect(sameId('jsexy021', 'jsexy0210')).toBe(false);
-    expect(sameId('JSEXY0210', 'jsexy0210')).toBe(false);
+  it('대소문자를 포함해 일치해야 한다', () => {
+    expect(sameId('test-admin', 'test-admin')).toBe(true);
+    expect(sameId('Test-admin', 'test-admin')).toBe(false);
+    expect(sameId('test', 'test-admin')).toBe(false);
   });
-
-  /** 설정이 없으면 아무 아이디도 통과하지 않는다. */
-  it.each([undefined, ''])('기대값이 %p면 막는다', (expected) => {
-    expect(sameId('jsexy0210', expected)).toBe(false);
+  it.each([undefined, ''])('설정 %p는 차단한다', (expected) => {
+    expect(sameId('test-admin', expected)).toBe(false);
     expect(sameId('', expected)).toBe(false);
   });
 });

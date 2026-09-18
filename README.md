@@ -36,9 +36,11 @@ npm run build --workspace @weddingpick/web
 
 ## 운영 주소
 
-- 앱 웹: [weddingpick-app-web.onrender.com](https://weddingpick-app-web.onrender.com)
-- 관리자: [weddingpick-admin.onrender.com/admin](https://weddingpick-admin.onrender.com/admin)
-- 웹사이트: [weddingpick-web.onrender.com](https://weddingpick-web.onrender.com)
-- API: `https://210.109.82.212` (KakaoCloud)
+- 앱 웹: `https://210.109.82.212/` (KakaoCloud 443, 2026-09-18 외부 확인)
+- API: `https://210.109.82.212` (같은 443에서 `/v1/*` · `/health`)
+- 관리자: `https://weddingpick-admin.onrender.com/admin` 임시 공개본. Kakao `:8443` 전환 대기
+- 웹사이트: `https://weddingpick-web.onrender.com` 임시 공개본. Kakao `:9443` 전환 대기
+
+Render 정적 주소는 전환 완료 전의 임시 공개본이며 **새 빌드·재배포 대상으로 사용하지 않는다.**
 
 `weddingpick.kr`은 **폐기했다**(2026-09-11 대표 지시). 2026-09-10의 「보유하되 미사용」을 뒤집은 결정이다. 다시 붙이자고 제안하지 않는다.

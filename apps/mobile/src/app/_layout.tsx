@@ -24,7 +24,7 @@ import { escapeInAppBrowser } from '@/features/inapp-browser/escape';
 import { InAppWebShell } from '@/features/in-app-web/in-app-web-shell';
 import { InAppBrowserNotice } from '@/features/inapp-browser/in-app-browser-notice';
 import { resolveSessionEntry, sessionErrorKind, type SessionEntry } from '@/features/auth/session-recovery';
-import { saveToken } from '@/api/session';
+import { initializeWebShellSession, stripLegacyWebShellToken } from '@/api/web-shell-session';
 import { SPLASH_MINIMUM_MS, SplashView } from '@/features/splash/splash-view';
 
 SplashScreen.preventAutoHideAsync();
@@ -64,6 +64,9 @@ const ENTRY_ROUTE = {
 } as const;
 
 export default function RootLayout() {
+  // 구버전 웹뷰가 URL에 남긴 자격증명은 어떤 화면도 그리기 전에 제거한다.
+  stripLegacyWebShellToken();
+
   if (isAuthPopup()) {
     // 훅을 하나도 부르지 않고 빈 화면을 돌려준다 — 부팅을 시작하지 않는다.
     // opener에게 결과를 넘기는 일은 completeAuthPopup()이 따로 한다(is-auth-popup.ts).
@@ -93,6 +96,7 @@ function RootLayoutContent() {
   const [entry, setEntry] = useState<Entry | null>(null);
   const [entryError, setEntryError] = useState<unknown>(null);
   const [entryAttempt, setEntryAttempt] = useState(0);
+  const boot = useRef<{ attempt: number; promise: Promise<Entry> } | null>(null);
   /**
    * 스플래시를 이만큼은 보여준다. 핸드오프 0번.
    *
@@ -135,19 +139,7 @@ function RootLayoutContent() {
    * 커플 앱의 첫 화면 규칙 밖에 있다. 주소가 바뀌면 페이지가 다시 뜨는 정적
    * export라 매 렌더 계산해도 값이 흔들리지 않는다.
    */
-  const isAdminPath = Platform.OS === 'web' && pathname.startsWith('/admin');
-  /*
-   * 네이티브 쉘의 웹뷰가 최초 진입 URL에 `wp_token`을 한 번 실어 보낸다(하이브리드
-   * 웹뷰 쉘, `features/webshell`). 웹 export는 이 값을 받아 저장하고 주소창에서
-   * 지운다 — 네이티브에서는 애초에 필요 없는 단계라 곧장 완료로 둔다. 토큰이
-   * 없는 경우도 초기 렌더 시점에 동기로 판정한다 — 있는 경우만 저장이 끝난 뒤
-   * effect 콜백에서 완료로 표시한다.
-   */
-  const [tokenBootstrapped, setTokenBootstrapped] = useState(() => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined') return true;
-
-    return !new URLSearchParams(window.location.search).has('wp_token');
-  });
+  const isAdminPath = Platform.OS === 'web' && (pathname === '/admin' || pathname.startsWith('/admin/'));
   const theme = useTheme();
   const stackScreenOptions = useStackScreenOptions();
   /*
@@ -194,62 +186,53 @@ function RootLayoutContent() {
   }, [pathname]);
 
   useEffect(() => {
-    if (Platform.OS !== 'web') return;
+    // 관리자 콘솔은 자체 인증을 사용한다. 소비자 세션 부팅으로 건드리지 않는다.
+    if (isAdminPath) return;
 
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('wp_token');
+    let cancelled = false;
 
-    if (!token) return;
+    // React StrictMode가 effect를 다시 실행해도 일회용 OAuth 코드를 두 번 교환하지 않는다.
+    if (!boot.current || boot.current.attempt !== entryAttempt) {
+      const promise = (async (): Promise<Entry> => {
+        await initializeWebShellSession();
 
-    params.delete('wp_token');
+        if (hasKakaoReturn()) {
+          try {
+            const session = await completeKakaoRedirect();
 
-    void saveToken(token).then(() => {
-      const nextSearch = params.toString();
-      const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
+            if (session) {
+              const next = await entryAfterSignIn(session);
 
-      window.history.replaceState(null, '', nextUrl);
-      setTokenBootstrapped(true);
-    });
-  }, []);
+              void rememberSignedIn({ provider: 'kakao', email: null }, next === '/setup');
 
-  useEffect(() => {
-    if (!tokenBootstrapped) return;
-
-    void (async () => {
-      /*
-       * 카카오에서 같은 창으로 돌아온 직후다(웹). 로그인 화면을 거치지 않고
-       * 스플래시에서 곧장 마무리한다 — 코드를 세션으로 바꾸고, 그 응답이 알려준
-       * 값으로 온보딩/홈을 바로 첫 화면으로 정한다(2026-09-08). 실패한 이유는
-       * 로그인 화면에 넘겨 시트로 띄운다.
-       */
-      if (hasKakaoReturn()) {
-        try {
-          const session = await completeKakaoRedirect();
-
-          if (session) {
-            const next = await entryAfterSignIn(session);
-
-            void rememberSignedIn({ provider: 'kakao', email: null }, next === '/setup');
-            setEntry(next === '/setup' ? 'setup' : 'app');
-
-            return;
+              return next === '/setup' ? 'setup' : 'app';
+            }
+          } catch (caught) {
+            setPendingSignInError(caught instanceof Error ? caught.message : '로그인하지 못했어요.');
           }
-        } catch (caught) {
-          setPendingSignInError(caught instanceof Error ? caught.message : '로그인하지 못했어요.');
+
+          return 'login';
         }
 
-        setEntry('login');
+        return resolveSessionEntry();
+      })();
 
-        return;
-      }
+      boot.current = { attempt: entryAttempt, promise };
+    }
 
-      try {
-        setEntry(await resolveSessionEntry());
-      } catch (error) {
-        setEntryError(error);
+    void boot.current.promise.then(
+      (next) => {
+        if (!cancelled) setEntry(next);
+      },
+      (error) => {
+        if (!cancelled) setEntryError(error);
       }
-    })();
-  }, [tokenBootstrapped, entryAttempt]);
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [entryAttempt, isAdminPath]);
 
   useEffect(() => {
     if (signingIn) return;
@@ -302,7 +285,7 @@ function RootLayoutContent() {
     if (Platform.OS === 'web' && /^\/(login|setup)(\/|$)/.test(window.location.pathname)) {
       router.replace('/');
     }
-  }, [entry, minimumShown]);
+  }, [entry, minimumShown, isAdminPath]);
 
   /*
    * 첫 화면을 정할 때까지, 그리고 스플래시를 충분히 보여줄 때까지 덮어둔다.
