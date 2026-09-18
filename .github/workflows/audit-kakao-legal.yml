@@ -1,0 +1,42 @@
+name: Audit Kakao Legal API
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Verify public legal endpoints
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify terms and privacy public documents
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import urllib.request
+
+          base = "https://210.109.82.212"
+          for doc in ("terms", "privacy"):
+              url = f"{base}/v1/legal/{doc}"
+              with urllib.request.urlopen(url, timeout=20) as response:
+                  if response.status != 200:
+                      raise SystemExit(f"{doc}: unexpected HTTP {response.status}")
+                  data = json.load(response)
+
+              if data.get("type") != doc:
+                  raise SystemExit(f"{doc}: wrong type")
+              if not isinstance(data.get("version"), str) or not data["version"].strip():
+                  raise SystemExit(f"{doc}: version missing")
+              if not isinstance(data.get("effectiveOn"), str) or len(data["effectiveOn"]) != 10:
+                  raise SystemExit(f"{doc}: effectiveOn missing")
+              sections = data.get("sections")
+              if not isinstance(sections, list) or not sections:
+                  raise SystemExit(f"{doc}: public sections missing")
+
+              print(f"{doc}=ok version={data['version']} effectiveOn={data['effectiveOn']} sections={len(sections)}")
+          PY
