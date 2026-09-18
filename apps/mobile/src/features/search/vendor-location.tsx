@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     aspectRatio: 2,
   },
   mapStatus: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: Radius.medium,
