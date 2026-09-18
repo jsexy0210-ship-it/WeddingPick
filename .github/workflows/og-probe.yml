@@ -7,9 +7,12 @@ name: 공유 링크 미리보기 확인 (읽기 전용)
 
 on:
   workflow_dispatch:
-  schedule:
-    # 매일 00:10 UTC = 09:10 KST. 배포가 카드를 떨어뜨린 것을 다음 날 아침에 안다.
-    - cron: '10 0 * * *'
+    inputs:
+      web_origin:
+        description: '공유 링크를 확인할 공개 웹사이트 origin'
+        required: false
+        default: 'https://210.109.82.212:9443'
+        type: string
 
 permissions:
   contents: read
@@ -21,4 +24,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: 확인
+        env:
+          WEDDINGPICK_WEB_ORIGIN: ${{ inputs.web_origin }}
         run: python3 scripts/og-probe.py

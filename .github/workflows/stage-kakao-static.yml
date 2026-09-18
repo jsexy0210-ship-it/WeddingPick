@@ -77,3 +77,20 @@ jobs:
             echo ''
             cat /tmp/kakao-runtime-audit.txt
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Record staged revision
+        if: steps.current.outputs.current == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s\n' "$GITHUB_SHA" > .kakao-static-staged-marker
+
+      - name: Upload staged revision marker
+        if: steps.current.outputs.current == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: kakao-static-staged-marker
+          path: .kakao-static-staged-marker
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 30

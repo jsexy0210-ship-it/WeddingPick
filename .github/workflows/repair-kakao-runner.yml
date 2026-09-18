@@ -1,8 +1,8 @@
 name: Repair Kakao Runner
 
 on:
+  # main CI의 API 배포 경로에서만 호출한다. 수동 재시작 우회 경로는 두지 않는다.
   workflow_call:
-  workflow_dispatch:
 
 permissions:
   contents: read
