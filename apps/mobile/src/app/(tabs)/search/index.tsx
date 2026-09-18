@@ -31,6 +31,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ApiError, listVendorRegions, searchVendors } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
+import { savePendingAction } from '@/features/auth/pending-action';
 import { useDepthBack } from '@/features/navigation/depth-back';
 import { PickDoneSheet, UnpickSheet } from '@/features/pick/pick-sheets';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
@@ -503,7 +504,10 @@ export default function SearchScreen() {
     }
     const result = await candidates.pick(item.id);
     if (result === 'picked') setPickDoneOpen(true);
-    else if (result === 'login') router.replace('/login');
+    else if (result === 'login') {
+      await savePendingAction({ kind: 'pick', vendorId: item.id, vendorName: item.name });
+      router.replace('/login');
+    }
     else setToast('Pick하지 못했어요. 잠시 후 다시 시도해주세요.');
   }
 
