@@ -397,6 +397,58 @@ shellTest('failed release update restores the immediately previous live release 
     assert.notEqual(second.status, 0);
     assert.equal(readFileSync(h.conf, 'utf8'), previousConfig);
     assert.equal(readFileSync(path.join(h.root, 'static-live-app'), 'utf8').trim(), h.releaseSha);
+    assert.equal(existsSync(path.join(h.root, '.app-web-update-backup')), true);
+    assert.equal(existsSync(path.join(h.root, '.app-web-update-live-backup')), true);
+    assert.equal(existsSync(path.join(h.root, '.app-web-update-target')), true);
+  } finally {
+    h.cleanup();
+  }
+});
+
+shellTest('explicit update rollback restores the previous app and verifies login before clearing transaction markers', () => {
+  const h = makeHarness();
+  try {
+    assert.equal(run(h.installPath, [h.releaseSha], h.env).status, 0);
+    assert.equal(run(h.finalizePath, [], h.env).status, 0);
+
+    const releaseB = 'release-b';
+    const sourceB = path.join(h.root, 'static-releases', releaseB, 'app');
+    mkdirSync(sourceB, { recursive: true });
+    writeFileSync(path.join(sourceB, 'index.html'), '<html>b</html>', 'utf8');
+    writeFileSync(path.join(sourceB, 'login.html'), '<html>b-login</html>', 'utf8');
+    assert.equal(run(h.installPath, [releaseB], h.env).status, 0);
+
+    const rollback = run(h.updateRollbackPath, [], h.env);
+    assert.equal(rollback.status, 0, rollback.stderr || rollback.stdout);
+    assert.equal(readFileSync(path.join(h.root, 'static-live-app'), 'utf8').trim(), h.releaseSha);
+    assert.equal(existsSync(path.join(h.root, '.app-web-update-backup')), false);
+    assert.equal(existsSync(path.join(h.root, '.app-web-update-live-backup')), false);
+    assert.equal(existsSync(path.join(h.root, '.app-web-update-target')), false);
+  } finally {
+    h.cleanup();
+  }
+});
+
+shellTest('update rollback fails closed before changing Nginx when the recorded previous app is incomplete', () => {
+  const h = makeHarness();
+  try {
+    assert.equal(run(h.installPath, [h.releaseSha], h.env).status, 0);
+    assert.equal(run(h.finalizePath, [], h.env).status, 0);
+
+    const releaseB = 'release-b';
+    const sourceB = path.join(h.root, 'static-releases', releaseB, 'app');
+    mkdirSync(sourceB, { recursive: true });
+    writeFileSync(path.join(sourceB, 'index.html'), '<html>b</html>', 'utf8');
+    writeFileSync(path.join(sourceB, 'login.html'), '<html>b-login</html>', 'utf8');
+    assert.equal(run(h.installPath, [releaseB], h.env).status, 0);
+    const liveBConfig = readFileSync(h.conf, 'utf8');
+
+    rmSync(path.join(h.servedApp, 'login.html'), { force: true });
+    const rollback = run(h.updateRollbackPath, [], h.env);
+    assert.notEqual(rollback.status, 0);
+    assert.match(rollback.stderr, /Previous live app login export is missing/);
+    assert.equal(readFileSync(h.conf, 'utf8'), liveBConfig);
+    assert.equal(readFileSync(path.join(h.root, 'static-live-app'), 'utf8').trim(), releaseB);
   } finally {
     h.cleanup();
   }
