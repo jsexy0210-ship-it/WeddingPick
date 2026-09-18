@@ -192,13 +192,16 @@ export default function PickScreen() {
     }
   }
 
-  function askUnpick(candidate: VendorCandidate) {
+  function askUnpick(row: Row) {
+    const { candidate, isDecided } = row;
     const who = partner && partner !== TERMS.spouse ? `${partner}님` : TERMS.spouse;
-    const message = candidate.addedByPartner
-      ? `${who} 목록에서도 함께 사라져요. 다시 담을 수 있어요.`
-      : '다시 담을 수 있어요.';
+    const impacts = [
+      isDecided ? '최종 결정도 함께 취소돼요.' : null,
+      candidate.addedByPartner ? `${who} 목록에서도 함께 사라져요.` : null,
+      '다시 Pick할 수 있어요.',
+    ].filter(Boolean);
 
-    confirmAlert('후보에서 뺄까요?', message, [
+    confirmAlert('후보에서 뺄까요?', impacts.join(' '), [
       { text: '그대로 둘게요', style: 'cancel' },
       { text: '빼기', onPress: () => confirmUnpick(candidate) },
     ]);
@@ -307,7 +310,7 @@ export default function PickScreen() {
                         onCompare={() => toggleCompare(row.candidate.vendorId)}
                         onDecide={() => goDecide(row.candidate)}
                         onUndecide={() => askUndecide(row.candidate)}
-                        onRemove={() => askUnpick(row.candidate)}
+                        onRemove={() => askUnpick(row)}
                       />
                     ))}
                   </View>
