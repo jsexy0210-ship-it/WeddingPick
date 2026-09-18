@@ -1,0 +1,23 @@
+name: Design Cache Boundary Check
+
+on:
+  push:
+    branches:
+      - chatgpt/design-integration-cache-test-20260918
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Client cache tests
+        run: npm test --workspace @weddingpick/mobile -- --runInBand src/api/client.test.ts
