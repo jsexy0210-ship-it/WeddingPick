@@ -1,6 +1,5 @@
 import type { CandidateListResponse, VendorCandidate } from '@weddingpick/api-contract';
 import {
-  MAX_COMPARED_VENDORS,
   TERMS,
   VENDOR_CATEGORY_LABEL,
   withInstrument,
@@ -32,6 +31,7 @@ import {
 import { getCurrentUser, listCandidates, removeCandidate } from '@/api/client';
 import { BackButton } from '@/components/back-button';
 import { UnpickSheet } from '@/features/pick/pick-sheets';
+import { PICK_COMPARE_MAX, PICK_COMPARE_MIN } from '@/features/pick/canonical-rules';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 
 /**
@@ -41,16 +41,16 @@ import { vendorImageCategory } from '@/features/search/vendor-image-category';
  *   hero     «3곳 중 2곳은 준호님도 골랐어요» + «둘 다 고른 곳부터 비교해보세요»
  *   카드      썸네일 72 · 배지(둘 다 고른 곳 / 나만 Pick) · 이름 18 · 지역 14 · 체크 26 · 메모
  *            둘 다 고른 곳은 coral 1.5px 테두리
- *   dock 92  «N곳 비교하기» 52(tokens size.ctaPrimary) — 체크한 후보 2~5곳
+ *   dock 92  «N곳 비교하기» 52(tokens size.ctaPrimary) — 체크한 후보 2~3곳
  *
- * 체크는 **비교 후보 선택**이다(SPEC §13.11 — Pick 탭 진입은 그 업종의 내 후보만 · 체크로 2~5곳).
+ * 체크는 **비교 후보 선택**이다(SPEC §13.11 — Pick 탭 진입은 그 업종의 내 후보만 · 체크로 2~3곳).
  * 최종 결정은 카드 아래 «최종 결정»으로 WP-PICK-005 시트에 넘긴다 — 결정 자체는 그 시트가 한다.
  * «편집»을 누르면 카드마다 «빼기»가 나오고, 빼기는 WP-SHT-003 시트로 한 번 묻는다.
  */
 
 /** 서버가 막는 값과 같아야 한다. 화면이 따로 세면 둘이 어긋난다 — `vendor-comparison.ts`가 원본이다. */
-const MAX_COMPARE = MAX_COMPARED_VENDORS;
-const MIN_COMPARE = 2;
+const MAX_COMPARE = PICK_COMPARE_MAX;
+const MIN_COMPARE = PICK_COMPARE_MIN;
 
 /** 시안 #10c 카드 썸네일 72 · 체크 26 · 배우자 테두리 1.5. Layout에 이름이 없는 값. */
 const CARD_THUMB = 72;

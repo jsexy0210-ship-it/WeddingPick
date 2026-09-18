@@ -21,7 +21,6 @@
  */
 import type { CandidateListResponse, CurrentUser, VendorCandidate } from '@weddingpick/api-contract';
 import {
-  MAX_COMPARED_VENDORS,
   TERMS,
   VENDOR_CATEGORY_LABEL,
   formatCount,
@@ -55,6 +54,7 @@ import {
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { getCurrentUser, listCandidates, removeCandidate, removeDecision } from '@/api/client';
 import { UnpickSheet } from '@/features/pick/pick-sheets';
+import { PICK_COMPARE_MAX } from '@/features/pick/canonical-rules';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import { isWebShellScreen } from '@/features/webshell/config';
 import { WebShellView } from '@/features/webshell/WebShellView';
@@ -93,7 +93,7 @@ export default function PickScreen() {
   const [page, setPage] = useState<CandidateListResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
-  /** 비교함에 담은 업체(vendorId). 최대 MAX_COMPARED_VENDORS. */
+  /** 비교함에 담은 업체(vendorId). 최대 PICK_COMPARE_MAX. */
   const [compare, setCompare] = useState<ReadonlySet<string>>(new Set());
   const [unpickTarget, setUnpickTarget] = useState<VendorCandidate | null>(null);
   const [busy, setBusy] = useState(false);
@@ -141,8 +141,8 @@ export default function PickScreen() {
     setCompare((prev) => {
       const next = new Set(prev);
       if (next.has(vendorId)) next.delete(vendorId);
-      else if (next.size < MAX_COMPARED_VENDORS) next.add(vendorId);
-      else setToast(`한 번에 ${MAX_COMPARED_VENDORS}곳까지 비교할 수 있어요`);
+      else if (next.size < PICK_COMPARE_MAX) next.add(vendorId);
+      else setToast(`한 번에 ${PICK_COMPARE_MAX}곳까지 비교할 수 있어요`);
       return next;
     });
   }
@@ -283,7 +283,7 @@ export default function PickScreen() {
                         key={row.candidate.id}
                         row={row}
                         comparing={compare.has(row.candidate.vendorId)}
-                        compareFull={compare.size >= MAX_COMPARED_VENDORS}
+                        compareFull={compare.size >= PICK_COMPARE_MAX}
                         busy={busy}
                         onCompare={() => toggleCompare(row.candidate.vendorId)}
                         onDecide={() => goDecide(row.candidate)}

@@ -188,11 +188,11 @@ export const ROUTES: readonly string[] = [
 
 /** Root 5탭(SPEC §12.2 · 05-root). 여기에는 뒤로가기를 두지 않는다 — 위가 없다. */
 /*
- * Root 5탭(2026-09-14 대표 확정 · `features/navigation/root-tabs.ts`와 같은 다섯).
- * 검색이 내려가고 라운지가 올라왔다 — 검색은 이제 위가 있는 화면이라 뒤로가기를
- * 둔다(홈 상단 검색바에서 들어오므로 올라가는 곳도 홈이다).
+ * Root 5탭(2026-09-18 정본 · `features/navigation/root-tabs.ts`와 같은 다섯).
+ * 홈 · 검색 · Pick · 웨딩노트 · MY만 루트다. 라운지(`/community`)는 홈/MY에서
+ * 들어가는 하위 화면이라 Depth Back 대상이다.
  */
-export const TAB_ROOTS: readonly string[] = ['/', '/wedding', '/pick', '/community', '/my'];
+export const TAB_ROOTS: readonly string[] = ['/', '/search', '/pick', '/wedding', '/my'];
 
 /**
  * 뒤로가기 버튼을 두지 않는 화면.
