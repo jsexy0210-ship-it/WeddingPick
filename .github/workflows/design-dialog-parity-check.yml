@@ -1,0 +1,25 @@
+name: Design Dialog Parity Check
+
+on:
+  push:
+    branches:
+      - chatgpt/design-dialog-parity-20260918
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Validate
+        run: |
+          npm run typecheck --workspace @weddingpick/mobile
+          npm test --workspace @weddingpick/mobile -- --runInBand src/components/confirm-alert.test.ts
