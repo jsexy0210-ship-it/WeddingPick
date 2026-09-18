@@ -41,6 +41,7 @@ import { ApiError, notFound } from '../errors';
 import { isUuid } from '../uuid';
 import { loadUsageScore, summaryRating } from '../review-view';
 import { vendorSourceNote } from '../vendor-view';
+import { fetchKakaoStaticMap } from '../kakao-static-map';
 
 /**
  * 질의는 계약(`vendorSearchQuerySchema`)이 들고 있다 — 여기서 따로 베끼면 v3.18처럼
@@ -60,6 +61,8 @@ type VendorRow = {
   /** 지도 핀 좌표. 아직 지오코딩하지 않았으면 둘 다 null. */
   lat: number | null;
   lng: number | null;
+  /** 확인된 도로명/지번 주소. 상세에서만 채워질 수 있다. */
+  address?: string | null;
   /** 승인된 대표 이미지 주소. 검색·상세 질의가 서브쿼리로 채운다. */
   image_url?: string | null;
   comparable_quote_count: string;
@@ -293,7 +296,7 @@ async function loadVendorDetail(pool: Pool, vendorId: string, viewerId: string |
   const preview = await previewsImages(pool, viewerId);
 
   const { rows } = await pool.query<VendorRow>(
-    `SELECT v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url, v.last_verified_at, v.lat, v.lng,
+    `SELECT v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url, v.last_verified_at, v.lat, v.lng, v.address,
               v.style_tags::text[] AS style_tags, v.guide_price_from, v.guide_price_source,
               (SELECT i.source_url FROM structured.vendor_images i
                  WHERE i.vendor_id = v.id AND ${displayableImageCondition('i', { preview })}
@@ -416,6 +419,7 @@ async function loadVendorDetail(pool: Pool, vendorId: string, viewerId: string |
     ...toSummary(vendor),
     usageScore,
     lastVerifiedAt: vendor.last_verified_at.toISOString(),
+    address: vendor.address ?? null,
     prices: {
       products,
       paidPrice,
@@ -873,6 +877,50 @@ async function loadConditionStats(
   /** A-17 업체 상세. */
   app.get<{ Params: { vendorId: string } }>('/v1/vendors/:vendorId', auth, async (request) =>
     loadVendorDetail(context.pool, request.params.vendorId, optionalUserId(request))
+  );
+
+  /**
+   * 업체 상세의 정적 지도 이미지.
+   *
+   * 카카오 REST API 키는 서버에만 두고 이미지 바이트만 전달한다. 좌표가 없는 업체는
+   * 지도를 만들 수 없으므로 404 — 화면은 이미지 없이 주소/외부 지도 링크만 유지한다.
+   */
+  app.get<{ Params: { vendorId: string } }>(
+    '/v1/vendors/:vendorId/static-map',
+    async (request, reply) => {
+      const { vendorId } = request.params;
+      if (!isUuid(vendorId)) throw notFound('업체');
+
+      const { rows } = await context.pool.query<{ lat: number | null; lng: number | null }>(
+        'SELECT lat, lng FROM structured.vendors WHERE id = $1',
+        [vendorId]
+      );
+      const location = rows[0];
+
+      if (!location || location.lat === null || location.lng === null) {
+        return reply.code(404).send();
+      }
+
+      const restApiKey = context.config.kakaoAppKey;
+      if (!restApiKey) {
+        request.log.warn({ vendorId }, '카카오 지도 키가 없어 정적 지도를 만들지 못했다');
+        return reply.code(503).send();
+      }
+
+      try {
+        const map = await fetchKakaoStaticMap({
+          restApiKey,
+          lat: location.lat,
+          lng: location.lng,
+        });
+
+        reply.header('cache-control', 'public, max-age=86400, stale-while-revalidate=604800');
+        return reply.type(map.contentType).send(map.body);
+      } catch (error) {
+        request.log.warn({ error, vendorId }, '카카오 정적 지도 조회가 실패했다');
+        return reply.code(502).send();
+      }
+    }
   );
 
   /**
