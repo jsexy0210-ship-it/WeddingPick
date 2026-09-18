@@ -2,9 +2,10 @@ import type { CandidateListResponse } from '@weddingpick/api-contract';
 import { VENDOR_CATEGORY_LABEL, type VendorCategory } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BackBar } from '@/components/back-bar';
+import { confirmAlert } from '@/components/confirm-alert';
 import { useDepthBack } from '@/features/navigation/depth-back';
 
 import {
@@ -74,7 +75,7 @@ export default function PickCategoryScreen() {
 
   function remove(candidateId: string, vendorName: string) {
     if (!weddingId) return;
-    Alert.alert('후보에서 뺄까요?', `${vendorName}을 후보에서 제외해요.`, [
+    confirmAlert('후보에서 뺄까요?', `${vendorName}을 후보에서 제외해요.`, [
       { text: '취소', style: 'cancel' },
       {
         text: '빼기',
