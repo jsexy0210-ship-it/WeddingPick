@@ -59,7 +59,7 @@ function makeHarness() {
     path.join(bin, 'sudo'),
     `#!/usr/bin/env bash
 set -euo pipefail
-if [ "${1:-}" = "-n" ]; then shift; fi
+if [ "\${1:-}" = "-n" ]; then shift; fi
 exec "$@"
 `,
   );
@@ -75,8 +75,8 @@ exit 0
     path.join(bin, 'docker'),
     `#!/usr/bin/env bash
 set -euo pipefail
-S="${MOCK_DOCKER_STATE:?}"
-FAIL="${MOCK_FAIL_STAGE:-}"
+S="\${MOCK_DOCKER_STATE:?}"
+FAIL="\${MOCK_FAIL_STAGE:-}"
 OLD=old123
 NEW=new456
 
@@ -94,23 +94,23 @@ resolve() {
     echo "$owner"
     return 0
   fi
-  if [ "$target" = "${old_name#/}" ] && [ -n "$old_name" ]; then
+  if [ "$target" = "\${old_name#/}" ] && [ -n "$old_name" ]; then
     echo old
     return 0
   fi
   return 1
 }
 
-cmd="${1:-}"
+cmd="\${1:-}"
 shift || true
 case "$cmd" in
   inspect)
     fmt=''
-    if [ "${1:-}" = -f ]; then
+    if [ "\${1:-}" = -f ]; then
       fmt="$2"
       shift 2
     fi
-    target="${1:-}"
+    target="\${1:-}"
     if [ "$FAIL" = inspect-old ] && [ "$target" = weddingpick-api ] && [ "$fmt" = '{{.Id}}' ]; then
       exit 1
     fi
@@ -145,7 +145,7 @@ case "$cmd" in
     while [ "$#" -gt 0 ] && [[ "$1" == --* ]]; do
       if [ "$1" = --time ]; then shift 2; else shift; fi
     done
-    target="${1:-}"
+    target="\${1:-}"
     [ "$target" = "$OLD" ] || exit 1
     if [ "$FAIL" = stop ]; then exit 1; fi
     put old_running 0
@@ -197,8 +197,8 @@ case "$cmd" in
     echo "$NEW"
     ;;
   rm)
-    [ "${1:-}" != -f ] || shift
-    target="${1:-}"
+    [ "\${1:-}" != -f ] || shift
+    target="\${1:-}"
     kind="$(resolve "$target")" || exit 0
     if [ "$kind" = old ]; then
       put removed_old 1
@@ -212,7 +212,7 @@ case "$cmd" in
     fi
     ;;
   start)
-    target="${1:-}"
+    target="\${1:-}"
     kind="$(resolve "$target")" || exit 1
     if [ "$kind" = old ]; then
       put old_running 1
@@ -234,9 +234,9 @@ esac
     path.join(bin, 'curl'),
     `#!/usr/bin/env bash
 set -euo pipefail
-S="${MOCK_DOCKER_STATE:?}"
+S="\${MOCK_DOCKER_STATE:?}"
 owner="$(cat "$S/prod_owner")"
-if [ "${MOCK_FAIL_STAGE:-}" = health-new ] && [ "$owner" = new ]; then
+if [ "\${MOCK_FAIL_STAGE:-}" = health-new ] && [ "$owner" = new ]; then
   exit 22
 fi
 printf '%s' '{"ok":true,"database":"ok","schema":{"ok":true,"pending":[]}}'
