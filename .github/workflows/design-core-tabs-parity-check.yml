@@ -1,0 +1,24 @@
+name: Design Core Tabs Parity Check
+
+on:
+  push:
+    branches:
+      - chatgpt/design-core-tabs-parity-20260918
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Validate
+        run: |
+          npm run typecheck --workspace @weddingpick/mobile
