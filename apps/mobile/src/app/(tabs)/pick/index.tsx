@@ -33,7 +33,6 @@ import Svg, { Path } from 'react-native-svg';
 
 import {
   Border,
-  Elevation,
   Layout,
   LetterSpacing,
   LineHeight,
@@ -290,7 +289,6 @@ export default function PickScreen() {
                       { backgroundColor: theme.tint },
                       pressed ? styles.pressed : null,
                     ]}>
-                    <ProductSymbol name="chart" size={Layout.iconField} color={theme.onTint} />
                     <ThemedText type="t7" style={[styles.bold, { color: theme.onTint }]}>
                       {COMPARE_ALL}
                     </ThemedText>
@@ -370,11 +368,9 @@ function Header({ me, partner, total }: { me: CurrentUser; partner: string | nul
         <ThemedText type="f24" style={[styles.bold, styles.title]}>
           {TERMS.pick}
         </ThemedText>
-        <View style={[styles.countBadge, { backgroundColor: theme.text }]}>
-          <ThemedText type="f12" style={[styles.bold, { color: theme.onInk }]}>
-            {pickCountLabel(total)}
-          </ThemedText>
-        </View>
+        <ThemedText type="f14" themeColor="textAssistive" style={styles.bold}>
+          {pickCountLabel(total)}
+        </ThemedText>
       </View>
       <ThemedText type="f14" themeColor="textAssistive">
         {SUBTITLE}
@@ -518,7 +514,11 @@ function CandidateCard({
     <View
       style={[
         styles.card,
-        { backgroundColor: isDecided ? theme.tintSurface : theme.background, borderColor: isDecided ? theme.tintBorder : theme.border },
+        {
+          backgroundColor: theme.background,
+          borderColor: isDecided ? theme.tint : theme.border,
+          borderWidth: isDecided ? 1.5 : Border.hairline,
+        },
       ]}>
       <Pressable
         accessibilityRole="button"
@@ -540,10 +540,10 @@ function CandidateCard({
               </ThemedText>
             </View>
           ) : null}
-          {/* 결정한 곳 — 피그마 `isConfirmed`: 썸네일 위 어두운 막 + 체크 원 28. */}
+          {/* 결정 완료 상태 — 03-pick 정본: 코랄 테두리 + 썸네일 우상단 체크. */}
           {isDecided ? (
-            <View style={[styles.decidedOverlay, { backgroundColor: theme.scrimLight }]}>
-              <ProductSymbol name="checkCircle" size={Layout.pickCircle} color={theme.onInk} />
+            <View style={[styles.decidedCheck, { backgroundColor: theme.tint }]}>
+              <ProductSymbol name="check" size={Layout.iconSmall} color={theme.onTint} />
             </View>
           ) : null}
         </View>
@@ -588,6 +588,27 @@ function CandidateCard({
       </Pressable>
 
       <View style={[styles.ctaStrip, { borderTopColor: theme.border }]}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ selected: comparing, disabled: compareDisabled }}
+          accessibilityLabel={`${candidate.vendorName} ${comparing ? ACTION_COMPARING : ACTION_COMPARE}`}
+          disabled={compareDisabled}
+          onPress={onCompare}
+          style={({ pressed }) => [
+            styles.compareLink,
+            compareDisabled ? styles.disabled : null,
+            pressed ? styles.pressed : null,
+          ]}>
+          <ThemedText
+            type="f12"
+            style={[
+              styles.bold,
+              { color: comparing ? theme.tint : compareDisabled ? theme.textDisabled : theme.textAssistive },
+            ]}>
+            {comparing ? ACTION_COMPARING : ACTION_COMPARE}
+          </ThemedText>
+        </Pressable>
+
         {isDecided ? (
           <Pressable
             accessibilityRole="button"
@@ -595,59 +616,30 @@ function CandidateCard({
             disabled={busy}
             onPress={onUndecide}
             style={({ pressed }) => [
-              styles.ctaSecondary,
-              styles.ctaFixed,
-              { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+              styles.decisionCta,
+              { backgroundColor: theme.tint, borderColor: theme.tint },
               pressed ? styles.pressed : null,
               busy ? styles.busy : null,
             ]}>
-            <ThemedText type="f12" themeColor="textAssistive" style={styles.bold}>
+            <ThemedText type="f12" style={[styles.bold, { color: theme.onTint }]}>
               {ACTION_UNDECIDE}
             </ThemedText>
           </Pressable>
-        ) : (
-          <>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ selected: comparing, disabled: compareDisabled }}
-              accessibilityLabel={`${candidate.vendorName} ${comparing ? ACTION_COMPARING : ACTION_COMPARE}`}
-              disabled={compareDisabled}
-              onPress={onCompare}
-              style={({ pressed }) => [
-                styles.ctaSecondary,
-                styles.ctaFlex,
-                comparing
-                  ? { backgroundColor: theme.text, borderColor: theme.text }
-                  : { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-                compareDisabled ? styles.disabled : null,
-                pressed ? styles.pressed : null,
-              ]}>
-              {/* 규격서: CTA 글자 «12/700 · lh 16». */}
-              <ThemedText
-                type="f12"
-                style={[styles.bold, { color: comparing ? theme.onInk : compareDisabled ? theme.textAssistive : theme.text }]}>
-                {comparing ? ACTION_COMPARING : ACTION_COMPARE}
-              </ThemedText>
-            </Pressable>
-            {/* 업종을 이미 다른 곳으로 결정했으면 이 카드에서는 결정을 권하지 않는다. */}
-            {!groupDecided ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`${candidate.vendorName} ${ACTION_DECIDE}`}
-                onPress={onDecide}
-                style={({ pressed }) => [
-                  styles.ctaPrimary,
-                  styles.ctaFlex,
-                  { backgroundColor: theme.tint },
-                  pressed ? styles.pressed : null,
-                ]}>
-                <ThemedText type="f12" style={[styles.bold, { color: theme.onTint }]}>
-                  {ACTION_DECIDE}
-                </ThemedText>
-              </Pressable>
-            ) : null}
-          </>
-        )}
+        ) : !groupDecided ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${candidate.vendorName} ${ACTION_DECIDE}`}
+            onPress={onDecide}
+            style={({ pressed }) => [
+              styles.decisionCta,
+              { backgroundColor: theme.background, borderColor: theme.border },
+              pressed ? styles.pressed : null,
+            ]}>
+            <ThemedText type="f12" style={[styles.bold, { color: theme.text }]}>
+              {ACTION_DECIDE}
+            </ThemedText>
+          </Pressable>
+        ) : null}
       </View>
     </View>
   );
@@ -748,18 +740,12 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.four,
     paddingBottom: Layout.listGap,
   },
-  /* 제목 ↔ 배지 `mb-1 flex items-center justify-between`. */
+  /* 정본: 제목 바로 옆에 N곳 회색 텍스트. */
   titleRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    gap: Layout.iconTextGap,
     marginBottom: Spacing.one,
-  },
-  /* «N곳» `rounded-full px-3 py-1` — 좌우 12(같은 값의 inlineGap) · 상하 4. */
-  countBadge: {
-    borderRadius: Radius.pill,
-    paddingHorizontal: Layout.inlineGap,
-    paddingVertical: Spacing.one,
   },
   /* 배우자 상자 `mt-4 rounded-2xl px-4 py-3` — 위 16 · radius 16 · 안쪽 16/12. */
   partnerBox: {
@@ -855,9 +841,9 @@ const styles = StyleSheet.create({
   },
   /* 규격서 「div 390×212 … r16 · border 1 #000000 6% · shadow」. */
   card: {
-    borderRadius: Radius.cardLarge,
+    borderRadius: Radius.medium,
     borderWidth: Border.hairline,
-    ...Elevation.figmaCard,
+    overflow: 'hidden',
   },
   cardBody: { flexDirection: 'row' },
   /* 왼쪽 열 `p-2` 안에 썸네일 104×116 — 열 폭 120. */
@@ -871,14 +857,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.half,
   },
-  /* 결정 막 `absolute inset-2 rounded-xl` — 썸네일과 같은 자리 · radius 22. */
-  decidedOverlay: {
+  /* 03-pick 정본: 결정 완료는 썸네일 우상단 24px 코랄 체크. */
+  decidedCheck: {
     position: 'absolute',
-    top: Spacing.two,
-    left: Spacing.two,
-    right: Spacing.two,
-    bottom: Spacing.two,
-    borderRadius: Radius.hero,
+    top: Layout.inlineGap,
+    right: Layout.inlineGap,
+    width: 24,
+    height: 24,
+    borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -914,31 +900,31 @@ const styles = StyleSheet.create({
   /* 메모 — 피그마 해시태그 줄 자리 `mt-2`. */
   note: { marginTop: Spacing.two },
 
-  /* CTA 띠 `border-t px-3 py-2.5 gap-2` — 안쪽 12/10. */
+  /* 03-pick 정본: 비교는 텍스트 링크, 오른쪽 행동만 버튼. */
   ctaStrip: {
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     gap: Spacing.two,
     borderTopWidth: Border.hairline,
-    paddingHorizontal: Layout.inlineGap,
-    paddingVertical: Layout.iconTextGap,
+    paddingHorizontal: Layout.fieldPaddingX,
+    paddingTop: Spacing.two,
+    paddingBottom: Layout.iconTextGap,
   },
-  /* 단추 `h-10 rounded-xl` — 40 · radius 22. */
-  ctaSecondary: {
+  compareLink: {
+    minHeight: Layout.controlMedium,
+    paddingHorizontal: Spacing.one,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  decisionCta: {
     height: Layout.controlMedium,
-    borderRadius: Radius.hero,
+    borderRadius: Radius.small,
     borderWidth: Border.hairline,
+    paddingHorizontal: Layout.toastPaddingX,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ctaPrimary: {
-    height: Layout.controlMedium,
-    borderRadius: Radius.hero,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ctaFlex: { flex: 1 },
-  /* «결정 취소» `flex-none px-4`. */
-  ctaFixed: { paddingHorizontal: Spacing.three },
 
   // ── 비어 있음 `py-20 gap-4` ──
   empty: {
