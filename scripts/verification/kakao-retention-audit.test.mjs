@@ -5,6 +5,7 @@ import {
   classifyBackups,
   classifyRetention,
   parseCorsMarker,
+  parseMarkerValue,
   recoveryFamily,
 } from '../audit-kakao-retention.mjs';
 
@@ -47,6 +48,17 @@ test('parses CORS recovery container marker without exposing env backup data', (
   assert.equal(
     parseCorsMarker('container=weddingpick-api-cors-previous-7-1\nenv_backup=/tmp/secret\n'),
     'weddingpick-api-cors-previous-7-1'
+  );
+});
+
+test('parses app-web update rollback config markers without treating release metadata as a path', () => {
+  assert.equal(
+    parseMarkerValue('config=/root/nginx-backups/app-update.conf\nrelease=abc123\n', 'config'),
+    '/root/nginx-backups/app-update.conf'
+  );
+  assert.equal(
+    parseMarkerValue('config=/root/nginx-backups/app-update.conf\nrelease=abc123\n', 'release'),
+    'abc123'
   );
 });
 
