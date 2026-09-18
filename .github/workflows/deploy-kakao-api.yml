@@ -17,7 +17,7 @@ jobs:
     timeout-minutes: 40
     # 이전 독립 실행의 승인 대기와 분리한다. VM 파일 잠금은 구버전과도 공유한다.
     concurrency:
-      group: weddingpick-kakao-api-cutover
+      group: weddingpick-kakao-vm-write
       cancel-in-progress: false
     steps:
       - name: Checkout
