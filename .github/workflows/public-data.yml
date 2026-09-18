@@ -68,6 +68,15 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  production-write-gate:
+    name: Approve production write
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.apply }}
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: echo 'Production write approved.'
+
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -93,7 +102,8 @@ jobs:
           DATABASE_URL: postgres://weddingpick:weddingpick_test@localhost:5432/weddingpick_test
 
   collect:
-    needs: verify
+    needs: [verify, production-write-gate]
+    if: ${{ always() && needs.verify.result == 'success' && (needs.production-write-gate.result == 'success' || needs.production-write-gate.result == 'skipped') }}
     runs-on: ubuntu-latest
     # 전국 전수는 업종코드마다 1,000건씩 페이지를 넘긴다 — 15분으로는 모자란다.
     timeout-minutes: 60

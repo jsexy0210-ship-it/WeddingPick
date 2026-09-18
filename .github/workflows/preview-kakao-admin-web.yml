@@ -1,0 +1,59 @@
+name: Preview Kakao Admin and Website on 443
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish admin and website preview routes
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - run: bash ./scripts/install-kakao-preview-routes.sh
+
+  verify:
+    name: Verify public preview routes
+    needs: [publish]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify admin
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --connect-timeout 5 --max-time 15             https://210.109.82.212/admin/login -o /tmp/admin.html
+          grep -qi '<html' /tmp/admin.html
+
+      - name: Verify website and legal pages
+        run: |
+          set -euo pipefail
+          for url in             https://210.109.82.212/website.html             https://210.109.82.212/privacy.html             https://210.109.82.212/terms.html; do
+            out="$(mktemp)"
+            curl --fail --silent --show-error --connect-timeout 5 --max-time 15 "$url" -o "$out"
+            grep -qi '<html' "$out"
+          done
+
+      - name: Verify API still works
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --connect-timeout 5 --max-time 15             https://210.109.82.212/health |
+            python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get("ok") is True and d.get("database")=="ok" else 1)'
+
+  rollback:
+    name: Roll back preview routes on failure
+    if: ${{ always() && needs.publish.result == 'success' && needs.verify.result != 'success' }}
+    needs: [publish, verify]
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - run: bash ./scripts/rollback-kakao-preview-routes.sh

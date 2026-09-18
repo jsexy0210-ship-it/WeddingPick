@@ -26,7 +26,18 @@ permissions:
   contents: read
 
 jobs:
+  production-write-gate:
+    name: Approve production write
+    if: ${{ inputs.apply && inputs.target != 'staging' }}
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: echo 'Production write approved.'
+
   remove:
+    needs: [production-write-gate]
+    if: ${{ always() && (needs.production-write-gate.result == 'success' || needs.production-write-gate.result == 'skipped') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
