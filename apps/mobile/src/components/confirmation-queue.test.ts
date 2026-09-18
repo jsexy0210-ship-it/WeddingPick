@@ -24,21 +24,21 @@ describe('createConfirmationQueue', () => {
 
   it('화면 scope가 바뀌면 열린 요청과 대기 요청을 버린다', () => {
     let scope = '/pick';
-    let active: Confirmation | null = null;
+    const state: { active: Confirmation | null } = { active: null };
     const queue = createConfirmationQueue({
       scope: () => scope,
       render: (request) => {
-        active = request;
-        return () => { active = null; };
+        state.active = request;
+        return () => { state.active = null; };
       },
       onError: (error) => { throw error; },
     });
 
     queue.enqueue('Pick 확인', '', [{ text: '확인' }]);
-    expect(active?.title).toBe('Pick 확인');
+    expect(state.active?.title).toBe('Pick 확인');
 
     scope = '/my';
     queue.checkScope();
-    expect(active).toBeNull();
+    expect(state.active).toBeNull();
   });
 });
