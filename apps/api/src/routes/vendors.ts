@@ -41,7 +41,7 @@ import { ApiError, notFound } from '../errors';
 import { isUuid } from '../uuid';
 import { loadUsageScore, summaryRating } from '../review-view';
 import { vendorSourceNote } from '../vendor-view';
-import { fetchKakaoStaticMap } from '../kakao-static-map';
+import { fetchKakaoStaticMap, geocodeKakaoAddress } from '../kakao-static-map';
 
 /**
  * 질의는 계약(`vendorSearchQuerySchema`)이 들고 있다 — 여기서 따로 베끼면 v3.18처럼
@@ -891,15 +891,18 @@ async function loadConditionStats(
       const { vendorId } = request.params;
       if (!isUuid(vendorId)) throw notFound('업체');
 
-      const { rows } = await context.pool.query<{ lat: number | null; lng: number | null }>(
-        'SELECT lat, lng FROM structured.vendors WHERE id = $1',
-        [vendorId]
-      );
+      const { rows } = await context.pool.query<{
+        lat: number | null;
+        lng: number | null;
+        address: string | null;
+      }>('SELECT lat, lng, address FROM structured.vendors WHERE id = $1', [vendorId]);
       const location = rows[0];
 
-      if (!location || location.lat === null || location.lng === null) {
-        return reply.code(404).send();
-      }
+      if (!location) return reply.code(404).send();
+
+      const hasStoredCoordinates = location.lat !== null && location.lng !== null;
+      const storedAddress = location.address?.trim() || null;
+      if (!hasStoredCoordinates && !storedAddress) return reply.code(404).send();
 
       const restApiKey = context.config.kakaoAppKey;
       if (!restApiKey) {
@@ -908,10 +911,21 @@ async function loadConditionStats(
       }
 
       try {
+        /*
+         * N-9: 카카오 로컬 응답을 자체 업체 DB에 저장하지 않는다.
+         * 좌표가 이미 있으면 그대로 쓰고, 없을 때만 현재 요청에서 주소를 일시 변환한다.
+         */
+        const resolved =
+          hasStoredCoordinates
+            ? { lat: location.lat!, lng: location.lng! }
+            : await geocodeKakaoAddress({ restApiKey, address: storedAddress! });
+
+        if (!resolved) return reply.code(404).send();
+
         const map = await fetchKakaoStaticMap({
           restApiKey,
-          lat: location.lat,
-          lng: location.lng,
+          lat: resolved.lat,
+          lng: resolved.lng,
         });
 
         reply.header('cache-control', 'public, max-age=86400, stale-while-revalidate=604800');
