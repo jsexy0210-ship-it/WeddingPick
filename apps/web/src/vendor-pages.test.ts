@@ -1,7 +1,7 @@
 import { readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { NOT_ENOUGH_DATA, TERMS } from '@weddingpick/domain';
+import { NOT_ENOUGH_DATA, SITE_ORIGIN, TERMS } from '@weddingpick/domain';
 import type { VendorDetail, VendorSummary } from '@weddingpick/api-contract';
 
 import { build } from './build';
@@ -107,7 +107,7 @@ test('검색 화면이 건 업체 상세는 환경변수 없이도 만들어진�
 
       /* 페이지가 있는 것으로 끝나지 않는다. 카드 태그가 함께 나가야 미리보기가 뜬다. */
       expect(page).toContain('property="og:title"');
-      expect(page).toContain(`content="https://weddingpick-web.onrender.com/v/${id}.html"`);
+      expect(page).toContain(`content="${SITE_ORIGIN}/v/${id}.html"`);
     }
   } finally {
     rmSync(out, { recursive: true, force: true });
