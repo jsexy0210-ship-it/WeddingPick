@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
   reviewHeadText: { flex: 1, minWidth: 0, gap: Spacing.half },
   reviewNameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   reviewAnswers: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  reviewChip: { minHeight: Layout.controlSmall, borderRadius: Radius.pill, paddingHorizontal: Layout.chipPaddingX, justifyContent: 'center' },
+  reviewChip: { height: 26, borderRadius: Radius.pill, paddingHorizontal: Layout.chipPaddingX, justifyContent: 'center' },
   reviewBody: { lineHeight: 22 },
   rebuttal: { borderRadius: Radius.medium, padding: Spacing.three, gap: Spacing.one },
   caveat: { paddingHorizontal: Layout.gutter, paddingTop: Spacing.three },
