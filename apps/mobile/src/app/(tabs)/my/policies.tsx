@@ -8,7 +8,7 @@ import { APP_VERSION } from '@/features/settings/version';
 
 /** 시안 16b-legal legalMenu · screens.json WP-MY-010. */
 const S = {
-  title: '서비스 정보',
+  title: '약관',
   version: '버전 정보',
   versionValue: (v: string) => `v${v}`,
   noteTitle: '문서는 확정 전 초안이에요',

@@ -36,6 +36,7 @@ const vendor = (id, name, category, region, opts = {}) => ({
    * 보여야 「없는 카드」의 생김새를 눈으로 확인할 수 있다.
    */
   rating: opts.rating ?? null,
+  reasons: opts.reasons ?? [],
 });
 
 /** 실 제보가 충분한 업체. 금액 한 줄이 구간으로 뜬다. */
@@ -54,18 +55,21 @@ const VENDORS = [
     paidPrice: disclosed(12, 1_520_000, 1_840_000, 1_680_000),
     styleTags: ['URBAN'],
     rating: { average: 4.7, count: 18 },
+    reasons: ['고른 사진이랑 가장 비슷해요', '생각한 예산 안에 들어와요', '찾던 조건이 가장 많이 맞아요'],
   }),
   vendor('22222222-2222-4222-8222-222222222222', '강남 B 웨딩홀', 'hall', '서울', {
     reports: 5,
     paidPrice: disclosed(5, 1_900_000, 2_400_000),
     styleTags: ['GLAMOROUS'],
     rating: { average: 4.3, count: 7 },
+    reasons: ['원하는 날에 가능해요', '실 제보가 충분히 모였어요'],
   }),
   vendor('33333333-3333-4333-8333-333333333333', '분당 C 웨딩홀', 'hall', '경기', {
     reports: 1,
     paidPrice: { stage: 'collecting', count: 1, caption: '수집 중' },
     guideFrom: 1_500_000,
     styleTags: ['NATURAL'],
+    reasons: ['좋아하는 분위기와 비슷해요'],
   }),
   vendor('44444444-4444-4444-8444-444444444444', '송파 D 웨딩홀', 'hall', '서울', {
     styleTags: ['ROMANTIC'],
@@ -182,7 +186,7 @@ const ME = {
   /* Pick 화면 캡처(배지·배너·가격 제보 링크)가 배우자 연결 상태를 필요로 한다. */
   spouseLinked: true,
   partnerDisplayName: '준호',
-  hasPaymentProof: false,
+  hasPaymentProof: process.env.FIXTURE_HAS_PAYMENT_PROOF === 'true',
   hasPick: false,
   hasCompared: false,
   tier: 'guest',
@@ -329,6 +333,43 @@ const routes = {
       },
     ],
   },
+
+  /*
+   * 글 하나 — 카드를 눌러 들어간 자리. 목록의 첫 글과 같은 id · 제목이라야
+   * 캡처에서 「눌러서 들어왔다」가 이어져 보인다. 본문은 목록에 없는 값이다.
+   */
+  'GET /v1/wedding-feed/:id': {
+    id: '00000000-0000-4000-8000-0000000000f1',
+    categoryLabel: '예산',
+    title: '예산을 넘기지 않는 스드메 조합 3가지',
+    summary: '항목별로 먼저 상한을 정해두면 흔들리지 않아요.',
+    body: '스드메는 세 가지를 한 번에 정하는 자리라 한쪽이 늘면 다른 쪽이 줄어요.\n\n먼저 항목별 상한을 적어두면 상담에서 흔들리지 않아요. 스튜디오는 원본 제공 조건, 드레스는 피팅 횟수와 추가 비용, 메이크업은 리허설 포함 여부를 함께 확인하세요.\n\n계약 전에 총액이 아니라 항목별 금액으로 받아 적으면 나중에 무엇이 늘었는지 바로 보여요.',
+    imageUrl: null,
+    publishedAt: '2026-09-15T02:00:00.000Z',
+  },
+  /** 라운지 후기 — 07-lounge-my의 Pick 인증 + 3축 populated 상태를 캡처한다. */
+  'GET /v1/reviews': {
+    reviews: [
+      {
+        ...VENDOR_REVIEWS[0],
+        verification: 'contract',
+        verificationLabel: 'Pick 인증',
+        aspects: [
+          { key: 'progress', label: '진행', rating: 5 },
+          { key: 'result', label: '결과물', rating: 4 },
+          { key: 'extra_cost', label: '추가비용', rating: 5 },
+        ],
+        vendor: {
+          id: VENDORS[4].id,
+          name: VENDORS[4].name,
+          category: VENDORS[4].category,
+        },
+      },
+    ],
+    nextCursor: null,
+    caveat: 'Pick 인증이 있는 후기는 인증 배지가 함께 보여요.',
+  },
+
   'GET /v1/vendors/regions': {
     regions: [
       { name: '서울', vendorCount: 128 },
@@ -497,6 +538,15 @@ const routes = {
   'GET /v1/weddings/:weddingId/candidates/removed': {
     groups: [],
   },
+  /*
+   * Pick DLG-F 캡처가 실제 삭제 → 되돌리기 흐름을 타도록 mutation도 성공시킨다.
+   * 캡처 스크립트는 프로덕션 API를 절대 호출하지 않으므로 이 fixture가 없으면
+   * 제품 오류가 아니라 fixture 404를 찍게 된다.
+   */
+  'DELETE /v1/weddings/:weddingId/candidates/:candidateId': null,
+  'POST /v1/weddings/:weddingId/candidates': {
+    candidateId: 'c1111111-1111-4111-8111-111111111111',
+  },
   /* 응답 본문이 없다(z.null()) — Pick 비교 로그. */
   'POST /v1/weddings/:weddingId/comparisons': null,
   'GET /v1/me/rewards/payout': {
@@ -507,6 +557,8 @@ const routes = {
     history: [],
   },
   'GET /v1/me/reports': { reports: [] },
+  /* MY 「문의하기」 꼬리 · 라운지 — 문의가 없는 상태가 기본이다. */
+  'GET /v1/inquiries': { inquiries: [] },
   'GET /v1/me/rewards': {
     referralCode: 'ABC123',
     invitedCount: 0,

@@ -21,7 +21,7 @@ export function useMyCandidates() {
   const [page, setPage] = useState<CandidateListResponse | null>(null);
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [weddingId, setWeddingId] = useState<string | null>(null);
-  /** 저장 요청이 진행 중인 업체. 두 번 누르는 것을 막는다. */
+  /** Pick 요청이 진행 중인 업체. 두 번 누르는 것을 막는다. */
   const [busyVendorId, setBusyVendorId] = useState<string | null>(null);
   const alive = useRef(true);
 

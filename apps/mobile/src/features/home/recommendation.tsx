@@ -19,7 +19,7 @@ import { CategoryImage } from './category-image';
 import type { HomeCta } from './state';
 
 /**
- * 웨딩픽 추천 — 규격서 docs/figma-spec/home.txt(2026-09-15 대표 지시 「규격서의 수를 그대로」).
+ * 웨딩픽 추천 — 규격서 docs/design/figma-export/01-home.dc.html(2026-09-15 대표 지시 「규격서의 수를 그대로」).
  *
  *   div 430×316  mar 0 0 24 0
  *     div 430×38  flex · justify space-between · align center · pad 0 20 0 20 · mar 0 0 12 0

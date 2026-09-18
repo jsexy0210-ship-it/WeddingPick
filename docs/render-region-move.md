@@ -200,7 +200,7 @@ API를 싱가포르로 옮기면 두 구간이 함께 짧아진다. API↔DB는 
 | `PROJECT_STATUS.md` | 30 |
 | `docs/AI_HANDOFF.md` | 225 · 403 · 445 · 800 |
 | `docs/INFRA_ACCESS_AUDIT_2026-09-10.md` | 42 · 83 |
-| `docs/screenshots/README.md` | 12 |
+| `docs/design/README.md` | 12 |
 | `docs/archive/HANDOFF-2026-09-07.md` | 81 · 215 |
 
 `docs/archive/`는 **지난 기록이다. 고치지 않는다** — 그때 그 주소였던 것이 사실이다.
