@@ -8,7 +8,7 @@ import {
   priceLine,
   type VendorCategory,
 } from '@weddingpick/domain';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import {
@@ -225,9 +225,10 @@ function CategoryRow({
   const theme = useTheme();
   const [reasonVendorId, setReasonVendorId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!expanded) setReasonVendorId(null);
-  }, [expanded]);
+  const handleToggle = () => {
+    setReasonVendorId(null);
+    onToggle();
+  };
 
   const reasonIndex = reasonVendorId === null
     ? -1
@@ -242,7 +243,7 @@ function CategoryRow({
         accessibilityRole="button"
         accessibilityState={{ expanded }}
         accessibilityLabel={`${group.categoryLabel} ${expanded ? '접기' : '펼치기'}`}
-        onPress={onToggle}
+        onPress={handleToggle}
         style={({ pressed }) => [styles.rowHead, styles.gutter, pressed && styles.pressed]}>
         <ThemedText type="f18" style={styles.bold}>{group.categoryLabel}</ThemedText>
         <View style={styles.foldMeta}>
@@ -284,6 +285,7 @@ function CategoryRow({
                   picked={isPicked(vendor.id)}
                   accessibilityLabel={`${vendor.name} 추천 이유 보기`}
                   showReason={false}
+                  variant="recommendations"
                   onPress={() => setReasonVendorId(vendor.id)}
                   onPressPick={() => onPressPick(vendor)}
                 />
@@ -527,17 +529,14 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: Spacing.two,
     marginTop: Spacing.three,
   },
   actionButton: {
-    minHeight: Layout.ctaInCard,
-    borderRadius: Radius.control,
-    borderWidth: Border.hairline,
+    height: Layout.chip,
+    borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: Layout.fieldPaddingX,
-    flex: 1,
+    paddingHorizontal: Spacing.three,
   },
 
   next: {
