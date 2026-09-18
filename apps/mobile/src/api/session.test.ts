@@ -48,6 +48,30 @@ describe('native session secure storage', () => {
     legacyValues.clear();
     secureValues.clear();
     jest.clearAllMocks();
+
+    (AsyncStorage.getItem as jest.Mock).mockImplementation(
+      async (key: string) => legacyValues.get(key) ?? null
+    );
+    (AsyncStorage.setItem as jest.Mock).mockImplementation(
+      async (key: string, value: string) => { legacyValues.set(key, value); }
+    );
+    (AsyncStorage.removeItem as jest.Mock).mockImplementation(
+      async (key: string) => { legacyValues.delete(key); }
+    );
+    (AsyncStorage.getAllKeys as jest.Mock).mockImplementation(
+      async () => [...legacyValues.keys()]
+    );
+
+    (SecureStore.getItemAsync as jest.Mock).mockImplementation(
+      async (key: string) => secureValues.get(key) ?? null
+    );
+    (SecureStore.setItemAsync as jest.Mock).mockImplementation(
+      async (key: string, value: string) => { secureValues.set(key, value); }
+    );
+    (SecureStore.deleteItemAsync as jest.Mock).mockImplementation(
+      async (key: string) => { secureValues.delete(key); }
+    );
+
     (Platform as { OS: string }).OS = 'ios';
   });
 
