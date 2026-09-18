@@ -36,6 +36,7 @@ const vendor = (id, name, category, region, opts = {}) => ({
    * 보여야 「없는 카드」의 생김새를 눈으로 확인할 수 있다.
    */
   rating: opts.rating ?? null,
+  reasons: opts.reasons ?? [],
 });
 
 /** 실 제보가 충분한 업체. 금액 한 줄이 구간으로 뜬다. */
@@ -54,18 +55,21 @@ const VENDORS = [
     paidPrice: disclosed(12, 1_520_000, 1_840_000, 1_680_000),
     styleTags: ['URBAN'],
     rating: { average: 4.7, count: 18 },
+    reasons: ['고른 사진이랑 가장 비슷해요', '생각한 예산 안에 들어와요', '찾던 조건이 가장 많이 맞아요'],
   }),
   vendor('22222222-2222-4222-8222-222222222222', '강남 B 웨딩홀', 'hall', '서울', {
     reports: 5,
     paidPrice: disclosed(5, 1_900_000, 2_400_000),
     styleTags: ['GLAMOROUS'],
     rating: { average: 4.3, count: 7 },
+    reasons: ['원하는 날에 가능해요', '실 제보가 충분히 모였어요'],
   }),
   vendor('33333333-3333-4333-8333-333333333333', '분당 C 웨딩홀', 'hall', '경기', {
     reports: 1,
     paidPrice: { stage: 'collecting', count: 1, caption: '수집 중' },
     guideFrom: 1_500_000,
     styleTags: ['NATURAL'],
+    reasons: ['좋아하는 분위기와 비슷해요'],
   }),
   vendor('44444444-4444-4444-8444-444444444444', '송파 D 웨딩홀', 'hall', '서울', {
     styleTags: ['ROMANTIC'],
