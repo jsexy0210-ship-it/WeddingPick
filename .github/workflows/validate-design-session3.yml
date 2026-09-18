@@ -42,10 +42,25 @@ jobs:
         id: owned_typecheck
         continue-on-error: true
         run: |
+          mkdir -p apps/mobile/.design-stubs
+          cat > apps/mobile/.design-stubs/webshell-config.ts <<'TS'
+          export const isWebShellScreen = (_id: string): boolean => false;
+          TS
+          cat > apps/mobile/.design-stubs/web-shell-view.ts <<'TS'
+          export const WebShellView = (_props: { path: string }): null => null;
+          TS
           cat > apps/mobile/tsconfig.design-session3.json <<'JSON'
           {
             "extends": "./tsconfig.json",
             "include": [],
+            "compilerOptions": {
+              "paths": {
+                "@/features/webshell/config": ["./.design-stubs/webshell-config.ts"],
+                "@/features/webshell/WebShellView": ["./.design-stubs/web-shell-view.ts"],
+                "@/*": ["./src/*"],
+                "@/assets/*": ["./assets/*"]
+              }
+            },
             "files": [
               "src/app/(tabs)/pick/index.tsx",
               "src/app/(tabs)/pick/[category].tsx",
@@ -83,11 +98,28 @@ jobs:
         run: |
           npx eslint             "src/app/(tabs)/pick"             "src/features/pick"             "src/components/confirm-alert.ts"             "src/components/confirm-alert.web.ts"             "src/components/confirm-alert-toast.tsx"             "src/components/confirmation-queue.ts"             "src/features/navigation"
 
-      - name: Related mobile tests
-        id: related_tests
+      - name: Owned Session 3 tests
+        id: owned_tests
         continue-on-error: true
         run: |
-          npm run test --workspace @weddingpick/mobile -- --runInBand             src/components/confirm-alert.test.ts             src/components/confirm-alert-toast.test.ts             src/components/confirmation-queue.test.ts             src/features/pick/canonical-rules.test.ts             src/features/pick/pick-done-back.test.ts             src/features/navigation
+          npm run test --workspace @weddingpick/mobile -- --runInBand \
+            src/components/confirm-alert.test.ts \
+            src/components/confirm-alert-toast.test.ts \
+            src/components/confirmation-queue.test.ts \
+            src/features/pick/canonical-rules.test.ts \
+            src/features/pick/pick-done-back.test.ts \
+            src/features/navigation/back-button-position.test.tsx \
+            src/features/navigation/depth-back.test.ts \
+            src/features/navigation/depth-back-history.test.ts \
+            src/features/navigation/root-tabs.test.ts
+
+      - name: Cross-scope navigation diagnostic
+        id: cross_scope_navigation
+        continue-on-error: true
+        run: |
+          npm run test --workspace @weddingpick/mobile -- --runInBand \
+            src/features/navigation/depth-back-buttons.test.tsx \
+            src/features/navigation/design-recovery.test.ts
 
       - name: Expo web export
         id: web_export
@@ -169,7 +201,7 @@ jobs:
         run: |
           test "${{ steps.owned_typecheck.outcome }}" = "success"
           test "${{ steps.owned_lint.outcome }}" = "success"
-          test "${{ steps.related_tests.outcome }}" = "success"
+          test "${{ steps.owned_tests.outcome }}" = "success"
           test "${{ steps.web_export.outcome }}" = "success"
           test "${{ steps.capture_root.outcome }}" = "success"
           test "${{ steps.capture_compare.outcome }}" = "success"
