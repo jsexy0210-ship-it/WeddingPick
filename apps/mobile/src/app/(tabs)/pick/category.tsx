@@ -11,6 +11,7 @@ import { useDepthBack } from '@/features/navigation/depth-back';
 
 import {
   addCandidate,
+  decideCategory,
   getCurrentUser,
   listCandidates,
   removeCandidate,
@@ -39,6 +40,11 @@ import {
  * Pick을 담는 행위는 **후보를 올리는 것**이지 결정이 아니다. 결정은 confirm 시트를
  * 별도로 거친다 — 그래야 실수로 결정이 되는 일이 없다.
  */
+type UndoCandidate = {
+  candidate: VendorCandidate;
+  wasDecided: boolean;
+};
+
 export default function PickCategoryScreen() {
   const theme = useTheme();
   const { category } = useLocalSearchParams<{ category: string }>();
@@ -49,7 +55,7 @@ export default function PickCategoryScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [undoCandidate, setUndoCandidate] = useState<VendorCandidate | null>(null);
+  const [undoCandidate, setUndoCandidate] = useState<UndoCandidate | null>(null);
   // 오류·목록 하단의 나가는 길은 Depth Back이다 — 딥링크로 들어와도 Pick 탭으로 간다.
   const depthBack = useDepthBack();
 
@@ -77,7 +83,7 @@ export default function PickCategoryScreen() {
     });
   }
 
-  function showToast(message: string, undo: VendorCandidate | null = null) {
+  function showToast(message: string, undo: UndoCandidate | null = null) {
     setUndoCandidate(undo);
     setToast(message);
   }
@@ -96,7 +102,7 @@ export default function PickCategoryScreen() {
         onPress: () =>
           removeCandidate(weddingId, candidate.id)
             .then(() => {
-              showToast('후보에서 뺐어요', candidate);
+              showToast('후보에서 뺐어요', { candidate, wasDecided: isDecided });
               load();
             })
             .catch((caught: Error) => setError(caught.message)),
@@ -104,14 +110,28 @@ export default function PickCategoryScreen() {
     ]);
   }
 
-  async function undoUnpick(candidate: VendorCandidate) {
+  async function undoUnpick(target: UndoCandidate) {
     if (!weddingId) return;
+    const { candidate, wasDecided } = target;
+    let candidateRestored = false;
     try {
       await addCandidate(weddingId, candidate.vendorId, candidate.note ?? undefined);
-      showToast('다시 Pick했어요');
-      load();
+      candidateRestored = true;
+      if (wasDecided) {
+        await decideCategory(weddingId, {
+          category: candidate.category,
+          vendorId: candidate.vendorId,
+        });
+      }
+      showToast(wasDecided ? 'Pick과 결정을 되돌렸어요' : '다시 Pick했어요');
     } catch {
-      showToast('다시 Pick하지 못했어요. 잠시 후 다시 시도해주세요.');
+      showToast(
+        candidateRestored && wasDecided
+          ? '다시 Pick했지만 결정을 복구하지 못했어요.'
+          : '다시 Pick하지 못했어요. 잠시 후 다시 시도해주세요.'
+      );
+    } finally {
+      load();
     }
   }
 
