@@ -103,6 +103,16 @@ describeWithDb('이용 후기', () => {
   }
 
   describe('라운지 전체 후기', () => {
+    it('공개 가능한 후기가 없으면 빈 목록과 null cursor를 준다', async () => {
+      const response = await test.app.inject({ method: 'GET', url: '/v1/reviews?limit=20' });
+
+      expect(response.statusCode).toBe(200);
+      expect(loungeReviewListResponseSchema.parse(response.json())).toMatchObject({
+        reviews: [],
+        nextCursor: null,
+      });
+    });
+
     async function insertReview(input: {
       vendorId: string;
       authorId: string;
