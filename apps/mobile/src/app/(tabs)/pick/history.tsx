@@ -2,7 +2,9 @@ import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-import { getCurrentUser, getRemovedCandidates, listCandidates } from '@/api/client';
+import { getCurrentUser, getRemovedCandidates, listCandidates, removeDecision } from '@/api/client';
+import { confirmAlert } from '@/components/confirm-alert';
+import { DialogToast } from '@/components/confirm-alert-toast';
 import type { CandidateListResponse } from '@weddingpick/api-contract';
 import {
   EmptyView,
@@ -28,6 +30,7 @@ const S = {
   'section.decided': '결정한 곳',
   'section.candidates': '후보',
   'cta.addCandidate': '다시 후보 추가',
+  'cta.cancelDecision': '결정 취소',
   'empty.title': '아직 Pick한 곳이 없어요',
   'empty.description': '업체를 찾아 Pick에 담아보세요',
   'empty.cta': '업체 검색',
@@ -58,14 +61,20 @@ export default function PickHistoryScreen() {
 
   const [data, setData] = useState<CandidateListResponse | null>(null);
   const [hasRemoved, setHasRemoved] = useState(false);
+  const [weddingId, setWeddingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = useCallback(() => {
+    setLoading(true);
+    setError(false);
     getCurrentUser()
       .then((user) => {
+        setWeddingId(user.weddingId ?? null);
         if (!user.weddingId) {
-          setLoading(false);
+          setData(null);
+          setHasRemoved(false);
           return;
         }
         return Promise.all([
@@ -78,6 +87,34 @@ export default function PickHistoryScreen() {
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(load, [load]);
+
+  const askCancelDecision = useCallback(
+    (category: string, categoryLabel: string) => {
+      if (!weddingId) return;
+      confirmAlert(
+        '결정을 취소할까요?',
+        `${categoryLabel}의 결정 상태가 풀려요. 언제든 다시 결정할 수 있어요.`,
+        [
+          { text: '그대로 둘게요', style: 'cancel' },
+          {
+            text: S['cta.cancelDecision'],
+            onPress: async () => {
+              try {
+                await removeDecision(weddingId, category);
+                setToast('결정을 취소했어요');
+                load();
+              } catch {
+                setToast('결정을 취소하지 못했어요. 잠시 후 다시 시도해주세요.');
+              }
+            },
+          },
+        ]
+      );
+    },
+    [load, weddingId]
+  );
 
   const handleAddCandidate = useCallback(
     (category: string) => {
@@ -179,6 +216,11 @@ export default function PickHistoryScreen() {
                       </ThemedText>
                     </View>
                   </View>
+                  <DashedCta
+                    label={S['cta.cancelDecision']}
+                    labelColor="textSecondary"
+                    onPress={() => askCancelDecision(group.category, group.categoryLabel)}
+                  />
                 </View>
               )}
 
@@ -229,6 +271,7 @@ export default function PickHistoryScreen() {
           />
         )}
       </ScrollView>
+      <DialogToast message={toast} onHidden={() => setToast(null)} />
     </Screen>
   );
 }
