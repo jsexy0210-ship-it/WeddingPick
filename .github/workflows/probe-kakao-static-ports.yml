@@ -9,6 +9,7 @@ permissions:
 jobs:
   install:
     name: Install temporary HTTPS probes
+    environment: production
     runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
     timeout-minutes: 5
     steps:
