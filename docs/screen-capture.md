@@ -119,16 +119,16 @@ npx jest --config packages/api-contract/jest.config.js --rootDir packages/api-co
 
 **2026-09-14에 뒤집혔다.** 대표님이 앱을 열어 보시고 「피그마랑 아예 다르다」고 하셨고,
 그때까지 우리는 「시안은 못 찍는다」를 전제로 사람 눈에 대조를 맡기고 있었다. 그 전제가
-`docs/design-handoff/`의 `.dc.html`에 대해서는 맞지만(아래) **피그마 저장소에는 틀리다** —
-`weddingpick_figma`는 그냥 도는 Vite 앱이라 빌드해서 찍힌다. 못 찍는 줄 알고 넘기는 동안
+`docs/design/handoff/`의 `.dc.html`에 대해서는 맞지만(아래) **피그마 저장소에는 틀리다** —
+`docs/design/figma-export`는 그냥 도는 Vite 앱이라 빌드해서 찍힌다. 못 찍는 줄 알고 넘기는 동안
 홈 · 검색 · Pick이 통째로 어긋나 있었다.
 
 처음 한 번 받아서 빌드한다.
 
 ```
-git clone --depth 1 https://github.com/jsexy0210-ship-it/weddingpick_figma \
-  /home/user/jsexy0210-ship-it/weddingpick_figma
-cd /home/user/jsexy0210-ship-it/weddingpick_figma && npm install && npx vite build
+git clone --depth 1 https://github.com/jsexy0210-ship-it/docs/design/figma-export \
+  /home/user/jsexy0210-ship-it/docs/design/figma-export
+cd /home/user/jsexy0210-ship-it/docs/design/figma-export && npm install && npx vite build
 ```
 
 그다음부터는 한 줄이다.
@@ -144,7 +144,7 @@ node scripts/screenshot-figma.mjs --route /search
 
 ## 핸드오프 `.dc.html`은 여전히 찍지 않는다
 
-`docs/design-handoff/`의 `.dc.html`은 **이 도구가 찍지 않는다.** 자산이 저장소에
+`docs/design/handoff/`의 `.dc.html`은 **이 도구가 찍지 않는다.** 자산이 저장소에
 들어오지 않기 때문이다(2026-09-11 대표님 확인 — 용량 때문에 올릴 수 없다).
 
 | 시안이 부르는 것 | `root/`(정본) | `current/html/` |
@@ -164,7 +164,7 @@ node scripts/screenshot-figma.mjs --route /search
 색 · 문구)은 그대로 읽힌다. 실제로 이 PR에서 `root/WP-SRCH-검색.dc.html`을 그렇게 읽어
 찍은 화면과 대조했다.
 
-`docs/design-handoff/current/png/`도 대신 쓸 수 없다. 이름만 PNG이고 실제로는 909×525
+`docs/design/handoff/png/`도 대신 쓸 수 없다. 이름만 PNG이고 실제로는 909×525
 JPEG 한 장에 캔버스 전체가 들어 있다 — 화면 하나를 떼어낼 해상도가 아니다.
 
 ## 아는 한계

@@ -41,12 +41,20 @@ import { ApiError, notFound } from '../errors';
 import { isUuid } from '../uuid';
 import { loadUsageScore, summaryRating } from '../review-view';
 import { vendorSourceNote } from '../vendor-view';
+import { fetchKakaoStaticMap, geocodeKakaoAddress } from '../kakao-static-map';
 
 /**
  * 질의는 계약(`vendorSearchQuerySchema`)이 들고 있다 — 여기서 따로 베끼면 v3.18처럼
  * 화면이 거는 조건이 늘 때 서버만 옛 칸으로 남는다.
  */
 const searchQuerySchema = vendorSearchQuerySchema;
+
+function isUpstreamTimeout(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    (error.name === 'TimeoutError' || error.name === 'AbortError')
+  );
+}
 
 
 type VendorRow = {
@@ -60,6 +68,8 @@ type VendorRow = {
   /** 지도 핀 좌표. 아직 지오코딩하지 않았으면 둘 다 null. */
   lat: number | null;
   lng: number | null;
+  /** 확인된 도로명/지번 주소. 상세에서만 채워질 수 있다. */
+  address?: string | null;
   /** 승인된 대표 이미지 주소. 검색·상세 질의가 서브쿼리로 채운다. */
   image_url?: string | null;
   comparable_quote_count: string;
@@ -293,7 +303,7 @@ async function loadVendorDetail(pool: Pool, vendorId: string, viewerId: string |
   const preview = await previewsImages(pool, viewerId);
 
   const { rows } = await pool.query<VendorRow>(
-    `SELECT v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url, v.last_verified_at, v.lat, v.lng,
+    `SELECT v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url, v.last_verified_at, v.lat, v.lng, v.address,
               v.style_tags::text[] AS style_tags, v.guide_price_from, v.guide_price_source,
               (SELECT i.source_url FROM structured.vendor_images i
                  WHERE i.vendor_id = v.id AND ${displayableImageCondition('i', { preview })}
@@ -416,6 +426,7 @@ async function loadVendorDetail(pool: Pool, vendorId: string, viewerId: string |
     ...toSummary(vendor),
     usageScore,
     lastVerifiedAt: vendor.last_verified_at.toISOString(),
+    address: vendor.address?.trim() || null,
     prices: {
       products,
       paidPrice,
@@ -873,6 +884,67 @@ async function loadConditionStats(
   /** A-17 업체 상세. */
   app.get<{ Params: { vendorId: string } }>('/v1/vendors/:vendorId', auth, async (request) =>
     loadVendorDetail(context.pool, request.params.vendorId, optionalUserId(request))
+  );
+
+  /**
+   * 업체 상세의 정적 지도 이미지.
+   *
+   * 정적 지도 인증 요청은 API가 맡고 이미지 바이트만 전달한다. 저장 좌표가 없더라도
+   * 허용 출처의 주소가 있으면 요청 중에만 좌표를 구한다. 주소·좌표가 모두 없으면 404다.
+   */
+  app.get<{ Params: { vendorId: string } }>(
+    '/v1/vendors/:vendorId/static-map',
+    async (request, reply) => {
+      const { vendorId } = request.params;
+      if (!isUuid(vendorId)) throw notFound('업체');
+
+      const { rows } = await context.pool.query<{
+        lat: number | null;
+        lng: number | null;
+        address: string | null;
+      }>('SELECT lat, lng, address FROM structured.vendors WHERE id = $1', [vendorId]);
+      const location = rows[0];
+
+      if (!location) return reply.code(404).send();
+
+      const hasStoredCoordinates = location.lat !== null && location.lng !== null;
+      const storedAddress = location.address?.trim() || null;
+      if (!hasStoredCoordinates && !storedAddress) return reply.code(404).send();
+
+      const restApiKey = context.config.kakaoAppKey;
+      if (!restApiKey) {
+        request.log.warn({ vendorId }, '카카오 지도 키가 없어 정적 지도를 만들지 못했다');
+        return reply.code(503).send();
+      }
+
+      try {
+        /*
+         * N-9: 카카오 로컬 응답을 자체 업체 DB에 저장하지 않는다.
+         * 좌표가 이미 있으면 그대로 쓰고, 없을 때만 현재 요청에서 주소를 일시 변환한다.
+         */
+        let resolved: { lat: number; lng: number } | null = null;
+        if (location.lat !== null && location.lng !== null) {
+          resolved = { lat: location.lat, lng: location.lng };
+        } else if (storedAddress) {
+          resolved = await geocodeKakaoAddress({ restApiKey, address: storedAddress });
+        }
+
+        if (!resolved) return reply.code(404).send();
+
+        const map = await fetchKakaoStaticMap({
+          restApiKey,
+          lat: resolved.lat,
+          lng: resolved.lng,
+        });
+
+        reply.header('cache-control', 'public, max-age=86400, stale-while-revalidate=604800');
+        return reply.type(map.contentType).send(map.body);
+      } catch (error) {
+        const timedOut = isUpstreamTimeout(error);
+        request.log.warn({ error, vendorId, timedOut }, '카카오 정적 지도 조회가 실패했다');
+        return reply.code(timedOut ? 504 : 502).send();
+      }
+    }
   );
 
   /**

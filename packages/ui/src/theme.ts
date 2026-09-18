@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 
 /**
  * 디자인 토큰 — SEED(당근 디자인시스템) 기준. **원본은 `spec/tokens.json`이고, 그 파일은
- * `docs/design-handoff/current/tokens.json`을 그대로 옮긴 것이다.** 여기 있는 값은 그 두 파일에
+ * `docs/design/handoff/tokens.json`과 상위 README의 확정 예외를 반영한다.** 여기 있는 값은 그 두 파일에
  * 있는 수와 색이어야 한다 — 이 파일이 새 값을 만들지 않는다(2026-09-09 감사에서 어긋난 값을 전부
  * 핸드오프로 맞췄다: primaryPressed · primaryTint · warningSurface · dangerText · dim · divider · inverse).
  *
@@ -644,7 +644,7 @@ export const AdminSpacing = {
  * 사람이 「어느 쪽이 맞나」를 다시 파지 않게 하려는 것이다.
  *
  *     ~2026-09-15   24   화면 99개. 피그마에 없는 화면은 24라는 예외가 붙어 있었다
- *      2026-09-15   20   「피그마가 곧 정본이다」 — docs/figma-spec 12화면 실측
+ *      2026-09-15   20   「피그마가 곧 정본이다」 — docs/design/figma-export 12화면 실측
  *      2026-09-17   24   새 패키지 「전 화면 예외 없음」 · 대표 지시
  *
  * **숫자보다 중요한 것은 한 화면 안에 두 값이 섞이지 않는 것이다.** 99개가 24이고
@@ -743,7 +743,7 @@ export const Layout = {
   tabPickDotOffset: -1,
   /**
    * 가운데 Pick 탭의 원형 강조. spec/tokens.json `tabBar.emphasized`
-   * (← weddingpick_figma `src/app/components/Root.tsx:66-84`).
+   * (← docs/design/figma-export `src/app/components/Root.tsx:66-84`).
    *
    * 원 안의 아이콘만 20이고 나머지 넷은 `iconTab`(24) 그대로다 — 그 사유도
    * 토큰의 `$only`에 적혀 있다.
@@ -848,8 +848,17 @@ export const Layout = {
   /** 업체 상세 대표 이미지 288 · 포트폴리오 띠 정사각 144 — size.heroVendor · thumbPortfolio(피그마 `VendorFlows.tsx` `h-72` · `h-36 w-36`). */
   heroVendor: 288,
   thumbPortfolio: 144,
+  /**
+   * 웨딩피드 글 상세의 대표 이미지 208 — size.heroFeed(피그마 `FlowScreens.tsx`
+   * `FeedDetailPage`의 `h-52`).
+   *
+   * **`heroVendor`(288 · `h-72`)로 대신하지 않는다.** 업체 상세는 사진이 주인공이라
+   * 크고, 글 상세는 읽는 화면이라 제목을 위로 끌어올린다. 피그마가 두 자리에 다른
+   * 값을 쓴 것이 그 뜻이고, 80px 차이는 나란히 놓으면 바로 보인다.
+   */
+  heroFeed: 208,
   /*
-   * 홈 규격서 docs/figma-spec/home.txt(2026-09-15). 히어로 장식 원 «div 144×144 … r9999» ·
+   * 홈 규격서 docs/design/figma-export/01-home.dc.html(2026-09-15). 히어로 장식 원 «div 144×144 … r9999» ·
    * «div 112×112 … border 14» · 더보기 «button 24×24» · 아바타 «span 16×16 "지" 7/700» · 추천 카드
    * «div 208×262» «img 206×144» · 하트 «button 32×32» · 웨딩피드 «img 80×80 r18» · 탭 바 «pad 0 8».
    */
@@ -958,17 +967,8 @@ export const Layout = {
 export const Radius = {
   /** 배지 · 체크박스 · 뼈대 바. radius.badge. */
   badge: 4,
-  /**
-   * 버튼과 입력 필드. radius.control.
-   *
-   * **2026-09-15까지 6이었다.** 피그마의 풀폭 CTA 17개를 재면 전부 r16이다 —
-   * 「카카오로 3초 만에 시작하기」 · 「다음」 · 「상담 일정 잡기」 · 「날짜와 시간을
-   * 선택해주세요」 전부 h56 · r16. 우리 버튼만 각진 채로 남아 있었다.
-   *
-   * **작은 썸네일은 이 이름에서 뗐다** — `small` 6을 쓴다. 한 이름이 버튼과
-   * 썸네일을 같이 가리키면 한쪽을 고칠 때 다른 쪽이 따라 움직인다.
-   */
-  control: 16,
+  /** 버튼과 입력 필드. docs/design/handoff/tokens.json radius.control=6. */
+  control: 6,
   /**
    * 날짜 선택의 연 · 월 펼침 칸과 날짜 칸. radius.picker — 20-onboarding-v2의
    * `optCell` · `dayCell`이 «border-radius:8px»다.
@@ -1033,7 +1033,7 @@ export const Border = {
 export const Elevation = {
   /**
    * 피그마 규격서의 «shadow» — Tailwind `shadow-sm` = 0 1px 2px rgba(0,0,0,.05). 검색 · Pick ·
-   * 웨딩피드 카드가 쓴다(docs/figma-spec/search.txt 「div 390×137 … r16 · border … · shadow」).
+   * 웨딩피드 카드가 쓴다(docs/design/figma-export/02-search.dc.html 「div 390×137 … r16 · border … · shadow」).
    * 2026-09-15 대표 지시로 규격서의 수를 그대로 옮긴다 — elevation.$rule(그림자 거의 안 씀)보다 앞선다.
    */
   figmaCard: {

@@ -16,7 +16,7 @@ import { CategoryImage } from './category-image';
 import type { WeddingContentItem } from './content';
 
 /**
- * 웨딩피드 — 규격서 docs/figma-spec/home.txt(2026-09-15 대표 지시 「규격서의 수를 그대로」).
+ * 웨딩피드 — 규격서 docs/design/figma-export/01-home.dc.html(2026-09-15 대표 지시 「규격서의 수를 그대로」).
  *
  *   div 390×224
  *     article 390×106  flex · gap 12 · pad 12 12 12 12 · mar 0 0 12 0 · bg #FFFFFF · r16 · border 1 #000000 6%

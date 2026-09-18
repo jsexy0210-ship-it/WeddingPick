@@ -18,7 +18,7 @@ npm run progress -- --compare "7 days ago"
 | 공정 | 세는 것 | 근거 |
 |---|---|---|
 | 화면 구현 (30) | `A-NN ✅` 표시된 화면 수 | `docs/05-product-spec.md` 2번 표 |
-| 관리자 콘솔 (20) | `WP-ADM-NNN ✅` 표시된 화면 수 | `docs/design-handoff/screens.md` |
+| 관리자 콘솔 (20) | `WP-ADM-NNN ✅` 표시된 화면 수 | `docs/design/handoff/screens.md` |
 | 열린 질문 해소 (20) | `- [x]` 체크된 질문 수 | `docs/05-product-spec.md` 열린 질문 절 |
 | 명세 항목 완결 (30) | `### 아직 없는 것` 에 남은 항목이 없는 `##` 절의 수 | `docs/05-product-spec.md` 전체 |
 | 코드 게이트 (20) | `typecheck` · `lint` · `test` 통과 수 | 실제 실행 (`--checks` 일 때만) |

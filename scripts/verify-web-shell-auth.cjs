@@ -44,6 +44,15 @@ function storage() {
     getItem: k => values.get(k) ?? null, setItem: (k,v) => values.set(k,v), removeItem: k => values.delete(k),
     getAllKeys: async () => [...values.keys()] };
 }
+function secureStorage() {
+  const values = new Map();
+  return {
+    values,
+    getItemAsync: async key => values.get(key) ?? null,
+    setItemAsync: async (key, value) => { values.set(key, value); },
+    deleteItemAsync: async key => { values.delete(key); },
+  };
+}
 function browser(href = `${origin}/?wp_shell=1`, bridge = true) {
   const win = { location: new URL(href), localStorage: storage(), sessionStorage: storage(),
     crypto: webcrypto, dispatchEvent() {}, sent: [],
@@ -182,17 +191,32 @@ function component(sequence = [token]) {
   });
   await check('loadToken waits for handshake rather than reading old local token',async()=>{
     const c=browser();c.win.localStorage.setItem('weddingpick.sessionToken.v1',otherToken);
-    const session=load(sessionPath,{'@react-native-async-storage/async-storage':c.win.localStorage,'./web-shell-session':c.api},c.globals);
+    const session=load(sessionPath,{
+      '@react-native-async-storage/async-storage':c.win.localStorage,
+      'expo-secure-store':secureStorage(),
+      'react-native':{Platform:{OS:'web'}},
+      './web-shell-session':c.api,
+    },c.globals);
     const p=session.loadToken();c.receive();assert.equal(await p,token);
   });
   await check('webview cannot sign into a different account from native',async()=>{
     const c=browser();const p=c.api.initializeWebShellSession();c.receive();await p;
-    const session=load(sessionPath,{'@react-native-async-storage/async-storage':c.win.localStorage,'./web-shell-session':c.api},c.globals);
+    const session=load(sessionPath,{
+      '@react-native-async-storage/async-storage':c.win.localStorage,
+      'expo-secure-store':secureStorage(),
+      'react-native':{Platform:{OS:'web'}},
+      './web-shell-session':c.api,
+    },c.globals);
     await assert.rejects(session.saveToken(otherToken),/앱에서/);assert.equal(c.api.readWebShellToken(),null);
   });
   const ordinaryBridge={initializeWebShellSession:async()=>{},isWebShellSession:()=>false};
   await check('native storage writes and conditional clears are ordered',async()=>{
-    const s=storage(),api=load(sessionPath,{'@react-native-async-storage/async-storage':s,'./web-shell-session':ordinaryBridge});
+    const s=storage(),secure=secureStorage(),api=load(sessionPath,{
+      '@react-native-async-storage/async-storage':s,
+      'expo-secure-store':secure,
+      'react-native':{Platform:{OS:'ios'}},
+      './web-shell-session':ordinaryBridge,
+    });
     let notifications=0;const unsubscribe=api.subscribeToken(()=>notifications++);
     await api.saveToken(token);assert.equal(await api.loadToken(),token);
     await api.saveToken(otherToken);assert.equal(await api.clearTokenIfMatches(token),false);assert.equal(await api.loadToken(),otherToken);
@@ -203,7 +227,12 @@ function component(sequence = [token]) {
     const c=browser(`${origin}/`,false);const s=c.win.localStorage;
     s.setItem('weddingpick.sessionToken.v1',token);s.setItem('other','keep');
     c.win.sessionStorage.setItem('weddingpick.kakaoAuthRequest.v1','pending');c.win.sessionStorage.setItem('other','keep');
-    const session=load(sessionPath,{'@react-native-async-storage/async-storage':s,'./web-shell-session':c.api},c.globals);
+    const session=load(sessionPath,{
+      '@react-native-async-storage/async-storage':s,
+      'expo-secure-store':secureStorage(),
+      'react-native':{Platform:{OS:'web'}},
+      './web-shell-session':c.api,
+    },c.globals);
     await session.wipeDevice();assert.equal(s.getItem('weddingpick.sessionToken.v1'),null);assert.equal(s.getItem('other'),'keep');
     assert.equal(c.win.sessionStorage.getItem('weddingpick.kakaoAuthRequest.v1'),null);assert.equal(c.win.sessionStorage.getItem('other'),'keep');
   });

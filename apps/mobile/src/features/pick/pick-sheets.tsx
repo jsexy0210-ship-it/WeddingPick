@@ -18,7 +18,7 @@ import { vendorImageCategory } from '@/features/search/vendor-image-category';
  * Pick 버튼이 띄우는 두 시트 — 시안 17-sheets-states.dc.html · 07-pick.dc.html #17f.
  *
  *   WP-SHT-002 Pick 완료   «후보에 담았어요»       Pick 목록 보기 / 닫기
- *   WP-SHT-003 Pick 해제   «후보에서 뺄까요?»      빼기(danger) / 그대로 둘게요
+ *   WP-SHT-003 Pick 해제   «후보에서 뺄까요?»      빼기 / 그대로 둘게요
  *
  * 패널은 공용 `SheetPanel`(padding 12 24 28 + safeBottom · 그래버 40×4) — 제목 24 · 본문 16/24 · 버튼 52. 문구는 spec/strings.ko.json `pick.unpickTitle` · `pick.unpickBody` · screens.json
  * WP-SHT-002/003.
@@ -134,7 +134,7 @@ export function UnpickSheet({
         </ThemedText>
         <View style={styles.actions}>
           <SheetButton label="그대로 둘게요" kind="ghost" flex={1} onPress={onDismiss} disabled={busy} />
-          <SheetButton label={busy ? '빼는 중…' : '빼기'} kind="danger" flex={1.2} onPress={onConfirm} disabled={busy} />
+          <SheetButton label={busy ? '빼는 중…' : '빼기'} kind="primary" flex={1.2} onPress={onConfirm} disabled={busy} />
         </View>
       </SheetPanel>
     </BottomSheet>

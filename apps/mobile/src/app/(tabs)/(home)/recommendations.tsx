@@ -1,46 +1,41 @@
 import type { CategoryRecommendation, VendorCandidate, VendorSummary } from '@weddingpick/api-contract';
 import { nextStepsCountLine, type VendorCategory } from '@weddingpick/domain';
-import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getCategoryRecommendations } from '@/api/client';
 import { BackBar } from '@/components/back-bar';
+import { useDepthBack } from '@/features/navigation/depth-back';
+import { recommendationsAreComplete } from '@/features/home/canon-state';
+import strings from '../../../../../../spec/strings.ko.json';
 import {
+  Border,
   EmptyView,
   ErrorView,
   Layout,
   MaxContentWidth,
+  Radius,
+  SeedIcon,
   SkeletonView,
   Spacing,
   ThemedText,
   ThemedView,
   Toast,
+  useTheme,
 } from '@weddingpick/ui';
 import { PickRecommend } from '@/features/home/pick-recommend';
 import { useOpenCategory } from '@/features/home/use-open-category';
 import { PickDoneSheet, UnpickSheet } from '@/features/pick/pick-sheets';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
 
+const S = strings.home;
+
 /**
- * 웨딩픽 추천 전체 — 2026-09-15 대표 사양 §10~§15.
- *
- * 홈은 지금 우선순위가 높은 업종 셋만 보여주고, 여기서는 **아직 결정하지 않은 모든 업종의
- * 추천**을 한 번에 본다. 진입은 홈 > Pick 추천 > 더보기 하나다(§15).
- *
- * **홈과 같은 데이터를 쓴다**(§12 · §14). `GET /v1/me/recommendations`를 `limit` 없이 부를
- * 뿐이고, 홈은 같은 것을 `limit=3`으로 부른다 — 별도 추천 로직도, 별도 상태 복제도 없다.
- * 카드도 홈과 같은 컴포넌트(`VendorCard`)이고, 업종 줄도 홈과 같은 `PickRecommend`다.
- * 그래서 여기서 Pick한 것이 홈에 그대로 있고, 홈에서 정한 업종은 여기서 사라진다.
- *
- * **업종이 많아 세로가 길어지므로 아코디언을 쓴다**(§12가 「현재 UX 구조를 보고 결정」하라고
- * 열어둔 자리다). 미결정 업종이 열둘까지 가고, 각 업종이 카드 줄을 하나씩 펼치면 홈보다
- * 네 배 긴 화면이 된다 — 무엇이 있는지 훑는 것이 먼저다.
- *
- * **홈의 「더보기」와 이름이 겹치지 않게 한다**(§13). 업종마다 「더 찾아보기」가 서고 그것은
- * 검색으로 간다 — 홈의 「더보기」는 이 화면으로 오는 단추라 같은 이름을 쓰면 어느 쪽이
- * 어디로 가는지 눌러봐야 안다. 이 단추는 홈에 두지 않는다.
+ * 추천 전체: docs/design/figma-export/08-recommendations.dc.html.
+ * 미결정 업종만 조회하며 완료·정보 부족·조회 실패를 구분한다.
+ * 홈과 같은 API와 카드를 사용하고 다른 화면에서 돌아오면 다시 조회한다.
  */
 /** 아직 못 받았을 때 훅에 넘길 빈 목록. 렌더마다 새 배열을 만들지 않는다. */
 const NO_GROUPS: readonly CategoryRecommendation[] = [];
@@ -52,9 +47,12 @@ type State = {
 };
 
 export default function RecommendationsScreen() {
+  const back = useDepthBack();
+  const version = useRef(0);
   const [state, setState] = useState<State | null>(null);
   const [error, setError] = useState<string | null>(null);
   const candidates = useMyCandidates();
+  const reloadCandidates = candidates.reload;
   const [pickDoneOpen, setPickDoneOpen] = useState(false);
   const [unpickTarget, setUnpickTarget] = useState<VendorCandidate | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -62,15 +60,23 @@ export default function RecommendationsScreen() {
   const { open, toggle } = useOpenCategory(state?.groups ?? NO_GROUPS);
 
   const load = useCallback(() => {
-    getCategoryRecommendations()
+    const request = ++version.current;
+    setError(null);
+    setState(null);
+    void getCategoryRecommendations()
       .then((response) => {
-        setError(null);
-        setState(response);
+        if (request === version.current) setState(response);
       })
-      .catch((e: Error) => setError(e.message));
+      .catch(() => {
+        if (request === version.current) setError(S['recommend.error']);
+      });
   }, []);
 
-  useEffect(load, [load]);
+  useFocusEffect(useCallback(() => {
+    load();
+    void reloadCandidates().catch(() => undefined);
+    return () => { version.current += 1; };
+  }, [load, reloadCandidates]));
 
   async function onPressPick(vendor: VendorSummary) {
     const existing = candidates.candidateFor(vendor.id);
@@ -79,19 +85,20 @@ export default function RecommendationsScreen() {
       return;
     }
     const result = await candidates.pick(vendor.id);
-    if (result === 'picked') setPickDoneOpen(true);
+    if (result === 'picked') { setPickDoneOpen(true); load(); }
     else if (result === 'login') router.push('/login');
-    else setToast('Pick하지 못했어요. 잠시 후 다시 시도해주세요.');
+    else setToast(S['pick.failed']);
   }
 
   async function confirmUnpick() {
     if (!unpickTarget) return;
     const ok = await candidates.unpick(unpickTarget);
     setUnpickTarget(null);
-    if (!ok) setToast('후보를 빼지 못했어요. 잠시 후 다시 시도해주세요.');
+    if (!ok) setToast(S['unpick.failed']);
+    else load();
   }
 
-  if (error) return <ErrorView message={error} onBack={() => router.back()} onRetry={load} />;
+  if (error) return <ErrorView message={error} onBack={back} onRetry={load} />;
   if (state === null) return <SkeletonView />;
 
   return (
@@ -101,20 +108,25 @@ export default function RecommendationsScreen() {
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <ThemedText type="f26" style={styles.bold}>
-              웨딩픽 추천
-            </ThemedText>
-            <ThemedText type="f12" themeColor="textAssistive" style={styles.sub}>
-              아직 남은 준비를 한눈에 확인해보세요
+              {S['recommend.title']}
             </ThemedText>
             {state.groups.length === 0 ? null : (
-              <ThemedText type="f12" numeric themeColor="textAssistive" style={styles.sub}>
+              <ThemedText type="f13" numeric themeColor="textAssistive" style={styles.sub}>
                 {nextStepsCountLine(state.remaining)}
               </ThemedText>
             )}
           </View>
 
           {state.groups.length === 0 ? (
-            <EmptyView title="정할 준비를 다 끝냈어요." />
+            recommendationsAreComplete(state) ? (
+              <RecommendationsDone onOpenNote={() => router.push('/wedding')} />
+            ) : (
+              <EmptyView
+                title={S['recommend.empty']}
+                actionLabel={S['recommend.more']}
+                onAction={() => router.push('/search')}
+              />
+            )
           ) : (
             <PickRecommend
               groups={state.groups}
@@ -153,11 +165,66 @@ export default function RecommendationsScreen() {
   );
 }
 
+function RecommendationsDone({ onOpenNote }: { onOpenNote: () => void }) {
+  const theme = useTheme();
+
+  return (
+    <View style={styles.doneSection}>
+      <ThemedView type="backgroundElement" style={styles.doneCard}>
+        <View style={[styles.doneMark, { backgroundColor: theme.positiveBackground }]}>
+          <SeedIcon name="checkFlowerFill" size={Layout.iconTab} color={theme.positive} />
+        </View>
+        <ThemedText type="f16" style={styles.bold}>{S['recommend.done']}</ThemedText>
+        <ThemedText type="f13" themeColor="textAssistive" style={styles.doneBody}>
+          {S['done.body']}
+        </ThemedText>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={S['note.open']}
+          onPress={onOpenNote}
+          style={({ pressed }) => [
+            styles.doneButton,
+            { backgroundColor: theme.background, borderColor: theme.border },
+            pressed && styles.pressed,
+          ]}>
+          <ThemedText type="f14" style={styles.bold}>{S['note.open']}</ThemedText>
+        </Pressable>
+      </ThemedView>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
   content: { paddingBottom: Spacing.five },
-  header: { paddingHorizontal: Layout.pageX, paddingBottom: Spacing.four },
+  header: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionHeadGap },
   bold: { fontWeight: 700 },
   sub: { marginTop: Spacing.half },
+  doneSection: { paddingHorizontal: Layout.gutter, paddingTop: Spacing.two },
+  doneCard: {
+    borderRadius: Radius.medium,
+    paddingHorizontal: Layout.cardPadding,
+    paddingVertical: Layout.sectionGap,
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  doneMark: {
+    width: 48,
+    height: 48,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  doneBody: { textAlign: 'center' },
+  doneButton: {
+    minHeight: Layout.ctaInCard,
+    marginTop: Spacing.one,
+    paddingHorizontal: Layout.cardPadding,
+    borderRadius: Radius.control,
+    borderWidth: Border.hairline,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pressed: { opacity: 0.8 },
 });
