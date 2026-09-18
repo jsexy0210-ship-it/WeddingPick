@@ -159,7 +159,10 @@ jobs:
             printf -- '- Runner: `%s`\n' "$RUNNER_NAME"
             echo '- Endpoint: `https://210.109.82.212`'
             echo '- Running API:'
-            sudo -n docker ps --filter name='^/weddingpick-api          } >> "$GITHUB_STEP_SUMMARY"
+            sudo -n docker ps --filter name='^/weddingpick-api$' --format '- `{{.Names}}` → `{{.Image}}` / `{{.Status}}`' || true
+            echo '- Running worker:'
+            sudo -n docker ps --filter name='^/weddingpick-worker$' --format '- `{{.Names}}` → `{{.Image}}` / `{{.Status}}`' || true
+          } >> "$GITHUB_STEP_SUMMARY"
  --format '- `{{.Names}}` → `{{.Image}}` / `{{.Status}}`' || true
             echo '- Running worker:'
             sudo -n docker ps --filter name='^/weddingpick-worker          } >> "$GITHUB_STEP_SUMMARY"
