@@ -1,0 +1,31 @@
+name: One-shot DB Migrate 0423
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/one-shot-db-migrate-0423.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    name: Apply pending DB migrations
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Apply pending migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          test -n "${DATABASE_URL:-}"
+          npm run migrate --workspace @weddingpick/db
