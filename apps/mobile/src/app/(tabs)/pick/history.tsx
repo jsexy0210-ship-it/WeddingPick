@@ -88,7 +88,10 @@ export default function PickHistoryScreen() {
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(load, [load]);
+  useEffect(() => {
+    const timer = setTimeout(load, 0);
+    return () => clearTimeout(timer);
+  }, [load]);
 
   const askCancelDecision = useCallback(
     (category: string, categoryLabel: string) => {
