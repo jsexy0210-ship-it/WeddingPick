@@ -6,7 +6,7 @@
  * 후보 릴리스 폴더에 올려 검증한 뒤 별도 cutover 단계에서만 공개한다.
  */
 
-import { cpSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
@@ -64,6 +64,15 @@ requirePath(join(OUT, 'admin', 'favicon.png'), '관리자 PNG 파비콘');
 requirePath(join(OUT, 'web', 'index.html'), '웹사이트 후보');
 requirePath(join(OUT, 'web', 'favicon.ico'), '웹사이트 공통 ICO 파비콘');
 requirePath(join(OUT, 'web', 'favicon.png'), '웹사이트 PNG 파비콘');
+
+const canonicalFaviconPng = readFileSync(CANONICAL_FAVICON_PNG);
+for (const role of ['app', 'admin', 'web']) {
+  const packaged = readFileSync(join(OUT, role, 'favicon.png'));
+  if (!canonicalFaviconPng.equals(packaged)) {
+    console.error(`!! ${role} PNG 파비콘 바이트가 canonical 원본과 다르다`);
+    process.exit(1);
+  }
+}
 
 const manifest = {
   commit: process.env.GITHUB_SHA || null,
