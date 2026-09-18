@@ -18,18 +18,30 @@ import { CategoryImage } from './category-image';
 
 /**
  * 홈과 추천 전체가 공유하는 업체 카드.
- * 이미지 → 업체명/지역 → 특징 → 금액 → 실 제보 → 추천 이유 순서를 고정한다.
+ * 홈은 추천 이유를 한 줄 노출하고, 추천 전체 기본 상태는 태그까지만 보여준 뒤
+ * 카드를 눌러 별도의 추천 이유 확장 상태로 전환한다.
  */
 export type VendorCardProps = {
   vendor: VendorSummary;
   picked: boolean;
   onPress: () => void;
   onPressPick: () => void;
+  accessibilityLabel?: string;
+  showTags?: boolean;
+  showReason?: boolean;
 };
 
 const MAX_TAGS = 2;
 
-export function VendorCard({ vendor, picked, onPress, onPressPick }: VendorCardProps) {
+export function VendorCard({
+  vendor,
+  picked,
+  onPress,
+  onPressPick,
+  accessibilityLabel,
+  showTags = true,
+  showReason = true,
+}: VendorCardProps) {
   const theme = useTheme();
   const price = priceLine(vendor.paidPrice, null);
   const tags = vendor.styleTags.slice(0, MAX_TAGS);
@@ -37,7 +49,7 @@ export function VendorCard({ vendor, picked, onPress, onPressPick }: VendorCardP
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${vendor.name} 상세`}
+      accessibilityLabel={accessibilityLabel ?? `${vendor.name} 상세`}
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,
@@ -86,7 +98,7 @@ export function VendorCard({ vendor, picked, onPress, onPressPick }: VendorCardP
           </ThemedText>
         </View>
 
-        {tags.length > 0 ? (
+        {showTags && tags.length > 0 ? (
           <View style={styles.tags}>
             {tags.map((tag) => (
               <ThemedText key={tag} type="f10" themeColor="textAssistive" numberOfLines={1}>
@@ -109,7 +121,7 @@ export function VendorCard({ vendor, picked, onPress, onPressPick }: VendorCardP
           실 제보 {formatCount(vendor.comparableQuoteCount)}건
         </ThemedText>
 
-        {vendor.reasons?.[0] ? (
+        {showReason && vendor.reasons?.[0] ? (
           <View style={styles.reasonRow}>
             <SeedIcon name="checkFlowerFill" size={Layout.iconField} color={theme.tint} />
             <ThemedText type="f12" themeColor="tint" numberOfLines={2} style={styles.reason}>
