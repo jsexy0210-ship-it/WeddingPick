@@ -2,8 +2,7 @@
 name: 인프라 요금 수집
 
 on:
-  schedule:
-    - cron: '10 20 * * *'
+  # Actions 탭 자동 실행을 만들지 않는다. 필요할 때만 수동 실행한다.
   workflow_dispatch:
     inputs:
       write:
@@ -36,7 +35,7 @@ jobs:
           NCP_ACCESS_KEY: ${{ secrets.NCP_ACCESS_KEY }}
           NCP_SECRET_KEY: ${{ secrets.NCP_SECRET_KEY }}
           GH_BILLING_TOKEN: ${{ secrets.GH_BILLING_TOKEN }}
-          WRITE: ${{ github.event_name == 'schedule' && 'true' || github.event.inputs.write }}
+          WRITE: ${{ github.event.inputs.write }}
         run: |
           set -euo pipefail
           if [ -z "${DATABASE_URL:-}" ]; then
