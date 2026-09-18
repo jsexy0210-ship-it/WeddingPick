@@ -15,7 +15,6 @@ import {
   type VendorCategory,
   VENDOR_CATEGORY_LABEL,
   regionLabel,
-  withParticle,
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -32,8 +31,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ApiError, listVendorRegions, searchVendors } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
-import { LoginSheet } from '@/features/auth/login-sheet';
-import { savePendingAction } from '@/features/auth/pending-action';
 import { useDepthBack } from '@/features/navigation/depth-back';
 import { PickDoneSheet, UnpickSheet } from '@/features/pick/pick-sheets';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
@@ -235,13 +232,12 @@ export default function SearchScreen() {
   const [acTotal, setAcTotal] = useState<number | null>(null);
 
   /*
-   * Pick — 카드의 버튼이 진짜 후보에 담는다(SPEC §13.1). 완료 시트(WP-SHT-002) · 해제
-   * 시트(WP-SHT-003) · 로그인 시트(첫 Pick이 대표 트리거)를 여기서 띄운다.
+   * Pick — 카드의 버튼이 진짜 후보에 담는다(SPEC §13.1).
+   * 비회원 검색은 폐기됐으므로 이 화면 안에서 별도 로그인 시트를 다시 열지 않는다.
    */
   const candidates = useMyCandidates();
   const [pickDoneOpen, setPickDoneOpen] = useState(false);
   const [unpickTarget, setUnpickTarget] = useState<VendorCandidate | null>(null);
-  const [loginFor, setLoginFor] = useState<VendorSummary | null>(null);
 
   useEffect(() => {
     loadRecentSearches().then(setRecentSearches);
@@ -497,7 +493,7 @@ export default function SearchScreen() {
 
   /**
    * 카드의 Pick 버튼(SPEC §13.1). Pick 전이면 후보에 담고 완료 시트, Pick 후면 해제 시트.
-   * 로그인 전이면 누른 것을 적어두고 로그인 시트를 연다.
+   * 세션이 사라졌다면 검색 안에서 로그인 UI를 겹쳐 띄우지 않고 로그인으로 복귀한다.
    */
   async function onPressPick(item: VendorSummary) {
     const existing = candidates.candidateFor(item.id);
@@ -507,10 +503,8 @@ export default function SearchScreen() {
     }
     const result = await candidates.pick(item.id);
     if (result === 'picked') setPickDoneOpen(true);
-    else if (result === 'login') {
-      await savePendingAction({ kind: 'pick', vendorId: item.id, vendorName: item.name });
-      setLoginFor(item);
-    } else setToast('Pick하지 못했어요. 잠시 후 다시 시도해주세요.');
+    else if (result === 'login') router.replace('/login');
+    else setToast('Pick하지 못했어요. 잠시 후 다시 시도해주세요.');
   }
 
   async function confirmUnpick() {
@@ -1032,21 +1026,6 @@ export default function SearchScreen() {
           busy={candidates.busyVendorId !== null}
           onConfirm={() => void confirmUnpick()}
           onDismiss={() => setUnpickTarget(null)}
-        />
-        <LoginSheet
-          visible={loginFor !== null}
-          reason={loginFor ? `로그인하면 ${withParticle(loginFor.name, '을를')} 바로 Pick해드려요.` : ''}
-          onSignedIn={(result) => {
-            setLoginFor(null);
-            if (result.needsSignup) {
-              router.push('/setup');
-              return;
-            }
-            candidates.reload().catch(() => undefined);
-            if (result.completed) setPickDoneOpen(true);
-            else if (result.weddingError) setToast(result.weddingError);
-          }}
-          onDismiss={() => setLoginFor(null)}
         />
       </SafeAreaView>
     </ThemedView>
