@@ -244,6 +244,11 @@ export const vendorDetailSchema = vendorSummarySchema
   .omit({ paidPrice: true, rating: true })
   .extend({
     lastVerifiedAt: z.string().min(1),
+    /**
+     * 업체의 확인된 주소. 0062부터 저장하지만 기존 자료에는 아직 비어 있을 수 있다.
+     * optional은 오래된 캡처 fixture와의 전환 호환용이고, 운영 API는 항상 키를 내려준다.
+     */
+    address: z.string().min(1).nullable().optional(),
     prices: vendorPricesSchema,
     /** 이용점수. 확인된 후기만 들어간다. */
     usageScore: usageScoreSchema,
