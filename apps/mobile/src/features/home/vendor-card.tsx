@@ -1,5 +1,5 @@
 import type { VendorSummary } from '@weddingpick/api-contract';
-import { VENDOR_CATEGORY_LABEL, WEDDING_STYLE_LABEL, priceLine } from '@weddingpick/domain';
+import { VENDOR_CATEGORY_LABEL, WEDDING_STYLE_LABEL, formatCount, priceLine } from '@weddingpick/domain';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import {
@@ -17,19 +17,16 @@ import {
 import { CategoryImage } from './category-image';
 
 /**
- * 홈·추천이 공유하는 카드. docs/design/figma-export/01-home, 08-recommendations 기준.
- * 별점 대신 실제 제보 건수/기준을 표시하고 서버가 제공한 추천 이유만 쓴다.
- * 제보 부족 시 업체 안내 금액으로 대체하지 않는다.
+ * 홈과 추천 전체가 공유하는 업체 카드.
+ * 이미지 → 업체명/지역 → 특징 → 금액 → 실 제보 → 추천 이유 순서를 고정한다.
  */
 export type VendorCardProps = {
   vendor: VendorSummary;
-  /** 이 업체가 후보에 담겨 있는가 — 하트 채움. */
   picked: boolean;
   onPress: () => void;
   onPressPick: () => void;
 };
 
-/** 카드에 적는 특징 태그 수(사양 §6 「특징 태그 최대 2개」). */
 const MAX_TAGS = 2;
 
 export function VendorCard({ vendor, picked, onPress, onPressPick }: VendorCardProps) {
@@ -60,11 +57,10 @@ export function VendorCard({ vendor, picked, onPress, onPressPick }: VendorCardP
             style={[
               styles.heartFill,
               picked
-                ? { backgroundColor: theme.text }
-                : { backgroundColor: theme.background, opacity: 0.8 },
+                ? { backgroundColor: theme.tint }
+                : { backgroundColor: theme.background, opacity: 0.88 },
             ]}
           />
-          {/* 웹에서 absolute 면이 뒤 형제 위에 그려진다 — 아이콘을 View로 감싸 위에 둔다. */}
           <View>
             <SeedIcon
               name={picked ? 'heartFill' : 'heartRegular'}
@@ -90,7 +86,6 @@ export function VendorCard({ vendor, picked, onPress, onPressPick }: VendorCardP
           </ThemedText>
         </View>
 
-        {/* 태그가 없으면 줄째 없다 — 빈 줄로 자리를 잡아두지 않는다. */}
         {tags.length > 0 ? (
           <View style={styles.tags}>
             {tags.map((tag) => (
@@ -101,24 +96,26 @@ export function VendorCard({ vendor, picked, onPress, onPressPick }: VendorCardP
           </View>
         ) : null}
 
-        <View style={styles.bottom}>
-          <ThemedText
-            type="f12"
-            numeric
-            numberOfLines={1}
-            themeColor={price.dim ? 'textAssistive' : 'text'}
-            style={[styles.price, styles.shrink]}>
-            {price.text}
-          </ThemedText>
-
-        </View>
-        <ThemedText type="f12" themeColor="textAssistive" numeric style={styles.proof}>
-          {price.caption}
+        <ThemedText
+          type="f13"
+          numeric
+          numberOfLines={1}
+          themeColor={price.dim ? 'textAssistive' : 'text'}
+          style={styles.price}>
+          {price.text}
         </ThemedText>
+
+        <ThemedText type="f12" themeColor="textAssistive" numeric style={styles.proof}>
+          실 제보 {formatCount(vendor.comparableQuoteCount)}건
+        </ThemedText>
+
         {vendor.reasons?.[0] ? (
-          <ThemedText type="f12" themeColor="tint" numberOfLines={2} style={styles.reason}>
-            {vendor.reasons[0]}
-          </ThemedText>
+          <View style={styles.reasonRow}>
+            <SeedIcon name="checkFlowerFill" size={Layout.iconField} color={theme.tint} />
+            <ThemedText type="f12" themeColor="tint" numberOfLines={2} style={styles.reason}>
+              {vendor.reasons[0]}
+            </ThemedText>
+          </View>
         ) : null}
       </View>
     </Pressable>
@@ -128,7 +125,7 @@ export function VendorCard({ vendor, picked, onPress, onPressPick }: VendorCardP
 const styles = StyleSheet.create({
   card: {
     width: Layout.cardRecommendWidth,
-    borderRadius: Radius.cardLarge,
+    borderRadius: Radius.medium,
     borderWidth: Border.hairline,
     overflow: 'hidden',
     ...Elevation.figmaCard,
@@ -148,19 +145,18 @@ const styles = StyleSheet.create({
   heartFill: { ...StyleSheet.absoluteFill },
   info: { padding: Layout.inlineGap },
   category: { fontWeight: 600, letterSpacing: LetterSpacing.p05 },
-  name: { fontWeight: 600, marginTop: Spacing.half },
+  name: { fontWeight: 700, marginTop: Spacing.half },
   place: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one, marginTop: Spacing.one },
   shrink: { flexShrink: 1, minWidth: 0 },
   tags: { flexDirection: 'row', gap: Spacing.one, marginTop: Spacing.one },
-  bottom: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.one,
-    marginTop: Layout.cardGap,
-  },
-  price: { fontWeight: 500 },
+  price: { fontWeight: 700, marginTop: Layout.cardGap },
   proof: { marginTop: Spacing.one },
-  reason: { marginTop: Spacing.two },
+  reasonRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.one,
+    marginTop: Spacing.two,
+  },
+  reason: { flex: 1, minWidth: 0, fontWeight: 600 },
   pressed: { opacity: 0.8 },
 });
