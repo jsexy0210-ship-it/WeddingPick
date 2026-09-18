@@ -486,6 +486,30 @@ function BudgetPanel({ expenses }: { expenses: ExpenseSummaryResponse | null }) 
           );
         })}
       </View>
+
+      <View style={[styles.proofInvite, { borderTopColor: theme.border }]}>
+        <View style={styles.grow}>
+          <ThemedText type="f14" style={styles.bold}>
+            실제 낸 금액을 인증해볼까요?
+          </ThemedText>
+          <ThemedText type="f12" themeColor="textAssistive">
+            인증하면 다음 사람에게 보여요
+          </ThemedText>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Pick 인증"
+          onPress={() => router.push('/capture/payment/consent' as never)}
+          style={({ pressed }) => [
+            styles.proofButton,
+            { backgroundColor: theme.tint },
+            pressed ? styles.pressed : null,
+          ]}>
+          <ThemedText type="f13" style={[styles.bold, { color: theme.onTint }]}>
+            Pick 인증
+          </ThemedText>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -737,6 +761,22 @@ const styles = StyleSheet.create({
   barFill: { height: '100%', borderRadius: Radius.pill },
   /* `mt-1.5 flex justify-between`. */
   bucketFoot: { marginTop: Layout.menuGroupGap, flexDirection: 'row', justifyContent: 'space-between' },
+  proofInvite: {
+    marginTop: Layout.listGap,
+    paddingTop: Layout.listGap,
+    borderTopWidth: Border.hairline,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Layout.inlineGap,
+  },
+  proofButton: {
+    height: 36,
+    paddingHorizontal: Layout.chipPaddingX,
+    borderRadius: Radius.input,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
 
   // ── 상담기록 ──
   /* 빈 상태 `mt-5 rounded-2xl border-dashed py-8 gap-2`. */
