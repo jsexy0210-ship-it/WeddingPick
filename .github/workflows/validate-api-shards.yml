@@ -8,10 +8,6 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: validate-api-shards-${{ github.ref }}-${{ matrix.shard }}
-  cancel-in-progress: true
-
 jobs:
   shard:
     name: API shard ${{ matrix.shard }}/2
@@ -20,6 +16,9 @@ jobs:
       fail-fast: false
       matrix:
         shard: [1, 2]
+    concurrency:
+      group: validate-api-shards-${{ github.ref }}-${{ matrix.shard }}
+      cancel-in-progress: true
     services:
       postgres:
         image: postgres:16
