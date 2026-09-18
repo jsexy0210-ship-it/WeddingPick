@@ -2,6 +2,7 @@
 # Render 배포 경로는 폐기했다. 운영 및 정적 사이트 잔여 작업은 docs/deployment.md를 따른다.
 # 이 워크플로 성공을 정적 사이트 전환 완료로 해석하지 않는다.
 # 라이브 전환은 [enable-static-cors] → [cutover-admin-web] → [cutover-app-web] 순서로 분리한다.
+# 각 라이브 전환은 별도 검증·롤백 workflow로 실행한다.
 name: CI / Deploy
 
 on:
