@@ -75,8 +75,8 @@ const EDIT = '수정';
 const DELETE = '삭제';
 const DELETE_TITLE = '삭제할까요?';
 const UNPAID = '미집행';
-const CONSULT_EMPTY_TITLE = '녹음 파일을 선택해 주세요';
-const CONSULT_EMPTY_BODY = '스마트폰 녹음앱에서 저장한 파일을 올릴 수 있어요';
+const CONSULT_EMPTY_TITLE = '녹음 파일을 올려주세요';
+const CONSULT_EMPTY_BODY = '휴대폰 녹음앱에서 저장한 파일이면 돼요';
 const CONSULT_SAVED = '저장됨';
 const CONSULT_PENDING = '확인 필요';
 const ADD_LABEL: Record<Tab, string> = { calendar: '추가', budget: '추가', consult: '녹음 올리기' };
@@ -522,24 +522,16 @@ function ConsultPanel({ records, onOpen }: { records: ConsultationRecord[]; onOp
 
   return (
     <View style={[styles.panel, { backgroundColor: theme.background, borderColor: theme.border }]}>
-      <ThemedText type="t6" style={styles.bold}>
-        {TABS[1].label}
-      </ThemedText>
-      {records.length === 0 ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={CONSULT_EMPTY_TITLE}
-          onPress={onOpen}
-          style={[styles.consultEmpty, { borderColor: theme.border }]}>
-          <ProductSymbol name="mic" size={Layout.iconRow} color={theme.textAssistive} />
-          <ThemedText type="t7" themeColor="textAssistive">
-            {CONSULT_EMPTY_TITLE}
-          </ThemedText>
-          <ThemedText type="micro" themeColor="textAssistive" style={styles.regular}>
-            {CONSULT_EMPTY_BODY}
-          </ThemedText>
-        </Pressable>
-      ) : (
+      <View style={styles.consultHead}>
+        <ThemedText type="t6" style={styles.bold}>
+          {records.length > 0 ? `상담 ${records.length}건` : TABS[1].label}
+        </ThemedText>
+        <ThemedText type="micro" themeColor="textAssistive" style={styles.regular}>
+          정리된 내용은 예산에 반영해요
+        </ThemedText>
+      </View>
+
+      {records.length > 0 ? (
         <View style={[styles.consultList, { borderTopColor: theme.border }]}>
           {records.map((record, index) => {
             const amount = consultAmount(record);
@@ -574,7 +566,21 @@ function ConsultPanel({ records, onOpen }: { records: ConsultationRecord[]; onOp
             );
           })}
         </View>
-      )}
+      ) : null}
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={CONSULT_EMPTY_TITLE}
+        onPress={onOpen}
+        style={[styles.consultEmpty, { borderColor: theme.border }]}>
+        <ProductSymbol name="mic" size={Layout.iconRow} color={theme.textAssistive} />
+        <ThemedText type="t7" themeColor="textAssistive">
+          {CONSULT_EMPTY_TITLE}
+        </ThemedText>
+        <ThemedText type="micro" themeColor="textAssistive" style={styles.regular}>
+          {CONSULT_EMPTY_BODY}
+        </ThemedText>
+      </Pressable>
     </View>
   );
 }
@@ -779,7 +785,8 @@ const styles = StyleSheet.create({
   },
 
   // ── 상담기록 ──
-  /* 빈 상태 `mt-5 rounded-2xl border-dashed py-8 gap-2`. */
+  consultHead: { gap: Spacing.half },
+  /* 업로드 `mt-5 rounded-2xl border-dashed py-8 gap-2`. 기록이 있어도 정본대로 마지막에 둔다. */
   consultEmpty: {
     marginTop: Layout.listGap,
     borderRadius: Radius.cardLarge,
