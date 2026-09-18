@@ -22,6 +22,14 @@ for role in app admin web; do
   fi
 done
 
+favicon_backup="$backup_dir/app-favicon.png"
+favicon_absent_marker="$backup_dir/app-favicon.absent"
+if sudo -n test -f "$release_root/app/favicon.png"; then
+  sudo -n cp -p "$release_root/app/favicon.png" "$favicon_backup"
+else
+  : > "$favicon_absent_marker"
+fi
+
 restore() {
   set +e
   for role in app admin web; do
@@ -29,6 +37,12 @@ restore() {
       sudo -n tar -C "$release_root/$role" -xzf "$backup_dir/$role-html.tgz" >/dev/null 2>&1 || true
     fi
   done
+
+  if [ -f "$favicon_backup" ]; then
+    sudo -n cp -p "$favicon_backup" "$release_root/app/favicon.png" >/dev/null 2>&1 || true
+  elif [ -f "$favicon_absent_marker" ]; then
+    sudo -n rm -f "$release_root/app/favicon.png" >/dev/null 2>&1 || true
+  fi
 }
 trap 'status=$?; if [ "$status" -ne 0 ]; then restore; fi; exit "$status"' EXIT
 
