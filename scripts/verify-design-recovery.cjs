@@ -86,16 +86,16 @@ function detailHarness(initialId='a') {
   return { h,calls,render:()=>h.render(screen),setId:value=>{id=value;},get backs(){return backs;} };
 }
 const post = (id, body='body') => ({ id, title:`title-${id}`, categoryLabel:'예산', summary:'summary', body, imageUri:null,publishedAt:null });
-function loungeHarness({failedUser=false}={}) {
-  const h=hooks();let failUser=failedUser;const pushed=[];
+function loungeHarness() {
+  const h=hooks();const pushed=[];const replaced=[];
   const items=[{id:'post/a?b',title:'첫 글',summary:'summary',imageUrl:null,categoryLabel:'예산'},
     {id:'second',title:'둘째 글',summary:'summary',imageUrl:null,categoryLabel:'체크리스트'}];
   const feed={tabs:[{key:'all',label:'전체',categories:[]},{key:'budget',label:'예산',categories:['예산']}],items};
   const screen=load('apps/mobile/src/app/(tabs)/community/index.tsx',{
-    '@weddingpick/domain':{daysUntil:()=>2},'expo-router':{Redirect:'Redirect',router:{push:x=>pushed.push(x)},
-      useFocusEffect:fn=>h.api.useEffect(fn,[fn])},react:h.api,'react-native':native,
+    '@weddingpick/domain':{daysUntil:()=>2,VENDOR_CATEGORY_LABEL:{}},'expo-router':{Redirect:'Redirect',router:{push:x=>pushed.push(x),replace:x=>replaced.push(x)},
+      useFocusEffect:fn=>h.api.useEffect(fn,[fn]),useLocalSearchParams:()=>({})},react:h.api,'react-native':native,
     'react-native-safe-area-context':{SafeAreaView:'SafeAreaView'},'@weddingpick/ui':ui,
-    '@/api/client':{getCurrentUser:async()=>{if(failUser)throw Error('offline');return{hasPaymentProof:true};},
+    '@/api/client':{listLoungeReviews:async()=>({reviews:[],caveat:''}),
       getWeddingFeed:async()=>feed,listExpos:async()=>({items:[]})},
     '@/features/auth/use-session':{useSession:()=>({state:{status:'signedIn'},refresh:()=>{}})},
     '@/features/errors/full-screen-error':{FullScreenError:'FullScreenError'},
@@ -103,7 +103,7 @@ function loungeHarness({failedUser=false}={}) {
     '@/features/loading/delayed-loader':{DelayedLoader:'Loader',DelayedLoadingView:'Loading'},
     '@/features/wedding/screen-kit':{NavBar:'NavBar'},'../../../../../../spec/strings.ko.json':strings,
   }).default;
-  return{h,pushed,render:()=>h.render(screen),setFailedUser:x=>{failUser=x;}};
+  return{h,pushed,replaced,render:()=>h.render(screen)};
 }
 function splitFixture(script,role,missingAdmin=false) {
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'wp-design-test-'));
@@ -190,8 +190,9 @@ function splitFixture(script,role,missingAdmin=false) {
     const l=loungeHarness();l.render();l.h.commit();await flush();const action=find(l.render(),'NavBar')[0].props.right;
     assert.equal(action.label,'글쓰기');action.onPress();assert.equal(l.pushed[0],'/my/reviews');
   });
-  await check('lounge failed user lookup does not grant write action',async()=>{
-    const l=loungeHarness({failedUser:true});l.render();l.h.commit();await flush();assert.equal(find(l.render(),'NavBar')[0].props.right,null);
+  await check('lounge back defaults to home',async()=>{
+    const l=loungeHarness();l.render();l.h.commit();await flush();
+    find(l.render(),'NavBar')[0].props.onBack();assert.equal(l.replaced[0],'/');
   });
   const script=fs.readFileSync(path.join(root,'scripts/split-admin-dist.mjs'),'utf8');
   const legacy=script.replace(/^[ \t]*['"]fonts['"],[^\n]*\n/m,'');
