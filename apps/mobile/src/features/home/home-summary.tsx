@@ -60,7 +60,7 @@ export function PendingPreparation({
                   pressed && styles.pressed,
                 ]}>
                 <View style={styles.cardTop}>
-                  <View style={[styles.categoryIcon, { backgroundColor: active ? theme.tintMuted : theme.background }]}>
+                  <View style={[styles.categoryIcon, { backgroundColor: active ? theme.tintSurface : theme.background }]}>
                     {icon ? (
                       <CategoryIcon
                         kind={icon}
