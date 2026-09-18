@@ -31,8 +31,9 @@ export function VendorLocationSection({
   const theme = useTheme();
   const [mapFailed, setMapFailed] = useState(false);
   const apiBase = API_URL?.replace(/\/$/, '') ?? '';
+  const hasMapSource = coordinates !== null || Boolean(address?.trim());
   const mapUri =
-    apiBase && (coordinates || address)
+    apiBase && hasMapSource
       ? `${apiBase}/v1/vendors/${encodeURIComponent(vendorId)}/static-map`
       : null;
 
