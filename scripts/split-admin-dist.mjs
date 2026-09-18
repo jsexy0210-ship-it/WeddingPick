@@ -36,7 +36,7 @@ const DIST = process.env.WEDDINGPICK_DIST_DIR
  * 관리자 출처. 기본값은 운영 주소이고, 스테이징처럼 다른 곳에 올릴 때만
  * 환경변수로 덮는다. 비밀이 아니다 — 브라우저 주소창에 그대로 보이는 값이다.
  */
-const ADMIN_ORIGIN = (process.env.ADMIN_ORIGIN || 'https://weddingpick-admin.onrender.com').replace(/\/+$/, '');
+const ADMIN_ORIGIN = (process.env.ADMIN_ORIGIN || 'https://210.109.82.212:8443').replace(/\/+$/, '');
 
 /*
  * 관리자 출처에 남길 것. 이 목록에 없는 최상위 항목은 지운다.
