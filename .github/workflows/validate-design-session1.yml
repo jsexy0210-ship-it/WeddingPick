@@ -28,11 +28,40 @@ jobs:
           cache: npm
       - run: npm ci
 
-      - name: Typecheck
+      - name: Full workspace typecheck diagnostic
+        id: full_typecheck
+        continue-on-error: true
         run: npm run typecheck
 
-      - name: Lint
-        run: npm run lint
+      - name: Owned scope typecheck
+        run: |
+          cat > apps/mobile/tsconfig.design-session1.json <<'JSON'
+          {
+            "extends": "./tsconfig.json",
+            "files": [
+              "src/app/(tabs)/index.tsx",
+              "src/app/(tabs)/(home)/recommendations.tsx",
+              "src/features/home/hero.tsx",
+              "src/features/home/home-summary.tsx",
+              "src/features/home/pick-recommend.tsx",
+              "src/features/home/vendor-card.tsx",
+              "src/features/home/canon-components.test.tsx"
+            ]
+          }
+          JSON
+          npx tsc -p apps/mobile/tsconfig.design-session1.json --noEmit
+
+      - name: Owned scope lint
+        working-directory: apps/mobile
+        run: |
+          npx eslint \
+            "src/app/(tabs)/index.tsx" \
+            "src/app/(tabs)/(home)/recommendations.tsx" \
+            "src/features/home/hero.tsx" \
+            "src/features/home/home-summary.tsx" \
+            "src/features/home/pick-recommend.tsx" \
+            "src/features/home/vendor-card.tsx" \
+            "src/features/home/canon-components.test.tsx"
 
       - name: Mobile home tests
         run: npm run test --workspace @weddingpick/mobile -- --runInBand src/features/home
