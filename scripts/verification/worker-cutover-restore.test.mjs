@@ -297,7 +297,7 @@ shellTest('successful worker update keeps new worker and retains old recovery co
     assert.equal(state(path.join(h.dockerState, 'new_exists')), '1');
     assert.equal(state(path.join(h.dockerState, 'new_running')), '1');
     assert.match(state(path.join(h.dockerState, 'old_name')), /^\/weddingpick-worker-previous-/);
-    assert.equal(state(path.join(h.dockerState, 'removed_old'), '0');
+    assert.equal(state(path.join(h.dockerState, 'removed_old')), '0');
   } finally {
     h.cleanup();
   }
