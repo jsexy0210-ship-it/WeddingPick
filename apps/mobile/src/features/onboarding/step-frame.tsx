@@ -18,7 +18,7 @@ import {
 import { OnboardingProgress } from './progress';
 
 /**
- * 온보딩 질문 한 장의 틀 — 규격서 docs/figma-spec/onboarding.txt(2026-09-15 대표 지시 「규격서의 수를 그대로」).
+ * 온보딩 질문 한 장의 틀 — 규격서 docs/design/figma-export/06-onboarding-login.dc.html(2026-09-15 대표 지시 「규격서의 수를 그대로」).
  *
  *   div 430×932  pad 32 24 32 24 · bg #FFFFFF
  *     (머리 줄 + 막대 ← OnboardingProgress)

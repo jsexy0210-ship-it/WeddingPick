@@ -23,7 +23,6 @@ import {
   styleOverlap,
   VENDOR_CATEGORY_LABEL,
   regionLabel,
-  withParticle,
   type WeddingStyle,
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -41,16 +40,14 @@ import {
   listVendorReviews,
 } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
-import { loadToken } from '@/api/session';
 import { BackButton } from '@/components/back-button';
-import { LoginSheet } from '@/features/auth/login-sheet';
 import { InfoDot, InfoSheet, type InfoTopic } from '@/features/common/info-sheet';
 import { savePendingAction } from '@/features/auth/pending-action';
-import { openExternal } from '@/features/open-external';
 import { readCurrentUserSnapshot } from '@/features/loading/current-user-snapshot';
 import { PickDoneSheet, UnpickSheet } from '@/features/pick/pick-sheets';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
 import { vendorBenefit } from '@/features/search/vendor-benefit';
+import { VendorLocationSection } from '@/features/search/vendor-location';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import {
   ActionButton,
@@ -99,7 +96,6 @@ const REPORT_ERROR = '정보가 틀렸나요? 제보하기';
 const GUIDE_PROVIDED = '업체가 제공한 정보예요';
 const EXPERIENCE_COUNT = (n: number) => `${n}명이 답했어요`;
 const REVIEW_VIEW_ALL = (n: number) => `${formatCount(n)}개 전체 보기`;
-const MAP_LINK = '지도에서 보기';
 /** 기준금액 ⓘ 설명 — SPEC §2 고정 문장. */
 const BASE_AMOUNT_NOTE = `${TERMS.baseAmount}은 실 제보의 중앙값이에요`;
 
@@ -170,14 +166,12 @@ export default function VendorDetailScreen() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  /** 로그인 시트가 떠 있는가. 첫 Pick이 대표 트리거다(v3.10 §3). */
-  const [loginOpen, setLoginOpen] = useState(false);
   /** Pick 완료 시트(WP-SHT-002) · 해제 시트(WP-SHT-003). */
   const [pickDoneOpen, setPickDoneOpen] = useState(false);
   const [unpickTarget, setUnpickTarget] = useState<VendorCandidate | null>(null);
   /**
-   * «나». 고른 스타일과 업체 태그의 일치를 그리려고 읽는다(SPEC §13.6). 로그인 전이면
-   * null이고 그때는 칩이 전부 회색이다 — 없는 취향을 지어내지 않는다.
+   * «나». 고른 스타일과 업체 태그의 일치를 그리려고 읽는다(SPEC §13.6).
+   * 비회원 상세는 폐기됐으므로 세션이 사라지면 로그인 경계가 화면 접근을 막는다.
    */
   const [me, setMe] = useState<CurrentUser | null>(() => readCurrentUserSnapshot());
   /** 후기 목록을 읽어 왔는가. 읽기 전에는 «아직 후기가 없어요»를 단정하지 않는다. */
@@ -236,9 +230,7 @@ export default function VendorDetailScreen() {
     if (!isServerConfigured) return;
     let alive = true;
 
-    /* 로그인 전에는 «나»가 없다 — 부르지 않는다. 실패해도 상세는 그대로 뜬다. */
-    loadToken()
-      .then((token) => (token ? getCurrentUser() : null))
+    getCurrentUser()
       .then((loaded) => {
         if (alive) setMe(loaded);
       })
@@ -262,8 +254,8 @@ export default function VendorDetailScreen() {
   const pickBusy = candidates.busyVendorId === vendor.id;
 
   /**
-   * Pick(SPEC §13.1). 통합정책 v3.10 §3 — **첫 Pick이 대표 로그인 트리거**다.
-   * Pick 후면 해제 시트를, 로그인 전이면 누른 것을 적어두고 로그인 시트를 연다.
+   * Pick(SPEC §13.1). 비회원 상세는 폐기됐으므로 이 화면 안에 로그인 시트를 겹쳐 띄우지 않는다.
+   * 세션이 사라졌다면 로그인 화면으로 복귀한다.
    */
   async function pick() {
     if (myCandidate) {
@@ -274,8 +266,9 @@ export default function VendorDetailScreen() {
     if (result === 'picked') setPickDoneOpen(true);
     else if (result === 'login') {
       await savePendingAction({ kind: 'pick', vendorId: vendor!.id, vendorName: vendor!.name });
-      setLoginOpen(true);
-    } else setToast('Pick하지 못했어요. 잠시 후 다시 시도해주세요.');
+      router.replace('/login');
+    }
+    else setToast('Pick하지 못했어요. 잠시 후 다시 시도해주세요.');
   }
 
   async function confirmUnpick() {
@@ -912,20 +905,13 @@ export default function VendorDetailScreen() {
                   <View style={[styles.divider, { backgroundColor: theme.border }]} />
                 </View>
               ) : null}
-              <Pressable
-                accessibilityRole="link"
-                accessibilityLabel={MAP_LINK}
-                onPress={() => {
-                  const query = encodeURIComponent(`${vendor.name} ${vendor.region}`);
-                  /* 지도 앱에 넘기는 자리다 — 앱 안에 가두면 길 찾기를 못 한다(CLAUDE.md 「지도와 달력은 이 규칙의 예외다」). */
-                  void openExternal(`https://map.kakao.com/?q=${query}`, { handOff: true });
-                }}>
-                <View style={styles.row}>
-                  <ThemedText type="t6" style={styles.rowGrow}>{MAP_LINK}</ThemedText>
-                  <ProductSymbol name="chevronRight" size={Layout.iconInline} color={theme.textDisabled} />
-                </View>
-                <View style={[styles.divider, { backgroundColor: theme.border }]} />
-              </Pressable>
+              <VendorLocationSection
+                vendorId={vendor.id}
+                name={vendor.name}
+                region={vendor.region}
+                address={vendor.address}
+                coordinates={vendor.coordinates}
+              />
             </View>
             <Pressable
               accessibilityRole="button"
@@ -1010,23 +996,6 @@ export default function VendorDetailScreen() {
         busy={candidates.busyVendorId !== null}
         onConfirm={() => void confirmUnpick()}
         onDismiss={() => setUnpickTarget(null)}
-      />
-      <LoginSheet
-        visible={loginOpen}
-        reason={`로그인하면 ${withParticle(vendor.name, '을를')} 바로 Pick해드려요.`}
-        onSignedIn={(result) => {
-          setLoginOpen(false);
-
-          if (result.needsSignup) {
-            router.push('/setup');
-            return;
-          }
-
-          candidates.reload().catch(() => undefined);
-          if (result.completed) setPickDoneOpen(true);
-          else if (result.weddingError) setToast(result.weddingError);
-        }}
-        onDismiss={() => setLoginOpen(false)}
       />
     </ThemedView>
   );

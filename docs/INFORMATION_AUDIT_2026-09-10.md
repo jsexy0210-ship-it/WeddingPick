@@ -56,7 +56,7 @@
 
 ### 폐기한 기능과 정책이 화면에 남음
 
-- **별점:** `docs/design-handoff/current/SPEC.md:427,439`은 별점·숫자 평점을 금지하지만 상세 `search/[vendorId]/index.tsx:642`, 후기 `reviews.tsx:213`, 작성 `write-review.tsx:210,253`, 수정 `edit-review.tsx:101`에 별점이 있다. 실제 상세·후기에서도 표시를 확인했다.
+- **별점:** `docs/design/handoff/SPEC.md:427,439`은 별점·숫자 평점을 금지하지만 상세 `search/[vendorId]/index.tsx:642`, 후기 `reviews.tsx:213`, 작성 `write-review.tsx:210,253`, 수정 `edit-review.tsx:101`에 별점이 있다. 실제 상세·후기에서도 표시를 확인했다.
 - **수동 가격 제보:** `CHANGELOG.md:75`에서 WP-RPT-010을 폐기했지만 상세 `index.tsx:528`에서 진입하고 `price-report.tsx:70,207`에서 제출한다. 실제 MY→제보에도 ‘증빙 없이 들은 금액’ 가격 제보가 노출된다. 단순히 옛 파일만 남은 문제가 아니다.
 - **개인정보 안내:** `my/privacy.tsx:43–44`는 출생연도 수집·삭제를 설명하지만 실제 구현은 연령대 `age_range`다. `auth/age-range.ts:11`에는 출생연도를 쓰지 말라는 9월 10일 사용자 지시가 명시돼 있다. **연령대 구현을 출생연도로 되돌릴 사안이 아니라 안내를 최신 정책과 일치시킬 사안**이다.
 

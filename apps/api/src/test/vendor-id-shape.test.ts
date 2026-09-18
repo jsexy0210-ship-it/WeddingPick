@@ -33,6 +33,7 @@ describeWithDb('업체 id 꼴', () => {
     `/v1/vendors/${id}`,
     `/v1/vendors/${id}/conditions`,
     `/v1/vendors/${id}/reviews`,
+    `/v1/vendors/${id}/static-map`,
   ];
 
   it('꼴이 아닌 id는 500이 아니라 404다', async () => {

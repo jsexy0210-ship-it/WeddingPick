@@ -22,7 +22,7 @@
 | 피그마 | `node scripts/screenshot-figma.mjs` — 같은 여섯 화면, 같은 폭 430 |
 | 수치 | 두 빌드를 각각 Chromium에 띄워 `getBoundingClientRect` · `getComputedStyle`로 실측 |
 | 글자 | 스크롤 밖까지 `innerText` 전문을 뽑아 섹션 단위로 대조 |
-| 규격서 | `docs/figma-spec/*.txt`(피그마 전 노드 실측값)와 대조 |
+| 규격서 | `docs/design/figma-export/*.txt`(피그마 전 노드 실측값)와 대조 |
 
 - **앱 `ecd114ac`(main) · 피그마 `3d1705d`**(2026-09-14 17:39 KST).
 - 폭은 둘 다 **430**으로 맞췄다.
@@ -229,9 +229,9 @@ Pick 원 안의 마크는 피그마가 `IconHeart`, 우리는 Pick Mark다 — `
 
 | 줄 | 적힌 것 | 왜 위반인가 |
 | --- | --- | --- |
-| **72–80** | 「지침(2026-09-11, 대표) — **화면의 정본은 `docs/design-handoff/root/`다.** 무조건 시안 기준으로 맞춘다」 · 「화면에 손대기 전에 `root/`부터 연다」 | 가장 명백하다. 통째로 죽은 줄이다 |
+| **72–80** | 「지침(2026-09-11, 대표) — **화면의 정본은 `docs/design/figma-export/`다.** 무조건 시안 기준으로 맞춘다」 · 「화면에 손대기 전에 `root/`부터 연다」 | 가장 명백하다. 통째로 죽은 줄이다 |
 | **74** | 「그럴 때는 **루트가 이긴다**」 | `root/`를 위에 세운다 |
-| **14–16** | 최상위 규칙 3 — 「피그마에 없는 화면은 **기존 정본**과 대조해 … 기존 정본은 `docs/design-handoff/root/`(36장)와 이미 만들어진 화면이다」 | 「기존 정본」이라는 말 자체가 없어졌다 |
+| **14–16** | 최상위 규칙 3 — 「피그마에 없는 화면은 **기존 정본**과 대조해 … 기존 정본은 `docs/design/figma-export/`(36장)와 이미 만들어진 화면이다」 | 「기존 정본」이라는 말 자체가 없어졌다 |
 | **17–18** | 최상위 규칙 4 — 「3번이 안 되면 1번 기준으로 **새로 만든다**」 | 3번에 매달린 줄이고, 같은 파일 27줄의 「**임의로 절대 화면 만들지 말라**」와 어긋난다 |
 | **19–22** | 최상위 규칙 5 — 「로딩 서클 · 토스트 · 얼럿 · 컨펌 · 바텀시트는 **기존 정본을 확인해** 그대로 쓰되」 | 기존 정본을 근거로 남긴다. 2-2의 웨딩노트 시트가 실제로 이 줄을 근거로 든다 |
 | **23–25** | 「「화면의 정본은 `root/`다」는 **3번이 말하는 자리에서만 살아 있다**」 · 「「SPEC 본문과 목업이 어긋나면 목업이 이긴다」도 피그마 아래다」 | 「아래」가 아니라 **없어야** 한다 |
@@ -258,15 +258,15 @@ Pick 원 안의 마크는 피그마가 `IconHeart`, 우리는 Pick Mark다 — `
 
 | 파일 : 줄 | 적힌 것 |
 | --- | --- |
-| `docs/session-prompt.md:24` · `:28` | 「피그마에 없는 화면은 **기존 정본**(`docs/design-handoff/root/` …)」 · 「시트는 **기존 정본**을 그대로 쓰되」 |
-| `docs/session-prompt.md:89` · `:91` · `:118` | 「**정본은 `docs/design-handoff/root/`다**」 · 「**루트가 이긴다.** 화면에 손대기 전에 `root/`부터 연다」 · 「**목업이 이긴다**」 |
+| `docs/session-prompt.md:24` · `:28` | 「피그마에 없는 화면은 **기존 정본**(`docs/design/figma-export/` …)」 · 「시트는 **기존 정본**을 그대로 쓰되」 |
+| `docs/session-prompt.md:89` · `:91` · `:118` | 「**정본은 `docs/design/figma-export/`다**」 · 「**루트가 이긴다.** 화면에 손대기 전에 `root/`부터 연다」 · 「**목업이 이긴다**」 |
 | `docs/codex-handoff.md:22` · `:26` · `:90` · `:92` · `:133` | 같은 다섯 문장 |
-| `docs/design-handoff/root/README.md:3` · `:24` | 「**여기가 화면의 정본이다**」 · 「**루트가 이긴다**」 |
+| `docs/design/figma-export/README.md:3` · `:24` | 「**여기가 화면의 정본이다**」 · 「**루트가 이긴다**」 |
 | `docs/rn-migration/COMPONENT_PARITY.md:20` | 「저장소의 **정본 시안**은 `root/` 36장이고, **Figma 자료는 그 아래다**」 — 서열이 정확히 뒤집혀 있다 |
 | `docs/rn-migration/FIGMA_DESIGN_SYSTEM.md:96` | 「**크기 체계는 기존 정본이 이긴다. Figma의 임의 px는 반영하지 않는다**」 — 글자 크기를 피그마 위에 둔다 |
 | `docs/rn-migration/FIGMA_DESIGN_SYSTEM.md:25` · `:28` · `:59` · `:95` | 색 · 상태 · 문구 · 크기의 출처를 「기존 정본」으로 적는 표 |
 | `docs/rn-migration/RN_MIGRATION_MAP.md:80` | 「**층 원칙**(「보이는 것」은 Figma, 「지켜야 하는 것」은 **기존 정본**)」 |
-| `docs/rn-migration/VENDOR_SCREEN_PARITY.md:37` | 「**정본은 `docs/design-handoff/root/`의**…」 |
+| `docs/rn-migration/VENDOR_SCREEN_PARITY.md:37` | 「**정본은 `docs/design/figma-export/`의**…」 |
 | `docs/admin-mockup-parity-v3.27.md:127` | 「**목업이 이긴다**(CLAUDE.md)」 |
 | `docs/sync/design-policy-audit.md:21` | 최상위 규칙 3(기존 정본 재사용)을 **감시 항목으로 유지**한다 |
 | `apps/mobile/src/app/(tabs)/search/index.tsx:183` | 주석 — 「**루트 시안이** «검색 홈 없음, 즉시 결과»**다**」 |
@@ -281,7 +281,7 @@ Pick 원 안의 마크는 피그마가 `IconHeart`, 우리는 Pick Mark다 — `
 
 ### 3-D. **시험이 막고 있는 자리**
 
-`apps/api/src/test/mockup-parity.test.ts`는 **`docs/design-handoff/current/html/`의 옛 목업 CSS와
+`apps/api/src/test/mockup-parity.test.ts`는 **`docs/design/handoff/html/`의 옛 목업 CSS와
 `spec/tokens.json`이 같은 값인지 CI에서 검사한다.** 온보딩 토큰을 피그마 값으로 옮기면 **CI가 깨진다.**
 
 | 줄 | 무엇을 옛 목업에 묶어 두는가 | 피그마 화면인가 |
@@ -300,7 +300,7 @@ Pick 원 안의 마크는 피그마가 `IconHeart`, 우리는 Pick Mark다 — `
   섹션 제목조차 없어 **없다**고 판정했으나, 조건부 렌더일 가능성을 fixture로 갈라야 한다.
 - **피그마 12화면 중 나머지 여섯** — `/vendor/1` · `/vendor/1/booking` · `/vendor/1/consult` ·
   `/onboarding` · `/login` · `/contract-verify`.
-- **`docs/figma-spec/`이 지금 피그마와 같은지** — 다시 뽑아 대조하지 않았다.
+- **`docs/design/figma-export/`이 지금 피그마와 같은지** — 다시 뽑아 대조하지 않았다.
 - **색 전수 대조** — 이번에는 히어로 · 탭바 · 패널 배경만 봤다. 글자색 · 테두리색은 못 쟀다.
 
 ---
@@ -374,7 +374,7 @@ Pick 원 안의 마크는 피그마가 `IconHeart`, 우리는 Pick Mark다 — `
     spec/tokens.json  spacing.gutter.$note
       「… 피그마 12 화면 전부가 20이다.」
     packages/ui/src/theme.ts:639
-      「피그마 12 화면을 실제로 재면 전부 20이다(docs/figma-spec/*.txt의 pad … 20 … 20).」
+      「피그마 12 화면을 실제로 재면 전부 20이다(docs/design/figma-export/*.txt의 pad … 20 … 20).」
 
 **전부가 아니다.** 규격서 12파일의 최상위 컨테이너 패딩을 전수로 뽑았다.
 
@@ -423,7 +423,7 @@ Pick 원 안의 마크는 피그마가 `IconHeart`, 우리는 Pick Mark다 — `
 **의도적으로 피그마 수치·문구를 안 옮긴 것**이고, 코드가 그렇게 적고 있다. 판정: **다르다**(확정).
 
 > **등급 체계는 이미 쓸모가 없어졌다.** 그 문서는 피그마 자료가 `imports/` 익스포트뿐이던 때에
-> 「어느 파일의 값을 믿을 수 있나」를 가리려고 만든 것이다. 지금은 **`docs/figma-spec/`이 있다** —
+> 「어느 파일의 값을 믿을 수 있나」를 가리려고 만든 것이다. 지금은 **`docs/design/figma-export/`이 있다** —
 > 돌아가는 피그마 앱을 브라우저에서 직접 잰 1,015개 노드다. 등급을 매길 일이 없다.
 > **그런데 등급이 아직 살아서 네 화면의 값을 막고 있다.**
 
@@ -480,7 +480,7 @@ Pick 원 안의 마크는 피그마가 `IconHeart`, 우리는 Pick Mark다 — `
 
 ### 6. 규격서가 피그마와 같은지 — **같다**
 
-`node scripts/extract-figma-spec.mjs`로 다시 뽑아 `docs/figma-spec/`와 비교했다.
+`node scripts/extract-figma-export.mjs`로 다시 뽑아 `docs/design/figma-export/`와 비교했다.
 **README 말고는 한 바이트도 다르지 않다.** 피그마 저장소도 `3d1705d` 그대로다. 판정: **같다.**
 
 ### 7. 규칙 파일 — 절반쯤 지워졌다
@@ -499,7 +499,7 @@ Pick 원 안의 마크는 피그마가 `IconHeart`, 우리는 Pick Mark다 — `
 | `CLAUDE.md:133` | 「**SPEC 본문과 목업이 어긋나면 목업이 이긴다**」 — 폐기 표시 없음 |
 | `docs/session-prompt.md:102` · `docs/codex-handoff.md:103` | 90–92줄에 폐기 표시를 붙였는데 **아래 본문이 그대로** 「**루트가 이긴다.** 화면에 손대기 전에 `root/`부터 연다」 |
 | `session-prompt.md:29` · `codex-handoff.md:27` · `:129` · `:144` | 규칙 5 · 「목업이 이긴다」 그대로 |
-| `docs/design-handoff/root/README.md:3` · `:24` | 「**여기가 화면의 정본이다**」 · 「**루트가 이긴다**」 — 손대지 않았다 |
+| `docs/design/figma-export/README.md:3` · `:24` | 「**여기가 화면의 정본이다**」 · 「**루트가 이긴다**」 — 손대지 않았다 |
 | `docs/rn-migration/COMPONENT_PARITY.md:20` | 「**Figma 자료는 그 아래다**」 |
 | `docs/rn-migration/RN_MIGRATION_MAP.md:80` | 「**층 원칙**(「보이는 것」은 Figma, 「지켜야 하는 것」은 **기존 정본**)」 |
 | `docs/rn-migration/VENDOR_SCREEN_PARITY.md:37` · `docs/admin-mockup-parity-v3.27.md:127` · `docs/sync/design-policy-audit.md:21` | 그대로 |

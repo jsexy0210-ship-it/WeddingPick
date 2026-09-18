@@ -1,7 +1,7 @@
 # 웨딩픽 — 구현 규칙 (v3.17까지의 보관본)
 
 > **이 파일은 기준이 아니다.** 지금 기준은 저장소 뿌리의 `CLAUDE.md`와
-> `docs/design-handoff/current/CHANGELOG.md` 맨 위(현 기준 **v3.27**)다. 여기에는 v3.17까지의
+> `docs/design/handoff/CHANGELOG.md` 맨 위(현 기준 **v3.27**)다. 여기에는 v3.17까지의
 > 화면 세부와 정책 변경 이력이 남아 있고, **위 둘과 어긋나면 위 둘이 이긴다.** 어긋나지 않는
 > 항목만 계속 유효하다.
 >
@@ -138,7 +138,7 @@
   하드코딩 금지 대상에 안전영역 상수도 포함된다 — `34`·`18`·`48` 같은 값을 상수로
   박지 않고 `useSafeAreaInsets()`를 쓴다. Android 3버튼 내비게이션은 하단 inset이
   0으로 오는 것이 정상이라 별도 처리가 필요하다.
-- 원본 자료는 `docs/design-handoff/current/`에 갱신했다(핸드오프 `CHANGELOG.md`도
+- 원본 자료는 `docs/design/handoff/`에 갱신했다(핸드오프 `CHANGELOG.md`도
   이번에 처음 동봉됨 — 과거 버전은 그 파일에서 추적한다).
 
 ---
