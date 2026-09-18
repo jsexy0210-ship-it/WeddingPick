@@ -6,6 +6,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BackBar } from '@/components/back-bar';
 import { confirmAlert } from '@/components/confirm-alert';
+import { DialogToast } from '@/components/confirm-alert-toast';
 import { useDepthBack } from '@/features/navigation/depth-back';
 
 import {
@@ -23,7 +24,6 @@ import {
   Spacing,
   ThemedText,
   ThemedView,
-  Toast,
   WeddingMark,
   useTheme,
 } from '@weddingpick/ui';
@@ -184,7 +184,7 @@ export default function PickCategoryScreen() {
           <ActionButton label="돌아가기" onPress={depthBack} />
         </ScrollView>
       </SafeAreaView>
-      <Toast message={toast} onHidden={() => setToast(null)} />
+      <DialogToast message={toast} onHidden={() => setToast(null)} />
     </ThemedView>
   );
 }
