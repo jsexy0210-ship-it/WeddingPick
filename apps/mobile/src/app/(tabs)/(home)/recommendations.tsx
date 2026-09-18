@@ -106,11 +106,8 @@ export default function RecommendationsScreen() {
             <ThemedText type="f26" style={styles.bold}>
               {S['recommend.title']}
             </ThemedText>
-            <ThemedText type="f12" themeColor="textAssistive" style={styles.sub}>
-              {S['recommend.body']}
-            </ThemedText>
             {state.groups.length === 0 ? null : (
-              <ThemedText type="f12" numeric themeColor="textAssistive" style={styles.sub}>
+              <ThemedText type="f13" numeric themeColor="textAssistive" style={styles.sub}>
                 {nextStepsCountLine(state.remaining)}
               </ThemedText>
             )}
@@ -165,7 +162,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
   content: { paddingBottom: Spacing.five },
-  header: { paddingHorizontal: Layout.pageX, paddingBottom: Spacing.four },
+  header: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionHeadGap },
   bold: { fontWeight: 700 },
   sub: { marginTop: Spacing.half },
 });
