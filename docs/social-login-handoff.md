@@ -69,8 +69,9 @@ PKCE 형식, 현재 origin의 `/setup`, 미래 시각 여부, **10분 만료**, 
 
 iOS는 `expo-apple-authentication`의 identityToken을 API에 보낸다.
 첫 인증 때 받을 수 있는 이름은 profileName으로 별도 전달한다. 서버는 Apple JWKS, issuer,
-audience와 sub를 확인한다. Apple이 연령을 제공했다고 가정하지 않는다.
-**Apple nonce·재생 방어를 새로 완성한 변경은 아니다.** 해당 전체 경로 검토는 남아 있다.
+audience와 sub를 확인하고, 앱이 로그인 시도마다 생성한 단일사용 nonce가 id_token의 nonce와
+정확히 같은지도 확인한다. nonce는 기기에 저장하지 않고 Apple 요청과 서버 검증 사이에서만 유지한다.
+Apple이 연령을 제공했다고 가정하지 않는다. 실제 iOS 기기에서 nonce 포함 로그인 성공·취소·재시도는 별도 검증한다.
 
 | 판정 | 결과 |
 | --- | --- |
@@ -187,7 +188,7 @@ Node Web Crypto와 URL 검증, 잘못된 메시지·origin·channel·만료·저
 | 구버전 네이티브 앱 | 새 웹과의 조합은 자동 호환하지 않음. 버전 일치·업데이트 유도·복구 계획 필요 |
 | 네이티브 세션 저장 | AsyncStorage 유지. SecureStore 의존성·lockfile·기존 토큰 이전·탈퇴 삭제·실기기 검증 필요 |
 | 일반 웹/관리자 세션 | HttpOnly/Secure 쿠키 미전환. 도메인·CORS·CSRF·SameSite·웹뷰 연동 검증 필요 |
-| Apple 재생 방어 | nonce/재생 방어의 전체 경로 검토 필요 |
+| Apple 재생 방어 | 코드 적용. 실제 iOS Apple 로그인에서 nonce 포함 성공·취소·재시도 검증 필요 |
 | 관리자 원문 설정 | 실제 운영 해시 전용 전환·기존 세션 폐기 정책 확인 필요 |
 | 전체 제품 회귀 | 전체 타입·lint·Jest·분리된 DB·웹 빌드·실제 제공자 로그인 검증 필요 |
 
