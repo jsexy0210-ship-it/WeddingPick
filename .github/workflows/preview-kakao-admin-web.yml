@@ -6,6 +6,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: weddingpick-kakao-vm-write
+  cancel-in-progress: false
+
 jobs:
   publish:
     name: Publish admin and website preview routes
