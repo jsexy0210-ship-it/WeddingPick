@@ -915,10 +915,12 @@ async function loadConditionStats(
          * N-9: 카카오 로컬 응답을 자체 업체 DB에 저장하지 않는다.
          * 좌표가 이미 있으면 그대로 쓰고, 없을 때만 현재 요청에서 주소를 일시 변환한다.
          */
-        const resolved =
-          hasStoredCoordinates
-            ? { lat: location.lat!, lng: location.lng! }
-            : await geocodeKakaoAddress({ restApiKey, address: storedAddress! });
+        let resolved: { lat: number; lng: number } | null = null;
+        if (location.lat !== null && location.lng !== null) {
+          resolved = { lat: location.lat, lng: location.lng };
+        } else if (storedAddress) {
+          resolved = await geocodeKakaoAddress({ restApiKey, address: storedAddress });
+        }
 
         if (!resolved) return reply.code(404).send();
 
