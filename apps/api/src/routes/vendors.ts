@@ -49,6 +49,13 @@ import { fetchKakaoStaticMap, geocodeKakaoAddress } from '../kakao-static-map';
  */
 const searchQuerySchema = vendorSearchQuerySchema;
 
+function isUpstreamTimeout(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    (error.name === 'TimeoutError' || error.name === 'AbortError')
+  );
+}
+
 
 type VendorRow = {
   id: string;
@@ -933,8 +940,9 @@ async function loadConditionStats(
         reply.header('cache-control', 'public, max-age=86400, stale-while-revalidate=604800');
         return reply.type(map.contentType).send(map.body);
       } catch (error) {
-        request.log.warn({ error, vendorId }, '카카오 정적 지도 조회가 실패했다');
-        return reply.code(502).send();
+        const timedOut = isUpstreamTimeout(error);
+        request.log.warn({ error, vendorId, timedOut }, '카카오 정적 지도 조회가 실패했다');
+        return reply.code(timedOut ? 504 : 502).send();
       }
     }
   );
