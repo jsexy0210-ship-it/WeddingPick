@@ -52,7 +52,9 @@ function makeHarness({ existingFavicon }) {
   const canonical = path.join(workspace, 'apps', 'mobile', 'assets', 'images', 'favicon.png');
   writeFileSync(canonical, Buffer.from('NEW-FAVICON'));
   if (existingFavicon) {
-    writeFileSync(path.join(releaseRoot, 'app', 'favicon.png'), Buffer.from('OLD-FAVICON'));
+    for (const role of ['app', 'admin', 'web']) {
+      writeFileSync(path.join(releaseRoot, role, 'favicon.png'), Buffer.from('OLD-FAVICON-' + role));
+    }
   }
 
   const transformed = source
@@ -156,10 +158,12 @@ shellTest('failed live favicon update restores the previous favicon bytes', () =
   try {
     const result = run(h, { MOCK_CURL_FAIL: '1' });
     assert.notEqual(result.status, 0);
-    assert.equal(
-      readFileSync(path.join(h.releaseRoot, 'app', 'favicon.png'), 'utf8'),
-      'OLD-FAVICON',
-    );
+    for (const role of ['app', 'admin', 'web']) {
+      assert.equal(
+        readFileSync(path.join(h.releaseRoot, role, 'favicon.png'), 'utf8'),
+        'OLD-FAVICON-' + role,
+      );
+    }
   } finally {
     h.cleanup();
   }
@@ -170,7 +174,9 @@ shellTest('failed live favicon update removes a favicon that did not exist befor
   try {
     const result = run(h, { MOCK_CURL_FAIL: '1' });
     assert.notEqual(result.status, 0);
-    assert.equal(existsSync(path.join(h.releaseRoot, 'app', 'favicon.png')), false);
+    for (const role of ['app', 'admin', 'web']) {
+      assert.equal(existsSync(path.join(h.releaseRoot, role, 'favicon.png')), false);
+    }
   } finally {
     h.cleanup();
   }
@@ -181,10 +187,12 @@ shellTest('successful live favicon update keeps canonical favicon bytes', () => 
   try {
     const result = run(h);
     assert.equal(result.status, 0, result.stderr || result.stdout);
-    assert.equal(
-      readFileSync(path.join(h.releaseRoot, 'app', 'favicon.png'), 'utf8'),
-      'NEW-FAVICON',
-    );
+    for (const role of ['app', 'admin', 'web']) {
+      assert.equal(
+        readFileSync(path.join(h.releaseRoot, role, 'favicon.png'), 'utf8'),
+        'NEW-FAVICON',
+      );
+    }
     const html = readFileSync(path.join(h.releaseRoot, 'app', 'index.html'), 'utf8');
     assert.match(html, /\/favicon\.png\?v=20260918-unified1/);
   } finally {
