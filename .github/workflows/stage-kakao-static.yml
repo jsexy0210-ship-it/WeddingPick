@@ -1,0 +1,92 @@
+name: Stage Kakao Static
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  stage:
+    name: Stage static candidates on Kakao VM
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 10
+    steps:
+      - name: Check current main
+        id: current
+        shell: bash
+        run: |
+          set -euo pipefail
+          current="$(git ls-remote https://github.com/jsexy0210-ship-it/WeddingPick.git refs/heads/main | cut -f1)"
+          if [ "$current" != "$GITHUB_SHA" ]; then
+            echo "current=false" >> "$GITHUB_OUTPUT"
+            echo "A newer main exists; stale static candidate will not be staged."
+            exit 0
+          fi
+          echo "current=true" >> "$GITHUB_OUTPUT"
+
+      - name: Download static artifact
+        if: steps.current.outputs.current == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: kakao-static-sites
+          path: .kakao-static
+
+      - name: Validate and stage candidates
+        if: steps.current.outputs.current == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .kakao-static/app/index.html
+          test -f .kakao-static/admin/index.html
+          test -f .kakao-static/admin/admin/login.html
+          test -f .kakao-static/web/index.html
+          if grep -RIl '<!--$!-->' .kakao-static/app .kakao-static/admin | grep -q .; then
+            echo 'Static export contains an unfinished React suspense boundary.' >&2
+            exit 1
+          fi
+
+          release="/home/ubuntu/WeddingPick/static-releases/$GITHUB_SHA"
+          mkdir -p "$release"
+          rm -rf "$release/app" "$release/admin" "$release/web"
+          cp -a .kakao-static/app "$release/app"
+          cp -a .kakao-static/admin "$release/admin"
+          cp -a .kakao-static/web "$release/web"
+          cp .kakao-static/manifest.json "$release/manifest.json"
+          echo "Static candidates staged at $release"
+
+      - name: Inspect existing HTTPS front end
+        if: steps.current.outputs.current == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo '### Kakao VM static staging'
+            printf -- '- Commit: \`%s\`\n' "$GITHUB_SHA"
+            echo '- Live cutover: **not performed**'
+            echo '- Candidate path: \`/home/ubuntu/WeddingPick/static-releases/<sha>\`'
+            echo ''
+            echo '#### Detected listeners'
+            sudo -n ss -ltnp 2>/dev/null | awk 'NR==1 || /:80 |:443 |:3001 /' | sed -E 's/users:\(\([^)]*\)\)/users:(redacted)/g' || true
+            echo ''
+            echo '#### Web server services'
+            for unit in nginx caddy apache2; do
+              state="$(systemctl is-active "$unit" 2>/dev/null || true)"
+              printf -- '- %s: \`%s\`\n' "$unit" "\${state:-not-found}"
+            done
+            echo ''
+            echo '#### Sanitized routing directives'
+            if command -v nginx >/dev/null 2>&1; then
+              sudo -n nginx -T 2>/dev/null |
+                grep -E '^\s*(listen|server_name|root|location|proxy_pass|ssl_certificate)' |
+                sed -E 's#(ssl_certificate(_key)?\s+).*#\1[redacted];#' |
+                head -120 || true
+            elif command -v caddy >/dev/null 2>&1; then
+              sudo -n caddy adapt --config /etc/caddy/Caddyfile --pretty 2>/dev/null |
+                grep -E '"(listen|host|handler|upstreams|root)"' |
+                head -120 || true
+            else
+              echo '- No nginx/caddy executable detected.'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
