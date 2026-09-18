@@ -105,7 +105,7 @@ jobs:
 
           echo "검증 통과: 실기기에 직접 설치 가능한 apk입니다."
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: weddingpick-preview-apk
           path: apps/mobile/weddingpick-preview.apk
