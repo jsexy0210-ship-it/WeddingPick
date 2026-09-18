@@ -1,5 +1,4 @@
 import type {
-  CurrentUser,
   ExpoItem,
   LoungeReviewListResponse,
   WeddingFeedListResponse,
@@ -24,7 +23,7 @@ import {
   ThemedView,
   useTheme,
 } from '@weddingpick/ui';
-import { getCurrentUser, getWeddingFeed, listExpos, listLoungeReviews } from '@/api/client';
+import { getWeddingFeed, listExpos, listLoungeReviews } from '@/api/client';
 import { useSession } from '@/features/auth/use-session';
 import { FullScreenError } from '@/features/errors/full-screen-error';
 import { CategoryImage } from '@/features/home/category-image';
@@ -57,7 +56,6 @@ export default function CommunityScreen() {
   const { state, refresh } = useSession();
   const [tab, setTab] = useState<Tab>('review');
   const [category, setCategory] = useState<CategoryLabel>('전체');
-  const [me, setMe] = useState<CurrentUser | null>(null);
   const [reviews, setReviews] = useState<Loaded<LoungeReviewListResponse>>({ status: 'loading' });
   const [feed, setFeed] = useState<Loaded<WeddingFeedListResponse>>({ status: 'loading' });
   const [expos, setExpos] = useState<Loaded<ExpoItem[]>>({ status: 'loading' });
@@ -66,12 +64,7 @@ export default function CommunityScreen() {
 
   const load = useCallback(() => {
     const version = ++loadVersion.current;
-    setMe(null);
     if (!isSignedIn) return;
-
-    void getCurrentUser()
-      .then((user) => { if (version === loadVersion.current) setMe(user); })
-      .catch(() => { if (version === loadVersion.current) setMe(null); });
 
     setReviews({ status: 'loading' });
     void listLoungeReviews()
@@ -98,7 +91,6 @@ export default function CommunityScreen() {
   if (state.status === 'loading') return <DelayedLoadingView />;
   if (state.status === 'signedOut') return <Redirect href="/login" />;
 
-  const canWrite = tab === 'review' && me?.hasPaymentProof === true;
   const hasCategoryChips = tab === 'review' || tab === 'feed';
 
   return (
@@ -106,7 +98,7 @@ export default function CommunityScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <NavBar
           title={S.title}
-          right={canWrite ? { label: S.write, brand: true, onPress: () => router.push('/my/reviews' as never) } : null}
+          right={{ label: S.write, brand: true, onPress: () => router.push('/my/reviews' as never) }}
         />
 
         <View style={styles.segment}>
