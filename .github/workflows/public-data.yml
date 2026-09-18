@@ -190,8 +190,8 @@ jobs:
           fi
           # 건수 상한. 0건이 아닌 것만으로는 부족하다 — 분류가 어긋나면 상권 자료가
           # 통째로 들어오고, 그건 0건보다 되돌리기 어렵다. 수집기도 --apply 직전에
-          # 같은 상한으로 거절하지만(run.ts MAX_APPLY), 크론은 --apply 없이 도는
-          # 무인 실행이라 여기서 먼저 드러내야 사람이 본다.
+          # 같은 상한으로 거절하지만(run.ts MAX_APPLY), 수동 검증 실행에서도
+          # 여기서 먼저 드러내야 사람이 본다.
           if [ "$ACCEPTED" -gt "$PUBLIC_DATA_MAX_APPLY" ]; then
             echo "::error::'$SOURCE' 수집 결과가 ${ACCEPTED}건으로 상한 ${PUBLIC_DATA_MAX_APPLY}건을 넘습니다. 업종 분류 또는 업종 코드가 어긋났는지 먼저 확인하세요. 이 양이 맞다면 저장소 Variables의 PUBLIC_DATA_MAX_APPLY를 올립니다."
             exit 1
