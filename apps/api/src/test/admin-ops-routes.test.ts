@@ -533,18 +533,15 @@ describeWithDb('관리자 운영·시스템 라우트', () => {
       const table = transfer.bodyTable as { rows: string[][] };
       const row = (needle: string) => table.rows.find((r) => r.join(' ').includes(needle))!.join(' ');
 
-      // 「국가」는 회사 소재지가 아니라 서버 리전이다.
-      for (const vendor of ['neon.tech', 'privacy@render.com']) {
-        expect(row(vendor)).toContain('싱가포르');
-      }
+      // 국외 이전 표에는 실제 국외 처리만 남는다. KakaoCloud는 국내 처리라 들어오면 회귀다.
+      expect(row('neon.tech')).toContain('싱가포르');
+      expect(table.rows.some((r) => r.join(' ').includes('Render Services'))).toBe(false);
+      expect(table.rows.some((r) => r.join(' ').includes('KakaoCloud'))).toBe(false);
+      expect(all).toContain('(주)카카오엔터프라이즈(KakaoCloud)');
+      expect(all).toContain('기존 객체 저장');
       // 푸시 중계는 그대로 미국이다. 싱가포르로 뭉뚱그리지 않는다.
       expect(row('650 Industries')).toContain('미국 ·');
 
-      /*
-       * 자료 분석·상담 녹음 정리의 수탁자는 Google이다. **처리 국가는 아직 「확인 필요」다**
-       * — 공개 정책 원문에 닿지 못해 리전·보유기간·법인명을 확인하지 못했고, 확인하지
-       * 못한 것을 지어내지 않았다(#230). 확인되면 방침과 이 시험을 함께 고친다.
-       */
       /*
        * **수탁자는 Google이다. Anthropic은 걷혔다**(2026-09-16 대표 결정 · PR #230).
        *
