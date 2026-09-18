@@ -177,6 +177,13 @@ jobs:
       contents: read
     uses: ./.github/workflows/audit-kakao-openapi-readiness.yml
 
+  audit-kakao-legal:
+    name: Audit Kakao Legal API
+    if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[audit-legal-api]') }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/audit-kakao-legal.yml
+
   probe-kakao-static-ports:
     name: Probe Kakao Static Ports
     if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[probe-static-ports]') }}
