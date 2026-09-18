@@ -71,14 +71,27 @@ describe('native session secure storage', () => {
     expect(secureValues.has(KEY)).toBe(false);
   });
 
-  it('SecureStore 세션이 있으면 구 AsyncStorage 값보다 우선한다', async () => {
+  it('SecureStore 세션이 있으면 구 AsyncStorage 값을 정리하고 secure 값을 쓴다', async () => {
     secureValues.set(KEY, 'secure-token');
     legacyValues.set(KEY, 'stale-token');
 
     await expect(loadToken()).resolves.toBe('secure-token');
 
     expect(SecureStore.setItemAsync).not.toHaveBeenCalled();
+    expect(legacyValues.has(KEY)).toBe(false);
+  });
+
+  it('legacy cleanup이 한 번 실패해도 secure 세션을 유지하고 다음 조회에서 다시 정리한다', async () => {
+    secureValues.set(KEY, 'secure-token');
+    legacyValues.set(KEY, 'stale-token');
+    (AsyncStorage.removeItem as jest.Mock).mockRejectedValueOnce(new Error('legacy cleanup failed'));
+
+    await expect(loadToken()).resolves.toBe('secure-token');
+    expect(secureValues.get(KEY)).toBe('secure-token');
     expect(legacyValues.get(KEY)).toBe('stale-token');
+
+    await expect(loadToken()).resolves.toBe('secure-token');
+    expect(legacyValues.has(KEY)).toBe(false);
   });
 
   it('네이티브 신규 로그인은 SecureStore에 저장하고 구 사본을 제거한다', async () => {
