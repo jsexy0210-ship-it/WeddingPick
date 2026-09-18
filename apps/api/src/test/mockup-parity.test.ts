@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const ROOT = join(__dirname, '..', '..', '..', '..');
-const HTML = join(ROOT, 'docs', 'design/handoff', 'current', 'html');
+const HTML = join(ROOT, 'docs', 'design', 'handoff', 'html');
 
 /**
  * 목업 파일의 CSS 문자열과 토큰을 직접 대조한다.
