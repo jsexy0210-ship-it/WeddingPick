@@ -96,6 +96,7 @@ jobs:
         run: |
           node --test scripts/check-render-retired.test.mjs
           node --test scripts/verification/static-cutover-order.test.mjs
+          node --test scripts/verification/ci-workspace-parallelism.test.mjs
 
       - name: Reject retired deployment paths
         run: node scripts/check-render-retired.mjs
