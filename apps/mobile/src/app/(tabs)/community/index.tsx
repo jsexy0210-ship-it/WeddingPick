@@ -265,10 +265,12 @@ function ReviewList({
  * progress 축은 서버가 별도 값을 주기 전까지 카드에서 생략한다.
  */
 function reviewAnswers(review: LoungeReview): string[] {
+  const progress = review.aspects.find((aspect) => aspect.key === 'progress');
   const result = review.aspects.find((aspect) => aspect.key === 'result');
   const cost = review.aspects.find((aspect) => aspect.key === 'extra_cost');
   const answers: string[] = [];
 
+  if (progress) answers.push(`${shortAxis(R['axis.progress'])} · ${progressAnswer(progress.rating)}`);
   if (result) answers.push(`${shortAxis(R['axis.result'])} · ${resultAnswer(result.rating)}`);
   if (cost) answers.push(`${shortAxis(R['axis.cost'])} · ${costAnswer(cost.rating)}`);
 
@@ -277,6 +279,12 @@ function reviewAnswers(review: LoungeReview): string[] {
 
 function shortAxis(label: string): string {
   return label.replace('은 어땠나요', '').replace('는 어땠나요', '').replace(' 안내는요', '');
+}
+
+function progressAnswer(rating: number): string {
+  if (rating >= 4) return R['axis.progress.fast'];
+  if (rating <= 2) return R['axis.progress.slow'];
+  return R['axis.progress.ok'];
 }
 
 function resultAnswer(rating: number): string {
