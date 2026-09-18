@@ -1,16 +1,16 @@
 # WeddingPick 프로젝트 상태
 
-## 현재 기준 — 2026-09-18 13:54 KST
+## 현재 기준 — 2026-09-18 13:58 KST
 
-- 운영 API는 `https://210.109.82.212`의 KakaoCloud VM이다. 첫 자동배포 성공 기준은 **CI / Deploy #979 / `4adc950`**이며 Render SG API는 사용자 중지 상태로 되살리지 않는다.
-- **앱웹 확인용 443 공개 #1006 성공**: staged app-web을 `https://210.109.82.212/`에 공개했고 외부 GitHub runner에서 루트·`/login` HTML을 확인했다. 같은 443의 `/health`와 `/v1/auth/providers`도 정상이라 정적 화면과 API가 공존한다.
-- 현재 직접 확인 가능한 주소: 앱웹 `https://210.109.82.212/`, 로그인 `https://210.109.82.212/login`, API health `https://210.109.82.212/health`.
-- 카카오 로그인 실제 완료 검증은 남아 있다. 브라우저 앱웹 origin이 IP로 바뀌었으므로 Kakao Developers Redirect URI에 `https://210.109.82.212/setup` 등록 여부를 확인해야 한다.
-- 관리자 `:8443`·웹사이트 `:9443`은 VM 내부 Nginx 설정·`nginx -t`는 성공하지만 외부 GitHub runner에서 둘 다 5초 timeout이다. 현재 KakaoCloud Security Group이 비표준 포트를 막고 있는 상태로 본다. 임시 probe 설정은 매번 cleanup으로 정상 제거했다.
-- 관리자 출처 분리 정책을 유지하므로 8443을 열기 전 관리자를 앱웹 443에 합치지 않는다. 웹사이트 9443도 보안그룹 허용 후 공개한다.
+- 운영 API와 앱웹은 KakaoCloud VM `https://210.109.82.212`의 443을 함께 사용한다. `/health`와 `/v1/*`는 API 프록시, 그 밖은 staged app-web 정적 파일이다.
+- **앱웹 443 공개 #1006 성공**: 외부 GitHub runner에서 `/`, `/login`, `/health`, `/v1/auth/providers` 모두 정상 확인했다.
+- **관리자·웹사이트 443 임시 확인 경로 #1012 성공**: 관리자 `https://210.109.82.212/admin/login`, 웹사이트 `https://210.109.82.212/website.html`, 개인정보처리방침 `/privacy.html`, 이용약관 `/terms.html`을 외부 runner에서 확인했고 API health도 유지됐다.
+- 관리자 443 노출은 **확인용 임시 경로**다. 최종 운영은 기존 결정대로 사용자 앱과 다른 origin으로 분리한다. 현재 `:8443`·`:9443`은 VM 내부 Nginx는 정상이나 KakaoCloud Security Group에서 외부 timeout이다.
+- 웹 카카오 로그인 코드는 `window.location.origin + /setup`을 Redirect URI로 사용한다. 현재 앱웹 origin에서는 `https://210.109.82.212/setup`이다. Kakao Developers의 REST API 키 Redirect URI에 이 값을 정확히 등록해야 실제 로그인 완료가 가능하다.
+- Kakao 공식 규칙상 Redirect URI는 요청값과 프로토콜·호스트·포트·경로·마지막 슬래시까지 일치해야 하며 미등록 값은 `KOE006`으로 거부된다.
 - Kakao VM IP 인증서는 Let's Encrypt이며 SAN에 `210.109.82.212`가 있고 `snap.certbot.renew.timer`가 활성 상태다.
-- 새 파일 저장소 운영 설정은 KakaoCloud Object Storage `weddingpick-prod-media` / `kr-central-2`다. 운영 컨테이너에서 HeadBucket·ListObjectsV2 읽기 검증이 성공했다.
-- 운영 DB 읽기 전용 감사 결과 분석 pending 0, stuck running 0, raw document pages 0, 내부 업체 이미지 0, 상담 음성 0, 파기 대상 0이다. 현재 DB가 참조하는 NCP→Kakao 이관 대상 파일은 **0개**라 불필요한 전체 egress 복사는 하지 않는다.
+- Kakao Object Storage `weddingpick-prod-media` / `kr-central-2`는 운영 컨테이너에서 HeadBucket·ListObjectsV2 읽기 검증이 성공했다.
+- 운영 DB 읽기 전용 감사 결과 분석 pending 0, stuck running 0, raw document pages 0, 내부 업체 이미지 0, 상담 음성 0, 파기 대상 0이다. 현재 DB가 참조하는 NCP→Kakao 이관 대상 파일은 **0개**다.
 - 런타임은 `RUN_WORKER_IN_API=false`, `RETENTION_MODE=automatic`이다. 현재 backlog는 0이지만 신규 업로드 운영 전 워커 활성화 방식은 별도 검증해야 한다.
 - Render는 더 이상 빌드·배포하지 않는다. 기존 Render 정적 서비스는 전환 검증 중 임시 잔존일 뿐이며 새 변경을 올리지 않는다.
 - `claude/rn-preview`는 최신 디자인 정본이 아니며 배포 소스로 사용하지 않는다.
