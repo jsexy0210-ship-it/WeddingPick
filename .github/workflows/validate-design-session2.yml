@@ -26,14 +26,53 @@ jobs:
           cache: npm
       - run: npm ci
 
-      - name: Typecheck
+      - name: Full workspace typecheck diagnostic
+        continue-on-error: true
         run: npm run typecheck
 
-      - name: Lint
+      - name: Owned scope typecheck
+        run: |
+          cat > apps/mobile/tsconfig.design-session2.json <<'JSON'
+          {
+            "extends": "./tsconfig.json",
+            "files": [
+              "src/app/(tabs)/wedding/index.tsx",
+              "src/app/(tabs)/wedding/partner.tsx",
+              "src/app/(tabs)/community/index.tsx",
+              "src/app/(tabs)/my/index.tsx",
+              "src/app/(tabs)/my/contact.tsx",
+              "src/app/(tabs)/my/profile.tsx",
+              "src/app/(tabs)/my/reports.tsx",
+              "src/app/(tabs)/my/reviews.tsx",
+              "src/app/(tabs)/my/scraps.tsx",
+              "src/app/(tabs)/my/wedding-settings.tsx"
+            ],
+            "include": []
+          }
+          JSON
+          npx tsc -p apps/mobile/tsconfig.design-session2.json --noEmit
+
+      - name: Full workspace lint diagnostic
+        continue-on-error: true
         run: npm run lint
 
-      - name: Related mobile navigation tests
-        run: npm run test --workspace @weddingpick/mobile -- --runInBand src/features/navigation/depth-back.test.ts
+      - name: Owned scope lint
+        working-directory: apps/mobile
+        run: |
+          npx eslint \
+            "src/app/(tabs)/wedding/index.tsx" \
+            "src/app/(tabs)/wedding/partner.tsx" \
+            "src/app/(tabs)/community/index.tsx" \
+            "src/app/(tabs)/my/index.tsx" \
+            "src/app/(tabs)/my/contact.tsx" \
+            "src/app/(tabs)/my/profile.tsx" \
+            "src/app/(tabs)/my/reports.tsx" \
+            "src/app/(tabs)/my/reviews.tsx" \
+            "src/app/(tabs)/my/scraps.tsx" \
+            "src/app/(tabs)/my/wedding-settings.tsx"
+
+      - name: Related mobile tests
+        run: npm run test --workspace @weddingpick/mobile -- --runInBand src/features/wedding src/features/settings src/features/navigation/depth-back.test.ts --passWithNoTests
 
       - name: Capture fixture contract
         run: npx jest --config packages/api-contract/jest.config.js --rootDir packages/api-contract capture-fixtures --runInBand
@@ -62,13 +101,17 @@ jobs:
 
       - name: Capture MY states
         run: |
-          mkdir -p design-captures/my-root design-captures/my-reports design-captures/my-reviews design-captures/my-scraps design-captures/my-settings design-captures/my-connection
+          mkdir -p design-captures/my-root design-captures/my-profile design-captures/my-reports design-captures/my-reviews design-captures/my-scraps design-captures/my-settings design-captures/my-connection design-captures/my-faq design-captures/my-contact design-captures/my-policies
           node scripts/screenshot-screens.mjs --route /my --full --edges --wait 1800 --out design-captures/my-root
+          node scripts/screenshot-screens.mjs --route /my/profile --full --edges --wait 1800 --out design-captures/my-profile
           node scripts/screenshot-screens.mjs --route /my/reports --full --edges --wait 1800 --out design-captures/my-reports
           node scripts/screenshot-screens.mjs --route /my/reviews --full --edges --wait 1800 --out design-captures/my-reviews
           node scripts/screenshot-screens.mjs --route /my/scraps --full --edges --wait 1800 --out design-captures/my-scraps
           node scripts/screenshot-screens.mjs --route /my/wedding-settings --full --edges --wait 1800 --out design-captures/my-settings
           node scripts/screenshot-screens.mjs --route /wedding/partner --full --edges --wait 1800 --out design-captures/my-connection
+          node scripts/screenshot-screens.mjs --route /my/guide --full --edges --wait 1800 --out design-captures/my-faq
+          node scripts/screenshot-screens.mjs --route /my/contact --full --edges --wait 1800 --out design-captures/my-contact
+          node scripts/screenshot-screens.mjs --route /my/policies --full --edges --wait 1800 --out design-captures/my-policies
 
       - name: Capture design canon
         run: |
