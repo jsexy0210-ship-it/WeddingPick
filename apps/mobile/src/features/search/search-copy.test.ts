@@ -79,17 +79,19 @@ describe('검색·업체상세는 폐기된 지연 로그인을 되살리지 않
     const source = routeSource('index.tsx');
 
     expect(source).not.toContain('LoginSheet');
-    expect(source).not.toContain('savePendingAction');
-    expect(source).toContain("result === 'login') router.replace('/login')");
+    expect(source).toContain('savePendingAction');
+    expect(source).toContain("await savePendingAction({ kind: 'pick'");
+    expect(source).toContain("router.replace('/login')");
   });
 
   it('업체 상세도 세션이 사라지면 로그인 화면으로 복귀한다', () => {
     const source = routeSource(join('[vendorId]', 'index.tsx'));
 
     expect(source).not.toContain('LoginSheet');
-    expect(source).not.toContain('savePendingAction');
+    expect(source).toContain('savePendingAction');
+    expect(source).toContain("await savePendingAction({ kind: 'pick'");
     expect(source).not.toContain('loadToken');
-    expect(source).toContain("result === 'login') router.replace('/login')");
+    expect(source).toContain("router.replace('/login')");
   });
 });
 
