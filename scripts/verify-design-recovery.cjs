@@ -88,6 +88,7 @@ function detailHarness(initialId='a') {
 const post = (id, body='body') => ({ id, title:`title-${id}`, categoryLabel:'예산', summary:'summary', body, imageUri:null,publishedAt:null });
 function loungeHarness() {
   const h=hooks();const pushed=[];const replaced=[];
+  const loungeReviewHelpers=load('apps/mobile/src/features/community/lounge-reviews.ts');
   const items=[{id:'post/a?b',title:'첫 글',summary:'summary',imageUrl:null,categoryLabel:'예산'},
     {id:'second',title:'둘째 글',summary:'summary',imageUrl:null,categoryLabel:'체크리스트'}];
   const feed={tabs:[{key:'all',label:'전체',categories:[]},{key:'budget',label:'예산',categories:['예산']}],items};
@@ -100,6 +101,7 @@ function loungeHarness() {
     '@/features/auth/use-session':{useSession:()=>({state:{status:'signedIn'},refresh:()=>{}})},
     '@/features/errors/full-screen-error':{FullScreenError:'FullScreenError'},
     '@/features/home/category-image':{CategoryImage:'CategoryImage'},
+    '@/features/community/lounge-reviews':loungeReviewHelpers,
     '@/features/loading/delayed-loader':{DelayedLoader:'Loader',DelayedLoadingView:'Loading'},
     '@/features/wedding/screen-kit':{NavBar:'NavBar'},'../../../../../../spec/strings.ko.json':strings,
   }).default;
