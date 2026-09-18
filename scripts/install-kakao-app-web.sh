@@ -13,7 +13,12 @@ test -n "$release_sha"
 
 source_dir="$ROOT/static-releases/$release_sha/app"
 test -f "$source_dir/index.html"
-test -f "$source_dir/login.html"
+if [ ! -f "$source_dir/login.html" ] && [ ! -f "$source_dir/login/index.html" ]; then
+  echo "App login export was not found in release: $release_sha" >&2
+  find "$source_dir" -maxdepth 2 -type f -name 'login*.html' -o -path '*/login/index.html' 2>/dev/null | head -20 >&2 || true
+  exit 1
+fi
+echo "Using staged app release: $release_sha"
 
 target="/var/www/weddingpick/releases/$release_sha/app"
 sudo -n mkdir -p "$(dirname "$target")"
