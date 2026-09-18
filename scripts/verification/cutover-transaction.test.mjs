@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   chmodSync,
+  existsSync,
   mkdtempSync,
   mkdirSync,
   readFileSync,
@@ -147,6 +148,11 @@ if [ "\${1:-}" = "reload" ] && [ "\${2:-}" = "nginx" ]; then
 fi
 exit 0
 `,
+  );
+
+  writeExecutable(
+    path.join(bin, 'sleep'),
+    '#!/usr/bin/env bash\nexit 0\n',
   );
 
   writeExecutable(
