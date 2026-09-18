@@ -36,7 +36,17 @@ function usesNativeSecureStore(): boolean {
  */
 async function readNativeToken(): Promise<string | null> {
   const secured = await SecureStore.getItemAsync(STORAGE_KEY);
-  if (secured !== null) return secured;
+  if (secured !== null) {
+    // SecureStore가 정본이면 이관 도중 남은 legacy 사본은 더 이상 필요 없다.
+    // cleanup 실패로 현재 세션까지 실패시키지 않고 다음 load에서 다시 시도한다.
+    try {
+      await AsyncStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // SecureStore 토큰은 이미 안전하게 존재한다. legacy cleanup만 재시도 대상으로 남긴다.
+    }
+
+    return secured;
+  }
 
   const legacy = await AsyncStorage.getItem(STORAGE_KEY);
   if (legacy === null) return null;
