@@ -144,7 +144,7 @@ jobs:
             exit 1
           fi
           sudo -n docker rm -f "$CANDIDATE_CONTAINER" >/dev/null
-          current_main || { echo 'main changed during the build; the existing API is unchanged.' >&2; exit 1; }
+          deploy_revision_is_current || { echo 'main gained API-relevant changes during the build; the existing API is unchanged.' >&2; exit 1; }
 
           CUTOVER_STARTED=1
           sudo -n docker stop --time 30 "$OLD_ID" >/dev/null
