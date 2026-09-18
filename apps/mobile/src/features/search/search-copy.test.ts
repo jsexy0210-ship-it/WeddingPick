@@ -68,4 +68,29 @@ describe('검색 문구는 spec과 같다', () => {
   });
 });
 
+
+describe('검색·업체상세는 폐기된 지연 로그인을 되살리지 않는다', () => {
+  const routeSource = (relativePath: string) =>
+    readFileSync(join(ROOT, 'apps', 'mobile', 'src', 'app', '(tabs)', 'search', relativePath), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, ' ')
+      .replace(/(^|[^:])\/\/.*$/gm, '$1');
+
+  it('검색 결과는 로그인 시트를 겹쳐 띄우지 않는다', () => {
+    const source = routeSource('index.tsx');
+
+    expect(source).not.toContain('LoginSheet');
+    expect(source).not.toContain('savePendingAction');
+    expect(source).toContain("result === 'login') router.replace('/login')");
+  });
+
+  it('업체 상세도 세션이 사라지면 로그인 화면으로 복귀한다', () => {
+    const source = routeSource(join('[vendorId]', 'index.tsx'));
+
+    expect(source).not.toContain('LoginSheet');
+    expect(source).not.toContain('savePendingAction');
+    expect(source).not.toContain('loadToken');
+    expect(source).toContain("result === 'login') router.replace('/login')");
+  });
+});
+
 export {};
