@@ -21,7 +21,6 @@ jobs:
       group: weddingpick-main-ci-${{ github.ref }}
       cancel-in-progress: true
     outputs:
-      deploy_api: ${{ steps.api_changes.outputs.changed }}
       stage_static: ${{ steps.static_changes.outputs.changed }}
       probe_static_ports: ${{ steps.port_probe_request.outputs.requested }}
 
@@ -155,33 +154,19 @@ jobs:
           if-no-files-found: error
           retention-days: 3
 
-      - name: API 배포 대상 변경 확인
-        id: api_changes
-        shell: bash
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          BEFORE_SHA: ${{ github.event.before }}
-          HEAD_MESSAGE: ${{ github.event.head_commit.message }}
-        run: |
-          set -euo pipefail
-          changed=true
-          if grep -Fq '[skip-api-deploy]' <<< "${HEAD_MESSAGE:-}"; then
-            changed=false
-          elif [ "$EVENT_NAME" = push ] && [[ "$BEFORE_SHA" =~ ^[0-9a-f]{40}$ ]] && git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
-            paths=$(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA")
-            if ! grep -Eq '^(apps/api/|packages/(api-contract|db|domain)/|package(-lock)?\.json$|Dockerfile$|\.dockerignore$|scripts/update-kakao-worker\.sh$|\.github/workflows/deploy-kakao-api\.yml$)' <<< "$paths"; then
-              changed=false
-            fi
-          fi
-          echo "changed=$changed" >> "$GITHUB_OUTPUT"
-          echo "API deployment required: $changed"
-
   audit-kakao-data:
     name: Audit Kakao Data State
     if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[audit-kakao-data]') }}
     permissions:
       contents: read
     uses: ./.github/workflows/audit-kakao-data-state.yml
+
+  audit-kakao-openapi:
+    name: Audit Kakao OpenAPI Readiness
+    if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[audit-kakao-openapi]') }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/audit-kakao-openapi-readiness.yml
 
   probe-kakao-static-ports:
     name: Probe Kakao Static Ports
@@ -220,18 +205,51 @@ jobs:
       actions: read
     uses: ./.github/workflows/stage-kakao-static.yml
 
+  api-deploy-needed:
+    name: Detect Kakao API catch-up
+    needs: [ci]
+    if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message || '', '[skip-api-deploy]') }}
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 5
+    outputs:
+      changed: ${{ steps.changes.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Compare live API revision with current main
+        id: changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          changed=true
+          live_revision="$(sudo -n docker inspect -f '{{ index .Config.Labels "org.opencontainers.image.revision" }}' weddingpick-api 2>/dev/null || true)"
+          if [[ "$live_revision" =~ ^[0-9a-f]{40}$ ]] && git cat-file -e "$live_revision^{commit}" 2>/dev/null; then
+            if git merge-base --is-ancestor "$live_revision" "$GITHUB_SHA"; then
+              paths="$(git diff --name-only "$live_revision" "$GITHUB_SHA")"
+              if ! grep -Eq '^(apps/api/|packages/(api-contract|db|domain)/|package(-lock)?\.json$|Dockerfile$|\.dockerignore$|scripts/update-kakao-worker\.sh$|\.github/workflows/deploy-kakao-api\.yml$)' <<< "$paths"; then
+                changed=false
+              fi
+            fi
+          fi
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+          echo "Live API revision: ${live_revision:-unknown}"
+          echo "API catch-up required: $changed"
+
   repair-kakao-runner:
     name: Repair Kakao Runner
-    needs: [ci]
-    if: github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && needs.ci.outputs.deploy_api == 'true'
+    needs: [ci, api-deploy-needed]
+    if: ${{ needs.api-deploy-needed.outputs.changed == 'true' }}
     permissions:
       contents: read
     uses: ./.github/workflows/repair-kakao-runner.yml
 
   deploy-kakao:
     name: KakaoCloud API
-    needs: [ci, repair-kakao-runner]
-    if: github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && needs.ci.outputs.deploy_api == 'true'
+    needs: [ci, api-deploy-needed, repair-kakao-runner]
+    if: ${{ needs.api-deploy-needed.outputs.changed == 'true' }}
     permissions:
       contents: read
     uses: ./.github/workflows/deploy-kakao-api.yml
