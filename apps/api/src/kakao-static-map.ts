@@ -5,6 +5,53 @@ export type KakaoStaticMap = {
   contentType: string;
 };
 
+export type KakaoMapCoordinates = {
+  lat: number;
+  lng: number;
+};
+
+/**
+ * 저장된 공식/허용 주소를 카카오 좌표로 잠깐 바꾼다.
+ *
+ * 통합정책 N-9 때문에 이 결과는 DB에 저장하지 않는다. 정적 지도 한 장을 만드는
+ * 현재 요청 안에서만 사용한다.
+ */
+export async function geocodeKakaoAddress({
+  restApiKey,
+  address,
+  fetchImpl = fetch,
+}: {
+  restApiKey: string;
+  address: string;
+  fetchImpl?: FetchLike;
+}): Promise<KakaoMapCoordinates | null> {
+  const url = new URL('https://dapi.kakao.com/v2/local/search/address.json');
+  url.searchParams.set('query', address);
+
+  const response = await fetchImpl(url, {
+    headers: {
+      authorization: `KakaoAK ${restApiKey}`,
+      accept: 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Kakao address geocode failed: HTTP ${response.status}`);
+  }
+
+  const payload = (await response.json()) as {
+    documents?: Array<{ x?: string; y?: string }>;
+  };
+  const first = payload.documents?.[0];
+  if (!first?.x || !first.y) return null;
+
+  const lng = Number(first.x);
+  const lat = Number(first.y);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+  return { lat, lng };
+}
+
 /**
  * 카카오 정적 지도 REST API를 서버에서 호출한다.
  *
