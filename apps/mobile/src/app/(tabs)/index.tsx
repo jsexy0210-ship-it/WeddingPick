@@ -198,7 +198,11 @@ export default function HomeScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <Header unread={data.unread} onPressBell={() => router.push('/my/notifications')} />
+          <Header
+            unread={data.unread}
+            onPressSearch={() => router.push('/search')}
+            onPressBell={() => router.push('/my/notifications')}
+          />
 
           <Hero
             me={data.me}
@@ -311,10 +315,14 @@ function venueName(candidates: CandidateListResponse | null, me: CurrentUser | n
 }
 
 /**
- * 홈 헤더 — 브랜드와 알림만 둔다.
- * 검색은 현재 루트 내비게이션 정책의 별도 진입점을 사용하며 홈 헤더에 중복 노출하지 않는다.
+ * 홈 헤더 — 01-home 정본의 워드마크 · 검색 · 알림 순서를 그대로 둔다.
+ * 검색은 Root 검색 화면으로 이동하고, 알림은 MY 알림으로 이동한다.
  */
-function Header({ unread, onPressBell }: { unread: number; onPressBell: () => void }) {
+function Header({ unread, onPressSearch, onPressBell }: {
+  unread: number;
+  onPressSearch: () => void;
+  onPressBell: () => void;
+}) {
   const theme = useTheme();
 
   return (
@@ -324,6 +332,13 @@ function Header({ unread, onPressBell }: { unread: number; onPressBell: () => vo
       </ThemedText>
 
       <View style={styles.headerButtons}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="업체 검색"
+          onPress={onPressSearch}
+          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
+          <SeedIcon name="searchRegular" size={Layout.iconRow} color={theme.text} />
+        </Pressable>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={hasUnread({ unread, total: unread }) ? `알림 ${formatCount(unread)}건` : '알림'}
