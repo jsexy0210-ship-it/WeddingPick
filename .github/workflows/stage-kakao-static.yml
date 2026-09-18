@@ -26,6 +26,13 @@ jobs:
           fi
           echo "current=true" >> "$GITHUB_OUTPUT"
 
+      - name: Checkout runtime audit
+        if: steps.current.outputs.current == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
       - name: Download static artifact
         if: steps.current.outputs.current == 'true'
         uses: actions/download-artifact@v4
@@ -56,37 +63,17 @@ jobs:
           cp .kakao-static/manifest.json "$release/manifest.json"
           echo "Static candidates staged at $release"
 
-      - name: Inspect existing HTTPS front end
+      - name: Inspect Kakao runtime without secrets
         if: steps.current.outputs.current == 'true'
         shell: bash
         run: |
           set -euo pipefail
+          ./scripts/audit-kakao-runtime.sh | tee /tmp/kakao-runtime-audit.txt
           {
             echo '### Kakao VM static staging'
             printf -- '- Commit: `%s`\n' "$GITHUB_SHA"
             echo '- Live cutover: **not performed**'
             echo '- Candidate path: `/home/ubuntu/WeddingPick/static-releases/<sha>`'
             echo ''
-            echo '#### Detected listeners'
-            sudo -n ss -ltnp 2>/dev/null | awk 'NR==1 || /:80 |:443 |:3001 /' | sed -E 's/users:\(\([^)]*\)\)/users:(redacted)/g' || true
-            echo ''
-            echo '#### Web server services'
-            for unit in nginx caddy apache2; do
-              state="$(systemctl is-active "$unit" 2>/dev/null || true)"
-              printf -- '- %s: `%s`\n' "$unit" "${state:-not-found}"
-            done
-            echo ''
-            echo '#### Sanitized routing directives'
-            if command -v nginx >/dev/null 2>&1; then
-              sudo -n nginx -T 2>/dev/null |
-                grep -E '^[[:space:]]*(listen|server_name|root|location|proxy_pass|ssl_certificate)' |
-                sed -E 's#(ssl_certificate(_key)?[[:space:]]+).*#\1[redacted];#' |
-                head -120 || true
-            elif command -v caddy >/dev/null 2>&1; then
-              sudo -n caddy adapt --config /etc/caddy/Caddyfile --pretty 2>/dev/null |
-                grep -E '"(listen|host|handler|upstreams|root)"' |
-                head -120 || true
-            else
-              echo '- No nginx/caddy executable detected.'
-            fi
+            cat /tmp/kakao-runtime-audit.txt
           } >> "$GITHUB_STEP_SUMMARY"

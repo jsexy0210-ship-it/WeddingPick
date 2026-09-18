@@ -1,14 +1,16 @@
 # WeddingPick 프로젝트 상태
 
-## 현재 기준 — 2026-09-18 10:28:36 KST
+## 현재 기준 — 2026-09-18 11:36 KST
 
-- 인수인계 기준 main은 `4adc9502f0c9f7d2efeb7cad467f07c578069d86`이다. 이 커밋에서 **CI / Deploy #979 (Run ID 35293129181)**의 CI·러너 복구·KakaoCloud API 자동배포가 모두 성공했다.
-- 운영 API 기준 주소는 `https://210.109.82.212`다. Render SG API는 사용자가 중지했으며 재배포·재활성화하지 않는다.
-- Render에는 앱 웹 Preview·관리자·웹사이트 정적 서비스가 유지된다. 정적 서비스의 실제 환경변수·라이브 번들이 KakaoCloud API를 바라보는지는 별도 배포와 브라우저 검증이 필요하다.
-- `claude/rn-preview`는 최신 디자인 정본이 아니다. 현재 main과 크게 갈라져 있으므로 그대로 배포 소스로 사용하지 않는다.
-- 남은 인프라 작업은 정적 화면 반영/검증, NCP 기존 파일 이전과 KakaoCloud 파일 접근 검증, 워커 실행 확인, 인증서 자동 갱신 및 잔여 Render 훅·키 정리다.
-- 보고 시 **코드 반영 / CI 통과 / API 배포 / 화면 배포 / 실제 기능 검증**을 서로 다른 상태로 기록한다.
-
+- 운영 API는 `https://210.109.82.212`의 KakaoCloud VM이다. 첫 자동배포 성공 기준은 **CI / Deploy #979 / `4adc950`**이며 Render SG API는 사용자 중지 상태로 되살리지 않는다.
+- 최신 main `365613f9ea57041947bd63bd546430c4a304cba2`에서 **CI / Deploy #982**가 성공했다. 앱웹·관리자·웹사이트 정적 산출물을 빌드·검사한 뒤 카카오 VM의 `static-releases/<SHA>` 후보 폴더까지 전달했다.
+- #982에서 **KakaoCloud API 재배포와 Runner 복구는 둘 다 Skip**됐다. 정적 이관 때문에 API를 불필요하게 교체하지 않았다.
+- 정적 후보의 **라이브 Nginx cutover는 아직 하지 않았다.** 공개 주소·카카오 로그인 redirect·CORS·정책 링크를 바꾸기 전에 Nginx·IP HTTPS 인증서·보안그룹을 검증한다.
+- Render는 빌드 분 복구 여부와 무관하게 더 이상 사용하지 않는다. 기존 정적 3개는 카카오 전환 검증 전 임시 공개본일 뿐이며 Render 재배포는 하지 않는다.
+- 새 파일 저장소는 KakaoCloud Object Storage `weddingpick-prod-media`(`kr-central-2`)다. 기존 NCP `weddingpick-test` 전체 이전과 실제 파일 접근 검증은 남아 있다.
+- 마지막 명시 워커 설정은 `RUN_WORKER_IN_API=false`다. `RETENTION_MODE=automatic`과 비용이 드는 Gemini 작업이 함께 있으므로 실제 런타임 감사 전 워커를 켜지 않는다.
+- `claude/rn-preview`는 최신 디자인 정본이 아니며 배포 소스로 사용하지 않는다.
+- 보고 시 **코드 반영 / CI 통과 / API 배포 / 화면 후보 스테이징 / 화면 공개 / 실제 기능 검증**을 서로 다른 상태로 기록한다.
 ## 이전 배포 기록 — 2026-09-13 KST
 
 앱 출시를 제외한 웹·API·관리자 배포를 진행한다. 기준 main은 `bcd8771484baa906aa24a0f4a0f88e27185359e9`이며 PR208·218·219와 검토 수정사항을 통합했다. 최종 CI·배포 결과는 [master-status.json의 webApiRelease20260913](docs/sync/master-status.json)을 따른다. 아래 9월 10~11일 기록은 당시의 이력이며 현재 배포 버전을 뜻하지 않는다.

@@ -42,7 +42,7 @@ npm run export:web --workspace @weddingpick/mobile
 | 역할 | 하는 일 | 성격 |
 |---|---|---|
 | `app` | `dist/admin/**.html`을 관리자 출처로 넘기는 쪽지로 교체 | **필요한 조치.** 관리자가 두 곳에 살아 한쪽이 낡는 것을 막는다 |
-| `admin` | `admin` · `_expo` · `assets` · favicon · `+not-found` 만 남기고 사용자 화면 제거, `index.html`은 `/admin/home`으로 | **정리이지 경계가 아니다.** 번들에 사용자 라우트가 남아 클라이언트 라우팅으로는 그려질 수 있다 |
+| `admin` | `admin` · `_expo` · `assets` · `fonts` · favicon · `+not-found` 만 남기고 사용자 화면 제거, `index.html`은 `/admin/home`으로 | **정리이지 경계가 아니다.** 번들에 사용자 라우트가 남아 클라이언트 라우팅으로는 그려질 수 있다 |
 
 ### 왜 `render.yaml`의 `routes`를 쓰지 않았나
 
@@ -52,6 +52,10 @@ npm run export:web --workspace @weddingpick/mobile
    못했다.** 추측 위에 경계를 세우지 않는다.
 
 파일이 없으면 규칙 해석과 무관하게 없다. 그래서 산출물을 직접 깎는다.
+
+**`fonts`도 보존한다.** Pretendard 웹폰트는 출력 뿌리의 `fonts/`에 따로 복사되므로
+화이트리스트에서 빠지면 관리자 출처만 조용히 시스템 서체로 떨어진다. 2026-09-18 main에서
+보존하도록 수정했고, 카카오 VM 후보 패키징도 같은 `split-admin-dist.mjs`를 쓴다.
 
 ### 왜 `/admin` 접두어를 관리자 출처에서도 유지하나
 

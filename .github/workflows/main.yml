@@ -52,7 +52,7 @@ jobs:
           changed=true
           if [ "$EVENT_NAME" = push ] && [[ "$BEFORE_SHA" =~ ^[0-9a-f]{40}$ ]] && git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
             paths=$(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA")
-            if ! grep -Eq '^(apps/(mobile|web)/|packages/(domain|ui)/|spec/|package(-lock)?\.json$|scripts/(split-admin-dist|package-kakao-static)\.mjs$|\.github/workflows/(main|stage-kakao-static)\.yml$)' <<< "$paths"; then
+            if ! grep -Eq '^(apps/(mobile|web)/|packages/(domain|ui)/|spec/|package(-lock)?\.json$|scripts/(split-admin-dist|package-kakao-static)\.mjs$|scripts/audit-kakao-runtime\.sh$|\.github/workflows/(main|stage-kakao-static)\.yml$)' <<< "$paths"; then
               changed=false
             fi
           fi
