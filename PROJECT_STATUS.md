@@ -11,7 +11,7 @@
 - Kakao VM IP 인증서는 Let's Encrypt이며 SAN에 `210.109.82.212`가 있고 `snap.certbot.renew.timer`가 활성 상태다.
 - Kakao Object Storage `weddingpick-prod-media` / `kr-central-2`는 운영 컨테이너에서 HeadBucket·ListObjectsV2 읽기 검증이 성공했다.
 - 운영 DB 읽기 전용 감사 결과 분석 pending 0, stuck running 0, raw document pages 0, 내부 업체 이미지 0, 상담 음성 0, 파기 대상 0이다. 현재 DB가 참조하는 NCP→Kakao 이관 대상 파일은 **0개**다.
-- 런타임은 `RUN_WORKER_IN_API=false`, `RETENTION_MODE=automatic`이다. 현재 backlog는 0이지만 신규 업로드 운영 전 워커 활성화 방식은 별도 검증해야 한다.
+- 런타임은 `RUN_WORKER_IN_API=false`, `RETENTION_MODE=automatic`이다. 별도 `weddingpick-worker` 배포 경로와 기동 smoke는 구현·검증됐고, 다음 완료 배포에서는 API·worker가 같은 image revision으로 상주하는지 확인한다.
 - Render는 더 이상 빌드·배포하지 않는다. 기존 Render 정적 서비스는 전환 검증 중 임시 잔존일 뿐이며 새 변경을 올리지 않는다.
 - `claude/rn-preview`는 최신 디자인 정본이 아니며 배포 소스로 사용하지 않는다.
 - 보고 시 **코드 반영 / CI 통과 / API 배포 / 화면 후보 스테이징 / 화면 공개 / 실제 기능 검증**을 서로 다른 상태로 기록한다.
@@ -94,10 +94,10 @@ EAS 최근 5개 조회 기준이다. 실제 기기 설치 버전과 TestFlight �
 
 ## CI/CD와 속도 확인 범위
 
-- GitHub CI와 Render main 자동배포는 독립 경로다. Actions 승인 대기 중 Render가 같은 커밋을 배포한 사례를 확인했다. ‘CI → migration → 배포’ 순서가 강제된다고 보고하지 않는다.
+- Render API 자동배포는 폐기됐다. 현재 API는 `main → CI / Deploy → 운영 revision 누적 diff 확인 → KakaoCloud API/worker 배포` 경로를 사용한다. DB migration은 자동배포와 분리된 수동 production 승인 작업이다.
 - HTTP 200만으로 health를 통과시키는 검사와 실제 `schema.ok` 판정이 다를 수 있다. 배포 관문과 DB 검사 실패 전파를 함께 보완해야 한다.
 - 워크플로 목록과 트리거는 [.github/workflows/](.github/workflows/)의 현재 파일이 기준이다. 과거의 ‘10개·중복 없음’ 목록은 현황 근거에서 제외했다.
-- Render Free의 유휴 기동 지연 가능성을 콘솔에서 확인했다. 운영 API·DB·스토리지가 여러 리전에 분포한다. 실제 응답 시간·왕복 지연은 추가 계측 대상이다.
+- 운영 API는 KakaoCloud, DB는 Neon, 파일은 KakaoCloud Object Storage를 사용한다. 과거 Render/Ohio 성능 수치는 현재 수치로 재사용하지 않고 실제 응답 시간·DB 왕복 지연은 현행 구성에서 다시 계측한다.
 - 앱 진입의 장시간 요청 대기·인증 오류 구분과 관리자 요청 타임아웃 문제는 코드 검수 결과이며, 측정된 속도 수치가 아니다.
 
 ## 다음 작업 우선순위
