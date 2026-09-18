@@ -1,12 +1,15 @@
 name: Validate Design Session 1
 
 on:
-  push:
-    branches:
-      - claude/overhaul-lounge-my
   pull_request:
     branches:
       - main
+    paths:
+      - 'apps/mobile/src/app/(tabs)/index.tsx'
+      - 'apps/mobile/src/app/(tabs)/(home)/**'
+      - 'apps/mobile/src/features/home/**'
+      - 'scripts/fixtures/api.cjs'
+      - '.github/workflows/validate-design-session1.yml'
 
 permissions:
   contents: read
