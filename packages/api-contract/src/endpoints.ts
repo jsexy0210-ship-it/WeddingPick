@@ -146,8 +146,8 @@ export type EndpointDefinition = {
 /**
  * API 계약. 서버는 이대로 구현하고 앱은 이대로 부른다.
  *
- * 인증: `listAuthProviders`와 `createSession`만 토큰 없이 부른다. 나머지 모든 경로는
- * `Authorization: Bearer <token>`을 요구한다.
+ * 인증: 로그인·FAQ·라운지 공개 후기처럼 서버가 명시적으로 open으로 등록한 경로는
+ * 토큰 없이 부를 수 있다. 그 밖의 사용자 경로는 `Authorization: Bearer <token>`을 요구한다.
  *
  * 오류: 어떤 경로든 실패하면 `errorResponseSchema` 모양으로 답한다.
  */
