@@ -101,7 +101,7 @@ function makeHarness({ includePrivacy = true, previousLiveSha = null } = {}) {
     path.join(bin, 'sudo'),
     `#!/usr/bin/env bash
 set -euo pipefail
-if [ "${1:-}" = "-n" ]; then shift; fi
+if [ "\${1:-}" = "-n" ]; then shift; fi
 exec "$@"
 `,
   );
@@ -110,8 +110,8 @@ exec "$@"
     path.join(bin, 'nginx'),
     `#!/usr/bin/env bash
 set -euo pipefail
-state="${MOCK_STATE_DIR:?}"
-case "${1:-}" in
+state="\${MOCK_STATE_DIR:?}"
+case "\${1:-}" in
   -T)
     printf '%s\\n' 'ssl_certificate /tmp/mock-cert.pem;' 'ssl_certificate_key /tmp/mock-key.pem;'
     ;;
@@ -121,7 +121,7 @@ case "${1:-}" in
     [ ! -f "$count_file" ] || count="$(cat "$count_file")"
     count=$((count + 1))
     printf '%s' "$count" > "$count_file"
-    if [ "${MOCK_NGINX_T_FAIL_FIRST:-0}" = "1" ] && [ "$count" -eq 1 ]; then
+    if [ "\${MOCK_NGINX_T_FAIL_FIRST:-0}" = "1" ] && [ "$count" -eq 1 ]; then
       exit 1
     fi
     ;;
@@ -133,14 +133,14 @@ esac
     path.join(bin, 'systemctl'),
     `#!/usr/bin/env bash
 set -euo pipefail
-state="${MOCK_STATE_DIR:?}"
-if [ "${1:-}" = "reload" ] && [ "${2:-}" = "nginx" ]; then
+state="\${MOCK_STATE_DIR:?}"
+if [ "\${1:-}" = "reload" ] && [ "\${2:-}" = "nginx" ]; then
   count_file="$state/reload-count"
   count=0
   [ ! -f "$count_file" ] || count="$(cat "$count_file")"
   count=$((count + 1))
   printf '%s' "$count" > "$count_file"
-  if [ "${MOCK_RELOAD_FAIL_FIRST:-0}" = "1" ] && [ "$count" -eq 1 ]; then
+  if [ "\${MOCK_RELOAD_FAIL_FIRST:-0}" = "1" ] && [ "$count" -eq 1 ]; then
     exit 1
   fi
 fi
