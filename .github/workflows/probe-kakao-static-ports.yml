@@ -16,7 +16,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - run: ./scripts/probe-kakao-static-ports.sh
+      - run: bash ./scripts/probe-kakao-static-ports.sh
 
   public-probe:
     name: Probe public 8443 and 9443
@@ -55,4 +55,4 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - run: ./scripts/cleanup-kakao-static-port-probes.sh
+      - run: bash ./scripts/cleanup-kakao-static-port-probes.sh
