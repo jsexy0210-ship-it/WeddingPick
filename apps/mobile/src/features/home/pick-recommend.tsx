@@ -45,6 +45,7 @@ type SharedRecommendationProps = {
 export function HomeRecommendations({
   groups,
   isPicked,
+  onPressVendor,
   onPressPick,
   onPressCompare,
   onPressMore,
@@ -140,7 +141,6 @@ export function PickRecommend({
   remaining,
   remainingCategories,
   isPicked,
-  onPressVendor,
   onPressPick,
   onPressCompare,
   onPressSearchMore,
