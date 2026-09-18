@@ -62,14 +62,14 @@
 | Render 관리자 | `https://weddingpick-admin.onrender.com/admin`. 정적 서비스 유지, 최신 main 반영 여부 별도 검증 필요 |
 | Render 웹사이트 | `https://weddingpick-web.onrender.com`. 정적 서비스 유지, 최신 main 반영 여부 별도 검증 필요 |
 | Neon | 프로젝트 콘솔 접근, production 브랜치의 `neondb`·`weddingpick_staging` 존재 확인. 이번 점검에서는 직접 SQL 실행 안 함 |
-| NCP Object Storage | `weddingpick-test` 버킷 및 계정 권한 조회. 목록 공개 꺼짐. 이번 점검의 업로드·다운로드·삭제 왕복 검증은 미실행 |
+| Kakao Object Storage | `weddingpick-prod-media` / `kr-central-2` 운영 기준. HeadBucket·ListObjectsV2 읽기 검증 성공. 현재 운영 DB가 참조하는 NCP→Kakao 이관 대상 파일은 0개로 확인. NCP `weddingpick-test`는 과거/이관 원본으로만 취급하며 새 운영 저장소로 사용하지 않음 |
 | Expo/EAS | Owner 계정·프로젝트·기존 빌드 조회 가능. 최근 조회 빌드는 아래 표 참조 |
 | Kakao Developers | 앱 콘솔 접근. `age_range` 필수 동의·`birthyear` 권한 없음 확인. 현재 카카오 단일 로그인 구현과 구분해 동의·안내 문서를 맞춰야 함 |
 | App Store Connect | iOS 1.0 ‘제출 준비 중’, TestFlight 1.0.0 빌드 2 ‘제출 준비 완료’. 스토어 출시·실기기 검증 완료가 아님 |
 | Google Play | 앱 상태 ‘임시’. 앱 설정·비공개 테스트·프로덕션 액세스 절차 미완료 |
 | Cloudflare | 연결 계정 인증 가능, zone 목록 비어 있음. 현재 사용하지 않는 도메인 부재를 장애로 분류하지 않음 |
 
-`weddingpick.kr`은 **폐기했다**(2026-09-11 대표 지시). 2026-09-10의 「보유하되 미사용·폐기 대상 아님」을 뒤집은 결정이다. DNS 연결·커스텀 도메인 전환을 과제로 두지 않고, 다시 붙이자고 제안하지도 않는다. 정적 사이트 공개 주소는 `onrender.com`을 유지하고, API는 KakaoCloud 주소를 사용한다.
+`weddingpick.kr`은 **폐기했다**(2026-09-11 대표 지시). 2026-09-10의 「보유하되 미사용·폐기 대상 아님」을 뒤집은 결정이다. DNS 연결·커스텀 도메인 전환을 과제로 두지 않고, 다시 붙이자고 제안하지도 않는다. **앱웹과 API는 KakaoCloud `https://210.109.82.212`가 운영 기준**이고, Render 정적 서비스는 관리자·웹사이트 분리 전환이 끝날 때까지만 임시 공개본으로 남긴다.
 
 Render의 환경변수 선언은 [infra/render-env.yml](infra/render-env.yml), 반영 경로는 [render-env-sync.yml](.github/workflows/render-env-sync.yml)이다. 서비스 표시 이름과 URL 호스트는 다를 수 있으므로 오래된 이름만으로 리소스를 삭제하거나 대체하지 않는다. 남은 별도 DB·관리자 리소스의 사용 여부는 추가 확인 대상이다.
 

@@ -28,15 +28,18 @@ jobs:
                       raise SystemExit(f"{doc}: unexpected HTTP {response.status}")
                   data = json.load(response)
 
-              if data.get("type") != doc:
+              document = data.get("document")
+              if not isinstance(document, dict):
+                  raise SystemExit(f"{doc}: document missing")
+              if document.get("type") != doc:
                   raise SystemExit(f"{doc}: wrong type")
-              if not isinstance(data.get("version"), str) or not data["version"].strip():
+              if not isinstance(document.get("version"), str) or not document["version"].strip():
                   raise SystemExit(f"{doc}: version missing")
-              if not isinstance(data.get("effectiveOn"), str) or len(data["effectiveOn"]) != 10:
+              if not isinstance(document.get("effectiveOn"), str) or len(document["effectiveOn"]) != 10:
                   raise SystemExit(f"{doc}: effectiveOn missing")
-              sections = data.get("sections")
-              if not isinstance(sections, list) or not sections:
-                  raise SystemExit(f"{doc}: public sections missing")
+              clauses = document.get("clauses")
+              if not isinstance(clauses, list) or not clauses:
+                  raise SystemExit(f"{doc}: public clauses missing")
 
-              print(f"{doc}=ok version={data['version']} effectiveOn={data['effectiveOn']} sections={len(sections)}")
+              print(f"{doc}=ok version={document['version']} effectiveOn={document['effectiveOn']} clauses={len(clauses)}")
           PY
