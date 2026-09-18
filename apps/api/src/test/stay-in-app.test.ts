@@ -119,9 +119,9 @@ describe('앱 밖으로 나가지 않는다', () => {
     const files = [...new Set(callSites('handOff: true', ['apps/mobile/src']).map(fileOf))].sort();
 
     expect(files).toEqual([
-      'apps/mobile/src/features/search/vendor-location.tsx',
       'apps/mobile/src/app/(tabs)/search/expo/[expoId]/calendar.tsx',
       'apps/mobile/src/app/(tabs)/wedding/[id]/map.tsx',
+      'apps/mobile/src/features/search/vendor-location.tsx',
     ]);
   });
 
