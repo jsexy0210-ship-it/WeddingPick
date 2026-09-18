@@ -164,6 +164,13 @@ jobs:
           echo "changed=$changed" >> "$GITHUB_OUTPUT"
           echo "API deployment required: $changed"
 
+  audit-kakao-data:
+    name: Audit Kakao Data State
+    if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[audit-kakao-data]') }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/audit-kakao-data-state.yml
+
   probe-kakao-static-ports:
     name: Probe Kakao Static Ports
     if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[probe-static-ports]') }}
