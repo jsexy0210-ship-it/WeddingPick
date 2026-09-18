@@ -17,6 +17,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: weddingpick-kakao-vm-write
+  cancel-in-progress: false
+
 jobs:
   precheck:
     name: Verify API dependency
