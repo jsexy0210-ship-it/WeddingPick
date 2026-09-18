@@ -164,6 +164,10 @@ import {
   type WeddingFeedDetail,
   weddingFeedListResponseSchema,
   type WeddingFeedListResponse,
+  weddingFeedScrapListResponseSchema,
+  weddingFeedScrapStateSchema,
+  type WeddingFeedScrapListResponse,
+  type WeddingFeedScrapState,
 } from '@weddingpick/api-contract';
 import { z, type ZodType } from 'zod';
 
@@ -641,6 +645,26 @@ export async function getWeddingFeed(limit?: number): Promise<WeddingFeedListRes
 /** 웨딩피드 글 하나. 목록에 없는 본문이 여기 있다 — 공개된 글이 아니면 404다. */
 export async function getWeddingFeedPost(id: string): Promise<WeddingFeedDetail> {
   return request(`/v1/wedding-feed/${encodeURIComponent(id)}`, weddingFeedDetailSchema);
+}
+
+export async function listMyWeddingFeedScraps(): Promise<WeddingFeedScrapListResponse> {
+  return request('/v1/me/scraps', weddingFeedScrapListResponseSchema);
+}
+
+export async function getWeddingFeedScrapState(postId: string): Promise<WeddingFeedScrapState> {
+  return request(`/v1/me/scraps/${encodeURIComponent(postId)}`, weddingFeedScrapStateSchema);
+}
+
+export async function saveWeddingFeedScrap(postId: string): Promise<WeddingFeedScrapState> {
+  return request(`/v1/me/scraps/${encodeURIComponent(postId)}`, weddingFeedScrapStateSchema, {
+    method: 'PUT',
+  });
+}
+
+export async function removeWeddingFeedScrap(postId: string): Promise<WeddingFeedScrapState> {
+  return request(`/v1/me/scraps/${encodeURIComponent(postId)}`, weddingFeedScrapStateSchema, {
+    method: 'DELETE',
+  });
 }
 
 /**
