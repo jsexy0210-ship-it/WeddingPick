@@ -92,22 +92,42 @@ jobs:
             --wait 2200 \
             --out design-captures
 
-      - name: Capture design canon
+      - name: Capture design canon phone frames
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/design-canon.log 2>&1 &
           server_pid=$!
           trap 'kill $server_pid || true' EXIT
           sleep 2
-          playwright screenshot \
-            --viewport-size=390,844 \
-            --full-page \
-            http://127.0.0.1:4173/docs/design/figma-export/01-home.dc.html \
-            design-captures/canon-home.png
-          playwright screenshot \
-            --viewport-size=390,844 \
-            --full-page \
-            http://127.0.0.1:4173/docs/design/figma-export/08-recommendations.dc.html \
-            design-captures/canon-recommendations.png
+          NODE_PATH="$(npm root -g)" node <<'NODE'
+          const { chromium } = require('playwright');
+
+          const cases = [
+            ['http://127.0.0.1:4173/docs/design/figma-export/01-home.dc.html', 'design-captures/canon-home.png'],
+            ['http://127.0.0.1:4173/docs/design/figma-export/08-recommendations.dc.html', 'design-captures/canon-recommendations.png'],
+          ];
+
+          const browser = await chromium.launch();
+          try {
+            const page = await browser.newPage({ viewport: { width: 1600, height: 1200 } });
+            for (const [url, output] of cases) {
+              await page.goto(url, { waitUntil: 'networkidle' });
+              await page.waitForTimeout(1000);
+              const divs = await page.locator('div').elementHandles();
+              let phone = null;
+              for (const div of divs) {
+                const box = await div.boundingBox();
+                if (box && Math.abs(box.width - 430) < 2 && Math.abs(box.height - 932) < 2) {
+                  phone = div;
+                  break;
+                }
+              }
+              if (!phone) throw new Error(`430x932 canon phone not found: ${url}`);
+              await phone.screenshot({ path: output });
+            }
+          } finally {
+            await browser.close();
+          }
+          NODE
 
       - name: Upload design captures
         if: always()
