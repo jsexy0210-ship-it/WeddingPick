@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { AuthProvider } from '@weddingpick/api-contract';
 import { SocialColors } from '@weddingpick/ui';
 import { AuthRequest, ResponseType, makeRedirectUri } from 'expo-auth-session';
+import * as Crypto from 'expo-crypto';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
@@ -115,9 +116,12 @@ export async function signInWithApple(
   options: { ageAcknowledged?: boolean } = {}
 ): Promise<SessionEntry | null> {
   const AppleAuthentication = await import('expo-apple-authentication');
+  const nonceBytes = await Crypto.getRandomBytesAsync(32);
+  const nonce = Array.from(nonceBytes, (value) => value.toString(16).padStart(2, '0')).join('');
   let credential: Awaited<ReturnType<typeof AppleAuthentication.signInAsync>>;
   try {
     credential = await AppleAuthentication.signInAsync({
+      nonce,
       requestedScopes: [
         AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
         AppleAuthentication.AppleAuthenticationScope.EMAIL,
@@ -128,7 +132,13 @@ export async function signInWithApple(
     throw new Error(APPLE_FAILED);
   }
   if (!credential.identityToken) throw new Error(APPLE_FAILED);
-  return signIn('apple', credential.identityToken, appleProfileName(credential.fullName), options.ageAcknowledged);
+  return signIn(
+    'apple',
+    credential.identityToken,
+    appleProfileName(credential.fullName),
+    options.ageAcknowledged,
+    nonce
+  );
 }
 
 function isAppleCancel(caught: unknown): boolean {

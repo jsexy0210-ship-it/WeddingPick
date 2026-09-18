@@ -30,6 +30,8 @@ export const createSessionRequestSchema = z.union([
     idToken: z.string().min(1),
     /** Apple이 최초 인증 때 토큰 밖에서 한 번만 주는 이름. */
     profileName: z.string().trim().min(1).max(100).optional(),
+    /** Apple 요청과 id_token을 묶는 단일사용 nonce. 실제 Apple 제공자는 필수로 검증한다. */
+    nonce: z.string().min(16).max(512).optional(),
     ageAcknowledged,
   }),
   z.object({
