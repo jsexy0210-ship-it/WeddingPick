@@ -1,0 +1,93 @@
+name: Validate product integration batch
+
+on:
+  push:
+    branches:
+      - 'chatgpt/product-batch-auth-search-reviews-20260918'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-product-batch-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: weddingpick
+          POSTGRES_PASSWORD: weddingpick
+          POSTGRES_DB: weddingpick_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgres://weddingpick:weddingpick@localhost:5432/weddingpick_test
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Workspace typecheck
+        run: npm run typecheck
+      - name: Repository lint
+        run: npm run lint
+      - name: Auth and root harnesses
+        run: |
+          npm run test:auth-hardening
+          npm run test:web-shell-auth
+          npm run test:root-entry
+      - name: Non-API workspace tests
+        run: |
+          npm run test --workspace @weddingpick/mobile
+          npm run test --workspace @weddingpick/web
+          npm run test --workspace @weddingpick/api-contract
+          npm run test --workspace @weddingpick/db
+          npm run test --workspace @weddingpick/domain
+      - name: Expo web export
+        run: npm run export:web --workspace @weddingpick/mobile
+
+  api-tests:
+    name: API regression (${{ matrix.shard }}/2)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: weddingpick
+          POSTGRES_PASSWORD: weddingpick
+          POSTGRES_DB: weddingpick_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgres://weddingpick:weddingpick@localhost:5432/weddingpick_test
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run API shard
+        run: npm run test --workspace @weddingpick/api -- --shard=${{ matrix.shard }}/2
