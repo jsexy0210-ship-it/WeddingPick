@@ -1,72 +1,111 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "updatedDate": "2026-09-18",
   "pr": 273,
   "branch": "claude/overhaul-lounge-my",
-  "previousHead": "74fbe1dd19145c4c5b04f2a34ed3faaaf4580d87",
-  "implementationCommit": "93ed5463a734cb779787660880f9907f30049270",
-  "integrationMain": "a3b65fa1d0175b19332f138f8e5c72ce38d24b7e",
-  "integrationTreeEvidence": "df3672a7401c3874443a3543870e4ec8fa1650ee",
-  "status": "draft-targeted-checks-passed-full-product-unverified",
+  "previousHead": "08c36d4bbaba736b67fb8e386a50e3bc843cc758",
+  "implementationCommit": "6aeafef2d14f4a5171450f390a466a60f54448ac",
+  "integrationMain": "44eb6a9a09c09276968a6dd885183a7650cf18fa",
+  "testedProductTree": "e73bdb655b6d8cec712f88facea90d6b93593e97",
+  "status": "draft-full-ci-passed-targeted-visual-review-full-design-incomplete",
   "execution": {
-    "mode": "direct implementation and local targeted verification",
+    "mode": "direct implementation with isolated GitHub Actions and real Chromium",
     "subagentsStarted": 0,
-    "reason": "Available connected tools do not expose a multi-coding-agent launcher. Plugin discovery did not provide a connected launcher. No background agent execution is claimed.",
-    "productionChanged": false
+    "copilotIssue": 296,
+    "copilotResult": "Assignment accepted but session start rejected for insufficient GitHub AI Credits; no active agent and no budget change",
+    "remoteDesktopCommander": "Connection suggested; owner authorization not completed",
+    "validationBranch": "codex/design-validation-20260918-273",
+    "validationSupportExcludedFromProduct": [".design-validation/", ".github/workflows/design-validation-isolated.yml", ".github/workflows/design-visual-isolated.yml"],
+    "productionChanged": false,
+    "productionDatabaseUsed": false,
+    "productionSecretsUsed": false,
+    "newSubscriptionPurchased": false
   },
   "canon": {
     "rules": "docs/design/README.md",
     "numbers": "docs/design/handoff/tokens.json",
     "shapes": "docs/design/figma-export/",
-    "exceptions": ["Pretendard", "gutter 24", "Kakao + Apple", "home/search/Pick/wedding/MY"]
+    "exceptions": ["Pretendard", "gutter 24", "Kakao + Apple", "home/search/Pick/wedding/MY"],
+    "inventoryAudit": {
+      "source": "docs/design/handoff/screens.json",
+      "listedIds": 208,
+      "uniqueIds": 208,
+      "listedExclusions": 16,
+      "remainingListedIds": 192,
+      "exclusionMissingFromList": ["WP-SHT-001-old"],
+      "note": "Metadata totals 189/202/186 disagree with the list. IDs include assets/navigation/state variants and are not all separate app routes. No completion percentage is inferred."
+    }
   },
   "implementedThisPass": [
-    "Browser-native alert/confirm replacement using the existing confirmAlert import and platform-specific web module",
-    "Web A/B/C/E dialogs: FIFO, cancel-left, danger last in action lists, caller-provided impact bullets, focus and scroll restoration",
-    "Duplicate/stale clicks and actions belonging to a previous URL blocked before execution",
-    "Old WebView fallback including showModal failure, keyboard containment, background inert/aria-hidden restoration",
-    "Pretendard restored as the first web CSS font choice without adding or sharing font assets",
-    "Current-main split-admin-dist.mjs retained byte-for-byte: Kakao administrator origin, WEDDINGPICK_DIST_DIR, fonts",
-    "Existing font regression made independent of comment wording and confined to disposable fixture paths",
-    "Node queue tests connected to existing API Jest; no new workflow triggers or runtime dependencies"
+    "Home: at most four pending preparation cards, excluding completed categories and promoting subsequent categories",
+    "Home: separate budget summary, zero/invalid budget and overspend handling, no duplicate hero budget",
+    "Home: persistent lounge entry even with empty content, separate loading/failure/empty states",
+    "Recommendations: distinguish response failure, insufficient information and all-preparations-complete; retain retry/search/wedding-note actions",
+    "Home/recommendations: focus reload, request generations and candidate refresh; correct D-DAY/D+ display",
+    "Recommendation cards: real proof caption/count and server-provided reason; no sparse-data guide-price replacement; prevent Pick click from opening detail",
+    "Canonical values: gutter/pageX/grid 24, two/three-column formulas, control radius 6",
+    "CI-discovered fixes: picking state, actual rendered text rather than SVG coordinates, file-local Node test types, inquiries fixture contract"
+  ],
+  "preservedEarlierWork": [
+    "Claude lounge/MY/profile/report designs and public feed detail integration from PR 271",
+    "Root-only tab bar and feed request lifetime/depth-back handling",
+    "Browser confirmation A/B/C/E queue, stale action protection, focus/scroll restore and Pretendard CSS",
+    "Pinned main deployment/worker/image/vendor-admin changes; no rollback of infrastructure work",
+    "Prior implementation and targeted-verification history remains in Git and docs/sync/design-recovery-2026-09-18.md"
   ],
   "verification": {
-    "queue": {"passed": 14, "failed": 0, "command": "node --test scripts/verify-confirmation-queue.cjs", "executed": true},
-    "browser": {"passed": 14, "failed": 0, "engine": "Chromium", "mode": "offline about:blank DOM with actual transpiled modules and verified canonical token subset"},
-    "filesystem": {"passed": 5, "failed": 0, "mode": "modified splitFixture and five existing cases extracted from verify-design-recovery.cjs; actual Node subprocesses and temporary directories"},
-    "isolatedStrictTypecheck": {"modules": 2, "strict": true, "noUncheckedIndexedAccess": true, "jsonFixtures": "verified canonical properties used by these modules"},
-    "node": "22.16.0",
-    "typescript": "5.8.3",
-    "previous45TestsFullyRerun": false,
-    "fullJest": false,
-    "fullWorkspaceTypecheck": false,
-    "expoBundle": false,
+    "runId": 35310626253,
+    "validationSha": "97b484b6914575811ca64a95ea1a1c3e1d64961b",
+    "fullWorkspaceTypecheck": true,
+    "lint": true,
+    "copyRules": true,
+    "seedTokens": true,
+    "expoWebExport": true,
+    "fullJest": true,
+    "workspaces": {
+      "api": {"suites": 99, "tests": 1174, "failed": 0, "shards": 3},
+      "mobile": {"suites": 37, "tests": 375, "failed": 0},
+      "domain": {"suites": 66, "tests": 991, "failed": 0},
+      "web": {"suites": 9, "tests": 73, "failed": 0},
+      "api-contract": {"suites": 2, "tests": 49, "failed": 0},
+      "db": {"suites": 2, "tests": 89, "failed": 0}
+    },
+    "total": {"suites": 215, "tests": 2751, "failed": 0},
+    "environment": "Ubuntu GitHub runner, Node 22, npm ci using repository lockfile, disposable PostgreSQL 16",
+    "sourceBinding": "Successful CI stored 46 product-delta Git blobs; all 46 match local file hashes. Product tree reconstructed on pinned main. Only this status document changes after code tests.",
+    "testCounting": "Final run only; original Claude reports and earlier isolated counts are not added. Existing Jest --forceExit does not prove absence of open handles.",
+    "visual": {
+      "runs": [35310726726, 35311149312],
+      "engine": "Chromium via Playwright 1.57.0",
+      "mode": "Actual Expo web bundle with fixture API interception and blocked production access",
+      "screens": ["home", "recommendations", "search", "Pick", "wedding-note", "MY", "profile", "lounge-review", "lounge-feed", "login", "vendor-detail"],
+      "viewports": ["390x844", "320x740"],
+      "notes": [
+        "Initial home capture was covered by the benefit sheet; followup used the real dismiss action",
+        "Initial dynamic vendor URL returned capture-server 404; followup added SPA fallback to the temporary fixture server only and rendered vendor detail successfully",
+        "Expanded home capture changes scroll layout for diagnostics and is not native/full-canvas pixel evidence",
+        "Targeted visual review and successful rendering are not complete pixel parity or full end-to-end interaction verification"
+      ]
+    },
     "liveProviderLogin": false,
     "nativeDevices": false,
-    "limits": [
-      "Direct clone and npm registry access failed at DNS resolution; no dependency installation or full app build succeeded",
-      "Offline browser checks are component checks, not an Expo app, live origin, device, or full-canvas comparison",
-      "Native Alert forwards to the existing SDK; native behavior was not tested on a device",
-      "D input sheets and F toasts remain separate; this is not a cross-component six-type global queue",
-      "All destructive callers have not been audited for complete impact wording; the wrapper does not invent consequences",
-      "The current main integration tree is a textual merge, not evidence of full CI success"
-    ]
+    "fullCanonPixelParity": false
   },
   "designCoverage": [
-    {"group": "01-home", "status": "pending", "remaining": "Latest structural redesign, four pending schedule cards, budget area, persistent lounge entry and same-state visual comparison"},
-    {"group": "02-search", "status": "pending-verification", "remaining": "Full latest-canon and state comparison; root-only tab visibility came from the previous pass"},
-    {"group": "03-pick", "status": "pending-verification", "remaining": "Comparison, state, long text and layout review against latest canon"},
-    {"group": "04-wedding-note", "status": "pending-verification", "remaining": "Calendar, budget and consultation flow review against latest canon"},
-    {"group": "05-vendor-detail", "status": "pending-verification", "remaining": "Tabs, price/response rules, images and actions review against latest canon"},
-    {"group": "06-onboarding-login", "status": "pending-verification", "remaining": "Latest visual and real-provider checks; authentication PR 274 remains separate"},
-    {"group": "07-lounge-my", "status": "partially-integrated", "remaining": "Whole-review API/filter, scrapbook persistence, profile layout differences and full app visual/API checks"},
-    {"group": "08-recommendations", "status": "pending", "remaining": "Latest recommendation screen and all-decided/empty state verification"},
-    {"group": "09-dialogs", "status": "web-ABCE-targeted-tests-passed", "remaining": "Whole-call-site wording audit, app/web/native integration, D/F coordination and pixel comparison"}
+    {"group": "01-home", "status": "structure-and-states-implemented-ci-passed", "remaining": "Exact canonical shape/typography/category icons and all data states; screenshots are fixture states"},
+    {"group": "02-search", "status": "captured-not-completely-verified", "remaining": "Full latest-canon filtering, states and interactions"},
+    {"group": "03-pick", "status": "captured-not-completely-verified", "remaining": "Comparison/decision flows, long content and complete visual parity"},
+    {"group": "04-wedding-note", "status": "captured-not-completely-verified", "remaining": "Calendar/budget/consultation interactions and full canonical parity"},
+    {"group": "05-vendor-detail", "status": "dynamic-route-render-verified-with-fixtures", "remaining": "All tabs/actions, real data and canonical parity"},
+    {"group": "06-onboarding-login", "status": "login-captured-provider-unverified", "remaining": "Full onboarding and real Kakao/Apple/device verification; PR 274 separate"},
+    {"group": "07-lounge-my", "status": "integrated-ci-passed-captured", "remaining": "Global review API/filter, scrapbook persistence, profile layout discrepancies; issue 296 agent did not start"},
+    {"group": "08-recommendations", "status": "state-and-card-fixes-ci-passed", "remaining": "All canonical shapes/data states and full end-to-end comparison/decision flow"},
+    {"group": "09-dialogs", "status": "web-ABCE-included-in-passing-ci", "remaining": "Destructive-call impact wording audit, native behavior, D/F coordination and full pixel parity"}
   ],
-  "crossCuttingRemaining": [
-    "spec/tokens.json pageX and grid.gutter 20 versus approved 24 remain to reconcile",
-    "Full typecheck/lint/Jest, disposable DB, web export and actual Android/iOS verification",
-    "Authentication PR 274 integration and old WebView compatibility/rollback checks",
-    "No overall 190-screen completion, deployment success, or lossless verification claim"
+  "releaseBlockers": [
+    "Remaining product functions and complete nine-group canonical verification are not complete",
+    "Authentication PR 274 integration, legacy WebView compatibility and rollback need separate validation",
+    "Real provider login and Android/iOS device testing not performed",
+    "Any main changes after pinned 44eb6a9 require a new integration review before release"
   ]
 }
