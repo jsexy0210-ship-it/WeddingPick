@@ -1,0 +1,49 @@
+name: Validate runner repair workflow
+
+on:
+  push:
+    branches:
+      - chatgpt/runner-restart-diagnostics-20260918
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: Parse YAML and extract embedded scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          ruby -ryaml -e '
+            d = YAML.load_file(".github/workflows/repair-kakao-runner.yml")
+            jobs = d.fetch("jobs")
+            repair = jobs.fetch("repair").fetch("steps").find { |s| s["id"] == "repair" }
+            File.write("/tmp/repair.js", repair.fetch("with").fetch("script"))
+            jobs.each do |job_name, job|
+              Array(job["steps"]).each_with_index do |step, i|
+                next unless step["run"]
+                File.write("/tmp/#{job_name}-#{i}.sh", step["run"])
+              end
+            end
+          '
+      - name: Check embedded JavaScript syntax
+        run: node --check /tmp/repair.js
+      - name: Check shell block syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in /tmp/restart-window-*.sh /tmp/verify-restart-*.sh; do
+            [ -e "$f" ] || continue
+            bash -n "$f"
+          done
+      - name: Check diagnostic guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F "restartLogPath" .github/workflows/repair-kakao-runner.yml
+          grep -F "sleep 30" .github/workflows/repair-kakao-runner.yml
+          grep -F 'cat "$restart_log"' .github/workflows/repair-kakao-runner.yml
