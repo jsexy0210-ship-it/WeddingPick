@@ -9,6 +9,7 @@ permissions:
 jobs:
   publish:
     name: Publish admin and website preview routes
+    environment: production
     runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
     timeout-minutes: 10
     steps:
