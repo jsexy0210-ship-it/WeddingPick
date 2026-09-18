@@ -27,6 +27,7 @@ jobs:
           git config user.email 'noreply@users.noreply.github.com'
           git merge --no-commit --no-ff "$INTEGRATION_MAIN"
           python .design-validation/apply.py
+          python .design-validation/fixups.py
           git diff --check
       - uses: actions/setup-node@v4
         with:
@@ -78,11 +79,19 @@ jobs:
   tests:
     if: contains(github.event.head_commit.message, '[verify-design]')
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
-        workspace: [api, mobile, domain, web, api-contract, db]
+        include:
+          - { workspace: api, shard: '1/3', label: api-1 }
+          - { workspace: api, shard: '2/3', label: api-2 }
+          - { workspace: api, shard: '3/3', label: api-3 }
+          - { workspace: mobile, shard: '1/1', label: mobile }
+          - { workspace: domain, shard: '1/1', label: domain }
+          - { workspace: web, shard: '1/1', label: web }
+          - { workspace: api-contract, shard: '1/1', label: api-contract }
+          - { workspace: db, shard: '1/1', label: db }
     services:
       postgres:
         image: postgres:16
@@ -92,7 +101,7 @@ jobs:
           POSTGRES_DB: weddingpick_test
         ports: ['5432:5432']
         options: >-
-          --health-cmd pg_isready --health-interval 10s
+          --health-cmd "pg_isready -U weddingpick -d weddingpick_test" --health-interval 10s
           --health-timeout 5s --health-retries 5
     steps:
       - uses: actions/checkout@v4
@@ -105,6 +114,7 @@ jobs:
           git config user.email 'noreply@users.noreply.github.com'
           git merge --no-commit --no-ff "$INTEGRATION_MAIN"
           python .design-validation/apply.py
+          python .design-validation/fixups.py
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -113,13 +123,13 @@ jobs:
       - name: Test workspace with disposable database
         run: |
           set -o pipefail
-          npm test --workspace '@weddingpick/${{ matrix.workspace }}' 2>&1 | tee "$RUNNER_TEMP/tests-${{ matrix.workspace }}.log"
+          npm test --workspace '@weddingpick/${{ matrix.workspace }}' -- --shard='${{ matrix.shard }}' 2>&1 | tee "$RUNNER_TEMP/tests-${{ matrix.label }}.log"
       - name: Preserve test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: design-test-${{ matrix.workspace }}
-          path: ${{ runner.temp }}/tests-${{ matrix.workspace }}.log
+          name: design-test-${{ matrix.label }}
+          path: ${{ runner.temp }}/tests-${{ matrix.label }}.log
           retention-days: 1
           if-no-files-found: warn
   tested-objects:
@@ -139,6 +149,7 @@ jobs:
           git config user.email 'noreply@users.noreply.github.com'
           git merge --no-commit --no-ff "$INTEGRATION_MAIN"
           python .design-validation/apply.py
+          python .design-validation/fixups.py
           python - <<'PY'
           import json,subprocess
           paths=[entry['path'] for entry in json.load(open('.design-validation/manifest.json'))]
@@ -149,7 +160,6 @@ jobs:
         with:
           script: |
             const fs=require('node:fs'), cp=require('node:child_process'), crypto=require('node:crypto');
-            const root=process.env.GITHUB_WORKSPACE;
             const paths=cp.execFileSync('git',['diff','--name-only',process.env.INTEGRATION_MAIN],{encoding:'utf8'}).trim().split('\n').filter(Boolean);
             const entries=[];
             for(const path of paths){
