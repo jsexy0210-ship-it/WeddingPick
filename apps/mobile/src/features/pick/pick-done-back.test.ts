@@ -20,6 +20,11 @@ const source = readFileSync(
   .replace(/\/\*[\s\S]*?\*\//g, ' ')
   .replace(/(^|[^:])\/\/.*$/gm, '$1');
 
+const layoutSource = readFileSync(
+  join(ROOT, 'apps', 'mobile', 'src', 'app', '(tabs)', 'pick', '_layout.tsx'),
+  'utf8'
+);
+
 describe('결정 완료 뒤로가기', () => {
   it('상단 Back UI를 두지 않는다', () => {
     expect(source).not.toContain("components/back-bar");
@@ -28,6 +33,10 @@ describe('결정 완료 뒤로가기', () => {
 
   it('안드로이드 물리 back을 소비한다', () => {
     expect(source).toContain("BackHandler.addEventListener('hardwareBackPress', () => true)");
+  });
+
+  it('iOS back swipe도 막는다', () => {
+    expect(layoutSource).toContain('<Stack.Screen name="done" options={{ gestureEnabled: false }} />');
   });
 
   it('완료 후 지출 입력 진입을 유지한다', () => {
