@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
 import {
@@ -25,9 +26,6 @@ function usesNativeSecureStore(): boolean {
   return Platform.OS !== 'web' && !isWebShellSession();
 }
 
-async function secureStore() {
-  return await import('expo-secure-store');
-}
 
 /**
  * 기존 앱이 AsyncStorage에 보관하던 네이티브 세션을 한 번만 SecureStore로 옮긴다.
@@ -37,14 +35,13 @@ async function secureStore() {
  * 다음 실행에서 다시 이관하는 편이 안전하다.
  */
 async function readNativeToken(): Promise<string | null> {
-  const store = await secureStore();
-  const secured = await store.getItemAsync(STORAGE_KEY);
+  const secured = await SecureStore.getItemAsync(STORAGE_KEY);
   if (secured !== null) return secured;
 
   const legacy = await AsyncStorage.getItem(STORAGE_KEY);
   if (legacy === null) return null;
 
-  await store.setItemAsync(STORAGE_KEY, legacy);
+  await SecureStore.setItemAsync(STORAGE_KEY, legacy);
   await AsyncStorage.removeItem(STORAGE_KEY);
   return legacy;
 }
@@ -86,8 +83,7 @@ export async function saveToken(token: string): Promise<void> {
 
   await serial(async () => {
     if (usesNativeSecureStore()) {
-      const store = await secureStore();
-      await store.setItemAsync(STORAGE_KEY, token);
+      await SecureStore.setItemAsync(STORAGE_KEY, token);
       // 새 저장이 성공한 뒤에만 구 저장소 사본을 없앤다.
       await AsyncStorage.removeItem(STORAGE_KEY);
     } else {
@@ -117,8 +113,7 @@ export async function wipeDevice(): Promise<void> {
     if (isWebShellSession()) {
       clearWebShellToken();
     } else if (usesNativeSecureStore()) {
-      const store = await secureStore();
-      await store.deleteItemAsync(STORAGE_KEY);
+      await SecureStore.deleteItemAsync(STORAGE_KEY);
     }
 
     const keys = (await AsyncStorage.getAllKeys()).filter((key) => key.startsWith('weddingpick.'));
