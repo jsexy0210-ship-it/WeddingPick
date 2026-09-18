@@ -1,0 +1,19 @@
+name: Validate PR404
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    if: github.head_ref == 'chatgpt/kakao-vm-concurrency-favicon-20260918'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - run: node --test scripts/verification/kakao-vm-concurrency-favicon.test.mjs
