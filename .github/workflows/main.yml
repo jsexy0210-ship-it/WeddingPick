@@ -235,9 +235,17 @@ jobs:
       actions: read
     uses: ./.github/workflows/stage-kakao-static.yml
 
+  repair-kakao-runner:
+    name: Repair Kakao Runner
+    needs: [ci]
+    if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message || '', '[skip-api-deploy]') }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/repair-kakao-runner.yml
+
   api-deploy-needed:
     name: Detect Kakao API catch-up
-    needs: [ci]
+    needs: [ci, repair-kakao-runner]
     if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message || '', '[skip-api-deploy]') }}
     runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
     timeout-minutes: 5
@@ -268,17 +276,9 @@ jobs:
           echo "Live API revision: ${live_revision:-unknown}"
           echo "API catch-up required: $changed"
 
-  repair-kakao-runner:
-    name: Repair Kakao Runner
-    needs: [ci, api-deploy-needed]
-    if: ${{ needs.api-deploy-needed.outputs.changed == 'true' }}
-    permissions:
-      contents: read
-    uses: ./.github/workflows/repair-kakao-runner.yml
-
   deploy-kakao:
     name: KakaoCloud API
-    needs: [ci, api-deploy-needed, repair-kakao-runner]
+    needs: [ci, repair-kakao-runner, api-deploy-needed]
     if: ${{ needs.api-deploy-needed.outputs.changed == 'true' }}
     permissions:
       contents: read
