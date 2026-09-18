@@ -16,7 +16,7 @@ import { WEB_SHELL_URL } from './webshell/config';
  * 하이브리드 웹뷰 쉘이 이미 쓰는 이 export의 배포 주소이고(`features/webshell/config.ts`),
  * 값이 없는 로컬·프리뷰 빌드에서는 운영 주소로 대신한다.
  */
-const APP_WEB_ORIGIN_FALLBACK = 'https://weddingpick-app-web.onrender.com';
+const APP_WEB_ORIGIN_FALLBACK = 'https://210.109.82.212';
 
 export const APP_WEB_ORIGIN = (WEB_SHELL_URL || APP_WEB_ORIGIN_FALLBACK).replace(/\/+$/, '');
 

@@ -1,42 +1,27 @@
-# 테스트용 안드로이드 APK.
-#
-# 검수 흐름:
-#   1. 여기서 APK 만든다 → 폰에서 확인
-#   2. 확인 완료되면 EAS 빌드 (스토어 배포용)
-#
-# Actions 탭 → "Android APK" → Run workflow.
-# 완료되면 실행 화면 하단 Artifacts에 APK zip이 붙는다.
+# 테스트용 안드로이드 APK. 스토어 배포용 EAS 빌드와 분리한다.
 name: Android APK
 
 on:
   workflow_dispatch:
     inputs:
       api_url:
-        description: >-
-          앱이 붙을 API 주소 (예: https://api.example.com).
-          비워두면 서버에 붙지 않는 빌드가 된다.
+        description: 앱이 붙을 API 주소
         required: false
-        default: 'https://weddingpickl-sg.onrender.com'
+        default: 'https://210.109.82.212'
 
 jobs:
   apk:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-
-      # AGP 8.x가 요구하는 JDK.
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
-
-      # Gradle 의존성·빌드 캐시. 캐시 히트 시 빌드 시간 38분 → 5분대로 줄어든다.
       - name: Cache Gradle
         uses: actions/cache@v4
         with:
@@ -45,25 +30,19 @@ jobs:
             ~/.gradle/wrapper
           key: gradle-${{ hashFiles('apps/mobile/android/**/*.gradle*', 'apps/mobile/android/**/gradle-wrapper.properties') }}
           restore-keys: gradle-
-
       - run: npm ci
-
-      # 네이티브 프로젝트는 레포에 두지 않는다(.gitignore). 빌드할 때 만든다.
       - name: Prebuild
         working-directory: apps/mobile
         run: npx expo prebuild --platform android --no-install
-
-      # 릴리스 서명은 Expo 템플릿의 디버그 키로 한다. 테스트용.
       - name: Assemble
         working-directory: apps/mobile/android
         env:
           EXPO_PUBLIC_API_URL: ${{ inputs.api_url }}
-          # 운영/스테이징과 동일한 공개 OAuth 설정을 APK에도 주입한다.
           EXPO_PUBLIC_KAKAO_CLIENT_ID: 73d13d819afd9d14f20de20b8dff46b8
           EXPO_PUBLIC_GOOGLE_CLIENT_ID: 595165026523-dd5s0fqtle78e03mb34m9iaclpdmlb9r.apps.googleusercontent.com
           EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID: 595165026523-3mlcq960r5q174h6chun8mommjkpt0qi.apps.googleusercontent.com
           EXPO_PUBLIC_NAVER_CLIENT_ID: tgp4WVYlYO_qd2nyvHug
-          # 네이버 콘솔에는 HTTPS callback만 등록하고, 서버가 앱 scheme으로 재전달한다.
+          # 기존 OAuth 등록값은 배포 주소가 아니다. 제공자 전환 검증 전까지 보존한다.
           EXPO_PUBLIC_NAVER_REDIRECT_URI: https://weddingpickl-sg.onrender.com/v1/auth/naver/callback
         run: >-
           ./gradlew assembleRelease
@@ -71,7 +50,6 @@ jobs:
           --no-daemon
           --max-workers=2
           -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"
-
       - uses: actions/upload-artifact@v4
         with:
           name: weddingpick-apk

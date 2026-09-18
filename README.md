@@ -36,8 +36,9 @@ npm run build --workspace @weddingpick/web
 
 ## 운영 주소
 
-- 앱·관리자: [앱 웹](https://weddingpick-app-web.onrender.com), [관리자](https://weddingpick-app-web.onrender.com/admin)
-- 웹사이트: [웨딩픽 웹사이트](https://weddingpick-web.onrender.com)
-- API: `https://weddingpickl.onrender.com`
+- 앱 웹: [weddingpick-app-web.onrender.com](https://weddingpick-app-web.onrender.com)
+- 관리자: [weddingpick-admin.onrender.com/admin](https://weddingpick-admin.onrender.com/admin)
+- 웹사이트: [weddingpick-web.onrender.com](https://weddingpick-web.onrender.com)
+- API: `https://210.109.82.212` (KakaoCloud)
 
 `weddingpick.kr`은 **폐기했다**(2026-09-11 대표 지시). 2026-09-10의 「보유하되 미사용」을 뒤집은 결정이다. 다시 붙이자고 제안하지 않는다.

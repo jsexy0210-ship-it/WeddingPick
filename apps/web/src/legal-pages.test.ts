@@ -80,14 +80,12 @@ describe('공개 법적 문서', () => {
     const row = (needle: string) =>
       table!.split('</tr>').find(part => part.includes(needle)) ?? '';
 
-    for (const vendor of ['neon.tech', 'privacy@render.com']) {
-      expect(row(vendor)).toContain('싱가포르');
-      expect(row(vendor)).not.toContain('미국 ·');
-    }
-    expect(row('privacy@render.com')).toContain('싱가포르(운영 API 및 백그라운드 처리)');
-    expect(row('privacy@render.com')).toContain('전 세계(정적 웹 전송망');
-    // 미국에 남은 API·워커는 없다. 지운 것을 방침이 계속 적고 있으면 그것도 틀린 고지다.
-    expect(row('privacy@render.com')).not.toContain('기존 API');
+    expect(row('neon.tech')).toContain('싱가포르');
+    expect(row('neon.tech')).not.toContain('미국 ·');
+
+    // Render는 운영·정적 호스팅 모두 폐기한다. 국외 이전 표에 남아 있으면 현재 사실과 어긋난다.
+    expect(table).not.toContain('privacy@render.com');
+    expect(table).not.toContain('Render Services');
     expect(row('650 Industries')).toContain('미국 ·');
     /*
      * 자료 분석·상담 녹음 정리의 수탁자를 Anthropic에서 Google로 바꿨다(2026-09-14 대표 결정).
@@ -116,6 +114,8 @@ describe('공개 법적 문서', () => {
     expect(row('Google LLC')).toContain('상담 녹음');
 
     expect(html).toContain('이전받는 자의 사업자 소재지와 다를 수 있습니다');
-    expect(html).toContain('이 처리방침 시행일부터 Render의 운영 API와 Neon의 정보 저장소는 싱가포르 리전을 사용하며');
+    expect(html).toContain('Neon의 정보 저장소는 싱가포르 리전을 사용합니다');
+    expect(html).toContain('KakaoCloud의 서비스 서버·정적 웹·Object Storage는 국내 인프라에서 운영되므로');
+    expect(html).toContain('(주)카카오엔터프라이즈(KakaoCloud)');
   });
 });

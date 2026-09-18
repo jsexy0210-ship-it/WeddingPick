@@ -71,7 +71,11 @@ const ALLOWED = new Map<string, string>([
   ],
   [
     'POST /v1/admin/data/price-stats/:vendorId/recalc',
-    '아직 껍데기다(202 `{queued:true}`). 가격 통계는 다른 세션이 맡는다 — 붙는 날 이 줄을 지운다(2026-09-16 배정).',
+    '**껍데기가 아니라 실패를 돌려준다**(2026-09-16). 재 보니 다시 계산할 것 자체가 없었다 — 바로 위 `GET`이 읽을 때마다 새로 구하고, `stats.price_stats`는 표만 있고 쓰는 코드가 없다. DB를 안 보는 것이 맞다.',
+  ],
+  [
+    'POST /v1/admin/site-meta/publish',
+    '폐기한 배포는 인증 후 409 deployment_retired만 반환한다. 아래 소스 검사와 site-publish-retired.test.ts가 성공 응답·외부 호출·DB 변경을 막는다.',
   ],
 ]);
 
@@ -195,6 +199,13 @@ describe('관리자 쓰기 라우트는 하지 않은 일을 성공이라 하지
     }
 
     expect(stubs).toEqual([]);
+  });
+
+  it('폐기된 배포 예외는 인증 뒤 오류만 반환한다', () => {
+    const retired = routes.find((route) => route.method === 'POST' && route.path === '/v1/admin/site-meta/publish');
+    expect(retired).toBeDefined();
+    // 이 예외가 성공 응답이나 외부 호출을 숨기는 통로가 되지 않도록 핸들러 전체를 검사한다.
+    expect(retired!.body).toMatch(/^\s*['"]\/v1\/admin\/site-meta\/publish['"],\s*auth,\s*async\s*\(\s*\)\s*=>\s*\{\s*throw\s+new\s+ApiError\(\s*['"]conflict['"],\s*['"][^'"]+['"],\s*\{\s*reason:\s*['"]deployment_retired['"]\s*\}\s*,?\s*\);\s*\}\s*$/);
   });
 
   it('예외 목록이 실제로 있는 라우트만 가리킨다', () => {

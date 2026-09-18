@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { setTimeout as sleep } from 'node:timers/promises';
 
-// Render의 /health는 스키마가 밀려도 HTTP 200을 준다. 배포 관문은 본문까지 확인한다.
+// /health는 스키마가 밀려도 HTTP 200을 줄 수 있다. 배포 관문은 본문까지 확인한다.
 export function assertApiHealth(status, body, expectedMigrations) {
   if (status !== 200) throw new Error(`HTTP ${status}`);
   if (body?.ok !== true) throw new Error('ok가 true가 아니다');
@@ -58,7 +58,7 @@ export async function checkApiHealth({ api, expectedMigrations, attempts = 3,
 
 async function main() {
   const { values } = parseArgs({ options: {
-    api: { type: 'string', default: process.env.API ?? 'https://weddingpickl-sg.onrender.com' },
+    api: { type: 'string', default: process.env.API ?? 'https://210.109.82.212' },
     'migrations-dir': { type: 'string' },
     attempts: { type: 'string', default: '3' },
     'timeout-ms': { type: 'string', default: '90000' },

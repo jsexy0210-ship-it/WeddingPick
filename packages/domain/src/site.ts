@@ -1,8 +1,7 @@
 /**
  * 서비스 웹사이트 주소.
  *
- * 앱(약관 링크) · 웹(공유 메타) · 도메인(정책 문서 주소)이 전부 여기서 읽는다.
- * **weddingpick.kr은 폐기한다**(2026-09-11 대표 지시). 2026-09-10에 「보유하되 미사용」으로
- * 두었던 것을 뒤집은 결정이다. 다시 붙이자고 제안하지 않는다 — 아래 onrender 주소가 정본이다.
+ * Render는 2026-09-18부터 폐기 경로다. 공개 웹사이트·약관 정본은 KakaoCloud VM의
+ * 별도 HTTPS origin을 사용한다. 관리자와 사용자 앱도 서로 다른 origin을 유지한다.
  */
-export const SITE_ORIGIN = 'https://weddingpick-web.onrender.com';
+export const SITE_ORIGIN = 'https://210.109.82.212:9443';

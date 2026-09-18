@@ -1,23 +1,14 @@
-# 운영 데이터가 실제로 얼마나 모였는지 세기만 한다. 아무것도 바꾸지 않는다.
-#
-# 스키마가 어디까지 왔는지는 `DB Status`가 본다. 이것은 **내용물**을 본다 —
-# 업체 몇 곳, 이미지 몇 장, 그 중 대표로 쓸 수 있는 것은 몇 장인지.
-#
-# 출력은 집계 숫자와 상태 이름뿐이다. 업체명 · 이미지 URL · 이용자 정보는 찍지 않는다 —
-# 이 로그는 GitHub Actions에 남고, 남으면 지우기 어렵다.
+# 운영 데이터 집계와 공개 API 상태를 읽는다. DB나 배포 설정을 바꾸지 않는다.
 name: DB Inventory (읽기 전용)
 
 on:
   workflow_dispatch:
     inputs:
       target:
-        description: '어느 DB를 볼 것인가'
+        description: 어느 DB를 볼 것인가
         type: choice
         default: production
-        options:
-          - production
-          - default
-          - staging
+        options: [production, default, staging]
 
 permissions:
   contents: read
@@ -28,17 +19,13 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-
       - run: npm ci
-
       - name: 데이터 현황 조회
         env:
-          # 셋 다 넘기고 아래에서 고른다. 값 자체는 어디에도 찍지 않는다.
           PRODUCTION_DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
           DEFAULT_DATABASE_URL: ${{ secrets.DATABASE_URL }}
           STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
@@ -55,13 +42,5 @@ jobs:
           fi
           echo "대상: ${TARGET:-production}"
           npx tsx scripts/db-inventory.ts
-
-      # 운영 API가 **어느 DB를 보고 있는지** 가려내는 유일한 공개 신호.
-      # /health가 적용/기대 마이그레이션 개수를 알려주므로, 위 집계의 「적용된
-      # 마이그레이션」과 맞춰 보면 같은 DB인지 알 수 있다. 비밀은 오가지 않는다.
-      - name: 운영 API가 보는 스키마 (공개 /health)
-        run: |
-          echo "운영 API /health:"
-          curl -s --max-time 90 https://weddingpickl-sg.onrender.com/health \
-            | python3 -c 'import json,sys; d=json.load(sys.stdin); print("  database=", d.get("database"), " schema=", json.dumps(d.get("schema"), ensure_ascii=False))' \
-            || echo "  운영 API에 닿지 못했다"
+      - name: 운영 API 상태 확인 (읽기 전용)
+        run: node scripts/check-api-health.mjs --attempts 3 --timeout-ms 20000 --delay-ms 5000

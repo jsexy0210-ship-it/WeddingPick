@@ -1,0 +1,21 @@
+name: Audit Kakao Data State
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Read-only production counts
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Read production counts without IDs or secrets
+        shell: bash
+        run: bash ./scripts/audit-kakao-data-state.sh

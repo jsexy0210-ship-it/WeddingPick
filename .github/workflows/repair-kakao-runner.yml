@@ -1,0 +1,82 @@
+name: Repair Kakao Runner
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  repair:
+    name: Repair self-hosted runner
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 5
+    steps:
+      - name: Repair runner work directory and restart
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const { spawn } = require('child_process');
+
+            const runnerRoot = '/home/ubuntu/actions-runner';
+            const configPath = runnerRoot + '/.runner';
+            const tempPath = configPath + '.repair';
+            const markerPath = runnerRoot + '/.runner-restart-needed';
+
+            if (!fs.existsSync(configPath)) {
+              core.setFailed('Runner configuration was not found: ' + configPath);
+              return;
+            }
+
+            const stat = fs.statSync(configPath);
+            const raw = fs.readFileSync(configPath, 'utf8').replace(/^\uFEFF/, '');
+            const config = JSON.parse(raw);
+            const before = String(config.workFolder || '');
+            const markerExists = fs.existsSync(markerPath);
+            core.info('Current runner workFolder: ' + before);
+
+            if (before !== '_work') {
+              if (!before.includes('svc.sh')) {
+                core.setFailed('Unexpected workFolder; refusing to overwrite: ' + before);
+                return;
+              }
+
+              config.workFolder = '_work';
+              fs.writeFileSync(tempPath, JSON.stringify(config, null, 2) + '\n', {
+                mode: stat.mode & 0o777
+              });
+              fs.chmodSync(tempPath, stat.mode & 0o777);
+              fs.renameSync(tempPath, configPath);
+              fs.writeFileSync(markerPath, 'restart required\n', { mode: 0o600 });
+              core.info('Runner workFolder changed to _work.');
+            } else {
+              core.info('Runner workFolder is already correct.');
+            }
+
+            const needsRestart = before !== '_work' || markerExists;
+            if (!needsRestart) {
+              core.info('No runner restart is needed.');
+              return;
+            }
+
+            const env = { ...process.env };
+            delete env.RUNNER_TRACKING_ID;
+
+            const restartCommand =
+              'sleep 8; ' +
+              'sudo -n "' + runnerRoot + '/svc.sh" stop; ' +
+              'stop_status=$?; ' +
+              'sleep 2; ' +
+              'sudo -n "' + runnerRoot + '/svc.sh" start; ' +
+              'start_status=$?; ' +
+              'if [ "$stop_status" -eq 0 ] && [ "$start_status" -eq 0 ]; then rm -f "' + markerPath + '"; fi';
+
+            const child = spawn('/bin/bash', ['-lc', restartCommand], {
+              detached: true,
+              stdio: 'ignore',
+              env
+            });
+            child.unref();
+            core.info('Runner restart scheduled in 8 seconds.');

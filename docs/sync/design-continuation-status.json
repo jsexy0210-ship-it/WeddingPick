@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "updatedDate": "2026-09-18",
+  "pr": 273,
+  "branch": "claude/overhaul-lounge-my",
+  "previousHead": "74fbe1dd19145c4c5b04f2a34ed3faaaf4580d87",
+  "implementationCommit": "93ed5463a734cb779787660880f9907f30049270",
+  "integrationMain": "a3b65fa1d0175b19332f138f8e5c72ce38d24b7e",
+  "integrationTreeEvidence": "df3672a7401c3874443a3543870e4ec8fa1650ee",
+  "status": "draft-targeted-checks-passed-full-product-unverified",
+  "execution": {
+    "mode": "direct implementation and local targeted verification",
+    "subagentsStarted": 0,
+    "reason": "Available connected tools do not expose a multi-coding-agent launcher. Plugin discovery did not provide a connected launcher. No background agent execution is claimed.",
+    "productionChanged": false
+  },
+  "canon": {
+    "rules": "docs/design/README.md",
+    "numbers": "docs/design/handoff/tokens.json",
+    "shapes": "docs/design/figma-export/",
+    "exceptions": ["Pretendard", "gutter 24", "Kakao + Apple", "home/search/Pick/wedding/MY"]
+  },
+  "implementedThisPass": [
+    "Browser-native alert/confirm replacement using the existing confirmAlert import and platform-specific web module",
+    "Web A/B/C/E dialogs: FIFO, cancel-left, danger last in action lists, caller-provided impact bullets, focus and scroll restoration",
+    "Duplicate/stale clicks and actions belonging to a previous URL blocked before execution",
+    "Old WebView fallback including showModal failure, keyboard containment, background inert/aria-hidden restoration",
+    "Pretendard restored as the first web CSS font choice without adding or sharing font assets",
+    "Current-main split-admin-dist.mjs retained byte-for-byte: Kakao administrator origin, WEDDINGPICK_DIST_DIR, fonts",
+    "Existing font regression made independent of comment wording and confined to disposable fixture paths",
+    "Node queue tests connected to existing API Jest; no new workflow triggers or runtime dependencies"
+  ],
+  "verification": {
+    "queue": {"passed": 14, "failed": 0, "command": "node --test scripts/verify-confirmation-queue.cjs", "executed": true},
+    "browser": {"passed": 14, "failed": 0, "engine": "Chromium", "mode": "offline about:blank DOM with actual transpiled modules and verified canonical token subset"},
+    "filesystem": {"passed": 5, "failed": 0, "mode": "modified splitFixture and five existing cases extracted from verify-design-recovery.cjs; actual Node subprocesses and temporary directories"},
+    "isolatedStrictTypecheck": {"modules": 2, "strict": true, "noUncheckedIndexedAccess": true, "jsonFixtures": "verified canonical properties used by these modules"},
+    "node": "22.16.0",
+    "typescript": "5.8.3",
+    "previous45TestsFullyRerun": false,
+    "fullJest": false,
+    "fullWorkspaceTypecheck": false,
+    "expoBundle": false,
+    "liveProviderLogin": false,
+    "nativeDevices": false,
+    "limits": [
+      "Direct clone and npm registry access failed at DNS resolution; no dependency installation or full app build succeeded",
+      "Offline browser checks are component checks, not an Expo app, live origin, device, or full-canvas comparison",
+      "Native Alert forwards to the existing SDK; native behavior was not tested on a device",
+      "D input sheets and F toasts remain separate; this is not a cross-component six-type global queue",
+      "All destructive callers have not been audited for complete impact wording; the wrapper does not invent consequences",
+      "The current main integration tree is a textual merge, not evidence of full CI success"
+    ]
+  },
+  "designCoverage": [
+    {"group": "01-home", "status": "pending", "remaining": "Latest structural redesign, four pending schedule cards, budget area, persistent lounge entry and same-state visual comparison"},
+    {"group": "02-search", "status": "pending-verification", "remaining": "Full latest-canon and state comparison; root-only tab visibility came from the previous pass"},
+    {"group": "03-pick", "status": "pending-verification", "remaining": "Comparison, state, long text and layout review against latest canon"},
+    {"group": "04-wedding-note", "status": "pending-verification", "remaining": "Calendar, budget and consultation flow review against latest canon"},
+    {"group": "05-vendor-detail", "status": "pending-verification", "remaining": "Tabs, price/response rules, images and actions review against latest canon"},
+    {"group": "06-onboarding-login", "status": "pending-verification", "remaining": "Latest visual and real-provider checks; authentication PR 274 remains separate"},
+    {"group": "07-lounge-my", "status": "partially-integrated", "remaining": "Whole-review API/filter, scrapbook persistence, profile layout differences and full app visual/API checks"},
+    {"group": "08-recommendations", "status": "pending", "remaining": "Latest recommendation screen and all-decided/empty state verification"},
+    {"group": "09-dialogs", "status": "web-ABCE-targeted-tests-passed", "remaining": "Whole-call-site wording audit, app/web/native integration, D/F coordination and pixel comparison"}
+  ],
+  "crossCuttingRemaining": [
+    "spec/tokens.json pageX and grid.gutter 20 versus approved 24 remain to reconcile",
+    "Full typecheck/lint/Jest, disposable DB, web export and actual Android/iOS verification",
+    "Authentication PR 274 integration and old WebView compatibility/rollback checks",
+    "No overall 190-screen completion, deployment success, or lossless verification claim"
+  ]
+}

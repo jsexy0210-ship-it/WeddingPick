@@ -11,9 +11,9 @@ import { startWorkerLoops } from './worker-loops';
  * 때문이다(`index.ts`). 이 파일은 그 루프에 필요한 것(설정 · DB · 저장소)을
  * 만들어 넘기고 종료 신호를 잇는 껍데기다.
  *
- * **이 프로세스는 아직 어디에도 배포돼 있지 않다.** `render.yaml`에 워커
- * 서비스를 적어 뒀지만 Blueprint 동기화가 깨져 있어 사람이 대시보드에서
- * 만들어야 한다. 만들기 전까지 실제로 도는 것은 API 안쪽이다.
+ * 운영에서는 KakaoCloud VM의 별도 `weddingpick-worker` 컨테이너가 이 진입점을
+ * 사용한다. API 컨테이너는 `RUN_WORKER_IN_API=false`를 유지해 중복 루프를 막고,
+ * API 배포 시 `scripts/update-kakao-worker.sh`가 같은 이미지로 worker를 함께 갱신한다.
  */
 async function main() {
   const config = loadConfig();

@@ -129,15 +129,13 @@ function RootLayoutContent() {
    */
   const [inAppNotice] = useState(escapeInAppBrowser);
   const redirected = useRef(false);
+  const pathname = usePathname();
   /*
    * 지금 열린 것이 관리자 콘솔인가. 관리자는 웹 전용이고(`admin/_layout.tsx`),
    * 커플 앱의 첫 화면 규칙 밖에 있다. 주소가 바뀌면 페이지가 다시 뜨는 정적
    * export라 매 렌더 계산해도 값이 흔들리지 않는다.
    */
-  const isAdminPath =
-    Platform.OS === 'web' &&
-    typeof window !== 'undefined' &&
-    window.location.pathname.startsWith('/admin');
+  const isAdminPath = Platform.OS === 'web' && pathname.startsWith('/admin');
   /*
    * 네이티브 쉘의 웹뷰가 최초 진입 URL에 `wp_token`을 한 번 실어 보낸다(하이브리드
    * 웹뷰 쉘, `features/webshell`). 웹 export는 이 값을 받아 저장하고 주소창에서
@@ -146,7 +144,7 @@ function RootLayoutContent() {
    * effect 콜백에서 완료로 표시한다.
    */
   const [tokenBootstrapped, setTokenBootstrapped] = useState(() => {
-    if (Platform.OS !== 'web') return true;
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return true;
 
     return !new URLSearchParams(window.location.search).has('wp_token');
   });
@@ -171,8 +169,6 @@ function RootLayoutContent() {
     }),
     [theme]
   );
-  const pathname = usePathname();
-
   useEffect(() => {
     /*
      * 화면을 넘길 때마다(push · replace) 방금 있던 화면의 `View`가

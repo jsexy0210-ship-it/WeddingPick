@@ -1,6 +1,21 @@
 # WeddingPick 프로젝트 상태
 
-## 최신 배포 작업 — 2026-09-13 KST
+## 현재 기준 — 2026-09-18 12:25 KST
+
+- 운영 API는 `https://210.109.82.212`의 KakaoCloud VM이다. 첫 자동배포 성공 기준은 **CI / Deploy #979 / `4adc950`**이며 Render SG API는 사용자 중지 상태로 되살리지 않는다.
+- **CI / Deploy #983 / `2dcf0b5` 성공**: 앱웹·관리자·웹사이트 정적 산출물을 빌드·검사한 뒤 카카오 VM의 `static-releases/<SHA>` 후보 폴더까지 전달했다. API 재배포와 Runner 복구는 둘 다 Skip됐다.
+- Kakao VM은 Nginx가 80/443을 받고 443에서 `127.0.0.1:3001` API로 프록시한다. IP 인증서는 Let's Encrypt이며 SAN에 `210.109.82.212`가 있고 `snap.certbot.renew.timer`가 활성 상태다.
+- **정적 별도 origin 포트 사전검증 #987**: VM 내부에서 8443/9443 Nginx 설정·`nginx -t`·reload는 성공했지만 외부 GitHub runner의 8443 연결은 5초 timeout으로 실패했다. 임시 설정은 cleanup에서 정상 제거했다. 현재 카카오 보안그룹에서 비표준 포트가 막힌 상태로 본다.
+- 관리자 출처 분리 정책을 되돌리지 않는다. 따라서 8443/9443 보안그룹 허용 전에는 관리자·웹사이트 라이브 cutover를 진행하지 않는다.
+- Render는 빌드 분 복구 여부와 무관하게 더 이상 사용하지 않는다. 기존 정적 3개는 카카오 전환 검증 전 임시 공개본일 뿐이며 Render 재배포는 하지 않는다.
+- 새 파일 저장소 운영 설정은 KakaoCloud Object Storage `weddingpick-prod-media` / `kr-central-2` / `https://objectstorage.kr-central-2.kakaocloud.com`이다.
+- **운영 DB 읽기 전용 감사 #988**: 분석 pending 0, 30분 이상 running 0, `raw_document_pages.storage_key` 0, 내부 업체 이미지 0, 상담 음성 원본 0, 기한 초과 음성 0, 파기 예정 원본 0, 파기 일정 미정 원본 0. 따라서 현재 운영 DB가 참조하는 NCP→Kakao 이관 대상 파일은 **0개**다. NCP 버킷은 삭제하지 않고 보존하며 불필요한 전체 egress 복사는 하지 않는다.
+- 런타임은 `RUN_WORKER_IN_API=false`, `RETENTION_MODE=automatic`이다. 현재 backlog·파기 대상이 모두 0이므로 즉시 데이터 적체는 없지만, 향후 신규 업로드 분석/파기에는 워커 활성화 또는 역할 분리가 필요하다. 비용·자동삭제를 함께 켜지 않도록 별도 검증 전에는 활성화하지 않는다.
+- 사용자 앱 443 cutover는 카카오 개발자 Redirect URI `https://210.109.82.212/setup` 등록과 CORS/정책 링크 변경을 같은 전환에서 처리한다.
+- `claude/rn-preview`는 최신 디자인 정본이 아니며 배포 소스로 사용하지 않는다.
+- 보고 시 **코드 반영 / CI 통과 / API 배포 / 화면 후보 스테이징 / 화면 공개 / 실제 기능 검증**을 서로 다른 상태로 기록한다.
+
+## 이전 배포 기록 — 2026-09-13 KST
 
 앱 출시를 제외한 웹·API·관리자 배포를 진행한다. 기준 main은 `bcd8771484baa906aa24a0f4a0f88e27185359e9`이며 PR208·218·219와 검토 수정사항을 통합했다. 최종 CI·배포 결과는 [master-status.json의 webApiRelease20260913](docs/sync/master-status.json)을 따른다. 아래 9월 10~11일 기록은 당시의 이력이며 현재 배포 버전을 뜻하지 않는다.
 
@@ -40,9 +55,11 @@
 | 대상 | 확인한 사실과 한계 |
 |---|---|
 | GitHub | 저장소·Actions 실행·로그 조회 가능. 조회 가능과 배포 통제 완료는 별개 |
-| Render 운영 API | `https://weddingpickl.onrender.com`, Live `e34193e`. Free·Ohio 리전 |
-| Render 앱 웹·관리자 | `https://weddingpick-app-web.onrender.com`, 관리자는 같은 주소의 `/admin`. Live `e34193e` |
-| Render 웹사이트 | `https://weddingpick-web.onrender.com`, Live `e34193e` |
+| KakaoCloud API | `https://210.109.82.212`. #979에서 자동배포 성공 확인 |
+| Render SG API | 사용자가 중지함. 재배포·재활성화하지 않음 |
+| Render 앱 웹 Preview | `https://weddingpick-app-web.onrender.com`. 정적 서비스 유지, 최신 main 반영 여부 별도 검증 필요 |
+| Render 관리자 | `https://weddingpick-admin.onrender.com/admin`. 정적 서비스 유지, 최신 main 반영 여부 별도 검증 필요 |
+| Render 웹사이트 | `https://weddingpick-web.onrender.com`. 정적 서비스 유지, 최신 main 반영 여부 별도 검증 필요 |
 | Neon | 프로젝트 콘솔 접근, production 브랜치의 `neondb`·`weddingpick_staging` 존재 확인. 이번 점검에서는 직접 SQL 실행 안 함 |
 | NCP Object Storage | `weddingpick-test` 버킷 및 계정 권한 조회. 목록 공개 꺼짐. 이번 점검의 업로드·다운로드·삭제 왕복 검증은 미실행 |
 | Expo/EAS | Owner 계정·프로젝트·기존 빌드 조회 가능. 최근 조회 빌드는 아래 표 참조 |
@@ -51,7 +68,7 @@
 | Google Play | 앱 상태 ‘임시’. 앱 설정·비공개 테스트·프로덕션 액세스 절차 미완료 |
 | Cloudflare | 연결 계정 인증 가능, zone 목록 비어 있음. 현재 사용하지 않는 도메인 부재를 장애로 분류하지 않음 |
 
-`weddingpick.kr`은 **폐기했다**(2026-09-11 대표 지시). 2026-09-10의 「보유하되 미사용·폐기 대상 아님」을 뒤집은 결정이다. DNS 연결·커스텀 도메인 전환을 과제로 두지 않고, 다시 붙이자고 제안하지도 않는다. 주소는 `onrender.com`이 정본이다.
+`weddingpick.kr`은 **폐기했다**(2026-09-11 대표 지시). 2026-09-10의 「보유하되 미사용·폐기 대상 아님」을 뒤집은 결정이다. DNS 연결·커스텀 도메인 전환을 과제로 두지 않고, 다시 붙이자고 제안하지도 않는다. 정적 사이트 공개 주소는 `onrender.com`을 유지하고, API는 KakaoCloud 주소를 사용한다.
 
 Render의 환경변수 선언은 [infra/render-env.yml](infra/render-env.yml), 반영 경로는 [render-env-sync.yml](.github/workflows/render-env-sync.yml)이다. 서비스 표시 이름과 URL 호스트는 다를 수 있으므로 오래된 이름만으로 리소스를 삭제하거나 대체하지 않는다. 남은 별도 DB·관리자 리소스의 사용 여부는 추가 확인 대상이다.
 
