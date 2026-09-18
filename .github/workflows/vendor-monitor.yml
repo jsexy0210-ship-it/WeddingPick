@@ -61,6 +61,15 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  production-write-gate:
+    name: Approve production write
+    if: ${{ inputs.job == 'retire-apply' && inputs.apply && inputs.target != 'staging' }}
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: echo 'Production write approved.'
+
   changes:
     if: inputs.job == 'changes'
     runs-on: ubuntu-latest
@@ -102,7 +111,8 @@ jobs:
   # 받은 응답과 DB를 맞춰야 「응답에 없다」가 근거가 된다. 여기 수집은 --apply를
   # 붙이지 않으므로 아무것도 쓰지 않는다.
   retire:
-    if: inputs.job == 'retire-check' || inputs.job == 'retire-apply'
+    needs: [production-write-gate]
+    if: ${{ always() && (inputs.job == 'retire-check' || inputs.job == 'retire-apply') && (needs.production-write-gate.result == 'success' || needs.production-write-gate.result == 'skipped') }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
