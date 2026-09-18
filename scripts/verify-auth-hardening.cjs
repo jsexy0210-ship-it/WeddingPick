@@ -164,7 +164,7 @@ const log = { warn() {}, info() {}, error() {} };
   });
 
   function adminRoute({ dbAccount, supers='0', plain='test-bootstrap', storedHash, role={role:'super'}, updateFails=false, cleanupFails=false }={}){
-    let handler,issued=0,revoked=0,queries=0;
+    let handler,issued=0,revoked=0,queries=0,accountQueries=0,superQueries=0;
     const chain={min(){return this;},max(){return this;}};
     const sessions={signIn:async()=>{issued++;return{token:'ephemeral-test-token',userId:'test-user',expiresAt:new Date()};},signOut:async()=>{revoked++;if(cleanupFails)throw new Error('cleanup failed');}};
     const api=load('apps/api/src/routes/admin-login.ts',{
@@ -173,14 +173,21 @@ const log = { warn() {}, info() {}, error() {} };
       '../auth/admin-role':{bootstrapLoginId:()=> 'test-admin',bootstrapPassword:()=>plain,bootstrapPasswordHash:()=>storedHash,resolveAdmin:async()=>role},
       '../auth/sessions':sessions,'../errors':{ApiError},
     });
-    const context={config:{sessionTtlDays:30},pool:{query:async(sql)=>{queries++;if(sql.includes('SELECT login_id'))return{rows:dbAccount?[dbAccount]:[]};if(sql.includes('count(*)'))return{rows:supers===undefined?[]:[{supers}]};if(updateFails)throw new Error('update failed');return{rows:[]};}}};
+    const context={config:{sessionTtlDays:30},pool:{query:async(sql)=>{queries++;
+      if(sql.includes('SELECT failure_count') && sql.includes('structured.admin_login_attempts'))return{rows:[]};
+      if(sql.includes('INSERT INTO structured.admin_login_attempts'))return{rows:[]};
+      if(sql.includes('SELECT login_id')){accountQueries++;return{rows:dbAccount?[dbAccount]:[]};}
+      if(sql.includes('count(*)')){superQueries++;return{rows:supers===undefined?[]:[{supers}]};}
+      if(updateFails && sql.includes('UPDATE structured.users'))throw new Error('update failed');
+      return{rows:[]};
+    }}};
     api.registerAdminLoginRoutes({post(_path,fn){handler=fn;}},context);
-    return{run:async(password=plain)=>handler({body:{id:'test-admin',password},ip:'test-ip',log},reply()),get issued(){return issued;},get revoked(){return revoked;},get queries(){return queries;}};
+    return{run:async(password=plain)=>handler({body:{id:'test-admin',password},ip:'test-ip',headers:{},log},reply()),get issued(){return issued;},get revoked(){return revoked;},get queries(){return queries;},get accountQueries(){return accountQueries;},get superQueries(){return superQueries;}};
   }
   await check('plain-only bootstrap can sign in',async()=>{const c=adminRoute();const r=await c.run();assert.equal(r.code,201);assert.equal(r.headers['Cache-Control'],'no-store');assert.equal(c.issued,1);});
   await check('active super blocks environment bootstrap',async()=>{const c=adminRoute({supers:'1'});await assert.rejects(c.run());assert.equal(c.issued,0);});
   await check('unrecognized super count fails closed',async()=>{const c=adminRoute({supers:'not-a-count'});await assert.rejects(c.run());assert.equal(c.issued,0);});
-  await check('disabled DB account cannot fall through to environment',async()=>{const c=adminRoute({dbAccount:{login_id:'test-admin',password_hash:hash,disabled:true}});await assert.rejects(c.run('test-secret-only'));assert.equal(c.issued,0);assert.equal(c.queries,1);});
+  await check('disabled DB account cannot fall through to environment',async()=>{const c=adminRoute({dbAccount:{login_id:'test-admin',password_hash:hash,disabled:true}});await assert.rejects(c.run('test-secret-only'));assert.equal(c.issued,0);assert.equal(c.accountQueries,1);assert.equal(c.superQueries,0);});
   await check('DB account never uses bootstrap plain',async()=>{const c=adminRoute({dbAccount:{login_id:'test-admin',password_hash:hash,disabled:false}});await assert.rejects(c.run('test-bootstrap'));assert.equal(c.issued,0);});
   await check('role failure revokes unreturned session',async()=>{const c=adminRoute({role:null});await assert.rejects(c.run(),e=>e.code==='forbidden');assert.equal(c.revoked,1);});
   await check('activation failure revokes unreturned session',async()=>{const c=adminRoute({updateFails:true});await assert.rejects(c.run(),/update failed/);assert.equal(c.revoked,1);});

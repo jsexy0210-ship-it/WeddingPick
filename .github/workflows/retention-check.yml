@@ -1,6 +1,6 @@
 # 보존 3건 규칙이 지켜지고 있는지 센다. 규칙은 docs/retention-policy.md.
 #
-# 한 번 치우고 끝나면 다시 쌓인다. 이 워크플로는 **세기만 한다** — 아무것도 지우지
+# 필요할 때 수동으로 보존 규칙을 점검한다. 이 워크플로는 **세기만 한다** — 아무것도 지우지
 # 않고, DB에 붙지도 않는다. 넘치면 잡이 빨개져서 알림이 간다.
 #
 # 지우는 것은 `branch-cleanup.yml`(「브랜치 정리」)이 한다. 둘은 하는 일이 다르다 —
@@ -10,8 +10,6 @@
 name: 보존 3건 점검
 
 on:
-  schedule:
-    - cron: '0 0 * * 1'
   workflow_dispatch:
 
 permissions:
@@ -21,7 +19,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
