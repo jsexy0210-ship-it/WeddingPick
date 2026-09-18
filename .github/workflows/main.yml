@@ -20,6 +20,9 @@ jobs:
     concurrency:
       group: weddingpick-main-ci-${{ github.ref }}
       cancel-in-progress: true
+    permissions:
+      contents: read
+      actions: read
     outputs:
       stage_static: ${{ steps.static_changes.outputs.changed }}
       probe_static_ports: ${{ steps.port_probe_request.outputs.requested }}
@@ -52,18 +55,22 @@ jobs:
         id: static_changes
         shell: bash
         env:
-          EVENT_NAME: ${{ github.event_name }}
-          BEFORE_SHA: ${{ github.event.before }}
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
           changed=true
-          if [ "$EVENT_NAME" = push ] && [[ "$BEFORE_SHA" =~ ^[0-9a-f]{40}$ ]] && git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
-            paths=$(git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA")
-            if ! grep -Eq '^(apps/(mobile|web)/|packages/(domain|ui)/|spec/|package(-lock)?\.json$|scripts/(split-admin-dist|package-kakao-static)\.mjs$|scripts/audit-kakao-runtime\.sh$|\.github/workflows/(main|stage-kakao-static)\.yml$)' <<< "$paths"; then
-              changed=false
+          staged_sha="$(gh api "repos/$REPOSITORY/actions/artifacts?name=kakao-static-staged-marker&per_page=10" --jq '[.artifacts[] | select(.expired == false)] | sort_by(.created_at) | reverse | .[0].workflow_run.head_sha // ""' 2>/dev/null || true)"
+          if [[ "$staged_sha" =~ ^[0-9a-f]{40}$ ]] && git cat-file -e "$staged_sha^{commit}" 2>/dev/null; then
+            if git merge-base --is-ancestor "$staged_sha" "$GITHUB_SHA"; then
+              paths="$(git diff --name-only "$staged_sha" "$GITHUB_SHA")"
+              if ! grep -Eq '^(apps/(mobile|web)/|packages/(api-contract|domain|ui)/|spec/|package(-lock)?\.json$|scripts/(ensure-modules|split-admin-dist|package-kakao-static)\.mjs$|scripts/audit-kakao-runtime\.sh$|\.github/workflows/(main|stage-kakao-static)\.yml$)' <<< "$paths"; then
+                changed=false
+              fi
             fi
           fi
           echo "changed=$changed" >> "$GITHUB_OUTPUT"
+          echo "Last staged static revision: ${staged_sha:-unknown}"
           echo "Static staging required: $changed"
 
       - name: 카카오 정적 포트 검사 요청 확인
@@ -124,6 +131,7 @@ jobs:
           retention-days: 7
 
       - name: Bundle (web)
+        if: steps.static_changes.outputs.changed == 'true'
         env:
           EXPO_PUBLIC_API_URL: https://210.109.82.212
           EXPO_PUBLIC_KAKAO_CLIENT_ID: 8e9a14dd3a0aa1a420bff858460c415c
@@ -131,6 +139,7 @@ jobs:
         run: npm run export:web --workspace @weddingpick/mobile
 
       - name: Build landing
+        if: steps.static_changes.outputs.changed == 'true'
         env:
           WEDDINGPICK_CONTACT_EMAIL: help.weddingpick@gmail.com
           WEDDINGPICK_API_URL: https://210.109.82.212
