@@ -122,6 +122,19 @@ jobs:
           mv design-captures/reason/recommendations.png design-captures/recommendations-reason.png
           rmdir design-captures/reason
 
+      - name: Capture canon home and recommendations
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/design-canon.log 2>&1 &
+          server_pid=$!
+          trap 'kill $server_pid || true' EXIT
+          sleep 2
+          playwright screenshot --viewport-size=1600,1200 --full-page \
+            http://127.0.0.1:4173/docs/design/figma-export/01-home.dc.html \
+            design-captures/canon-home.png
+          playwright screenshot --viewport-size=1600,1200 --full-page \
+            http://127.0.0.1:4173/docs/design/figma-export/08-recommendations.dc.html \
+            design-captures/canon-recommendations.png
+
       - name: Upload design captures
         if: always()
         uses: actions/upload-artifact@v4

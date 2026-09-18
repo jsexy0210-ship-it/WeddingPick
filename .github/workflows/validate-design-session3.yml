@@ -179,7 +179,7 @@ jobs:
           mkdir -p design-captures/pick-toast
           node scripts/screenshot-screens.mjs             --route /pick             --tap "강남 A 웨딩홀 빼기"             --tap "빼기"             --full             --edges             --wait 400             --out design-captures/pick-toast
 
-      - name: Capture dialog canon
+      - name: Capture Pick and dialog canon
         id: capture_canon
         continue-on-error: true
         run: |
@@ -189,7 +189,12 @@ jobs:
           trap 'kill $server_pid || true' EXIT
           sleep 2
           if command -v playwright >/dev/null 2>&1; then
-            playwright screenshot --viewport-size=1600,1200 --full-page               http://127.0.0.1:4173/docs/design/figma-export/09-dialogs.dc.html               design-captures/canon-dialogs.png
+            playwright screenshot --viewport-size=1600,1200 --full-page \
+              http://127.0.0.1:4173/docs/design/figma-export/03-pick.dc.html \
+              design-captures/canon-pick.png
+            playwright screenshot --viewport-size=1600,1200 --full-page \
+              http://127.0.0.1:4173/docs/design/figma-export/09-dialogs.dc.html \
+              design-captures/canon-dialogs.png
           fi
 
       - name: Validation manifest
