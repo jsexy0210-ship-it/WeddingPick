@@ -28,12 +28,18 @@ export function WebShellView({ path }: Props) {
   }, [path]);
 
   useEffect(() => {
-    const unsubscribe = subscribeToken(() => {
-      generation.current++;
+    const invalidateSessionOffer = () => {
+      generation.current += 1;
       offered.current = null;
+    };
+    const unsubscribe = subscribeToken(() => {
+      invalidateSessionOffer();
       setRevision((value) => value + 1);
     });
-    return () => { generation.current++; offered.current = null; unsubscribe(); };
+    return () => {
+      invalidateSessionOffer();
+      unsubscribe();
+    };
   }, []);
 
   async function onMessage(event: WebViewMessageEvent): Promise<void> {

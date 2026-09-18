@@ -1,9 +1,12 @@
+import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
 
-const mockMaybeCompleteAuthSession = jest.fn();
-jest.mock('expo-web-browser', () => ({ maybeCompleteAuthSession: mockMaybeCompleteAuthSession }));
-
 import { completeAuthPopup, isAuthPopup } from './is-auth-popup';
+
+jest.mock('expo-web-browser', () => ({ maybeCompleteAuthSession: jest.fn() }));
+
+const mockMaybeCompleteAuthSession =
+  WebBrowser.maybeCompleteAuthSession as jest.MockedFunction<typeof WebBrowser.maybeCompleteAuthSession>;
 
 /**
  * 카카오 인증 팝업 판별과 완료 처리.

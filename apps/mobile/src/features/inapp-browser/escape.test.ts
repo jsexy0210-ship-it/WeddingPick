@@ -1,9 +1,11 @@
+import { hasKakaoReturn } from '@/features/auth/providers';
 import { Platform } from 'react-native';
 
-const mockHasKakaoReturn = jest.fn(() => false);
-jest.mock('@/features/auth/providers', () => ({ hasKakaoReturn: () => mockHasKakaoReturn() }));
-
 import { escapeInAppBrowser } from './escape';
+
+jest.mock('@/features/auth/providers', () => ({ hasKakaoReturn: jest.fn(() => false) }));
+
+const mockHasKakaoReturn = hasKakaoReturn as jest.MockedFunction<typeof hasKakaoReturn>;
 
 const KAKAO_UA =
   'Mozilla/5.0 (Linux; Android 13; SM-S908N; wv) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36 KAKAOTALK 10.4.3';

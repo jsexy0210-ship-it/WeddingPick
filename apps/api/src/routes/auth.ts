@@ -41,7 +41,10 @@ export function registerAuthRoutes(app: FastifyInstance, context: AppContext): v
     let identity;
     try {
       if (provider.flow === 'id_token' && 'idToken' in body) {
-        identity = await provider.verify(body.idToken);
+        identity = await provider.verify(
+          body.idToken,
+          body.provider === 'apple' ? body.nonce : undefined
+        );
         if (body.provider === 'apple' && body.profileName) appleProfileName = body.profileName;
       } else if (provider.flow === 'authorization_code' && 'authorizationCode' in body) {
         identity = await provider.verify({

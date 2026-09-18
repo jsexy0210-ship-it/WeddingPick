@@ -1,8 +1,8 @@
-jest.mock('@/api/config', () => ({ API_URL: 'https://api.example.test' }));
-jest.mock('../../app/admin/_session', () => ({ loadAdminToken: jest.fn(), clearAdminToken: jest.fn() }));
-
 import { AdminForbidden, AdminUnauthorized, apiFetch } from '../../app/admin/_api';
 import { clearAdminToken, loadAdminToken } from '../../app/admin/_session';
+
+jest.mock('@/api/config', () => ({ API_URL: 'https://api.example.test' }));
+jest.mock('../../app/admin/_session', () => ({ loadAdminToken: jest.fn(), clearAdminToken: jest.fn() }));
 
 const tokenMock = loadAdminToken as jest.MockedFunction<typeof loadAdminToken>;
 const clearMock = clearAdminToken as jest.MockedFunction<typeof clearAdminToken>;
