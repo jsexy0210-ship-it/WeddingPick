@@ -22,6 +22,10 @@ test('captures previous API image before cutover starts', () => {
   const cutover = position('CUTOVER_STARTED=1');
   assert.ok(oldId < oldImage);
   assert.ok(oldImage < cutover);
+  assert.match(
+    workflow,
+    /OLD_IMAGE="\$\(sudo -n docker inspect -f '\{\{\.Image\}\}' "\$OLD_ID"\)"/,
+  );
   assert.match(workflow, /test -n "\$OLD_IMAGE"/);
 });
 
