@@ -439,93 +439,460 @@ describeWithDb('관리자 운영·시스템 라우트', () => {
   // ── 약관 ────────────────────────────────────────────────────
 
   describe('약관 · 방침', () => {
-    async function draftWithClause(): Promise<{ versionId: string; clauseId: string }> {
-      const { rows: version } = await test.pool.query<{ id: string }>(
-        `INSERT INTO structured.terms_versions (doc, version) VALUES ('terms', 'v1.0') RETURNING id`
-      );
-      const { rows: clause } = await test.pool.query<{ id: string }>(
-        `INSERT INTO structured.terms_clauses (version_id, article_number, title, body, position)
-         VALUES ($1, '제1조', '목적', '처음 내용', 0) RETURNING id`,
-        [version[0]!.id]
-      );
-      return { versionId: version[0]!.id, clauseId: clause[0]!.id };
+    type TermsDocView = {
+      type: string;
+      currentVersion: string;
+      latestDraftVersion: string | null;
+      effectiveOn: string | null;
+      clauses: { id: string; body: string; bodyTable: unknown; removalWarning: string | null }[];
+    };
+
+    const docOf = (body: unknown, type: string) =>
+      (body as { documents: TermsDocView[] }).documents.find((d) => d.type === type);
+
+    /**
+     * **0422는 «공개된 판»을 심는다. 초안이 아니다.**
+     *
+     * 심은 글은 이미 웹사이트에 나가 있던 글이라 「아직 공개 전」이 아니고, 초안만
+     * 두면 공개된 판이 하나도 없어 웹 빌드가 멈춘다(`legal-data.ts` — 빈 약관을
+     * 내보내는 것보다 낫다).
+     *
+     * 그래서 고치려면 **먼저 새 초안을 만든다.** 공개된 판의 조문은 얼어 있다.
+     * 운영자가 실제로 밟는 순서가 이것이고, 시험도 같은 순서를 밟는다.
+     */
+    async function createDraft(doc: string, headers: Record<string, string>) {
+      const response = await post('/v1/admin/terms', headers, { doc });
+      expect(response.statusCode).toBe(200);
     }
 
-    it('앱 약관 연결 전에는 조문 편집을 거부하고 원문을 보존한다', async () => {
-      const operator = await operatorHeaders();
-      const { clauseId } = await draftWithClause();
+    async function newDraftClause(
+      doc = 'terms',
+      headers?: Record<string, string>
+    ): Promise<{ versionId: string; clauseId: string }> {
+      const h = headers ?? (await operatorHeaders()).headers;
+      await createDraft(doc, h);
 
-      const response = await put(
-        `/v1/admin/terms/terms/clauses/${clauseId}`,
-        operator.headers,
-        { body: '고친 내용' }
+      const { rows } = await test.pool.query<{ version_id: string; id: string }>(
+        `SELECT c.id, c.version_id
+         FROM structured.terms_clauses c
+         JOIN structured.terms_versions v ON v.id = c.version_id
+         WHERE v.doc = $1::terms_doc_kind AND v.published_at IS NULL
+         ORDER BY c.position
+         LIMIT 1`,
+        [doc]
       );
-      expect(response.statusCode).toBe(400);
+      return { versionId: rows[0]!.version_id, clauseId: rows[0]!.id };
+    }
 
-      const body = (await get('/v1/admin/terms', operator.headers)).json() as {
-        documents: { type: string; clauses: { body: string }[] }[];
-      };
-      expect(body.documents.find((d) => d.type === 'terms')?.clauses[0]?.body).toBe('처음 내용');
+    it('심어 둔 본문이 공개된 판으로 들어가 있다', async () => {
+      const operator = await operatorHeaders();
+      const body = (await get('/v1/admin/terms', operator.headers)).json();
+
+      expect(docOf(body, 'terms')?.clauses).toHaveLength(21);
+      expect(docOf(body, 'privacy')?.clauses).toHaveLength(13);
+      // 마케팅은 저장소에 본문이 한 번도 없었다. 없는 법적 문서를 지어내지 않는다.
+      expect(docOf(body, 'marketing')?.clauses).toHaveLength(0);
+      expect(docOf(body, 'terms')?.clauses[0]?.body).toContain('이 약관은 픽랩');
+
+      /*
+       * **시행일은 문서마다 다르다.** 배포 환경변수에 있던 값이 판으로 왔다
+       * (`infra/render-env.yml` — 약관 2026-09-10 · 방침 2026-09-21).
+       */
+      expect(docOf(body, 'terms')?.effectiveOn).toBe('2026-09-10');
+      expect(docOf(body, 'privacy')?.effectiveOn).toBe('2026-09-21');
+
+      // 공개돼 있고 초안은 아직 없다 — 고치려면 새 초안을 만든다.
+      expect(docOf(body, 'terms')?.currentVersion).toBe('v1.0');
+      expect(docOf(body, 'terms')?.latestDraftVersion).toBeNull();
+      expect(docOf(body, 'marketing')?.latestDraftVersion).toBe('v1.0');
     });
 
-    it('내부 공개 함수는 판을 보존하고 다음 초안을 만든다', async () => {
+    /**
+     * **심어 둔 방침이 무엇을 적고 있는가.**
+     *
+     * 2026-09-16까지 이 확인은 `apps/web/src/legal-pages.test.ts`에 있었다. 본문이
+     * 코드에 있었기 때문이다. 0422가 본문을 표로 옮겼으므로 확인도 따라온다 —
+     * 시험이 보는 것은 «사용자에게 나가는 글»이고, 그 글은 이제 여기 있다.
+     *
+     * **수탁자가 Anthropic에서 Google로 바뀌었다**(PR #230 흡수). 클로드 API는
+     * 2026-09-15 대표 지시로 전면 폐기했고 지금 부르는 것은 전부 제미나이다
+     * (`analysis/gemini-*.ts` · `no-claude.test.ts`). 없는 수탁자를 적은 채로
+     * 옮기면 그 틀린 고지가 «공개된 판»으로 얼어붙는다.
+     *
+     * **이 시험이 지키는 것은 «심은 것»이지 «앞으로의 모든 판»이 아니다.** 대표님이
+     * 고치시면 여기는 빨개지지 않는다 — 고치라고 연 편집을 시험이 도로 막으면 안
+     * 된다. 실수로 지우는 것을 막는 자리는 `removal_warning`이다.
+     */
+    it('심어 둔 방침이 국외 이전과 상담 녹음 처리를 적는다', async () => {
       const operator = await operatorHeaders();
-      await draftWithClause();
+      const body = (await get('/v1/admin/terms', operator.headers)).json();
+      const clauses = docOf(body, 'privacy')!.clauses;
+      const all = JSON.stringify(clauses);
 
-      const published = await publishTerms(test.pool, 'terms', operator.userId, '분리된 DB 검증');
-      expect(published).toMatchObject({ version: 'v1.0', nextDraft: 'v1.1' });
+      const transfer = clauses.find((c) => c.removalWarning?.includes('제28조의8'))!;
+      const table = transfer.bodyTable as { rows: string[][] };
+      const row = (needle: string) => table.rows.find((r) => r.join(' ').includes(needle))!.join(' ');
 
-      const body = (await get('/v1/admin/terms', operator.headers)).json() as {
-        documents: { type: string; currentVersion: string; latestDraftVersion: string | null }[];
-      };
-      const doc = body.documents.find((d) => d.type === 'terms');
-      expect(doc?.currentVersion).toBe('v1.0');
-      // 새 초안이 없으면 공개 직후 그 문서는 편집할 수 없는 상태가 된다.
-      expect(doc?.latestDraftVersion).toBe('v1.1');
+      // 「국가」는 회사 소재지가 아니라 서버 리전이다.
+      for (const vendor of ['neon.tech', 'privacy@render.com']) {
+        expect(row(vendor)).toContain('싱가포르');
+      }
+      // 푸시 중계는 그대로 미국이다. 싱가포르로 뭉뚱그리지 않는다.
+      expect(row('650 Industries')).toContain('미국 ·');
+
+      /*
+       * 자료 분석·상담 녹음 정리의 수탁자는 Google이다. **처리 국가는 아직 「확인 필요」다**
+       * — 공개 정책 원문에 닿지 못해 리전·보유기간·법인명을 확인하지 못했고, 확인하지
+       * 못한 것을 지어내지 않았다(#230). 확인되면 방침과 이 시험을 함께 고친다.
+       */
+      /*
+       * **수탁자는 Google이다. Anthropic은 걷혔다**(2026-09-16 대표 결정 · PR #230).
+       *
+       * 클로드 API는 2026-09-15 대표 지시로 전면 폐기했고 문자인식·영상 분석과 상담
+       * 녹음 정리 둘 다 제미나이가 한다(`analysis/gemini-*.ts` · `no-claude.test.ts`).
+       * 방침이 그 사실을 따라잡은 것이 #230이고, 이 씨앗은 그 뒤의 본문이다.
+       *
+       * **없는 수탁자가 다시 들어오면 여기가 빨개진다.** 국외 이전은 고지가 이전보다
+       * 먼저라(제28조의8) 틀린 이름이 실린 채로 공개되면 그것이 미고지가 된다.
+       */
+      expect(all).toContain('Google LLC');
+      expect(all).not.toContain('Anthropic');
+
+      // 수탁자 목록과 국외 이전, 둘 다 지우면 안 되는 절로 찍혀 있다.
+      expect(clauses.filter((c) => c.removalWarning !== null)).toHaveLength(2);
+
+      // 상담 녹음 — 언제 지우는지.
+      expect(all).toContain('읽어내기가 끝나는 즉시 삭제');
+      expect(all).toContain('녹취록은 만들지');
+      // 권익침해 구제 창구.
+      expect(all).toContain('https://privacy.kisa.or.kr');
     });
 
     it('공개된 판의 조문은 라우트가 거부한다', async () => {
       const operator = await operatorHeaders();
-      const { clauseId } = await draftWithClause();
-      await publishTerms(test.pool, 'terms', operator.userId, '분리된 DB 검증');
-
-      const response = await put(
-        `/v1/admin/terms/terms/clauses/${clauseId}`,
-        operator.headers,
-        { body: '몰래 고침' }
+      const { rows } = await test.pool.query<{ id: string }>(
+        `SELECT c.id FROM structured.terms_clauses c
+         JOIN structured.terms_versions v ON v.id = c.version_id
+         WHERE v.doc = 'terms' AND v.published_at IS NOT NULL ORDER BY c.position LIMIT 1`
       );
+
+      const response = await put(`/v1/admin/terms/terms/clauses/${rows[0]!.id}`, operator.headers, {
+        body: '몰래 고침',
+      });
       expect(response.statusCode).toBe(400);
     });
 
     /*
-     * **가드를 도로 빼고 확인한 자리.** 라우트의 `if (found.published_at !== null)`을
-     * 지우면 위 시험은 통과해 버린다. 그때 막는 것이 0130의 트리거다.
+     * **가드를 도로 빼고 확인한 자리.** 라우트의 `published_at` 검사를 지우면 위
+     * 시험은 통과해 버린다. 그때 막는 것이 0130의 트리거다.
      */
     it('스키마 트리거가 공개된 판의 조문 쓰기를 거부한다', async () => {
+      await expect(
+        test.pool.query(
+          `UPDATE structured.terms_clauses c SET body = '몰래 고침'
+           FROM structured.terms_versions v
+           WHERE v.id = c.version_id AND v.doc = 'terms' AND v.published_at IS NOT NULL`
+        )
+      ).rejects.toThrow(/공개된 판/);
+    });
+
+    it('새 초안을 만들면 공개된 판의 조문을 그대로 물려받는다', async () => {
       const operator = await operatorHeaders();
-      const { clauseId } = await draftWithClause();
-      await publishTerms(test.pool, 'terms', operator.userId, '분리된 DB 검증');
+      await createDraft('terms', operator.headers);
+
+      const body = (await get('/v1/admin/terms', operator.headers)).json();
+      expect(docOf(body, 'terms')?.latestDraftVersion).toBe('v1.1');
+      // 조문은 초안 쪽을 보인다 — 고칠 수 있는 판을 띄운다.
+      expect(docOf(body, 'terms')?.clauses).toHaveLength(21);
+    });
+
+    it('초안이 이미 있으면 또 만들지 않는다', async () => {
+      const operator = await operatorHeaders();
+      // 마케팅은 0422가 빈 초안을 두었다. 한 문서에 초안은 하나뿐이다.
+      const again = await post('/v1/admin/terms', operator.headers, { doc: 'marketing' });
+      expect(again.statusCode).toBe(400);
+    });
+
+    it('초안 조문을 고친다', async () => {
+      const operator = await operatorHeaders();
+      const { clauseId } = await newDraftClause('terms', operator.headers);
+
+      const response = await put(`/v1/admin/terms/terms/clauses/${clauseId}`, operator.headers, {
+        body: '고친 내용',
+      });
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toMatchObject({ saved: true });
+
+      const body = (await get('/v1/admin/terms', operator.headers)).json();
+      expect(docOf(body, 'terms')?.clauses[0]?.body).toBe('고친 내용');
+    });
+
+    /**
+     * **국외 이전 고지는 이전보다 먼저다**(개인정보보호법 제28조의8).
+     * 막지 않는다 — 대표님이 고치실 수 있어야 한다. 무엇이 사라지는지 보이고
+     * 한 번 더 받는 것이 전부다(v3.27).
+     */
+    it('국외 이전 절에서 수탁자가 빠지면 저장 전에 무엇이 사라지는지 보인다', async () => {
+      const operator = await operatorHeaders();
+      await createDraft('privacy', operator.headers);
+
+      const { rows } = await test.pool.query<{ id: string; body_table: { rows: string[][] } }>(
+        `SELECT c.id, c.body_table
+         FROM structured.terms_clauses c
+         JOIN structured.terms_versions v ON v.id = c.version_id
+         WHERE v.doc = 'privacy' AND v.published_at IS NULL AND c.removal_warning IS NOT NULL
+         ORDER BY c.position DESC
+         LIMIT 1`
+      );
+      const clause = rows[0]!;
+      const table = clause.body_table;
+      const shrunk = { body: '남은 설명', bodyTable: { ...table, rows: table.rows.slice(0, 1) } };
+
+      const response = await put(
+        `/v1/admin/terms/privacy/clauses/${clause.id}`,
+        operator.headers,
+        shrunk
+      );
+      expect(response.statusCode).toBe(200);
+      const result = response.json() as { saved: boolean; warning: string; removing: string[] };
+      expect(result.saved).toBe(false);
+      expect(result.warning).toContain('제28조의8');
+      expect(result.removing.length).toBe(table.rows.length - 1);
+
+      // 확인 전에는 표가 그대로다 — 「보여주기」가 저장을 겸하지 않는다.
+      const before = (await get('/v1/admin/terms', operator.headers)).json();
+      const kept = docOf(before, 'privacy')?.clauses.find((c) => c.id === clause.id);
+      expect((kept?.bodyTable as { rows: string[][] }).rows).toHaveLength(table.rows.length);
+
+      // 확인하면 저장된다. 막는 것이 아니라 가르는 것이다.
+      const confirmed = await put(`/v1/admin/terms/privacy/clauses/${clause.id}`, operator.headers, {
+        ...shrunk,
+        confirm: true,
+      });
+      expect(confirmed.json()).toMatchObject({ saved: true });
+    });
+
+    it('국외 이전 절을 지울 때도 무엇이 사라지는지 먼저 보인다', async () => {
+      const operator = await operatorHeaders();
+      await createDraft('privacy', operator.headers);
+
+      const { rows } = await test.pool.query<{ id: string }>(
+        `SELECT c.id FROM structured.terms_clauses c
+         JOIN structured.terms_versions v ON v.id = c.version_id
+         WHERE v.doc = 'privacy' AND v.published_at IS NULL AND c.removal_warning IS NOT NULL
+         ORDER BY c.position DESC LIMIT 1`
+      );
+      const clauseId = rows[0]!.id;
+      const del = (confirm: boolean) =>
+        test.app.inject({
+          method: 'DELETE',
+          url: `/v1/admin/terms/privacy/clauses/${clauseId}?confirm=${confirm}`,
+          headers: operator.headers,
+        });
+
+      const asked = (await del(false)).json() as { saved: boolean; removing: string[] };
+      expect(asked.saved).toBe(false);
+      expect(asked.removing.length).toBeGreaterThan(1);
+
+      const still = (await get('/v1/admin/terms', operator.headers)).json();
+      expect(docOf(still, 'privacy')?.clauses.some((c) => c.id === clauseId)).toBe(true);
+
+      expect((await del(true)).json()).toMatchObject({ saved: true });
+      const gone = (await get('/v1/admin/terms', operator.headers)).json();
+      expect(docOf(gone, 'privacy')?.clauses.some((c) => c.id === clauseId)).toBe(false);
+    });
+
+    it('보호 표시가 없는 조문은 한 번에 지워진다', async () => {
+      const operator = await operatorHeaders();
+      const { clauseId } = await newDraftClause('terms', operator.headers);
+
+      const response = await test.app.inject({
+        method: 'DELETE',
+        url: `/v1/admin/terms/terms/clauses/${clauseId}?confirm=false`,
+        headers: operator.headers,
+      });
+      expect(response.json()).toMatchObject({ saved: true });
+
+      const body = (await get('/v1/admin/terms', operator.headers)).json();
+      expect(docOf(body, 'terms')?.clauses).toHaveLength(20);
+    });
+
+    /*
+     * **마케팅 정보 수신 동의는 이 길로 시작한다.** 저장소에 본문이 한 번도 없어서
+     * 0422가 빈 초안만 두었다 — 없는 법적 문서를 지어내지 않았다.
+     */
+    it('빈 문서에 조문을 더해 공개까지 간다', async () => {
+      const operator = await operatorHeaders();
+
+      const added = await post('/v1/admin/terms/marketing/clauses', operator.headers, {
+        title: '제1조 목적',
+        body: '혜택 소식을 받는 것에 대한 동의예요.',
+      });
+      expect(added.statusCode).toBe(200);
+
+      const body = (await get('/v1/admin/terms', operator.headers)).json();
+      expect(docOf(body, 'marketing')?.clauses).toHaveLength(1);
+
+      const published = await publishTerms(
+        test.pool,
+        'marketing',
+        operator.userId,
+        '첫 판',
+        '2026-10-01'
+      );
+      expect(published.effectiveOn).toBe('2026-10-01');
+    });
+
+    it('빈 제목이나 빈 내용은 조문이 되지 않는다', async () => {
+      const operator = await operatorHeaders();
+
+      for (const payload of [
+        { title: '  ', body: '내용' },
+        { title: '제목', body: '  ' },
+      ]) {
+        const response = await post('/v1/admin/terms/marketing/clauses', operator.headers, payload);
+        expect(response.statusCode).toBe(400);
+      }
+    });
+
+    it('공개하면 판을 보존하고 시행일을 붙이고 다음 초안을 만든다', async () => {
+      const operator = await operatorHeaders();
+      await createDraft('terms', operator.headers);
+
+      const published = await publishTerms(
+        test.pool,
+        'terms',
+        operator.userId,
+        '분리된 DB 검증',
+        '2026-10-01'
+      );
+      expect(published).toMatchObject({
+        version: 'v1.1',
+        nextDraft: 'v1.2',
+        effectiveOn: '2026-10-01',
+      });
+
+      const body = (await get('/v1/admin/terms', operator.headers)).json();
+      const doc = docOf(body, 'terms');
+      expect(doc?.currentVersion).toBe('v1.1');
+      expect(doc?.effectiveOn).toBe('2026-10-01');
+      // 새 초안이 없으면 공개 직후 그 문서는 편집할 수 없는 상태가 된다.
+      expect(doc?.latestDraftVersion).toBe('v1.2');
+    });
+
+    it('시행일 없이는 공개할 수 없다', async () => {
+      const operator = await operatorHeaders();
+      await createDraft('terms', operator.headers);
+
+      const response = await post('/v1/admin/terms/terms/publish', operator.headers, {});
+      expect(response.statusCode).toBe(400);
+    });
+
+    /* 표의 CHECK도 같은 것을 막는다. 라우트의 검사가 지워지는 날 여기가 남는다. */
+    it('스키마가 시행일 없는 공개를 거부한다', async () => {
+      const operator = await operatorHeaders();
+      await createDraft('terms', operator.headers);
 
       await expect(
-        test.pool.query('UPDATE structured.terms_clauses SET body = $2 WHERE id = $1', [
-          clauseId,
-          '몰래 고침',
-        ])
-      ).rejects.toThrow(/공개된 판/);
+        test.pool.query(
+          `UPDATE structured.terms_versions
+           SET published_at = now(), published_by = NULL
+           WHERE doc = 'terms' AND published_at IS NULL`
+        )
+      ).rejects.toThrow();
+    });
+
+    /* 조문이 없는 판을 공개하면 사용자에게 빈 약관이 나가고, 그 판은 얼어붙는다. */
+    it('조문이 없는 초안은 공개할 수 없다', async () => {
+      const operator = await operatorHeaders();
+      await expect(
+        publishTerms(test.pool, 'marketing', operator.userId, '빈 초안', '2026-10-01')
+      ).rejects.toThrow(/조문/);
     });
 
     it('공개할 초안이 없으면 거부한다', async () => {
       const operator = await operatorHeaders();
-      const response = await post('/v1/admin/terms/privacy/publish', operator.headers);
+      // 0422가 심은 판은 이미 공개돼 있고 초안은 없다.
+      const response = await post('/v1/admin/terms/privacy/publish', operator.headers, {
+        effectiveOn: '2026-10-01',
+      });
       expect(response.statusCode).toBe(400);
     });
 
     it('없는 문서 갈래는 404다', async () => {
       const operator = await operatorHeaders();
-      const response = await post('/v1/admin/terms/no-such-doc/publish', operator.headers);
+      const response = await post('/v1/admin/terms/no-such-doc/publish', operator.headers, {
+        effectiveOn: '2026-10-01',
+      });
       expect(response.statusCode).toBe(404);
     });
+
+    /*
+     * 동의 기록이 초안을 가리키면, 그 뒤 초안이 고쳐지면서 동의한 글이 소리 없이
+     * 바뀐다. 0130이 조문을 얼리는 것과 같은 이유이고 여기가 나머지 반쪽이다.
+     */
+    it('공개되지 않은 판에는 동의를 받을 수 없다', async () => {
+      const session = await signInAs(test, `consenter-${Math.random()}`);
+      const { versionId } = await newDraftClause();
+
+      await expect(
+        test.pool.query(
+          `INSERT INTO structured.user_consents (user_id, item, terms_version, is_required, terms_version_id)
+           VALUES ($1, 'terms', 'v1.0', true, $2)`,
+          [session.userId, versionId]
+        )
+      ).rejects.toThrow(/공개되지 않은 판/);
+    });
+
+    /* 웹이 빌드할 때 읽는 자리. 초안은 나가지 않는다. */
+    describe('공개 조회', () => {
+      it('심어 둔 판이 그대로 나간다 — 웹 빌드가 이것을 읽는다', async () => {
+        const response = await test.app.inject({ method: 'GET', url: '/v1/legal/terms' });
+        const doc = (
+          response.json() as {
+            document: { version: string; effectiveOn: string; clauses: unknown[] };
+          }
+        ).document;
+
+        expect(doc).toMatchObject({ version: 'v1.0', effectiveOn: '2026-09-10' });
+        expect(doc.clauses).toHaveLength(21);
+      });
+
+      it('방침도 제 시행일로 나간다', async () => {
+        const response = await test.app.inject({ method: 'GET', url: '/v1/legal/privacy' });
+        expect(
+          (response.json() as { document: { effectiveOn: string } }).document.effectiveOn
+        ).toBe('2026-09-21');
+      });
+
+      /* 마케팅은 조문이 없어 공개된 적이 없다. 초안을 내보내지 않는다. */
+      it('공개된 판이 없으면 비어 있다', async () => {
+        const response = await test.app.inject({ method: 'GET', url: '/v1/legal/marketing' });
+        expect(response.statusCode).toBe(200);
+        expect(response.json()).toMatchObject({ document: null });
+      });
+
+      it('새 초안을 만들어도 공개 조회는 옛 판을 그대로 준다', async () => {
+        const operator = await operatorHeaders();
+        const { clauseId } = await newDraftClause('terms', operator.headers);
+        await put(`/v1/admin/terms/terms/clauses/${clauseId}`, operator.headers, {
+          body: '아직 공개하지 않은 글',
+        });
+
+        const response = await test.app.inject({ method: 'GET', url: '/v1/legal/terms' });
+        const doc = (response.json() as { document: { version: string; clauses: { body: string }[] } })
+          .document;
+        expect(doc.version).toBe('v1.0');
+        expect(JSON.stringify(doc.clauses)).not.toContain('아직 공개하지 않은 글');
+      });
+
+      it('없는 문서는 404다', async () => {
+        const response = await test.app.inject({ method: 'GET', url: '/v1/legal/no-such-doc' });
+        expect(response.statusCode).toBe(404);
+      });
+    });
   });
+
 
   // ── 광고 실운영 게이트 ───────────────────────────────────────
 
