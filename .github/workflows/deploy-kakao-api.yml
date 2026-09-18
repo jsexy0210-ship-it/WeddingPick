@@ -24,6 +24,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           ref: ${{ github.sha }}
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Verify deployment environment
@@ -70,8 +71,29 @@ jobs:
             return 1
           }
 
-          current_main() {
-            test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$GITHUB_SHA"
+          deploy_revision_is_current() {
+            local latest_main paths
+            latest_main="$(git ls-remote origin refs/heads/main | cut -f1)"
+
+            if [ "$latest_main" = "$GITHUB_SHA" ]; then
+              return 0
+            fi
+
+            # 뒤에 붙은 문서·정적·probe 전용 커밋 때문에 이미 검증한 API 배포를
+            # 버리지 않는다. 대신 API 런타임에 영향을 주는 파일이 하나라도 바뀌면
+            # 최신 main의 CI가 배포하도록 여기서 멈춘다.
+            git fetch --quiet origin main
+            git cat-file -e "$latest_main^{commit}" 2>/dev/null || return 1
+            git merge-base --is-ancestor "$GITHUB_SHA" "$latest_main" || return 1
+
+            paths="$(git diff --name-only "$GITHUB_SHA" "$latest_main")"
+            if grep -Eq '^(apps/api/|packages/(api-contract|db|domain)/|package(-lock)?\.json$|Dockerfile$|\.dockerignore$|scripts/update-kakao-worker\.sh$|\.github/workflows/(main|repair-kakao-runner|deploy-kakao-api)\.yml$)' <<< "$paths"; then
+              echo "A newer main commit changes API runtime/deploy files: $latest_main" >&2
+              return 1
+            fi
+
+            echo "main advanced only through non-API files; deploying validated API revision $GITHUB_SHA."
+            return 0
           }
 
           cleanup() {
@@ -102,7 +124,7 @@ jobs:
           trap 'exit 130' INT
           trap 'exit 143' TERM
 
-          current_main || { echo 'A newer main commit exists; deployment stopped.' >&2; exit 1; }
+          deploy_revision_is_current || { echo 'A newer API-relevant main commit exists; deployment stopped.' >&2; exit 1; }
           OLD_ID="$(sudo -n docker inspect -f '{{.Id}}' "$PROD_CONTAINER")"
           test "$(sudo -n docker inspect -f '{{.State.Running}}' "$OLD_ID")" = true
           health_ok http://127.0.0.1:3001/health 10 2
@@ -122,7 +144,7 @@ jobs:
             exit 1
           fi
           sudo -n docker rm -f "$CANDIDATE_CONTAINER" >/dev/null
-          current_main || { echo 'main changed during the build; the existing API is unchanged.' >&2; exit 1; }
+          deploy_revision_is_current || { echo 'main gained API-relevant changes during the build; the existing API is unchanged.' >&2; exit 1; }
 
           CUTOVER_STARTED=1
           sudo -n docker stop --time 30 "$OLD_ID" >/dev/null
