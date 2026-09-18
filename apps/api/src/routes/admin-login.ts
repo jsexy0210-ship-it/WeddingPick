@@ -1,4 +1,6 @@
-import type { FastifyInstance } from 'fastify';
+import { createHash } from 'node:crypto';
+
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 
 import { sameId, verifyAdminPassword } from '../auth/admin-password';
@@ -23,29 +25,98 @@ const loginSchema = z.object({
   password: z.string().min(1).max(200),
 });
 
-const ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
 const ATTEMPTS_BEFORE_DELAY = 5;
 const MAX_DELAY_MS = 8_000;
-// 프로세스 재시작 시 초기화되며 서버 여러 대에서 공유되지 않는다.
-const attempts = new Map<string, { count: number; first: number }>();
 
-function recordFailure(key: string): void {
-  const now = Date.now();
-  for (const [seenKey, seenAt] of attempts) {
-    if (now - seenAt.first > ATTEMPT_WINDOW_MS) attempts.delete(seenKey);
+/**
+ * 로그인 ID와 네트워크 식별자를 원문으로 저장하지 않는다.
+ *
+ * ID만 쓰면 제3자가 그 ID를 반복 실패시켜 정상 관리자를 함께 지연시키는 계정 잠금
+ * DoS가 쉬워지고, IP만 쓰면 한 사무실/NAT의 정상 관리자들이 서로의 실패를 떠안는다.
+ * 둘을 묶되 DB에는 해시만 남긴다. 로그인 ID 대조 자체는 기존 sameId 규칙(대소문자
+ * 포함)을 그대로 쓴다.
+ */
+function networkIdFor(request: FastifyRequest): string {
+  /*
+   * Kakao Nginx는 X-Real-IP를 $remote_addr로 덮어쓰고 API 포트는 host loopback에만
+   * publish한다. 반면 X-Forwarded-For는 클라이언트가 앞 값을 심을 수 있으므로
+   * trustProxy=true의 request.ip를 보안 식별자로 단독 신뢰하지 않는다.
+   *
+   * 테스트/로컬처럼 X-Real-IP가 없는 경우에만 request.ip로 되돌아간다.
+   */
+  const realIp = request.headers['x-real-ip'];
+  if (typeof realIp === 'string') {
+    const trimmed = realIp.trim();
+    if (trimmed && trimmed.length <= 128 && !trimmed.includes(',')) return trimmed;
   }
-  const seen = attempts.get(key);
-  if (!seen || now - seen.first > ATTEMPT_WINDOW_MS) {
-    attempts.set(key, { count: 1, first: now });
-    return;
-  }
-  seen.count += 1;
+  return request.ip;
 }
 
-function delayFor(key: string): number {
-  const seen = attempts.get(key);
-  if (!seen || Date.now() - seen.first > ATTEMPT_WINDOW_MS || seen.count < ATTEMPTS_BEFORE_DELAY) return 0;
-  return Math.min(MAX_DELAY_MS, 2 ** (seen.count - ATTEMPTS_BEFORE_DELAY) * 500);
+function attemptKey(loginId: string, networkId: string): string {
+  return createHash('sha256').update(loginId).update('\0').update(networkId).digest('hex');
+}
+
+/**
+ * 현재 확정된 실패 횟수만 읽는다.
+ *
+ * 진행 중인 인증 요청은 실패가 아니다. 미리 count를 올리면 정상 성공 요청 자체가
+ * 제한 상태를 만들고, 성공/실패 완료 순서와 DB 상태가 어긋난다.
+ */
+async function currentFailureCount(context: AppContext, key: string): Promise<number> {
+  await context.pool.query(
+    `DELETE FROM structured.admin_login_attempts
+      WHERE window_started_at <= now() - interval '15 minutes'
+         OR updated_at <= now() - interval '15 minutes'`
+  );
+
+  const { rows } = await context.pool.query<{ failure_count: number }>(
+    `SELECT failure_count
+       FROM structured.admin_login_attempts
+      WHERE attempt_key = $1`,
+    [key]
+  );
+
+  return rows[0]?.failure_count ?? 0;
+}
+
+function delayForFailures(failureCount: number): number {
+  if (failureCount < ATTEMPTS_BEFORE_DELAY) return 0;
+  return Math.min(MAX_DELAY_MS, 2 ** (failureCount - ATTEMPTS_BEFORE_DELAY) * 500);
+}
+
+/**
+ * 인증 실패가 확정된 시점에만 원자적으로 기록한다.
+ *
+ * 동시 실패는 ON CONFLICT가 같은 키를 직렬화하므로 증가분을 잃지 않는다. 반대로
+ * 성공 완료 후 늦게 끝난 실패는 성공의 DELETE 다음에 새 row를 만들기 때문에
+ * 자연스럽게 남는다.
+ */
+async function recordFailure(context: AppContext, key: string): Promise<void> {
+  await context.pool.query(
+    `INSERT INTO structured.admin_login_attempts AS current
+       (attempt_key, failure_count, window_started_at, updated_at)
+     VALUES ($1, 1, now(), now())
+     ON CONFLICT (attempt_key) DO UPDATE
+       SET failure_count = CASE
+             WHEN current.window_started_at <= now() - interval '15 minutes'
+               THEN 1
+             ELSE current.failure_count + 1
+           END,
+           window_started_at = CASE
+             WHEN current.window_started_at <= now() - interval '15 minutes'
+               THEN now()
+             ELSE current.window_started_at
+           END,
+           updated_at = now()`,
+    [key]
+  );
+}
+
+async function clearAttempts(context: AppContext, key: string): Promise<void> {
+  await context.pool.query(
+    'DELETE FROM structured.admin_login_attempts WHERE attempt_key = $1',
+    [key]
+  );
 }
 
 async function bootstrapCandidate(
@@ -72,8 +143,9 @@ export function registerAdminLoginRoutes(app: FastifyInstance, context: AppConte
     const parsed = loginSchema.safeParse(request.body);
     if (!parsed.success) throw new ApiError('invalid_request', '아이디와 비밀번호를 입력해주세요.');
 
-    const key = request.ip;
-    const wait = delayFor(key);
+    const key = attemptKey(parsed.data.id, networkIdFor(request));
+    const failureCount = await currentFailureCount(context, key);
+    const wait = delayForFailures(failureCount);
     if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
 
     // 비활성 계정도 조회한다. 같은 ID의 환경변수 계정으로 돌아가지 못하게 한다.
@@ -95,11 +167,10 @@ export function registerAdminLoginRoutes(app: FastifyInstance, context: AppConte
     const passwordOk = await verifyAdminPassword(parsed.data.password, expectedHash, expectedPlain);
 
     if (!idOk || !passwordOk || account?.disabled) {
-      recordFailure(key);
-      request.log.warn({ ip: key }, '관리자 로그인 실패');
+      await recordFailure(context, key);
+      request.log.warn('관리자 로그인 실패');
       throw new ApiError('unauthenticated', '아이디 또는 비밀번호가 맞지 않아요.');
     }
-    attempts.delete(key);
 
     const session = await signIn(
       context.pool,
@@ -122,6 +193,9 @@ export function registerAdminLoginRoutes(app: FastifyInstance, context: AppConte
       );
       const admin = await resolveAdmin(context.pool, session.userId);
       if (!admin) throw new ApiError('forbidden', '이 계정에는 관리자 권한이 없어요.');
+
+      // 세션 발급과 권한 확인까지 성공한 로그인만 실패 이력을 지운다.
+      await clearAttempts(context, key);
 
       return reply.status(201).send({
         token: session.token,
