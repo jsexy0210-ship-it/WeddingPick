@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - claude/overhaul-lounge-my
-  pull_request:
-    branches:
-      - main
 
 permissions:
   contents: read
@@ -85,6 +82,7 @@ jobs:
       - name: Validation manifest
         if: always()
         run: |
+          mkdir -p design-captures
           {
             echo "sha=$(git rev-parse HEAD)"
             echo "branch=$(git branch --show-current)"
