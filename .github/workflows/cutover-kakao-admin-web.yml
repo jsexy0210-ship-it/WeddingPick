@@ -1,0 +1,50 @@
+name: Cutover Kakao Admin Web
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  install:
+    name: Enable Kakao admin and web static sites
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - run: bash ./scripts/install-kakao-static-sites.sh
+
+  verify:
+    name: Verify public admin and web
+    needs: [install]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify admin login page
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --connect-timeout 5 --max-time 15             https://210.109.82.212:8443/admin/login > /tmp/admin.html
+          grep -qi '<html' /tmp/admin.html
+
+      - name: Verify website privacy page
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --connect-timeout 5 --max-time 15             https://210.109.82.212:9443/privacy.html > /tmp/privacy.html
+          grep -qi '<html' /tmp/privacy.html
+
+  rollback:
+    name: Roll back Kakao admin and web on failure
+    if: ${{ always() && needs.install.result == 'success' && needs.verify.result != 'success' }}
+    needs: [install, verify]
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - run: bash ./scripts/rollback-kakao-static-sites.sh
