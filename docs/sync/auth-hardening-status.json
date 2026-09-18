@@ -1,11 +1,30 @@
 {
   "schemaVersion": 1,
-  "updatedDate": "2026-09-17",
-  "pr": 274,
-  "branch": "codex/auth-hardening-20260917",
-  "baseMain": "e0060059d67c938b300dcf44dc599fea2ba43ff5",
+  "updatedDate": "2026-09-18",
+  "pr": 288,
+  "branch": "main",
+  "baseMain": "bbab144472128072dd1a6a04fc74e7cbe8aed02e",
   "secondPhaseParent": "f9b4e4e46eaaa55886da17596a3c98cecd151c29",
-  "status": "draft-local-regressions-passed-integration-unverified",
+  "status": "merged-via-288-integration-and-rollout-unverified",
+  "source": {
+    "pr": 274,
+    "branch": "codex/auth-hardening-20260917",
+    "baseMain": "e0060059d67c938b300dcf44dc599fea2ba43ff5",
+    "status": "superseded-by-selective-port-not-merged-as-original-pr",
+    "verificationDate": "2026-09-17",
+    "productionMutations": { "merged": false, "deployed": false, "secretsChanged": false, "databaseChanged": false }
+  },
+  "integration": {
+    "mergeCommit": "a24ac9c189f92e338c11dc26c03c790d60524011",
+    "mergedAt": "2026-09-18T04:54:09Z",
+    "observedMain": "f8fa4eef8326457bcb96e2b51dac04cbc5605070",
+    "verificationIssue": 282,
+    "dependentIssue": 286,
+    "designPr": 273,
+    "liveApiSha": null,
+    "liveAppWebSha": null,
+    "notes": "PR #288 병합을 확인했다. 아래 과거 검사 수는 #274 원본 기록이며 포팅 후 통합 검증으로 재사용하지 않는다. 운영 SHA와 실제 기기/제공자 검증은 이 정정에서 확인하지 않았다. null은 미확인이지 미배포/변경 없음의 증명이 아니다."
+  },
   "implemented": [
     "URL 세션 토큰 전달 제거와 정확한 HTTPS origin·메인 프레임·일회성 channel 검사",
     "웹뷰 세션 메모리 보관과 네이티브 계정/페이지 변경·로그아웃 동기화",
@@ -16,6 +35,7 @@
     "기존 npm test pretest에 인증 회귀 검사 연결; PR별 CI 미추가"
   ],
   "verification": {
+    "scope": "historical-source-pr-274-not-rerun-by-status-reconciliation",
     "secondPhaseStandalone": { "passed": 75, "failed": 0, "command": "npm run test:web-shell-auth" },
     "typeScriptSyntaxFiles": 7,
     "strictTypecheckedModules": [
@@ -28,12 +48,12 @@
     "databaseIntegration": false,
     "nativeDevices": false,
     "liveProviders": false,
-    "limits": "SDK·React·스토리지·네트워크 경계는 테스트 대역. 실제 TS/TSX·주입 스크립트 실행 및 Node Web Crypto 사용. 직접 clone/npm 다운로드 불가. 전체 CI 통과를 의미하지 않음."
+    "limits": "SDK·React·스토리지·네트워크 경계는 테스트 대역. 실제 TS/TSX·주입 스크립트 실행 및 Node Web Crypto 사용. 직접 clone/npm 다운로드 불가. 전체 CI 통과를 의미하지 않음. 이 절의 false는 원본 검사 미완료 기록이며 최신 CI의 실패/미실행을 새로 판정한 값이 아니다."
   },
   "rolloutBlockers": [
     "구버전 네이티브 셸의 wp_token 방식과 새 웹은 자동 호환하지 않음. 버전 일치와 복구 절차 검증",
     "Android/iOS 메시지·이동·새로고침·로그아웃 실제 검증",
-    "전체 타입·lint·Jest·DB·웹 번들 검사"
+    "포팅 후 대상 SHA의 전체 타입·lint·Jest·분리 DB·웹 번들 검사 근거 확인"
   ],
   "remaining": [
     "네이티브 SecureStore 전환과 lockfile/이전/탈퇴 삭제",
@@ -41,5 +61,14 @@
     "Apple nonce/재생 방어",
     "운영 관리자 해시 전용 설정 전환과 기존 세션 정책"
   ],
-  "productionMutations": { "merged": false, "deployed": false, "secretsChanged": false, "databaseChanged": false }
+  "productionMutations": { "merged": true, "deployed": null, "secretsChanged": null, "databaseChanged": null },
+  "reconciliation": {
+    "scope": "documentation-and-issue-dependencies-only",
+    "productCodeChanged": false,
+    "deploymentTriggered": false,
+    "secretsChanged": false,
+    "databaseChanged": false,
+    "newAgentExecution": "blocked-insufficient-github-ai-credits",
+    "executionEvidence": "issue-299-comment-5725564357"
+  }
 }
