@@ -85,6 +85,7 @@ jobs:
             );
 
             const restartCommand =
+              '{ ' +
               'set +e; ' +
               'echo "[$(date -Is)] systemd restart unit started"; ' +
               'echo "[$(date -Is)] stopping runner service"; ' +
@@ -103,8 +104,8 @@ jobs:
               'else ' +
               'echo "[$(date -Is)] restart failed; marker retained"; ' +
               'exit 1; ' +
-              'fi ' +
-              '>> "' + restartLogPath + '" 2>&1';
+              'fi; ' +
+              '} >> "' + restartLogPath + '" 2>&1';
 
             const suffix = String(process.env.GITHUB_RUN_ID || 'manual') + '-' +
               String(process.env.GITHUB_RUN_ATTEMPT || '1');
