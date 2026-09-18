@@ -1,10 +1,11 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Linking, Platform, ScrollView, StyleSheet } from 'react-native';
+import { Linking, Platform, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getExpo, type ExpoDetail } from '@/api/client';
 import { BackBar } from '@/components/back-bar';
+import { confirmAlert } from '@/components/confirm-alert';
 import { openExternal } from '@/features/open-external';
 import {
   ActionButton,
@@ -74,20 +75,9 @@ export default function CalendarScreen() {
   const [adding, setAdding] = useState<CalendarOption | null>(null);
   const [expo, setExpo] = useState<ExpoDetail | null>(null);
   const [loadError, setLoadError] = useState(false);
-  /**
-   * 웹 안내 문구 — `Alert.alert`는 react-native-web에서 아무 동작도 하지 않는
-   * 빈 구현이라, 웹에서는 캘린더 열기를 실패해도 사용자에게 아무 것도 보이지
-   * 않는다. 웹에서만 화면 안에 문구를 대신 띄운다.
-   */
-  const [webNotice, setWebNotice] = useState<string | null>(null);
-
-  /** 네이티브는 Alert, 웹은 화면 안 안내 문구로 갈라 보여준다. */
+  /** 단순 실패 안내는 플랫폼을 가르지 않고 DLG-A 한 경로로 보여준다. */
   function notify(title: string, message: string) {
-    if (Platform.OS === 'web') {
-      setWebNotice(message);
-    } else {
-      Alert.alert(title, message);
-    }
+    confirmAlert(title, message, [{ text: '확인' }]);
   }
 
   useEffect(() => {
@@ -105,8 +95,6 @@ export default function CalendarScreen() {
 
   async function handleAdd(option: CalendarOption) {
     setAdding(option);
-    setWebNotice(null);
-
     try {
       if (option === 'google') {
         const url = buildGoogleCalendarUrl({
@@ -207,15 +195,6 @@ export default function CalendarScreen() {
               </ThemedText>
             )}
           </ThemedView>
-
-          {/* 웹 안내 문구 — Alert가 뜨지 않는 웹에서 실패를 조용히 넘기지 않는다 */}
-          {webNotice ? (
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="t7" themeColor="negative">
-                {webNotice}
-              </ThemedText>
-            </ThemedView>
-          ) : null}
 
           {/* 캘린더 선택 */}
           <ThemedView style={styles.optionList}>

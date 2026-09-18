@@ -25,17 +25,14 @@ import { DatePickerSheet } from '@/features/onboarding/date-picker-sheet';
 import { UNDECIDED_LABEL, type Answers } from '@/features/onboarding/flow';
 import { PrepStatus } from '@/features/onboarding/prep-status';
 import { RegionPicker } from '@/features/onboarding/region-picker';
-import { Hero, NoteBox, Row, Rows, Section, SubScreen } from '@/features/settings/my-kit';
+import { NoteBox, Row, Rows, Section, SubScreen } from '@/features/settings/my-kit';
 
 /** 준비 현황이 받는 업종 — 계약이 «기타»를 받지 않는다(`preparationCategorySchema`). */
 type PreparedCategory = Exclude<VendorCategory, 'etc'>;
 
 /** screens.json WP-MY-003 layout · `spec/strings.ko.json` `my.setting.*`. */
 const S = {
-  title: '내 웨딩 설정',
-  hero: ['한 가지씩', '고칠 수 있어요'],
-  basic: '기본',
-  recommend: '추천에 쓰는 정보',
+  title: '내 웨딩설정',
   date: '예식일',
   region: '지역',
   budget: BUDGET_BRACKET_FIELD_LABEL,
@@ -156,9 +153,7 @@ export default function WeddingSettingsScreen() {
 
   return (
     <SubScreen title={S.title}>
-      <Hero lines={S.hero} />
-
-      <Section title={S.basic}>
+      <Section>
         <Rows>
           <Row
             name={S.date}
@@ -192,6 +187,24 @@ export default function WeddingSettingsScreen() {
           ) : null}
 
           <Row
+            name={S.prepared}
+            tail={preparedValue}
+            tailDim
+            chevron
+            onPress={() => toggle('prepared')}
+          />
+          {editing === 'prepared' ? (
+            <View style={styles.editor}>
+              <PrepStatus
+                selected={current.preparedCategories}
+                notStarted={current.preparedCategories.length === 0}
+                onChange={(next) => save({ preparedCategories: onlyPrepared(next) })}
+                onNotStarted={() => save({ preparedCategories: [] })}
+              />
+            </View>
+          ) : null}
+
+          <Row
             name={S.budget}
             tail={current.budgetBracket ? BUDGET_BRACKET_LABEL[current.budgetBracket] : S.none}
             tailDim
@@ -209,12 +222,7 @@ export default function WeddingSettingsScreen() {
               />
             </View>
           ) : null}
-        </Rows>
-      </Section>
 
-      <Section title={S.recommend}>
-        <Rows>
-          {/* 스타일은 WP-MY-004가 이미 같은 격자를 그린다 — 여기서 다시 만들지 않고 그 화면으로 보낸다. */}
           <Row
             name={S.style}
             tail={styleValue}
@@ -222,24 +230,6 @@ export default function WeddingSettingsScreen() {
             chevron
             onPress={() => router.push('/my/taste' as never)}
           />
-
-          <Row
-            name={S.prepared}
-            tail={preparedValue}
-            tailDim
-            chevron
-            onPress={() => toggle('prepared')}
-          />
-          {editing === 'prepared' ? (
-            <View style={styles.editor}>
-              <PrepStatus
-                selected={current.preparedCategories}
-                notStarted={current.preparedCategories.length === 0}
-                onChange={(next) => save({ preparedCategories: onlyPrepared(next) })}
-                onNotStarted={() => save({ preparedCategories: [] })}
-              />
-            </View>
-          ) : null}
         </Rows>
       </Section>
 

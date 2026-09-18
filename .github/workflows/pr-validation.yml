@@ -1,0 +1,165 @@
+name: PR Validation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Open pull request number to validate'
+        required: true
+        type: number
+
+permissions:
+  contents: read
+
+concurrency:
+  group: weddingpick-pr-validation-${{ github.event.pull_request.number || inputs.pr_number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Code / non-API validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: weddingpick
+          POSTGRES_PASSWORD: weddingpick
+          POSTGRES_DB: weddingpick_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://weddingpick:weddingpick@localhost:5432/weddingpick_test
+      MARKETING_PREVIEW_DIR: .marketing-preview
+
+    steps:
+      - name: Checkout pull request
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Checkout selected pull request
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/checkout@v5
+        with:
+          ref: refs/pull/${{ inputs.pr_number }}/merge
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Deployment policy regression tests
+        run: node --test scripts/check-render-retired.test.mjs
+
+      - name: Reject retired deployment paths
+        run: node scripts/check-render-retired.mjs
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: SEED token check
+        run: node scripts/sync-seed-tokens.mjs --check
+
+      - name: Copy lint
+        run: node lint-copy.js spec/strings.ko.json apps packages
+
+      - name: Root and non-API tests
+        run: |
+          npm run pretest
+          npm run test --workspace @weddingpick/mobile
+          npm run test --workspace @weddingpick/web
+          npm run test --workspace @weddingpick/api-contract
+          npm run test --workspace @weddingpick/db
+          npm run test --workspace @weddingpick/domain
+
+      - name: API health validator test
+        run: node --test scripts/check-api-health.test.mjs
+
+      - name: Marketing preview
+        run: npm run marketing --workspace @weddingpick/api -- demo "$GITHUB_WORKSPACE/$MARKETING_PREVIEW_DIR"
+
+      - name: Bundle app web
+        env:
+          EXPO_PUBLIC_API_URL: https://210.109.82.212
+          EXPO_PUBLIC_KAKAO_CLIENT_ID: 8e9a14dd3a0aa1a420bff858460c415c
+          EXPO_PUBLIC_WEB_URL: https://210.109.82.212
+        run: npm run export:web --workspace @weddingpick/mobile
+
+      - name: Build landing
+        env:
+          WEDDINGPICK_CONTACT_EMAIL: help.weddingpick@gmail.com
+          WEDDINGPICK_API_URL: https://210.109.82.212
+          LEGAL_TERMS_EFFECTIVE_ON: '2026-09-10'
+          LEGAL_PRIVACY_EFFECTIVE_ON: '2026-09-21'
+        run: npm run build --workspace @weddingpick/web
+
+      - name: Package Kakao static candidates
+        env:
+          ADMIN_ORIGIN: https://210.109.82.212:8443
+        run: node scripts/package-kakao-static.mjs
+
+  api-tests:
+    name: API tests (${{ matrix.shard }}/2)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: weddingpick
+          POSTGRES_PASSWORD: weddingpick
+          POSTGRES_DB: weddingpick_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://weddingpick:weddingpick@localhost:5432/weddingpick_test
+
+    steps:
+      - name: Checkout pull request
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v5
+
+      - name: Checkout selected pull request
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/checkout@v5
+        with:
+          ref: refs/pull/${{ inputs.pr_number }}/merge
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run API shard
+        run: npm run test --workspace @weddingpick/api -- --shard=${{ matrix.shard }}/2

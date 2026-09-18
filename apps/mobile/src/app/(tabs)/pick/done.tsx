@@ -1,11 +1,10 @@
 import { VENDOR_CATEGORY_LABEL, withInstrument, type VendorCategory } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Animated, Easing, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Animated, BackHandler, Easing, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getCurrentUser } from '@/api/client';
-import { BackBar } from '@/components/back-bar';
 import {
   Layout,
   MaxContentWidth,
@@ -40,7 +39,8 @@ import {
  * 되돌아갈 곳이 방금 끝낸 확인 시트뿐이라 문을 열어두지 않는다. 나가는 길은 반영 카드
  * 두 장(웨딩일정 · 지출)과 «홈으로»다. Depth Back 규칙표에는 `/pick/done → /pick`을 적어
  * 두었다 — 이 화면에 뒤로가기가 붙는 날에도 확인 시트로 되돌아가지 않게 하려는 것이다.
- * 안드로이드 하드웨어 뒤로가기는 History Back이라 그대로 둔다(막지 않는다).
+ * 안드로이드 하드웨어 뒤로가기도 여기서는 소비한다. 완료 동작을 다시 실행할 수 있는
+ * 이전 화면으로 돌아가면 안 된다(SPEC §14.5).
  *
  * **결정 직후가 지출을 넣을 때다(SPEC §13.10 · CHANGELOG v3.24).** 지출 카드가 WP-OUR-014로 보낸다 —
  * 그 순간이 사용자가 금액을 기억하고 있는 유일한 때다.
@@ -89,6 +89,13 @@ export default function PickDoneScreen() {
       },
     } as never);
   }
+
+  /* 완료 화면은 뒤로 갈 화면이 아니다. 안드로이드 물리 Back도 소비한다. */
+  useEffect(() => {
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => true);
+
+    return () => subscription.remove();
+  }, []);
 
   // ── 애니메이션 값 — useMemo로 생성해 렌더 중 ref 접근을 피한다 ──────
   const markScale = useMemo(() => new Animated.Value(0), []);
@@ -165,7 +172,6 @@ export default function PickDoneScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <BackBar />
         <ScrollView
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}>
