@@ -360,7 +360,7 @@ PR #99의 조사 보고서와 그 독립 재검증 결과에서 **코드로 확�
 RN 화면의 웹 렌더링 품질이 이제 "부가 기능"이 아니라 **실제 앱 화면 그 자체**가 된다.
 `apps/mobile/src/app/` 아래 화면 소스가 모바일 폭부터 데스크톱 폭까지 브라우저에서
 정상 렌더링돼야 실제 앱이 정상 동작하는 것이다. 점검 기준:
-`docs/design-handoff/hybrid-web-qa-checklist.md`.
+`docs/design/README.md`.
 
 ### 정책 1 — 비회원 진입 삭제
 로그인 없이 들어갈 수 있는 화면(게스트 홈 등)을 폐지한다. 로그인 완료 후에만 앱 진입이
@@ -390,7 +390,7 @@ RN 화면의 웹 렌더링 품질이 이제 "부가 기능"이 아니라 **실�
 
 4. 웹 빌드 호스팅 방식 결정(`expo export -p web` 결과물을 어디에 올릴지).
    스테이징 서버 분리가 먼저다 — 순서는 `docs/release-env-split.md`.
-5. `docs/design-handoff/hybrid-web-qa-checklist.md` 기준으로 홈·진입/내비게이션·공통
+5. `docs/design/README.md` 기준으로 홈·진입/내비게이션·공통
    화면군부터 웹 렌더링 QA. 4번이 끝나야 돌릴 수 있다.
 
 ---
@@ -659,7 +659,7 @@ DATABASE_URL=<neon-connection-string> KAKAO_REST_API_KEY=<발급받은 키> \
 ### 운영 규칙
 
 - Source of Truth는 과거 대화가 아니라 Git이다 — 최신 코드 · `CLAUDE.md` ·
-  `PROJECT_STATUS.md` · 이 파일 · `docs/design-handoff/current/`의 최신 md.
+  `PROJECT_STATUS.md` · 이 파일 · `docs/design/handoff/`의 최신 md.
 - 새 세션은 과거 대화 전체를 옮겨받지 않는다. Git과 관련 파일만 읽고 시작한다.
 - 지시는 MASTER에서 각 영역 세션으로 간다. 영역 세션끼리 같은 파일을 동시에 고치지 않는다.
 - 컨텍스트 40~60%에 도달하면 상태를 Git에 최소 반영한 뒤 같은 역할의 새 버전 세션으로 교체한다.
@@ -832,7 +832,7 @@ WeddingPickl/
 │   └── ...
 ├── docs/
 │   ├── 통합정책 v3.15       # 현재 확정 기준 정책
-│   ├── design-handoff/      # 디자인 핸드오프 (IA 176화면)
+│   ├── design/handoff/      # 디자인 핸드오프 (IA 176화면)
 │   ├── AI_HANDOFF.md        # 이 파일
 │   └── 05-product-spec.md   # Phase 1 제품 스펙 (A-01~A-18)
 └── .github/workflows/       # CI/CD 워크플로
@@ -893,8 +893,8 @@ WeddingPickl/
 
 ## 프론트엔드 화면별 상세 갭 분석 (디자인 핸드오프 21개 화면 기준)
 
-> 아래는 `docs/design-handoff/README.md` 기준 21개 화면을 코드와 1:1 대조한 결과다.
-> 참고: `docs/design-handoff/웨딩픽 앱 v7.dc.html`은 레포에 없어 README 기준으로 분석.
+> 아래는 `docs/design/handoff/README.md` 기준 21개 화면을 코드와 1:1 대조한 결과다.
+> 참고: `docs/design/handoff/웨딩픽 앱 v7.dc.html`은 레포에 없어 README 기준으로 분석.
 
 ### 우선순위별 핵심 갭
 
@@ -974,7 +974,7 @@ WeddingPickl/
   - **회원탈퇴 자동 삭제 백엔드를 만들지 말 것.** `packages/domain/src/withdrawal.ts`의 `WITHDRAWAL_NOTICE`가 개인정보처리방침 확정 전까지 `null`인 명시적 게이트다. 스키마상 `structured.users` 하드 삭제는 FK CASCADE로 확인된 정보(quotes)까지 지운다 — 위험. `payment_proofs`/`price_reports`를 "통계 제외"할지 "익명화 유지"할지도 정책 §46이 명확히 안 정했다. 이 정책들이 정해지기 전엔 손대지 말 것.
   - Npay·월간 웨딩지원금 기능을 만들지 말 것(위 미완료 항목 참조, 개인정보 처리방침과 함께 정리해야 함).
   - 네이버 authorization code 교환과 프로필 조회 경로가 구현됐다. 서버와 앱 환경값 및 네이버 Developers callback URL이 모두 설정된 경우에만 노출한다(`docs/social-login-handoff.md` 참조).
-  - `docs/design-handoff/current/`는 원본 그대로 유지 — 화면 구현할 때 이 폴더 안의 `.dc.html` 파일을 직접 고치지 않는다(참고용 원본). 옛 `seed/`는 v3.11 반영 시점(2026-09-06)에 삭제했다.
+  - `docs/design/handoff/`는 원본 그대로 유지 — 화면 구현할 때 이 폴더 안의 `.dc.html` 파일을 직접 고치지 않는다(참고용 원본). 옛 `seed/`는 v3.11 반영 시점(2026-09-06)에 삭제했다.
 
 ## 롤백
 - rollback_note: 커밋 4개(`f22a512`, `bba48ed`, `10ce66a`, `cf07b15`)는 서로 기능적으로 독립적이라 필요하면 개별 `git revert <hash>`로 되돌릴 수 있다. 순서상 뒤 커밋이 앞 커밋의 파일을 다시 건드리지 않으므로 역순 revert도 안전하다. 전부 origin/main에 push 완료 — 로컬에만 있는 미커밋 변경 없음(`.npm-cache/` 잡음 제외).

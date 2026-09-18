@@ -71,7 +71,7 @@ type Editing = 'region' | 'budget' | 'prepared' | null;
  * 만들지 않는다.
  *
  * **«추천에 쓰는 정보»가 시안의 3행이 아니라 2행이다.** WP-MY-003은 전용 시안 파일이 없고
- * (`docs/design-handoff/current/html`에 이 화면이 없다) screens.json layout과 00-ia의 항목만 있다.
+ * (`docs/design/handoff/html`에 이 화면이 없다) screens.json layout과 00-ia의 항목만 있다.
  * 00-ia가 세는 세 번째는 «취향 다시 고르기»(WP-MY-004)인데, v3.24가 취향을 스타일 4종으로
  * 합치면서 그 화면이 곧 «스타일»(`/my/taste`)이 됐다. 같은 화면을 두 줄로 세우지 않는다.
  */

@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 
 /**
  * 디자인 토큰 — SEED(당근 디자인시스템) 기준. **원본은 `spec/tokens.json`이고, 그 파일은
- * `docs/design-handoff/current/tokens.json`을 그대로 옮긴 것이다.** 여기 있는 값은 그 두 파일에
+ * `docs/design/handoff/tokens.json`을 그대로 옮긴 것이다.** 여기 있는 값은 그 두 파일에
  * 있는 수와 색이어야 한다 — 이 파일이 새 값을 만들지 않는다(2026-09-09 감사에서 어긋난 값을 전부
  * 핸드오프로 맞췄다: primaryPressed · primaryTint · warningSurface · dangerText · dim · divider · inverse).
  *
@@ -644,7 +644,7 @@ export const AdminSpacing = {
  * 사람이 「어느 쪽이 맞나」를 다시 파지 않게 하려는 것이다.
  *
  *     ~2026-09-15   24   화면 99개. 피그마에 없는 화면은 24라는 예외가 붙어 있었다
- *      2026-09-15   20   「피그마가 곧 정본이다」 — docs/figma-spec 12화면 실측
+ *      2026-09-15   20   「피그마가 곧 정본이다」 — docs/design/figma-export 12화면 실측
  *      2026-09-17   24   새 패키지 「전 화면 예외 없음」 · 대표 지시
  *
  * **숫자보다 중요한 것은 한 화면 안에 두 값이 섞이지 않는 것이다.** 99개가 24이고
@@ -743,7 +743,7 @@ export const Layout = {
   tabPickDotOffset: -1,
   /**
    * 가운데 Pick 탭의 원형 강조. spec/tokens.json `tabBar.emphasized`
-   * (← weddingpick_figma `src/app/components/Root.tsx:66-84`).
+   * (← docs/design/figma-export `src/app/components/Root.tsx:66-84`).
    *
    * 원 안의 아이콘만 20이고 나머지 넷은 `iconTab`(24) 그대로다 — 그 사유도
    * 토큰의 `$only`에 적혀 있다.
@@ -849,7 +849,7 @@ export const Layout = {
   heroVendor: 288,
   thumbPortfolio: 144,
   /*
-   * 홈 규격서 docs/figma-spec/home.txt(2026-09-15). 히어로 장식 원 «div 144×144 … r9999» ·
+   * 홈 규격서 docs/design/figma-export/01-home.dc.html(2026-09-15). 히어로 장식 원 «div 144×144 … r9999» ·
    * «div 112×112 … border 14» · 더보기 «button 24×24» · 아바타 «span 16×16 "지" 7/700» · 추천 카드
    * «div 208×262» «img 206×144» · 하트 «button 32×32» · 웨딩피드 «img 80×80 r18» · 탭 바 «pad 0 8».
    */
@@ -1033,7 +1033,7 @@ export const Border = {
 export const Elevation = {
   /**
    * 피그마 규격서의 «shadow» — Tailwind `shadow-sm` = 0 1px 2px rgba(0,0,0,.05). 검색 · Pick ·
-   * 웨딩피드 카드가 쓴다(docs/figma-spec/search.txt 「div 390×137 … r16 · border … · shadow」).
+   * 웨딩피드 카드가 쓴다(docs/design/figma-export/02-search.dc.html 「div 390×137 … r16 · border … · shadow」).
    * 2026-09-15 대표 지시로 규격서의 수를 그대로 옮긴다 — elevation.$rule(그림자 거의 안 씀)보다 앞선다.
    */
   figmaCard: {

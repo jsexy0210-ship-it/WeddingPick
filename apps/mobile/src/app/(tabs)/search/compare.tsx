@@ -8,7 +8,6 @@ import {
   regionLabel,
   manwon,
   priceLine,
-  withParticle,
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -17,7 +16,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { compareVendors, getCurrentUser, recordComparison } from '@/api/client';
 import { BackButton } from '@/components/back-button';
-import { LoginSheet } from '@/features/auth/login-sheet';
 import { savePendingAction } from '@/features/auth/pending-action';
 import { PickDoneSheet } from '@/features/pick/pick-sheets';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
@@ -77,8 +75,6 @@ export default function CompareScreen() {
   const [result, setResult] = useState<VendorComparisonResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  /** 로그인 전에 Pick을 눌렀을 때, 로그인 후 이어서 저장할 업체. */
-  const [loginTarget, setLoginTarget] = useState<VendorDetail | null>(null);
   const [pickDoneOpen, setPickDoneOpen] = useState(false);
   /* Pick 전·후 — 검색 카드 · 업체 상세와 같은 후보 목록을 본다. */
   const candidates = useMyCandidates();
@@ -122,8 +118,8 @@ export default function CompareScreen() {
   }
 
   /**
-   * 바텀 독에서 Pick(SPEC §13.1). 첫 Pick이 대표 로그인 트리거다 — 로그인 전이면 누른 것을
-   * 적어두고 시트를 연다. 업체상세와 같은 흐름.
+   * 바텀 독에서 Pick(SPEC §13.1). 세션이 사라지면 pending Pick만 남기고 로그인으로 복귀한다.
+   * 비교 화면 안에 별도 로그인 UI를 겹쳐 띄우지 않는다.
    */
   async function pickVendor(vendor: VendorDetail) {
     if (candidates.candidateFor(vendor.id)) return;
@@ -131,7 +127,7 @@ export default function CompareScreen() {
     if (outcome === 'picked') setPickDoneOpen(true);
     else if (outcome === 'login') {
       await savePendingAction({ kind: 'pick', vendorId: vendor.id, vendorName: vendor.name });
-      setLoginTarget(vendor);
+      router.replace('/login');
     } else setToast('Pick하지 못했어요. 잠시 후 다시 시도해주세요.');
   }
 
@@ -353,25 +349,6 @@ export default function CompareScreen() {
 
       <Toast message={toast} onHidden={() => setToast(null)} />
       <PickDoneSheet visible={pickDoneOpen} onDismiss={() => setPickDoneOpen(false)} />
-      <LoginSheet
-        visible={loginTarget !== null}
-        reason={
-          loginTarget ? `로그인하면 ${withParticle(loginTarget.name, '을를')} 바로 Pick해드려요.` : ''
-        }
-        onSignedIn={(outcome) => {
-          setLoginTarget(null);
-
-          if (outcome.needsSignup) {
-            router.push('/setup');
-            return;
-          }
-
-          candidates.reload().catch(() => undefined);
-          if (outcome.completed) setPickDoneOpen(true);
-          else if (outcome.weddingError) setToast(outcome.weddingError);
-        }}
-        onDismiss={() => setLoginTarget(null)}
-      />
     </ThemedView>
   );
 }

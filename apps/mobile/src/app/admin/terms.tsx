@@ -19,31 +19,40 @@ import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { formatDateDot } from '@/features/common/format-date';
 import { ConfirmCard } from './_ui';
-import { PendingBackendNotice } from '@/features/admin/pending-backend';
 
-const BACKEND_PENDING = true;
-
-/**
- * 잠긴 동안 핸들러가 돌면 적는 말.
+/*
+ * **2026-09-16에 이 화면이 열렸다.** 대표 지시 — 「개인정보처리방침 이용약관 마케팅
+ * 약관도 동일하게 내가 수정가능하도록 하고」.
  *
- * 단추는 이미 비활성이지만 핸들러는 그대로 있다. 그냥 `return`하면 「눌렀는데
- * 아무 일도 안 일어난다」가 되고, v3.27이 가장 나쁘다고 적은 상태가 된다.
- * 무엇이 되는지를 함께 말한다.
+ * 전까지 이 화면에는 화면 안쪽 잠금 상수가 켜져 있었고, 서버도 `termsUnavailable()`로
+ * 막고 있었다. 그 문구가 적은 「앱 약관·동의 기록에 연결한 뒤」가 0422이다 —
+ * 본문이 표로 왔고 동의 기록이 판을 가리킨다.
+ *
+ * **이 주석에 그 상수 이름을 적지 않는다.** `test/admin-read-only-pairing.test.ts`가
+ * 화면 파일에서 그 글자를 «글자 그대로» 찾아 「아직 잠긴 화면」을 센다 — 지나간
+ * 이야기를 적어 둔 줄 하나 때문에 이 화면이 다시 잠긴 것으로 세어진다.
+ *
+ * **사이드바의 「조회만」 딱지도 같이 뗐다**(`faq.tsx`의 `TABS`). 한쪽만 지우면
+ * 말이 어긋난다 — 목록은 「조회만」이라 적고 화면은 저장되는 상태가 된다.
  */
-const PENDING_REASON =
-  '지금은 약관 조문과 판 이력을 조회할 수 있어요. 편집·공개는 앱 약관·동의 기록에 연결한 뒤 열려요.';
 
 type DocType = 'terms' | 'privacy' | 'marketing';
 type TermsVersion = {
   version: string;
   publishedAt: string | null;
+  effectiveOn: string | null;
   isDraft: boolean;
 };
+type TermsClauseTable = { lead: string | null; cols: { label: string }[]; rows: string[][] };
 type TermsClause = {
   id: string;
   articleNumber: string;
   title: string;
   body: string;
+  /** 표 모양 조문이면 채워져 있다. 방침의 세 절이 그렇다. */
+  bodyTable: TermsClauseTable | null;
+  /** 지우거나 비울 때 한 번 더 확인받을 절이면 그 사유(0422). */
+  removalWarning: string | null;
 };
 type TermsDoc = {
   type: DocType;
@@ -51,6 +60,7 @@ type TermsDoc = {
   currentVersion: string;
   latestDraftVersion: string | null;
   publishedAt: string | null;
+  effectiveOn: string | null;
   versions: TermsVersion[];
   clauses: TermsClause[];
 };
@@ -75,6 +85,26 @@ export function TermsPanel() {
   const [publishing, setPublishing] = useState(false);
   /** 공개를 확인받는 중. 공개한 판은 다시 고칠 수 없어 한 번 더 묻는다(v3.27). */
   const [askingPublish, setAskingPublish] = useState(false);
+  /** 공개할 판의 시행일. 저장한 날과 효력이 생기는 날은 다르다. */
+  const [effectiveOn, setEffectiveOn] = useState('');
+  /**
+   * 국외 이전 · 수탁자 절에서 무엇이 사라지는지 서버가 보내온 것.
+   *
+   * 막는 것이 아니라 가르는 것이다 — 알고 지우는 것과 모르고 지우는 것(0422).
+   */
+  const [askingRemoval, setAskingRemoval] = useState<{ warning: string; removing: string[] } | null>(null);
+  /** 표 모양 조문을 고치는 중이면 그 표. 방침의 세 절이 여기에 해당한다. */
+  const [clauseTable, setClauseTable] = useState<TermsClauseTable | null>(null);
+  /**
+   * 조문을 새로 더하는 중.
+   *
+   * **마케팅 정보 수신 동의가 이 길로 시작한다** — 저장소에 본문이 한 번도 없어서
+   * 빈 초안만 있다. 더하는 자리가 없으면 「수정 가능하도록」이 반만 열린 셈이다.
+   */
+  const [addingClause, setAddingClause] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  /** 지우려는 조문. 보호 표시가 붙었으면 서버가 무엇이 사라지는지 먼저 보낸다. */
+  const [deletingClause, setDeletingClause] = useState<TermsClause | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -99,28 +129,115 @@ export function TermsPanel() {
   const activeDocData = data?.documents.find((d) => d.type === activeDoc);
 
   function openClause(clause: TermsClause) {
-    if (BACKEND_PENDING) {
-      setActionError(PENDING_REASON);
-      return;
-    }
     setEditingClause(clause);
     setClauseBody(clause.body);
+    setClauseTable(clause.bodyTable);
     setActionError(null);
   }
 
-  async function saveClause() {
-    if (BACKEND_PENDING) {
-      setActionError(PENDING_REASON);
-      return;
+  /**
+   * 표의 한 줄을 지운다.
+   *
+   * 지우는 순간 저장하지 않는다 — 저장할 때 서버가 무엇이 사라지는지 세어
+   * 한 번 더 묻는다. 여기서 바로 보내면 그 관문을 화면이 건너뛰게 된다.
+   */
+  function dropTableRow(index: number) {
+    setClauseTable((table) =>
+      table === null ? null : { ...table, rows: table.rows.filter((_, i) => i !== index) }
+    );
+  }
+
+  /**
+   * 새 초안을 만든다.
+   *
+   * **0422가 심은 판은 공개돼 있다** — 이미 웹사이트에 나가 있던 글이라 「아직 공개
+   * 전」이 아니다. 공개된 판의 조문은 얼어 있으므로, 고치려면 먼저 초안을 만든다.
+   * 공개된 판의 조문을 그대로 물려받아 시작한다.
+   */
+  async function createDraft() {
+    setSaving(true);
+    setActionError(null);
+    try {
+      await apiFetch('/v1/admin/terms', {
+        method: 'POST',
+        body: JSON.stringify({ doc: activeDoc }),
+      });
+      setRev((r) => r + 1);
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : '초안 만들기 실패');
+    } finally {
+      setSaving(false);
     }
+  }
+
+  async function addClause() {
+    setSaving(true);
+    setActionError(null);
+    try {
+      await apiFetch(`/v1/admin/terms/${activeDoc}/clauses`, {
+        method: 'POST',
+        body: JSON.stringify({ title: newTitle, body: clauseBody }),
+      });
+      setAddingClause(false);
+      setNewTitle('');
+      setClauseBody('');
+      setRev((r) => r + 1);
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : '추가 실패');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /** 조문을 지운다. 보호 표시가 붙은 절은 서버가 한 번 더 묻는다(0422). */
+  async function deleteClause(clause: TermsClause, confirm = false) {
+    setSaving(true);
+    setActionError(null);
+    try {
+      const result = (await apiFetch(
+        `/v1/admin/terms/${activeDoc}/clauses/${clause.id}?confirm=${confirm ? 'true' : 'false'}`,
+        { method: 'DELETE' }
+      )) as { saved: boolean; warning?: string; removing?: string[] };
+
+      if (!result.saved) {
+        setDeletingClause(clause);
+        setAskingRemoval({ warning: result.warning ?? '', removing: result.removing ?? [] });
+        return;
+      }
+
+      setDeletingClause(null);
+      setAskingRemoval(null);
+      setRev((r) => r + 1);
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : '삭제 실패');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /**
+   * 조문을 저장한다.
+   *
+   * 국외 이전 · 수탁자 절에서 항목이 사라지면 서버가 저장하지 않고
+   * `{ saved: false, removing }`을 돌려준다. 그때 무엇이 사라지는지 항목으로
+   * 보인 뒤 `confirm`을 붙여 다시 보낸다(v3.27 · 0422).
+   */
+  async function saveClause(confirm = false) {
     if (!editingClause) return;
     setSaving(true);
     setActionError(null);
     try {
-      await apiFetch(`/v1/admin/terms/${activeDoc}/clauses/${editingClause.id}`, {
+      const result = (await apiFetch(`/v1/admin/terms/${activeDoc}/clauses/${editingClause.id}`, {
         method: 'PUT',
-        body: JSON.stringify({ body: clauseBody }),
-      });
+        body: JSON.stringify({ body: clauseBody, bodyTable: clauseTable, confirm }),
+      })) as { saved: boolean; warning?: string; removing?: string[] };
+
+      if (!result.saved) {
+        setAskingRemoval({ warning: result.warning ?? '', removing: result.removing ?? [] });
+        return;
+      }
+
+      setAskingRemoval(null);
       setEditingClause(null);
       setRev((r) => r + 1);
     } catch (e) {
@@ -131,15 +248,15 @@ export function TermsPanel() {
   }
 
   async function publish() {
-    if (BACKEND_PENDING) {
-      setActionError(PENDING_REASON);
-      return;
-    }
     if (!activeDocData?.latestDraftVersion) return;
     setPublishing(true);
     setActionError(null);
     try {
-      await apiFetch(`/v1/admin/terms/${activeDoc}/publish`, { method: 'POST' });
+      await apiFetch(`/v1/admin/terms/${activeDoc}/publish`, {
+        method: 'POST',
+        body: JSON.stringify({ effectiveOn }),
+      });
+      setEffectiveOn('');
       setRev((r) => r + 1);
     } catch (e) {
       setActionError(e instanceof Error ? e.message : '공개 실패');
@@ -154,21 +271,34 @@ export function TermsPanel() {
     <View style={styles.root}>
       <View style={styles.header}>
         <Text style={styles.title}>약관 · 방침 관리</Text>
+        {activeDocData && !activeDocData.latestDraftVersion && (
+          <Pressable
+            style={[styles.addBtn, saving && styles.btnDisabled]}
+            disabled={saving}
+            onPress={() => void createDraft()}
+          >
+            <Text style={styles.addBtnText}>{saving ? '만드는 중…' : '새 초안 만들기'}</Text>
+          </Pressable>
+        )}
+        {activeDocData?.latestDraftVersion && (
+          <Pressable
+            style={styles.addBtn}
+            onPress={() => { setNewTitle(''); setClauseBody(''); setClauseTable(null); setActionError(null); setAddingClause(true); }}
+          >
+            <Text style={styles.addBtnText}>조문 추가</Text>
+          </Pressable>
+        )}
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
           <Text style={styles.refreshText}>새로 고침</Text>
         </Pressable>
       </View>
 
       {/*
-        * **약관 정본은 웹사이트다**(2026-09-11 대표 지시 — `apps/web/src/subpages.ts`).
-        * 여기서 고치게 만들면 같은 문서가 두 벌이 되고, 한 벌이 낡으면 낡은 쪽을
-        * 사용자가 본다. 「관리자에서 직접 조작」을 어디에 둘지는 두 안을 올려 두었고
-        * (`docs/admin-screen-inventory.md`), 정해지기 전까지는 조회만 둔다.
+        * **정본은 여전히 하나다.** CLAUDE.md의 「약관과 개인정보처리방침의 정본은
+        * 웹사이트다」(2026-09-11 대표 지시)가 막는 것은 사본이 둘이 되는 것이고,
+        * 그 위험은 그대로다. 2026-09-16 지시로 바뀐 것은 그 하나가 코드가 아니라
+        * 표라는 것뿐이다 — 여기서 고치면 웹이 그것을 읽어 그린다.
         */}
-      <PendingBackendNotice
-        actions="약관 편집·공개"
-        reason="약관 정본은 웹사이트에 있어요. 여기서는 저장된 초안과 판 이력을 확인할 수 있어요."
-      />
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
@@ -211,6 +341,11 @@ export function TermsPanel() {
                       공개일: {formatDateDot(activeDocData.publishedAt)}
                     </Text>
                   )}
+                  {activeDocData.effectiveOn && (
+                    <Text style={styles.dateText}>
+                      시행일: {formatDateDot(activeDocData.effectiveOn)}
+                    </Text>
+                  )}
                   {activeDocData.latestDraftVersion && (
                     <Text style={styles.draftText}>
                       미공개 초안: {activeDocData.latestDraftVersion}
@@ -218,15 +353,31 @@ export function TermsPanel() {
                   )}
                 </View>
                 {activeDocData.latestDraftVersion && (
-                  <Pressable
-                    style={[styles.publishBtn, (BACKEND_PENDING || publishing) && styles.btnDisabled]}
-                    onPress={() => { setActionError(null); setAskingPublish(true); }}
-                    disabled={BACKEND_PENDING || publishing}
-                  >
-                    <Text style={styles.publishBtnText}>
-                      {publishing ? '공개 중…' : '초안 공개'}
-                    </Text>
-                  </Pressable>
+                  <View style={styles.publishGroup}>
+                    {/*
+                      저장한 날과 효력이 생기는 날은 다르다. 약관 변경은 시행일을
+                      미리 알리고 그날부터 적용한다(이용약관 제3조 · 방침 제13항).
+                    */}
+                    <View>
+                      <Text style={styles.effectiveLabel}>시행일</Text>
+                      <TextInput
+                        style={styles.effectiveInput}
+                        value={effectiveOn}
+                        onChangeText={setEffectiveOn}
+                        placeholder="2026-10-01"
+                        placeholderTextColor={Colors.light.textAssistive}
+                      />
+                    </View>
+                    <Pressable
+                      style={[styles.publishBtn, (publishing || effectiveOn.trim() === '') && styles.btnDisabled]}
+                      onPress={() => { setActionError(null); setAskingPublish(true); }}
+                      disabled={publishing || effectiveOn.trim() === ''}
+                    >
+                      <Text style={styles.publishBtnText}>
+                        {publishing ? '공개 중…' : '초안 공개'}
+                      </Text>
+                    </Pressable>
+                  </View>
                 )}
               </View>
 
@@ -235,14 +386,51 @@ export function TermsPanel() {
               )}
 
               <ScrollView>
+                {/*
+                  빈 상태가 정상 상태다(v3.27). 마케팅 동의는 저장소에 본문이 한 번도
+                  없었다 — 「고장 났다」가 아니라 「아직 안 쓰셨다」이고, 다음에 무엇을
+                  하면 되는지를 말한다.
+                */}
+                {activeDocData.clauses.length === 0 && (
+                  <Text style={styles.emptyText}>
+                    {activeDocData.latestDraftVersion
+                      ? '아직 조문이 없어요. 위의 「조문 추가」로 첫 조문을 넣어주세요.'
+                      : '아직 조문이 없어요. 위의 「새 초안 만들기」부터 눌러주세요.'}
+                  </Text>
+                )}
                 {activeDocData.clauses.map((clause, i) => (
                   <View key={clause.id} style={[styles.clauseRow, i % 2 === 1 && styles.clauseRowZebra]}>
                     <View style={styles.clauseMain}>
-                      <Text style={styles.clauseArticle}>{clause.articleNumber}. {clause.title}</Text>
-                      <Text style={styles.clauseBody} numberOfLines={3}>{clause.body}</Text>
+                      <Text style={styles.clauseArticle}>{clause.title}</Text>
+                      {clause.bodyTable ? (
+                        <Text style={styles.clauseBody} numberOfLines={2}>
+                          표 {clause.bodyTable.rows.length}줄 · {clause.bodyTable.cols.map((c) => c.label).join(' · ')}
+                        </Text>
+                      ) : (
+                        <Text style={styles.clauseBody} numberOfLines={3}>{clause.body}</Text>
+                      )}
+                      {/* 지우면 고지가 빠지는 절. 목록에서부터 보인다 — 열고 나서 알면 늦다. */}
+                      {clause.removalWarning && (
+                        <Text style={styles.protectedNote}>{clause.removalWarning}</Text>
+                      )}
                     </View>
-                    <Pressable style={[styles.editBtn, BACKEND_PENDING && styles.btnDisabled]} disabled={BACKEND_PENDING} onPress={() => openClause(clause)}>
+                    {/*
+                      공개된 판을 보고 있으면 고칠 수 없다 — 단추를 눌러도 서버가
+                      거절하므로, 눌리지 않게 두고 위의 「새 초안 만들기」로 보낸다.
+                    */}
+                    <Pressable
+                      style={[styles.editBtn, !activeDocData.latestDraftVersion && styles.btnDisabled]}
+                      disabled={!activeDocData.latestDraftVersion}
+                      onPress={() => openClause(clause)}
+                    >
                       <Text style={styles.editBtnText}>수정</Text>
+                    </Pressable>
+                    <Pressable
+                      style={[styles.editBtn, !activeDocData.latestDraftVersion && styles.btnDisabled]}
+                      disabled={!activeDocData.latestDraftVersion}
+                      onPress={() => void deleteClause(clause)}
+                    >
+                      <Text style={styles.deleteBtnText}>삭제</Text>
                     </Pressable>
                   </View>
                 ))}
@@ -256,10 +444,12 @@ export function TermsPanel() {
       <Modal visible={editingClause !== null} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>
-              {editingClause?.articleNumber}. {editingClause?.title}
+            <Text style={styles.modalTitle}>{editingClause?.title}</Text>
+            <Text style={styles.modalSub}>
+              {clauseTable
+                ? '표 앞에 붙는 설명이에요. 줄은 아래에서 지울 수 있어요.'
+                : '엔터로 줄을 나누면 조항이 나뉘어요. 지금 보고 있는 초안에 저장돼요.'}
             </Text>
-            <Text style={styles.modalSub}>저장하면 새 초안 버전이 만들어져요.</Text>
             <TextInput
               style={styles.clauseInput}
               multiline
@@ -267,6 +457,25 @@ export function TermsPanel() {
               onChangeText={setClauseBody}
               textAlignVertical="top"
             />
+            {/*
+              표 모양 조문. 수탁자 한 곳이 목록에서 빠지는 것이 가장 위험하고 가장
+              눈에 안 띄어서, 줄마다 무엇인지를 적고 지우는 단추를 따로 둔다.
+            */}
+            {clauseTable && (
+              <ScrollView style={styles.tableBox}>
+                {clauseTable.rows.map((row, i) => (
+                  <View key={`${row[0] ?? ''}-${i}`} style={styles.tableRow}>
+                    <Text style={styles.tableCell} numberOfLines={2}>{row.join(' · ')}</Text>
+                    <Pressable style={styles.rowDropBtn} onPress={() => dropTableRow(i)}>
+                      <Text style={styles.rowDropText}>줄 지우기</Text>
+                    </Pressable>
+                  </View>
+                ))}
+                {clauseTable.rows.length === 0 && (
+                  <Text style={styles.tableEmpty}>줄이 하나도 없어요.</Text>
+                )}
+              </ScrollView>
+            )}
             {actionError && <Text style={styles.saveError}>{actionError}</Text>}
             <View style={styles.modalActions}>
               <Pressable style={styles.cancelBtn} onPress={() => setEditingClause(null)} disabled={saving}>
@@ -284,6 +493,68 @@ export function TermsPanel() {
         </View>
       </Modal>
 
+      {/* 조문 더하기. 제목은 화면에 그대로 그려진다 — 「제1조 목적」처럼 번호를 안에 적는다. */}
+      <Modal visible={addingClause} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>조문 추가</Text>
+            <Text style={styles.modalSub}>
+              제목은 화면에 그대로 나와요 — 「제1조 목적」처럼 번호를 안에 적어주세요.
+            </Text>
+            <TextInput
+              style={styles.titleInput}
+              value={newTitle}
+              onChangeText={setNewTitle}
+              placeholder="제1조 목적"
+              placeholderTextColor={Colors.light.textAssistive}
+            />
+            <TextInput
+              style={styles.clauseInput}
+              multiline
+              value={clauseBody}
+              onChangeText={setClauseBody}
+              textAlignVertical="top"
+              placeholder="엔터로 줄을 나누면 조항이 나뉘어요."
+              placeholderTextColor={Colors.light.textAssistive}
+            />
+            {actionError && <Text style={styles.saveError}>{actionError}</Text>}
+            <View style={styles.modalActions}>
+              <Pressable style={styles.cancelBtn} onPress={() => setAddingClause(false)} disabled={saving}>
+                <Text style={styles.cancelBtnText}>취소</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.saveBtn, saving && styles.btnDisabled]}
+                onPress={() => void addClause()}
+                disabled={saving}
+              >
+                <Text style={styles.saveBtnText}>{saving ? '추가 중…' : '추가'}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/*
+        **국외 이전 · 수탁자 절에서 항목이 사라질 때.**
+
+        고지가 이전보다 먼저다(개인정보보호법 제28조의8 · 제26조). 막지는 않는다 —
+        대표님이 고치실 수 있어야 한다. 가르는 것은 알고 지우는 것과 모르고 지우는
+        것이고, 그래서 무엇이 사라지는지 항목으로 먼저 보인다(v3.27).
+      */}
+      {askingRemoval ? (
+        <ConfirmCard
+          title="이 항목들이 방침에서 빠져요"
+          body={askingRemoval.warning}
+          items={askingRemoval.removing}
+          cta={deletingClause ? '알겠어요, 지울게요' : '알겠어요, 저장할게요'}
+          danger
+          onConfirm={() =>
+            void (deletingClause ? deleteClause(deletingClause, true) : saveClause(true))
+          }
+          onCancel={() => { setAskingRemoval(null); setDeletingClause(null); }}
+        />
+      ) : null}
+
       {/*
         공개한 판은 얼어붙는다 — 사용자가 동의한 글이라 나중에 고칠 수 없다.
         무엇이 바뀌는지 항목으로 보인 뒤 한 번 더 확인한다(v3.27).
@@ -294,8 +565,9 @@ export function TermsPanel() {
           body="공개한 판의 조문은 다시 고칠 수 없어요."
           items={[
             `${activeDocData.label} ${activeDocData.latestDraftVersion ?? ''} 판이 공개돼요`,
+            `시행일은 ${effectiveOn.trim()}이에요`,
             '공개된 조문은 잠기고, 이어서 고칠 새 초안이 만들어져요',
-            '사용자에게 이 판이 현행으로 보여요',
+            '웹사이트를 다시 배포하면 사용자에게 이 판이 보여요',
             '공개한 사람과 시각이 감사 기록에 남아요',
           ]}
           cta="초안 공개"
@@ -369,6 +641,66 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.tint,
   },
   publishBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
+  publishGroup: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'flex-end', gap: 12 },
+  effectiveLabel: { fontSize: FontSize.tab, color: Colors.light.textAssistive, marginBottom: 4 },
+  effectiveInput: {
+    width: 120,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: Colors.light.fieldBorder,
+    backgroundColor: Colors.light.background,
+    fontSize: FontSize.t7,
+    color: Colors.light.text,
+  },
+  protectedNote: { fontSize: FontSize.tab, color: Colors.light.cautionary, marginTop: 6 },
+  addBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 6,
+    backgroundColor: Colors.light.tint,
+    marginRight: 8,
+  },
+  addBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
+  deleteBtnText: { fontSize: FontSize.tab, color: Colors.light.negative },
+  emptyText: {
+    fontSize: FontSize.t7,
+    color: Colors.light.textAssistive,
+    padding: 24,
+    textAlign: 'center',
+  },
+  titleInput: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: Colors.light.fieldBorder,
+    backgroundColor: Colors.light.background,
+    fontSize: FontSize.t7,
+    color: Colors.light.text,
+    marginBottom: 10,
+  },
+  tableBox: { maxHeight: 220, marginTop: 12 },
+  tableRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.backgroundSelected,
+    gap: 12,
+  },
+  tableCell: { flex: 1, fontSize: FontSize.tab, color: Colors.light.textSecondary },
+  rowDropBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: Colors.light.fieldBorder,
+    flexShrink: 0,
+  },
+  rowDropText: { fontSize: FontSize.tab, color: Colors.light.negative },
+  tableEmpty: { fontSize: FontSize.tab, color: Colors.light.textAssistive, paddingVertical: 12 },
   actionError: { fontSize: FontSize.t7, color: Colors.light.negative, padding: 12 },
   clauseRow: {
     flexDirection: 'row',

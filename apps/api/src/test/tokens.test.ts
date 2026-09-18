@@ -6,7 +6,7 @@ const ROOT = join(__dirname, '..', '..', '..', '..');
 /**
  * 핸드오프 토큰이 코드 토큰에 다 들어 있는지 지킨다.
  *
- * 값의 원본은 `docs/design-handoff/current/tokens.json`이고, 코드가 읽는 원본은 `spec/tokens.json`이다
+ * 값의 원본은 `docs/design/handoff/tokens.json`이고, 코드가 읽는 원본은 `spec/tokens.json`이다
  * (CLAUDE.md: 값은 spec/tokens.json에서만 가져온다). 두 파일의 모양은 다르지만 — spec은 값마다 `use`를
  * 붙인다 — **핸드오프가 정한 색과 수는 전부 spec에 있어야 한다.** 핸드오프가 바뀌고 spec이 그대로면
  * 화면은 옛 값을 그린다. 그 어긋남을 여기서 잡는다.
@@ -28,7 +28,7 @@ function leaves(value: Json, path = '', out: [string, Json][] = []): [string, Js
 }
 
 const handoff = JSON.parse(
-  readFileSync(join(ROOT, 'docs/design-handoff/current/tokens.json'), 'utf8')
+  readFileSync(join(ROOT, 'docs/design/handoff/tokens.json'), 'utf8')
 ) as Json;
 const specText = readFileSync(join(ROOT, 'spec/tokens.json'), 'utf8');
 const seedLight = (

@@ -1,121 +1,104 @@
 import { renderPrivacyPage, renderTermsPage } from './subpages';
+import type { LegalDocument } from './legal-data';
+
+/**
+ * **그리는 법**을 보는 자리다. 무엇이 적혀 있는가는 여기서 보지 않는다.
+ *
+ * 2026-09-16 대표 지시로 본문이 코드를 떠나 표로 갔다(0422). 그전까지 이 파일은
+ * 두 가지를 한꺼번에 봤다 — 표가 제대로 그려지는가와, 방침이 국외 이전을 제대로
+ * 적는가. **둘은 이제 사는 곳이 다르다.**
+ *
+ *     그리는 법   이 파일. 어떤 내용이 와도 표·목차·행 제목이 제대로 나오는가
+ *     적힌 내용   apps/api/src/test/admin-ops-routes.test.ts 「심어 둔 방침」
+ *
+ * 내용 쪽을 여기 두면 대표님이 한 글자를 고칠 때마다 이 시험이 빨개진다 —
+ * 고치라고 연 편집을 시험이 도로 막는 꼴이 된다. 내용은 표에 있으니 표에서 본다.
+ */
+
+const doc = (sections: LegalDocument['sections']): LegalDocument => ({
+  version: 'v1.0',
+  effectiveOn: '2026-10-01',
+  sections,
+});
+
+const listSection = (t: string, lines: string[]) => ({ t, l: lines });
+
+const tableSection = (t: string) => ({
+  t,
+  table: true,
+  lead: '표 앞에 붙는 설명.',
+  cols: [{ label: '이전받는 자' }, { label: '국가·목적' }, { label: '보유기간' }],
+  rows: [
+    ['어느 회사 · privacy@example.com', '미국 · 분석', '목적 달성 시까지'],
+    ['다른 회사', '싱가포르 · 저장', '계약 종료 시까지'],
+  ],
+});
+
+const manySections = (prefix: string) =>
+  Array.from({ length: 12 }, (_, i) => listSection(`${prefix} ${i + 1}`, [`${i + 1}번 내용`]));
 
 describe('공개 법적 문서', () => {
   it('표의 각 값에 열 제목과 행 제목을 제공한다', () => {
-    const html = renderPrivacyPage();
-    expect(html.match(/class="sp-policy-table"/g)).toHaveLength(3);
+    const html = renderPrivacyPage(doc([tableSection('4. 처리위탁'), tableSection('5. 국외 이전')]));
+
+    expect(html.match(/class="sp-policy-table"/g)).toHaveLength(2);
     expect(html).toContain('<th scope="col">보유기간</th>');
     expect(html).toContain('<th scope="row">');
+    // 열 제목을 화면 폭이 좁을 때 각 칸 안에 다시 적는다 — 표가 세로로 접히기 때문이다.
+    expect(html).toContain('<span class="sp-cell-label" aria-hidden="true">국가·목적</span>');
     expect(html).not.toContain('width:230px;flex:0 0 auto');
   });
 
-  it.each([renderTermsPage, renderPrivacyPage])('목차 링크마다 본문 목적지가 있다', render => {
-    const html = render();
+  /*
+   * **약관에도 표를 넣을 수 있다.** 지금 약관에는 없지만 넣는 것은 이제 대표님이
+   * 고르실 수 있는 일이고, 그리는 쪽이 갈라져 있으면 그날 넣은 표가 조용히 빈 칸으로
+   * 나간다 — 아무 오류도 나지 않는다.
+   */
+  it('약관 쪽도 표를 그린다', () => {
+    const html = renderTermsPage(doc([tableSection('제9조 위탁')]));
+
+    expect(html).toContain('class="sp-policy-table"');
+    expect(html).toContain('<th scope="row">');
+  });
+
+  it.each([
+    ['이용약관', renderTermsPage, manySections('제')],
+    ['개인정보처리방침', renderPrivacyPage, manySections('항목')],
+  ] as const)('%s의 목차 링크마다 본문 목적지가 있다', (_label, render, sections) => {
+    const html = render(doc([...sections]));
     const links = [...html.matchAll(/href="#((?:article|ps)-\d+)"/g)];
+
     expect(links.length).toBeGreaterThan(10);
     for (const [, id] of links) expect(html).toContain(`id="${id}"`);
     expect(html).toContain('<summary>목차 보기</summary>');
   });
 
-  it('외부 사본의 보유기간과 기능별 거부 효과를 구분한다', () => {
-    const html = renderPrivacyPage();
-    expect(html).toContain('회사 저장소의 원본 삭제 일정과는 별도');
-    expect(html).toContain('기본 서비스 이용을 제한하지 않습니다');
-    expect(html).not.toContain('기관명·연락처는 시행 시점');
+  /*
+   * 본문의 주소는 눌리는 링크가 된다(`legalText`). 방침의 권익침해 구제 항목이
+   * 그것에 기대고 있어서, 이 변환이 빠지면 신고 창구가 글자로만 남는다.
+   */
+  it('본문의 주소를 링크로 만든다', () => {
+    const html = renderPrivacyPage(
+      doc([listSection('12. 권익침해 구제', ['개인정보침해 신고센터: https://privacy.kisa.or.kr'])])
+    );
+
     expect(html).toContain('href="https://privacy.kisa.or.kr"');
   });
 
   /**
-   * 상담 녹음을 받기 전에 방침이 먼저 말해야 하는 것.
+   * **시행일은 판에 붙어 있다**(0422).
    *
-   * **고지가 이전보다 먼저다**(개인정보보호법 제28조의8). 국외 이전 자체가 위법이 아니라
-   * 고지 없이 이전하는 것이 위법이라, 이 문장들이 시행되기 전에 첫 호출을 내보내면 그
-   * 구간이 통째로 미고지 이전이 된다.
-   *
-   * 사용자에게 한 약속도 여기서 지켜진다 — **녹취록을 만들지 않는다**와 **원본을 바로
-   * 지운다**는 화면 동의문에도 적히는 말이고, 방침과 어긋나면 어느 쪽이 맞는지 알 수 없다.
+   * 전까지는 배포 환경변수 `LEGAL_TERMS_EFFECTIVE_ON` 하나였다 — 판마다 다른 값인데
+   * 배포 전체에 하나뿐이라, 옛 판이 언제부터 언제까지 효력이었는지를 말할 수 없었다.
+   * 보이는 꼴은 그대로 둔다. 글자가 바뀌면 그것은 문서가 바뀐 것이다.
    */
-  it('상담 녹음의 위탁·수집·파기를 방침이 먼저 적는다', () => {
-    const html = renderPrivacyPage();
+  it('제목 아래에 그 판의 시행일을 적는다', () => {
+    const html = renderTermsPage({
+      version: 'v2.0',
+      effectiveOn: '2026-10-01',
+      sections: [listSection('제1조 목적', ['내용'])],
+    });
 
-    // 수탁자 — 누가 읽어내는지
-    expect(html).toContain('Google LLC');
-    expect(html).toContain('음성 인식·상담내용 분석');
-
-    // 수집 항목 — 무엇을 받는지
-    expect(html).toContain('상담 녹음 파일');
-
-    // 파기 — 언제 지우는지. 「끝나면 지운다」만 적으면 안 끝난 파일이 영원히 남는다.
-    expect(html).toContain('읽어내기가 끝나는 즉시 삭제');
-    expect(html).toContain('업로드 시점부터 24시간을 넘겨 보관하지 않습니다');
-
-    // 녹취록을 만들지 않는다 — 담을 칸 자체가 없다는 약속
-    expect(html).toContain('녹취록은 만들지');
-    expect(html).toContain('전화번호·계좌번호·카드번호·주민등록번호를 담는 항목 자체를 두지 않습니다');
-  });
-
-  /**
-   * 국외 이전 표의 「국가」는 **서버 리전**이다.
-   *
-   * 2026-09-11까지 이 표는 Neon을 「미국」으로 적고 있었다. Neon, Inc.는 미국 사업자지만
-   * 서비스 정보는 AWS 싱가포르에 있다(`docs/INFRA_ACCESS_AUDIT_2026-09-10.md`). 법이 묻는
-   * 것은 회사가 어디에 있느냐가 아니라 정보가 어디로 가느냐다.
-   *
-   * 2026-09-13 콘솔 확인에서는 기존 API가 Ohio, 백그라운드 워커가 Oregon이었고 방침도 그렇게
-   * 적었다. **2026-09-14에 그 둘이 없어졌다** — 미국 서비스를 지웠고, 워커 프로세스는 배포된
-   * 적이 없어 루프가 운영 API 프로세스 안에서 돈다(`apps/api/src/index.ts` startWorkerLoops).
-   * 그래서 Render 쪽에 남은 미국 리전은 정적 웹 전송망뿐이다.
-   *
-   * **낡은 문장을 지키던 시험이라 같이 고쳤다.** 방침이 사실과 어긋나면 그것이 곧 미고지다 —
-   * 시험이 거짓을 지키고 있으면 고치려 할 때마다 빨개져서 되돌리게 된다.
-   *
-   * 회사 소재지와 실제 처리 리전은 계속 구분한다.
-   *
-   * 리전을 다시 옮길 때에는 이 값과 방침과 `docs/render-region-move.md`를 함께 고친다.
-   */
-  it('국외 이전 표에 수탁자별 서버 리전을 적는다', () => {
-    const html = renderPrivacyPage();
-    const table = html.match(/<table class="sp-policy-table" aria-label="5\. 개인정보의 국외 이전">[\s\S]*?<\/table>/)?.[0];
-    expect(table).toBeDefined();
-    const row = (needle: string) =>
-      table!.split('</tr>').find(part => part.includes(needle)) ?? '';
-
-    expect(row('neon.tech')).toContain('싱가포르');
-    expect(row('neon.tech')).not.toContain('미국 ·');
-
-    // Render는 운영·정적 호스팅 모두 폐기한다. 국외 이전 표에 남아 있으면 현재 사실과 어긋난다.
-    expect(table).not.toContain('privacy@render.com');
-    expect(table).not.toContain('Render Services');
-    expect(row('650 Industries')).toContain('미국 ·');
-    /*
-     * 자료 분석·상담 녹음 정리의 수탁자를 Anthropic에서 Google로 바꿨다(2026-09-14 대표 결정).
-     *
-     * **한 회사는 한 줄이다.** 2026-09-16에 이 표에 Google 행이 «둘» 있었다 — 하나는
-     * Anthropic 행을 옮긴 것이라 법인명·국가가 전부 「확인 필요」였고, 다른 하나는 이미
-     * `Google LLC · 미국`으로 적고 있었다. 같은 회사를 두 이름으로 부르면 읽는 사람은
-     * 서로 다른 곳으로 읽는다. 구체적인 쪽으로 합치고 자료 분석 목적을 그 행에 더했다.
-     *
-     * 아래가 그 잠금이다. **「확인 필요」를 잠그던 자리를 실제 값으로 바꿨다** — 이전받는
-     * 자와 국가는 국외 이전 고지의 핵심 항목이라(개인정보보호법 제28조의8) 비어 있으면
-     * 고지가 성립하지 않는다.
-     */
-    expect(row('Google LLC')).toContain('업로드한 자료와 상담 녹음');
-    expect(row('Google LLC')).not.toContain('싱가포르');
-    // 모델 학습에 쓰이지 않는다는 조건은 이 이전을 받아들일 수 있게 하는 근거다. 지우지 않는다.
-    expect(row('Google LLC')).toContain('모델 학습에 이용되지 않는 조건');
-    // 합쳐진 뒤에도 Google 행은 하나뿐이다. 주소는 링크로 바뀌므로 행을 센다.
-    expect(table!.split('</tr>').filter(part => part.includes('Google LLC'))).toHaveLength(1);
-
-    /*
-     * 상담 녹음을 읽어내는 이전. **이 행이 없으면 첫 호출이 곧 미고지 이전이다**
-     * (개인정보보호법 제28조의8 — 고지가 이전보다 먼저다).
-     */
-    expect(row('Google LLC')).toContain('미국 ·');
-    expect(row('Google LLC')).toContain('상담 녹음');
-
-    expect(html).toContain('이전받는 자의 사업자 소재지와 다를 수 있습니다');
-    expect(html).toContain('Neon의 정보 저장소는 싱가포르 리전을 사용합니다');
-    expect(html).toContain('KakaoCloud의 서비스 서버·정적 웹·Object Storage는 국내 인프라에서 운영되므로');
-    expect(html).toContain('(주)카카오엔터프라이즈(KakaoCloud)');
+    expect(html).toContain('시행일 2026년 10월 1일');
   });
 });

@@ -34,7 +34,8 @@ import { loadAdminToken, readAdminTokenSync, subscribeAdminToken } from './_sess
  *
  * **「지금 쓸 수 있는 화면인지」 표시는 버리지 않았다.** 「서버 연결 전」 그룹이
  * 없어진 자리는 각 `AdminTabShell`의 `AdminTabDef.readOnly`가 대신한다 — 그 탭에만
- * 「조회만」 딱지가 붙는다(다섯 화면. `_ui.tsx`의 `AdminTabShell` 주석 참고).
+ * 「조회만」 딱지가 붙는다(`_ui.tsx`의 `AdminTabShell` 주석 참고). **2026-09-16에
+ * 약관·방침이 그 목록에서 빠져 넷이 됐다** — 편집·공개가 열렸다(0422).
  *
  * **사이드바 이름과 화면 이름은 다를 수 있다.** 240 폭에서 긴 이름은 잘리고, 잘린
  * 이름은 어느 화면인지 말해주지 못한다.
