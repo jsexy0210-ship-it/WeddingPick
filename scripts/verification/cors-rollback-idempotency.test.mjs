@@ -45,6 +45,7 @@ function harness({ backupExists = true, markerExists = true } = {}) {
   writeFileSync(path.join(state, 'backup_exists'), backupExists ? '1\n' : '0\n', 'utf8');
   writeFileSync(path.join(state, 'backup_name'), 'weddingpick-api-cors-previous-100-1\n', 'utf8');
   writeFileSync(path.join(state, 'removed_prod'), '0\n', 'utf8');
+  writeFileSync(path.join(state, 'rm_count'), '0\n', 'utf8');
 
   if (markerExists) {
     writeFileSync(
@@ -88,6 +89,7 @@ case "$cmd" in
     target="${1:-}"
     if [ "$target" = new123 ] || [ "$target" = weddingpick-api ]; then
       printf '1\n' > "$S/removed_prod"
+      n="$(cat "$S/rm_count")"; n=$((n+1)); printf '%s\n' "$n" > "$S/rm_count"
       printf '0\n' > "$S/prod_exists"
     fi
     ;;
@@ -144,10 +146,11 @@ shellTest('second rollback after success is a no-op and does not delete the rest
   const h = harness();
   try {
     assert.equal(h.run().status, 0);
+    assert.equal(get(path.join(h.state, 'rm_count')), '1');
     const second = h.run();
     assert.equal(second.status, 0, second.stderr || second.stdout);
     assert.equal(get(path.join(h.state, 'prod_id')), 'old123');
-    assert.equal(get(path.join(h.state, 'removed_prod')), '1');
+    assert.equal(get(path.join(h.state, 'rm_count')), '1', 'second rollback must not remove the restored API again');
   } finally { h.close(); }
 });
 
