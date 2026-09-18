@@ -24,8 +24,8 @@
 
 ### 5번이 지키는 컴포넌트
 
-`packages/ui/src`의 `circle-loader.tsx` · `category-cycle-loader.tsx` · `toast.tsx` ·
-`show-alert.ts`, 그리고 바텀시트를 그리는 화면들. **동작 · 크기 · 자리 · 문구는 손대지
+`packages/ui/src`의 `circle-loader.tsx` · `category-cycle-loader.tsx` · `toast.tsx`,
+`apps/mobile/src/components/confirm-alert*`, 그리고 바텀시트를 그리는 화면들. **동작 · 크기 · 자리 · 문구는 손대지
 않는다** — 이것들에는 이미 규칙이 붙어 있다(페이지 이동은 원형 로더 · 700ms 임계값 ·
 로그인 표시는 한 가지만 · 위험한 조작은 한 번 더 확인).
 
