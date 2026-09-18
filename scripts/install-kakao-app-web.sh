@@ -5,6 +5,8 @@ ROOT=/home/ubuntu/WeddingPick
 CONF=/etc/nginx/sites-available/weddingpick-api
 BACKUP_MARKER="$ROOT/.app-web-cutover-backup"
 LIVE_MARKER="$ROOT/static-live-app"
+UPDATE_BACKUP_MARKER="$ROOT/.app-web-update-backup"
+CUTOVER_MODE_MARKER="$ROOT/.app-web-last-cutover-mode"
 
 release_sha="${1:-}"
 if [ -z "$release_sha" ]; then
@@ -60,7 +62,9 @@ if [ "$app_web_is_live" = true ]; then
   fi
 fi
 
+same_live_release=false
 if [ "$live_sha" = "$release_sha" ] && grep -Fq "root $target;" "$CONF" 2>/dev/null; then
+  same_live_release=true
   # 같은 immutable release 재실행은 현재 서비스 중인 디렉터리를 지우지 않는다.
   test -f "$target/index.html"
   if [ ! -f "$target/login.html" ] && [ ! -f "$target/login/index.html" ]; then
@@ -81,7 +85,19 @@ test -n "$cert"
 test -n "$key"
 
 mkdir -p "$ROOT/nginx-backups"
-if [ -n "$preserved_backup" ]; then
+cutover_mode='api-only'
+if [ "$same_live_release" = true ]; then
+  cutover_mode='noop'
+  echo "Same live release; public verify failure will not tear app-web down."
+elif [ "$app_web_is_live" = true ]; then
+  update_backup="$ROOT/nginx-backups/weddingpick-app-update-$(date -u +%Y%m%dT%H%M%SZ).conf"
+  sudo -n cp "$CONF" "$update_backup"
+  marker_tmp="$(mktemp)"
+  printf 'config=%s\nrelease=%s\n' "$update_backup" "$live_sha" > "$marker_tmp"
+  mv "$marker_tmp" "$UPDATE_BACKUP_MARKER"
+  cutover_mode='update'
+  echo "Previous live app release preserved for update rollback: $live_sha"
+elif [ -n "$preserved_backup" ]; then
   backup="$preserved_backup"
   echo "Existing API-only rollback backup preserved: $backup"
 else
@@ -89,6 +105,7 @@ else
   sudo -n cp "$CONF" "$backup"
   printf '%s\n' "$backup" > "$BACKUP_MARKER"
 fi
+printf '%s\n' "$cutover_mode" > "$CUTOVER_MODE_MARKER"
 
 tmp=''
 rollback_on_error() {
@@ -96,9 +113,9 @@ rollback_on_error() {
   if [ -n "${tmp:-}" ]; then
     rm -f "$tmp" || true
   fi
-  if [ "$status" -ne 0 ] && [ -r "$BACKUP_MARKER" ]; then
-    echo 'App-web cutover failed; restoring previous 443 Nginx config.' >&2
-    if ! bash "$(dirname "$0")/rollback-kakao-app-web.sh"; then
+  if [ "$status" -ne 0 ] && [ -r "$CUTOVER_MODE_MARKER" ]; then
+    echo 'App-web cutover failed; restoring the appropriate previous 443 state.' >&2
+    if ! bash "$(dirname "$0")/rollback-kakao-app-web-failed-cutover.sh"; then
       echo 'Automatic app-web rollback failed; inspect the Kakao VM before another cutover.' >&2
     fi
   fi
