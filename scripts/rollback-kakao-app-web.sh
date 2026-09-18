@@ -4,6 +4,9 @@ set -euo pipefail
 ROOT=/home/ubuntu/WeddingPick
 CONF=/etc/nginx/sites-available/weddingpick-api
 BACKUP_MARKER="$ROOT/.app-web-cutover-backup"
+TX_BACKUP_MARKER="$ROOT/.app-web-update-backup"
+TX_LIVE_MARKER="$ROOT/.app-web-update-live-backup"
+TX_TARGET_MARKER="$ROOT/.app-web-update-target"
 
 test -r "$BACKUP_MARKER"
 backup="$(cat "$BACKUP_MARKER")"
@@ -16,6 +19,7 @@ sudo -n systemctl reload nginx
 for i in $(seq 1 20); do
   if curl --fail --silent --show-error --connect-timeout 5 --max-time 10     https://210.109.82.212/health >/dev/null 2>&1; then
     rm -f "$ROOT/static-live-app"
+    rm -f "$TX_BACKUP_MARKER" "$TX_LIVE_MARKER" "$TX_TARGET_MARKER"
     echo 'App-web cutover rolled back; API-only 443 restored.'
     exit 0
   fi
