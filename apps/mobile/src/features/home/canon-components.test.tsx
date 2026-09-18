@@ -2,7 +2,7 @@ import type { CategoryRecommendation, VendorSummary } from '@weddingpick/api-con
 import React from 'react';
 import { act, create, type ReactTestRenderer, type ReactTestRendererJSON } from 'react-test-renderer';
 import { PendingPreparation, HomeBudget } from './home-summary';
-import { PickRecommend } from './pick-recommend';
+import { HomeRecommendations, PickRecommend } from './pick-recommend';
 import { VendorCard } from './vendor-card';
 
 jest.mock('./category-image', () => ({ CategoryImage: () => null }));
@@ -33,6 +33,11 @@ const vendor: VendorSummary = {
   styleTags: [], reasons: ['선호하는 분위기가 같아요'], rating: { average: 4.8, count: 10 },
 };
 
+const groupWithVendor: CategoryRecommendation = {
+  ...group,
+  vendors: [vendor],
+};
+
 describe('최신 홈·추천 연결', () => {
   it('별점 검사는 SVG 좌표를 제외하되 실제 표시된 별점은 탐지한다', () => {
     const icon: ReactTestRendererJSON = { type: 'RNSVGPath', props: { d: 'M2 4.80739' }, children: null };
@@ -43,6 +48,26 @@ describe('최신 홈·추천 연결', () => {
   const views: ReactTestRenderer[] = [];
   const mount = (element: React.ReactElement) => { const view = render(element); views.push(view); return view; };
   afterEach(() => { act(() => { views.splice(0).forEach((view) => view.unmount()); }); });
+
+  it('홈 추천은 아코디언 대신 첫 업종 카드와 비교 CTA를 바로 보여준다', () => {
+    const onCompare = jest.fn();
+    const view = mount(<HomeRecommendations groups={[groupWithVendor]} isPicked={() => false}
+      onPressVendor={jest.fn()} onPressPick={jest.fn()} onPressCompare={onCompare} onPressMore={jest.fn()} />);
+    expect(text(view)).toContain('웨딩픽 추천');
+    expect(text(view)).toContain('테스트 업체');
+    expect(text(view)).toContain('선호하는 분위기가 같아요');
+    expect(view.root.findAllByProps({ accessibilityState: { expanded: true } })).toHaveLength(0);
+  });
+
+  it('추천 전체의 첫 업체는 추천 이유 펼침 상태를 실제 데이터로 보여준다', () => {
+    const view = mount(<PickRecommend groups={[groupWithVendor]} open="studio" onToggle={jest.fn()}
+      remaining={1} remainingCategories={[]} isPicked={() => false} onPressVendor={jest.fn()}
+      onPressPick={jest.fn()} onPressCompare={jest.fn()} onPressMore={jest.fn()}
+      onPressSearchMore={jest.fn()} />);
+    expect(text(view)).toContain('추천 이유');
+    expect(text(view)).toContain('선호하는 분위기가 같아요');
+    expect(text(view)).toContain('실 제보 0건');
+  });
 
   it('업체가 없는 업종도 더 찾아보기를 열 수 있다', () => {
     const onMore = jest.fn();
