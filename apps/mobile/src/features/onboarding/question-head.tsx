@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { Layout, LetterSpacing, ThemedText } from '@weddingpick/ui';
 
 /**
- * 질문 머리 — 규격서 docs/figma-spec/onboarding.txt(2026-09-15 대표 지시 「규격서의 수를 그대로」).
+ * 질문 머리 — 규격서 docs/design/figma-export/06-onboarding-login.dc.html(2026-09-15 대표 지시 「규격서의 수를 그대로」).
  *
  *   div 382×445  pad 80 0 0 0
  *     p "JUST FOR YOU" · 10/400 primary · lh 15 · ls 2.2px      ← **넣지 않는다**(아래)
@@ -20,7 +20,7 @@ import { Layout, LetterSpacing, ThemedText } from '@weddingpick/ui';
  * **제목은 규격서와 같은 자리에 둔다.** eyebrow가 차지하던 높이까지 사라지면 제목이 위로
  * 붙으므로, 그만큼을 위 여백으로 돌렸다 — `Layout.headTopOnboarding`(80 + lh 15 + mar 16 = 111).
  *
- * `extract-figma-spec.mjs`를 다시 돌리면 규격서에는 영문이 되살아난다(피그마를 그대로
+ * `extract-figma-export.mjs`를 다시 돌리면 규격서에는 영문이 되살아난다(피그마를 그대로
  * 읽는 도구다). 그때 「규격서에 있는데 왜 없냐」며 되돌리지 않는다.
  */
 export function QuestionHead({
