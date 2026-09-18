@@ -112,8 +112,14 @@ jobs:
       - name: Copy lint (금지어)
         run: node lint-copy.js spec/strings.ko.json apps packages
 
-      - name: Test
-        run: npm test
+      - name: Test non-API workspaces
+        run: |
+          npm run pretest
+          npm run test --workspace @weddingpick/mobile
+          npm run test --workspace @weddingpick/web
+          npm run test --workspace @weddingpick/api-contract
+          npm run test --workspace @weddingpick/db
+          npm run test --workspace @weddingpick/domain
 
       - name: API health validator test
         run: node --test scripts/check-api-health.test.mjs
@@ -162,6 +168,46 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 3
+
+  api-tests:
+    name: API Tests (${{ matrix.shard }}/2)
+    if: ${{ !contains(github.event.head_commit.message || '', '[probe-only]') }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    concurrency:
+      group: weddingpick-main-api-tests-${{ github.ref }}-${{ matrix.shard }}
+      cancel-in-progress: true
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: weddingpick
+          POSTGRES_PASSWORD: weddingpick
+          POSTGRES_DB: weddingpick_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://weddingpick:weddingpick@localhost:5432/weddingpick_test
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run API shard
+        run: npm run test --workspace @weddingpick/api -- --shard=${{ matrix.shard }}/2
 
   audit-kakao-data:
     name: Audit Kakao Data State
@@ -235,7 +281,7 @@ jobs:
 
   stage-kakao-static:
     name: Stage Kakao Static
-    needs: [ci]
+    needs: [ci, api-tests]
     if: github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && needs.ci.outputs.stage_static == 'true'
     permissions:
       contents: read
@@ -244,7 +290,7 @@ jobs:
 
   repair-kakao-runner:
     name: Repair Kakao Runner
-    needs: [ci]
+    needs: [ci, api-tests]
     if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message || '', '[skip-api-deploy]') }}
     permissions:
       contents: read
@@ -252,7 +298,7 @@ jobs:
 
   api-deploy-needed:
     name: Detect Kakao API catch-up
-    needs: [ci, repair-kakao-runner]
+    needs: [ci, api-tests, repair-kakao-runner]
     if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message || '', '[skip-api-deploy]') }}
     runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
     timeout-minutes: 5
@@ -285,7 +331,7 @@ jobs:
 
   deploy-kakao:
     name: KakaoCloud API
-    needs: [ci, repair-kakao-runner, api-deploy-needed]
+    needs: [ci, api-tests, repair-kakao-runner, api-deploy-needed]
     if: ${{ needs.api-deploy-needed.outputs.changed == 'true' }}
     permissions:
       contents: read
