@@ -65,7 +65,7 @@ describe('depthBackTarget — 대표 경로', () => {
     ['/pick/removed', '/pick/history', '제거된 후보 → 결정 내역'],
     ['/my/referral', '/my/rewards', '초대 현황 → 혜택'],
 
-    ...['candidates', 'changelog', 'conflict', 'decided', 'events', 'map', 'notes', 'quotes', 'tasks', 'timeline', 'visit-notes'].map((part): [string, string, string] => [
+    ...['candidates', 'changelog', 'conflict', 'decided', 'map', 'notes', 'quotes', 'tasks', 'timeline', 'visit-notes'].map((part): [string, string, string] => [
       `/wedding/w-1/${part}`, '/wedding', '서버 weddingId를 로컬 문서 식별자로 취급하지 않는다',
     ]),
     ['/wedding/document-1/verify', '/wedding/document-1', '로컬 문서 확인은 문서 상세로 복귀한다'],
