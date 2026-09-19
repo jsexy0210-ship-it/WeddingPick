@@ -46,7 +46,8 @@ describe('depthBackTarget — 대표 경로', () => {
     ['/pick/history', '/pick', 'WP-PICK-007 결정 내역 → Pick 탭'],
     ['/pick/studio', '/pick', '업종별 Pick → Pick 탭'],
     ['/feed', '/', '홈 하위 스택(피드) → 홈'],
-    ['/feed/f-1', '/feed', '웨딩피드 글 상세 → 웨딩피드 목록'],
+    ['/feed/f-1', '/feed', '홈 웨딩피드 글 상세 → 웨딩피드 목록'],
+    ['/community/feed/f-1', '/community?tab=feed', '라운지 웨딩피드 상세 → 라운지 웨딩피드 탭'],
     ['/top3', '/', '웨딩픽 TOP3 → 홈'],
     ['/progress', '/', '준비 현황 → 홈'],
 
@@ -128,7 +129,7 @@ describe('규칙의 앞뒤가 맞는가', () => {
   it('예외표의 열쇠와 목적지가 모두 실재하는 라우트다', () => {
     for (const [from, to] of Object.entries(DEPTH_BACK_EXCEPTIONS)) {
       expect(ROUTES).toContain(from);
-      expect(ROUTES).toContain(to);
+      expect(matchRoute(to)).not.toBeNull();
     }
   });
 
