@@ -10,7 +10,7 @@ import SettingsScreen from '@/app/(tabs)/my/settings';
 import AutocompleteScreen from '@/app/(tabs)/search/autocomplete';
 import PriceReportScreen from '@/app/(tabs)/search/[vendorId]/price-report';
 
-jest.mock('react-native', () => ({ ...jest.requireActual('react-native'), Switch: 'Switch' }));
+jest.mock('react-native', () => Object.setPrototypeOf({ Switch: 'Switch' }, jest.requireActual('react-native')));
 jest.mock('expo-router', () => ({ router: { push: jest.fn() }, Redirect: 'Redirect', useLocalSearchParams: () => ({ q: '검수' }) }));
 jest.mock('@/api/client', () => ({
   listNotifications: jest.fn(), readNotification: jest.fn(), readAllNotifications: jest.fn(),
