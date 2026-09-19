@@ -57,6 +57,7 @@ jobs:
           flock -n 9 || { echo 'Another API deployment holds the lock.' >&2; exit 1; }
 
           IMAGE="weddingpick-api:${GITHUB_SHA}"
+          WORKER_IMAGE="weddingpick-worker:${GITHUB_SHA}"
           PROD_CONTAINER=weddingpick-api
           CANDIDATE_CONTAINER="weddingpick-api-candidate-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           BACKUP_CONTAINER="weddingpick-api-previous-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
@@ -146,9 +147,9 @@ jobs:
             exit 1
           fi
 
-          # 이 VM은 20GB 디스크라 SHA별 API 이미지/빌드 캐시가 쌓이면 새 레이어 export가
+          # 이 VM은 20GB 디스크라 SHA별 API/worker 이미지와 빌드 캐시가 쌓이면 새 레이어 export가
           # ENOSPC로 실패한다. 컨테이너가 참조하는 이미지(실행/중지 복구본 포함)는 건드리지 않고,
-          # 재생성 가능한 build cache/dangling image와 미참조 weddingpick-api:<sha> 태그만 정리한다.
+          # 재생성 가능한 build cache/dangling image와 미참조 SHA 태그만 정리한다.
           echo 'Disk before safe API build cleanup:'
           df -h / | sed -n '1,2p'
           sudo -n docker system df || true
@@ -166,7 +167,7 @@ jobs:
             if [ "$image_ref" = 'weddingpick-api:kakao-current' ]; then
               continue
             fi
-            if [[ ! "$image_ref" =~ ^weddingpick-api:[0-9a-f]{40}$ ]]; then
+            if [[ ! "$image_ref" =~ ^weddingpick-(api|worker):[0-9a-f]{40}$ ]]; then
               continue
             fi
 
@@ -174,7 +175,7 @@ jobs:
             if [ -z "$image_id" ] || [ -n "${protected_image_ids[$image_id]:-}" ]; then
               continue
             fi
-            echo "Removing unreferenced API image tag before build: $image_ref"
+            echo "Removing unreferenced runtime image tag before build: $image_ref"
             sudo -n docker image rm "$image_ref" >/dev/null
           done < <(sudo -n docker images --format '{{.Repository}}:{{.Tag}}' | sort -u)
 
@@ -183,8 +184,9 @@ jobs:
           df -h / | sed -n '1,2p'
           sudo -n docker system df || true
 
-          echo "Building $IMAGE while the current API remains running."
+          echo "Building $IMAGE and $WORKER_IMAGE while the current API remains running."
           sudo -n docker build --label "org.opencontainers.image.revision=$GITHUB_SHA" -t "$IMAGE" .
+          sudo -n docker build --target worker-runtime --label "org.opencontainers.image.revision=$GITHUB_SHA" -t "$WORKER_IMAGE" .
           sudo -n docker run -d --pull=never --name "$CANDIDATE_CONTAINER" --restart=no \
             --env-file "$ENV_FILE" -e RUN_WORKER_IN_API=false \
             -p 127.0.0.1:3002:3000 "$IMAGE" >/dev/null
@@ -210,10 +212,10 @@ jobs:
           sudo -n docker tag "$IMAGE" weddingpick-api:kakao-current
 
           # API 안쪽 worker는 RUN_WORKER_IN_API=false로 유지한다.
-          # 별도 worker가 같은 이미지로 교체돼야 API와 백그라운드 코드가 어긋나지 않는다.
+          # worker는 같은 소스 revision이지만 ffmpeg가 포함된 전용 target으로 교체한다.
           # 이 단계가 실패하면 update-kakao-worker.sh가 이전 worker를 복원하고,
           # 이 job의 EXIT trap이 이전 API까지 복원한다.
-          bash scripts/update-kakao-worker.sh "$IMAGE"
+          bash scripts/update-kakao-worker.sh "$WORKER_IMAGE"
 
           DEPLOYED=1
           echo "KakaoCloud API and worker deployed successfully: $GITHUB_SHA"
