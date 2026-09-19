@@ -1,7 +1,10 @@
 .git
 .github
 docs
-spec
+spec/*
+!spec/glossary.json
+!spec/font-subsets.json
+!spec/strings.ko.json
 scripts
 infra
 
