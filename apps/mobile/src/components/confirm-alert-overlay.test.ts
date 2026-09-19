@@ -23,6 +23,7 @@ describe('native canonical confirmation overlay', () => {
     expect(host).toContain('<Modal');
     expect(host).toContain('onRequestClose={danger ? noop : cancel}');
     expect(host).toContain("tone={destructive ? 'danger' : 'primary'}");
+    expect(host).toContain('{cancelIndex >= 0 || danger ? (');
   });
 
   it('앱 루트에 overlay host가 한 번만 장착된다', () => {
