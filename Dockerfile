@@ -31,13 +31,10 @@ RUN npm install \
     && npm cache clean --force
 
 
-FROM node:22-alpine AS runtime
+FROM node:22-alpine AS runtime-base
 
 WORKDIR /app
 ENV NODE_ENV=production
-
-# 상담 녹음 1차 판정용 클리핑. 운영 런타임에만 필요하다.
-RUN apk add --no-cache ffmpeg
 
 # deps stage에는 package manifest + 선택된 production node_modules만 있다.
 COPY --from=runtime-deps /app /app
@@ -55,6 +52,16 @@ COPY spec/glossary.json ./spec/glossary.json
 COPY spec/font-subsets.json ./spec/font-subsets.json
 COPY spec/strings.ko.json ./spec/strings.ko.json
 
-EXPOSE 3000
 
+# 상담 녹음 클리핑은 worker 전용 이미지에만 둔다.
+# API 요청 경로는 현재 audio-clip/consultation-reader를 import하지 않으므로,
+# ffmpeg를 API 이미지에 싣지 않아도 현재 운영 경로는 유지된다.
+FROM runtime-base AS worker-runtime
+RUN apk add --no-cache ffmpeg
+CMD ["/opt/tsx/node_modules/.bin/tsx", "apps/api/src/worker.ts"]
+
+
+# 기본 docker build 결과는 HTTP API 전용 이미지다. ffmpeg는 포함하지 않는다.
+FROM runtime-base AS runtime
+EXPOSE 3000
 CMD ["/opt/tsx/node_modules/.bin/tsx", "apps/api/src/index.ts"]
