@@ -38,3 +38,15 @@ test('app-web cutover cannot bypass a failed migration for PR417 or PR431', () =
   assert.match(cutover, /pr_number != '431'/);
   assert.match(cutover, /needs\.migrate-current-backlog-db\.result == 'success'/);
 });
+
+test('API deploy tolerates a skipped non-required migration without bypassing validation', () => {
+  const deploy = jobBlock('deploy-kakao');
+
+  assert.match(deploy, /if: \$\{\{ always\(\)/);
+  assert.match(deploy, /needs\.ci\.result == 'success'/);
+  assert.match(deploy, /needs\.api-tests\.result == 'success'/);
+  assert.match(deploy, /needs\.non-db-tests\.result == 'success'/);
+  assert.match(deploy, /needs\.db-tests\.result == 'success'/);
+  assert.match(deploy, /needs\.api-deploy-needed\.result == 'success'/);
+  assert.match(deploy, /needs\.api-deploy-needed\.outputs\.changed == 'true'/);
+});
