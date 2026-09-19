@@ -101,9 +101,6 @@ const SUBTITLE = '우리 조건에 맞는 선택만 모았어요';
 const PLACEHOLDER = '업체 이름, 지역, 카테고리 검색';
 const BACK_LABEL = '홈으로 돌아가기';
 const CLEAR_LABEL = '검색어 지우기';
-const CHIP_CATEGORY = '카테고리';
-const CHIP_REGION = '지역';
-const CHIP_PRICE = '가격';
 
 /** 자동완성은 결과보다 빨리 따라와야 한다(시안 WP-SRCH-002). */
 const AUTOCOMPLETE_DEBOUNCE_MS = 200;
@@ -836,8 +833,6 @@ export default function SearchScreen() {
       );
     }
 
-    const budgetLabel = BUDGET_BANDS.find((band) => band.key === filters.budget)?.label ?? null;
-
     return (
       <>
         {/*
@@ -853,39 +848,20 @@ export default function SearchScreen() {
           업종 칩 일곱(전체 · 웨딩홀 · …)이 여기 서 있었다(루트 시안 16a). 피그마가
           그 자리를 드롭다운 칩으로 바꿨고 업종은 필터 시트의 첫 그룹으로 갔다.
         */}
-        <View style={[styles.filterRow, { backgroundColor: theme.background }]}>
-          <DropdownChip
-            label={filters.category ? VENDOR_CATEGORY_LABEL[filters.category] : CHIP_CATEGORY}
-            active={filters.category !== null}
-            onPress={() => setFilterOpen(true)}
-          />
-          <DropdownChip
-            label={filters.region ?? CHIP_REGION}
-            active={filters.region !== null}
-            onPress={() => setFilterOpen(true)}
-          />
-          <DropdownChip
-            label={budgetLabel ?? CHIP_PRICE}
-            active={filters.budget !== null}
-            onPress={() => setFilterOpen(true)}
-          />
-          <View style={styles.sortChip}>
-            <DropdownChip
-              label={SORT_LABEL[filters.sort]}
-              active={false}
-              accessibilityLabel={`정렬: ${SORT_LABEL[filters.sort]}`}
-              onPress={() => setSortOpen(true)}
-            />
-          </View>
-        </View>
-
-        {/* 결과 수 — 피그마 «7개 업체»(12 · muted). 아래 12. 새로고침 표시가 같은 줄에 붙는다. */}
+        {/* 결과 수와 정렬을 한 줄에 둔다. 조건 필터 칩은 이 결과 화면에서 노출하지 않는다. */}
         <View style={[styles.countRow, { backgroundColor: theme.background }]}>
-          {/* 규격서: «12/500 #868B94 · lh 16». */}
-          <ThemedText type="f12" themeColor="textAssistive" numeric style={styles.medium}>
-            {formatCount(total)}개 업체
-          </ThemedText>
-          <DelayedLoader active={refreshing} size={20} />
+          <View style={styles.countText}>
+            <ThemedText type="f12" themeColor="textAssistive" numeric style={styles.medium}>
+              {formatCount(total)}개 업체
+            </ThemedText>
+            <DelayedLoader active={refreshing} size={20} />
+          </View>
+          <DropdownChip
+            label={SORT_LABEL[filters.sort]}
+            active={false}
+            accessibilityLabel={`정렬: ${SORT_LABEL[filters.sort]}`}
+            onPress={() => setSortOpen(true)}
+          />
         </View>
 
         {/* 결과 목록 */}
@@ -1520,6 +1496,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Layout.pageX,
     marginBottom: Layout.inlineGap,
   },
+  countText: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   /* 목록 `px-5 space-y-3` + 바깥 `pb-4` — 카드 사이 12 · 아래 16. */
   resultList: {
     paddingHorizontal: Layout.pageX,
