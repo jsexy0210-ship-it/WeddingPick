@@ -456,7 +456,9 @@ export default function SetupScreen() {
                 accessibilityLabel={`${STEP_LABEL[answeredStep]} 바꾸기`}
                 onPress={() => enter(answeredStep)}
                 style={({ pressed }) => [styles.answeredRow, pressed && styles.pressed]}>
-                <ProductSymbol name="check" size={20} color={theme.tint} />
+                <View style={[styles.answeredCheck, { backgroundColor: theme.tint }]}>
+                  <ProductSymbol name="check" size={12} color={theme.onTint} />
+                </View>
                 <ThemedText type="f14" themeColor="textAssistive" style={styles.answeredLabel}>
                   {STEP_LABEL[answeredStep]}
                 </ThemedText>
@@ -622,6 +624,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Layout.iconTextGap,
+  },
+  answeredCheck: {
+    width: 20,
+    height: 20,
+    flexShrink: 0,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   answeredLabel: { flexShrink: 0 },
   answeredValue: { flex: 1, minWidth: 0, fontWeight: 700 },
