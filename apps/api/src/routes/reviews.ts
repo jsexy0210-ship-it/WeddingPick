@@ -1090,6 +1090,197 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
     }
   );
 
+  /** 도움돼요는 사용자×후기 한 줄이라 PUT을 여러 번 불러도 하나만 남는다. */
+  app.put<{ Params: { reviewId: string } }>(
+    '/v1/reviews/:reviewId/helpful',
+    auth,
+    async (request) => {
+      const userId = currentUserId(request);
+      await ensureVisibleReview(context.pool, request.params.reviewId);
+      await context.pool.query(
+        `INSERT INTO structured.review_helpful (review_id, user_id)
+         VALUES ($1, $2)
+         ON CONFLICT (review_id, user_id) DO NOTHING`,
+        [request.params.reviewId, userId]
+      );
+      return helpfulState(context.pool, request.params.reviewId, userId);
+    }
+  );
+
+  /** 해제도 이미 없는 상태에서 성공한다. 빠른 연타가 404를 만들지 않는다. */
+  app.delete<{ Params: { reviewId: string } }>(
+    '/v1/reviews/:reviewId/helpful',
+    auth,
+    async (request) => {
+      const userId = currentUserId(request);
+      await ensureVisibleReview(context.pool, request.params.reviewId);
+      await context.pool.query(
+        'DELETE FROM structured.review_helpful WHERE review_id = $1 AND user_id = $2',
+        [request.params.reviewId, userId]
+      );
+      return helpfulState(context.pool, request.params.reviewId, userId);
+    }
+  );
+
+  /** 후기 댓글. 작성자 식별자는 계약에 내보내지 않고 mine만 계산한다. */
+  app.get<{ Params: { reviewId: string } }>(
+    '/v1/reviews/:reviewId/comments',
+    open,
+    async (request) => {
+      await ensureVisibleReview(context.pool, request.params.reviewId);
+      const userId = optionalUserId(request);
+      const query = listQuerySchema.parse(request.query);
+      const after = query.cursor ? decodeCursor(query.cursor) : null;
+
+      const total = await context.pool.query<{ count: number }>(
+        `SELECT count(*)::int AS count
+         FROM structured.review_comments
+         WHERE review_id = $1 AND status = 'published'`,
+        [request.params.reviewId]
+      );
+
+      const { rows } = await context.pool.query<{
+        id: string;
+        body: string;
+        created_at: Date;
+        mine: boolean;
+      }>(
+        `SELECT id, body, created_at,
+                coalesce(author_user_id = $2::uuid, false) AS mine
+         FROM structured.review_comments
+         WHERE review_id = $1
+           AND status = 'published'
+           AND ($3::timestamptz IS NULL OR (created_at, id) > ($3, $4::uuid))
+         ORDER BY created_at, id
+         LIMIT $5`,
+        [
+          request.params.reviewId,
+          userId,
+          after?.[0] ?? null,
+          after?.[1] ?? null,
+          query.limit + 1,
+        ]
+      );
+
+      const hasMore = rows.length > query.limit;
+      const page = hasMore ? rows.slice(0, query.limit) : rows;
+      return {
+        comments: page.map((row) => ({
+          id: row.id,
+          body: row.body,
+          createdAt: row.created_at.toISOString(),
+          mine: row.mine,
+        })),
+        nextCursor: hasMore && page.length > 0 ? encodeCursor(page[page.length - 1]!) : null,
+        count: Number(total.rows[0]?.count ?? 0),
+      };
+    }
+  );
+
+  app.post<{ Params: { reviewId: string } }>(
+    '/v1/reviews/:reviewId/comments',
+    auth,
+    async (request, reply) => {
+      const userId = currentUserId(request);
+      const body = createReviewCommentRequestSchema.parse(request.body);
+      await ensureVisibleReview(context.pool, request.params.reviewId);
+
+      const risky = scanForRisk(body.body);
+      if (risky.length > 0) {
+        throw new ApiError('invalid_request', riskNotice(risky));
+      }
+
+      const { rows } = await context.pool.query<{ id: string; created_at: Date }>(
+        `INSERT INTO structured.review_comments (review_id, author_user_id, body)
+         VALUES ($1, $2, $3)
+         RETURNING id, created_at`,
+        [request.params.reviewId, userId, body.body]
+      );
+
+      return reply.status(201).send({
+        id: rows[0]!.id,
+        body: body.body,
+        createdAt: rows[0]!.created_at.toISOString(),
+        mine: true,
+      });
+    }
+  );
+
+  /** 자기 댓글만 지운다. 없는 글과 남의 글은 같은 404로 답한다. */
+  app.delete<{ Params: { commentId: string } }>(
+    '/v1/review-comments/:commentId',
+    auth,
+    async (request, reply) => {
+      const userId = currentUserId(request);
+      if (!isUuid(request.params.commentId)) throw notFound('댓글');
+      const removed = await context.pool.query(
+        `DELETE FROM structured.review_comments
+         WHERE id = $1 AND author_user_id = $2
+         RETURNING id`,
+        [request.params.commentId, userId]
+      );
+      if (removed.rowCount !== 1) throw notFound('댓글');
+      return reply.status(204).send();
+    }
+  );
+
+  /** 댓글 신고도 접수만 한다. 신고만으로 댓글을 가리지 않는다. */
+  app.post<{ Params: { commentId: string } }>(
+    '/v1/review-comments/:commentId/reports',
+    auth,
+    async (request, reply) => {
+      const userId = currentUserId(request);
+      const body = createReviewCommentReportRequestSchema.parse(request.body);
+      if (!isUuid(request.params.commentId)) throw notFound('댓글');
+
+      const visible = await context.pool.query(
+        `SELECT 1
+         FROM structured.review_comments c
+         JOIN structured.visible_reviews r ON r.id = c.review_id
+         WHERE c.id = $1 AND c.status = 'published'`,
+        [request.params.commentId]
+      );
+      if (visible.rowCount !== 1) throw notFound('댓글');
+
+      const { rows } = await context.pool.query<{ id: string; received_at: Date }>(
+        `INSERT INTO structured.review_comment_reports
+           (comment_id, reporter_user_id, reason, note)
+         VALUES ($1, $2, $3, $4)
+         RETURNING id, received_at`,
+        [request.params.commentId, userId, body.reason, body.note ?? null]
+      );
+
+      return reply.status(201).send({
+        reportId: rows[0]!.id,
+        status: 'received' as const,
+        receivedAt: rows[0]!.received_at.toISOString(),
+        acknowledgement: reviewReportAcknowledgement(),
+      });
+    }
+  );
+
+  /**
+   * 운영자 가림. 신고와 분리한다 — 신고 버튼을 누른 사람이 게시 여부를 결정할 수
+   * 없고, 운영자 판단이 들어온 시각과 사람을 남긴다.
+   */
+  app.post<{ Params: { commentId: string } }>(
+    '/v1/admin/review-comments/:commentId/hide',
+    operatorAuth,
+    async (request, reply) => {
+      const operatorId = currentUserId(request);
+      if (!isUuid(request.params.commentId)) throw notFound('댓글');
+      const hidden = await context.pool.query(
+        `UPDATE structured.review_comments
+         SET status = 'hidden', hidden_at = now(), hidden_by = $2, updated_at = now()
+         WHERE id = $1 AND status = 'published'
+         RETURNING id`,
+        [request.params.commentId, operatorId]
+      );
+      if (hidden.rowCount !== 1) throw notFound('댓글');
+      return reply.status(204).send();
+    }
+  );
+
   /**
    * 후기 신고.
    *
