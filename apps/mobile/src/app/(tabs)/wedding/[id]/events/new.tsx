@@ -182,5 +182,4 @@ const styles = StyleSheet.create({
   fields: { gap: Spacing.three },
   actions: { flexDirection: 'row', gap: Spacing.two },
   sheetSection: { paddingHorizontal: 0 },
-  spacer: { paddingHorizontal: Layout.gutter },
 });
