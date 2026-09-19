@@ -93,7 +93,7 @@ export const DONE_TITLE_LINES = ['가입이', '완료됐어요'] as const;
 
 /** 질문 아래 한 줄 — 서비스가 무엇을 해주는지(SPEC §13.6 첫 표 «설명»). */
 export const STEP_DESCRIPTION: Record<QuestionStep, string> = {
-  date: '남은 기간에 맞춰 웨딩픽이 추천드려요',
+  date: '남은 기간에 맞춰 준비 순서를 잡아드릴게요',
   region: '선택한 지역으로 좁혀드려요',
   style: '마음에 드는 스타일을 골라주세요',
 };
