@@ -17,6 +17,8 @@ test('PR417 alone runs the current-backlog DB migration before API deployment', 
   const migration = jobBlock('migrate-current-backlog-db');
   assert.match(migration, /pr_number == '417'/);
   assert.match(migration, /environment: production-current-backlog-auto/);
+  assert.match(migration, /runs-on: \[self-hosted, Linux, X64, weddingpick-kakao\]/);
+  assert.match(migration, /docker inspect[^\n]+weddingpick-api/);
   assert.match(migration, /npm run migrate --workspace @weddingpick\/db/);
 
   const detect = jobBlock('api-deploy-needed');
