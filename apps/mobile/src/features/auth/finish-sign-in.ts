@@ -1,5 +1,3 @@
-import { router } from 'expo-router';
-
 import { getCurrentUser, type SessionEntry } from '@/api/client';
 import { completeAfterSignIn } from '@/features/auth/after-sign-in';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
