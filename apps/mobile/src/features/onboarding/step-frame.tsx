@@ -3,12 +3,11 @@ import { Animated, Easing, Pressable, ScrollView, StyleSheet, View } from 'react
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
+  Border,
   Layout,
   MaxContentWidth,
   Motion,
   Radius,
-  SeedIcon,
-  Spacing,
   ThemedText,
   ThemedView,
   USE_NATIVE_DRIVER,
@@ -18,19 +17,10 @@ import {
 import { OnboardingProgress } from './progress';
 
 /**
- * 온보딩 질문 한 장의 틀 — 규격서 docs/figma-spec/onboarding.txt(2026-09-15 대표 지시 「규격서의 수를 그대로」).
+ * 온보딩 한 장의 틀 — docs/design/figma-export/06-onboarding-login.dc.html.
  *
- *   div 430×932  pad 32 24 32 24 · bg #FFFFFF
- *     (머리 줄 + 막대 ← OnboardingProgress)
- *     (질문 ← QuestionHead · 보기 ← children «mar 40 0 0 0»)
- *     button 382×56  "다음" · 14/700 #FFFFFF · lh 20 · flex · gap 8 · center · mar 40 0 0 0 · bg #1A1C20 · r16
- *       svg 16×16  ChevronRight
- *
- * «이전»은 머리 줄 왼쪽 글자 단추다(피그마 `step ? "이전" : "나중에"`). 하단 dock은 규격서에 없어 뺐다 —
- * 「다음」은 보기 아래 40에 붙어 흐른다.
- *
- * **답 줄(«라벨 · 값 · 바꾸기»)은 없다** — 2026-09-15 대표 지시 「온보딩에 바꾸기 정보 삭제해.
- * 버튼 CTA는 하단에 유지한다」로 걷어냈다. 규격서에도 없던 자리다.
+ * 상단은 56px 진행행, 가운데만 스크롤, 하단은 92px 고정 dock이다. 첫 질문은
+ * Primary 하나, 2/3·3/3은 «이전» + Primary 두 버튼을 둔다.
  */
 export function StepFrame({
   label,
@@ -43,12 +33,9 @@ export function StepFrame({
   nextDisabled = false,
   error,
 }: {
-  /** `stepProgress().label` — «1/3» 꼴. */
   label: string;
-  /** 바뀌면 질문 블록이 «요소 상승»으로 나타난다. */
   stepKey: string;
   children: ReactNode;
-  /** 없으면 «이전»이 없다 — 첫 질문과 완료 화면. */
   prevLabel?: string;
   onPrev?: () => void;
   nextLabel: string;
@@ -58,43 +45,67 @@ export function StepFrame({
 }) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const paired = Boolean(prevLabel && onPrev);
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
-        <OnboardingProgress label={label} leftLabel={prevLabel} onLeft={onPrev} />
+        <OnboardingProgress label={label} />
 
         <ScrollView
           style={styles.scroll}
-          contentContainerStyle={[styles.content, { paddingBottom: Spacing.five + Math.max(insets.bottom, 0) }]}
+          contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <Rise key={stepKey}>{children}</Rise>
+          {error ? (
+            <ThemedText type="f13" themeColor="negative" style={styles.error}>
+              {error}
+            </ThemedText>
+          ) : null}
+        </ScrollView>
 
-          <View style={styles.ctaWrap}>
+        <View
+          style={[
+            styles.dock,
+            {
+              borderTopColor: theme.border,
+              paddingBottom: Layout.gutter + Math.max(insets.bottom, 0),
+              minHeight: DOCK_HEIGHT + Math.max(insets.bottom, 0),
+            },
+          ]}>
+          {paired ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityState={{ disabled: nextDisabled }}
-              disabled={nextDisabled}
-              onPress={onNext}
+              onPress={onPrev}
               style={({ pressed }) => [
-                styles.next,
-                { backgroundColor: theme.text },
-                nextDisabled && styles.disabled,
+                styles.previous,
+                { backgroundColor: theme.backgroundSelected },
                 pressed && styles.pressed,
               ]}>
-              <ThemedText type="f14" themeColor="onTint" style={styles.nextLabel}>
-                {nextLabel}
+              <ThemedText type="f18" themeColor="textSecondary" style={styles.buttonLabel}>
+                {prevLabel}
               </ThemedText>
-              <SeedIcon name="chevronRightRegular" size={Layout.iconField} color={theme.onTint} />
             </Pressable>
-            {error ? (
-              <ThemedText type="f12" themeColor="negative" style={styles.error}>
-                {error}
-              </ThemedText>
-            ) : null}
-          </View>
-        </ScrollView>
+          ) : null}
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ disabled: nextDisabled }}
+            disabled={nextDisabled}
+            onPress={onNext}
+            style={({ pressed }) => [
+              styles.next,
+              paired ? styles.nextPaired : styles.nextSingle,
+              { backgroundColor: theme.tint },
+              nextDisabled && styles.disabled,
+              pressed && styles.pressed,
+            ]}>
+            <ThemedText type="f18" themeColor="onTint" style={styles.buttonLabel}>
+              {nextLabel}
+            </ThemedText>
+          </Pressable>
+        </View>
       </SafeAreaView>
     </ThemedView>
   );
@@ -123,29 +134,42 @@ function Rise({ children }: { children: ReactNode }) {
   );
 }
 
-/** spec/tokens.json motion.sheetEnter easing — Motion.enter는 문자열이라 여기 숫자로 둔다. */
 const ENTER_BEZIER = [0.16, 1, 0.3, 1] as const;
+const DOCK_HEIGHT = 92;
 
 const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
   scroll: { flex: 1 },
-  /* 화면 «pad 32 24 32 24»의 아래 32는 위에서 insets와 합친다. */
   content: { flexGrow: 1 },
-  /* «mar 40 0 0 0» — 보기 아래 40. 좌우는 화면 24. */
-  ctaWrap: { marginTop: Spacing.five + Spacing.two, paddingHorizontal: Layout.gutter, gap: Spacing.two },
-  /* «382×56 · gap 8 · r16 · bg #1A1C20». */
-  next: {
-    height: Layout.ctaSheet,
-    borderRadius: Radius.cardLarge,
+  error: {
+    paddingHorizontal: Layout.gutter,
+    paddingBottom: Layout.inlineGap,
+    textAlign: 'center',
+  },
+  dock: {
     flexDirection: 'row',
+    gap: Layout.iconTextGap,
+    paddingTop: Layout.inlineGap,
+    paddingHorizontal: Layout.gutter,
+    borderTopWidth: Border.hairline,
+  },
+  previous: {
+    flex: 1,
+    height: 56,
+    borderRadius: Radius.control,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.two,
   },
-  /* «14/700». */
-  nextLabel: { fontWeight: 700 },
+  next: {
+    height: 56,
+    borderRadius: Radius.control,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nextSingle: { flex: 1 },
+  nextPaired: { flex: 1.4 },
+  buttonLabel: { fontWeight: 700 },
   disabled: { opacity: 0.4 },
   pressed: { opacity: 0.8 },
-  error: { textAlign: 'center' },
 });

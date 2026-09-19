@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { addVisitNote, listVisitNotes, removeVisitNote } from '@/api/client';
+import { confirmAlert } from '@/components/confirm-alert';
 import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
 import { formatDateDot } from '@/features/common/format-date';
 import {
@@ -16,8 +17,7 @@ import {
   ThemedText,
   ThemedView,
   WeddingCalendar,
-  showAlert,
-} from '@weddingpick/ui';
+  } from '@weddingpick/ui';
 import { DateChip, Field, Hero, ListRow, NavBar, NoteCard, RowValue, Screen, Section } from '@/features/wedding/screen-kit';
 
 /**
@@ -92,7 +92,7 @@ export default function VisitNotesScreen() {
   }
 
   function remove(noteId: string, label: string) {
-    showAlert(`${label} 방문 기록을 삭제할까요?`, '삭제하면 되돌릴 수 없어요.', [
+    confirmAlert(`${label} 방문 기록을 삭제할까요?`, '삭제하면 되돌릴 수 없어요.', [
       { text: '취소', style: 'cancel' },
       {
         text: '삭제',

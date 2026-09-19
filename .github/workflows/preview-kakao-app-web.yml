@@ -6,6 +6,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: weddingpick-kakao-vm-write
+  cancel-in-progress: false
+
 jobs:
   precheck:
     name: Verify API health before preview
@@ -65,4 +69,17 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - run: bash ./scripts/rollback-kakao-app-web.sh
+      - run: bash ./scripts/rollback-kakao-app-web-update.sh
+
+  finalize:
+    name: Finalize verified app-web preview
+    if: ${{ needs.publish.result == 'success' && needs.verify.result == 'success' }}
+    needs: [publish, verify]
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - run: bash ./scripts/finalize-kakao-app-web-update.sh

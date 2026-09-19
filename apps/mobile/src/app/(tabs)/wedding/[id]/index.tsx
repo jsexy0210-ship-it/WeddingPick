@@ -3,13 +3,14 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ActionButton, ErrorView, Layout, MaxContentWidth, Radius, showAlert, Spacing, ThemedText, ThemedView, VerificationBadge } from '@weddingpick/ui';
+import { ActionButton, ErrorView, Layout, MaxContentWidth, Radius, Spacing, ThemedText, ThemedView, VerificationBadge } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { PageThumbnail } from '@/components/page-thumbnail';
 import { isServerConfigured } from '@/api/config';
 import { formatDateDot } from '@/features/common/format-date';
 import { useDocumentStore } from '@/features/documents/document-store';
 import { BackBar } from '@/components/back-bar';
+import { confirmAlert } from '@/components/confirm-alert';
 
 
 /** A-12 견적 상세. 저장된 묶음을 다시 열어보고, 인증 신청과 삭제로 이어진다. */
@@ -31,7 +32,7 @@ export default function DocumentSetScreen() {
   }
 
   function confirmDelete() {
-    showAlert('문서를 지울까요?', '저장된 원본까지 함께 지워요. 되돌릴 수 없어요.', [
+    confirmAlert('문서를 지울까요?', '저장된 원본까지 함께 지워요. 되돌릴 수 없어요.', [
       { text: '취소', style: 'cancel' },
       {
         text: '지우기',

@@ -59,7 +59,13 @@ export async function finishSignIn(identity: Identity, entry?: SessionEntry) {
     email: identity.email,
     weddingDate: me?.weddingDate ?? null,
   });
-  router.replace(nextAfterSignIn({ setupComplete: me?.setupComplete, savedWedding: after.savedWedding }));
+  router.replace(
+    nextAfterSignIn({
+      setupComplete: me?.setupComplete,
+      savedWedding: after.savedWedding,
+      completedVendorId: after.completed?.vendorId,
+    })
+  );
 }
 
 /**
@@ -69,12 +75,16 @@ export async function finishSignIn(identity: Identity, entry?: SessionEntry) {
  * 가입이 끝난 계정은 기기에 적어둔 초안·미뤄둔 행동을 여기서 마저 처리한다
  * (`completeAfterSignIn`, 서버에 다시 묻지 않는다 — 기기 저장소만 읽는다).
  */
-export async function entryAfterSignIn(entry: SessionEntry): Promise<'/(tabs)' | '/setup'> {
+export async function entryAfterSignIn(entry: SessionEntry): Promise<PostSignInRoute> {
   if (!entry.activated) return '/setup';
 
   const after = await completeAfterSignIn({ activated: true });
 
-  return nextAfterSignIn({ setupComplete: entry.setupComplete, savedWedding: after.savedWedding });
+  return nextAfterSignIn({
+    setupComplete: entry.setupComplete,
+    savedWedding: after.savedWedding,
+    completedVendorId: after.completed?.vendorId,
+  });
 }
 
 /**
@@ -102,9 +112,19 @@ export async function rememberSignedIn(identity: Identity, pending: boolean): Pr
  * 예식일·지역·예산·분위기를 한 번도 묻지 않고 홈에 도착했다. 같은 결정을 두 곳에
  * 적으면 한쪽만 고쳐지는 날이 온다.
  */
+export type PostSignInRoute = '/(tabs)' | '/setup' | `/search/${string}`;
+
 export function nextAfterSignIn(state: {
   setupComplete?: boolean;
   savedWedding?: boolean;
-}): '/(tabs)' | '/setup' {
-  return state.setupComplete || state.savedWedding ? '/(tabs)' : '/setup';
+  completedVendorId?: string | null;
+}): PostSignInRoute {
+  // 가입/최소 설정이 남아 있으면 pending Pick보다 setup이 항상 먼저다.
+  if (!state.setupComplete && !state.savedWedding) return '/setup';
+
+  // 로그인 때문에 멈춘 Pick을 완료했다면 홈으로 보내 맥락을 잃지 않고
+  // 해당 업체 상세로 돌아간다. path segment는 저장소 변조에도 경로를 탈출하지 않게 인코딩한다.
+  if (state.completedVendorId) return `/search/${encodeURIComponent(state.completedVendorId)}`;
+
+  return '/(tabs)';
 }

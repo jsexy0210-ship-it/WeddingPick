@@ -7,6 +7,10 @@ on:
         required: false
         type: string
         default: ''
+      environment_name:
+        required: false
+        type: string
+        default: production
   workflow_dispatch:
     inputs:
       release_sha:
@@ -16,6 +20,10 @@ on:
 
 permissions:
   contents: read
+
+concurrency:
+  group: weddingpick-kakao-vm-write
+  cancel-in-progress: false
 
 jobs:
   precheck:
@@ -31,7 +39,7 @@ jobs:
 
   cutover:
     name: Enable app web on 443
-    environment: production
+    environment: ${{ inputs.environment_name || 'production' }}
     needs: [precheck]
     runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
     timeout-minutes: 10
@@ -76,4 +84,17 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - run: bash ./scripts/rollback-kakao-app-web.sh
+      - run: bash ./scripts/rollback-kakao-app-web-update.sh
+
+  finalize:
+    name: Finalize verified app-web update
+    if: ${{ needs.cutover.result == 'success' && needs.verify.result == 'success' }}
+    needs: [cutover, verify]
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - run: bash ./scripts/finalize-kakao-app-web-update.sh

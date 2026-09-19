@@ -33,7 +33,7 @@
     {
       "id": "cleanup-design-intake",
       "status": "complete",
-      "evidence": "../design-handoff/INTAKE-2026-09-10.md"
+      "evidence": "../design/handoff/INTAKE-2026-09-10.md"
     },
     {
       "id": "cleanup-validation",

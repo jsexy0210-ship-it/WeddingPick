@@ -672,7 +672,7 @@
   "designCanonical20260911": {
     "decidedAtKst": "2026-09-11 15:40",
     "order": "무조건 시안 기준으로 맞춘다 (대표)",
-    "canonical": "docs/design-handoff/root/ — 대표님이 직접 그린 원본 36장. current/(전달 ZIP handoff/)와 어긋나면 루트가 이긴다.",
+    "canonical": "docs/design/figma-export/ — 대표님이 직접 그린 원본 36장. current/(전달 ZIP handoff/)와 어긋나면 루트가 이긴다.",
     "why": "저장소에 current/만 있던 동안 세션 셋이 없어진 검색 홈 위에 필터·정렬을 계속 쌓았다. 대표님이 앱을 열어 볼 때까지 아무도 몰랐다.",
     "staleInsideRoot": "한 파일에서 제목·설명과 그려진 화면이 어긋나면 제목·설명이 이긴다. WP-APP-020은 제목이 「연월 셀렉트」인데 그려진 3장이 폐기된 휠 3열이다.",
     "exceptions": [

@@ -6,9 +6,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: weddingpick-kakao-vm-write
+  cancel-in-progress: false
+
 jobs:
   apply:
     name: Apply one favicon to app admin website
+    environment: production
     runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
     timeout-minutes: 10
     steps:

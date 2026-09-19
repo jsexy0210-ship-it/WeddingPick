@@ -30,7 +30,15 @@ jest.mock('./question-head', () => ({ QuestionHead: 'QuestionHead' }));
 jest.mock('./region-picker-sheet', () => ({ RegionPickerSheet: 'RegionPickerSheet' }));
 jest.mock('./step-frame', () => ({ StepFrame: 'StepFrame' }));
 jest.mock('@weddingpick/ui', () => ({
-  Layout: {}, Radius: {}, Spacing: {}, ThemedText: 'ThemedText', ThemedView: 'ThemedView', useTheme: () => ({}),
+  Border: { selected: 1.5 },
+  FontSize: { dateWheel: 17 },
+  Layout: {},
+  ProductSymbol: 'ProductSymbol',
+  Radius: {},
+  Spacing: {},
+  ThemedText: 'ThemedText',
+  ThemedView: 'ThemedView',
+  useTheme: () => ({}),
 }));
 
 const answers: Answers = {

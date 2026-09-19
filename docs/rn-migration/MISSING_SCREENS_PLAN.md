@@ -3,7 +3,7 @@
 조사만 한다. **코드·마이그레이션·계약 변경 없음**(2026-09-14 MASTER 동결 지시).
 배정됐던 마이그레이션 번호 셋은 회수됐다 — 이 문서는 번호를 잡지 않는다.
 
-기준 SHA `8a25960`(`origin/main`) · 피그마 `jsexy0210-ship-it/Weddingpick_Figma` 기본 브랜치.
+기준 SHA `8a25960`(`origin/main`) · 피그마 `jsexy0210-ship-it/docs/design/figma-export` 기본 브랜치.
 피그마 `src/app/components/`는 Figma Make가 만든 근사치(B등급)라 **화면 구성·흐름·필드
 목록의 근거로만** 쓰고 px·색 수치는 쓰지 않았다.
 
@@ -363,7 +363,7 @@ MASTER 단서는 ③을 「이건 정말 없다」로 묶었다. **좋아요·�
 
 ### 4. 저장소 이름
 
-단서의 `jsexy0210-ship-it/weddingpick_figma`는 실제로 **`Weddingpick_Figma`**다. 대소문자를
+단서의 `jsexy0210-ship-it/docs/design/figma-export`는 실제로 **`docs/design/figma-export`**다. 대소문자를
 가리지 않아 클론은 됐다. 고장은 아니지만 적어 둔다.
 
 ### 5. 「몇 번째 발견인가」는 확인 못 함
@@ -396,7 +396,7 @@ MASTER 단서는 ③을 「이건 정말 없다」로 묶었다. **좋아요·�
 
 ## root 시안에서 직접 확인한 것
 
-`docs/design-handoff/root/` 36장을 직접 훑었다.
+`docs/design/figma-export/` 36장을 직접 훑었다.
 
 - **「상담 예약」·「상담 신청」 0건.** 상담 화면 자체가 정본에 없다.
 - **FAQ는 `WP-FAQ-FAQ · 사용자와 운영자.dc.html` 하나** — 서비스 FAQ다.

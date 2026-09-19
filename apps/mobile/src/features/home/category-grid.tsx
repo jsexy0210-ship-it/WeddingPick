@@ -1,5 +1,5 @@
 /**
- * 홈 카테고리 3×2 — 규격서 docs/figma-spec/home.txt(2026-09-15 대표 지시 「규격서의 수를 그대로」).
+ * 홈 카테고리 3×2 — 규격서 docs/design/figma-export/01-home.dc.html(2026-09-15 대표 지시 「규격서의 수를 그대로」).
  *
  *   div 390×184  grid · cols 124.656px ×3 · gap 8
  *     button 125×88  flex/column · gap 8 · align center · pad 16 · bg #F7F8F9 · r16

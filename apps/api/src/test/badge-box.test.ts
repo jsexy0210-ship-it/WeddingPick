@@ -12,7 +12,7 @@ const ROOT = join(__dirname, '..', '..', '..', '..');
  * 상자 밖으로 비어져 나와 테두리에 닿는다 — 「배지가 잘린다」로 보이던 자리가
  * 전부 이 한 줄이었다(`height: 22` · 패딩 4 · 줄 19 → 안쪽 14).
  *
- * 핸드오프의 배지 22곳(`docs/design-handoff/current/html`)은 어느 것도 height를
+ * 핸드오프의 배지 22곳(`docs/design/handoff/html`)은 어느 것도 height를
  * 적지 않는다. `padding:4px 9px; line-height:19px`뿐이고 그려지는 높이는 27이다.
  * 웹(`apps/web/src/site-styles.ts` `.badge`)도 같다. 그래서 앱도 최소 높이로만 든다.
  *
@@ -129,7 +129,7 @@ describe('배지 상자', () => {
      * 기준은 최신 핸드오프다. 시안이 배지에 height를 적기 시작하면 위 규칙이 틀린
      * 것이 되므로, 시안 쪽이 바뀌는 순간을 여기서 잡는다.
      */
-    const html = execFileSync('git', ['ls-files', 'docs/design-handoff/current/html/*.dc.html'], {
+    const html = execFileSync('git', ['ls-files', 'docs/design/handoff/html/*.dc.html'], {
       cwd: ROOT,
       encoding: 'utf8',
     })

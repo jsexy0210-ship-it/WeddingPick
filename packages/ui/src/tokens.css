@@ -1,30 +1,17 @@
 /*
- * 웹 토큰 — spec/tokens.json을 따른다.
- *
- * 색은 theme.ts가 값으로 들고 있으므로 여기 없다. 여기 있는 것은 React Native가
- * 웹에서 var()로 넘기는 글꼴 변수뿐이다.
- *
- * **글꼴은 시스템 서체다.** spec/tokens.json `typography.$fontFamily.web` 그대로 — 웹폰트를
- * 넣지 않는다(CLAUDE.md 「Pretendard 미적용」 · 핸드오프 tokens.json `webfont: null`). 이 파일은
- * 어디에도 폰트 파일을 요구하지 않으므로 그대로 복사되어 나가는 곳(디자인 시스템 번들)에서도
- * 자립한다.
+ * 웹 글꼴·타이포 변수. 수치는 spec/tokens.json을 따른다.
+ * docs/design/README.md의 2026-09-17 예외에 따라 Pretendard를 유지한다.
+ * 실제 폰트 파일 로드는 앱 +html.tsx가 담당한다. 이 파일은 폰트 사본을 만들지 않는다.
  */
-
 :root {
   --font-sans:
-    -apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic',
-    'Segoe UI', Roboto, 'Noto Sans KR', 'Helvetica Neue', Arial, sans-serif;
+    'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui,
+    'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono:
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
   --font-serif: Georgia, 'Times New Roman', serif;
 
-  /*
-   * 글자 크기. `packages/ui/src/typography.ts`의 t 스케일과 **같은 수여야 한다.**
-   *
-   * 앱은 그 파일을, 웹은 이 변수를 본다. 두 곳이 갈라지면 같은 서비스가 앱에서는
-   * 15px, 웹에서는 0.95rem으로 보이고 — 나란히 놓고 보기 전까지 아무도 모른다.
-   * `apps/api/src/test/typography.test.ts`가 두 값이 같은지 지킨다.
-   */
+  /* typography.ts와 같은 크기·줄 높이를 유지한다. */
   --text-t1: 32px;
   --text-t2: 26px;
   --text-t3: 24px;
@@ -37,7 +24,6 @@
   --text-badge: 14px;
   --text-amount: 32px;
 
-  /* 줄 높이 — typography.ts LineHeight와 같은 수. */
   --leading-t1: 43px;
   --leading-t2: 35px;
   --leading-t3: 32px;

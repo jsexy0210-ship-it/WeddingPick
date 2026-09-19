@@ -5,8 +5,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { getExpenseDetail, removeExpense } from '@/api/client';
+import { confirmAlert } from '@/components/confirm-alert';
 import { formatDateDot, formatMonthDayDot } from '@/features/common/format-date';
-import { ErrorView, Layout, Spacing, ThemedText, showAlert } from '@weddingpick/ui';
+import { ErrorView, Layout, Spacing, ThemedText } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import {
   Badge,
@@ -63,7 +64,7 @@ export default function ExpenseDetailScreen() {
     current.refundStatus === 'cancelled' ? 'negative' : current.refundStatus === 'partial_refund' ? 'cautionary' : 'text';
 
   function remove() {
-    showAlert('이 지출을 삭제할까요?', '삭제하면 되돌릴 수 없어요.', [
+    confirmAlert('이 지출을 삭제할까요?', '삭제하면 되돌릴 수 없어요.', [
       { text: '취소', style: 'cancel' },
       {
         text: '삭제',
@@ -104,7 +105,7 @@ export default function ExpenseDetailScreen() {
 
         <View style={styles.rows}>
           <KeyValueRow label="업체" value={current.label} />
-          <KeyValueRow label="카테고리" value={categoryLabel} />
+          <KeyValueRow label="업종" value={categoryLabel} />
           <KeyValueRow
             label="낸 날짜"
             value={current.spentOn ? formatDateDot(current.spentOn) : '아직 없어요'}

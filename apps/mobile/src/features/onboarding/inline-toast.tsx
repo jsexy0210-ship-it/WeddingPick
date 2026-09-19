@@ -28,7 +28,15 @@ export function useInlineToast() {
   return { toast, show, hide };
 }
 
-export function InlineToast({ toast, onHidden }: { toast: InlineToastState | null; onHidden: () => void }) {
+export function InlineToast({
+  toast,
+  onHidden,
+  placement = 'floating',
+}: {
+  toast: InlineToastState | null;
+  onHidden: () => void;
+  placement?: 'floating' | 'inline';
+}) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const [opacity] = useState(() => new Animated.Value(0));
@@ -60,10 +68,16 @@ export function InlineToast({ toast, onHidden }: { toast: InlineToastState | nul
       accessibilityRole="alert"
       pointerEvents="none"
       style={[
-        styles.toast,
-        { backgroundColor: theme.backgroundInk, opacity, bottom: DOCK_HEIGHT + Spacing.three + Math.max(insets.bottom, 0) },
+        placement === 'inline' ? styles.inline : styles.toast,
+        {
+          backgroundColor: theme.backgroundInk,
+          opacity,
+          ...(placement === 'floating'
+            ? { bottom: DOCK_HEIGHT + Spacing.three + Math.max(insets.bottom, 0) }
+            : {}),
+        },
       ]}>
-      <ThemedText type="t7" themeColor="onTint" style={styles.label} numberOfLines={1}>
+      <ThemedText type={placement === 'inline' ? 'f15' : 't7'} themeColor="onTint" style={styles.label} numberOfLines={1}>
         {toast.message}
       </ThemedText>
     </Animated.View>
@@ -83,5 +97,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  label: { textAlign: 'center' },
+  inline: {
+    alignSelf: 'center',
+    borderRadius: Radius.medium,
+    paddingVertical: 14,
+    paddingHorizontal: Layout.toastPaddingX,
+  },
+  label: { textAlign: 'center', fontWeight: 700 },
 });

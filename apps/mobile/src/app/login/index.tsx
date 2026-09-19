@@ -33,7 +33,7 @@ import { useSignIn } from '@/features/auth/use-sign-in';
 import { openExternal } from '@/features/open-external';
 
 /**
- * 로그인 — 규격서 docs/figma-spec/login.txt(2026-09-15 대표 지시 「규격서의 수를 그대로」).
+ * 로그인 — 규격서 docs/design/figma-export/06-onboarding-login.dc.html(2026-09-15 대표 지시 「규격서의 수를 그대로」).
  *
  *   div 430×932  pad 64 24 32 24
  *     p "WEDDING, LESS OVERWHELMING" · 10/400 primary · lh 15 · ls 2.4px   ← **넣지 않는다**(아래)
@@ -53,7 +53,7 @@ import { openExternal } from '@/features/open-external';
  *   2026-09-15 대표 지시 「위와 같이 온보딩, 전체 메뉴에 이런 형식에 맞지 않는 화면 있으면
  *   싹다 찾아서 삭제해」다. 한국어로 옮기는 것도 아니고 **줄째 없앤다.** 제목은 규격서와
  *   같은 자리에 둔다 — eyebrow가 차지하던 높이를 위 여백으로 돌렸다
- *   (`Layout.headTopLogin` = 64 + lh 15 + mar 20 = 99). `extract-figma-spec.mjs`를 다시
+ *   (`Layout.headTopLogin` = 64 + lh 15 + mar 20 = 99). `extract-figma-export.mjs`를 다시
  *   돌리면 규격서에는 영문이 되살아나므로, 「규격서에 있는데 왜 없냐」며 되돌리지 않는다.
  * - 안내 카드 면 `#EE8888 6%` · 테두리 `#E4868D 15%`는 토큰에 없다 — 색은 MASTER 몫이라 `tintSurface` ·
  *   `tintBorder`로 두고 PR에 보고했다.
