@@ -26,6 +26,13 @@ describe('native canonical confirmation overlay', () => {
     expect(host).toContain('{cancelIndex >= 0 || danger ? (');
   });
 
+  it('route 변경 시 이전 화면 confirmation queue를 폐기한다', () => {
+    expect(nativeAlert).toContain('scope: () => nativeScope');
+    expect(nativeAlert).toContain('queue.checkScope()');
+    expect(host).toContain('const pathname = usePathname()');
+    expect(host).toContain('updateNativeConfirmationScope(pathname)');
+  });
+
   it('앱 루트에 overlay host가 한 번만 장착된다', () => {
     expect(rootLayout).toContain('<ConfirmationDialogHost />');
     expect(rootLayout.match(/<ConfirmationDialogHost \/>/g)).toHaveLength(1);

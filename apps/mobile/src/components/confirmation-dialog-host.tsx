@@ -1,10 +1,12 @@
-import { useSyncExternalStore } from 'react';
+import { usePathname } from 'expo-router';
+import { useEffect, useSyncExternalStore } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 
 import { Layout, Radius, ThemedText, useTheme } from '@weddingpick/ui';
 import strings from '../../../../spec/strings.ko.json';
 
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
+import { updateNativeConfirmationScope } from './confirm-alert';
 import {
   getNativeConfirmation,
   subscribeNativeConfirmation,
@@ -15,11 +17,16 @@ const CANCEL = strings.common['cta.cancel'];
 const CONFIRM = strings.common['cta.confirm'];
 
 export function ConfirmationDialogHost() {
+  const pathname = usePathname();
   const active = useSyncExternalStore(
     subscribeNativeConfirmation,
     getNativeConfirmation,
     getNativeConfirmation
   );
+
+  useEffect(() => {
+    updateNativeConfirmationScope(pathname);
+  }, [pathname]);
 
   if (!active) return null;
 
