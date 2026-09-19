@@ -17,7 +17,6 @@ import { dayToTimestamp, isDay, todayDay } from '@/features/wedding/expense-day'
 import {
   CheckBox,
   Field,
-  Hero,
   ListRow,
   NoteCard,
   Section,
@@ -135,7 +134,7 @@ export default function AddExpenseRoute() {
             contentContainerStyle={styles.content}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}>
-            <Hero title="얼마를 내셨어요?" />
+            <ThemedText type="t2">얼마를 내셨어요?</ThemedText>
 
             <View style={styles.fields}>
               <Field
@@ -190,7 +189,7 @@ export default function AddExpenseRoute() {
               </View>
             </View>
 
-            <Section label="자료를 올리면 실 제보가 돼요">
+            <Section label="자료를 올리면 실 제보가 돼요" style={styles.sheetSection}>
               {PROOF_KINDS.map((kind) => (
                 <ListRow key={kind} left={<CheckBox checked />} title={kind} />
               ))}
@@ -243,4 +242,5 @@ const styles = StyleSheet.create({
   field: { gap: Spacing.one + Spacing.half },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   actions: { flexDirection: 'row', gap: Spacing.two },
+  sheetSection: { paddingHorizontal: 0 },
 });
