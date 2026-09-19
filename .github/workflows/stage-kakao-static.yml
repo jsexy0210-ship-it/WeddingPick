@@ -150,6 +150,14 @@ jobs:
           }
           trap cleanup EXIT
 
+          # staging/runtime audit 중 main이 전진했을 수 있다. shared latest-candidate를
+          # 쓰기 직전에 한 번 더 확인해 늦게 끝난 과거 run이 marker를 되돌리지 못하게 한다.
+          current="$(git ls-remote https://github.com/jsexy0210-ship-it/WeddingPick.git refs/heads/main | cut -f1)"
+          if [ "$current" != "$GITHUB_SHA" ]; then
+            echo "::notice::Main advanced before candidate publication; latest-candidate remains unchanged."
+            exit 0
+          fi
+
           # runtime audit까지 성공한 완성본만 자동 cutover 후보로 공개한다.
           test -f "$release/app/index.html"
           test -f "$release/admin/index.html"
