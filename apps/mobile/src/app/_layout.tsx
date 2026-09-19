@@ -19,6 +19,7 @@ import { completeKakaoRedirect, hasKakaoReturn } from '@/features/auth/providers
 import { claimSigningInMessageForBoot, setPendingSignInError } from '@/features/auth/sign-in-handoff';
 import { SigningInView } from '@/features/auth/signing-in-view';
 import { CaptureDraftProvider } from '@/features/capture/capture-draft';
+import { ConfirmationDialogHost } from '@/components/confirmation-dialog-host';
 import { DocumentStoreProvider } from '@/features/documents/document-store';
 import { FullScreenError } from '@/features/errors/full-screen-error';
 import { escapeInAppBrowser } from '@/features/inapp-browser/escape';
@@ -324,6 +325,7 @@ function RootLayoutContent() {
       <DocumentStoreProvider>
         <CaptureDraftProvider>
           <InAppBrowserNotice notice={inAppNotice} />
+          <ConfirmationDialogHost />
           {/*
             바깥 주소를 앱 «안»에 띄우는 껍데기(웹). 뿌리에 한 장만 둔다 — 화면 안에
             두면 탭바·헤더 아래에 갇혀서 앱을 덮지 못한다(2026-09-15 대표 지시 ·
