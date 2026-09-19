@@ -37,6 +37,7 @@ function render(route, { browser = false, os = 'web', browserRoute = route, forb
     'expo-splash-screen': { preventAutoHideAsync: () => {}, hideAsync: () => {} },
     '@weddingpick/ui': { useTheme: () => ({}) },
     '@/features/navigation/screen-options': { useStackScreenOptions: () => ({}) },
+    '@/features/navigation/depth-back': { dismissToOrReplace: () => { counters.redirects++; } },
     '@/features/auth/finish-sign-in': { entryAfterSignIn: async () => '/', rememberSignedIn: () => {} },
     '@/features/auth/is-auth-popup': { isAuthPopup: () => false, completeAuthPopup: () => {} },
     '@/features/auth/providers': { hasKakaoReturn: () => false, completeKakaoRedirect: async () => null },
