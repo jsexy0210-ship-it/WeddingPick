@@ -1,23 +1,8 @@
-import { router } from 'expo-router';
-
-import { ThemedText } from '@weddingpick/ui';
-import { SubScreen } from '@/features/settings/my-kit';
-import strings from '../../../../../../../spec/strings.ko.json';
-
-const S = strings.community;
-
 /**
- * 라운지 상세 · Figma `FlowScreens.tsx` `FeedDetailPage`(B등급 — 구성만 참고).
+ * 라운지 웨딩피드 상세.
  *
- * **서버 계약이 없다.** 라운지 홈(`community/index.tsx`)이 글 목록을 못 보여주는 한
- * 이 화면에 진짜 `id`로 들어올 방법이 없다 — 링크가 잘못됐거나 지워진 글로 본다.
+ * 홈과 라운지가 같은 공개 웨딩피드 상세 계약/시각 정본을 사용한다. 라운지에서 연
+ * 글은 이 route를 써서 Back history가 라운지의 현재 탭/필터 상태를 그대로 복원한다.
+ * 직접 진입처럼 history가 없을 때는 depth-back 예외가 /community?tab=feed로 보낸다.
  */
-export default function CommunityFeedDetailScreen() {
-  return (
-    <SubScreen title={S.title} onBack={() => router.back()}>
-      <ThemedText type="t6" themeColor="textSecondary">
-        {S['detail.notFound']}
-      </ThemedText>
-    </SubScreen>
-  );
-}
+export { default } from '../../../(home)/feed/[id]';
