@@ -60,7 +60,7 @@ function runGroup(label, files) {
   }
 
   console.log(`[infra-regression] ${label}: ${files.length} file(s)`);
-  const result = spawnSync(process.execPath, ['--test', ...files], {
+  const result = spawnSync(process.execPath, ['--test', '--test-concurrency=1', ...files], {
     cwd: repoRoot,
     env: process.env,
     stdio: 'inherit',
