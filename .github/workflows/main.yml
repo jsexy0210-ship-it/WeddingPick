@@ -311,22 +311,33 @@ jobs:
     needs: [ci, api-tests, non-db-tests, db-tests, current-backlog-production]
     if: ${{ needs.current-backlog-production.outputs.auto == 'true' && needs.current-backlog-production.outputs.pr_number == '417' }}
     environment: production-current-backlog-auto
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 15
+    concurrency:
+      group: weddingpick-kakao-api-cutover
+      cancel-in-progress: false
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v5
         with:
           ref: ${{ github.sha }}
+          persist-credentials: false
       - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Run pending migrations
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: npm run migrate --workspace @weddingpick/db
+      - name: Run pending migrations against the live API database
+        shell: bash
+        run: |
+          set -euo pipefail
+          DATABASE_URL="$(sudo -n docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' weddingpick-api | sed -n 's/^DATABASE_URL=//p' | tail -n1)"
+          test -n "$DATABASE_URL"
+          export DATABASE_URL
+          npm run migrate --workspace @weddingpick/db
+          unset DATABASE_URL
+          echo 'Production DB migration completed without printing connection values.'
 
   audit-kakao-data:
     name: Audit Kakao Data State
