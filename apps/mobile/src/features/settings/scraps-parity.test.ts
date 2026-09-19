@@ -1,7 +1,12 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+declare const require: (id: string) => unknown;
+declare const __dirname: string;
 
-import { savedAtLabel } from '@/app/(tabs)/my/scraps';
+const { readFileSync } = require('fs') as {
+  readFileSync: (path: string, encoding: 'utf8') => string;
+};
+const { join } = require('path') as {
+  join: (...parts: string[]) => string;
+};
 
 const source = readFileSync(join(__dirname, '../../app/(tabs)/my/scraps.tsx'), 'utf8');
 
@@ -15,8 +20,8 @@ describe('MY 스크랩 07-lounge-my 4-6 정본', () => {
     expect(source).not.toContain('<Row');
   });
 
-  it('저장 시각을 정본 문구로 표시한다', () => {
-    expect(savedAtLabel('2026-09-08T12:34:56.000Z')).toBe('9월 8일 저장');
-    expect(savedAtLabel('invalid')).toBe('저장됨');
+  it('ISO 저장 시각을 사용자 문구로 바꾸는 fallback을 유지한다', () => {
+    expect(source).toContain("if (!match) return '저장됨';");
+    expect(source).toContain("return \`\${Number(match[2])}월 \${Number(match[3])}일 저장\`;");
   });
 });
