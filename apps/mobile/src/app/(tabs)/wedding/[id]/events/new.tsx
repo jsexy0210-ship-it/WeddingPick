@@ -1,7 +1,7 @@
 import type { CurrentUser } from '@weddingpick/api-contract';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { addWeddingEvent, getCurrentUser } from '@/api/client';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
@@ -17,18 +17,19 @@ import {
 } from '@/features/wedding/screen-kit';
 import { ActionButton, Spacing, ThemedText } from '@weddingpick/ui';
 
-import EventsScreen from './index';
+import WeddingScreen from '../../index';
 
 /**
  * /events/new 딥링크는 유지하되 별도 전체 화면은 만들지 않는다.
  * 부모 일정 화면을 그대로 남기고 DLG-D BottomSheet만 올린다.
  */
 export default function AddWeddingEventRoute() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, date } = useLocalSearchParams<{ id: string; date?: string }>();
+  const { height } = useWindowDimensions();
 
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [title, setTitle] = useState('');
-  const [day, setDay] = useState<string | null>(null);
+  const [day, setDay] = useState<string | null>(date ?? null);
   const [time, setTime] = useState('14:00');
   const [location, setLocation] = useState('');
   const [vendorLabel, setVendorLabel] = useState('');
@@ -48,13 +49,13 @@ export default function AddWeddingEventRoute() {
   const ready = reason === null;
   const dirty =
     title.length > 0 ||
-    day !== null ||
+    day !== (date ?? null) ||
     location.length > 0 ||
     vendorLabel.length > 0 ||
     notifyEnabled !== true;
 
   function closeSheet() {
-    dismissToOrReplace(`/wedding/${id}/events`);
+    dismissToOrReplace('/wedding?tab=calendar');
   }
 
   function requestClose() {
@@ -88,9 +89,9 @@ export default function AddWeddingEventRoute() {
 
   return (
     <View style={styles.host}>
-      <EventsScreen />
+      <WeddingScreen initialTab="calendar" />
 
-      <BottomSheet visible onRequestClose={requestClose} testID="event-add-sheet">
+      <BottomSheet visible onRequestClose={requestClose} style={styles.sheetHost} testID="event-add-sheet">
         <SheetPanel>
           <View style={styles.sheetHead}>
             <ThemedText type="t4">일정 추가</ThemedText>
@@ -100,7 +101,8 @@ export default function AddWeddingEventRoute() {
           </View>
 
           <ScrollView
-            style={styles.scroll}
+            style={[styles.scroll, { maxHeight: Math.max(280, height * 0.62) }]}
+            nestedScrollEnabled
             contentContainerStyle={styles.content}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}>
@@ -177,6 +179,7 @@ export default function AddWeddingEventRoute() {
 
 const styles = StyleSheet.create({
   host: { flex: 1 },
+  sheetHost: { flexShrink: 1 },
   sheetHead: { gap: Spacing.one },
   scroll: { flexShrink: 1 },
   content: { paddingBottom: Spacing.two, gap: Spacing.three },

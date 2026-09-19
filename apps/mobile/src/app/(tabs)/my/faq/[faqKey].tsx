@@ -1,6 +1,5 @@
 import {
   FAQ_RELATED,
-  FAQ_UNRESOLVED_CATEGORY,
   faqItem,
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -101,19 +100,6 @@ export default function FaqDetailScreen() {
           <View style={styles.helpful}>
             <View style={styles.helpfulBtn}>
               <ActionButton label="도움이 됐어요" variant="ghost" size="large" onPress={() => setThanked(true)} />
-            </View>
-            <View style={styles.helpfulBtn}>
-              <ActionButton
-                label="해결되지 않았어요"
-                variant="ghost"
-                size="large"
-                onPress={() =>
-                  router.push({
-                    pathname: '/my/contact',
-                    params: { category: FAQ_UNRESOLVED_CATEGORY[item.key] ?? 'other' },
-                  } as never)
-                }
-              />
             </View>
           </View>
         )}

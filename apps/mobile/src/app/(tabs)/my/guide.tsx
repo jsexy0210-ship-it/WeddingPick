@@ -57,13 +57,6 @@ export default function GuideScreen() {
               </ThemedView>
             )}
 
-            <ThemedView style={styles.section}>
-              <ActionButton
-                variant="secondary"
-                label="문의하기"
-                onPress={() => router.push('/my/contact')}
-              />
-            </ThemedView>
           </ScrollView>
         </SafeAreaView>
       </ThemedView>
@@ -162,11 +155,6 @@ export default function GuideScreen() {
               label="샘플 결과 보기"
               hint="자료를 올리기 전에 결과가 어떤 모습인지 볼 수 있어요"
               onPress={() => router.push('/capture/sample')}
-            />
-            <ActionButton
-              label="문의하기"
-              hint="답이 없으면 직접 물어보세요"
-              onPress={() => router.push('/my/contact')}
             />
             <ActionButton label="돌아가기" onPress={() => router.back()} />
           </ThemedView>

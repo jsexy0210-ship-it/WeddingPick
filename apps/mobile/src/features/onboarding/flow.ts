@@ -89,7 +89,7 @@ export const STEP_TITLE_LINES: Record<QuestionStep, readonly [string, string]> =
  * 마지막 단계라는 것이 드러나지 않았다 — 카카오 개인정보 동의항목 심사가 가입
  * 절차를 확인할 수 없다고 반려한 것과 같은 문제다.
  */
-export const DONE_TITLE_LINES = ['가입이', '완료됐어요'] as const;
+export const DONE_TITLE_LINES = ['선택한 정보로', '준비할게요'] as const;
 
 /** 질문 아래 한 줄 — 서비스가 무엇을 해주는지(SPEC §13.6 첫 표 «설명»). */
 export const STEP_DESCRIPTION: Record<QuestionStep, string> = {

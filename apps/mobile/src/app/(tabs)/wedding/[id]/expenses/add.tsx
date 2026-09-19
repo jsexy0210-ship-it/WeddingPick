@@ -8,7 +8,7 @@ import {
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { addExpense } from '@/api/client';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
@@ -24,7 +24,7 @@ import {
 } from '@/features/wedding/screen-kit';
 import { ActionButton, FilterChip, Spacing, ThemedText } from '@weddingpick/ui';
 
-import ExpensesScreen from './index';
+import WeddingScreen from '../../index';
 
 const PROOF_KINDS = ['영수증', '문자', '앱 화면 1장'] as const;
 
@@ -42,7 +42,8 @@ export default function AddExpenseRoute() {
     category?: string;
   }>();
 
-  const initialCategory = isVendorCategory(category) ? category : null;
+  const { height } = useWindowDimensions();
+    const initialCategory = isVendorCategory(category) ? category : null;
   const initialDay = todayDay();
 
   const [label, setLabel] = useState(vendorName ?? '');
@@ -71,7 +72,7 @@ export default function AddExpenseRoute() {
   const ready = reason === null;
 
   function closeSheet() {
-    dismissToOrReplace(`/wedding/${id}/expenses`);
+    dismissToOrReplace('/wedding?tab=budget');
   }
 
   function requestClose() {
@@ -119,9 +120,9 @@ export default function AddExpenseRoute() {
 
   return (
     <View style={styles.host}>
-      <ExpensesScreen />
+      <WeddingScreen initialTab="budget" suppressBudgetPrompt />
 
-      <BottomSheet visible onRequestClose={requestClose} testID="expense-add-sheet">
+      <BottomSheet visible onRequestClose={requestClose} style={styles.sheetHost} testID="expense-add-sheet">
         <SheetPanel>
           <View style={styles.sheetHead}>
             <ThemedText type="t4">지출 추가</ThemedText>
@@ -131,7 +132,8 @@ export default function AddExpenseRoute() {
           </View>
 
           <ScrollView
-            style={styles.scroll}
+            style={[styles.scroll, { maxHeight: Math.max(280, height * 0.58) }]}
+            nestedScrollEnabled
             contentContainerStyle={styles.content}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}>
@@ -236,6 +238,7 @@ export default function AddExpenseRoute() {
 
 const styles = StyleSheet.create({
   host: { flex: 1 },
+  sheetHost: { flexShrink: 1 },
   sheetHead: { gap: Spacing.one },
   scroll: { flexShrink: 1 },
   content: { paddingBottom: Spacing.two, gap: Spacing.three },

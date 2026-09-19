@@ -38,3 +38,8 @@ export async function loadRememberedAccount(): Promise<RememberedAccount | null>
 export async function saveRememberedAccount(account: RememberedAccount): Promise<void> {
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(account));
 }
+
+/** 로그인 유지 화면에서 «다른 계정으로 시작하기»를 누르면 마지막 계정 표시도 지운다. */
+export async function clearRememberedAccount(): Promise<void> {
+  await AsyncStorage.removeItem(STORAGE_KEY);
+}

@@ -76,7 +76,6 @@ src/app/                     expo-router 파일 기반 라우팅
   (tabs)/wedding/[id]/       A-12 견적 상세, A-13 인증 등급
   (tabs)/my/index.tsx        A-14 MY
   (tabs)/my/guide.tsx        촬영 방법 + AI 안내
-  (tabs)/my/policies.tsx     A-15 약관 및 정책
 src/api/                     서버 클라이언트 — 응답을 계약 스키마로 검사한다
 src/features/capture/        촬영 흐름 상태, 사진·PDF 선택, 업로드
 src/features/quotes/         분석 결과 렌더링 (실제 결과와 샘플이 함께 쓴다)
