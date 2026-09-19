@@ -209,10 +209,12 @@ describe('완료 흐름은 이전 Stack을 다시 열지 않는다', () => {
   };
   const { join } = nodeRequire('path') as { join: (...parts: string[]) => string };
 
-  it('보이는 탭과 숨은 capture 탭 모두 blur 시 하위 Stack을 첫 화면으로 접는다', () => {
-    const source = readFileSync(join(dirName, 'screen-options.ts'), 'utf8');
+  it('완료성 숨은 capture 탭만 blur 시 하위 Stack을 첫 화면으로 접는다', () => {
+    const layout = readFileSync(join(dirName, '..', '..', 'app', '(tabs)', '_layout.tsx'), 'utf8');
+    const common = readFileSync(join(dirName, 'screen-options.ts'), 'utf8');
 
-    expect(source).toContain('popToTopOnBlur: true');
+    expect(layout).toContain("popToTopOnBlur: name === 'capture'");
+    expect(common).not.toContain('popToTopOnBlur: true');
   });
 
   it('Pick 완료에서 지출 추가로 갈 때 done 화면 위에 push하지 않는다', () => {
