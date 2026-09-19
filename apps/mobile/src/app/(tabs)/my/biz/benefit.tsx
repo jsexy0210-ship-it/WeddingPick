@@ -18,6 +18,7 @@ import { createInquiry } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { formatDateDot } from '@/features/common/format-date';
 import { BackBar } from '@/components/back-bar';
+import { useDepthBack } from '@/features/navigation/depth-back';
 
 /**
  * WP-BIZ-004: 업체 혜택 등록 화면.
@@ -27,6 +28,7 @@ import { BackBar } from '@/components/back-bar';
  */
 export default function BizBenefitScreen() {
   const theme = useTheme();
+  const depthBack = useDepthBack();
   const [vendorName, setVendorName] = useState('');
   const [benefitTitle, setBenefitTitle] = useState('');
   const [benefitDetail, setBenefitDetail] = useState('');
@@ -88,7 +90,7 @@ export default function BizBenefitScreen() {
             <ThemedText type="t6" themeColor="textSecondary">
               담당자 확인 후 게재 여부를 알려드려요.
             </ThemedText>
-            <ActionButton variant="primary" label="확인" onPress={() => router.back()} />
+            <ActionButton variant="primary" label="확인" onPress={depthBack} />
           </ThemedView>
         </SafeAreaView>
       </ThemedView>
