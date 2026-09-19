@@ -3,20 +3,30 @@ import {
   WEDDING_STYLES,
   WEDDING_STYLE_LABEL,
   combineRegion,
-  shortDistrictName,
+  dDay,
   formatDateDot,
   toggleStyle,
   type WeddingStyle,
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BackHandler, StyleSheet, View } from 'react-native';
+import { BackHandler, Pressable, StyleSheet, View } from 'react-native';
 
 import { ApiError, completeSetup, completeSignup, getCurrentUser, getSignupState } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { loadToken } from '@/api/session';
 import { error as errorCopy } from '../../../../spec/strings.ko.json';
-import { Layout, Radius, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+import {
+  Border,
+  FontSize,
+  Layout,
+  ProductSymbol,
+  Radius,
+  Spacing,
+  ThemedText,
+  ThemedView,
+  useTheme,
+} from '@weddingpick/ui';
 
 import { DelayedRecommendingView } from '@/features/loading/delayed-loader';
 import { DatePickerSheet } from '@/features/onboarding/date-picker-sheet';
@@ -27,8 +37,12 @@ import {
   EMPTY_ANSWERS,
   NEXT_CTA,
   PREV_CTA,
+  QUESTION_STEPS,
+  STEP_LABEL,
   STEP_TITLE_LINES,
+  STYLE_DESCRIPTION,
   UNDECIDED_LABEL,
+  answerSummary,
   canAdvance,
   doneRows,
   nextStep,
@@ -37,6 +51,7 @@ import {
   stepDescription,
   stepProgress,
   stepsFor,
+  styleCta,
   type Answers,
   type QuestionStep,
 } from '@/features/onboarding/flow';
@@ -114,7 +129,7 @@ const REGION_PICK_LABEL = '지역 고르기';
 function regionLabelOf(value: Answers['region']): string | null {
   if (value === null || value.region === null) return null;
 
-  return value.district === null ? value.region : `${value.region} ${shortDistrictName(value.district)}`;
+  return value.district === null ? value.region : `${value.region} ${value.district}`;
 }
 
 export default function SetupScreen() {
@@ -417,6 +432,10 @@ export default function SetupScreen() {
   const date = answers.date?.value ?? null;
   const dateUndecided = answers.date !== null && date === null;
   const regionUndecided = answers.region !== null && answers.region.region === null;
+  const answeredSteps = QUESTION_STEPS.slice(0, QUESTION_STEPS.indexOf(step)).filter(
+    (answeredStep) => answerSummary(answeredStep, answers) !== null
+  );
+  const remaining = date ? dDay(date) : null;
 
   return (
     <>
@@ -425,11 +444,39 @@ export default function SetupScreen() {
         stepKey={step}
         prevLabel={previous === null ? undefined : PREV_CTA}
         onPrev={previous === null ? undefined : goPrev}
-        nextLabel={NEXT_CTA}
+        nextLabel={step === 'style' ? styleCta(chosenStyles.length) : NEXT_CTA}
         nextDisabled={!canAdvance(step, answers) || sending}
         onNext={goNext}
         error={error}>
-        <QuestionHead lines={STEP_TITLE_LINES[step]} description={stepDescription(step)} />
+        {answeredSteps.length > 0 ? (
+          <View style={styles.answeredWrap}>
+            {answeredSteps.map((answeredStep) => (
+              <Pressable
+                key={answeredStep}
+                accessibilityRole="button"
+                accessibilityLabel={`${STEP_LABEL[answeredStep]} 바꾸기`}
+                onPress={() => enter(answeredStep)}
+                style={({ pressed }) => [styles.answeredRow, pressed && styles.pressed]}>
+                <ProductSymbol name="check" size={20} color={theme.tint} />
+                <ThemedText type="f14" themeColor="textAssistive" style={styles.answeredLabel}>
+                  {STEP_LABEL[answeredStep]}
+                </ThemedText>
+                <ThemedText type="f14" numberOfLines={1} style={styles.answeredValue}>
+                  {answerSummary(answeredStep, answers)}
+                </ThemedText>
+                <ThemedText type="f13" themeColor="textAssistive" style={styles.answeredEdit}>
+                  바꾸기
+                </ThemedText>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
+
+        <QuestionHead
+          lines={STEP_TITLE_LINES[step]}
+          description={stepDescription(step)}
+          compact={step !== 'date'}
+        />
 
         {/*
           예식일 1/3 — 보기는 규격서의 65 줄(`OptionRow`). 피그마의 «2027년 1월 15일 · 2027년 상반기 ·
@@ -437,17 +484,45 @@ export default function SetupScreen() {
           둘째 줄이 «아직 정하지 않았어요»다.
         */}
         {step === 'date' ? (
-          <View style={styles.options}>
-            <OptionRow
-              label={date ? formatDateDot(date) : DATE_PICK_LABEL}
-              selected={date !== null}
+          <View style={styles.selectionSection}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="예식일 선택"
               onPress={() => setSheetOpen(true)}
-            />
-            <OptionRow
-              label={UNDECIDED_LABEL}
-              selected={dateUndecided}
+              style={({ pressed }) => [
+                styles.selectionField,
+                { borderColor: theme.tint },
+                pressed && styles.pressed,
+              ]}>
+              <ThemedText type="f16" numeric style={styles.selectionFieldLabel}>
+                {date ? formatDateDot(date) : DATE_PICK_LABEL}
+              </ThemedText>
+            </Pressable>
+
+            {date && remaining ? (
+              <View style={styles.ddayRow}>
+                <ThemedText type="f14" themeColor="textAssistive">
+                  오늘부터
+                </ThemedText>
+                <ThemedText type="f16" themeColor="tint" numeric style={styles.ddayValue}>
+                  {remaining.kind === 'upcoming' ? `${remaining.days}일` : '오늘'}
+                </ThemedText>
+              </View>
+            ) : null}
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ selected: dateUndecided }}
               onPress={() => update({ date: { value: null } })}
-            />
+              style={({ pressed }) => [
+                styles.undecidedChip,
+                { backgroundColor: dateUndecided ? theme.tintSurface : theme.backgroundSelected },
+                pressed && styles.pressed,
+              ]}>
+              <ThemedText type="f15" themeColor={dateUndecided ? 'tint' : 'textSecondary'} style={styles.bold}>
+                {UNDECIDED_LABEL}
+              </ThemedText>
+            </Pressable>
           </View>
         ) : null}
 
@@ -456,28 +531,46 @@ export default function SetupScreen() {
           둘째 줄이 «아직 정하지 않았어요»다. 2026-09-15 대표 지시로 줄 목록에서 시트로 바뀌었다.
         */}
         {step === 'region' ? (
-          <View style={styles.options}>
-            <OptionRow
-              label={regionLabelOf(answers.region) ?? REGION_PICK_LABEL}
-              selected={regionLabelOf(answers.region) !== null}
+          <View style={styles.selectionSection}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="지역 선택"
               onPress={() => setRegionSheetOpen(true)}
-            />
-            <OptionRow
-              label={UNDECIDED_LABEL}
-              selected={regionUndecided}
+              style={({ pressed }) => [
+                styles.selectionField,
+                { borderColor: theme.tint },
+                pressed && styles.pressed,
+              ]}>
+              <ThemedText type="f16" style={styles.selectionFieldLabel}>
+                {regionLabelOf(answers.region) ?? REGION_PICK_LABEL}
+              </ThemedText>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ selected: regionUndecided }}
               onPress={() => update({ region: { region: null, district: null } })}
-            />
+              style={({ pressed }) => [
+                styles.undecidedChip,
+                { backgroundColor: regionUndecided ? theme.tintSurface : theme.backgroundSelected },
+                pressed && styles.pressed,
+              ]}>
+              <ThemedText type="f15" themeColor={regionUndecided ? 'tint' : 'textSecondary'} style={styles.bold}>
+                {UNDECIDED_LABEL}
+              </ThemedText>
+            </Pressable>
           </View>
         ) : null}
 
         {/* 스타일 3/3 — 넷 중 1~2개(v3.24). 사진 타일은 규격서에 없어 65 줄로 바꿨고 파일은 지웠다. */}
         {step === 'style' ? (
-          <View style={styles.options}>
+          <View style={styles.styleOptions}>
             {WEDDING_STYLES.map((style) => (
               <OptionRow
                 key={style}
                 role="checkbox"
                 label={WEDDING_STYLE_LABEL[style]}
+                description={STYLE_DESCRIPTION[style]}
                 selected={chosenStyles.includes(style)}
                 onPress={() => {
                   const { next, limited } = toggleStyle(chosenStyles, style);
@@ -524,12 +617,59 @@ const styles = StyleSheet.create({
     paddingBottom: Layout.gutter,
     gap: Layout.rowPaddingY,
   },
-  /* 보기 묶음 — 규격서 «div 382×218 · mar 40 0 0 0», 줄 사이 «mar 0 0 12 0». 좌우는 화면 24. */
-  options: {
-    marginTop: Spacing.five + Spacing.two,
+  answeredWrap: {
+    paddingTop: Spacing.one,
     paddingHorizontal: Layout.gutter,
+  },
+  answeredRow: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Layout.iconTextGap,
+  },
+  answeredLabel: { flexShrink: 0 },
+  answeredValue: { flex: 1, minWidth: 0, fontWeight: 700 },
+  answeredEdit: { flexShrink: 0, fontWeight: 700 },
+
+  selectionSection: {
+    paddingHorizontal: Layout.gutter,
+    paddingBottom: Layout.listGap,
     gap: Layout.inlineGap,
   },
+  selectionField: {
+    height: 56,
+    borderRadius: Radius.control,
+    borderWidth: Border.selected,
+    paddingHorizontal: Spacing.three,
+    justifyContent: 'center',
+  },
+  selectionFieldLabel: {
+    fontSize: FontSize.dateWheel,
+    fontWeight: 700,
+  },
+  ddayRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: Layout.inlineGap,
+    paddingHorizontal: Spacing.half,
+  },
+  ddayValue: { fontWeight: 700 },
+  undecidedChip: {
+    alignSelf: 'flex-start',
+    height: 44,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Radius.pill,
+    justifyContent: 'center',
+  },
+
+  styleOptions: {
+    paddingHorizontal: Layout.gutter,
+    paddingBottom: Spacing.three,
+    gap: Layout.iconTextGap,
+  },
+  bold: { fontWeight: 700 },
+  pressed: { opacity: 0.8 },
   /* 완료 요약 — gray50 · radius 10 · 안쪽 20 · 행 상하 9. 안쪽 상자 없음. */
   summary: {
     borderRadius: Radius.medium,
