@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Layout, TextField, Toast } from '@weddingpick/ui';
 import { createInquiry } from '@/api/client';
 import { CheckCircle } from '@/features/onboarding/check-circle';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import { Dock, Hero, NoteBox, Row, Rows, Section, SubScreen } from '@/features/settings/my-kit';
 
 /** 시안 09b-vendor-sub #5 «정보 오류 제보 · WP-VEND-006»의 renderVals. */
@@ -60,6 +61,7 @@ type ItemKey = (typeof ITEMS)[number]['key'];
  */
 export default function FixReportScreen() {
   const { vendorId } = useLocalSearchParams<{ vendorId: string }>();
+  const depthBack = useDepthBack();
 
   const [item, setItem] = useState<ItemKey | null>(null);
   const [value, setValue] = useState('');
@@ -104,7 +106,7 @@ export default function FixReportScreen() {
     return (
       <SubScreen
         title={S.title}
-        dock={<Dock primary={{ label: '확인', onPress: () => router.back() }} />}>
+        dock={<Dock primary={{ label: '확인', onPress: depthBack }} />}>
         <Hero lines={['제보를 받았어요', '확인하고 알려드릴게요']} />
         <Section>
           <NoteBox title={done} />
