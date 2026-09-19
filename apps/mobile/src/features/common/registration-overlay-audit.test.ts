@@ -90,6 +90,25 @@ describe('registration routes use canonical overlays', () => {
     expect(booking).toContain("export { default } from './consult'");
   });
 
+  it('route형 시트는 부모 화면을 history 중복 없이 복원하고 dirty 입력은 DLG-B를 거친다', () => {
+    const routes = [
+      ['(tabs)/wedding/[id]/events/new.tsx', 'dismissToOrReplace(\`/wedding/\${id}/events\`)'],
+      ['(tabs)/wedding/[id]/expenses/add.tsx', 'dismissToOrReplace(\`/wedding/\${id}/expenses\`)'],
+      ['(tabs)/search/[vendorId]/write-review.tsx', 'dismissToOrReplace(\`/search/\${vendorId}\`)'],
+      ['(tabs)/search/[vendorId]/edit-review.tsx', 'dismissToOrReplace(\`/search/\${vendorId}/reviews\`)'],
+      ['(tabs)/search/[vendorId]/consult.tsx', 'dismissToOrReplace(\`/search/\${vendorId}\`)'],
+    ] as const;
+
+    for (const [path, parentClose] of routes) {
+      const content = source(path);
+      expect(content).toContain('requestDirtySheetClose(dirty, closeSheet)');
+      expect(content).toContain(parentClose);
+    }
+
+    const calendar = source('(tabs)/search/expo/[expoId]/calendar.tsx');
+    expect(calendar).toContain('dismissToOrReplace(\`/search/expo/\${expoId}\`)');
+  });
+
   it('증빙 등록 one-shot 작업 단계만 명시적 전체 화면 예외다', () => {
     const content = source(CAPTURE_EXCEPTION);
 
