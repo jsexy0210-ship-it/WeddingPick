@@ -50,6 +50,11 @@ COPY packages/db/src ./packages/db/src
 COPY packages/db/migrations ./packages/db/migrations
 COPY packages/domain/src ./packages/domain/src
 
+# Domain/API runtime imports these canonical JSON files directly.
+COPY spec/glossary.json ./spec/glossary.json
+COPY spec/font-subsets.json ./spec/font-subsets.json
+COPY spec/strings.ko.json ./spec/strings.ko.json
+
 EXPOSE 3000
 
 CMD ["/opt/tsx/node_modules/.bin/tsx", "apps/api/src/index.ts"]
