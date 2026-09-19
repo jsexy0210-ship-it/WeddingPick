@@ -148,6 +148,19 @@ const VENDOR_REVIEWS = [
     aspects: [],
     createdAt: '2026-07-01T00:00:00.000Z',
     mine: false,
+    media: [],
+    helpful: { count: 3, mine: false },
+    comments: {
+      count: 1,
+      items: [
+        {
+          id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+          body: '상담 일정은 어느 정도 여유를 두고 잡으셨나요?',
+          createdAt: '2026-07-02T00:00:00.000Z',
+          mine: false,
+        },
+      ],
+    },
     rebuttal: null,
   },
 ];
@@ -358,6 +371,13 @@ const routes = {
           { key: 'progress', label: '진행', rating: 5 },
           { key: 'result', label: '결과물', rating: 4 },
           { key: 'extra_cost', label: '추가비용', rating: 5 },
+        ],
+        media: [
+          {
+            id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+            url: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3',
+            mimeType: 'image/jpeg',
+          },
         ],
         vendor: {
           id: VENDORS[4].id,
@@ -973,6 +993,11 @@ const routes = {
   'GET /v1/vendors/:vendorId/conditions': {
     available: false,
     note: '조건이 비슷한 사례를 더 모으고 있어요',
+  },
+  'GET /v1/reviews/:reviewId/comments': {
+    comments: VENDOR_REVIEWS[0].comments.items,
+    nextCursor: null,
+    count: VENDOR_REVIEWS[0].comments.count,
   },
   'GET /v1/vendors/:vendorId/reviews': {
     reviews: VENDOR_REVIEWS,
