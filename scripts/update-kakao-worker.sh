@@ -75,7 +75,7 @@ fi
 
 sudo -n docker run -d --pull=never --name "$NAME" --restart=unless-stopped \
   --env-file "$ENV_FILE" \
-  "$IMAGE" npm run worker --workspace @weddingpick/api >/dev/null
+  "$IMAGE" /opt/tsx/node_modules/.bin/tsx apps/api/src/worker.ts >/dev/null
 
 sleep 8
 test "$(sudo -n docker inspect -f '{{.State.Running}}' "$NAME")" = true
