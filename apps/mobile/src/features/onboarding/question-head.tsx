@@ -22,8 +22,7 @@ export function QuestionHead({
       <ThemedText
         type={compact ? 'f26' : 'f28'}
         style={[styles.title, compact ? styles.titleCompact : styles.titleRegular]}>
-        {lines[0]}{'
-'}{lines[1]}
+        {lines[0]}{'\n'}{lines[1]}
       </ThemedText>
       {description ? (
         <ThemedText type="f15" themeColor="textAssistive" style={styles.description}>
