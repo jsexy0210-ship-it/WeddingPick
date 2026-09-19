@@ -74,7 +74,7 @@ export function InlineToast({
           opacity,
           ...(placement === 'floating'
             ? { bottom: DOCK_HEIGHT + Spacing.three + Math.max(insets.bottom, 0) }
-            : null),
+            : {}),
         },
       ]}>
       <ThemedText type={placement === 'inline' ? 'f15' : 't7'} themeColor="onTint" style={styles.label} numberOfLines={1}>
