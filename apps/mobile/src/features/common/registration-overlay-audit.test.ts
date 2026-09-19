@@ -83,6 +83,13 @@ describe('registration routes use canonical overlays', () => {
     }
   });
 
+  it('상담/예약처럼 route 이름이 등록이 아니어도 데이터를 만들면 시트다', () => {
+    expectCanonicalSheet('(tabs)/search/[vendorId]/consult.tsx');
+
+    const booking = source('(tabs)/search/[vendorId]/booking.tsx');
+    expect(booking).toContain("export { default } from './consult'");
+  });
+
   it('증빙 등록 one-shot 작업 단계만 명시적 전체 화면 예외다', () => {
     const content = source(CAPTURE_EXCEPTION);
 
