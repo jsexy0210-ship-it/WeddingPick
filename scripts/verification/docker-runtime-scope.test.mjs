@@ -19,6 +19,9 @@ test('runtime image contains only API runtime source and the pinned tsx tool', (
   assert.match(dockerfile, /tsx@4\.19\.2/);
   assert.match(dockerfile, /COPY apps\/api\/src \.\/apps\/api\/src/);
   assert.match(dockerfile, /COPY packages\/db\/migrations \.\/packages\/db\/migrations/);
+  assert.match(dockerfile, /COPY spec\/glossary\.json \.\/spec\/glossary\.json/);
+  assert.match(dockerfile, /COPY spec\/font-subsets\.json \.\/spec\/font-subsets\.json/);
+  assert.match(dockerfile, /COPY spec\/strings\.ko\.json \.\/spec\/strings\.ko\.json/);
   assert.match(dockerfile, /CMD \["\/opt\/tsx\/node_modules\/\.bin\/tsx", "apps\/api\/src\/index\.ts"\]/);
   assert.doesNotMatch(dockerfile, /COPY apps\/mobile/);
   assert.doesNotMatch(dockerfile, /COPY apps\/web/);
@@ -26,11 +29,14 @@ test('runtime image contains only API runtime source and the pinned tsx tool', (
 });
 
 test('Docker context excludes frontend, docs, tests and local build debris', () => {
-  for (const entry of ['apps/mobile', 'apps/web', 'packages/ui', 'docs', 'spec', 'scripts', '**/node_modules']) {
+  for (const entry of ['apps/mobile', 'apps/web', 'packages/ui', 'docs', 'spec/*', 'scripts', '**/node_modules']) {
     assert.ok(dockerignore.split(/\r?\n/).includes(entry), 'missing dockerignore entry: ' + entry);
   }
   assert.match(dockerignore, /^\*\*\/\*\.test\.ts$/m);
   assert.match(dockerignore, /^\*\*\/\*\.test\.tsx$/m);
+  for (const file of ['!spec/glossary.json', '!spec/font-subsets.json', '!spec/strings.ko.json']) {
+    assert.ok(dockerignore.split(/\r?\n/).includes(file), 'missing runtime spec include: ' + file);
+  }
 });
 
 test('Kakao worker uses the same minimal tsx runtime instead of API devDependencies', () => {
