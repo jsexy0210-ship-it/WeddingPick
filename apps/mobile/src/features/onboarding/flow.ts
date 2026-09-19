@@ -80,8 +80,8 @@ export const STEP_LABEL: Record<QuestionStep, string> = {
  */
 export const STEP_TITLE_LINES: Record<QuestionStep, readonly [string, string]> = {
   date: ['예식일은', '언제인가요?'],
-  region: ['어느 지역에서', '하나요?'],
-  style: ['어떤 분위기로', '준비할까요?'],
+  region: ['어디에서', '식을 올리시나요?'],
+  style: ['어떤 스타일을', '좋아하세요?'],
 };
 
 /**
@@ -96,25 +96,29 @@ export const DONE_TITLE_LINES = ['가입이', '완료됐어요'] as const;
 
 /** 질문 아래 한 줄 — 서비스가 무엇을 해주는지(SPEC §13.6 첫 표 «설명»). */
 export const STEP_DESCRIPTION: Record<QuestionStep, string> = {
-  date: '남은 기간에 맞춰 준비 순서를 잡아드릴게요',
-  region: '선택한 지역을 기준으로 찾아드릴게요',
+  date: '남은 기간에 맞춰 웨딩픽이 추천드려요',
+  region: '선택한 지역으로 좁혀드려요',
   style: '마음에 드는 스타일을 골라주세요',
+};
+
+/** 06-onboarding-login 정본의 스타일 버튼 보조 문구. */
+export const STYLE_DESCRIPTION: Record<WeddingStyle, string> = {
+  URBAN: '모던하고 세련된 도심 분위기',
+  NATURAL: '편안하고 빛이 좋은 야외 느낌',
+  ROMANTIC: '부드럽고 사랑스러운 분위기',
+  GLAMOROUS: '풍성하고 존재감 있는 스타일',
 };
 
 export const DONE_CTA = '웨딩픽 시작하기';
 
-/**
- * 「다음」 — 세 질문이 전부 같은 CTA를 쓴다.
- *
- * **스타일 3/3도 이것이다.** 2026-09-15까지 `styleCta(n)`이 «N장 선택»을 만들었는데
- * «장»은 사진·종이를 세는 말이라 사진 타일을 지운 지금은 셀 것이 없다(대표 지시
- * 「타일로 하지마 버튼으로 통일한다」). 규격서 `docs/design/figma-export/06-onboarding-login.dc.html`의
- * CTA는 «다음»이다 — `button 382×56 "다음" · 14/700 #FFFFFF · bg #1A1C20 · r16`.
- * 근거를 옛 SPEC.md에서 피그마로 옮긴 것이고, 문구는 `spec/strings.ko.json`
- * `common.cta.next`에서 온다.
- */
+/** 1/3 · 2/3의 하단 CTA. 3/3은 정본대로 선택 개수를 표시한다. */
 export const NEXT_CTA = common['cta.next'];
 export const PREV_CTA = '이전';
+
+/** 3/3 정본 CTA — 사진 단위 «장»이 아니라 버튼 선택 개수 «개». */
+export function styleCta(count: number): string {
+  return `${count}개 선택`;
+}
 
 /** 이 답 상태에서 묻는 Step. 셋 전부 — 건너뛰는 질문이 없다. */
 export function stepsFor(_answers: Answers): readonly QuestionStep[] {
