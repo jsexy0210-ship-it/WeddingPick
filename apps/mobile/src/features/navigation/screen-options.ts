@@ -48,25 +48,18 @@ export function useStackScreenOptions(): {
 /**
  * 탭 화면의 기본값. `sceneStyle`이 탭 한 칸의 바탕이다.
  *
- * **탭을 떠날 때 하위 Stack은 첫 화면으로 접는다.** 보이는 Root 5탭뿐 아니라
- * `capture` · `(home)` 같은 숨은 Tabs.Screen도 같은 옵션을 받는다. Pick 인증처럼
- * 숨은 탭 안에서 제출 완료 화면까지 간 뒤 웨딩노트로 빠지면, 그 Stack을 그대로
- * 보존할 이유가 없다. 보존하면 다음 진입이 새 흐름이 아니라 예전 완료 화면에서
- * 시작한다. React Navigation의 `popToTopOnBlur`가 이 경계를 한 곳에서 정리한다.
+ * nested Stack을 버릴지는 여기서 전역으로 정하지 않는다. 검색 상세 → Pick 인증처럼
+ * 아직 끝나지 않은 교차 흐름은 이전 상세로 돌아갈 수 있어야 한다. 완료성 숨은 흐름만
+ * `app/(tabs)/_layout.tsx`에서 route별로 `popToTopOnBlur`를 켠다.
  */
 export function useTabScreenOptions(): {
   headerShown: false;
-  popToTopOnBlur: true;
   sceneStyle: { backgroundColor: string };
 } {
   const theme = useTheme();
 
   return useMemo(
-    () => ({
-      headerShown: false,
-      popToTopOnBlur: true,
-      sceneStyle: { backgroundColor: theme.background },
-    }),
+    () => ({ headerShown: false, sceneStyle: { backgroundColor: theme.background } }),
     [theme.background]
   );
 }
