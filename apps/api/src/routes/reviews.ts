@@ -830,7 +830,7 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
          */
         `SELECT r.id, r.role, r.overall, r.title, r.body, r.pros, r.cons,
                 r.verification, r.created_at,
-                (r.author_user_id = $2) AS mine,
+                coalesce(r.author_user_id = $2::uuid, false) AS mine,
                 (SELECT json_agg(json_build_object('aspect', a.aspect, 'rating', a.rating)
                                  ORDER BY a.aspect)
                  FROM structured.review_aspects a WHERE a.review_id = r.id) AS aspects,
