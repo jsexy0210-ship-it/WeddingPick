@@ -1,4 +1,7 @@
 import {
+  createReviewCommentReportRequestSchema,
+  createReviewCommentRequestSchema,
+  createReviewMediaUploadTargetRequestSchema,
   createReviewReportRequestSchema,
   createReviewRequestSchema,
   updateReviewRequestSchema,
@@ -31,11 +34,19 @@ import {
   type VendorCategory,
   type VerificationLevel,
 } from '@weddingpick/domain';
+import { randomUUID } from 'node:crypto';
+
 import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
 import { z } from 'zod';
 
-import { currentUserId, optionalUser, optionalUserId, requireUser } from '../auth/plugin';
+import {
+  currentUserId,
+  optionalUser,
+  optionalUserId,
+  requireOperatorUser,
+  requireUser,
+} from '../auth/plugin';
 import type { AppContext } from '../context';
 import { withTransaction } from '../db';
 import { newEventId, recordDecision } from '../decisions';
@@ -240,6 +251,96 @@ function encodeCursor(row: { created_at: Date; id: string }): string {
   return Buffer.from(JSON.stringify([row.created_at.toISOString(), row.id]), 'utf8').toString(
     'base64url'
   );
+}
+
+
+const REVIEW_IMAGE_TYPES: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+};
+const REVIEW_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
+const REVIEW_MEDIA_URL_TTL_SECONDS = 15 * 60;
+
+type ReviewInteractionFields = {
+  media: { id: string; storage_key: string; mime_type: string }[] | null;
+  helpful_count: number;
+  helpful_mine: boolean;
+  comment_count: number;
+  comments:
+    | { id: string; body: string; created_at: Date | string; mine: boolean }[]
+    | null;
+};
+
+function reviewImageBytesMatch(bytes: Buffer, mimeType: string): boolean {
+  if (mimeType === 'image/jpeg') {
+    return bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  }
+  if (mimeType === 'image/png') {
+    return (
+      bytes.length >= 8 &&
+      bytes.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+    );
+  }
+  if (mimeType === 'image/webp') {
+    return (
+      bytes.length >= 12 &&
+      bytes.subarray(0, 4).toString('ascii') === 'RIFF' &&
+      bytes.subarray(8, 12).toString('ascii') === 'WEBP'
+    );
+  }
+  return false;
+}
+
+async function reviewInteractionPayload(context: AppContext, row: ReviewInteractionFields) {
+  const media = await Promise.all(
+    (row.media ?? []).map(async (item) => ({
+      id: item.id,
+      url: await context.storage.getPublicUrl(item.storage_key, REVIEW_MEDIA_URL_TTL_SECONDS),
+      mimeType: item.mime_type,
+    }))
+  );
+
+  return {
+    media,
+    helpful: {
+      count: Number(row.helpful_count ?? 0),
+      mine: Boolean(row.helpful_mine),
+    },
+    comments: {
+      count: Number(row.comment_count ?? 0),
+      items: (row.comments ?? []).map((comment) => ({
+        id: comment.id,
+        body: comment.body,
+        createdAt:
+          comment.created_at instanceof Date
+            ? comment.created_at.toISOString()
+            : new Date(comment.created_at).toISOString(),
+        mine: Boolean(comment.mine),
+      })),
+    },
+  };
+}
+
+async function helpfulState(pool: Pool, reviewId: string, userId: string) {
+  const { rows } = await pool.query<{ count: number; mine: boolean }>(
+    `SELECT
+       (SELECT count(*)::int FROM structured.review_helpful WHERE review_id = $1) AS count,
+       EXISTS (
+         SELECT 1 FROM structured.review_helpful
+         WHERE review_id = $1 AND user_id = $2
+       ) AS mine`,
+    [reviewId, userId]
+  );
+  return rows[0] ?? { count: 0, mine: false };
+}
+
+async function ensureVisibleReview(pool: Pool, reviewId: string): Promise<void> {
+  if (!isUuid(reviewId)) throw notFound('후기');
+  const found = await pool.query('SELECT 1 FROM structured.visible_reviews WHERE id = $1', [
+    reviewId,
+  ]);
+  if (found.rowCount !== 1) throw notFound('후기');
 }
 
 function decodeCursor(cursor: string): [string, string] | null {
