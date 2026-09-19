@@ -1,0 +1,130 @@
+name: Kakao VM Emergency Cleanup
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: weddingpick-kakao-vm-write
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    name: Reclaim Kakao VM disk safely
+    if: ${{ contains(github.event.head_commit.message || '', '[vm-emergency-cleanup]') }}
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 10
+    steps:
+      - name: Remove only stopped recovery/transient containers and unreferenced API images
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=/home/ubuntu/WeddingPick
+
+          echo '=== BEFORE ==='
+          df -h / | sed -n '1,2p'
+          sudo -n docker system df || true
+          sudo -n docker ps -a --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}'
+
+          protected_cors=''
+          if [ -r "$root/.cors-cutover-backup" ]; then
+            protected_cors="$(sed -n 's/^container=//p' "$root/.cors-cutover-backup" | head -n1)"
+          fi
+
+          cleanup_family() {
+            local prefix="$1" protected="${2:-}" keep=1
+            mapfile -t names < <(
+              while IFS= read -r name; do
+                [ -n "$name" ] || continue
+                running="$(sudo -n docker inspect -f '{{.State.Running}}' "$name" 2>/dev/null || true)"
+                [ "$running" = false ] || continue
+                created="$(sudo -n docker inspect -f '{{.Created}}' "$name" 2>/dev/null || true)"
+                [ -n "$created" ] && printf '%s\t%s\n' "$created" "$name"
+              done < <(sudo -n docker ps -a --format '{{.Names}}' | grep -E "^$prefix" || true) |
+              sort -r | cut -f2-
+            )
+
+            for name in "${names[@]}"; do
+              if [ "$name" = "$protected" ]; then
+                echo "KEEP protected recovery: $name"
+                continue
+              fi
+              if [ "$keep" -gt 0 ]; then
+                echo "KEEP newest recovery: $name"
+                keep=$((keep - 1))
+                continue
+              fi
+              echo "REMOVE stale recovery: $name"
+              sudo -n docker rm "$name" >/dev/null
+            done
+          }
+
+          cleanup_family 'weddingpick-api-previous-' ''
+          cleanup_family 'weddingpick-worker-previous-' ''
+          cleanup_family 'weddingpick-api-cors-previous-' "$protected_cors"
+
+          while IFS= read -r name; do
+            [ -n "$name" ] || continue
+            running="$(sudo -n docker inspect -f '{{.State.Running}}' "$name" 2>/dev/null || true)"
+            if [ "$running" = false ]; then
+              echo "REMOVE stale candidate: $name"
+              sudo -n docker rm "$name" >/dev/null
+            fi
+          done < <(sudo -n docker ps -a --format '{{.Names}}' | grep -E '^weddingpick-(api|worker)-candidate-' || true)
+
+          declare -A protected_image_ids=()
+          while IFS= read -r container_id; do
+            image_id="$(sudo -n docker inspect -f '{{.Image}}' "$container_id" 2>/dev/null || true)"
+            [ -n "$image_id" ] && protected_image_ids["$image_id"]=1
+          done < <(sudo -n docker ps -aq)
+
+          while IFS= read -r image_ref; do
+            [[ "$image_ref" =~ ^weddingpick-api:[0-9a-f]{40}$ ]] || continue
+            image_id="$(sudo -n docker image inspect -f '{{.Id}}' "$image_ref" 2>/dev/null || true)"
+            if [ -n "$image_id" ] && [ -z "${protected_image_ids[$image_id]:-}" ]; then
+              echo "REMOVE unreferenced image: $image_ref"
+              sudo -n docker image rm "$image_ref" >/dev/null
+            fi
+          done < <(sudo -n docker images --format '{{.Repository}}:{{.Tag}}' | sort -u)
+
+          sudo -n docker image prune -f >/dev/null
+
+          releases="$root/static-releases"
+          if [ -d "$releases" ]; then
+            declare -A keep_release=()
+            latest="$(cat "$releases/latest-candidate" 2>/dev/null || true)"
+            [[ "$latest" =~ ^[0-9a-f]{40}$ ]] && keep_release["$latest"]=1
+            kept=0
+            while IFS= read -r dir; do
+              name="$(basename "$dir")"
+              [[ "$name" =~ ^[0-9a-f]{40}$ ]] || continue
+              if [ "$kept" -lt 2 ]; then
+                keep_release["$name"]=1
+                kept=$((kept + 1))
+              fi
+            done < <(find "$releases" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -nr | cut -d' ' -f2-)
+
+            while IFS= read -r dir; do
+              name="$(basename "$dir")"
+              [[ "$name" =~ ^[0-9a-f]{40}$ ]] || continue
+              if [ -z "${keep_release[$name]:-}" ]; then
+                echo "REMOVE stale static candidate: $name"
+                rm -rf -- "$dir"
+              fi
+            done < <(find "$releases" -mindepth 1 -maxdepth 1 -type d -print)
+          fi
+
+          echo '=== VERIFY ==='
+          sudo -n nginx -t
+          body="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 10 http://127.0.0.1:3001/health)"
+          printf '%s' "$body" | python3 -c 'import json,sys; d=json.load(sys.stdin); s=d.get("schema"); sys.exit(0 if d.get("ok") is True and d.get("database")=="ok" and isinstance(s,dict) and s.get("ok") is True else 1)'
+          test "$(sudo -n docker inspect -f '{{.State.Running}}' weddingpick-api)" = true
+          test "$(sudo -n docker inspect -f '{{.State.Running}}' weddingpick-worker)" = true
+
+          echo '=== AFTER ==='
+          df -h / | sed -n '1,2p'
+          sudo -n docker system df || true
+          sudo -n docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}'
