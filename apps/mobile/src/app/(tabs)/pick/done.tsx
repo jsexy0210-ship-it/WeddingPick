@@ -176,6 +176,15 @@ export default function PickDoneScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <View style={styles.closeRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="완료 화면 닫기"
+            onPress={() => router.replace('/pick')}
+            style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}>
+            <ProductSymbol name="close" size={Layout.iconRow} color={theme.text} />
+          </Pressable>
+        </View>
         <ScrollView
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}>
@@ -280,6 +289,20 @@ const styles = StyleSheet.create({
   scroll: {
     paddingBottom: Spacing.five,
   },
+  closeRow: {
+    minHeight: Layout.navBar,
+    paddingHorizontal: Layout.gutter,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  closeButton: {
+    width: Layout.iconButton,
+    height: Layout.iconButton,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pressed: { opacity: 0.8 },
   bold: { fontWeight: 700 },
   center: { textAlign: 'center' },
 

@@ -39,7 +39,7 @@ const R = strings.review;
 type Tab = 'review' | 'feed' | 'expo';
 const TABS: { value: Tab; label: string }[] = [
   { value: 'review', label: '후기' },
-  { value: 'feed', label: '웨딩정보' },
+  { value: 'feed', label: '웨딩피드' },
   { value: 'expo', label: '박람회' },
 ];
 const CATEGORIES = ['전체', '웨딩홀', '드레스', '스튜디오', '메이크업', '예산', '허니문'] as const;
@@ -56,8 +56,8 @@ type LoungeReview = LoungeReviewListResponse['reviews'][number];
  */
 export default function CommunityScreen() {
   const { state, refresh } = useSession();
-  const params = useLocalSearchParams<{ from?: string }>();
-  const [tab, setTab] = useState<Tab>('review');
+  const params = useLocalSearchParams<{ from?: string; tab?: string }>();
+  const [tab, setTab] = useState<Tab>(params.tab === 'feed' ? 'feed' : 'review');
   const [category, setCategory] = useState<CategoryLabel>('전체');
   const [reviews, setReviews] = useState<Loaded<LoungeReviewListResponse>>({ status: 'loading' });
   const [reviewMoreLoading, setReviewMoreLoading] = useState(false);
@@ -157,7 +157,11 @@ export default function CommunityScreen() {
         <NavBar
           title={S.title}
           onBack={() => router.replace(params.from === 'my' ? '/my' : '/')}
-          right={{ label: S.write, brand: true, onPress: () => router.push('/my/reviews' as never) }}
+          right={
+            tab === 'review'
+              ? { label: S.write, brand: true, onPress: () => router.push('/community/review/write' as never) }
+              : undefined
+          }
         />
 
         <View style={styles.segment}>

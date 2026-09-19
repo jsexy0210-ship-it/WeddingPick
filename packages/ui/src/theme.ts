@@ -845,14 +845,14 @@ export const Layout = {
   /** Pick 빈 상태의 원 64와 그 안 하트 32 — size.emptyMark · iconEmpty(피그마 `Pick.tsx` `h-16 w-16` · `h-8 w-8`). */
   emptyMark: 64,
   iconEmpty: 32,
-  /** 업체 상세 대표 이미지 288 · 포트폴리오 띠 정사각 144 — size.heroVendor · thumbPortfolio(피그마 `VendorFlows.tsx` `h-72` · `h-36 w-36`). */
-  heroVendor: 288,
+  /** 업체 상세 대표 이미지 260 · 포트폴리오 띠 정사각 144 — docs/design/handoff/screens.json WP-VEND-001. */
+  heroVendor: 260,
   thumbPortfolio: 144,
   /**
    * 웨딩피드 글 상세의 대표 이미지 208 — size.heroFeed(피그마 `FlowScreens.tsx`
    * `FeedDetailPage`의 `h-52`).
    *
-   * **`heroVendor`(288 · `h-72`)로 대신하지 않는다.** 업체 상세는 사진이 주인공이라
+   * **`heroVendor`(260)로 대신하지 않는다.** 업체 상세는 사진이 주인공이라
    * 크고, 글 상세는 읽는 화면이라 제목을 위로 끌어올린다. 피그마가 두 자리에 다른
    * 값을 쓴 것이 그 뜻이고, 80px 차이는 나란히 놓으면 바로 보인다.
    */

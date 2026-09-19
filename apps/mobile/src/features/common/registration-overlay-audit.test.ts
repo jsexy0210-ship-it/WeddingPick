@@ -88,12 +88,16 @@ describe('registration routes use canonical overlays', () => {
 
     const booking = source('(tabs)/search/[vendorId]/booking.tsx');
     expect(booking).toContain("export { default } from './consult'");
+
+    const loungeWrite = source('(tabs)/community/review/write.tsx');
+    expect(loungeWrite).toContain('<BottomSheet');
+    expect(loungeWrite).toContain('<SheetPanel');
   });
 
   it('route형 시트는 부모 화면을 history 중복 없이 복원하고 dirty 입력은 DLG-B를 거친다', () => {
     const routes = [
-      ['(tabs)/wedding/[id]/events/new.tsx', 'dismissToOrReplace(`/wedding/${id}/events`)'],
-      ['(tabs)/wedding/[id]/expenses/add.tsx', 'dismissToOrReplace(`/wedding/${id}/expenses`)'],
+      ['(tabs)/wedding/[id]/events/new.tsx', "dismissToOrReplace('/wedding?tab=calendar')"],
+      ['(tabs)/wedding/[id]/expenses/add.tsx', "dismissToOrReplace('/wedding?tab=budget')"],
       ['(tabs)/search/[vendorId]/write-review.tsx', 'dismissToOrReplace(`/search/${vendorId}`)'],
       ['(tabs)/search/[vendorId]/edit-review.tsx', 'dismissToOrReplace(`/search/${vendorId}/reviews`)'],
       ['(tabs)/search/[vendorId]/consult.tsx', 'dismissToOrReplace(`/search/${vendorId}`)'],

@@ -3,6 +3,7 @@ import {
   DISPLAY_NAME_HINT,
   MAX_DISPLAY_NAME_LENGTH,
   PAYMENT_CONSENT_REVOKED_NOTICE,
+  POLICY_DOCUMENTS,
   checkDisplayName,
   formatWeddingDate,
 } from '@weddingpick/domain';
@@ -30,6 +31,7 @@ import { confirmAlert } from '@/components/confirm-alert';
 import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
 import { useSession } from '@/features/auth/use-session';
 import { APP_VERSION } from '@/features/settings/version';
+import { openExternal } from '@/features/open-external';
 
 /**
  * 설정. 디자인 핸드오프 19번.
@@ -38,6 +40,11 @@ import { APP_VERSION } from '@/features/settings/version';
  * 없앴다 — `배우자 연결 = 공유`, `연결 해제 = 공유 종료`로 단순해졌다. 연결해두고
  * 공유는 끄는 상태를 만들 수 있게 두면, 상대는 무엇이 보이는지 알 수 없다.
  */
+function openPolicy(id: 'terms' | 'privacy') {
+  const policy = POLICY_DOCUMENTS.find((document) => document.id === id);
+  if (policy?.url) void openExternal(policy.url, { title: policy.title });
+}
+
 export default function SettingsScreen() {
   const theme = useTheme();
   const { signOut } = useSession();
@@ -229,10 +236,8 @@ export default function SettingsScreen() {
 
           <Section title="지원">
             <ActionButton label="문의하기" onPress={() => router.push('/my/contact')} />
-            <ActionButton
-              label="이용약관 · 개인정보처리방침"
-              onPress={() => router.push('/my/policies')}
-            />
+            <ActionButton label="이용약관" onPress={() => openPolicy('terms')} />
+            <ActionButton label="개인정보처리방침" onPress={() => openPolicy('privacy')} />
           </Section>
 
           <ThemedView style={styles.section}>

@@ -348,7 +348,7 @@ export default function VendorDetailScreen() {
         <View style={[styles.navBar, { borderBottomColor: theme.border }]}>
           <BackButton />
           {/* 규격서 vendor-1.txt: 제목 «14/700 · lh 20 · pad 0 40 0 0». */}
-          <ThemedText type="f14" numberOfLines={1} style={[styles.bold, styles.navTitle]}>
+          <ThemedText type="f16" numberOfLines={1} style={[styles.bold, styles.navTitle]}>
             {vendor.name}
           </ThemedText>
         </View>
@@ -405,13 +405,12 @@ export default function VendorDetailScreen() {
                   </View>
                 ) : null}
                 <View style={styles.heroCategory}>
-                  {/* 규격서: 업종 «12/700 #FFFFFF 70% · lh 16 · ls 0.3px» · 이름 «32/700 · lh 40 · ls -0.64px». */}
-                  <ThemedText type="f12" style={[styles.bold, styles.tracked03, { color: theme.onInk }]}>
-                    {VENDOR_CATEGORY_LABEL[vendor.category]}
+                  <ThemedText type="f13" style={[styles.bold, styles.tracked03, { color: theme.onInk }]}>
+                    {VENDOR_CATEGORY_LABEL[vendor.category]} · {regionLabel(vendor.region)}
                   </ThemedText>
                 </View>
               </View>
-              <ThemedText type="f32" numberOfLines={2} style={[styles.bold, styles.heroName, { color: theme.onInk }]}>
+              <ThemedText type="f26" numberOfLines={2} style={[styles.bold, styles.heroName, { color: theme.onInk }]}>
                 {vendor.name}
               </ThemedText>
             </View>
@@ -425,32 +424,20 @@ export default function VendorDetailScreen() {
           </Pressable>
 
           {/*
-            ② 요약 줄 — 피그마 quick stats: 좌우 24 · 상하 12 · 아래 선 · 사이 12.
-            «★ 4.9»는 그리지 않는다(별점은 그리지 않는다 · SPEC §6.1). 실 제보 N건 · 핀 + 지역 ·
-            오른쪽 끝 금액(14/700).
+            ② 제보 금액 — handoff WP-VEND-001: 30px + 건수·기간·기준금액.
+            검색 카드식 작은 통계 행을 쓰지 않고 상세 정본의 금액 블록을 독립시킨다.
           */}
-          <View style={[styles.statsRow, { borderBottomColor: theme.border }]}>
-            {/* 규격서: «14/400 #868B94 · lh 20» 셋 · 핀 14 · 금액 «14/700». */}
-            <ThemedText type="f14" themeColor="textAssistive" numeric>
-              {`${TERMS.verifiedData} ${formatCount(paidPrice.count)}건`}
+          <View style={[styles.priceSummary, { borderBottomColor: theme.border }]}>
+            <ThemedText
+              type="f30"
+              numeric
+              themeColor={line.dim ? 'textAssistive' : undefined}
+              style={styles.bold}>
+              {line.text}
             </ThemedText>
-            <ThemedText type="f14" themeColor="textAssistive">·</ThemedText>
-            <View style={styles.statsPlace}>
-              <ProductSymbol name="pin" size={Layout.iconSmall} color={theme.textAssistive} />
-              <ThemedText type="f14" themeColor="textAssistive" numberOfLines={1}>
-                {regionLabel(vendor.region)}
-              </ThemedText>
-            </View>
-            <View style={styles.statsPrice}>
-              <ThemedText
-                type="f14"
-                numeric
-                numberOfLines={1}
-                themeColor={line.dim ? 'textAssistive' : undefined}
-                style={styles.bold}>
-                {line.text}
-              </ThemedText>
-            </View>
+            <ThemedText type="f13" themeColor="textAssistive" numeric>
+              {line.caption}
+            </ThemedText>
           </View>
 
           {/*
@@ -973,7 +960,7 @@ export default function VendorDetailScreen() {
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="상담 일정 잡기"
+              accessibilityLabel="상담 잡기"
               style={({ pressed }) => [styles.pickBtn, { backgroundColor: theme.tint }, pressed ? styles.pressed : null]}
               onPress={() => router.push(`/search/${vendor.id}/consult`)}>
               <ProductSymbol name="calendar" size={Layout.iconField} color={theme.onTint} />
@@ -1003,7 +990,7 @@ export default function VendorDetailScreen() {
 
 // ─── 레이아웃 상수 ──────────────────────────────────────────────────────────
 
-/* 대표 이미지 높이는 피그마의 288 — size.heroVendor(Layout.heroVendor). 핸드오프의 260을 이겼다. */
+/* 대표 이미지 높이는 handoff WP-VEND-001의 260 — docs/design README의 수치 우선 규칙. */
 
 /**
  * Pick·비교 버튼 높이. tokens.json `size.ctaPick` 56.
@@ -1070,7 +1057,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
 
-  // ── 대표 이미지 — 피그마 `h-72` 288 · 아래 어두운 막 · 글 `p-5` ──
+  // ── 대표 이미지 — handoff 260 · 아래 어두운 막 ──
   hero: {
     width: '100%',
     height: Layout.heroVendor,
@@ -1102,17 +1089,13 @@ const styles = StyleSheet.create({
   },
   /* 업종 `text-white/70`. */
   heroCategory: { opacity: 0.7 },
-  /* 요약 줄 `px-5 py-3 gap-3 border-b` — 좌우 24 · 상하 12 · 사이 12. */
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Layout.inlineGap,
+  priceSummary: {
     paddingHorizontal: Layout.pageX,
-    paddingVertical: Layout.inlineGap,
+    paddingTop: Layout.cardPadding,
+    paddingBottom: Spacing.three,
+    gap: Spacing.one,
     borderBottomWidth: Border.hairline,
   },
-  statsPlace: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one, flexShrink: 1, minWidth: 0 },
-  statsPrice: { marginLeft: 'auto', flexShrink: 0 },
   /* 시안: right 16 bottom 14 · rgba(0,0,0,.5) · 13/18 700 · padding 5 10 · radius 999 */
   photoCounter: {
     position: 'absolute',
@@ -1201,9 +1184,8 @@ const styles = StyleSheet.create({
   tracked03: {
     letterSpacing: LetterSpacing.p03,
   },
-  /* 규격서 히어로 이름 «ls -0.64px». */
   heroName: {
-    letterSpacing: LetterSpacing.n064,
+    letterSpacing: LetterSpacing.n052,
   },
   /* 규격서 어두운 카드 아래 줄 «lh 20». */
   noteLine: {

@@ -112,7 +112,7 @@ export default function DecidedVendorsScreen() {
                       {paid ? manwon(decision.expenses.paidTotal) : S.expensesEmpty}
                     </RowValue>
                   }
-                  onPress={() => router.push(`/wedding/${id}/expenses` as never)}
+                  onPress={() => router.push('/wedding?tab=budget' as never)}
                 />
                 <ListRow
                   title={S.memoCta}

@@ -133,7 +133,7 @@ export function WeddingCompleteView({ weddingId }: { weddingId: string }) {
           titleColor={paid.length > 0 ? 'textDisabled' : 'text'}
           sub={paid.length > 0 ? `${formatCount(paid.length)}건 · ${manwon(expenses.paidTotal)}` : '낸 금액을 넣어두면 여기 모여요'}
           subLines={1}
-          onPress={() => router.push(`/wedding/${weddingId}/expenses` as never)}
+          onPress={() => router.push('/wedding?tab=budget' as never)}
         />
       </Section>
 

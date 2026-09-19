@@ -183,7 +183,7 @@ function splitFixture(script,role,missingAdmin=false) {
     const tree=l.render(),buttons=find(tree,'Pressable');assert.equal(buttons.length,2);
     assert.equal(buttons[0].props.accessibilityLabel,'첫 글');buttons[0].props.onPress();
     assert.equal(l.pushed[0],'/feed/post%2Fa%3Fb');
-    assert.equal(find(tree,'NavBar')[0].props.right.label,'글쓰기');
+    assert.equal(find(tree,'NavBar')[0].props.right,undefined);
   });
   await check('lounge category filters preserve clickable detail',async()=>{
     const l=loungeHarness();l.render();l.h.commit();await flush();find(l.render(),'SegmentedTabs')[0].props.onChange('feed');
@@ -192,7 +192,7 @@ function splitFixture(script,role,missingAdmin=false) {
   });
   await check('lounge verified review action is restricted to review tab',async()=>{
     const l=loungeHarness();l.render();l.h.commit();await flush();const action=find(l.render(),'NavBar')[0].props.right;
-    assert.equal(action.label,'글쓰기');action.onPress();assert.equal(l.pushed[0],'/my/reviews');
+    assert.equal(action.label,'글쓰기');action.onPress();assert.equal(l.pushed[0],'/community/review/write');
   });
   await check('lounge back defaults to home',async()=>{
     const l=loungeHarness();l.render();l.h.commit();await flush();
