@@ -72,7 +72,13 @@ export function OptionRow({
       )}
 
       {selected ? (
-        <ProductSymbol name="check" size={detailed ? 24 : Layout.iconRow} color={theme.tint} />
+        detailed ? (
+          <View style={[styles.selectedMark, { backgroundColor: theme.tint }]}>
+            <ProductSymbol name="check" size={15} color={theme.onTint} />
+          </View>
+        ) : (
+          <ProductSymbol name="check" size={Layout.iconRow} color={theme.tint} />
+        )
       ) : detailed ? (
         <View style={[styles.emptyMark, { borderColor: theme.track }]} />
       ) : (
@@ -108,6 +114,14 @@ const styles = StyleSheet.create({
     fontWeight: 700,
   },
   detailDescription: { lineHeight: LineHeight.lh19 },
+  selectedMark: {
+    width: 24,
+    height: 24,
+    flexShrink: 0,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   emptyMark: {
     width: 24,
     height: 24,
