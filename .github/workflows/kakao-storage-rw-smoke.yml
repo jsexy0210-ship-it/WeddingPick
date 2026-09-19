@@ -1,0 +1,25 @@
+name: Kakao Storage RW Smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Verify Kakao Object Storage read/write/delete
+    environment: production
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Run temporary object smoke
+        env:
+          WP_STORAGE_PROBE_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+        run: bash ./scripts/probe-kakao-storage-rw.sh
