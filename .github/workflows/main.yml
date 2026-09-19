@@ -31,7 +31,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
-          ALLOWED_PRS: '329 334 336 340 342 345 352 359 370 373 377 388 402 406 410 412 413 414 415 417 418 419'
+          ALLOWED_PRS: '329 334 336 340 342 345 352 359 370 373 377 388 402 406 410 412 413 414 415 417 418 419 431'
         run: |
           set -euo pipefail
           auto=false
@@ -309,7 +309,7 @@ jobs:
   migrate-current-backlog-db:
     name: Migrate DB for current backlog
     needs: [ci, api-tests, non-db-tests, db-tests, current-backlog-production]
-    if: ${{ needs.current-backlog-production.outputs.auto == 'true' && needs.current-backlog-production.outputs.pr_number == '417' }}
+    if: ${{ needs.current-backlog-production.outputs.auto == 'true' && (needs.current-backlog-production.outputs.pr_number == '417' || needs.current-backlog-production.outputs.pr_number == '431') }}
     environment: production-current-backlog-auto
     runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
     timeout-minutes: 15
@@ -430,7 +430,7 @@ jobs:
   api-deploy-needed:
     name: Detect Kakao API catch-up
     needs: [ci, api-tests, non-db-tests, db-tests, repair-kakao-runner, migrate-current-backlog-db, current-backlog-production]
-    if: ${{ always() && github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || needs.current-backlog-production.outputs.auto == 'true') && (needs.current-backlog-production.outputs.pr_number != '417' || needs.migrate-current-backlog-db.result == 'success') && (needs.repair-kakao-runner.result == 'success' || needs.repair-kakao-runner.result == 'skipped') && !contains(github.event.head_commit.message || '', '[skip-api-deploy]') }}
+    if: ${{ always() && github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || needs.current-backlog-production.outputs.auto == 'true') && ((needs.current-backlog-production.outputs.pr_number != '417' && needs.current-backlog-production.outputs.pr_number != '431') || needs.migrate-current-backlog-db.result == 'success') && (needs.repair-kakao-runner.result == 'success' || needs.repair-kakao-runner.result == 'skipped') && !contains(github.event.head_commit.message || '', '[skip-api-deploy]') }}
     runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
     timeout-minutes: 5
     outputs:
@@ -473,7 +473,7 @@ jobs:
   auto-cutover-current-backlog-app-web:
     name: Production App Web (current backlog)
     needs: [current-backlog-production, migrate-current-backlog-db, stage-kakao-static, deploy-kakao]
-    if: ${{ always() && needs.current-backlog-production.outputs.auto == 'true' && (needs.current-backlog-production.outputs.pr_number != '417' || needs.migrate-current-backlog-db.result == 'success') && needs.stage-kakao-static.result == 'success' && (needs.deploy-kakao.result == 'success' || needs.deploy-kakao.result == 'skipped') }}
+    if: ${{ always() && needs.current-backlog-production.outputs.auto == 'true' && ((needs.current-backlog-production.outputs.pr_number != '417' && needs.current-backlog-production.outputs.pr_number != '431') || needs.migrate-current-backlog-db.result == 'success') && needs.stage-kakao-static.result == 'success' && (needs.deploy-kakao.result == 'success' || needs.deploy-kakao.result == 'skipped') }}
     permissions:
       contents: read
     uses: ./.github/workflows/cutover-kakao-app-web.yml
