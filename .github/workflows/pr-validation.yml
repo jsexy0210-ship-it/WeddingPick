@@ -64,7 +64,9 @@ jobs:
       - run: npm ci
 
       - name: Deployment policy regression tests
-        run: node --test scripts/check-render-retired.test.mjs
+        run: |
+          node --test scripts/check-render-retired.test.mjs
+          node --test scripts/verification/docker-runtime-scope.test.mjs
 
       - name: Reject retired deployment paths
         run: node scripts/check-render-retired.mjs
