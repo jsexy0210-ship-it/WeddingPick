@@ -24,6 +24,7 @@ export * from './rebuttals';
 export * from './recommendations';
 export * from './reviews';
 export * from './rewards';
+export * from './scraps';
 export * from './settings';
 export * from './signup';
 export * from './taste';
