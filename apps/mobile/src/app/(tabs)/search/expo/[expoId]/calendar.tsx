@@ -1,10 +1,11 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Linking, Platform, ScrollView, StyleSheet, View } from 'react-native';
 
 import { getExpo, type ExpoDetail } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
+import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { openExternal } from '@/features/open-external';
 import {
   ActionButton,
@@ -91,7 +92,7 @@ export default function CalendarRoute() {
   const expoAddress = expo?.address ?? '';
 
   function closeSheet() {
-    router.replace(`/search/expo/${expoId}` as never);
+    dismissToOrReplace(`/search/expo/${expoId}`);
   }
 
   async function handleAdd(option: CalendarOption) {
