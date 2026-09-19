@@ -5,4 +5,4 @@
  * 글은 이 route를 써서 Back history가 라운지의 현재 탭/필터 상태를 그대로 복원한다.
  * 직접 진입처럼 history가 없을 때는 depth-back 예외가 /community?tab=feed로 보낸다.
  */
-export { default } from '../../../(home)/feed/[id]';
+export { default } from '../../(home)/feed/[id]';
