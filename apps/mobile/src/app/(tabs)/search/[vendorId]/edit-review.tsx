@@ -1,15 +1,12 @@
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, TextInput } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { updateReview } from '@/api/client';
-import { BackBar } from '@/components/back-bar';
-import { dismissToOrReplace, useDepthBack } from '@/features/navigation/depth-back';
+import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
+import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
 import {
   ActionButton,
-  Layout,
-  MaxContentWidth,
   Radius,
   RatingPicker,
   Spacing,
@@ -18,42 +15,65 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 
-/**
- * 내 후기 고치기.
- *
- * 역할·체크리스트·측면 점수는 바꿀 수 없다(서비스 정책). 글과 별점만 고친다.
- * 수정 규칙이 위험정보를 찾아 가린 글도 고치면 재심사로 되살아난다 — 그래야
- * "지우고 다시 올려주세요"가 지킬 수 있는 말이 된다.
- */
-export default function EditReviewScreen() {
-  const { vendorId, reviewId, overall: overallParam, title: titleParam, body: bodyParam, pros: prosParam, cons: consParam } =
-    useLocalSearchParams<{
-      vendorId: string;
-      reviewId: string;
-      overall: string;
-      title: string;
-      body: string;
-      pros: string;
-      cons: string;
-    }>();
-  const theme = useTheme();
-  const depthBack = useDepthBack();
+import ReviewsScreen from './reviews';
 
-  const [overall, setOverall] = useState<number | null>(
-    overallParam ? parseInt(overallParam, 10) : null
-  );
-  const [title, setTitle] = useState(titleParam ?? '');
-  const [body, setBody] = useState(bodyParam ?? '');
-  const [pros, setPros] = useState(prosParam ?? '');
-  const [cons, setCons] = useState(consParam ?? '');
+/**
+ * 후기 수정 딥링크도 별도 전체 화면을 만들지 않고 후기 목록 + DLG-D 시트로 연결한다.
+ */
+export default function EditReviewRoute() {
+  const {
+    vendorId,
+    reviewId,
+    overall: overallParam,
+    title: titleParam,
+    body: bodyParam,
+    pros: prosParam,
+    cons: consParam,
+  } = useLocalSearchParams<{
+    vendorId: string;
+    reviewId: string;
+    overall: string;
+    title: string;
+    body: string;
+    pros: string;
+    cons: string;
+  }>();
+  const theme = useTheme();
+
+  const initialOverall = overallParam ? parseInt(overallParam, 10) : null;
+  const initialTitle = titleParam ?? '';
+  const initialBody = bodyParam ?? '';
+  const initialPros = prosParam ?? '';
+  const initialCons = consParam ?? '';
+
+  const [overall, setOverall] = useState<number | null>(initialOverall);
+  const [title, setTitle] = useState(initialTitle);
+  const [body, setBody] = useState(initialBody);
+  const [pros, setPros] = useState(initialPros);
+  const [cons, setCons] = useState(initialCons);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
 
   const ready = overall !== null && title.trim().length > 0 && body.trim().length >= 20;
+  const dirty =
+    overall !== initialOverall ||
+    title !== initialTitle ||
+    body !== initialBody ||
+    pros !== initialPros ||
+    cons !== initialCons;
+
+  function closeSheet() {
+    router.replace(`/search/${vendorId}/reviews` as never);
+  }
+
+  function requestClose() {
+    if (sending) return;
+    requestDirtySheetClose(dirty, closeSheet);
+  }
 
   async function submit() {
-    if (overall === null) return;
+    if (overall === null || !ready || sending) return;
+
     setSending(true);
     setError(null);
     try {
@@ -64,126 +84,123 @@ export default function EditReviewScreen() {
         ...(pros.trim() ? { pros: pros.trim() } : {}),
         ...(cons.trim() ? { cons: cons.trim() } : {}),
       });
-      setDone(true);
-    } catch (err) {
-      setError((err as Error).message ?? '고치지 못했어요.');
+      // 시트를 닫고 갱신된 후기 목록으로 돌아간다. 별도 성공 alert는 띄우지 않는다.
+      closeSheet();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : '고치지 못했어요.');
     } finally {
       setSending(false);
     }
   }
 
-  if (done) {
-    return (
-      <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <BackBar />
-          <ThemedView style={styles.content}>
-            <ThemedText type="subtitle">후기를 고쳤어요</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              수정된 내용은 심사 후 반영돼요.
-            </ThemedText>
-            <ActionButton
-              label="후기 목록으로"
-              onPress={() => dismissToOrReplace(`/search/${vendorId}/reviews`)}
-            />
-          </ThemedView>
-        </SafeAreaView>
-      </ThemedView>
-    );
-  }
-
   const inputStyle = [styles.input, { color: theme.text, borderColor: theme.border }];
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <BackBar />
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <ThemedText type="subtitle">내 후기 고치기</ThemedText>
+    <View style={styles.host}>
+      <ReviewsScreen />
 
-          <ThemedView style={styles.section}>
-            <ThemedText type="smallBold">이용한 사람들의 경험</ThemedText>
-            <RatingPicker label="이용한 사람들의 경험" value={overall} onChange={setOverall} />
-          </ThemedView>
+      <BottomSheet visible onRequestClose={requestClose} testID="review-edit-sheet">
+        <SheetPanel>
+          <View style={styles.sheetHead}>
+            <ThemedText type="t4">내 후기 고치기</ThemedText>
+            <ThemedText type="t7" themeColor="textSecondary">
+              후기 목록을 남겨둔 채 내용만 고쳐요.
+            </ThemedText>
+          </View>
 
-          <ThemedView style={styles.section}>
-            <ThemedText type="smallBold">제목</ThemedText>
-            <TextInput
-              style={inputStyle}
-              value={title}
-              onChangeText={setTitle}
-              placeholderTextColor={theme.textSecondary}
-              returnKeyType="next"
-            />
-          </ThemedView>
-
-          <ThemedView style={styles.section}>
-            <ThemedText type="smallBold">후기</ThemedText>
-            <TextInput
-              style={[inputStyle, styles.bodyInput]}
-              value={body}
-              onChangeText={setBody}
-              multiline
-              textAlignVertical="top"
-              placeholderTextColor={theme.textSecondary}
-            />
-          </ThemedView>
-
-          <ThemedView style={styles.section}>
-            <ThemedText type="smallBold">좋은 점 (선택)</ThemedText>
-            <TextInput
-              style={inputStyle}
-              value={pros}
-              onChangeText={setPros}
-              placeholderTextColor={theme.textSecondary}
-            />
-          </ThemedView>
-
-          <ThemedView style={styles.section}>
-            <ThemedText type="smallBold">아쉬운 점 (선택)</ThemedText>
-            <TextInput
-              style={inputStyle}
-              value={cons}
-              onChangeText={setCons}
-              placeholderTextColor={theme.textSecondary}
-            />
-          </ThemedView>
-
-          {error ? (
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="small" themeColor="textSecondary">{error}</ThemedText>
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.content}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}>
+            <ThemedView style={styles.section}>
+              <ThemedText type="smallBold">이용한 사람들의 경험</ThemedText>
+              <RatingPicker
+                label="이용한 사람들의 경험"
+                value={overall}
+                onChange={setOverall}
+              />
             </ThemedView>
-          ) : null}
 
-          <ThemedView style={styles.section}>
+            <ThemedView style={styles.section}>
+              <ThemedText type="smallBold">제목</ThemedText>
+              <TextInput
+                style={inputStyle}
+                value={title}
+                onChangeText={setTitle}
+                placeholderTextColor={theme.textSecondary}
+                returnKeyType="next"
+              />
+            </ThemedView>
+
+            <ThemedView style={styles.section}>
+              <ThemedText type="smallBold">후기</ThemedText>
+              <TextInput
+                style={[inputStyle, styles.bodyInput]}
+                value={body}
+                onChangeText={setBody}
+                multiline
+                textAlignVertical="top"
+                placeholderTextColor={theme.textSecondary}
+              />
+            </ThemedView>
+
+            <ThemedView style={styles.section}>
+              <ThemedText type="smallBold">좋은 점 (선택)</ThemedText>
+              <TextInput
+                style={inputStyle}
+                value={pros}
+                onChangeText={setPros}
+                placeholderTextColor={theme.textSecondary}
+              />
+            </ThemedView>
+
+            <ThemedView style={styles.section}>
+              <ThemedText type="smallBold">아쉬운 점 (선택)</ThemedText>
+              <TextInput
+                style={inputStyle}
+                value={cons}
+                onChangeText={setCons}
+                placeholderTextColor={theme.textSecondary}
+              />
+            </ThemedView>
+
             <ThemedText type="small" themeColor="textSecondary">
               직원분 실명처럼 다른 분을 알아볼 수 있는 내용은 적지 말아주세요.
             </ThemedText>
+
+            {error ? (
+              <ThemedView type="backgroundElement" style={styles.card}>
+                <ThemedText type="small" themeColor="textSecondary">
+                  {error}
+                </ThemedText>
+              </ThemedView>
+            ) : null}
+          </ScrollView>
+
+          <View style={styles.actions}>
+            <ActionButton label="취소" disabled={sending} onPress={requestClose} />
             <ActionButton
               variant="primary"
               label={sending ? '저장 중…' : '저장하기'}
               disabled={!ready || sending}
               onPress={() => void submit()}
             />
-            <ActionButton label="그만두기" onPress={depthBack} />
-          </ThemedView>
-        </ScrollView>
-      </SafeAreaView>
-    </ThemedView>
+          </View>
+        </SheetPanel>
+      </BottomSheet>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
-  safeArea: { flex: 1, maxWidth: MaxContentWidth },
-  content: {
-    paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.five,
-    paddingBottom: Spacing.four,
-    gap: Spacing.four,
-  },
+  host: { flex: 1 },
+  sheetHead: { gap: Spacing.one },
+  scroll: { flexShrink: 1 },
+  content: { paddingBottom: Spacing.two, gap: Spacing.four },
   section: { gap: Spacing.two },
   card: { borderRadius: Radius.medium, padding: Spacing.three, gap: Spacing.one },
   input: { borderWidth: 1, borderRadius: Radius.input, padding: Spacing.three },
   bodyInput: { minHeight: 140, textAlignVertical: 'top' },
+  actions: { flexDirection: 'row', gap: Spacing.two },
 });
