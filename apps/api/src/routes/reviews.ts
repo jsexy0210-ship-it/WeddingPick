@@ -686,7 +686,7 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
       rebuttal_role: string | null;
       rebuttal_body: string | null;
       rebuttal_published_at: Date | null;
-    }>(
+    } & ReviewInteractionFields>(
       `SELECT r.id,
               v.id AS vendor_id,
               v.name AS vendor_name,
@@ -697,6 +697,34 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
               (SELECT json_agg(json_build_object('aspect', a.aspect, 'rating', a.rating)
                                ORDER BY a.aspect)
                FROM structured.review_aspects a WHERE a.review_id = r.id) AS aspects,
+              (SELECT json_agg(
+                         json_build_object('id', m.id, 'storage_key', m.storage_key, 'mime_type', m.mime_type)
+                         ORDER BY m.position)
+               FROM structured.review_media m
+               WHERE m.review_id = r.id) AS media,
+              (SELECT count(*)::int FROM structured.review_helpful h
+               WHERE h.review_id = r.id) AS helpful_count,
+              EXISTS (
+                SELECT 1 FROM structured.review_helpful h
+                WHERE h.review_id = r.id AND h.user_id = $2::uuid
+              ) AS helpful_mine,
+              (SELECT count(*)::int FROM structured.review_comments rc
+               WHERE rc.review_id = r.id AND rc.status = 'published') AS comment_count,
+              (SELECT json_agg(
+                         json_build_object(
+                           'id', recent.id,
+                           'body', recent.body,
+                           'created_at', recent.created_at,
+                           'mine', coalesce(recent.author_user_id = $2::uuid, false)
+                         )
+                         ORDER BY recent.created_at, recent.id)
+               FROM (
+                 SELECT rc.id, rc.body, rc.created_at, rc.author_user_id
+                 FROM structured.review_comments rc
+                 WHERE rc.review_id = r.id AND rc.status = 'published'
+                 ORDER BY rc.created_at, rc.id
+                 LIMIT 2
+               ) recent) AS comments,
               b.claimed_role AS rebuttal_role,
               b.body AS rebuttal_body,
               b.published_at AS rebuttal_published_at
@@ -720,8 +748,9 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
     const page = hasMore ? rows.slice(0, query.limit) : rows;
 
     return {
-      reviews: page.map((row) => {
+      reviews: await Promise.all(page.map(async (row) => {
         const labels = new Map(aspectsFor(row.vendor_category).map((a) => [a.key, a.label]));
+        const interactions = await reviewInteractionPayload(context, row);
 
         return {
           id: row.id,
@@ -754,8 +783,9 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
             name: row.vendor_name,
             category: row.vendor_category,
           },
+          ...interactions,
         };
-      }),
+      })),
       nextCursor: hasMore && page.length > 0 ? encodeCursor(page[page.length - 1]!) : null,
       caveat: REVIEW_CAVEAT,
     };
