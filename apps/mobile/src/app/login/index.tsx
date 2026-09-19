@@ -15,6 +15,7 @@ import {
   Spacing,
   ThemedText,
   ThemedView,
+  WeddingMark,
   useTheme,
 } from '@weddingpick/ui';
 import { LoginFailureSheet } from '@/features/auth/login-failure-sheet';
@@ -25,7 +26,11 @@ import {
   providerTone,
   useAuthProviders,
 } from '@/features/auth/providers';
-import { loadRememberedAccount, type RememberedAccount } from '@/features/auth/remembered-account';
+import {
+  clearRememberedAccount,
+  loadRememberedAccount,
+  type RememberedAccount,
+} from '@/features/auth/remembered-account';
 import { bootOwnsSigningInMessage, takePendingSignInError } from '@/features/auth/sign-in-handoff';
 import { CheckDot } from '@/features/settings/my-kit';
 import { SigningInBody, signingInMessage } from '@/features/auth/signing-in-view';
@@ -63,11 +68,13 @@ import { openExternal } from '@/features/open-external';
  *   그대로 둔다(CLAUDE.md 3번). 카카오 단추 규격(56 · r16 · 15/700)을 같이 쓴다.
  */
 
-const HERO_TITLE = '결정은 가볍게,\n준비는 단단하게.';
-const HERO_SUB = '흩어진 웨딩 정보를 한곳에 모아, 우리에게 맞는 선택만 남겨드릴게요.';
-const CALLOUT_MARK = '✦';
-const CALLOUT_TITLE = '나에게 맞는 순서부터';
-const CALLOUT_BODY = '예산, 지역, 날짜를 기준으로 시작해요';
+const HERO_TITLE = '웨딩 준비,\n여기서 같이 해요';
+const HERO_SUB = '실 제보로 고르고 배우자와 함께 정해요';
+const BENEFITS = [
+  '실 제보로 실제 금액대를 볼 수 있어요',
+  '배우자와 일정과 지출을 같이 봐요',
+  '기기를 바꿔도 고른 곳이 그대로 있어요',
+] as const;
 
 const AGE_CONFIRM_LABEL = '만 14세 이상이에요';
 const AGE_CONFIRM_NOTICE = '만 14세 이상인지 확인하면 시작할 수 있어요';
@@ -98,61 +105,55 @@ export default function LoginScreen() {
   const showRemembered = Boolean(remembered);
   /* 서버 목록 그대로 — 순서(카카오 · 애플 · 개발용)와 거르기는 `usableProviders`가 정한다. */
   const options = providers ?? [];
+  const primary = options.find((provider) => provider.provider === 'kakao' && !provider.isDevelopmentStandIn)
+    ?? options[0]
+    ?? null;
   /* 만 14세 확인이 필요한데 아직 안 눌렀으면 어느 제공자든 시작하지 않는다. */
   const ageBlocked = needsAgeConfirm && !ageChecked;
+
+  async function switchAccount() {
+    await clearRememberedAccount();
+    setRemembered(null);
+  }
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          {showRemembered && remembered ? (
-            <>
-              <ThemedText type="f42" style={styles.title}>
-                {remembered.displayName ? `${remembered.displayName}님,\n` : ''}다시 오셨네요
-              </ThemedText>
-              {remembered.weddingDate ? (
-                <ThemedText type="f15" themeColor="textAssistive" style={styles.sub}>
-                  {remainingLine(remembered.weddingDate)}
-                </ThemedText>
-              ) : null}
+          <View style={styles.hero}>
+            <View style={[styles.markBox, { backgroundColor: theme.tint }]}>
+              <WeddingMark size={34} color={theme.onTint} />
+            </View>
+            <ThemedText type="f32" style={styles.title}>
+              {showRemembered && remembered
+                ? `${remembered.displayName ? `${remembered.displayName}님,\n` : ''}다시 오셨네요`
+                : HERO_TITLE}
+            </ThemedText>
+            <ThemedText type="f17" themeColor="textSecondary" style={styles.sub}>
+              {showRemembered && remembered?.weddingDate
+                ? remainingLine(remembered.weddingDate)
+                : HERO_SUB}
+            </ThemedText>
+          </View>
 
+          <View style={styles.benefitWrap}>
+            {showRemembered && remembered ? (
               <RememberedAccountCard account={remembered} />
-            </>
-          ) : (
-            <>
-              <ThemedText type="f42" style={styles.title}>
-                {HERO_TITLE}
-              </ThemedText>
-              <ThemedText type="f15" themeColor="textAssistive" style={styles.sub}>
-                {HERO_SUB}
-              </ThemedText>
-              <View style={[styles.callout, { backgroundColor: theme.tintSurface, borderColor: theme.tintBorder }]}>
-                <View style={[styles.calloutMark, { backgroundColor: theme.tint }]}>
-                  <ThemedText type="f18" themeColor="onTint">
-                    {CALLOUT_MARK}
+            ) : (
+              BENEFITS.map((benefit) => (
+                <View key={benefit} style={styles.benefitRow}>
+                  <View style={[styles.benefitDot, { backgroundColor: theme.tint }]} />
+                  <ThemedText type="f16" themeColor="textSecondary" style={styles.benefitText}>
+                    {benefit}
                   </ThemedText>
                 </View>
-                <View style={styles.calloutText}>
-                  <ThemedText type="f14" style={styles.bold}>
-                    {CALLOUT_TITLE}
-                  </ThemedText>
-                  <ThemedText type="f12" themeColor="textAssistive" style={styles.calloutBody}>
-                    {CALLOUT_BODY}
-                  </ThemedText>
-                </View>
-              </View>
-            </>
-          )}
+              ))
+            )}
+          </View>
 
-          {/* «div 382×132 · pad 40 0 0 0» — 단추와 약관. */}
           <View style={styles.authBlock}>
             {providers === null || remembered === undefined || busy ? (
               <ThemedView style={styles.busy}>
-                {/*
-                  문구   지금 로그인을 진행 중이고(`busy`), 그 말을 이 화면이 맡았을 때
-                  로더   그 밖 — 제공자·기억된 계정을 읽어오는 중이거나, 문구는 부팅 화면이 맡았을 때
-                  문장은 `SigningInBody` 한 곳에만 있고, 누가 말하는지는 `bootOwnsSigningInMessage()`가 정한다.
-                */}
                 <SigningInBody
                   size={28}
                   show={busy && !bootOwnsSigningInMessage() ? 'message' : 'loader'}
@@ -160,40 +161,49 @@ export default function LoginScreen() {
                 />
               </ThemedView>
             ) : (
-              <View style={styles.section}>
+              <>
                 <AgeConfirmRow
                   visible={needsAgeConfirm}
                   checked={ageChecked}
                   onToggle={() => setAgeChecked((was) => !was)}
                 />
 
-                {options.map((provider) => {
-                  /* 시안 #27h — 기억된 계정의 카카오 «계속하기»는 로고 없는 ctaPrimary다. 애플은 심사지침 때문에 마크를 지우지 않는다. */
-                  const plain = showRemembered && provider.provider !== 'apple';
-                  const tone = plain ? { background: theme.tint, text: theme.onTint } : (providerTone(provider) ?? { background: theme.tint, text: theme.onTint });
+                {primary ? (
+                  <ProviderButton
+                    tone={
+                      showRemembered && primary.provider !== 'apple'
+                        ? { background: theme.tint, text: theme.onTint }
+                        : (providerTone(primary) ?? { background: theme.tint, text: theme.onTint })
+                    }
+                    icon={
+                      primary.isDevelopmentStandIn || (showRemembered && primary.provider !== 'apple') ? null : (
+                        <SocialLogo provider={primary.provider} size={KAKAO_LOGO} />
+                      )
+                    }
+                    label={providerLabel(primary, showRemembered ? 'continue' : 'start')}
+                    hint={
+                      primary.isDevelopmentStandIn
+                        ? '실제 카카오 로그인이 아니에요. 개발 중인 서버에만 있어요'
+                        : null
+                    }
+                    disabled={busy || !canSignInWith(primary) || ageBlocked}
+                    onPress={() => signIn(primary, { ageAcknowledged: ageChecked })}
+                  />
+                ) : null}
 
-                  return (
-                    <ProviderButton
-                      key={provider.provider}
-                      tone={tone}
-                      icon={
-                        provider.isDevelopmentStandIn || plain ? null : (
-                          <SocialLogo provider={provider.provider} size={KAKAO_LOGO} />
-                        )
-                      }
-                      label={providerLabel(provider, showRemembered ? 'continue' : 'start')}
-                      hint={
-                        provider.isDevelopmentStandIn
-                          ? '실제 카카오 로그인이 아니에요. 개발 중인 서버에만 있어요'
-                          : null
-                      }
-                      disabled={busy || !canSignInWith(provider) || ageBlocked}
-                      onPress={() => signIn(provider, { ageAcknowledged: ageChecked })}
-                    />
-                  );
-                })}
+                {showRemembered ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="다른 계정으로 시작하기"
+                    onPress={() => void switchAccount()}
+                    style={({ pressed }) => [styles.otherButton, pressed && styles.pressed]}>
+                    <ThemedText type="f17" themeColor="textSecondary" style={styles.bold}>
+                      다른 계정으로 시작하기
+                    </ThemedText>
+                  </Pressable>
+                ) : null}
 
-                <ThemedText type="f11" themeColor="textAssistive" style={styles.terms}>
+                <ThemedText type="f13" themeColor="textAssistive" style={styles.terms}>
                   {showRemembered ? (
                     '이 기기에서 로그인을 유지하고 있어요'
                   ) : (
@@ -202,7 +212,7 @@ export default function LoginScreen() {
                     </>
                   )}
                 </ThemedText>
-              </View>
+              </>
             )}
 
             {loadError ? (
@@ -368,67 +378,71 @@ const ACCOUNT_PADDING_X = 18;
 const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
-  /* «pad 64 24 32 24». */
-  content: {
+  content: { flexGrow: 1 },
+  hero: {
     flexGrow: 1,
-    paddingTop: Layout.headTopLogin,
+    justifyContent: 'flex-end',
+    paddingTop: 64,
     paddingHorizontal: Layout.gutter,
-    paddingBottom: Spacing.five,
   },
-  /* «10/400 · ls 2.4px». */
-  /* «42/700 · lh 45 · ls -1.05px» — «mar 20»은 위 여백에 합쳐졌다(eyebrow 삭제). */
-  title: { fontWeight: 700, letterSpacing: LetterSpacing.n105 },
-  /* «15/400 · lh 28 · mar 20 0 0 0 · max-w 300». */
-  sub: { lineHeight: LineHeight.lh28, marginTop: Layout.listGap, maxWidth: SUB_MAX_WIDTH },
-  /* «pad 20 · mar 48 0 0 0 · r28 · border 1 · gap 12». */
-  callout: {
-    marginTop: Spacing.four + Spacing.four,
-    borderRadius: Radius.callout,
-    borderWidth: Border.hairline,
-    padding: Layout.cardPadding,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Layout.inlineGap,
-  },
-  /* «span 40×40 · r9999». */
-  calloutMark: {
-    width: Layout.iconButton,
-    height: Layout.iconButton,
-    borderRadius: Radius.pill,
+  markBox: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: Spacing.four,
   },
-  calloutText: { flex: 1, minWidth: 0 },
-  /* «12/400 · mar 2 0 0 0». */
-  calloutBody: { marginTop: Spacing.half },
-  /* «pad 40 0 0 0». */
-  authBlock: { paddingTop: Spacing.five + Spacing.two, gap: Layout.cardGap },
+  title: { fontWeight: 700, letterSpacing: LetterSpacing.n052 },
+  sub: { lineHeight: LineHeight.lh26, marginTop: 10 },
+  benefitWrap: {
+    flexShrink: 0,
+    paddingTop: Spacing.four + Spacing.four,
+    paddingHorizontal: Layout.gutter,
+  },
+  benefitRow: {
+    minHeight: 48,
+    paddingVertical: 11,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  benefitDot: { width: 6, height: 6, borderRadius: Radius.pill, marginTop: 8 },
+  benefitText: { flex: 1, lineHeight: LineHeight.lh24 },
+  authBlock: {
+    flexShrink: 0,
+    paddingTop: Spacing.four + Spacing.four,
+    paddingHorizontal: Layout.gutter,
+    paddingBottom: Spacing.four + Spacing.four,
+    gap: 10,
+  },
   section: { gap: Layout.cardGap },
-  /* 확인 행 — 안내 한 줄 위, 체크 행 아래. 사이 10. */
   ageConfirm: { gap: Layout.cardGap },
   ageConfirmRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Layout.rowPaddingY },
   grow: { flex: 1 },
   card: { borderRadius: Radius.medium, padding: Spacing.three, gap: Spacing.one },
-  /* «button 382×56 · gap 8 · r16». */
   provider: {
     height: Layout.ctaSheet,
-    borderRadius: Radius.cardLarge,
+    borderRadius: Radius.control,
     borderWidth: Border.hairline,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.two,
   },
-  /* «15/700 · lh 23». */
-  providerLabel: { fontWeight: 700, lineHeight: LineHeight.lh23 },
+  providerLabel: { fontWeight: 700, lineHeight: LineHeight.lh24 },
   hint: { textAlign: 'center', marginTop: Spacing.one },
-  disabled: { opacity: 0.4 },
-  pressed: { opacity: 0.8 },
-  /* «11/400 · lh 20 · mar 16 0 0 0 · 가운데». 단추와의 사이는 section gap 10 + 6. */
-  terms: { textAlign: 'center', marginTop: Spacing.three - Layout.cardGap, lineHeight: LineHeight.lh20 },
-  busy: { alignItems: 'center', gap: Spacing.two, paddingVertical: Spacing.three },
-  /* 기억된 계정 카드 — 옛 시안 lastWrap 위 28. */
-  accountWrap: { paddingTop: Layout.sectionGap },
+  otherButton: {
+    minHeight: 52,
+    borderRadius: Radius.control,
+    backgroundColor: '#F2F3F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Layout.gutter,
+  },
+  terms: { textAlign: 'center', paddingTop: 6, lineHeight: LineHeight.lh19 },
+  busy: { alignItems: 'center', justifyContent: 'center', minHeight: Layout.ctaSheet },
+  accountWrap: {},
   account: {
     borderRadius: Radius.medium,
     paddingVertical: ACCOUNT_PADDING_Y,
@@ -448,4 +462,6 @@ const styles = StyleSheet.create({
   badge: { paddingVertical: Spacing.one, paddingHorizontal: BADGE_PADDING_X, borderRadius: Radius.badge },
   policyLink: { fontWeight: 700, textDecorationLine: 'underline', textDecorationStyle: 'solid' },
   bold: { fontWeight: 700 },
+  disabled: { opacity: 0.4 },
+  pressed: { opacity: 0.8 },
 });
