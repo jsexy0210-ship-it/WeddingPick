@@ -1,11 +1,11 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { updateReview } from '@/api/client';
 import { BackBar } from '@/components/back-bar';
-import { dismissToOrReplace } from '@/features/navigation/depth-back';
+import { dismissToOrReplace, useDepthBack } from '@/features/navigation/depth-back';
 import {
   ActionButton,
   Layout,
@@ -37,6 +37,7 @@ export default function EditReviewScreen() {
       cons: string;
     }>();
   const theme = useTheme();
+  const depthBack = useDepthBack();
 
   const [overall, setOverall] = useState<number | null>(
     overallParam ? parseInt(overallParam, 10) : null
@@ -164,7 +165,7 @@ export default function EditReviewScreen() {
               disabled={!ready || sending}
               onPress={() => void submit()}
             />
-            <ActionButton label="그만두기" onPress={() => router.back()} />
+            <ActionButton label="그만두기" onPress={depthBack} />
           </ThemedView>
         </ScrollView>
       </SafeAreaView>
