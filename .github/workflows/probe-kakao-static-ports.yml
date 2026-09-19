@@ -6,6 +6,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: weddingpick-kakao-vm-write
+  cancel-in-progress: false
+
 jobs:
   install:
     name: Install temporary HTTPS probes
