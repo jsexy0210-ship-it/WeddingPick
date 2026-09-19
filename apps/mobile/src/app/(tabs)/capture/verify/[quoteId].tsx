@@ -111,7 +111,13 @@ export default function VerifyRequestScreen() {
           {received.requestId ? (
             <DockButton
               label="진행 상황 보기"
-              onPress={() => router.push(`/capture/verify-status/${received.requestId}` as never)}
+              onPress={() =>
+                /*
+                 * 접수 완료는 이미 끝난 흐름이다. 상태 화면 아래에 이 완료 화면을 남기면
+                 * 상태 화면의 Back이 다시 «접수했어요»로 돌아온다.
+                 */
+                router.replace(`/capture/verify-status/${received.requestId}` as never)
+              }
             />
           ) : null}
           <DockButton variant="primary" label="결과로 돌아가기" onPress={() => router.back()} />
