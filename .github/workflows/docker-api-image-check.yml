@@ -1,0 +1,140 @@
+name: Docker API Image Check
+
+on:
+  pull_request:
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - package.json
+      - package-lock.json
+      - apps/api/package.json
+      - packages/api-contract/package.json
+      - packages/db/package.json
+      - packages/domain/package.json
+      - scripts/update-kakao-worker.sh
+      - scripts/verification/docker-runtime-scope.test.mjs
+      - .github/workflows/docker-api-image-check.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-smoke:
+    name: Build and smoke slim API image
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: weddingpick
+          POSTGRES_PASSWORD: weddingpick
+          POSTGRES_DB: weddingpick_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      IMAGE: weddingpick-api:slim-check
+      DATABASE_URL: postgres://weddingpick:weddingpick@127.0.0.1:5432/weddingpick_test
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Runtime scope regression
+        run: node --test scripts/verification/docker-runtime-scope.test.mjs
+
+      - name: Build production image
+        run: docker build --label org.opencontainers.image.revision="$GITHUB_SHA" -t "$IMAGE" .
+
+      - name: Enforce image size ceiling
+        shell: bash
+        run: |
+          set -euo pipefail
+          bytes="$(docker image inspect "$IMAGE" --format '{{.Size}}')"
+          mib="$(( (bytes + 1048575) / 1048576 ))"
+          echo "image_bytes=$bytes"
+          echo "image_mib=$mib"
+          docker history --no-trunc "$IMAGE" | head -20
+          if [ "$bytes" -gt $((650 * 1024 * 1024)) ]; then
+            echo "Slim API image exceeded 650 MiB: ${mib} MiB" >&2
+            exit 1
+          fi
+
+      - name: Verify runtime payload excludes frontend and dev toolchain
+        run: |
+          docker run --rm "$IMAGE" sh -ec '
+            command -v ffmpeg >/dev/null
+            test -x /opt/tsx/node_modules/.bin/tsx
+            test ! -e apps/mobile
+            test ! -e apps/web
+            test ! -e packages/ui
+            test ! -e docs
+            test ! -e spec
+            test ! -d node_modules/jest
+            test ! -d node_modules/typescript
+          '
+
+      - name: Migrate smoke database from image
+        run: |
+          docker run --rm --network host \
+            -e DATABASE_URL="$DATABASE_URL" \
+            -e NODE_ENV=staging \
+            -e STORAGE_DRIVER=local \
+            "$IMAGE" /opt/tsx/node_modules/.bin/tsx packages/db/src/cli.ts
+
+      - name: Smoke API and worker from the slim image
+        shell: bash
+        run: |
+          set -euo pipefail
+          cleanup() {
+            docker rm -f weddingpick-api-slim-smoke weddingpick-worker-slim-smoke >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          docker run -d --name weddingpick-api-slim-smoke --network host \
+            -e DATABASE_URL="$DATABASE_URL" \
+            -e NODE_ENV=staging \
+            -e STORAGE_DRIVER=local \
+            -e RUN_WORKER_IN_API=false \
+            "$IMAGE" >/dev/null
+
+          body=''
+          for _ in $(seq 1 30); do
+            body="$(curl --silent --show-error --connect-timeout 2 --max-time 5 http://127.0.0.1:3000/health 2>/dev/null || true)"
+            if printf '%s' "$body" | python3 -c 'import json,sys; d=json.load(sys.stdin); s=d.get("schema"); sys.exit(0 if d.get("ok") is True and d.get("database")=="ok" and isinstance(s,dict) and s.get("ok") is True and s.get("pending")==[] else 1)' 2>/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          printf '%s' "$body" | python3 -c 'import json,sys; d=json.load(sys.stdin); s=d.get("schema"); sys.exit(0 if d.get("ok") is True and d.get("database")=="ok" and isinstance(s,dict) and s.get("ok") is True and s.get("pending")==[] else 1)'
+
+          docker run -d --name weddingpick-worker-slim-smoke --network host \
+            -e DATABASE_URL="$DATABASE_URL" \
+            -e NODE_ENV=staging \
+            -e STORAGE_DRIVER=local \
+            "$IMAGE" /opt/tsx/node_modules/.bin/tsx apps/api/src/worker.ts >/dev/null
+          sleep 5
+          test "$(docker inspect -f '{{.State.Running}}' weddingpick-worker-slim-smoke)" = true
+          docker logs weddingpick-worker-slim-smoke 2>&1 | grep -F '분석 워커 시작'
+
+      - name: Image summary
+        if: always()
+        shell: bash
+        run: |
+          if docker image inspect "$IMAGE" >/dev/null 2>&1; then
+            bytes="$(docker image inspect "$IMAGE" --format '{{.Size}}')"
+            mib="$(( (bytes + 1048575) / 1048576 ))"
+            {
+              echo '### Slim Kakao API image'
+              echo "- Size: ${mib} MiB"
+              echo '- Ceiling: 650 MiB'
+              echo '- Runtime excludes mobile/web/UI workspace and test/dev toolchain.'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
