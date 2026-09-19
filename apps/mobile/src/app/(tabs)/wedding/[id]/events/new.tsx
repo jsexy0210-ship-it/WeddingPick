@@ -1,11 +1,12 @@
 import type { CurrentUser } from '@weddingpick/api-contract';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { addWeddingEvent, getCurrentUser } from '@/api/client';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
+import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { DateTimeField, combineDayTime } from '@/features/wedding/event-form';
 import {
   Badge,
@@ -53,7 +54,7 @@ export default function AddWeddingEventRoute() {
     notifyEnabled !== true;
 
   function closeSheet() {
-    router.replace(`/wedding/${id}/events` as never);
+    dismissToOrReplace(`/wedding/${id}/events`);
   }
 
   function requestClose() {
