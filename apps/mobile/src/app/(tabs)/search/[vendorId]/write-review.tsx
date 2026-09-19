@@ -5,13 +5,14 @@ import {
   type ChecklistAnswer,
   type ReviewerRole,
 } from '@weddingpick/domain';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { createReview, getReviewForm } from '@/api/client';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
+import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import {
   ActionButton,
   FilterChip,
@@ -72,7 +73,7 @@ export default function WriteReviewRoute() {
     !shortBody;
 
   function closeSheet() {
-    router.replace(`/search/${vendorId}` as never);
+    dismissToOrReplace(`/search/${vendorId}`);
   }
 
   function requestClose() {
