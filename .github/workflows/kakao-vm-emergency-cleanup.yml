@@ -75,6 +75,16 @@ jobs:
             fi
           done < <(sudo -n docker ps -a --format '{{.Names}}' | grep -E '^weddingpick-(api|worker)-candidate-' || true)
 
+          # Current audit found one Docker-generated stopped container unrelated to
+          # the protected WeddingPick recovery families. Remove only that observed leftover.
+          if sudo -n docker inspect strange_chatelet >/dev/null 2>&1; then
+            running="$(sudo -n docker inspect -f '{{.State.Running}}' strange_chatelet)"
+            if [ "$running" = false ]; then
+              echo 'REMOVE observed stopped leftover: strange_chatelet'
+              sudo -n docker rm strange_chatelet >/dev/null
+            fi
+          fi
+
           declare -A protected_image_ids=()
           while IFS= read -r container_id; do
             image_id="$(sudo -n docker inspect -f '{{.Image}}' "$container_id" 2>/dev/null || true)"
