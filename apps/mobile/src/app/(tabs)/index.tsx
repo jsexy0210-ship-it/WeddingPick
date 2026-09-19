@@ -200,7 +200,6 @@ export default function HomeScreen() {
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Header
             unread={data.unread}
-            onPressSearch={() => router.push('/search')}
             onPressBell={() => router.push('/my/notifications')}
           />
 
@@ -218,7 +217,7 @@ export default function HomeScreen() {
               router.push(
                 data.me?.weddingId == null
                   ? '/my/wedding-settings'
-                  : `/wedding/${data.me.weddingId}/expenses`
+                  : '/wedding?tab=budget' as never
               )
             }
             onPressPartner={() => router.push('/wedding/partner')}
@@ -249,7 +248,7 @@ export default function HomeScreen() {
 
           <HomeBudget
             budget={data.budget}
-            onOpen={() => router.push(data.me?.weddingId == null ? '/my/wedding-settings' : `/wedding/${data.me.weddingId}/expenses`)}
+            onOpen={() => router.push(data.me?.weddingId == null ? '/my/wedding-settings' : '/wedding?tab=budget' as never)}
           />
 
           {/* 콘텐츠가 없어도 라운지 진입은 유지한다. */}
@@ -262,7 +261,7 @@ export default function HomeScreen() {
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="웨딩피드 자세히"
-                  onPress={() => router.push('/community')}
+                  onPress={() => router.push('/community?tab=feed' as never)}
                   style={({ pressed }) => [styles.feedMore, pressed && styles.pressed]}>
                   <ThemedText type="f13" themeColor="textAssistive">
                     {S.more}
@@ -318,9 +317,8 @@ function venueName(candidates: CandidateListResponse | null, me: CurrentUser | n
  * 홈 헤더 — 01-home 정본의 워드마크 · 검색 · 알림 순서를 그대로 둔다.
  * 검색은 Root 검색 화면으로 이동하고, 알림은 MY 알림으로 이동한다.
  */
-function Header({ unread, onPressSearch, onPressBell }: {
+function Header({ unread, onPressBell }: {
   unread: number;
-  onPressSearch: () => void;
   onPressBell: () => void;
 }) {
   const theme = useTheme();
@@ -332,13 +330,6 @@ function Header({ unread, onPressSearch, onPressBell }: {
       </ThemedText>
 
       <View style={styles.headerButtons}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="업체 검색"
-          onPress={onPressSearch}
-          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
-          <SeedIcon name="searchRegular" size={Layout.iconRow} color={theme.text} />
-        </Pressable>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={hasUnread({ unread, total: unread }) ? `알림 ${formatCount(unread)}건` : '알림'}
