@@ -16,6 +16,28 @@ import type { Answers } from './flow';
 const STORAGE_KEY = 'weddingpick.weddingDraft.v1';
 const ANSWERS_KEY = 'weddingpick.onboardingAnswers.v1';
 
+/*
+ * AsyncStorage의 set/remove는 호출 순서와 완료 순서가 같다는 보장이 없다.
+ * 완료 직전 save가 느리고 완료 후 clear가 먼저 끝나면, 늦게 끝난 save가 지운 값을
+ * 다시 살릴 수 있다. 키별 mutation을 직렬화해 마지막으로 호출한 동작이 마지막 상태가
+ * 되게 한다. 두 키뿐이라 큐를 오래 들고 있어도 크기가 늘어나지 않는다.
+ */
+const storageMutations = new Map<string, Promise<void>>();
+
+function mutateStorage(key: string, operation: () => Promise<void>): Promise<void> {
+  const previous = storageMutations.get(key) ?? Promise.resolve();
+  const current = previous.catch(() => undefined).then(operation);
+
+  // 한 번 실패했다고 이후 clear/save까지 영원히 막히지 않게 큐 자체는 회복시킨다.
+  storageMutations.set(key, current.catch(() => undefined));
+
+  return current;
+}
+
+async function waitForStorageMutation(key: string): Promise<void> {
+  await (storageMutations.get(key) ?? Promise.resolve()).catch(() => undefined);
+}
+
 /**
  * 로그인 전에 적어둔 최소 온보딩 값. 통합정책 v3.10 §3.
  *
@@ -44,12 +66,13 @@ export type WeddingDraft = {
   styleTags?: WeddingStyle[];
 };
 
-export async function saveWeddingDraft(draft: WeddingDraft): Promise<void> {
-  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+export function saveWeddingDraft(draft: WeddingDraft): Promise<void> {
+  return mutateStorage(STORAGE_KEY, () => AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(draft)));
 }
 
 /** 적어둔 값. 모양이 어긋나면 없는 것으로 본다 — 낡은 형식을 억지로 읽지 않는다. */
 export async function loadWeddingDraft(): Promise<WeddingDraft | null> {
+  await waitForStorageMutation(STORAGE_KEY);
   const raw = await AsyncStorage.getItem(STORAGE_KEY);
 
   if (!raw) return null;
@@ -85,8 +108,8 @@ export async function loadWeddingDraft(): Promise<WeddingDraft | null> {
   return null;
 }
 
-export async function clearWeddingDraft(): Promise<void> {
-  await AsyncStorage.removeItem(STORAGE_KEY);
+export function clearWeddingDraft(): Promise<void> {
+  return mutateStorage(STORAGE_KEY, () => AsyncStorage.removeItem(STORAGE_KEY));
 }
 
 /**
@@ -96,11 +119,12 @@ export async function clearWeddingDraft(): Promise<void> {
  * `after-sign-in`이 그대로 보낸다), 이쪽은 «미정으로 답했는가 · 아직 안 답했는가»
  * 를 가르는 화면 상태다. 서버에 올리고 나면 둘 다 지운다.
  */
-export async function saveOnboardingAnswers(answers: Answers): Promise<void> {
-  await AsyncStorage.setItem(ANSWERS_KEY, JSON.stringify(answers));
+export function saveOnboardingAnswers(answers: Answers): Promise<void> {
+  return mutateStorage(ANSWERS_KEY, () => AsyncStorage.setItem(ANSWERS_KEY, JSON.stringify(answers)));
 }
 
 export async function loadOnboardingAnswers(): Promise<Answers | null> {
+  await waitForStorageMutation(ANSWERS_KEY);
   const raw = await AsyncStorage.getItem(ANSWERS_KEY);
 
   if (!raw) return null;
@@ -127,8 +151,8 @@ export async function loadOnboardingAnswers(): Promise<Answers | null> {
   }
 }
 
-export async function clearOnboardingAnswers(): Promise<void> {
-  await AsyncStorage.removeItem(ANSWERS_KEY);
+export function clearOnboardingAnswers(): Promise<void> {
+  return mutateStorage(ANSWERS_KEY, () => AsyncStorage.removeItem(ANSWERS_KEY));
 }
 
 function readBracket(value: unknown): WeddingBudgetBracket | null {

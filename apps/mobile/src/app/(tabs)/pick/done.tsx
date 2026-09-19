@@ -81,7 +81,11 @@ export default function PickDoneScreen() {
       return;
     }
 
-    router.push({
+    /*
+     * 완료 화면을 다음 화면 아래에 남기지 않는다. push면 지출 화면에서 나왔을 때
+     * 방금 끝낸 Pick 완료가 다시 살아난다. 완료된 가지를 현재 자리에서 갈아끼운다.
+     */
+    router.replace({
       pathname: `/wedding/${target}/expenses/add`,
       params: {
         ...(vendor ? { vendorName: vendor } : {}),

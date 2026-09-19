@@ -26,6 +26,7 @@ import {
 } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { BackBar } from '@/components/back-bar';
+import { dismissToOrReplace, useDepthBack } from '@/features/navigation/depth-back';
 
 /**
  * 후기 쓰기.
@@ -40,6 +41,7 @@ import { BackBar } from '@/components/back-bar';
 export default function WriteReviewScreen() {
   const { vendorId } = useLocalSearchParams<{ vendorId: string }>();
   const theme = useTheme();
+  const depthBack = useDepthBack();
 
   const [form, setForm] = useState<ReviewForm | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -64,7 +66,7 @@ export default function WriteReviewScreen() {
   }, [vendorId]);
 
   if (loadError) {
-    return <ErrorView message={loadError} onBack={() => router.back()} />;
+    return <ErrorView message={loadError} onBack={depthBack} />;
   }
 
   if (!form) {
@@ -108,7 +110,7 @@ export default function WriteReviewScreen() {
         <ActionButton
           label={next ? '나중에 할게요' : '후기 보러 가기'}
           variant={next ? 'secondary' : 'primary'}
-          onPress={() => router.back()}
+          onPress={() => dismissToOrReplace(`/search/${vendorId}/reviews`)}
         />
       </Frame>
     );
@@ -122,7 +124,7 @@ export default function WriteReviewScreen() {
         <ThemedText type="small" themeColor="textSecondary">
           한 업체에 후기는 하나만 남길 수 있어요. 고치고 싶으시면 문의로 알려주세요.
         </ThemedText>
-        <ActionButton label="돌아가기" onPress={() => router.back()} />
+        <ActionButton label="돌아가기" onPress={depthBack} />
       </Frame>
     );
   }
@@ -342,7 +344,7 @@ export default function WriteReviewScreen() {
               disabled={!ready || sending}
               onPress={() => void submit()}
             />
-            <ActionButton label="그만두기" onPress={() => router.back()} />
+            <ActionButton label="그만두기" onPress={depthBack} />
           </ThemedView>
         </ScrollView>
       </SafeAreaView>

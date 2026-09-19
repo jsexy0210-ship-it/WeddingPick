@@ -45,7 +45,13 @@ export function useStackScreenOptions(): {
   );
 }
 
-/** 탭 화면의 기본값. `sceneStyle`이 탭 한 칸의 바탕이다. */
+/**
+ * 탭 화면의 기본값. `sceneStyle`이 탭 한 칸의 바탕이다.
+ *
+ * nested Stack을 버릴지는 여기서 전역으로 정하지 않는다. 검색 상세 → Pick 인증처럼
+ * 아직 끝나지 않은 교차 흐름은 이전 상세로 돌아갈 수 있어야 한다. 완료성 숨은 흐름만
+ * `app/(tabs)/_layout.tsx`에서 route별로 `popToTopOnBlur`를 켠다.
+ */
 export function useTabScreenOptions(): {
   headerShown: false;
   sceneStyle: { backgroundColor: string };

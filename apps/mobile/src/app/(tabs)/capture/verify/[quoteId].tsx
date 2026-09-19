@@ -17,6 +17,7 @@ import { createVerificationRequest, getQuote } from '@/api/client';
 import { formatMonthDayDot } from '@/features/common/format-date';
 import { ErrorView, FilterChip, Layout, Radius, Spacing, ThemedText, VerificationBadge, useTheme } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import {
   Dock,
   DockButton,
@@ -50,6 +51,7 @@ function documentLabel(document: QuoteDocument, index: number): string {
 export default function VerifyRequestScreen() {
   const { quoteId } = useLocalSearchParams<{ quoteId: string }>();
   const theme = useTheme();
+  const depthBack = useDepthBack();
 
   const [quote, setQuote] = useState<Quote | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -89,7 +91,7 @@ export default function VerifyRequestScreen() {
   }
 
   if (error && !quote) {
-    return <ErrorView message={error} onBack={() => router.back()} />;
+    return <ErrorView message={error} onBack={depthBack} />;
   }
 
   if (!quote) {
@@ -111,10 +113,16 @@ export default function VerifyRequestScreen() {
           {received.requestId ? (
             <DockButton
               label="진행 상황 보기"
-              onPress={() => router.push(`/capture/verify-status/${received.requestId}` as never)}
+              onPress={() =>
+                /*
+                 * 접수 완료는 이미 끝난 흐름이다. 상태 화면 아래에 이 완료 화면을 남기면
+                 * 상태 화면의 Back이 다시 «접수했어요»로 돌아온다.
+                 */
+                router.replace(`/capture/verify-status/${received.requestId}` as never)
+              }
             />
           ) : null}
-          <DockButton variant="primary" label="결과로 돌아가기" onPress={() => router.back()} />
+          <DockButton variant="primary" label="결과로 돌아가기" onPress={depthBack} />
         </Dock>
       </Screen>
     );
@@ -219,7 +227,7 @@ export default function VerifyRequestScreen() {
             : null
         }>
         {blocked ? (
-          <DockButton variant="primary" label="결과로 돌아가기" onPress={() => router.back()} />
+          <DockButton variant="primary" label="결과로 돌아가기" onPress={depthBack} />
         ) : (
           <DockButton
             variant="primary"

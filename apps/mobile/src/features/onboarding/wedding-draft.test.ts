@@ -1,0 +1,71 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import { EMPTY_ANSWERS } from './flow';
+import {
+  clearOnboardingAnswers,
+  loadOnboardingAnswers,
+  saveOnboardingAnswers,
+} from './wedding-draft';
+
+/**
+ * 완료 직전 저장이 느려도 완료 후 clear가 최종 상태여야 한다.
+ *
+ * AsyncStorage는 호출한 순서대로 Promise가 끝난다고 보장하지 않는다. 이 시험은
+ * setItem을 일부러 붙잡아 두고 clear를 뒤에서 호출해, removeItem이 먼저 달려나가지
+ * 못하는지 확인한다.
+ */
+describe('onboarding draft storage mutation order', () => {
+  let values: Map<string, string>;
+
+  beforeEach(() => {
+    values = new Map();
+
+    jest.spyOn(AsyncStorage, 'getItem').mockImplementation(async (key: string) => values.get(key) ?? null);
+    jest.spyOn(AsyncStorage, 'setItem').mockImplementation(async (key: string, value: string) => {
+      values.set(key, value);
+    });
+    jest.spyOn(AsyncStorage, 'removeItem').mockImplementation(async (key: string) => {
+      values.delete(key);
+    });
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('느린 save 뒤에 호출한 clear가 마지막에 실행돼 완료 캐시가 되살아나지 않는다', async () => {
+    const setItem = AsyncStorage.setItem as jest.MockedFunction<typeof AsyncStorage.setItem>;
+    const removeItem = AsyncStorage.removeItem as jest.MockedFunction<typeof AsyncStorage.removeItem>;
+    const normalSet = setItem.getMockImplementation()!;
+    let release!: () => void;
+    let markStarted!: () => void;
+    const blocked = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const started = new Promise<void>((resolve) => {
+      markStarted = resolve;
+    });
+
+    setItem.mockImplementationOnce(async (key: string, value: string) => {
+      markStarted();
+      await blocked;
+      await normalSet(key, value);
+    });
+
+    const saving = saveOnboardingAnswers(EMPTY_ANSWERS);
+    const clearing = clearOnboardingAnswers();
+
+    // 큐가 실제 첫 mutation을 시작한 시점까지 기다린다. microtask 횟수에 기대지 않는다.
+    await started;
+
+    expect(setItem).toHaveBeenCalledTimes(1);
+    expect(removeItem).not.toHaveBeenCalled();
+
+    release();
+    await saving;
+    await clearing;
+
+    expect(removeItem).toHaveBeenCalledWith('weddingpick.onboardingAnswers.v1');
+    expect(await loadOnboardingAnswers()).toBeNull();
+  });
+});
