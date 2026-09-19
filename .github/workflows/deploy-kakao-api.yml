@@ -163,19 +163,19 @@ jobs:
           done < <(sudo -n docker ps -aq)
 
           while IFS= read -r image_ref; do
-            case "$image_ref" in
-              weddingpick-api:kakao-current)
-                continue
-                ;;
-              weddingpick-api:[0-9a-f]*)
-                image_id="$(sudo -n docker image inspect -f '{{.Id}}' "$image_ref" 2>/dev/null || true)"
-                if [ -z "$image_id" ] || [ -n "${protected_image_ids[$image_id]:-}" ]; then
-                  continue
-                fi
-                echo "Removing unreferenced API image tag before build: $image_ref"
-                sudo -n docker image rm "$image_ref" >/dev/null
-                ;;
-            esac
+            if [ "$image_ref" = 'weddingpick-api:kakao-current' ]; then
+              continue
+            fi
+            if [[ ! "$image_ref" =~ ^weddingpick-api:[0-9a-f]{40}$ ]]; then
+              continue
+            fi
+
+            image_id="$(sudo -n docker image inspect -f '{{.Id}}' "$image_ref" 2>/dev/null || true)"
+            if [ -z "$image_id" ] || [ -n "${protected_image_ids[$image_id]:-}" ]; then
+              continue
+            fi
+            echo "Removing unreferenced API image tag before build: $image_ref"
+            sudo -n docker image rm "$image_ref" >/dev/null
           done < <(sudo -n docker images --format '{{.Repository}}:{{.Tag}}' | sort -u)
 
           sudo -n docker image prune -f >/dev/null
