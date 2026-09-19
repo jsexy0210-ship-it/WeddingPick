@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-import { ActionButton, Layout, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { ActionButton, Layout, Radius, ThemedText, useTheme } from '@weddingpick/ui';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 
 import { Wheel, WheelGroup } from './wheel';
@@ -91,8 +91,12 @@ function SheetBody({
         <ThemedText type="t4" style={styles.bold}>
           {S.title}
         </ThemedText>
-        <Pressable accessibilityRole="button" accessibilityLabel={S.close} onPress={onDismiss} style={styles.close}>
-          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={theme.textAssistive} strokeWidth={2} strokeLinecap="round">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={S.close}
+          onPress={onDismiss}
+          style={[styles.close, { backgroundColor: theme.backgroundSelected }]}>
+          <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth={2} strokeLinecap="round">
             <Path d="M6 6l12 12M18 6 6 18" />
           </Svg>
         </Pressable>
@@ -117,12 +121,6 @@ function SheetBody({
         />
       </WheelGroup>
 
-      <View style={styles.picked}>
-        <ThemedText type="t5" numberOfLines={1} style={styles.bold}>
-          {current === WHOLE ? region : `${region} ${shortDistrictName(current)}`}
-        </ThemedText>
-      </View>
-
       <View style={styles.cta}>
         <ActionButton variant="primary" size="sheet" label={S.confirm} onPress={() => onConfirm(picked)} />
       </View>
@@ -146,23 +144,22 @@ const FLEX_REGION = 1;
 const FLEX_DISTRICT = 1;
 
 const styles = StyleSheet.create({
-  /* 예식일 시트와 같은 틀 — 패딩 · 둥글기 · 그래버는 SheetPanel. 요소 사이만 16. */
-  sheet: { gap: Spacing.three },
+  /* 06 정본 wheelSheet — 요소 간격 14. 패딩/그래버는 SheetPanel이 맡는다. */
+  sheet: { gap: Layout.sectionHeadGap },
   head: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: Layout.rowPaddingY,
-    minHeight: Layout.sheetClose,
+    gap: Layout.inlineGap,
+    minHeight: 36,
   },
   close: {
-    width: Layout.sheetClose,
-    height: Layout.sheetClose,
+    width: 36,
+    height: 36,
+    borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  /* 결과 줄 — 예식일 시트의 pickedRow와 같은 자리다. 여기는 D-day가 없어 한 줄이다. */
-  picked: { paddingHorizontal: Spacing.half },
   /* width 100% · flex 0 0 — 세로 컨테이너에서 늘어나지 않는다(SPEC §13.7). */
   cta: { width: '100%', flexGrow: 0, flexShrink: 0 },
   bold: { fontWeight: 700 },
