@@ -13,6 +13,15 @@ function jobBlock(name) {
   return next === -1 ? workflow.slice(start) : workflow.slice(start, start + marker.length + next);
 }
 
+function assertNeeds(block, expected) {
+  const match = block.match(/needs:\s*\[([^\]]+)\]/);
+  assert.ok(match, 'job must declare bracket-list needs');
+  const actual = match[1].split(',').map((item) => item.trim());
+  for (const dependency of expected) {
+    assert.ok(actual.includes(dependency), `missing dependency: ${dependency}; actual=${actual.join(', ')}`);
+  }
+}
+
 test('mobile/web/api-contract/domain tests run as independent matrix jobs', () => {
   const block = jobBlock('non-db-tests');
   assert.match(block, /workspace: \[mobile, web, api-contract, domain\]/);
@@ -37,17 +46,33 @@ test('root harnesses remain in the primary CI job', () => {
 
 test('runner repair and static staging wait for all workspace tests', () => {
   const repair = jobBlock('repair-kakao-runner');
-  assert.match(repair, /needs: \[ci, api-tests, non-db-tests, db-tests\]/);
+  assertNeeds(repair, ['ci', 'api-tests', 'non-db-tests', 'db-tests']);
 
   const stage = jobBlock('stage-kakao-static');
-  assert.match(stage, /needs: \[ci, api-tests, non-db-tests, db-tests, repair-kakao-runner\]/);
+  assertNeeds(stage, ['ci', 'api-tests', 'non-db-tests', 'db-tests', 'repair-kakao-runner']);
   assert.match(stage, /needs\.non-db-tests\.result == 'success'/);
   assert.match(stage, /needs\.db-tests\.result == 'success'/);
 });
 
-test('API deployment path cannot bypass non-API workspace tests', () => {
+test('API deployment path cannot bypass non-API workspace tests or migration gates', () => {
   const detect = jobBlock('api-deploy-needed');
   const deploy = jobBlock('deploy-kakao');
-  assert.match(detect, /needs: \[ci, api-tests, non-db-tests, db-tests, repair-kakao-runner\]/);
-  assert.match(deploy, /needs: \[ci, api-tests, non-db-tests, db-tests, repair-kakao-runner, api-deploy-needed\]/);
+  assertNeeds(detect, [
+    'ci',
+    'api-tests',
+    'non-db-tests',
+    'db-tests',
+    'repair-kakao-runner',
+    'migrate-current-backlog-db',
+    'current-backlog-production',
+  ]);
+  assertNeeds(deploy, [
+    'ci',
+    'api-tests',
+    'non-db-tests',
+    'db-tests',
+    'repair-kakao-runner',
+    'api-deploy-needed',
+    'current-backlog-production',
+  ]);
 });
