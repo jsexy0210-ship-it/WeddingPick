@@ -260,7 +260,7 @@ export default function WeddingEventDetailScreen() {
             contentContainerStyle={styles.sheetContent}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}>
-            <Hero title="무엇을 바꿀까요?" />
+            <ThemedText type="t2">무엇을 바꿀까요?</ThemedText>
 
             <View style={styles.fields}>
               <Field label="제목" value={title} onChangeText={setTitle} maxLength={60} />
