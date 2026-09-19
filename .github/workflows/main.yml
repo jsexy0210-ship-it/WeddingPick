@@ -138,7 +138,9 @@ jobs:
           cache: npm
 
       - name: Deployment policy regression tests
-        run: node --test scripts/check-render-retired.test.mjs
+        run: |
+          node --test scripts/check-render-retired.test.mjs
+          node --test scripts/verification/static-cutover-order.test.mjs
 
       - name: Reject retired deployment paths
         run: node scripts/check-render-retired.mjs
@@ -291,7 +293,8 @@ jobs:
 
   cutover-kakao-admin-web:
     name: Cutover Kakao Admin Web
-    if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[cutover-admin-web]') }}
+    needs: [ci, api-tests, repair-kakao-runner, stage-kakao-static]
+    if: ${{ always() && github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[cutover-admin-web]') && needs.ci.result == 'success' && needs.api-tests.result == 'success' && (needs.repair-kakao-runner.result == 'success' || needs.repair-kakao-runner.result == 'skipped') && (needs.ci.outputs.stage_static != 'true' || (needs.stage-kakao-static.result == 'success' && needs.stage-kakao-static.outputs.candidate_sha == github.sha)) }}
     permissions:
       contents: read
     uses: ./.github/workflows/cutover-kakao-admin-web.yml
