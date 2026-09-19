@@ -106,6 +106,7 @@ jobs:
             -e NODE_ENV=staging \
             -e STORAGE_DRIVER=local \
             -e RUN_WORKER_IN_API=false \
+            -e GEMINI_API_KEY=ci-smoke-key \
             "$IMAGE" >/dev/null
 
           body=''
@@ -132,6 +133,7 @@ jobs:
             -e DATABASE_URL="$DATABASE_URL" \
             -e NODE_ENV=staging \
             -e STORAGE_DRIVER=local \
+            -e GEMINI_API_KEY=ci-smoke-key \
             "$IMAGE" /opt/tsx/node_modules/.bin/tsx apps/api/src/worker.ts >/dev/null
           sleep 5
           if [ "$(docker inspect -f '{{.State.Running}}' weddingpick-worker-slim-smoke 2>/dev/null || true)" != true; then
