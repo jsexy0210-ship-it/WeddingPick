@@ -19,14 +19,11 @@ import { common } from '../../../../../spec/strings.ko.json';
  * 고칠 수 있고, 서버 계약(`completeSetup`)도 둘을 선택 항목으로 그대로 받는다.
  * 처음 들어온 사람에게 다섯 번 묻던 것을 세 번으로 줄인 것뿐이다.
  *
- * **3/3이 스타일인 이유.** 피그마의 3번째 질문은 「무엇이 가장 중요해요?」(예산 안에서 ·
- * 취향이 뚜렷하게 · 정보가 충분하게)인데 그 답을 담을 칸이 서버에 없고 API 계약은
- * 바꾸지 않는다. 스타일은 이미 있는 칸이면서 같은 일을 한다 — 추천의 근거고(v3.24)
- * 피그마의 3번째 질문처럼 하나는 반드시 고르게 돼 있다.
+ * **3/3은 스타일이다.** 최신 06 정본도 4개 텍스트 버튼(도시적인 · 자연스러운 ·
+ * 로맨틱한 · 화려한)으로 같은 계약을 쓴다. 최소 1개, 최대 2개다.
  *
- * 예식일은 휠 3열, 지역은 짧은 꼴 아홉 그대로다 — 피그마가 그 자리에 그려 둔 보기
- * 세 개(「2027년 1월 15일」 · 「경기·인천」)는 시안용 가짜 값이고, 둘 다 대표님이
- * 따로 정해 둔 규칙이 있다(CLAUDE.md).
+ * 예식일은 3열 날짜 휠, 지역은 시/도 · 시/군/구 2열 휠 바텀시트다. 진행 화면에는
+ * 선택한 값을 56px 필드로 보여준다.
  *
  * **큰 질문 하나 = Step 하나.** 지역 안의 시/도 → 구는 화면 안에서 끝나고 Step으로
  * 세지 않는다. 진행바와 «N/3»은 이 셋으로만 움직인다.
@@ -80,8 +77,8 @@ export const STEP_LABEL: Record<QuestionStep, string> = {
  */
 export const STEP_TITLE_LINES: Record<QuestionStep, readonly [string, string]> = {
   date: ['예식일은', '언제인가요?'],
-  region: ['어느 지역에서', '하나요?'],
-  style: ['어떤 분위기로', '준비할까요?'],
+  region: ['어디에서', '식을 올리시나요?'],
+  style: ['어떤 스타일을', '좋아하세요?'],
 };
 
 /**
@@ -97,24 +94,28 @@ export const DONE_TITLE_LINES = ['가입이', '완료됐어요'] as const;
 /** 질문 아래 한 줄 — 서비스가 무엇을 해주는지(SPEC §13.6 첫 표 «설명»). */
 export const STEP_DESCRIPTION: Record<QuestionStep, string> = {
   date: '남은 기간에 맞춰 준비 순서를 잡아드릴게요',
-  region: '선택한 지역을 기준으로 찾아드릴게요',
+  region: '선택한 지역으로 좁혀드려요',
   style: '마음에 드는 스타일을 골라주세요',
+};
+
+/** 06-onboarding-login 정본의 스타일 버튼 보조 문구. */
+export const STYLE_DESCRIPTION: Record<WeddingStyle, string> = {
+  URBAN: '모던하고 세련된 도심 분위기',
+  NATURAL: '편안하고 빛이 좋은 야외 느낌',
+  ROMANTIC: '부드럽고 사랑스러운 분위기',
+  GLAMOROUS: '풍성하고 존재감 있는 스타일',
 };
 
 export const DONE_CTA = '웨딩픽 시작하기';
 
-/**
- * 「다음」 — 세 질문이 전부 같은 CTA를 쓴다.
- *
- * **스타일 3/3도 이것이다.** 2026-09-15까지 `styleCta(n)`이 «N장 선택»을 만들었는데
- * «장»은 사진·종이를 세는 말이라 사진 타일을 지운 지금은 셀 것이 없다(대표 지시
- * 「타일로 하지마 버튼으로 통일한다」). 규격서 `docs/design/figma-export/06-onboarding-login.dc.html`의
- * CTA는 «다음»이다 — `button 382×56 "다음" · 14/700 #FFFFFF · bg #1A1C20 · r16`.
- * 근거를 옛 SPEC.md에서 피그마로 옮긴 것이고, 문구는 `spec/strings.ko.json`
- * `common.cta.next`에서 온다.
- */
+/** 1/3 · 2/3의 하단 CTA. 3/3은 정본대로 선택 개수를 표시한다. */
 export const NEXT_CTA = common['cta.next'];
 export const PREV_CTA = '이전';
+
+/** 3/3 정본 CTA — 사진 단위 «장»이 아니라 버튼 선택 개수 «개». */
+export function styleCta(count: number): string {
+  return `${count}개 선택`;
+}
 
 /** 이 답 상태에서 묻는 Step. 셋 전부 — 건너뛰는 질문이 없다. */
 export function stepsFor(_answers: Answers): readonly QuestionStep[] {

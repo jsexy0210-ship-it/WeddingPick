@@ -3,6 +3,7 @@ import {
   QUESTION_STEPS,
   STEP_DESCRIPTION,
   STEP_TITLE_LINES,
+  STYLE_DESCRIPTION,
   answerSummary,
   canAdvance,
   ddayLabel,
@@ -12,6 +13,7 @@ import {
   resumeStep,
   stepProgress,
   stepsFor,
+  styleCta,
   summarizeStyles,
   type Answers,
 } from './flow';
@@ -25,14 +27,23 @@ const FULL: Answers = {
 describe('히어로 문구', () => {
   it('제목과 설명이 세 질문 그대로다', () => {
     expect(STEP_TITLE_LINES.date.join(' ')).toBe('예식일은 언제인가요?');
-    expect(STEP_TITLE_LINES.region.join(' ')).toBe('어느 지역에서 하나요?');
-    expect(STEP_TITLE_LINES.style.join(' ')).toBe('어떤 분위기로 준비할까요?');
+    expect(STEP_TITLE_LINES.region.join(' ')).toBe('어디에서 식을 올리시나요?');
+    expect(STEP_TITLE_LINES.style.join(' ')).toBe('어떤 스타일을 좋아하세요?');
 
     expect(STEP_DESCRIPTION).toEqual({
       date: '남은 기간에 맞춰 준비 순서를 잡아드릴게요',
-      region: '선택한 지역을 기준으로 찾아드릴게요',
+      region: '선택한 지역으로 좁혀드려요',
       style: '마음에 드는 스타일을 골라주세요',
     });
+
+    expect(STYLE_DESCRIPTION).toEqual({
+      URBAN: '모던하고 세련된 도심 분위기',
+      NATURAL: '편안하고 빛이 좋은 야외 느낌',
+      ROMANTIC: '부드럽고 사랑스러운 분위기',
+      GLAMOROUS: '풍성하고 존재감 있는 스타일',
+    });
+    expect(styleCta(0)).toBe('0개 선택');
+    expect(styleCta(2)).toBe('2개 선택');
   });
 
   it('높임 어미를 겹치지 않는다 — «하시나요» «좋으세요»를 쓰지 않는다', () => {

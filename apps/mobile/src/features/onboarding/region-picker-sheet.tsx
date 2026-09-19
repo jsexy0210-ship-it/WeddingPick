@@ -1,14 +1,11 @@
 import {
   REGION_DISTRICTS,
   WEDDING_REGIONS,
-  shortDistrictName,
   type WeddingRegion,
 } from '@weddingpick/domain';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
-
-import { ActionButton, Layout, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { ActionButton, Layout, ProductSymbol, Radius, ThemedText, useTheme } from '@weddingpick/ui';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 
 import { Wheel, WheelGroup } from './wheel';
@@ -38,8 +35,8 @@ export type PickedRegion = { region: WeddingRegion; district: string | null };
  * **시/군/구는 `REGION_DISTRICTS`에서 온다** — 저장소에 이미 있던 목록이라 지어낸
  * 값이 없다. 「그 외」는 구 목록이 없다(전국이라는 뜻이라 더 좁힐 것이 없다).
  *
- * **보이는 것만 짧게 줄인다** — 「강남구」 → 「강남」(`shortDistrictName`). 저장하는
- * 값은 「강남구」 그대로다. 그 함수가 「중구」처럼 두 글자인 이름은 손대지 않는다.
+ * 휠과 선택 필드는 정본처럼 시/군/구의 전체 이름(예: 「강남구」)을 보여준다.
+ * 저장 값과 표시 값이 같으므로 별도 축약을 하지 않는다.
  */
 export function RegionPickerSheet({
   visible,
@@ -91,10 +88,12 @@ function SheetBody({
         <ThemedText type="t4" style={styles.bold}>
           {S.title}
         </ThemedText>
-        <Pressable accessibilityRole="button" accessibilityLabel={S.close} onPress={onDismiss} style={styles.close}>
-          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={theme.textAssistive} strokeWidth={2} strokeLinecap="round">
-            <Path d="M6 6l12 12M18 6 6 18" />
-          </Svg>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={S.close}
+          onPress={onDismiss}
+          style={[styles.close, { backgroundColor: theme.backgroundSelected }]}>
+          <ProductSymbol name="close" size={16} color={theme.text} />
         </Pressable>
       </View>
 
@@ -111,17 +110,11 @@ function SheetBody({
           accessibilityLabel={S.district}
           flex={FLEX_DISTRICT}
           items={districts}
-          format={(item) => (item === WHOLE ? WHOLE : shortDistrictName(item))}
+          format={(item) => item}
           value={current}
           onChange={setDistrict}
         />
       </WheelGroup>
-
-      <View style={styles.picked}>
-        <ThemedText type="t5" numberOfLines={1} style={styles.bold}>
-          {current === WHOLE ? region : `${region} ${shortDistrictName(current)}`}
-        </ThemedText>
-      </View>
 
       <View style={styles.cta}>
         <ActionButton variant="primary" size="sheet" label={S.confirm} onPress={() => onConfirm(picked)} />
@@ -146,23 +139,22 @@ const FLEX_REGION = 1;
 const FLEX_DISTRICT = 1;
 
 const styles = StyleSheet.create({
-  /* 예식일 시트와 같은 틀 — 패딩 · 둥글기 · 그래버는 SheetPanel. 요소 사이만 16. */
-  sheet: { gap: Spacing.three },
+  /* 06 정본 wheelSheet — 요소 간격 14. 패딩/그래버는 SheetPanel이 맡는다. */
+  sheet: { gap: Layout.sectionHeadGap },
   head: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: Layout.rowPaddingY,
-    minHeight: Layout.sheetClose,
+    gap: Layout.inlineGap,
+    minHeight: 36,
   },
   close: {
-    width: Layout.sheetClose,
-    height: Layout.sheetClose,
+    width: 36,
+    height: 36,
+    borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  /* 결과 줄 — 예식일 시트의 pickedRow와 같은 자리다. 여기는 D-day가 없어 한 줄이다. */
-  picked: { paddingHorizontal: Spacing.half },
   /* width 100% · flex 0 0 — 세로 컨테이너에서 늘어나지 않는다(SPEC §13.7). */
   cta: { width: '100%', flexGrow: 0, flexShrink: 0 },
   bold: { fontWeight: 700 },
