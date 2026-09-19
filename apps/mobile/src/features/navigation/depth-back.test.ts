@@ -201,3 +201,29 @@ describe('ROUTES가 src/app과 같은가', () => {
     expect([...found].sort()).toEqual([...ROUTES].sort());
   });
 });
+
+
+describe('완료 흐름은 이전 Stack을 다시 열지 않는다', () => {
+  const { readFileSync } = nodeRequire('fs') as {
+    readFileSync: (path: string, encoding: 'utf8') => string;
+  };
+  const { join } = nodeRequire('path') as { join: (...parts: string[]) => string };
+
+  it('보이는 탭과 숨은 capture 탭 모두 blur 시 하위 Stack을 첫 화면으로 접는다', () => {
+    const source = readFileSync(join(dirName, 'screen-options.ts'), 'utf8');
+
+    expect(source).toContain('popToTopOnBlur: true');
+  });
+
+  it('Pick 완료에서 지출 추가로 갈 때 done 화면 위에 push하지 않는다', () => {
+    const source = readFileSync(join(dirName, '..', '..', 'app', '(tabs)', 'pick', 'done.tsx'), 'utf8');
+    const start = source.indexOf('async function goAddExpense()');
+    const end = source.indexOf('/* 완료 화면은 뒤로 갈 화면이 아니다.', start);
+    const flow = source.slice(start, end);
+
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(end).toBeGreaterThan(start);
+    expect(flow).toContain('router.replace({');
+    expect(flow).not.toContain('router.push({');
+  });
+});
