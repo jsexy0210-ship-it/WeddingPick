@@ -16,6 +16,7 @@
     "test:auth-hardening": "node scripts/verify-auth-hardening.cjs",
     "test:web-shell-auth": "node scripts/verify-web-shell-auth.cjs",
     "test:root-entry": "node scripts/verify-root-entry.cjs",
+    "test:cutover-transaction": "node --test scripts/verification/cutover-transaction.test.mjs",
     "test:infra-transactions": "node scripts/verification/run-infra-transactions.mjs"
   },
   "engines": {
