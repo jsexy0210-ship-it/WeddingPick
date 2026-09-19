@@ -50,7 +50,7 @@ jobs:
           --no-daemon
           --max-workers=2
           -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: weddingpick-apk
           path: apps/mobile/android/app/build/outputs/apk/release/*.apk

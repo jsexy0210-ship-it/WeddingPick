@@ -173,7 +173,7 @@ jobs:
         run: npm run marketing --workspace @weddingpick/api -- demo "$GITHUB_WORKSPACE/$MARKETING_PREVIEW_DIR"
 
       - name: Upload marketing preview
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: marketing-preview
           path: ${{ env.MARKETING_PREVIEW_DIR }}/
@@ -206,7 +206,7 @@ jobs:
 
       - name: Upload Kakao static candidates
         if: steps.static_changes.outputs.changed == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: kakao-static-sites
           path: .kakao-static/
