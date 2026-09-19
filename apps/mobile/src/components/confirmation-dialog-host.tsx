@@ -113,7 +113,7 @@ function NativeConfirmation({ active }: { active: ActiveNativeConfirmation }) {
           ) : null}
 
           <View style={styles.buttonRow}>
-            {request.buttons.length > 0 ? (
+            {cancelIndex >= 0 || danger ? (
               <DialogButton
                 label={request.buttons[cancelIndex]?.text ?? CANCEL}
                 tone="cancel"
