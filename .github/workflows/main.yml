@@ -31,8 +31,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
-          # Deployment-successor PR number is filled immediately after this PR is opened.
-          ALLOWED_PRS: '329 334 336 340 342 345 352 359 370 373 377 388 402 406 410 412 413 414 415 417 418 419 431'
+          ALLOWED_PRS: '329 334 336 340 342 345 352 359 370 373 377 388 402 406 410 412 413 414 415 417 418 419 431 437'
         run: |
           set -euo pipefail
           auto=false
