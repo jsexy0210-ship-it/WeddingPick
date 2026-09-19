@@ -141,6 +141,7 @@ jobs:
         run: |
           node --test scripts/check-render-retired.test.mjs
           node --test scripts/verification/static-cutover-order.test.mjs
+          node --test scripts/verification/kakao-retention-cleanup-policy.test.mjs
           node --test scripts/verification/ci-workspace-parallelism.test.mjs
           node --test scripts/verification/current-backlog-db-migration.test.mjs
 

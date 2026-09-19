@@ -36,12 +36,91 @@ jobs:
           fi
           echo "current=true" >> "$GITHUB_OUTPUT"
 
+      - name: Reclaim regenerable Docker space for authorized cleanup
+        if: steps.current.outputs.current == 'true' && contains(github.event.head_commit.message || '', '[vm-cleanup]')
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo 'Disk before regenerable cleanup:'
+          df -h / | sed -n '1,2p'
+          sudo -n docker system df || true
+          # Build cache and dangling images are reproducible. No container is removed here.
+          sudo -n docker builder prune -af >/dev/null
+          sudo -n docker image prune -f >/dev/null
+          echo 'Disk after regenerable cleanup:'
+          df -h / | sed -n '1,2p'
+
       - name: Checkout runtime audit
         if: steps.current.outputs.current == 'true'
         uses: actions/checkout@v5
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+
+      - name: Apply authorized retention cleanup
+        if: steps.current.outputs.current == 'true' && contains(github.event.head_commit.message || '', '[vm-cleanup]')
+        shell: bash
+        env:
+          WEDDINGPICK_RETENTION_KEEP: '1'
+          WP_RETENTION_APPROVED: '1'
+        run: node ./scripts/cleanup-kakao-retention.mjs --apply
+
+      - name: Remove unreferenced API images and stale static candidates
+        if: steps.current.outputs.current == 'true' && contains(github.event.head_commit.message || '', '[vm-cleanup]')
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=/home/ubuntu/WeddingPick
+          releases="$root/static-releases"
+
+          declare -A protected_image_ids=()
+          while IFS= read -r container_id; do
+            image_id="$(sudo -n docker inspect -f '{{.Image}}' "$container_id" 2>/dev/null || true)"
+            if [ -n "$image_id" ]; then
+              protected_image_ids["$image_id"]=1
+            fi
+          done < <(sudo -n docker ps -aq)
+
+          while IFS= read -r image_ref; do
+            [ "$image_ref" = 'weddingpick-api:kakao-current' ] && continue
+            [[ "$image_ref" =~ ^weddingpick-api:[0-9a-f]{40}$ ]] || continue
+            image_id="$(sudo -n docker image inspect -f '{{.Id}}' "$image_ref" 2>/dev/null || true)"
+            if [ -n "$image_id" ] && [ -z "${protected_image_ids[$image_id]:-}" ]; then
+              echo "Removing unreferenced API image: $image_ref"
+              sudo -n docker image rm "$image_ref" >/dev/null
+            fi
+          done < <(sudo -n docker images --format '{{.Repository}}:{{.Tag}}' | sort -u)
+          sudo -n docker image prune -f >/dev/null
+
+          if [ -d "$releases" ]; then
+            declare -A keep_release=()
+            latest_candidate="$(cat "$releases/latest-candidate" 2>/dev/null || true)"
+            [[ "$latest_candidate" =~ ^[0-9a-f]{40}$ ]] && keep_release["$latest_candidate"]=1
+            keep_release["$GITHUB_SHA"]=1
+
+            kept_recent=0
+            while IFS= read -r dir; do
+              name="$(basename "$dir")"
+              [[ "$name" =~ ^[0-9a-f]{40}$ ]] || continue
+              if [ "$kept_recent" -lt 2 ]; then
+                keep_release["$name"]=1
+                kept_recent=$((kept_recent + 1))
+              fi
+            done < <(find "$releases" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -nr | cut -d' ' -f2-)
+
+            while IFS= read -r dir; do
+              name="$(basename "$dir")"
+              [[ "$name" =~ ^[0-9a-f]{40}$ ]] || continue
+              if [ -z "${keep_release[$name]:-}" ]; then
+                echo "Removing stale static candidate: $name"
+                rm -rf -- "$dir"
+              fi
+            done < <(find "$releases" -mindepth 1 -maxdepth 1 -type d -print)
+          fi
+
+          echo 'Disk after authorized VM cleanup:'
+          df -h / | sed -n '1,2p'
+          sudo -n docker system df || true
 
       - name: Download static artifact
         if: steps.current.outputs.current == 'true'

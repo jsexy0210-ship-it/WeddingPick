@@ -4,8 +4,8 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const DEFAULT_ROOT = '/home/ubuntu/WeddingPick';
-const DEFAULT_RETAIN = 3;
+export const DEFAULT_ROOT = '/home/ubuntu/WeddingPick';
+export const DEFAULT_RETAIN = 3;
 
 export function recoveryFamily(name) {
   if (/^weddingpick-api-previous-/.test(name)) return 'api';
@@ -112,7 +112,7 @@ function dockerContainers() {
   return output.split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line));
 }
 
-function collectRecoveryContainers(root) {
+export function collectRecoveryContainers(root) {
   const protectedNames = new Set();
   const corsMarker = readMarker(root, '.cors-cutover-backup');
   const corsContainer = parseCorsMarker(corsMarker);
@@ -139,7 +139,7 @@ function collectRecoveryContainers(root) {
   return { containers, protectedNames };
 }
 
-function collectNginxBackups(root) {
+export function collectNginxBackups(root) {
   const dir = join(root, 'nginx-backups');
   const protectedPaths = new Set();
 
