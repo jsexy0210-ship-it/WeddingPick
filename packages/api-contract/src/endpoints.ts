@@ -84,12 +84,19 @@ import {
 } from './planners';
 import { confirmFieldsRequestSchema, quoteListResponseSchema, quoteSchema } from './quotes';
 import {
+  createReviewCommentReportRequestSchema,
+  createReviewCommentRequestSchema,
+  createReviewMediaUploadTargetRequestSchema,
+  createReviewMediaUploadTargetResponseSchema,
   createReviewReportRequestSchema,
   createReviewReportResponseSchema,
   createReviewRequestSchema,
   createReviewResponseSchema,
   reportReasonListResponseSchema,
+  reviewCommentListResponseSchema,
+  reviewCommentSchema,
   reviewFormSchema,
+  reviewHelpfulSchema,
   reviewListResponseSchema,
   loungeReviewListResponseSchema,
   updateReviewRequestSchema,
@@ -965,6 +972,13 @@ export const ENDPOINTS = {
    *
    * 확인 단계는 보내지 않는다 — 서버가 이 사람의 인증된 문서를 보고 정한다.
    */
+  createReviewMediaUploadTarget: {
+    method: 'POST',
+    path: '/v1/reviews/media/upload-target',
+    body: createReviewMediaUploadTargetRequestSchema,
+    response: createReviewMediaUploadTargetResponseSchema,
+  },
+
   createReview: {
     method: 'POST',
     path: '/v1/vendors/{vendorId}/reviews',
@@ -998,6 +1012,44 @@ export const ENDPOINTS = {
     method: 'POST',
     path: '/v1/reviews/{reviewId}/reports',
     body: createReviewReportRequestSchema,
+    response: createReviewReportResponseSchema,
+  },
+
+  markReviewHelpful: {
+    method: 'PUT',
+    path: '/v1/reviews/{reviewId}/helpful',
+    response: reviewHelpfulSchema,
+  },
+
+  unmarkReviewHelpful: {
+    method: 'DELETE',
+    path: '/v1/reviews/{reviewId}/helpful',
+    response: reviewHelpfulSchema,
+  },
+
+  listReviewComments: {
+    method: 'GET',
+    path: '/v1/reviews/{reviewId}/comments',
+    response: reviewCommentListResponseSchema,
+  },
+
+  createReviewComment: {
+    method: 'POST',
+    path: '/v1/reviews/{reviewId}/comments',
+    body: createReviewCommentRequestSchema,
+    response: reviewCommentSchema,
+  },
+
+  deleteReviewComment: {
+    method: 'DELETE',
+    path: '/v1/review-comments/{commentId}',
+    response: z.null(),
+  },
+
+  createReviewCommentReport: {
+    method: 'POST',
+    path: '/v1/review-comments/{commentId}/reports',
+    body: createReviewCommentReportRequestSchema,
     response: createReviewReportResponseSchema,
   },
 
