@@ -182,7 +182,7 @@ function splitFixture(script,role,missingAdmin=false) {
     find(l.render(),'SegmentedTabs')[0].props.onChange('feed');
     const tree=l.render(),buttons=find(tree,'Pressable');assert.equal(buttons.length,2);
     assert.equal(buttons[0].props.accessibilityLabel,'첫 글');buttons[0].props.onPress();
-    assert.equal(l.pushed[0],'/feed/post%2Fa%3Fb');
+    assert.equal(l.pushed[0],'/community/feed/post%2Fa%3Fb');
     assert.equal(find(tree,'NavBar')[0].props.right,undefined);
   });
   await check('lounge category filters preserve clickable detail',async()=>{
