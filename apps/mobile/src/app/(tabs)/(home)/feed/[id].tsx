@@ -42,8 +42,10 @@ export default function WeddingFeedDetailScreen() {
   const { state: sessionState } = useSession();
   const version = useRef(0);
   const [state, setState] = useState<DetailState>({ id, status: 'loading' });
-  const [scrapSaved, setScrapSaved] = useState<boolean | null>(null);
+  const scrapKey = sessionState.status === 'signedIn' && id.trim() ? `${sessionState.userId}:${id}` : null;
+  const [scrapState, setScrapState] = useState<{ key: string; saved: boolean } | null>(null);
   const [scrapBusy, setScrapBusy] = useState(false);
+  const scrapSaved = scrapState?.key === scrapKey ? scrapState.saved : null;
 
   const load = useCallback(() => {
     const requestVersion = ++version.current;
@@ -71,25 +73,22 @@ export default function WeddingFeedDetailScreen() {
   }, [load]);
 
   useEffect(() => {
-    if (sessionState.status !== 'signedIn' || !id.trim()) {
-      setScrapSaved(null);
-      return;
-    }
+    if (scrapKey === null) return;
     let active = true;
     void getWeddingFeedScrapState(id)
-      .then(({ saved }) => { if (active) setScrapSaved(saved); })
-      .catch(() => { if (active) setScrapSaved(null); });
+      .then(({ saved }) => { if (active) setScrapState({ key: scrapKey, saved }); })
+      .catch(() => { if (active) setScrapState(null); });
     return () => { active = false; };
-  }, [id, sessionState.status]);
+  }, [id, scrapKey]);
 
   const toggleScrap = useCallback(() => {
-    if (scrapSaved === null || scrapBusy) return;
+    if (scrapSaved === null || scrapBusy || scrapKey === null) return;
     setScrapBusy(true);
     const operation = scrapSaved ? removeWeddingFeedScrap(id) : saveWeddingFeedScrap(id);
     void operation
-      .then(({ saved }) => setScrapSaved(saved))
+      .then(({ saved }) => setScrapState({ key: scrapKey, saved }))
       .finally(() => setScrapBusy(false));
-  }, [id, scrapBusy, scrapSaved]);
+  }, [id, scrapBusy, scrapKey, scrapSaved]);
 
   // 주소가 바뀐 렌더에서 이전 글을 한 프레임도 표시하지 않는다.
   if (state.id !== id || state.status === 'loading') return <DelayedLoadingView />;
