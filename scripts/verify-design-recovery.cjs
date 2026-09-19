@@ -79,6 +79,8 @@ function detailHarness(initialId='a') {
     'expo-router':{useLocalSearchParams:()=>({id})},react:h.api,'react-native':native,
     'react-native-safe-area-context':{SafeAreaView:'SafeAreaView'},'@weddingpick/ui':ui,
     '@/components/back-bar':{BackBar:'BackBar'},'@/features/home/category-image':{CategoryImage:'CategoryImage'},
+    '@/api/client':{getWeddingFeedScrapState:async()=>({saved:false}),removeWeddingFeedScrap:async()=>({saved:false}),saveWeddingFeedScrap:async()=>({saved:true})},
+    '@/features/auth/use-session':{useSession:()=>({state:{status:'signedOut'}})},
     '@/features/home/content':{getWeddingFeedDetail:key=>{const d=deferred();calls.push({key,...d});return d.promise;}},
     '@/features/common/format-date':{formatDateDot:x=>x},'@/features/loading/delayed-loader':{DelayedLoadingView:'Loading'},
     '@/features/navigation/depth-back':{useDepthBack:()=>back},'../../../../../../../spec/strings.ko.json':strings,
