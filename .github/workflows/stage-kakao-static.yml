@@ -87,7 +87,7 @@ jobs:
 
       - name: Upload staged revision marker
         if: steps.current.outputs.current == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: kakao-static-staged-marker
           path: .kakao-static-staged-marker
