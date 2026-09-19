@@ -42,3 +42,15 @@ test('a static-changing cutover cannot treat a stale/no-op staging run as curren
     /needs\.ci\.outputs\.stage_static != 'true' \|\| \(needs\.stage-kakao-static\.result == 'success' && needs\.stage-kakao-static\.outputs\.candidate_sha == github\.sha\)/,
   );
 });
+
+
+test('staging rechecks current main immediately before publishing latest-candidate', () => {
+  const publishStart = stage.indexOf('- name: Publish validated static candidate');
+  assert.ok(publishStart >= 0, 'publish candidate step must exist');
+  const publish = stage.slice(publishStart);
+  const recheck = publish.indexOf('git ls-remote https://github.com/jsexy0210-ship-it/WeddingPick.git refs/heads/main');
+  const markerWrite = publish.indexOf('printf \'%s\\n\' "$GITHUB_SHA" > "$candidate_marker_tmp"');
+  assert.ok(recheck >= 0, 'publish step must recheck current main');
+  assert.ok(markerWrite > recheck, 'main recheck must happen before candidate marker write');
+  assert.match(publish, /if \[ "\$current" != "\$GITHUB_SHA" \]; then[\s\S]*exit 0/);
+});
