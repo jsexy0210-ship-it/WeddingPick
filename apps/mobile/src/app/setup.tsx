@@ -29,6 +29,7 @@ import {
 } from '@weddingpick/ui';
 
 import { DelayedRecommendingView } from '@/features/loading/delayed-loader';
+import { takeFullScreenLoading } from '@/features/loading/first-run';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { DatePickerSheet } from '@/features/onboarding/date-picker-sheet';
 import {
@@ -262,6 +263,7 @@ export default function SetupScreen() {
   async function finish(source: Answers = answers) {
     if (sending) return;
 
+    const loadingStartedAt = Date.now();
     setSending(true);
     setError(null);
 
@@ -333,6 +335,16 @@ export default function SetupScreen() {
        * 여기서 기다리면 저장이 끝난 뒤에도 로더가 더 떠 있다.
        */
       void clearOnboardingAnswers().catch(() => undefined);
+
+      /*
+       * 완료 뒤 로더는 이 한 번만 보여준다. 홈이 이어서 같은 전체 화면 로더를
+       * 다시 띄우지 않도록 실행당 1회 예산도 여기서 소모한다.
+       */
+      void takeFullScreenLoading();
+      const remainingLoadingMs = 3000 - (Date.now() - loadingStartedAt);
+      if (remainingLoadingMs > 0) {
+        await new Promise<void>((resolve) => setTimeout(resolve, remainingLoadingMs));
+      }
 
       dismissToOrReplace('/');
     } catch (caught) {
