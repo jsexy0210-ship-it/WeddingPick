@@ -46,7 +46,19 @@ export default function TabLayout() {
         다른 화면에서 밀어 넣어 연다 — `href: null`이 없으면 라우터가 없는 탭을 만든다.
        */}
       {OFF_TAB_ROUTES.map((name) => (
-        <Tabs.Screen key={name} name={name} options={{ href: null }} />
+        <Tabs.Screen
+          key={name}
+          name={name}
+          options={{
+            href: null,
+            /*
+             * capture는 가입/탐색 탭이 아니라 제출을 위해 잠깐 들어오는 one-shot 흐름이다.
+             * 완료 뒤 다른 탭으로 빠졌다면 내부 register/done Stack을 버린다. 반면
+             * (home)·community까지 같이 접으면 아직 끝나지 않은 탐색의 Back 문맥이 깨진다.
+             */
+            popToTopOnBlur: name === 'capture',
+          }}
+        />
       ))}
     </Tabs>
   );
