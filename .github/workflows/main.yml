@@ -463,7 +463,7 @@ jobs:
   deploy-kakao:
     name: KakaoCloud API
     needs: [ci, api-tests, non-db-tests, db-tests, repair-kakao-runner, api-deploy-needed, current-backlog-production]
-    if: ${{ needs.api-deploy-needed.outputs.changed == 'true' }}
+    if: ${{ always() && needs.ci.result == 'success' && needs.api-tests.result == 'success' && needs.non-db-tests.result == 'success' && needs.db-tests.result == 'success' && (needs.repair-kakao-runner.result == 'success' || needs.repair-kakao-runner.result == 'skipped') && needs.api-deploy-needed.result == 'success' && needs.api-deploy-needed.outputs.changed == 'true' && needs.current-backlog-production.result == 'success' }}
     permissions:
       contents: read
     uses: ./.github/workflows/deploy-kakao-api.yml
