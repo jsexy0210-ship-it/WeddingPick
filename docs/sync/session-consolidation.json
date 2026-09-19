@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAtKst": "2026-09-19T18:45:00+09:00",
+  "updatedAtKst": "2026-09-19T18:48:00+09:00",
   "sourceOfTruth": {
     "repository": "jsexy0210-ship-it/WeddingPick",
     "branch": "main",
@@ -77,7 +77,6 @@
     ],
     "maintenanceBacklog": [
       289,
-      308,
       305
     ]
   },
@@ -89,6 +88,10 @@
     {
       "number": 384,
       "reason": "current main에서 staging dependency + candidate_sha == github.sha + stale candidate 차단을 독립 재검증 후 completed"
+    },
+    {
+      "number": 308,
+      "reason": "workspace 병렬화 main 반영 후 성공 main run 3회 wall-clock 평균을 비교해 완료 조건 충족 확인"
     }
   ],
   "absorbedRecentPullRequests": {
@@ -152,7 +155,8 @@
     "PR #443 Kakao API Docker 이미지 경량화",
     "PR #444 경량 API 1회 운영 배포 트리거 코드 반영",
     "Issue #348 static latest-candidate 정본화",
-    "Issue #384 static cutover exact-candidate 순서"
+    "Issue #384 static cutover exact-candidate 순서",
+    "Issue #308 CI workspace 병렬화 및 3-run wall-clock 검증"
   ],
   "notes": [
     "PR #444는 main에 병합됐고 main CI / Deploy #1095는 success다. 다만 전용 Deploy Slim Kakao API Once run #35434880290은 production reviewer 승인 대기 중이므로 운영 반영 성공으로 취급하지 않는다.",
