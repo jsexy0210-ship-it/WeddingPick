@@ -41,9 +41,6 @@ jobs:
           EXPO_PUBLIC_KAKAO_CLIENT_ID: 73d13d819afd9d14f20de20b8dff46b8
           EXPO_PUBLIC_GOOGLE_CLIENT_ID: 595165026523-dd5s0fqtle78e03mb34m9iaclpdmlb9r.apps.googleusercontent.com
           EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID: 595165026523-3mlcq960r5q174h6chun8mommjkpt0qi.apps.googleusercontent.com
-          EXPO_PUBLIC_NAVER_CLIENT_ID: tgp4WVYlYO_qd2nyvHug
-          # 기존 OAuth 등록값은 배포 주소가 아니다. 제공자 전환 검증 전까지 보존한다.
-          EXPO_PUBLIC_NAVER_REDIRECT_URI: https://weddingpickl-sg.onrender.com/v1/auth/naver/callback
         run: >-
           ./gradlew assembleRelease
           --build-cache

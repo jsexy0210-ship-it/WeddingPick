@@ -46,11 +46,7 @@ export function inspectDeploymentFiles(files) {
         || /(?:scripts\/render-(?:env-sync|trigger-deploy|deploy-status)\.py|infra\/render-env\.yml)/.test(active)) {
       violations.push(`${path}: retired Render deployment dependency`);
     }
-    // Existing Naver callback registration is not a deploy hook. Do not break it by rewriting it.
-    const withoutLegacyCallback = active.replaceAll(
-      'https://weddingpickl-sg.onrender.com/v1/auth/naver/callback', ''
-    );
-    if (/https:\/\/weddingpickl-sg\.onrender\.com/.test(withoutLegacyCallback)) {
+    if (/https:\/\/weddingpickl-sg\.onrender\.com/.test(active)) {
       violations.push(`${path}: obsolete Render API default`);
     }
     if (path.startsWith('apps/mobile/src/') && active.includes('/v1/admin/site-meta/publish')) {
