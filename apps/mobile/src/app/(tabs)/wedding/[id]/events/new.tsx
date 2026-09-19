@@ -15,7 +15,7 @@ import {
   ListRow,
   Section,
 } from '@/features/wedding/screen-kit';
-import { ActionButton, Layout, Spacing, ThemedText } from '@weddingpick/ui';
+import { ActionButton, Spacing, ThemedText } from '@weddingpick/ui';
 
 import EventsScreen from './index';
 
