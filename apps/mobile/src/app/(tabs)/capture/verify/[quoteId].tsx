@@ -17,6 +17,7 @@ import { createVerificationRequest, getQuote } from '@/api/client';
 import { formatMonthDayDot } from '@/features/common/format-date';
 import { ErrorView, FilterChip, Layout, Radius, Spacing, ThemedText, VerificationBadge, useTheme } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import {
   Dock,
   DockButton,
@@ -50,6 +51,7 @@ function documentLabel(document: QuoteDocument, index: number): string {
 export default function VerifyRequestScreen() {
   const { quoteId } = useLocalSearchParams<{ quoteId: string }>();
   const theme = useTheme();
+  const depthBack = useDepthBack();
 
   const [quote, setQuote] = useState<Quote | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -120,7 +122,7 @@ export default function VerifyRequestScreen() {
               }
             />
           ) : null}
-          <DockButton variant="primary" label="결과로 돌아가기" onPress={() => router.back()} />
+          <DockButton variant="primary" label="결과로 돌아가기" onPress={depthBack} />
         </Dock>
       </Screen>
     );
@@ -225,7 +227,7 @@ export default function VerifyRequestScreen() {
             : null
         }>
         {blocked ? (
-          <DockButton variant="primary" label="결과로 돌아가기" onPress={() => router.back()} />
+          <DockButton variant="primary" label="결과로 돌아가기" onPress={depthBack} />
         ) : (
           <DockButton
             variant="primary"
