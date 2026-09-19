@@ -7,6 +7,7 @@ import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native
 import { addWeddingEvent, getVendor } from '@/api/client';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
+import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { CategoryImage } from '@/features/home/category-image';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
@@ -79,7 +80,7 @@ export default function ConsultRoute() {
   const dirty = selectedDay !== null || selectedTime !== null || note.length > 0;
 
   function closeSheet() {
-    router.replace(`/search/${vendorId}` as never);
+    dismissToOrReplace(`/search/${vendorId}`);
   }
 
   function requestClose() {
