@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -160,7 +159,7 @@ export default function BizDataScreen() {
             disabled={busy || !canSubmit || !isServerConfigured}
             onPress={() => void submit()}
           />
-          <ActionButton label="돌아가기" onPress={() => router.back()} />
+          <ActionButton label="돌아가기" onPress={depthBack} />
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
