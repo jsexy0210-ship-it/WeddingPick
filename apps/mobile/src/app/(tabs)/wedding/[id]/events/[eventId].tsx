@@ -6,14 +6,14 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { getCurrentUser, listWeddingEvents, removeWeddingEvent, updateWeddingEvent } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
 import { formatDateDot, formatMonthDayDot } from '@/features/common/format-date';
-import { ErrorView, Layout, Spacing, ThemedText } from '@weddingpick/ui';
+import { ActionButton, ErrorView, Layout, Spacing, ThemedText } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
+import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
+import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
 import { DateTimeField, combineDayTime, splitDayTime } from '@/features/wedding/event-form';
 import {
   Badge,
   CheckBox,
-  Dock,
-  DockButton,
   Field,
   Hero,
   ListRow,
@@ -125,6 +125,20 @@ export default function WeddingEventDetailScreen() {
   const startsAt = combineDayTime(day, time);
   const ready = title.trim().length > 0 && startsAt !== null;
 
+  const initialEdit = splitDayTime(current.startsAt);
+  const dirty =
+    title !== current.title ||
+    day !== initialEdit.day ||
+    time !== initialEdit.time ||
+    location !== (current.location ?? '') ||
+    vendorLabel !== (current.vendorLabel ?? '') ||
+    memo !== (current.memo ?? '');
+
+  function requestCloseEditing() {
+    if (saving) return;
+    requestDirtySheetClose(dirty, () => setEditing(false));
+  }
+
   async function save() {
     if (!ready || startsAt === null || saving) return;
 
@@ -175,64 +189,6 @@ export default function WeddingEventDetailScreen() {
             .catch((caught: Error) => setError(caught.message ?? '삭제하지 못했어요.')),
       },
     ]);
-  }
-
-  if (editing) {
-    return (
-      <Screen>
-        <NavBar title="일정 수정" variant="close" onBack={() => setEditing(false)} />
-
-        <ScrollView
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}>
-          <Hero title="무엇을 바꿀까요?" />
-
-          <View style={styles.fields}>
-            <Field label="제목" value={title} onChangeText={setTitle} maxLength={60} />
-            <DateTimeField day={day} time={time} onChangeDay={setDay} onChangeTime={setTime} allowPast />
-            <Field
-              label="장소"
-              value={location}
-              onChangeText={setLocation}
-              placeholder="어디에서 만나요?"
-              maxLength={120}
-            />
-            <Field
-              label="관련 업체"
-              value={vendorLabel}
-              onChangeText={setVendorLabel}
-              placeholder="업체 이름"
-              maxLength={60}
-            />
-            <Field
-              label="메모"
-              value={memo}
-              onChangeText={setMemo}
-              placeholder="준비물이나 확인할 것"
-              multiline
-              maxLength={1000}
-            />
-          </View>
-
-          {error ? (
-            <ThemedText type="t7" themeColor="negative" style={styles.error}>
-              {error}
-            </ThemedText>
-          ) : null}
-        </ScrollView>
-
-        <Dock>
-          <DockButton label="삭제" onPress={remove} />
-          <DockButton
-            variant="primary"
-            label={saving ? '저장 중…' : '저장'}
-            disabled={!ready || saving}
-            onPress={() => void save()}
-          />
-        </Dock>
-      </Screen>
-    );
   }
 
   const place = current.location ?? current.vendorLabel;
@@ -287,6 +243,77 @@ export default function WeddingEventDetailScreen() {
           </View>
         ) : null}
       </ScrollView>
+      <BottomSheet
+        visible={editing}
+        onRequestClose={requestCloseEditing}
+        testID="event-edit-sheet">
+        <SheetPanel>
+          <View style={styles.sheetHead}>
+            <ThemedText type="t4">일정 수정</ThemedText>
+            <ThemedText type="t7" themeColor="textSecondary">
+              일정 상세를 남겨둔 채 필요한 내용만 고쳐요.
+            </ThemedText>
+          </View>
+
+          <ScrollView
+            style={styles.sheetScroll}
+            contentContainerStyle={styles.sheetContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}>
+            <Hero title="무엇을 바꿀까요?" />
+
+            <View style={styles.fields}>
+              <Field label="제목" value={title} onChangeText={setTitle} maxLength={60} />
+              <DateTimeField
+                day={day}
+                time={time}
+                onChangeDay={setDay}
+                onChangeTime={setTime}
+                allowPast
+              />
+              <Field
+                label="장소"
+                value={location}
+                onChangeText={setLocation}
+                placeholder="어디에서 만나요?"
+                maxLength={120}
+              />
+              <Field
+                label="관련 업체"
+                value={vendorLabel}
+                onChangeText={setVendorLabel}
+                placeholder="업체 이름"
+                maxLength={60}
+              />
+              <Field
+                label="메모"
+                value={memo}
+                onChangeText={setMemo}
+                placeholder="준비물이나 확인할 것"
+                multiline
+                maxLength={1000}
+              />
+            </View>
+
+            {error ? (
+              <ThemedText type="t7" themeColor="negative">
+                {error}
+              </ThemedText>
+            ) : null}
+          </ScrollView>
+
+          <View style={styles.sheetActions}>
+            <ActionButton label="취소" disabled={saving} onPress={requestCloseEditing} />
+            <ActionButton label="삭제" disabled={saving} onPress={remove} />
+            <ActionButton
+              variant="primary"
+              label={saving ? '저장 중…' : '저장'}
+              disabled={!ready || saving}
+              onPress={() => void save()}
+            />
+          </View>
+        </SheetPanel>
+      </BottomSheet>
     </Screen>
   );
 }
@@ -296,4 +323,8 @@ const styles = StyleSheet.create({
   fields: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four, gap: Spacing.three },
   error: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.three },
   noteWrap: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionGap },
+  sheetHead: { gap: Spacing.one },
+  sheetScroll: { flexShrink: 1 },
+  sheetContent: { paddingBottom: Spacing.two, gap: Spacing.three },
+  sheetActions: { flexDirection: 'row', gap: Spacing.two },
 });
