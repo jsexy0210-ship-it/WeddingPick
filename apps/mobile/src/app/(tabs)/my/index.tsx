@@ -17,7 +17,7 @@
  */
 import { FullScreenError } from '@/features/errors/full-screen-error';
 import type { CurrentUser, MyReportListResponse } from '@weddingpick/api-contract';
-import { BUSINESS_NOTICE_LINES, daysUntil, formatCount } from '@weddingpick/domain';
+import { BUSINESS_NOTICE_LINES, POLICY_DOCUMENTS, daysUntil, formatCount } from '@weddingpick/domain';
 import { Redirect, router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -49,8 +49,14 @@ import { DelayedLoader, DelayedLoadingView } from '@/features/loading/delayed-lo
 import { Avatar } from '@/features/settings/my-kit';
 import strings from '../../../../../../spec/strings.ko.json';
 import { APP_VERSION } from '@/features/settings/version';
+import { openExternal } from '@/features/open-external';
 
 const S = strings.my;
+
+function openPolicy(id: 'terms' | 'privacy') {
+  const policy = POLICY_DOCUMENTS.find((document) => document.id === id);
+  if (policy?.url) void openExternal(policy.url, { title: policy.title });
+}
 
 type CoupleState = 'unlinked' | 'invited' | 'linked';
 
@@ -187,8 +193,8 @@ export default function MyScreen() {
     {
       title: S['group.terms'],
       rows: [
-        { key: 'terms', label: S['item.terms'], icon: 'file', onPress: () => router.push('/my/policies' as never) },
-        { key: 'privacy', label: S['item.privacy'], icon: 'file', onPress: () => router.push('/my/privacy' as never) },
+        { key: 'terms', label: S['item.terms'], icon: 'file', onPress: () => openPolicy('terms') },
+        { key: 'privacy', label: S['item.privacy'], icon: 'file', onPress: () => openPolicy('privacy') },
       ],
     },
   ];
