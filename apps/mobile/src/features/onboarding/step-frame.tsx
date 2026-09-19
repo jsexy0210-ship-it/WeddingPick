@@ -80,7 +80,7 @@ export function StepFrame({
               onPress={onPrev}
               style={({ pressed }) => [
                 styles.previous,
-                { backgroundColor: theme.backgroundElement },
+                { backgroundColor: theme.backgroundSelected },
                 pressed && styles.pressed,
               ]}>
               <ThemedText type="f18" themeColor="textSecondary" style={styles.buttonLabel}>
