@@ -11,6 +11,7 @@ import { Platform } from 'react-native';
 
 import { useTheme } from '@weddingpick/ui';
 import { useStackScreenOptions } from '@/features/navigation/screen-options';
+import { dismissToOrReplace } from '@/features/navigation/depth-back';
 
 import { entryAfterSignIn, rememberSignedIn } from '@/features/auth/finish-sign-in';
 import { completeAuthPopup, isAuthPopup } from '@/features/auth/is-auth-popup';
@@ -287,7 +288,7 @@ function RootLayoutContent() {
     const pendingRoute = postSignInRoute.current;
     if (pendingRoute) {
       postSignInRoute.current = null;
-      router.replace(pendingRoute as never);
+      dismissToOrReplace(pendingRoute);
 
       return;
     }
@@ -298,7 +299,7 @@ function RootLayoutContent() {
      * 그대로 그려진다. 홈으로 옮긴다.
      */
     if (Platform.OS === 'web' && /^\/(login|setup)(\/|$)/.test(window.location.pathname)) {
-      router.replace('/');
+      dismissToOrReplace('/');
     }
   }, [entry, minimumShown, isAdminPath]);
 

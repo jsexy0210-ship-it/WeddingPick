@@ -1,7 +1,6 @@
-import { router } from 'expo-router';
-
 import { getCurrentUser, type SessionEntry } from '@/api/client';
 import { completeAfterSignIn } from '@/features/auth/after-sign-in';
+import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { saveRememberedAccount, type RememberedAccount } from '@/features/auth/remembered-account';
 
 type Identity = { provider: RememberedAccount['provider']; email: string | null };
@@ -24,7 +23,7 @@ export async function finishSignIn(identity: Identity, entry?: SessionEntry) {
     const next = await entryAfterSignIn(entry);
 
     void rememberSignedIn(identity, next === '/setup');
-    router.replace(next);
+    dismissToOrReplace(next);
 
     return;
   }
@@ -46,7 +45,7 @@ export async function finishSignIn(identity: Identity, entry?: SessionEntry) {
      * 이용약관과 개인정보처리방침에 동의하게 돼요»)로 받는다. 온보딩(`/setup`)이
      * 둘 다 서버에 올린다.
      */
-    router.replace('/setup');
+    dismissToOrReplace('/setup');
 
     return;
   }
@@ -59,7 +58,7 @@ export async function finishSignIn(identity: Identity, entry?: SessionEntry) {
     email: identity.email,
     weddingDate: me?.weddingDate ?? null,
   });
-  router.replace(
+  dismissToOrReplace(
     nextAfterSignIn({
       setupComplete: me?.setupComplete,
       savedWedding: after.savedWedding,
