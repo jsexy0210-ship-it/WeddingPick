@@ -1,0 +1,111 @@
+name: Validate Lounge Visual QA
+
+on:
+  push:
+    branches:
+      - qa/lounge-visual-20260919
+    paths:
+      - '.github/workflows/validate-lounge-visual-qa.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  visual:
+    name: Lounge MY visual QA
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      EXPO_PUBLIC_API_URL: http://127.0.0.1:39999
+      EXPO_PUBLIC_WEB_URL: https://example.invalid
+      EXPO_PUBLIC_KAKAO_CLIENT_ID: validation-only
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Inject CI-only scrap fixtures
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/fixtures/api.cjs')
+          text = path.read_text()
+          marker = "  /** 홈 아래쪽 웨딩피드 — 공개된 글만. 홈은 두 장만 보여준다(`HOME_FEED_PREVIEW_COUNT`). */"
+          fixtures = """  'GET /v1/me/scraps': {
+            items: [
+              {
+                id: '00000000-0000-4000-8000-0000000000f1',
+                categoryLabel: '예산',
+                title: '스드메 예산 짜는 법',
+                summary: '예산을 정할 때 먼저 볼 기준을 정리했어요.',
+                imageUrl: null,
+                savedAt: '2026-09-18T00:00:00.000Z',
+              },
+              {
+                id: '00000000-0000-4000-8000-0000000000f2',
+                categoryLabel: '드레스',
+                title: '드레스 투어 전에 볼 것',
+                summary: '투어 전에 확인할 항목을 모았어요.',
+                imageUrl: null,
+                savedAt: '2026-09-17T00:00:00.000Z',
+              },
+            ],
+          },
+          'GET /v1/me/scraps/:postId': { saved: true },
+          """
+          if "'GET /v1/me/scraps':" not in text:
+              if marker not in text:
+                  raise SystemExit('wedding-feed marker not found')
+              text = text.replace(marker, fixtures + marker)
+              path.write_text(text)
+          PY
+
+      - name: Expo web export
+        run: npm run export:web --workspace @weddingpick/mobile
+
+      - name: Install Chromium
+        run: |
+          npm install --global playwright@1.55.0
+          playwright install --with-deps chromium
+
+      - name: Capture 320 390 430
+        run: |
+          set -euo pipefail
+          mkdir -p qa-captures
+          : > qa-captures/capture.log
+          for viewport in 320x780 390x844 430x932; do
+            mkdir -p "qa-captures/$viewport"
+            for route in /community /my/scraps /feed/00000000-0000-4000-8000-0000000000f1; do
+              node scripts/screenshot-screens.mjs                 --route "$route"                 --viewport "$viewport"                 --full                 --edges                 --wait 1800                 --out "qa-captures/$viewport" | tee -a qa-captures/capture.log
+            done
+
+            node scripts/screenshot-screens.mjs               --route /my/scraps               --viewport "$viewport"               --tap "일정"               --full               --edges               --wait 1000               --out "qa-captures/$viewport/scraps-empty" | tee -a qa-captures/capture.log
+
+            node scripts/screenshot-screens.mjs               --route /community               --viewport "$viewport"               --tap "허니문"               --full               --edges               --wait 1000               --out "qa-captures/$viewport/lounge-empty" | tee -a qa-captures/capture.log
+          done
+
+          if grep -Eq 'fixture 없음|콘솔 오류' qa-captures/capture.log; then
+            echo "Visual QA capture reported fixture or console errors." >&2
+            exit 1
+          fi
+
+      - name: Manifest
+        if: always()
+        run: |
+          {
+            echo "sha=$(git rev-parse HEAD)"
+            echo "base=c2929874604e22c11f579d5004f990639934420c"
+            echo "scope=#281 current-main 320/390/430"
+          } > qa-captures/validation.txt
+
+      - name: Upload visual QA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lounge-my-visual-qa
+          path: qa-captures/
+          if-no-files-found: error
+          retention-days: 7
