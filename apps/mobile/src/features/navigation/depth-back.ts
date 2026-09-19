@@ -40,7 +40,7 @@ export function useDepthBack(): () => void {
       router.back();
       return;
     }
-    goUp(depthBackTarget(pathname));
+    dismissToOrReplace(depthBackTarget(pathname));
   }, [pathname]);
 }
 
@@ -50,10 +50,14 @@ export function goDepthBack(pathname: string): void {
     router.back();
     return;
   }
-  goUp(depthBackTarget(pathname));
+  dismissToOrReplace(depthBackTarget(pathname));
 }
 
-function goUp(target: string): void {
+/**
+ * 완료 CTA처럼 목적지가 이미 정해진 자리에서 History를 되짚지 않고 그 화면으로 끝낸다.
+ * 대상이 스택에 있으면 거기까지 접고, 직접 진입이라 대상이 없으면 현재 화면을 교체한다.
+ */
+export function dismissToOrReplace(target: string): void {
   try {
     router.dismissTo(target as never);
   } catch {
