@@ -69,12 +69,14 @@ describe('transient completion flow navigation', () => {
     }
   });
 
-  it('후기 작성·수정 완료는 명시적으로 후기 목록에서 흐름을 끝낸다', () => {
+  it('후기 작성·수정 완료는 성공 화면을 쌓지 않고 부모 시트를 닫는다', () => {
     const write = screen('(tabs)', 'search', '[vendorId]', 'write-review.tsx');
     const edit = screen('(tabs)', 'search', '[vendorId]', 'edit-review.tsx');
 
-    expect(write).toContain('dismissToOrReplace(`/search/${vendorId}/reviews`)');
+    expect(write).toContain('dismissToOrReplace(`/search/${vendorId}`)');
     expect(edit).toContain('dismissToOrReplace(`/search/${vendorId}/reviews`)');
+    expect(write).not.toContain('setDone(');
+    expect(edit).not.toContain('setDone(');
   });
 
   it('배우자 연결·Pick 인증·탈퇴 완료는 replace로 완료 화면을 폐기한다', () => {

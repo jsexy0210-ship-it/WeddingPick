@@ -1,10 +1,9 @@
-import { Alert } from 'react-native';
-
 import {
   createConfirmationQueue,
   type AlertButton,
   type Confirmation,
 } from './confirmation-queue';
+import { showNativeConfirmation } from './native-confirmation-store';
 
 /**
  * 네이티브 확인창도 09-dialogs의 핵심 순서를 따른다.
@@ -36,36 +35,26 @@ function renderNativeDialog(
   request: Confirmation,
   choose: (index: number | null) => void
 ): () => void {
-  const ordered = orderNativeAlertButtons(request.buttons) ?? [];
-  const destructive = ordered.some((button) => button.style === 'destructive');
-  const cancelIndex = ordered.findIndex((button) => button.style === 'cancel');
-  const buttons =
-    ordered.length > 0
-      ? ordered.map((button, index) => ({
-          text: button.text,
-          style: button.style,
-          onPress: () => choose(index),
-        }))
-      : [{ text: '확인', onPress: () => choose(null) }];
-
-  Alert.alert(request.title, request.message || undefined, buttons, {
-    // DLG-C는 배경 탭으로 닫히지 않는다. 그 밖은 플랫폼 기본 취소 동작을 허용한다.
-    cancelable: !destructive,
-    onDismiss: destructive
-      ? undefined
-      : () => choose(cancelIndex >= 0 ? cancelIndex : null),
-  });
-
-  return () => undefined;
+  return showNativeConfirmation(request, choose);
 }
 
+let nativeScope = 'native';
+
 const queue = createConfirmationQueue({
-  scope: () => 'native',
+  scope: () => nativeScope,
   render: renderNativeDialog,
   onError: (error) => {
     console.error('확인창 동작 중 오류가 발생했습니다.', error);
   },
 });
+
+/** route가 바뀌면 이전 화면에서 열린/대기 중인 확인창을 모두 버린다. */
+export function updateNativeConfirmationScope(scope: string): void {
+  const next = scope || 'native';
+  if (nativeScope === next) return;
+  nativeScope = next;
+  queue.checkScope();
+}
 
 /** 네이티브 구현. 웹은 같은 경로의 confirm-alert.web.ts가 담당한다. */
 export function confirmAlert(title: string, message?: string, buttons?: AlertButton[]): void {

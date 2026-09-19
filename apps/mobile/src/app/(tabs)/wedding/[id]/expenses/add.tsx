@@ -11,23 +11,21 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { addExpense } from '@/api/client';
+import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
+import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
+import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { dayToTimestamp, isDay, todayDay } from '@/features/wedding/expense-day';
-import { FilterChip, Layout, Spacing, ThemedText } from '@weddingpick/ui';
-import { useDepthBack } from '@/features/navigation/depth-back';
 import {
   CheckBox,
-  Dock,
-  DockButton,
   Field,
-  Hero,
   ListRow,
-  NavBar,
   NoteCard,
-  Screen,
   Section,
 } from '@/features/wedding/screen-kit';
+import { ActionButton, FilterChip, Spacing, ThemedText } from '@weddingpick/ui';
 
-/** 실 제보가 되는 자료 3가지. 입력이 아니라 안내다 — 올리는 일은 다음 화면이 한다. */
+import ExpensesScreen from './index';
+
 const PROOF_KINDS = ['영수증', '문자', '앱 화면 1장'] as const;
 
 function isVendorCategory(value: string | undefined): value is VendorCategory {
@@ -35,36 +33,32 @@ function isVendorCategory(value: string | undefined): value is VendorCategory {
 }
 
 /**
- * 지출 추가 · Pick 인증 통합. WP-OUR-014(v3.22 SPEC 13.10).
- *
- *   close nav
- *   hero      «얼마를 내셨어요?»
- *   필드 4     업체 · 금액 · 낸 날짜 · 항목
- *   3행 체크   «자료를 올리면 실 제보가 돼요» — 영수증 · 문자 · 앱 화면 1장
- *   note      «원본은 24시간 안에 지워요»
- *   dock      «지출만 넣기»(아웃라인) + «지출 넣고 인증하기»(coral)
- *
- * **지출 입력과 Pick 인증을 한 화면에서 처리한다.** 자료가 없어도 지출은 저장된다 —
- * 인증을 강제하지 않는다. 진입은 웨딩일정 지출과 최종 결정 직후(WP-PICK-006). 그때가
- * 금액을 기억하는 유일한 때라 `vendorName` · `category`를 파라미터로 받아 미리 채운다.
+ * /expenses/add 딥링크는 부모 지출 화면 + DLG-D 입력 시트로 연결한다.
  */
-export default function AddExpenseScreen() {
-  const depthBack = useDepthBack();
+export default function AddExpenseRoute() {
   const { id, vendorName, category } = useLocalSearchParams<{
     id: string;
     vendorName?: string;
     category?: string;
   }>();
 
+  const initialCategory = isVendorCategory(category) ? category : null;
+  const initialDay = todayDay();
+
   const [label, setLabel] = useState(vendorName ?? '');
   const [amountText, setAmountText] = useState('');
-  const [day, setDay] = useState(() => todayDay());
-  const [picked, setPicked] = useState<VendorCategory | null>(isVendorCategory(category) ? category : null);
+  const [day, setDay] = useState(initialDay);
+  const [picked, setPicked] = useState<VendorCategory | null>(initialCategory);
   const [saving, setSaving] = useState<'expense' | 'proof' | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const amount = Number(amountText.replace(/[^\d]/g, ''));
   const dayValid = isDay(day) && dayToTimestamp(day) !== null;
+  const dirty =
+    label !== (vendorName ?? '') ||
+    amountText.length > 0 ||
+    day !== initialDay ||
+    picked !== initialCategory;
 
   const reason =
     label.trim().length === 0
@@ -75,6 +69,15 @@ export default function AddExpenseScreen() {
           ? '낸 날짜를 2027-05-16 형태로 적어주세요'
           : null;
   const ready = reason === null;
+
+  function closeSheet() {
+    dismissToOrReplace(`/wedding/${id}/expenses`);
+  }
+
+  function requestClose() {
+    if (saving) return;
+    requestDirtySheetClose(dirty, closeSheet);
+  }
 
   async function save(): Promise<boolean> {
     const body: CreateExpenseRequest = {
@@ -87,159 +90,158 @@ export default function AddExpenseScreen() {
 
     try {
       await addExpense(id, body);
-
       return true;
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '넣지 못했어요. 다시 시도해주세요.');
-
       return false;
     }
   }
 
-  /** 지출만 넣기 — 저장하고 돌아간다. */
   async function saveOnly() {
     if (!ready || saving) return;
-
     setSaving('expense');
     setError(null);
-
     const ok = await save();
-
     setSaving(null);
-    if (!ok) return;
-
-    /* 링크로 곧장 들어와 되돌아갈 곳이 없으면 Depth Back이 한 단계 위(지출 요약)로
-       보낸다 — `depthBack`이 이미 History 우선 순서다. */
-    depthBack();
+    if (ok) closeSheet();
   }
 
-  /**
-   * 지출 넣고 인증하기 — 저장한 뒤 Pick 인증으로 간다. `replace`라 인증 화면에서
-   * 돌아오면 지출이다.
-   *
-   * **적은 값을 넘기지 않는다.** 예전에는 업체·금액·날짜를 그대로 넘겨 인증 화면을
-   * 미리 채웠다. 그 값에는 증빙이 없다 — v3.24가 「모든 금액은 사진 한 장에서만」으로
-   * 정한 뒤로 금액 구간에 들어가는 값은 자료에서 읽은 것뿐이고, 적어준 숫자를 미리
-   * 채워두면 사용자는 그것이 인증된 줄로 안다. 여기서 하는 것은 사진을 올릴 자리로
-   * 데려다주는 것까지다.
-   */
   async function saveAndVerify() {
     if (!ready || saving) return;
-
     setSaving('proof');
     setError(null);
-
     const ok = await save();
-
     setSaving(null);
     if (!ok) return;
 
-    // 동의 화면이 이미 동의한 사람은 지나쳐 보낸다.
     router.replace('/capture/payment/consent' as never);
   }
 
   return (
-    <Screen>
-      <NavBar title="지출 추가" variant="close" />
+    <View style={styles.host}>
+      <ExpensesScreen />
 
-      <ScrollView
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}>
-        <Hero title="얼마를 내셨어요?" />
-
-        <View style={styles.fields}>
-          <Field
-            label="업체"
-            value={label}
-            onChangeText={setLabel}
-            placeholder="업체 이름"
-            maxLength={60}
-            returnKeyType="next"
-          />
-          <Field
-            label="금액"
-            value={amountText}
-            onChangeText={(text) =>
-              setAmountText(text.replace(/[^0-9]/g, '').slice(0, 12).replace(/\B(?=(\d{3})+(?!\d))/g, ','))
-            }
-            placeholder="예: 1,500,000"
-            keyboardType="number-pad"
-            maxLength={15}
-            hint={amount > 0 ? manwon(amount) : null}
-          />
-          <Field
-            label="낸 날짜"
-            value={day}
-            onChangeText={setDay}
-            placeholder={todayDay()}
-            keyboardType="numbers-and-punctuation"
-            maxLength={10}
-            /* 표기는 전역 고정 `2027.05.16(토)` — 적은 값이 읽히는 대로 보여준다. */
-            hint={dayValid ? formatDateDot(day) : '2027-05-16 형태로 적어주세요'}
-            hintColor={dayValid ? 'textAssistive' : 'negative'}
-          />
-          <View style={styles.field}>
+      <BottomSheet visible onRequestClose={requestClose} testID="expense-add-sheet">
+        <SheetPanel>
+          <View style={styles.sheetHead}>
+            <ThemedText type="t4">지출 추가</ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">
-              항목
+              지출 내역을 보면서 바로 추가할 수 있어요.
             </ThemedText>
-            <View style={styles.chips}>
-              {VENDOR_CATEGORIES.map((value) => (
-                <FilterChip
-                  key={value}
-                  label={VENDOR_CATEGORY_LABEL[value]}
-                  selected={picked === value}
-                  role="radio"
-                  onPress={() => setPicked((current) => (current === value ? null : value))}
-                />
-              ))}
-            </View>
           </View>
-        </View>
 
-        {/* 자료를 올리면 실 제보가 돼요 — 3행 체크. 입력이 아니라 안내다. */}
-        <Section label="자료를 올리면 실 제보가 돼요">
-          {PROOF_KINDS.map((kind) => (
-            <ListRow key={kind} left={<CheckBox checked />} title={kind} />
-          ))}
-        </Section>
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.content}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}>
+            <ThemedText type="t2">얼마를 내셨어요?</ThemedText>
 
-        {/* note — 원본 24시간 내 삭제. 이 화면에서도 적는다(SPEC 13.10). */}
-        <View style={styles.noteWrap}>
-          <NoteCard title="원본은 24시간 안에 지워요" body="확인이 끝나면 금액과 업체만 남기고 자료는 삭제해요." />
-        </View>
+            <View style={styles.fields}>
+              <Field
+                label="업체"
+                value={label}
+                onChangeText={setLabel}
+                placeholder="업체 이름"
+                maxLength={60}
+                returnKeyType="next"
+              />
+              <Field
+                label="금액"
+                value={amountText}
+                onChangeText={(text) =>
+                  setAmountText(
+                    text
+                      .replace(/[^0-9]/g, '')
+                      .slice(0, 12)
+                      .replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                  )
+                }
+                placeholder="예: 1,500,000"
+                keyboardType="number-pad"
+                maxLength={15}
+                hint={amount > 0 ? manwon(amount) : null}
+              />
+              <Field
+                label="낸 날짜"
+                value={day}
+                onChangeText={setDay}
+                placeholder={todayDay()}
+                keyboardType="numbers-and-punctuation"
+                maxLength={10}
+                hint={dayValid ? formatDateDot(day) : '2027-05-16 형태로 적어주세요'}
+                hintColor={dayValid ? 'textAssistive' : 'negative'}
+              />
+              <View style={styles.field}>
+                <ThemedText type="t7" themeColor="textSecondary">
+                  항목
+                </ThemedText>
+                <View style={styles.chips}>
+                  {VENDOR_CATEGORIES.map((value) => (
+                    <FilterChip
+                      key={value}
+                      label={VENDOR_CATEGORY_LABEL[value]}
+                      selected={picked === value}
+                      role="radio"
+                      onPress={() => setPicked((current) => (current === value ? null : value))}
+                    />
+                  ))}
+                </View>
+              </View>
+            </View>
 
-        {error ? (
-          <ThemedText type="t7" themeColor="negative" style={styles.error}>
-            {error}
-          </ThemedText>
-        ) : null}
-      </ScrollView>
+            <Section label="자료를 올리면 실 제보가 돼요" style={styles.sheetSection}>
+              {PROOF_KINDS.map((kind) => (
+                <ListRow key={kind} left={<CheckBox checked />} title={kind} />
+              ))}
+            </Section>
 
-      {/* dock — 좌 아웃라인 «지출만 넣기» · 우 coral «지출 넣고 인증하기». Primary는 하나다. */}
-      <Dock note={!ready && (label.length > 0 || amountText.length > 0) ? reason : null}>
-        <DockButton
-          variant="ghost"
-          label={saving === 'expense' ? '넣는 중…' : '지출만 넣기'}
-          disabled={!ready || saving !== null}
-          onPress={() => void saveOnly()}
-        />
-        <DockButton
-          variant="primary"
-          label={saving === 'proof' ? '넣는 중…' : '지출 넣고 인증하기'}
-          disabled={!ready || saving !== null}
-          onPress={() => void saveAndVerify()}
-        />
-      </Dock>
-    </Screen>
+            <NoteCard
+              title="원본은 24시간 안에 지워요"
+              body="확인이 끝나면 금액과 업체만 남기고 자료는 삭제해요."
+            />
+
+            {error ? (
+              <ThemedText type="t7" themeColor="negative">
+                {error}
+              </ThemedText>
+            ) : null}
+          </ScrollView>
+
+          {!ready && dirty && reason ? (
+            <ThemedText type="t7" themeColor="textSecondary">
+              {reason}
+            </ThemedText>
+          ) : null}
+
+          <View style={styles.actions}>
+            <ActionButton
+              label={saving === 'expense' ? '넣는 중…' : '지출만 넣기'}
+              disabled={!ready || saving !== null}
+              onPress={() => void saveOnly()}
+            />
+            <ActionButton
+              variant="primary"
+              label={saving === 'proof' ? '넣는 중…' : '지출 넣고 인증하기'}
+              disabled={!ready || saving !== null}
+              onPress={() => void saveAndVerify()}
+            />
+          </View>
+          <ActionButton label="취소" disabled={saving !== null} onPress={requestClose} />
+        </SheetPanel>
+      </BottomSheet>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { paddingBottom: Spacing.four },
-  fields: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four, gap: Spacing.three },
+  host: { flex: 1 },
+  sheetHead: { gap: Spacing.one },
+  scroll: { flexShrink: 1 },
+  content: { paddingBottom: Spacing.two, gap: Spacing.three },
+  fields: { gap: Spacing.three },
   field: { gap: Spacing.one + Spacing.half },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  noteWrap: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four },
-  error: { paddingHorizontal: Layout.gutter },
+  actions: { flexDirection: 'row', gap: Spacing.two },
+  sheetSection: { paddingHorizontal: 0 },
 });
