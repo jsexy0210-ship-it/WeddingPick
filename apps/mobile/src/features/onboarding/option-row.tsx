@@ -1,48 +1,80 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Border, Layout, LineHeight, ProductSymbol, Radius, ThemedText, useTheme } from '@weddingpick/ui';
+import {
+  Border,
+  FontSize,
+  Layout,
+  LineHeight,
+  ProductSymbol,
+  Radius,
+  ThemedText,
+  useTheme,
+} from '@weddingpick/ui';
 
 /**
- * 온보딩 보기 한 줄 — 규격서 docs/design/figma-export/06-onboarding-login.dc.html(2026-09-15 대표 지시 「규격서의 수를 그대로」).
+ * 온보딩 선택 행.
  *
- *   button 382×65  flex · justify space-between · align center · pad 20 20 20 20 · mar 0 0 12 0 · r16
- *     고른 것   bg #E38E8E 7% · border 1 #E7898D    span "2027년 1월 15일" · 15/700 #E7898D · lh 23   svg 20×20(Check)
- *     나머지    bg #FFFFFF · border 1 #000000 6%     span "2027년 상반기" · 15/700 #1A1C20 · lh 23
- *
- * 고른 줄의 면 `#E38E8E 7%`는 토큰에 없다 — 색은 MASTER 몫이라 `tintSurface`로 두고 PR에 보고했다.
- * 체크는 피그마가 lucide `Check`(SEED가 아니다)라 우리 `check` 심볼로 그린다.
+ * 기본형은 기존 설정 화면 호환용이고, description이 있으면 06-onboarding-login의
+ * 스타일 4버튼(72px · 18/16 padding · radius 10 · 보조문구)을 그대로 쓴다.
  */
 export function OptionRow({
   label,
+  description,
   selected,
   onPress,
   role = 'radio',
 }: {
   label: string;
+  description?: string;
   selected: boolean;
   onPress: () => void;
   role?: 'radio' | 'checkbox';
 }) {
   const theme = useTheme();
+  const detailed = Boolean(description);
 
   return (
     <Pressable
       accessibilityRole={role}
       accessibilityState={role === 'checkbox' ? { checked: selected } : { selected }}
-      accessibilityLabel={label}
+      accessibilityLabel={description ? `${label}. ${description}` : label}
       onPress={onPress}
       style={({ pressed }) => [
-        styles.row,
+        detailed ? styles.detailRow : styles.row,
         selected
-          ? { backgroundColor: theme.tintSurface, borderColor: theme.tint }
-          : { backgroundColor: theme.background, borderColor: theme.border },
+          ? {
+              backgroundColor: theme.tintSurface,
+              borderColor: theme.tint,
+              borderWidth: detailed ? Border.selected : Border.hairline,
+            }
+          : detailed
+            ? { backgroundColor: theme.backgroundElement, borderColor: 'transparent', borderWidth: Border.selected }
+            : { backgroundColor: theme.background, borderColor: theme.border, borderWidth: Border.hairline },
         pressed && styles.pressed,
       ]}>
-      <ThemedText type="f15" themeColor={selected ? 'tint' : 'text'} numberOfLines={1} style={styles.label}>
-        {label}
-      </ThemedText>
+      {detailed ? (
+        <View style={styles.detailText}>
+          <ThemedText
+            type="f16"
+            themeColor={selected ? 'tint' : 'text'}
+            numberOfLines={1}
+            style={styles.detailLabel}>
+            {label}
+          </ThemedText>
+          <ThemedText type="f13" themeColor="textAssistive" numberOfLines={1} style={styles.detailDescription}>
+            {description}
+          </ThemedText>
+        </View>
+      ) : (
+        <ThemedText type="f15" themeColor={selected ? 'tint' : 'text'} numberOfLines={1} style={styles.label}>
+          {label}
+        </ThemedText>
+      )}
+
       {selected ? (
-        <ProductSymbol name="check" size={Layout.iconRow} color={theme.tint} />
+        <ProductSymbol name="check" size={detailed ? 24 : Layout.iconRow} color={theme.tint} />
+      ) : detailed ? (
+        <View style={[styles.emptyMark, { borderColor: theme.track }]} />
       ) : (
         <View style={styles.checkSlot} />
       )}
@@ -51,17 +83,38 @@ export function OptionRow({
 }
 
 const styles = StyleSheet.create({
-  /* «pad 20 · r16 · border 1 · space-between · center». */
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: Layout.cardPadding,
     borderRadius: Radius.cardLarge,
-    borderWidth: Border.hairline,
   },
-  /* «15/700 · lh 23». */
   label: { fontWeight: 700, lineHeight: LineHeight.lh23, flexShrink: 1 },
   checkSlot: { width: Layout.iconRow, height: Layout.iconRow },
+
+  detailRow: {
+    minHeight: 72,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
+    borderRadius: Radius.medium,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Layout.inlineGap,
+  },
+  detailText: { flex: 1, minWidth: 0, gap: 3 },
+  detailLabel: {
+    fontSize: FontSize.dateWheel,
+    fontWeight: 700,
+  },
+  detailDescription: { lineHeight: LineHeight.lh19 },
+  emptyMark: {
+    width: 24,
+    height: 24,
+    flexShrink: 0,
+    borderRadius: Radius.pill,
+    borderWidth: Border.selected,
+  },
+
   pressed: { opacity: 0.8 },
 });
