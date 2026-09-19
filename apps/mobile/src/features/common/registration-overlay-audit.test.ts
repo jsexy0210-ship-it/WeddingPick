@@ -70,8 +70,12 @@ describe('registration routes use canonical overlays', () => {
   });
 
   it('수정/외부 캘린더처럼 이름 규칙 밖의 입력 흐름도 시트로 유지한다', () => {
+    const eventDetail = source('(tabs)/wedding/[id]/events/[eventId].tsx');
+    expect(eventDetail).toContain('testID="event-edit-sheet"');
+    expect(eventDetail).toContain('<BottomSheet');
+    expect(eventDetail).toContain('<SheetPanel>');
+
     for (const path of [
-      '(tabs)/wedding/[id]/events/[eventId].tsx',
       '(tabs)/search/[vendorId]/edit-review.tsx',
       '(tabs)/search/expo/[expoId]/calendar.tsx',
     ]) {
