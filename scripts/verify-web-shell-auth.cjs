@@ -349,20 +349,24 @@ function component(sequence = [token]) {
       '@/api/web-shell-session':{stripLegacyWebShellToken:nothing,initializeWebShellSession:async()=>{initializations++;if(bridgeFails)throw new Error('bridge timeout');}},
       '@/features/splash/splash-view':{SPLASH_MINIMUM_MS:1,SplashView:'Splash'},
     },{window:win});
-    api.default().type();
-    return{effects,states,finish,get oauth(){return oauth;},get resolutions(){return resolutions;},get initializations(){return initializations;}};
+    const root=api.default();
+    // hydration gate 자체는 verify-root-entry.cjs가 검증한다. 여기서는 hydration 이후
+    // browserReady=true가 된 소비자 부팅의 single-flight/bridge 실패 의미만 고정한다.
+    root.type({...root.props,browserReady:true});
+    const entryState=states[2],errorState=states[3],bootEffect=effects[3];
+    return{effects,states,entryState,errorState,bootEffect,finish,get oauth(){return oauth;},get resolutions(){return resolutions;},get initializations(){return initializations;}};
   }
   await check('StrictMode effect replay exchanges OAuth code only once',async()=>{
-    const c=rootBoot();const cleanup=c.effects[1]();cleanup();c.effects[1]();
+    const c=rootBoot();const cleanup=c.bootEffect();cleanup();c.bootEffect();
     for(let i=0;i<5;i++)await Promise.resolve();assert.equal(c.oauth,1);c.finish();
-    for(let i=0;i<10;i++)await Promise.resolve();assert.equal(c.states[0].value,'app');assert.equal(c.resolutions,0);
+    for(let i=0;i<10;i++)await Promise.resolve();assert.equal(c.entryState.value,'app');assert.equal(c.resolutions,0);
   });
   await check('bridge failure does not fall back to old session or protected API',async()=>{
-    const c=rootBoot({bridgeFails:true});c.effects[1]();for(let i=0;i<8;i++)await Promise.resolve();
-    assert.equal(c.oauth,0);assert.equal(c.resolutions,0);assert.equal(c.states[0].value,null);assert.ok(c.states[1].value);
+    const c=rootBoot({bridgeFails:true});c.bootEffect();for(let i=0;i<8;i++)await Promise.resolve();
+    assert.equal(c.oauth,0);assert.equal(c.resolutions,0);assert.equal(c.entryState.value,null);assert.ok(c.errorState.value);
   });
   await check('admin entry never starts consumer authentication bootstrap',async()=>{
-    const c=rootBoot({admin:true});c.effects[1]();for(let i=0;i<5;i++)await Promise.resolve();
+    const c=rootBoot({admin:true});c.bootEffect();for(let i=0;i<5;i++)await Promise.resolve();
     assert.equal(c.initializations,0);assert.equal(c.resolutions,0);assert.equal(c.oauth,0);
   });
 })().then(()=>{
