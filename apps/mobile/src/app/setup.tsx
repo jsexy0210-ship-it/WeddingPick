@@ -582,9 +582,13 @@ export default function SetupScreen() {
             ))}
           </View>
         ) : null}
-      </StepFrame>
 
-      <InlineToast toast={limitToast.toast} onHidden={limitToast.hide} />
+        {step === 'style' ? (
+          <View style={styles.toastWrap}>
+            <InlineToast toast={limitToast.toast} onHidden={limitToast.hide} placement="inline" />
+          </View>
+        ) : null}
+      </StepFrame>
 
       <RegionPickerSheet
         visible={regionSheetOpen}
@@ -667,6 +671,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: Layout.gutter,
     paddingBottom: Spacing.three,
     gap: Layout.iconTextGap,
+  },
+  toastWrap: {
+    paddingHorizontal: Layout.gutter,
+    paddingBottom: Layout.listGap,
+    alignItems: 'center',
   },
   bold: { fontWeight: 700 },
   pressed: { opacity: 0.8 },
