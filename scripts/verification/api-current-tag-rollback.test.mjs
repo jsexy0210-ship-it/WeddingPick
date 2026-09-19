@@ -43,14 +43,14 @@ test('rollback restores kakao-current only after previous API is healthy', () =>
   );
 });
 
-test('new current tag is still written before worker handoff', () => {
+test('new current tag is still written before dedicated worker handoff', () => {
   const newTag = position('docker tag "$IMAGE" weddingpick-api:kakao-current');
-  const worker = position('bash scripts/update-kakao-worker.sh "$IMAGE"');
+  const worker = position('bash scripts/update-kakao-worker.sh "$WORKER_IMAGE"');
   assert.ok(newTag < worker);
 });
 
-test('deployment is only marked successful after worker handoff', () => {
-  const worker = position('bash scripts/update-kakao-worker.sh "$IMAGE"');
+test('deployment is only marked successful after dedicated worker handoff', () => {
+  const worker = position('bash scripts/update-kakao-worker.sh "$WORKER_IMAGE"');
   const deployed = position('DEPLOYED=1');
   assert.ok(worker < deployed);
 });
