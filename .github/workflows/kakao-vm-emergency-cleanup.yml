@@ -100,7 +100,7 @@ jobs:
             fi
           done < <(sudo -n docker images --format '{{.Repository}}:{{.Tag}}' | sort -u)
 
-          sudo -n docker image prune -f >/dev/null
+          # Remove every image not referenced by any running or stopped container.\n          # Docker itself preserves images used by the three retained recovery containers.\n          sudo -n docker image prune -af >/dev/null
 
           releases="$root/static-releases"
           if [ -d "$releases" ]; then
