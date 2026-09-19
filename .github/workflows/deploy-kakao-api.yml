@@ -22,7 +22,7 @@ jobs:
     timeout-minutes: 40
     # 이전 독립 실행의 승인 대기와 분리한다. VM 파일 잠금은 구버전과도 공유한다.
     concurrency:
-      group: weddingpick-kakao-api-cutover
+      group: weddingpick-kakao-vm-write
       cancel-in-progress: false
     steps:
       - name: Checkout
@@ -61,6 +61,7 @@ jobs:
           CANDIDATE_CONTAINER="weddingpick-api-candidate-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           BACKUP_CONTAINER="weddingpick-api-previous-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           OLD_ID=''
+          OLD_IMAGE=''
           CUTOVER_STARTED=0
           DEPLOYED=0
 
@@ -117,7 +118,12 @@ jobs:
                 sudo -n docker rename "$OLD_ID" "$PROD_CONTAINER"
               fi
               if sudo -n docker start "$OLD_ID" >/dev/null && health_ok http://127.0.0.1:3001/health 30 2; then
-                echo 'Previous API container restored.' >&2
+                if [ -n "$OLD_IMAGE" ] && sudo -n docker tag "$OLD_IMAGE" weddingpick-api:kakao-current; then
+                  echo 'Previous API container and current image tag restored.' >&2
+                else
+                  echo 'Previous API container restored, but current image tag recovery failed.' >&2
+                  status=1
+                fi
               else
                 echo 'Automatic recovery failed; inspect the VM. No DB rollback was attempted.' >&2
               fi
@@ -131,6 +137,8 @@ jobs:
 
           deploy_revision_is_current || { echo 'A newer API-relevant main commit exists; deployment stopped.' >&2; exit 1; }
           OLD_ID="$(sudo -n docker inspect -f '{{.Id}}' "$PROD_CONTAINER")"
+          OLD_IMAGE="$(sudo -n docker inspect -f '{{.Image}}' "$OLD_ID")"
+          test -n "$OLD_IMAGE"
           test "$(sudo -n docker inspect -f '{{.State.Running}}' "$OLD_ID")" = true
           health_ok http://127.0.0.1:3001/health 10 2
           if sudo -n docker inspect "$BACKUP_CONTAINER" >/dev/null 2>&1; then
