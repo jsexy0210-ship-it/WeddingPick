@@ -1,14 +1,11 @@
 import {
   REGION_DISTRICTS,
   WEDDING_REGIONS,
-  shortDistrictName,
   type WeddingRegion,
 } from '@weddingpick/domain';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
-
-import { ActionButton, Layout, Radius, ThemedText, useTheme } from '@weddingpick/ui';
+import { ActionButton, Layout, ProductSymbol, Radius, ThemedText, useTheme } from '@weddingpick/ui';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 
 import { Wheel, WheelGroup } from './wheel';
@@ -38,8 +35,8 @@ export type PickedRegion = { region: WeddingRegion; district: string | null };
  * **시/군/구는 `REGION_DISTRICTS`에서 온다** — 저장소에 이미 있던 목록이라 지어낸
  * 값이 없다. 「그 외」는 구 목록이 없다(전국이라는 뜻이라 더 좁힐 것이 없다).
  *
- * **보이는 것만 짧게 줄인다** — 「강남구」 → 「강남」(`shortDistrictName`). 저장하는
- * 값은 「강남구」 그대로다. 그 함수가 「중구」처럼 두 글자인 이름은 손대지 않는다.
+ * 휠과 선택 필드는 정본처럼 시/군/구의 전체 이름(예: 「강남구」)을 보여준다.
+ * 저장 값과 표시 값이 같으므로 별도 축약을 하지 않는다.
  */
 export function RegionPickerSheet({
   visible,
@@ -96,9 +93,7 @@ function SheetBody({
           accessibilityLabel={S.close}
           onPress={onDismiss}
           style={[styles.close, { backgroundColor: theme.backgroundSelected }]}>
-          <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={theme.text} strokeWidth={2} strokeLinecap="round">
-            <Path d="M6 6l12 12M18 6 6 18" />
-          </Svg>
+          <ProductSymbol name="close" size={16} color={theme.text} />
         </Pressable>
       </View>
 
@@ -115,7 +110,7 @@ function SheetBody({
           accessibilityLabel={S.district}
           flex={FLEX_DISTRICT}
           items={districts}
-          format={(item) => (item === WHOLE ? WHOLE : shortDistrictName(item))}
+          format={(item) => item}
           value={current}
           onChange={setDistrict}
         />
