@@ -17,6 +17,7 @@ import {
 import { createInquiry } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { BackBar } from '@/components/back-bar';
+import { useDepthBack } from '@/features/navigation/depth-back';
 
 /**
  * WP-BIZ-003: 업체 자료 제공 화면.
@@ -26,6 +27,7 @@ import { BackBar } from '@/components/back-bar';
  */
 export default function BizDataScreen() {
   const theme = useTheme();
+  const depthBack = useDepthBack();
   const [vendorName, setVendorName] = useState('');
   const [body, setBody] = useState('');
   const [contact, setContact] = useState('');
@@ -70,7 +72,7 @@ export default function BizDataScreen() {
             <ThemedText type="t6" themeColor="textSecondary">
               {acknowledgement}
             </ThemedText>
-            <ActionButton variant="primary" label="확인" onPress={() => router.back()} />
+            <ActionButton variant="primary" label="확인" onPress={depthBack} />
           </ThemedView>
         </SafeAreaView>
       </ThemedView>
