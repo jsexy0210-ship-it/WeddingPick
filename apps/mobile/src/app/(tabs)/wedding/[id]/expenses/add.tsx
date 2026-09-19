@@ -13,6 +13,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { addExpense } from '@/api/client';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
+import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { dayToTimestamp, isDay, todayDay } from '@/features/wedding/expense-day';
 import {
   CheckBox,
@@ -70,7 +71,7 @@ export default function AddExpenseRoute() {
   const ready = reason === null;
 
   function closeSheet() {
-    router.replace(`/wedding/${id}/expenses` as never);
+    dismissToOrReplace(`/wedding/${id}/expenses`);
   }
 
   function requestClose() {
