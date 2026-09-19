@@ -57,6 +57,11 @@ jobs:
           ref: ${{ github.sha }}
           persist-credentials: false
 
+      - uses: actions/setup-node@v5
+        if: steps.current.outputs.current == 'true' && contains(github.event.head_commit.message || '', '[vm-cleanup]')
+        with:
+          node-version: 22
+
       - name: Apply authorized retention cleanup
         if: steps.current.outputs.current == 'true' && contains(github.event.head_commit.message || '', '[vm-cleanup]')
         shell: bash
