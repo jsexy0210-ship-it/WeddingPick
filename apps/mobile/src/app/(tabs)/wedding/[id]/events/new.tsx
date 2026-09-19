@@ -1,40 +1,29 @@
 import type { CurrentUser } from '@weddingpick/api-contract';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { addWeddingEvent, getCurrentUser } from '@/api/client';
-import { Layout, Spacing, ThemedText } from '@weddingpick/ui';
-import { useDepthBack } from '@/features/navigation/depth-back';
+import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
+import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
 import { DateTimeField, combineDayTime } from '@/features/wedding/event-form';
 import {
   Badge,
   CheckBox,
-  Dock,
-  DockButton,
   Field,
   Hero,
   ListRow,
-  NavBar,
-  Screen,
   Section,
 } from '@/features/wedding/screen-kit';
+import { ActionButton, Layout, Spacing, ThemedText } from '@weddingpick/ui';
+
+import EventsScreen from './index';
 
 /**
- * 일정 추가. WP-OUR-006 · 핸드오프 08-schedule-sub #3.
- *
- *   close nav «일정 추가»
- *   hero      «어떤 일정을 넣을까요?»
- *   필드 4     제목 · 일시 · 장소 · 관련 업체 (필수: 제목 · 일시)
- *   알림       «하루 전에 알려주기» 체크 · 배우자가 있으면 «{이름}님에게도 알려주기»
- *   dock      «일정 넣기» 52 coral
- *
- * 배우자 공유는 켜고 끄는 것이 아니다 — 일정은 한 명이 넣으면 둘 다 알림을 받는다
- * (SPEC 4.1). 그래서 그 줄은 늘 켜져 있고 누를 수 없다. 끌 수 있는 것처럼 보이는 컨트롤을
- * 두지 않는다.
+ * /events/new 딥링크는 유지하되 별도 전체 화면은 만들지 않는다.
+ * 부모 일정 화면을 그대로 남기고 DLG-D BottomSheet만 올린다.
  */
-export default function AddWeddingEventScreen() {
-  const depthBack = useDepthBack();
+export default function AddWeddingEventRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [me, setMe] = useState<CurrentUser | null>(null);
@@ -57,6 +46,21 @@ export default function AddWeddingEventScreen() {
   const reason =
     title.trim().length === 0 ? '제목을 적어주세요' : startsAt === null ? '일시를 골라주세요' : null;
   const ready = reason === null;
+  const dirty =
+    title.length > 0 ||
+    day !== null ||
+    location.length > 0 ||
+    vendorLabel.length > 0 ||
+    notifyEnabled !== true;
+
+  function closeSheet() {
+    router.replace(`/wedding/${id}/events` as never);
+  }
+
+  function requestClose() {
+    if (saving) return;
+    requestDirtySheetClose(dirty, closeSheet);
+  }
 
   async function save() {
     if (!ready || startsAt === null || saving) return;
@@ -72,10 +76,7 @@ export default function AddWeddingEventScreen() {
         ...(vendorLabel.trim() ? { vendorLabel: vendorLabel.trim() } : {}),
         notifyEnabled,
       });
-
-      /* 링크로 곧장 들어와 되돌아갈 곳이 없으면 Depth Back이 한 단계 위(일정 목록)로
-         보낸다 — `depthBack`이 이미 History 우선 순서다. */
-      depthBack();
+      closeSheet();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '넣지 못했어요. 다시 시도해주세요.');
     } finally {
@@ -86,78 +87,100 @@ export default function AddWeddingEventScreen() {
   const partner = me?.spouseLinked ? (me.partnerDisplayName ?? '배우자') : null;
 
   return (
-    <Screen>
-      <NavBar title="일정 추가" variant="close" />
+    <View style={styles.host}>
+      <EventsScreen />
 
-      <ScrollView
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}>
-        <Hero title="어떤 일정을 넣을까요?" />
+      <BottomSheet visible onRequestClose={requestClose} testID="event-add-sheet">
+        <SheetPanel>
+          <View style={styles.sheetHead}>
+            <ThemedText type="t4">일정 추가</ThemedText>
+            <ThemedText type="t7" themeColor="textSecondary">
+              보던 일정 화면을 남겨둔 채 필요한 내용만 입력해요.
+            </ThemedText>
+          </View>
 
-        <View style={styles.fields}>
-          <Field
-            label="제목"
-            value={title}
-            onChangeText={setTitle}
-            placeholder="예: 드레스 투어 2차"
-            maxLength={60}
-            returnKeyType="next"
-          />
-          <DateTimeField day={day} time={time} onChangeDay={setDay} onChangeTime={setTime} />
-          <Field
-            label="장소"
-            value={location}
-            onChangeText={setLocation}
-            placeholder="어디에서 만나요?"
-            maxLength={120}
-          />
-          <Field
-            label="관련 업체"
-            value={vendorLabel}
-            onChangeText={setVendorLabel}
-            placeholder="업체 이름"
-            maxLength={60}
-          />
-        </View>
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.content}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}>
+            <Hero title="어떤 일정을 넣을까요?" />
 
-        <Section label="알림">
-          <ListRow
-            left={<CheckBox checked={notifyEnabled} />}
-            title="하루 전에 알려주기"
-            accessibilityLabel={`하루 전에 알려주기 ${notifyEnabled ? '켬' : '끔'}`}
-            onPress={() => setNotifyEnabled((current) => !current)}
-          />
-          {partner ? (
-            <ListRow
-              left={<CheckBox checked />}
-              title={`${partner}님에게도 알려주기`}
-              right={<Badge label="함께" tone="ok" />}
-            />
+            <View style={styles.fields}>
+              <Field
+                label="제목"
+                value={title}
+                onChangeText={setTitle}
+                placeholder="예: 드레스 투어 2차"
+                maxLength={60}
+                returnKeyType="next"
+              />
+              <DateTimeField day={day} time={time} onChangeDay={setDay} onChangeTime={setTime} />
+              <Field
+                label="장소"
+                value={location}
+                onChangeText={setLocation}
+                placeholder="어디에서 만나요?"
+                maxLength={120}
+              />
+              <Field
+                label="관련 업체"
+                value={vendorLabel}
+                onChangeText={setVendorLabel}
+                placeholder="업체 이름"
+                maxLength={60}
+              />
+            </View>
+
+            <Section label="알림">
+              <ListRow
+                left={<CheckBox checked={notifyEnabled} />}
+                title="하루 전에 알려주기"
+                accessibilityLabel={`하루 전에 알려주기 ${notifyEnabled ? '켬' : '끔'}`}
+                onPress={() => setNotifyEnabled((current) => !current)}
+              />
+              {partner ? (
+                <ListRow
+                  left={<CheckBox checked />}
+                  title={`${partner}님에게도 알려주기`}
+                  right={<Badge label="함께" tone="ok" />}
+                />
+              ) : null}
+            </Section>
+
+            {error ? (
+              <ThemedText type="t7" themeColor="negative">
+                {error}
+              </ThemedText>
+            ) : null}
+          </ScrollView>
+
+          {!ready && dirty && reason ? (
+            <ThemedText type="t7" themeColor="textSecondary">
+              {reason}
+            </ThemedText>
           ) : null}
-        </Section>
-
-        {error ? (
-          <ThemedText type="t7" themeColor="negative" style={styles.error}>
-            {error}
-          </ThemedText>
-        ) : null}
-      </ScrollView>
-
-      <Dock note={!ready && (title.length > 0 || day !== null) ? reason : null}>
-        <DockButton
-          variant="primary"
-          label={saving ? '넣는 중…' : '일정 넣기'}
-          disabled={!ready || saving}
-          onPress={() => void save()}
-        />
-      </Dock>
-    </Screen>
+          <View style={styles.actions}>
+            <ActionButton label="취소" disabled={saving} onPress={requestClose} />
+            <ActionButton
+              variant="primary"
+              label={saving ? '넣는 중…' : '일정 넣기'}
+              disabled={!ready || saving}
+              onPress={() => void save()}
+            />
+          </View>
+        </SheetPanel>
+      </BottomSheet>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { paddingBottom: Spacing.four },
-  fields: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four, gap: Spacing.three },
-  error: { paddingHorizontal: Layout.gutter },
+  host: { flex: 1 },
+  sheetHead: { gap: Spacing.one },
+  scroll: { flexShrink: 1 },
+  content: { paddingBottom: Spacing.two, gap: Spacing.three },
+  fields: { gap: Spacing.three },
+  actions: { flexDirection: 'row', gap: Spacing.two },
+  spacer: { paddingHorizontal: Layout.gutter },
 });
