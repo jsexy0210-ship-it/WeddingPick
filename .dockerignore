@@ -1,11 +1,27 @@
 .git
+.github
+docs
+spec
+scripts
+infra
+
+apps/mobile
+apps/web
+apps/api/eval
+packages/ui
+
 **/node_modules
-apps/mobile/.expo
-apps/mobile/android
-apps/mobile/ios
-apps/web/dist
+**/.expo
+**/dist
+**/coverage
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
 *.log
 .env*
+**/.env*
 .claude
 .audit-*
 .worktrees
@@ -14,19 +30,16 @@ apps/web/dist
 .npm-cache
 WeddingPickl
 iOS_액세스 토큰(중요)
+
 **/*.p8
 **/*.p12
 **/*.jks
 **/*.key
 **/*.mobileprovision
-
-**/.env*
-
 **/*.pem
-
 **/.ssh
 
-# 원본 폰트 배포 ZIP은 추출본만 사용하고 저장소/도커 컨텍스트에 다시 넣지 않는다.
+# 원본 폰트 배포 ZIP은 추출본만 사용하고 Docker context에 넣지 않는다.
 /public.zip
 /static.zip
 /variable.zip
