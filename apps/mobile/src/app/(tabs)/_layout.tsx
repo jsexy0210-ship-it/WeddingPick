@@ -28,6 +28,12 @@ export default function TabLayout() {
   const segments: readonly string[] = useSegments();
   const onCamera = segments.includes('camera');
   /*
+   * Pick 완료는 transient route다. 이 화면을 떠날 때만 Pick nested Stack을 root로 접는다.
+   * category/compare → search 상세처럼 아직 진행 중인 교차 탐색에서는 false라 Back 문맥을 보존한다.
+   */
+  const onPickDone =
+    segments[segments.length - 2] === 'pick' && segments[segments.length - 1] === 'done';
+  /*
    * 탭 한 칸의 바탕. 이걸 비워두면 옮겨간 탭 아래로 지나온 탭이 비친다 —
    * 웹에서는 안 보이는 탭이 떼어지지도 않았다(features/navigation/screen-options).
    */
@@ -39,7 +45,14 @@ export default function TabLayout() {
       tabBar={(props) => (onCamera ? null : <RootTabBar {...props} />)}
       screenOptions={screenOptions}>
       {ROOT_TABS.map((tab) => (
-        <Tabs.Screen key={tab.name} name={tab.name} options={{ title: tab.label }} />
+        <Tabs.Screen
+          key={tab.name}
+          name={tab.name}
+          options={{
+            title: tab.label,
+            popToTopOnBlur: tab.name === 'pick' && onPickDone,
+          }}
+        />
       ))}
       {/*
         탭에서 내린 화면들(라운지 · 제보 · (home) 하위 스택). 화면은 그대로 살아 있고
