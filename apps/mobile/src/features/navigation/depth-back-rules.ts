@@ -243,6 +243,7 @@ export const NO_BACK_ROUTES: readonly string[] = [
  * | `/wedding/[id]/complete`           | `/wedding`       | WP-OUR-013 예식 완료 → 서버 웨딩일정 탭. `[id]` 문서 상세와 식별자가 다르다.        |
  */
 export const DEPTH_BACK_EXCEPTIONS: Readonly<Record<string, string>> = {
+  '/community/feed/[id]': '/community?tab=feed',
   '/capture': '/my',
   '/capture/verify/[quoteId]': '/capture/result/[quoteId]',
   '/capture/verify-status/[requestId]': '/my/reports',
@@ -334,9 +335,13 @@ function fill(target: string, route: string, pathname: string): string {
     if (isDynamic(slot) && actual[i]) values[paramName(slot)] = actual[i]!;
   });
 
-  const filled = segmentsOf(target).map((slot) => (isDynamic(slot) ? (values[paramName(slot)] ?? slot) : slot));
+  const [targetPath, query] = target.split('?');
+  const filled = segmentsOf(targetPath ?? target).map((slot) =>
+    isDynamic(slot) ? (values[paramName(slot)] ?? slot) : slot
+  );
+  const path = filled.length > 0 ? `/${filled.join('/')}` : '/';
 
-  return filled.length > 0 ? `/${filled.join('/')}` : '/';
+  return query ? `${path}?${query}` : path;
 }
 
 /**

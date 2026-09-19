@@ -481,7 +481,7 @@ function FeedList({
           key={item.id}
           accessibilityRole="button"
           accessibilityLabel={item.title}
-          onPress={() => router.push(`/feed/${encodeURIComponent(item.id)}` as never)}
+          onPress={() => router.push(`/community/feed/${encodeURIComponent(item.id)}` as never)}
           style={({ pressed }) => [styles.guideRow, { borderBottomColor: theme.border }, pressed ? styles.pressed : null]}>
           <View style={styles.guideThumb}>
             <CategoryImage uri={item.imageUrl} />
