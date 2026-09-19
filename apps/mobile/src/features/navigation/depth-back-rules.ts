@@ -243,6 +243,7 @@ export const NO_BACK_ROUTES: readonly string[] = [
  * | `/wedding/[id]/complete`           | `/wedding`       | WP-OUR-013 예식 완료 → 서버 웨딩일정 탭. `[id]` 문서 상세와 식별자가 다르다.        |
  */
 export const DEPTH_BACK_EXCEPTIONS: Readonly<Record<string, string>> = {
+  '/community/feed/[id]': '/community?tab=feed',
   '/capture': '/my',
   '/capture/verify/[quoteId]': '/capture/result/[quoteId]',
   '/capture/verify-status/[requestId]': '/my/reports',
