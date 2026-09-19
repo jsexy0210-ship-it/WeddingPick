@@ -29,6 +29,7 @@ import {
 } from '@weddingpick/ui';
 
 import { DelayedRecommendingView } from '@/features/loading/delayed-loader';
+import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { DatePickerSheet } from '@/features/onboarding/date-picker-sheet';
 import {
   DONE_CTA,
@@ -333,7 +334,7 @@ export default function SetupScreen() {
        */
       void clearOnboardingAnswers().catch(() => undefined);
 
-      router.replace('/');
+      dismissToOrReplace('/');
     } catch (caught) {
       // 세션이 끝났으면(401) 이 화면에 머물 이유가 없다 — 로그인으로 보낸다.
       if (caught instanceof ApiError && caught.status === 401) {
