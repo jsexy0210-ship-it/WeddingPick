@@ -61,7 +61,7 @@ jobs:
           mib="$(( (bytes + 1048575) / 1048576 ))"
           echo "image_bytes=$bytes"
           echo "image_mib=$mib"
-          docker history --no-trunc "$IMAGE" | head -20
+          docker history --no-trunc "$IMAGE" | head -20 || true
           if [ "$bytes" -gt $((650 * 1024 * 1024)) ]; then
             echo "Slim API image exceeded 650 MiB: ${mib} MiB" >&2
             exit 1
