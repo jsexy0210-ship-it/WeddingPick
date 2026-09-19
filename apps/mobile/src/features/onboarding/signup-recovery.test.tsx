@@ -97,20 +97,29 @@ beforeEach(() => {
 afterEach(async () => { if (tree) await act(async () => tree.unmount()); });
 
 it('첫 가입 상태 조회가 늦어도 완료 시 재확인하고 가입 저장 뒤 초기 설정을 저장한다', async () => {
-  const first = deferred<Awaited<ReturnType<typeof getSignupState>>>();
-  const signup = deferred<Awaited<ReturnType<typeof completeSignup>>>();
-  jest.mocked(getSignupState).mockReturnValueOnce(first.promise).mockResolvedValue(pendingSignup);
-  jest.mocked(completeSignup).mockReturnValue(signup.promise);
-  await mount();
-  await finish();
-  expect(getSignupState).toHaveBeenCalledTimes(2);
-  expect(completeSignup).toHaveBeenCalledWith({ consents: ['terms', 'privacy'] });
-  expect(completeSetup).not.toHaveBeenCalled();
-  await act(async () => signup.resolve(activeSignup));
-  expect(completeSetup).toHaveBeenCalledTimes(1);
-  /* 저장이 끝나면 홈으로 간다 — 결과 화면은 그 전에 이미 그려져 있었다. */
-  expect(router.replace).toHaveBeenCalledWith('/');
-  await act(async () => first.resolve(pendingSignup));
+  jest.useFakeTimers();
+  try {
+    const first = deferred<Awaited<ReturnType<typeof getSignupState>>>();
+    const signup = deferred<Awaited<ReturnType<typeof completeSignup>>>();
+    jest.mocked(getSignupState).mockReturnValueOnce(first.promise).mockResolvedValue(pendingSignup);
+    jest.mocked(completeSignup).mockReturnValue(signup.promise);
+    await mount();
+    await finish();
+    expect(getSignupState).toHaveBeenCalledTimes(2);
+    expect(completeSignup).toHaveBeenCalledWith({ consents: ['terms', 'privacy'] });
+    expect(completeSetup).not.toHaveBeenCalled();
+    await act(async () => signup.resolve(activeSignup));
+    expect(completeSetup).toHaveBeenCalledTimes(1);
+    expect(router.replace).not.toHaveBeenCalledWith('/');
+    await act(async () => {
+      jest.advanceTimersByTime(3000);
+      await Promise.resolve();
+    });
+    expect(router.replace).toHaveBeenCalledWith('/');
+    await act(async () => first.resolve(pendingSignup));
+  } finally {
+    jest.useRealTimers();
+  }
 });
 
 it('첫 조회가 실패했어도 완료 시 가입 상태를 다시 읽어 누락된 가입을 마친다', async () => {
