@@ -73,8 +73,8 @@ describe('transient completion flow navigation', () => {
     const write = screen('(tabs)', 'search', '[vendorId]', 'write-review.tsx');
     const edit = screen('(tabs)', 'search', '[vendorId]', 'edit-review.tsx');
 
-    expect(write).toContain('router.replace(`/search/${vendorId}` as never)');
-    expect(edit).toContain('router.replace(`/search/${vendorId}/reviews` as never)');
+    expect(write).toContain('dismissToOrReplace(\`/search/\${vendorId}\`)');
+    expect(edit).toContain('dismissToOrReplace(\`/search/\${vendorId}/reviews\`)');
     expect(write).not.toContain('setDone(');
     expect(edit).not.toContain('setDone(');
   });
