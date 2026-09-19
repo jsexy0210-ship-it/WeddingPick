@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "updatedAtKst": "2026-09-19T18:19:00+09:00",
+  "sourceOfTruth": {
+    "repository": "jsexy0210-ship-it/WeddingPick",
+    "branch": "main",
+    "mainShaAtConsolidation": "d6d16a6c8320240c74451d10bc90eb95b9715da1",
+    "rule": "매 작업 시작 시 GitHub 최신 main, Open PR/Issue, Actions 상태를 다시 확인한다. 과거 세션의 SHA·완료 보고보다 GitHub 현재값을 우선한다."
+  },
+  "sessionPolicy": {
+    "activeSessionCountTarget": 4,
+    "activeSessions": [
+      {
+        "name": "WeddingPick 마스터",
+        "scope": "전체 PR/Issue/Actions, 충돌·의존성·우선순위·인계. 구현 세션 결과를 흡수하고 완료 세션은 참조 전용으로 전환한다."
+      },
+      {
+        "name": "제품·디자인 QA",
+        "scope": "등록 BottomSheet/Overlay, 디자인 1:1, 인증·온보딩 실기기, 라운지·MY 잔여",
+        "refs": ["PR #435", "Issue #422", "Issue #283", "Issue #282", "Issue #281", "Issue #286"]
+      },
+      {
+        "name": "인프라·배포",
+        "scope": "Kakao VM/API/정적 컷오버/retention/Naver OAuth/Object Storage/외부 포트 검증",
+        "refs": ["PR #444", "Issue #389", "Issue #384", "Issue #374", "Issue #376", "Issue #364", "Issue #344", "Issue #348"]
+      },
+      {
+        "name": "독립 최종 QA",
+        "scope": "최신 main 병합 후 제품 흐름·디자인·실기기·회귀를 독립 검증한다. 구현은 하지 않는다."
+      }
+    ],
+    "archiveRule": "완료·병합·중복·대체된 세션은 결과 PR/Issue와 남은 blocker만 마스터에 흡수하고 별도 활성 세션으로 유지하지 않는다."
+  },
+  "openPullRequestsAtConsolidation": [
+    {
+      "number": 435,
+      "title": "feat(design): 등록 BottomSheet·공통 Overlay 정본화",
+      "mergeable": true,
+      "draft": false,
+      "headSha": "59d1b689ce6b6cd32e76d29ee2799f1b03d15ac6"
+    },
+    {
+      "number": 444,
+      "title": "ops(deploy): 경량 API 1회 운영 배포 트리거",
+      "mergeable": true,
+      "draft": false,
+      "headSha": "0ec0daafbc7a2f73979fdee97f58619349f3c956"
+    }
+  ],
+  "openIssuesAtConsolidation": {
+    "productDesign": [422, 283, 282, 281, 286],
+    "infraOps": [389, 384, 374, 376, 364, 344, 348],
+    "maintenanceBacklog": [289, 308, 305]
+  },
+  "absorbedRecentPullRequests": {
+    "designAndNavigation": [423, 424, 432],
+    "infraAndRegression": [426, 427, 428, 429, 430, 431, 436, 437, 438],
+    "vmDiskAndImage": [439, 440, 441, 442, 443],
+    "loungeMy": [410, 417]
+  },
+  "doNotReopenBySessionHistory": [
+    "PR #273 디자인 통합",
+    "PR #391 인증/SecureStore/검색 통합",
+    "PR #380 업체 위치/정적 지도",
+    "PR #392 docs/design 단일 정본화",
+    "PR #423 온보딩 정합",
+    "PR #424 완료 흐름 stale stack/cache",
+    "PR #427 retired Naver build callback 정리",
+    "PR #430 rollback·cutover 단일 회귀 게이트",
+    "PR #432 Android Back 인증 history 격리",
+    "PR #443 Kakao API Docker 이미지 경량화"
+  ],
+  "notes": [
+    "ChatGPT 대화 세션 자체의 삭제·병합 여부는 제품 UI에서 관리한다. 이 파일은 작업 정본의 흡수 결과를 고정한다.",
+    "새 세션은 기존 활성 세션으로 해결할 수 없는 독립 작업이 생길 때만 만든다.",
+    "Open Issue라는 이유만으로 즉시 별도 세션을 만들지 않는다. 우선 마스터가 기존 활성 작업군에 흡수 가능 여부를 판정한다."
+  ]
+}
