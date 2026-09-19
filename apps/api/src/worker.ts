@@ -13,7 +13,9 @@ import { startWorkerLoops } from './worker-loops';
  *
  * 운영에서는 KakaoCloud VM의 별도 `weddingpick-worker` 컨테이너가 이 진입점을
  * 사용한다. API 컨테이너는 `RUN_WORKER_IN_API=false`를 유지해 중복 루프를 막고,
- * API 배포 시 `scripts/update-kakao-worker.sh`가 같은 이미지로 worker를 함께 갱신한다.
+ * API 배포 시 `scripts/update-kakao-worker.sh`가 같은 source revision의 worker 전용
+ * 이미지로 함께 갱신한다. 현재 production worker는 ffmpeg가 필요하지 않으며,
+ * 상담 녹음 경로를 연결할 때만 별도 media-worker-runtime target을 사용한다.
  */
 async function main() {
   const config = loadConfig();
