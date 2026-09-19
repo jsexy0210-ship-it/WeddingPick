@@ -91,7 +91,7 @@ export default function VerifyRequestScreen() {
   }
 
   if (error && !quote) {
-    return <ErrorView message={error} onBack={() => router.back()} />;
+    return <ErrorView message={error} onBack={depthBack} />;
   }
 
   if (!quote) {
