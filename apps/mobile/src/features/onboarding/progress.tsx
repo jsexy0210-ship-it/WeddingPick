@@ -15,7 +15,7 @@ export function OnboardingProgress({ label }: { label: string }) {
 
   return (
     <ThemedView style={styles.bar}>
-      <View style={[styles.track, { backgroundColor: theme.backgroundElement }]}>
+      <View style={[styles.track, { backgroundColor: theme.backgroundSelected }]}>
         <View style={[styles.fill, { flex: progress, backgroundColor: theme.tint }]} />
         <View style={{ flex: 1 - progress }} />
       </View>
