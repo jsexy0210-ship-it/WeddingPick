@@ -57,13 +57,6 @@ export default function GuideScreen() {
               </ThemedView>
             )}
 
-            <ThemedView style={styles.section}>
-              <ActionButton
-                variant="secondary"
-                label="문의하기"
-                onPress={() => router.push('/my/contact')}
-              />
-            </ThemedView>
           </ScrollView>
         </SafeAreaView>
       </ThemedView>
