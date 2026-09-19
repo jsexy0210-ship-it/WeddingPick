@@ -13,6 +13,8 @@ on:
       - packages/domain/package.json
       - scripts/update-kakao-worker.sh
       - scripts/verification/docker-runtime-scope.test.mjs
+      - scripts/verification/api-current-tag-rollback.test.mjs
+      - .github/workflows/deploy-kakao-api.yml
       - .github/workflows/docker-api-image-check.yml
   workflow_dispatch:
 
@@ -21,7 +23,7 @@ permissions:
 
 jobs:
   build-smoke:
-    name: Build and smoke slim API image
+    name: Build and smoke split API/worker images
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
@@ -42,35 +44,40 @@ jobs:
 
     env:
       IMAGE: weddingpick-api:slim-check
+      WORKER_IMAGE: weddingpick-worker:slim-check
       DATABASE_URL: postgres://weddingpick:weddingpick@127.0.0.1:5432/weddingpick_test
 
     steps:
       - uses: actions/checkout@v5
 
       - name: Runtime scope regression
-        run: node --test scripts/verification/docker-runtime-scope.test.mjs
+        run: node --test scripts/verification/docker-runtime-scope.test.mjs scripts/verification/api-current-tag-rollback.test.mjs
 
-      - name: Build production image
-        run: docker build --label org.opencontainers.image.revision="$GITHUB_SHA" -t "$IMAGE" .
+      - name: Build production images
+        run: |
+          docker build --label org.opencontainers.image.revision="$GITHUB_SHA" -t "$IMAGE" .
+          docker build --target worker-runtime --label org.opencontainers.image.revision="$GITHUB_SHA" -t "$WORKER_IMAGE" .
 
       - name: Enforce image size ceiling
         shell: bash
         run: |
           set -euo pipefail
-          bytes="$(docker image inspect "$IMAGE" --format '{{.Size}}')"
-          mib="$(( (bytes + 1048575) / 1048576 ))"
-          echo "image_bytes=$bytes"
-          echo "image_mib=$mib"
-          docker history --no-trunc "$IMAGE" | head -20 || true
-          if [ "$bytes" -gt $((650 * 1024 * 1024)) ]; then
-            echo "Slim API image exceeded 650 MiB: ${mib} MiB" >&2
-            exit 1
-          fi
+          for image in "$IMAGE" "$WORKER_IMAGE"; do
+            bytes="$(docker image inspect "$image" --format '{{.Size}}')"
+            mib="$(( (bytes + 1048575) / 1048576 ))"
+            echo "image=$image bytes=$bytes mib=$mib"
+            docker history --no-trunc "$image" | head -20 || true
+            if [ "$bytes" -gt $((650 * 1024 * 1024)) ]; then
+              echo "$image exceeded 650 MiB: ${mib} MiB" >&2
+              exit 1
+            fi
+          done
 
-      - name: Verify runtime payload excludes frontend and dev toolchain
+      - name: Verify split runtime payload
         run: |
           docker run --rm "$IMAGE" sh -ec '
-            command -v ffmpeg >/dev/null
+            ! command -v ffmpeg >/dev/null 2>&1
+            ! command -v ffprobe >/dev/null 2>&1
             test -x /opt/tsx/node_modules/.bin/tsx
             test ! -e apps/mobile
             test ! -e apps/web
@@ -83,8 +90,13 @@ jobs:
             test ! -d node_modules/jest
             test ! -d node_modules/typescript
           '
+          docker run --rm "$WORKER_IMAGE" sh -ec '
+            command -v ffmpeg >/dev/null
+            command -v ffprobe >/dev/null
+            test -x /opt/tsx/node_modules/.bin/tsx
+          '
 
-      - name: Migrate smoke database from image
+      - name: Migrate smoke database from API image
         run: |
           docker run --rm --network host \
             -e DATABASE_URL="$DATABASE_URL" \
@@ -92,7 +104,7 @@ jobs:
             -e STORAGE_DRIVER=local \
             "$IMAGE" /opt/tsx/node_modules/.bin/tsx packages/db/src/cli.ts
 
-      - name: Smoke API and worker from the slim image
+      - name: Smoke API and worker from split images
         shell: bash
         run: |
           set -euo pipefail
@@ -134,7 +146,7 @@ jobs:
             -e NODE_ENV=staging \
             -e STORAGE_DRIVER=local \
             -e GEMINI_API_KEY=ci-smoke-key \
-            "$IMAGE" /opt/tsx/node_modules/.bin/tsx apps/api/src/worker.ts >/dev/null
+            "$WORKER_IMAGE" >/dev/null
           sleep 5
           if [ "$(docker inspect -f '{{.State.Running}}' weddingpick-worker-slim-smoke 2>/dev/null || true)" != true; then
             docker inspect weddingpick-worker-slim-smoke --format 'state={{.State.Status}} exit={{.State.ExitCode}} error={{.State.Error}}' >&2 || true
@@ -150,13 +162,16 @@ jobs:
         if: always()
         shell: bash
         run: |
-          if docker image inspect "$IMAGE" >/dev/null 2>&1; then
-            bytes="$(docker image inspect "$IMAGE" --format '{{.Size}}')"
-            mib="$(( (bytes + 1048575) / 1048576 ))"
-            {
-              echo '### Slim Kakao API image'
-              echo "- Size: ${mib} MiB"
-              echo '- Ceiling: 650 MiB'
-              echo '- Runtime excludes mobile/web/UI workspace and test/dev toolchain.'
-            } >> "$GITHUB_STEP_SUMMARY"
-          fi
+          {
+            echo '### Split Kakao runtime images'
+            for image in "$IMAGE" "$WORKER_IMAGE"; do
+              if docker image inspect "$image" >/dev/null 2>&1; then
+                bytes="$(docker image inspect "$image" --format '{{.Size}}')"
+                mib="$(( (bytes + 1048575) / 1048576 ))"
+                echo "- $image: ${mib} MiB"
+              fi
+            done
+            echo '- API image intentionally excludes ffmpeg/ffprobe.'
+            echo '- Worker image keeps ffmpeg/ffprobe for consultation audio clipping.'
+            echo '- Ceiling: 650 MiB per image.'
+          } >> "$GITHUB_STEP_SUMMARY"
