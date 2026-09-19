@@ -63,7 +63,9 @@ export function ProductSymbol({ name, size = 24, color = Colors.light.text }: { 
       {name === 'gift' &&<><Rect {...common} x="3.5" y="9" width="17" height="4" rx="1" /><Path {...common} d="M5 13v7h14v-7M12 9v11M12 9c-2-4-6-4-6-1.5S10 9 12 9c2-4 6-4 6-1.5S14 9 12 9" /></>}
       {/* 위치 핀 — 검색 결과 카드의 지역 앞(피그마 `Search.tsx` lucide MapPin). */}
       {name === 'pin' && <><Path {...common} d="M12 21.4s-6.4-5.6-6.4-10.6a6.4 6.4 0 0 1 12.8 0c0 5-6.4 10.6-6.4 10.6z" /><Circle {...common} cx="12" cy="10.8" r="2.4" /></>}
-      {/* 스크랩 저장 상태 — 07-lounge-my 4-6 bookmark 20. */}\n      {name === 'bookmark' && <Path {...common} d="M7 3.5h10a2 2 0 0 1 2 2v15l-7-4.5-7 4.5v-15a2 2 0 0 1 2-2z" />}\n      {name === 'close' && <Path {...common} d="M6 6l12 12M18 6 6 18" />}
+      {/* 스크랩 저장 상태 — 07-lounge-my 4-6 bookmark 20. */}
+      {name === 'bookmark' && <Path {...common} d="M7 3.5h10a2 2 0 0 1 2 2v15l-7-4.5-7 4.5v-15a2 2 0 0 1 2-2z" />}
+      {name === 'close' && <Path {...common} d="M6 6l12 12M18 6 6 18" />}
       {/* 완료 체크(11 · 획 3.6) — 혜택 안내 시트 조건 행. 시안 path 그대로. */}
       {name === 'check' && <Path {...common} d="m5 12.5 4.5 4.5L19 7.5" />}
       {name === 'warning' && <><Path {...common} d="M12 3.8 21 19.5H3z" /><Path {...common} d="M12 10v4.2M12 16.8v.1" /></>}
