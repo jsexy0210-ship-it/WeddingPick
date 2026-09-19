@@ -1,0 +1,59 @@
+name: Kakao Retention Cleanup
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Actually delete only the current deterministic candidates'
+        required: true
+        type: boolean
+        default: false
+      retain:
+        description: 'Recovery generations to keep per family (1-20)'
+        required: true
+        type: string
+        default: '3'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: weddingpick-kakao-vm-write
+  cancel-in-progress: false
+
+jobs:
+  dry-run:
+    name: Audit retention candidates only
+    if: ${{ !inputs.apply }}
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Print deterministic cleanup plan
+        env:
+          WEDDINGPICK_RETENTION_KEEP: ${{ inputs.retain }}
+        run: node ./scripts/cleanup-kakao-retention.mjs
+
+  apply:
+    name: Apply approved retention cleanup
+    if: ${{ inputs.apply }}
+    environment: production
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Recheck and delete only current candidates
+        env:
+          WEDDINGPICK_RETENTION_KEEP: ${{ inputs.retain }}
+          WP_RETENTION_APPROVED: '1'
+        run: node ./scripts/cleanup-kakao-retention.mjs --apply
