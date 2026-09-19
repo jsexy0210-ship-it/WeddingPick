@@ -7,12 +7,15 @@ import {
 } from '@weddingpick/domain';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { createReview, getReviewForm } from '@/api/client';
+import { pickFromLibrary } from '@/features/capture/pickers';
+import type { CapturedPage } from '@/features/capture/types';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
+import { uploadReviewMedia } from '@/features/review/media-upload';
 import {
   ActionButton,
   FilterChip,
@@ -44,6 +47,8 @@ export default function WriteReviewRoute() {
   const [body, setBody] = useState('');
   const [pros, setPros] = useState('');
   const [cons, setCons] = useState('');
+  const [photos, setPhotos] = useState<CapturedPage[]>([]);
+  const [rightsConfirmed, setRightsConfirmed] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,7 +66,8 @@ export default function WriteReviewRoute() {
     title.length > 0 ||
     body.length > 0 ||
     pros.length > 0 ||
-    cons.length > 0;
+    cons.length > 0 ||
+    photos.length > 0;
 
   const picked = form?.roles.find((option) => option.value === role) ?? null;
   const shortBody = form ? body.trim().length < form.minimumBodyLength : false;
@@ -70,7 +76,8 @@ export default function WriteReviewRoute() {
     role !== null &&
     overall !== null &&
     title.trim().length > 0 &&
-    !shortBody;
+    !shortBody &&
+    (photos.length === 0 || rightsConfirmed);
 
   function closeSheet() {
     dismissToOrReplace(`/search/${vendorId}`);
@@ -81,6 +88,20 @@ export default function WriteReviewRoute() {
     requestDirtySheetClose(dirty, closeSheet);
   }
 
+  async function addPhotos() {
+    if (sending || photos.length >= 3) return;
+    setError(null);
+    try {
+      const pickedPhotos = await pickFromLibrary();
+      const accepted = pickedPhotos.filter((page) =>
+        ['image/jpeg', 'image/png', 'image/webp'].includes(page.mimeType)
+      );
+      setPhotos((current) => [...current, ...accepted].slice(0, 3));
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : '사진을 불러오지 못했어요.');
+    }
+  }
+
   async function submit() {
     if (!form || !picked || overall === null || !ready || sending) return;
 
@@ -88,6 +109,10 @@ export default function WriteReviewRoute() {
     setError(null);
 
     try {
+      const media = photos.length > 0
+        ? await Promise.all(photos.map((photo) => uploadReviewMedia(photo)))
+        : [];
+
       await createReview(vendorId, {
         role: picked.value,
         overall,
@@ -103,6 +128,7 @@ export default function WriteReviewRoute() {
           const answer = checklist[item.key];
           return answer === undefined ? [] : [{ key: item.key, answer }];
         }),
+        media,
       });
 
       // 저장 뒤 부모 화면으로 돌아간다. 별도 성공 Alert는 띄우지 않는다.
@@ -280,6 +306,58 @@ export default function WriteReviewRoute() {
                 </ThemedView>
 
                 <ThemedView style={styles.section}>
+                  <ThemedText type="smallBold">사진 (선택)</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    최대 3장까지 올릴 수 있어요. 다른 사람의 사진은 허락 없이 올리지 말아주세요.
+                  </ThemedText>
+                  {photos.length > 0 ? (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoRow}>
+                      {photos.map((photo) => (
+                        <View key={photo.id} style={styles.photoWrap}>
+                          <Image source={{ uri: photo.uri }} style={styles.photo} resizeMode="cover" />
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel="후기 사진 삭제"
+                            onPress={() => {
+                              setPhotos((current) => current.filter((item) => item.id !== photo.id));
+                              if (photos.length === 1) setRightsConfirmed(false);
+                            }}
+                            style={[styles.photoRemove, { backgroundColor: theme.scrim }]}>
+                            <ThemedText type="smallBold" themeColor="onTint">×</ThemedText>
+                          </Pressable>
+                        </View>
+                      ))}
+                    </ScrollView>
+                  ) : null}
+                  {photos.length < 3 ? (
+                    <ActionButton label="사진 추가" disabled={sending} onPress={() => void addPhotos()} />
+                  ) : null}
+                  {photos.length > 0 ? (
+                    <Pressable
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: rightsConfirmed }}
+                      onPress={() => setRightsConfirmed((value) => !value)}
+                      style={styles.rightsRow}>
+                      <View
+                        style={[
+                          styles.rightsCheck,
+                          {
+                            borderColor: rightsConfirmed ? theme.tint : theme.border,
+                            backgroundColor: rightsConfirmed ? theme.tint : theme.background,
+                          },
+                        ]}>
+                        {rightsConfirmed ? (
+                          <ThemedText type="smallBold" themeColor="onTint">✓</ThemedText>
+                        ) : null}
+                      </View>
+                      <ThemedText type="small" style={styles.rightsText}>
+                        제가 촬영했거나 게시할 권한이 있는 사진이에요.
+                      </ThemedText>
+                    </Pressable>
+                  ) : null}
+                </ThemedView>
+
+                <ThemedView style={styles.section}>
                   <ThemedText type="smallBold">좋았던 점 (선택)</ThemedText>
                   <TextInput
                     style={[styles.input, { color: theme.text, borderColor: theme.border }]}
@@ -364,5 +442,28 @@ const styles = StyleSheet.create({
     minHeight: 140,
     textAlignVertical: 'top',
   },
+  photoRow: { gap: Spacing.two },
+  photoWrap: { width: 96, height: 96 },
+  photo: { width: 96, height: 96, borderRadius: Radius.medium },
+  photoRemove: {
+    position: 'absolute',
+    right: Spacing.one,
+    top: Spacing.one,
+    width: 28,
+    height: 28,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rightsRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  rightsCheck: {
+    width: 24,
+    height: 24,
+    borderWidth: 1,
+    borderRadius: Radius.small,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rightsText: { flex: 1 },
   actions: { flexDirection: 'row', gap: Spacing.two },
 });

@@ -32,10 +32,14 @@ import {
   notificationSummaryResponseSchema,
   rebuttalListResponseSchema,
   registerPaymentProofResponseSchema,
+  createReviewMediaUploadTargetResponseSchema,
   createReviewReportResponseSchema,
   createReviewResponseSchema,
   reportReasonListResponseSchema,
+  reviewCommentListResponseSchema,
+  reviewCommentSchema,
   reviewFormSchema,
+  reviewHelpfulSchema,
   reviewListResponseSchema,
   loungeReviewListResponseSchema,
   plannerDetailSchema,
@@ -109,10 +113,17 @@ import {
   type RegisterPaymentProofRequest,
   type RegisterPaymentProofResponse,
   type OriginalKind,
+  type CreateReviewCommentReportRequest,
+  type CreateReviewCommentRequest,
+  type CreateReviewMediaUploadTargetRequest,
+  type CreateReviewMediaUploadTargetResponse,
   type CreateReviewReportRequest,
   type CreateReviewReportResponse,
   type CreateReviewRequest,
   type CreateReviewResponse,
+  type ReviewComment,
+  type ReviewCommentListResponse,
+  type ReviewHelpful,
   type ReportReasonListResponse,
   type ReviewForm,
   type ReviewListResponse,
@@ -1127,6 +1138,16 @@ export async function getReviewForm(vendorId: string): Promise<ReviewForm> {
   return request(`/v1/vendors/${vendorId}/review-form`, reviewFormSchema);
 }
 
+/** 후기 사진을 올릴 서명 URL. 파일 본체는 API 서버를 지나지 않는다. */
+export async function createReviewMediaUploadTarget(
+  body: CreateReviewMediaUploadTargetRequest
+): Promise<CreateReviewMediaUploadTargetResponse> {
+  return request('/v1/reviews/media/upload-target', createReviewMediaUploadTargetResponseSchema, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
 /** 후기 쓰기. 확인 단계는 보내지 않는다 — 서버가 정한다. */
 export async function createReview(
   vendorId: string,
@@ -1194,6 +1215,48 @@ export async function reportReview(
   body: CreateReviewReportRequest
 ): Promise<CreateReviewReportResponse> {
   return request(`/v1/reviews/${reviewId}/reports`, createReviewReportResponseSchema, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+/** 도움돼요 상태는 서버 응답이 정본이다. 연타해도 PUT/DELETE가 멱등이다. */
+export async function setReviewHelpful(reviewId: string, helpful: boolean): Promise<ReviewHelpful> {
+  return request(`/v1/reviews/${reviewId}/helpful`, reviewHelpfulSchema, {
+    method: helpful ? 'PUT' : 'DELETE',
+  });
+}
+
+export async function listReviewComments(
+  reviewId: string,
+  cursor?: string
+): Promise<ReviewCommentListResponse> {
+  const suffix = cursor ? `?cursor=${encodeURIComponent(cursor)}` : '';
+  return request(
+    `/v1/reviews/${reviewId}/comments${suffix}`,
+    reviewCommentListResponseSchema
+  );
+}
+
+export async function createReviewComment(
+  reviewId: string,
+  body: CreateReviewCommentRequest
+): Promise<ReviewComment> {
+  return request(`/v1/reviews/${reviewId}/comments`, reviewCommentSchema, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteReviewComment(commentId: string): Promise<void> {
+  await request(`/v1/review-comments/${commentId}`, z.null(), { method: 'DELETE' });
+}
+
+export async function reportReviewComment(
+  commentId: string,
+  body: CreateReviewCommentReportRequest
+): Promise<CreateReviewReportResponse> {
+  return request(`/v1/review-comments/${commentId}/reports`, createReviewReportResponseSchema, {
     method: 'POST',
     body: JSON.stringify(body),
   });
