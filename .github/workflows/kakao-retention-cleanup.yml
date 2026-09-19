@@ -34,6 +34,10 @@ jobs:
           ref: ${{ github.sha }}
           persist-credentials: false
 
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
       - name: Print deterministic cleanup plan
         env:
           WEDDINGPICK_RETENTION_KEEP: ${{ inputs.retain }}
@@ -51,6 +55,10 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
 
       - name: Recheck and delete only current candidates
         env:
