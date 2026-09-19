@@ -214,6 +214,7 @@ describe('완료 흐름은 이전 Stack을 다시 열지 않는다', () => {
     const common = readFileSync(join(dirName, 'screen-options.ts'), 'utf8');
 
     expect(layout).toContain("popToTopOnBlur: name === 'capture'");
+    expect(layout).toContain("popToTopOnBlur: tab.name === 'pick' && onPickDone");
     expect(common).not.toContain('popToTopOnBlur: true');
   });
 
