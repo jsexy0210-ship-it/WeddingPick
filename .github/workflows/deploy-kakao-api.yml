@@ -146,6 +146,43 @@ jobs:
             exit 1
           fi
 
+          # 이 VM은 20GB 디스크라 SHA별 API 이미지/빌드 캐시가 쌓이면 새 레이어 export가
+          # ENOSPC로 실패한다. 컨테이너가 참조하는 이미지(실행/중지 복구본 포함)는 건드리지 않고,
+          # 재생성 가능한 build cache/dangling image와 미참조 weddingpick-api:<sha> 태그만 정리한다.
+          echo 'Disk before safe API build cleanup:'
+          df -h / | sed -n '1,2p'
+          sudo -n docker system df || true
+          sudo -n docker builder prune -af >/dev/null
+
+          declare -A protected_image_ids=()
+          while IFS= read -r container_id; do
+            image_id="$(sudo -n docker inspect -f '{{.Image}}' "$container_id" 2>/dev/null || true)"
+            if [ -n "$image_id" ]; then
+              protected_image_ids["$image_id"]=1
+            fi
+          done < <(sudo -n docker ps -aq)
+
+          while IFS= read -r image_ref; do
+            case "$image_ref" in
+              weddingpick-api:kakao-current)
+                continue
+                ;;
+              weddingpick-api:[0-9a-f]*)
+                image_id="$(sudo -n docker image inspect -f '{{.Id}}' "$image_ref" 2>/dev/null || true)"
+                if [ -z "$image_id" ] || [ -n "${protected_image_ids[$image_id]:-}" ]; then
+                  continue
+                fi
+                echo "Removing unreferenced API image tag before build: $image_ref"
+                sudo -n docker image rm "$image_ref" >/dev/null
+                ;;
+            esac
+          done < <(sudo -n docker images --format '{{.Repository}}:{{.Tag}}' | sort -u)
+
+          sudo -n docker image prune -f >/dev/null
+          echo 'Disk after safe API build cleanup:'
+          df -h / | sed -n '1,2p'
+          sudo -n docker system df || true
+
           echo "Building $IMAGE while the current API remains running."
           sudo -n docker build --label "org.opencontainers.image.revision=$GITHUB_SHA" -t "$IMAGE" .
           sudo -n docker run -d --pull=never --name "$CANDIDATE_CONTAINER" --restart=no \
