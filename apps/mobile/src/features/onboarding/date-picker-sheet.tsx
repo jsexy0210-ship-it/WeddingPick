@@ -1,9 +1,7 @@
 import { dDay, formatDateDot } from '@weddingpick/domain';
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
-
-import { ActionButton, FontSize, Layout, LineHeight, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { ActionButton, FontSize, Layout, LineHeight, ProductSymbol, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 
 import {
@@ -133,10 +131,12 @@ function SheetBody({
         <ThemedText type="t4" style={styles.bold}>
           {S.title}
         </ThemedText>
-        <Pressable accessibilityRole="button" accessibilityLabel={S.close} onPress={onDismiss} style={styles.close}>
-          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={theme.textAssistive} strokeWidth={2} strokeLinecap="round">
-            <Path d="M6 6l12 12M18 6 6 18" />
-          </Svg>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={S.close}
+          onPress={onDismiss}
+          style={[styles.close, { backgroundColor: theme.backgroundSelected }]}>
+          <ProductSymbol name="close" size={16} color={theme.text} />
         </Pressable>
       </View>
 
@@ -202,19 +202,20 @@ const FLEX_MONTH = 1;
 const FLEX_DAY = 1;
 
 const styles = StyleSheet.create({
-  /* 시안 sheet — 패딩 · 둥글기 · 그래버는 SheetPanel. 요소 사이만 16(공용 20보다 좁다). */
-  sheet: { gap: Spacing.three },
+  /* 06 정본 wheelSheet — 패딩/그래버는 SheetPanel, 요소 사이 14. */
+  sheet: { gap: Layout.sectionHeadGap },
   /* 시안 sheetHead — 제목과 닫기를 양끝으로. */
   head: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: Layout.rowPaddingY,
-    minHeight: Layout.sheetClose,
+    gap: Layout.inlineGap,
+    minHeight: 36,
   },
   close: {
-    width: Layout.sheetClose,
-    height: Layout.sheetClose,
+    width: 36,
+    height: 36,
+    borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
