@@ -38,11 +38,16 @@ describe('onboarding draft storage mutation order', () => {
     const removeItem = AsyncStorage.removeItem as jest.MockedFunction<typeof AsyncStorage.removeItem>;
     const normalSet = setItem.getMockImplementation()!;
     let release!: () => void;
+    let markStarted!: () => void;
     const blocked = new Promise<void>((resolve) => {
       release = resolve;
     });
+    const started = new Promise<void>((resolve) => {
+      markStarted = resolve;
+    });
 
     setItem.mockImplementationOnce(async (key: string, value: string) => {
+      markStarted();
       await blocked;
       await normalSet(key, value);
     });
@@ -50,8 +55,8 @@ describe('onboarding draft storage mutation order', () => {
     const saving = saveOnboardingAnswers(EMPTY_ANSWERS);
     const clearing = clearOnboardingAnswers();
 
-    // mutation queue의 첫 operation이 시작할 microtask까지 보낸다.
-    await Promise.resolve();
+    // 큐가 실제 첫 mutation을 시작한 시점까지 기다린다. microtask 횟수에 기대지 않는다.
+    await started;
 
     expect(setItem).toHaveBeenCalledTimes(1);
     expect(removeItem).not.toHaveBeenCalled();
