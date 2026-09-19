@@ -6,7 +6,7 @@ import type {
 import { VENDOR_CATEGORY_LABEL, daysUntil } from '@weddingpick/domain';
 import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -24,7 +24,7 @@ import {
   ThemedView,
   useTheme,
 } from '@weddingpick/ui';
-import { getWeddingFeed, listExpos, listLoungeReviews } from '@/api/client';
+import { getWeddingFeed, listExpos, listLoungeReviews, setReviewHelpful } from '@/api/client';
 import { useSession } from '@/features/auth/use-session';
 import { FullScreenError } from '@/features/errors/full-screen-error';
 import { CategoryImage } from '@/features/home/category-image';
@@ -218,6 +218,7 @@ export default function CommunityScreen() {
               moreLoading={reviewMoreLoading}
               moreError={reviewMoreError}
               onRetryMore={loadMoreReviews}
+              signedIn={isSignedIn}
             />
           ) : tab === 'feed' ? (
             <FeedList state={feed} category={category} onRetry={load} />
@@ -237,6 +238,7 @@ function ReviewList({
   moreLoading,
   moreError,
   onRetryMore,
+  signedIn,
 }: {
   state: Loaded<LoungeReviewListResponse>;
   category: CategoryLabel;
@@ -244,8 +246,30 @@ function ReviewList({
   moreLoading: boolean;
   moreError: boolean;
   onRetryMore: () => void;
+  signedIn: boolean;
 }) {
   const theme = useTheme();
+  const [helpfulOverrides, setHelpfulOverrides] = useState<
+    Record<string, { count: number; mine: boolean }>
+  >({});
+  const [helpfulPending, setHelpfulPending] = useState<Record<string, boolean>>({});
+
+  async function toggleHelpful(review: LoungeReview) {
+    if (!signedIn) {
+      router.push('/login' as never);
+      return;
+    }
+    if (helpfulPending[review.id]) return;
+
+    const current = helpfulOverrides[review.id] ?? review.helpful;
+    setHelpfulPending((value) => ({ ...value, [review.id]: true }));
+    try {
+      const next = await setReviewHelpful(review.id, !current.mine);
+      setHelpfulOverrides((value) => ({ ...value, [review.id]: next }));
+    } finally {
+      setHelpfulPending((value) => ({ ...value, [review.id]: false }));
+    }
+  }
 
   if (state.status === 'loading') return <DelayedLoader size={28} />;
   if (state.status === 'error') return <LoadFailed onRetry={onRetry} />;
@@ -274,21 +298,20 @@ function ReviewList({
         const answers = reviewAnswers(review);
         const verified = review.verification !== 'reported';
         const who = review.mine ? '내 후기' : review.roleLabel;
+        const helpful = helpfulOverrides[review.id] ?? review.helpful;
         return (
-          <Pressable
+          <View
             key={review.id}
-            accessibilityRole="button"
-            accessibilityLabel={`${review.vendor.name} 후기`}
-            onPress={() =>
-              router.push(
-                `/search/${encodeURIComponent(review.vendor.id)}/review/${encodeURIComponent(review.id)}` as never
-              )
-            }
-            style={({ pressed }) => [
-              styles.reviewCard,
-              { borderBottomColor: theme.border },
-              pressed ? styles.pressed : null,
-            ]}>
+            style={[styles.reviewCard, { borderBottomColor: theme.border }]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${review.vendor.name} 후기`}
+              onPress={() =>
+                router.push(
+                  `/search/${encodeURIComponent(review.vendor.id)}/review/${encodeURIComponent(review.id)}` as never
+                )
+              }
+              style={({ pressed }) => [styles.reviewTap, pressed ? styles.pressed : null]}>
             <View style={styles.reviewHead}>
               <View style={[styles.reviewAvatar, { backgroundColor: theme.backgroundSelected }]}>
                 <ThemedText type="f13" style={styles.bold}>
@@ -320,6 +343,15 @@ function ReviewList({
               </View>
             ) : null}
 
+            {review.media[0] ? (
+              <Image
+                source={{ uri: review.media[0].url }}
+                style={styles.reviewImage}
+                resizeMode="cover"
+                accessibilityLabel="후기 사진"
+              />
+            ) : null}
+
             <ThemedText type="f14" style={styles.reviewBody}>
               {review.body}
             </ThemedText>
@@ -332,7 +364,35 @@ function ReviewList({
                 <ThemedText type="f13">{review.rebuttal.body}</ThemedText>
               </View>
             ) : null}
-          </Pressable>
+            </Pressable>
+
+            <View style={styles.reviewActions}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ selected: helpful.mine, disabled: helpfulPending[review.id] }}
+                disabled={helpfulPending[review.id]}
+                onPress={() => void toggleHelpful(review)}
+                style={({ pressed }) => [styles.reviewAction, pressed ? styles.pressed : null]}>
+                <ThemedText
+                  type="f12"
+                  style={helpful.mine ? [styles.bold, { color: theme.tint }] : styles.bold}>
+                  도움돼요 {helpful.count}
+                </ThemedText>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() =>
+                  router.push(
+                    `/search/${encodeURIComponent(review.vendor.id)}/review/${encodeURIComponent(review.id)}` as never
+                  )
+                }
+                style={({ pressed }) => [styles.reviewAction, pressed ? styles.pressed : null]}>
+                <ThemedText type="f12" style={styles.bold}>
+                  댓글 {review.comments.count}
+                </ThemedText>
+              </Pressable>
+            </View>
+          </View>
         );
       })}
       {moreLoading ? <DelayedLoader size={20} /> : null}
@@ -564,6 +624,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: Border.hairline,
     gap: Layout.inlineGap,
   },
+  reviewTap: { gap: Layout.inlineGap },
+  reviewImage: {
+    width: '100%',
+    aspectRatio: 1.55,
+    borderRadius: Radius.medium,
+    backgroundColor: '#F7F8F9',
+  },
+  reviewActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.four },
+  reviewAction: { minHeight: Layout.touchTarget, justifyContent: 'center' },
   reviewHead: { flexDirection: 'row', alignItems: 'center', gap: Layout.inlineGap },
   reviewAvatar: {
     width: Layout.avatarRow,

@@ -1,12 +1,23 @@
-import type { Review } from '@weddingpick/api-contract';
+import type { Review, ReviewComment } from '@weddingpick/api-contract';
+import type { ReportReason } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { listVendorReviews } from '@/api/client';
 import {
+  createReviewComment,
+  deleteReviewComment,
+  listReportReasons,
+  listReviewComments,
+  listVendorReviews,
+  reportReviewComment,
+  setReviewHelpful,
+} from '@/api/client';
+import {
+  ActionButton,
   Border,
+  FilterChip,
   Layout,
   LineHeight,
   MaxContentWidth,
@@ -21,6 +32,7 @@ import {
 import { BackButton } from '@/components/back-button';
 import { formatDateDot } from '@/features/common/format-date';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
+import { useSession } from '@/features/auth/use-session';
 import { Badge } from '@/features/wedding/screen-kit';
 
 /**
@@ -51,8 +63,15 @@ const STARS = [1, 2, 3, 4, 5] as const;
 
 export default function ReviewDetailScreen() {
   const theme = useTheme();
+  const { state: session } = useSession();
   const { vendorId, reviewId } = useLocalSearchParams<{ vendorId: string; reviewId: string }>();
   const [review, setReview] = useState<Review | null | undefined>(undefined);
+  const [comments, setComments] = useState<ReviewComment[]>([]);
+  const [commentText, setCommentText] = useState('');
+  const [commentSending, setCommentSending] = useState(false);
+  const [interactionNotice, setInteractionNotice] = useState<string | null>(null);
+  const [reportingComment, setReportingComment] = useState<string | null>(null);
+  const [reasons, setReasons] = useState<{ value: ReportReason; label: string }[]>([]);
 
   useEffect(() => {
     if (!vendorId || !reviewId) return;
@@ -61,6 +80,105 @@ export default function ReviewDetailScreen() {
       .then((page) => setReview(page.reviews.find((item) => item.id === reviewId) ?? null))
       .catch(() => setReview(null));
   }, [vendorId, reviewId]);
+
+  useEffect(() => {
+    if (!reviewId) return;
+    let active = true;
+    void listReviewComments(reviewId)
+      .then((page) => {
+        if (active) setComments(page.comments);
+      })
+      .catch(() => {
+        if (active) setInteractionNotice('댓글을 불러오지 못했어요.');
+      });
+    return () => {
+      active = false;
+    };
+  }, [reviewId]);
+
+  useEffect(() => {
+    void listReportReasons()
+      .then((loaded) => setReasons(loaded.reasons))
+      .catch(() => setReasons([]));
+  }, []);
+
+  async function toggleHelpful() {
+    if (!review || !reviewId) return;
+    if (session.status !== 'signedIn') {
+      router.push('/login');
+      return;
+    }
+    setInteractionNotice(null);
+    try {
+      const helpful = await setReviewHelpful(reviewId, !review.helpful.mine);
+      setReview((current) => (current ? { ...current, helpful } : current));
+    } catch (caught) {
+      setInteractionNotice(caught instanceof Error ? caught.message : '도움돼요를 반영하지 못했어요.');
+    }
+  }
+
+  async function sendComment() {
+    if (!reviewId || commentSending || !commentText.trim()) return;
+    if (session.status !== 'signedIn') {
+      router.push('/login');
+      return;
+    }
+    setCommentSending(true);
+    setInteractionNotice(null);
+    try {
+      const created = await createReviewComment(reviewId, { body: commentText.trim() });
+      setComments((current) => [...current, created]);
+      setReview((current) =>
+        current
+          ? {
+              ...current,
+              comments: {
+                ...current.comments,
+                count: current.comments.count + 1,
+                items: [...current.comments.items, created].slice(0, 2),
+              },
+            }
+          : current
+      );
+      setCommentText('');
+    } catch (caught) {
+      setInteractionNotice(caught instanceof Error ? caught.message : '댓글을 남기지 못했어요.');
+    } finally {
+      setCommentSending(false);
+    }
+  }
+
+  async function removeComment(commentId: string) {
+    setInteractionNotice(null);
+    try {
+      await deleteReviewComment(commentId);
+      setComments((current) => current.filter((comment) => comment.id !== commentId));
+      setReview((current) =>
+        current
+          ? {
+              ...current,
+              comments: {
+                ...current.comments,
+                count: Math.max(0, current.comments.count - 1),
+                items: current.comments.items.filter((comment) => comment.id !== commentId),
+              },
+            }
+          : current
+      );
+    } catch (caught) {
+      setInteractionNotice(caught instanceof Error ? caught.message : '댓글을 지우지 못했어요.');
+    }
+  }
+
+  async function reportComment(commentId: string, reason: ReportReason) {
+    try {
+      const received = await reportReviewComment(commentId, { reason });
+      setReportingComment(null);
+      setInteractionNotice(received.acknowledgement);
+    } catch (caught) {
+      setInteractionNotice(caught instanceof Error ? caught.message : '신고하지 못했어요.');
+    }
+  }
 
   return (
     <ThemedView style={styles.container}>
@@ -107,7 +225,32 @@ export default function ReviewDetailScreen() {
               </View>
             </View>
 
+            {review.media[0] ? (
+              <Image
+                source={{ uri: review.media[0].url }}
+                style={styles.heroImage}
+                resizeMode="cover"
+                accessibilityLabel="후기 사진"
+              />
+            ) : null}
+
             <View style={styles.body}>
+              <View style={styles.interactions}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: review.helpful.mine }}
+                  onPress={() => void toggleHelpful()}
+                  style={({ pressed }) => [styles.interactionButton, pressed && styles.pressed]}>
+                  <ThemedText
+                    type="f14"
+                    style={review.helpful.mine ? [styles.bold, { color: theme.tint }] : styles.bold}>
+                    도움돼요 {review.helpful.count}
+                  </ThemedText>
+                </Pressable>
+                <ThemedText type="f14" style={styles.bold}>
+                  댓글 {review.comments.count}
+                </ThemedText>
+              </View>
               {/* 항목별 별점 `grid grid-cols-4 gap-2` — 있는 만큼. */}
               {review.aspects.length > 0 ? (
                 <View style={styles.aspects}>
@@ -166,6 +309,73 @@ export default function ReviewDetailScreen() {
                   {CONSULT_CTA}
                 </ThemedText>
               </Pressable>
+
+              <View style={[styles.commentSection, { borderTopColor: theme.border }]}>
+                <ThemedText type="f14" style={styles.bold}>댓글 {review.comments.count}</ThemedText>
+                {comments.map((comment) => (
+                  <View key={comment.id} style={styles.comment}>
+                    <View style={styles.commentHead}>
+                      <ThemedText type="f12" style={styles.bold}>
+                        {comment.mine ? '내 댓글' : '회원'}
+                      </ThemedText>
+                      <ThemedText type="f10" numeric themeColor="textAssistive">
+                        {formatDateDot(comment.createdAt)}
+                      </ThemedText>
+                    </View>
+                    <ThemedText type="f13">{comment.body}</ThemedText>
+                    {comment.mine ? (
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={() => void removeComment(comment.id)}
+                        style={({ pressed }) => [styles.textAction, pressed && styles.pressed]}>
+                        <ThemedText type="f12" themeColor="textSecondary">삭제</ThemedText>
+                      </Pressable>
+                    ) : reportingComment === comment.id ? (
+                      <View style={styles.reportReasons}>
+                        {reasons.map((reason) => (
+                          <FilterChip
+                            key={reason.value}
+                            label={reason.label}
+                            selected={false}
+                            role="radio"
+                            onPress={() => void reportComment(comment.id, reason.value)}
+                          />
+                        ))}
+                        <ActionButton label="그만두기" onPress={() => setReportingComment(null)} />
+                      </View>
+                    ) : (
+                      <Pressable
+                        accessibilityRole="button"
+                        disabled={reasons.length === 0}
+                        onPress={() => setReportingComment(comment.id)}
+                        style={({ pressed }) => [styles.textAction, pressed && styles.pressed]}>
+                        <ThemedText type="f12" themeColor="textSecondary">신고</ThemedText>
+                      </Pressable>
+                    )}
+                  </View>
+                ))}
+
+                <TextInput
+                  value={commentText}
+                  onChangeText={setCommentText}
+                  multiline
+                  maxLength={1000}
+                  editable={!commentSending}
+                  placeholder="댓글을 남겨보세요"
+                  placeholderTextColor={theme.textSecondary}
+                  style={[styles.commentInput, { color: theme.text, borderColor: theme.border }]}
+                  accessibilityLabel="후기 댓글"
+                />
+                <ActionButton
+                  variant="primary"
+                  label={commentSending ? '등록 중…' : '댓글 등록'}
+                  disabled={commentSending || !commentText.trim()}
+                  onPress={() => void sendComment()}
+                />
+                {interactionNotice ? (
+                  <ThemedText type="f12" themeColor="textSecondary">{interactionNotice}</ThemedText>
+                ) : null}
+              </View>
             </View>
           </ScrollView>
         )}
@@ -250,5 +460,20 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   bold: { fontWeight: 700 },
+  heroImage: { width: '100%', aspectRatio: 1, backgroundColor: '#F7F8F9' },
+  interactions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.four },
+  interactionButton: { minHeight: Layout.touchTarget, justifyContent: 'center' },
+  commentSection: { borderTopWidth: Border.hairline, paddingTop: Spacing.four, gap: Spacing.three },
+  comment: { gap: Spacing.one },
+  commentHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
+  textAction: { minHeight: Layout.touchTarget, justifyContent: 'center', alignSelf: 'flex-start' },
+  reportReasons: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  commentInput: {
+    minHeight: 72,
+    borderWidth: 1,
+    borderRadius: Radius.input,
+    padding: Spacing.three,
+    textAlignVertical: 'top',
+  },
   pressed: { opacity: 0.8 },
 });

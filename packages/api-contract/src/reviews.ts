@@ -19,6 +19,54 @@ export const reviewVerificationSchema = z.enum(REVIEW_VERIFICATION);
 export const reportReasonSchema = z.enum(REPORT_REASONS);
 
 const ratingSchema = z.int().min(MIN_RATING).max(MAX_RATING);
+export const reviewImageMimeTypeSchema = z.enum(['image/jpeg', 'image/png', 'image/webp']);
+
+export const reviewMediaSchema = z.object({
+  id: idSchema,
+  url: z.url(),
+  mimeType: reviewImageMimeTypeSchema,
+});
+
+export const reviewHelpfulSchema = z.object({
+  count: z.int().nonnegative(),
+  mine: z.boolean(),
+});
+
+/**
+ * 댓글도 작성자 식별자를 내보내지 않는다. mine만 있어야 자기 댓글 삭제 버튼을
+ * 그릴 수 있고, 다른 회원은 모두 익명 역할로 남는다.
+ */
+export const reviewCommentSchema = z.object({
+  id: idSchema,
+  body: z.string().min(1).max(1000),
+  createdAt: timestampSchema,
+  mine: z.boolean(),
+});
+
+export const reviewCommentsSchema = z.object({
+  count: z.int().nonnegative(),
+  items: z.array(reviewCommentSchema),
+});
+
+export const createReviewMediaUploadTargetRequestSchema = z.object({
+  mimeType: reviewImageMimeTypeSchema,
+});
+
+export const createReviewMediaUploadTargetResponseSchema = z.object({
+  storageKey: z.string().min(1),
+  uploadUrl: z.url(),
+  expiresAt: timestampSchema,
+});
+
+export const createReviewCommentRequestSchema = z.object({
+  body: z.string().trim().min(1).max(1000),
+});
+
+export const reviewCommentListResponseSchema = z.object({
+  comments: z.array(reviewCommentSchema),
+  nextCursor: z.string().nullable(),
+  count: z.int().nonnegative(),
+});
 
 /**
  * 항목 하나의 평가.
@@ -128,6 +176,20 @@ export const createReviewRequestSchema = z.object({
     .array(z.object({ key: z.string().min(1), answer: checklistAnswerSchema }))
     .max(20)
     .default([]),
+  /**
+   * 업로드가 끝난 사진 열쇠. 서버가 자기 사용자 prefix인지·실제 파일이 있는지 다시
+   * 확인하고 후기와 묶는다. 권리 확인 없는 사진은 계약상 제출할 수 없다.
+   */
+  media: z
+    .array(
+      z.object({
+        storageKey: z.string().min(1),
+        mimeType: reviewImageMimeTypeSchema,
+        rightsConfirmed: z.literal(true),
+      })
+    )
+    .max(3)
+    .default([]),
 });
 
 export const createReviewResponseSchema = z.object({
@@ -153,6 +215,11 @@ export const reviewSchema = z.object({
   createdAt: timestampSchema,
   /** 내가 쓴 글인지. 작성자를 밝히지 않으므로 이것 말고는 알 방법이 없다. */
   mine: z.boolean(),
+  /** 권리 확인 후 게시된 후기 사진. 저장소 열쇠는 공개 계약에 없다. */
+  media: z.array(reviewMediaSchema),
+  helpful: reviewHelpfulSchema,
+  /** 목록 카드에서는 앞의 일부만 담아도 count는 전체 댓글 수다. */
+  comments: reviewCommentsSchema,
 
   /**
    * 업체가 단 반론. **사람이 게시를 결정한 것만 온다**
@@ -277,6 +344,9 @@ export const createReviewReportRequestSchema = z.object({
   note: z.string().trim().max(2000).optional(),
 });
 
+/** 댓글 신고도 같은 사유·같은 접수 원칙을 쓴다. 신고만으로 댓글을 가리지 않는다. */
+export const createReviewCommentReportRequestSchema = createReviewReportRequestSchema;
+
 /**
  * 신고 접수 응답.
  *
@@ -295,6 +365,14 @@ export type ReviewForm = z.infer<typeof reviewFormSchema>;
 export type CreateReviewRequest = z.infer<typeof createReviewRequestSchema>;
 export type UpdateReviewRequest = z.infer<typeof updateReviewRequestSchema>;
 export type CreateReviewResponse = z.infer<typeof createReviewResponseSchema>;
+export type ReviewMedia = z.infer<typeof reviewMediaSchema>;
+export type ReviewHelpful = z.infer<typeof reviewHelpfulSchema>;
+export type ReviewComment = z.infer<typeof reviewCommentSchema>;
+export type ReviewComments = z.infer<typeof reviewCommentsSchema>;
+export type CreateReviewMediaUploadTargetRequest = z.infer<typeof createReviewMediaUploadTargetRequestSchema>;
+export type CreateReviewMediaUploadTargetResponse = z.infer<typeof createReviewMediaUploadTargetResponseSchema>;
+export type CreateReviewCommentRequest = z.infer<typeof createReviewCommentRequestSchema>;
+export type ReviewCommentListResponse = z.infer<typeof reviewCommentListResponseSchema>;
 export type Review = z.infer<typeof reviewSchema>;
 export type LoungeReview = z.infer<typeof loungeReviewSchema>;
 export type LoungeReviewListResponse = z.infer<typeof loungeReviewListResponseSchema>;
@@ -302,4 +380,5 @@ export type UsageScore = z.infer<typeof usageScoreSchema>;
 export type ReviewListResponse = z.infer<typeof reviewListResponseSchema>;
 export type ReportReasonListResponse = z.infer<typeof reportReasonListResponseSchema>;
 export type CreateReviewReportRequest = z.infer<typeof createReviewReportRequestSchema>;
+export type CreateReviewCommentReportRequest = z.infer<typeof createReviewCommentReportRequestSchema>;
 export type CreateReviewReportResponse = z.infer<typeof createReviewReportResponseSchema>;

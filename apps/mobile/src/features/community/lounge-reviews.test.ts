@@ -16,6 +16,15 @@ const baseReview = {
   aspects: [],
   createdAt: '2026-09-18T00:00:00.000Z',
   mine: false,
+  media: [],
+  helpful: {
+    count: 0,
+    mine: false,
+  },
+  comments: {
+    count: 0,
+    items: [],
+  },
   rebuttal: null,
   vendor: {
     id: '00000000-0000-4000-8000-000000000010',
