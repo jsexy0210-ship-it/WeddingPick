@@ -1,10 +1,11 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { updateReview } from '@/api/client';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
+import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import {
   ActionButton,
   Radius,
@@ -63,7 +64,7 @@ export default function EditReviewRoute() {
     cons !== initialCons;
 
   function closeSheet() {
-    router.replace(`/search/${vendorId}/reviews` as never);
+    dismissToOrReplace(`/search/${vendorId}/reviews`);
   }
 
   function requestClose() {
