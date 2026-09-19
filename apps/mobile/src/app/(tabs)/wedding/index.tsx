@@ -29,12 +29,13 @@ import type {
   WeddingEvent,
 } from '@weddingpick/api-contract';
 import { TERMS, isBeforeWedding, lifecycle, manwon } from '@weddingpick/domain';
-import { Redirect, router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
+  ActionButton,
   Border,
   Elevation,
   Layout,
@@ -53,7 +54,9 @@ import {
   listConsultations,
   listWeddingEvents,
   removeWeddingEvent,
+  setBudget,
 } from '@/api/client';
+import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 import { useSession } from '@/features/auth/use-session';
 import { WeddingCompleteView } from '@/features/wedding/complete-view';
 import { eventTime } from '@/features/wedding/screen-kit';
@@ -89,15 +92,30 @@ const EVENT_DOT = 4;
 const pad = (value: number) => String(value).padStart(2, '0');
 const dayKey = (value: Date) => `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`;
 
-export default function WeddingScreen() {
+function parseTab(value: string | undefined): Tab | null {
+  return value === 'calendar' || value === 'consult' || value === 'budget' ? value : null;
+}
+
+export default function WeddingScreen({
+  initialTab,
+  suppressBudgetPrompt = false,
+}: {
+  initialTab?: Tab;
+  suppressBudgetPrompt?: boolean;
+} = {}) {
   const theme = useTheme();
+  const params = useLocalSearchParams<{ tab?: string }>();
   const { state, refresh } = useSession();
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [events, setEvents] = useState<WeddingEvent[] | null>(null);
   const [expenses, setExpenses] = useState<ExpenseSummaryResponse | null>(null);
   const [consults, setConsults] = useState<ConsultationRecord[] | null>(null);
-  const [tab, setTab] = useState<Tab>('calendar');
+  const [tab, setTab] = useState<Tab>(initialTab ?? parseTab(params.tab) ?? 'calendar');
   const [toast, setToast] = useState<string | null>(null);
+  const [budgetOpen, setBudgetOpen] = useState(false);
+  const [budgetDraft, setBudgetDraft] = useState('');
+  const [budgetSaving, setBudgetSaving] = useState(false);
+  const budgetPrompted = useRef(false);
 
   const isSignedIn = state.status === 'signedIn';
 
@@ -122,6 +140,25 @@ export default function WeddingScreen() {
 
   /* 일정 · 지출 화면에서 돌아오면 목록이 바뀌어 있다 — 화면에 올 때마다 다시 읽는다. */
   useFocusEffect(load);
+
+  useEffect(() => {
+    if (initialTab !== undefined) return;
+    const requested = parseTab(params.tab);
+    if (requested) setTab(requested);
+  }, [initialTab, params.tab]);
+
+  useEffect(() => {
+    if (
+      suppressBudgetPrompt ||
+      tab !== 'budget' ||
+      !expenses ||
+      expenses.budget.set ||
+      budgetPrompted.current
+    ) return;
+    budgetPrompted.current = true;
+    setBudgetDraft('');
+    setBudgetOpen(true);
+  }, [expenses, suppressBudgetPrompt, tab]);
 
   if (state.status === 'error') return <FullScreenError kind={state.kind} onRetry={() => void refresh()} />;
   if (state.status === 'loading') return <DelayedLoadingView />;
@@ -167,7 +204,25 @@ export default function WeddingScreen() {
     if (!weddingId) return;
     if (tab === 'calendar') router.push(`/wedding/${weddingId}/events/new` as never);
     else if (tab === 'budget') router.push(`/wedding/${weddingId}/expenses/add` as never);
-    else router.push(`/wedding/${weddingId}/consultations` as never);
+    else router.push(`/wedding/${weddingId}/consultations/upload` as never);
+  }
+
+  const budgetAmount = Number(budgetDraft.replace(/[^\d]/g, ''));
+  const budgetReady = Number.isFinite(budgetAmount) && budgetAmount > 0;
+
+  async function saveInitialBudget() {
+    if (!weddingId || !budgetReady || budgetSaving) return;
+    setBudgetSaving(true);
+    try {
+      await setBudget(weddingId, budgetAmount);
+      const next = await getExpenses(weddingId);
+      setExpenses(next);
+      setBudgetOpen(false);
+    } catch {
+      setToast('예산을 등록하지 못했어요. 다시 시도해주세요.');
+    } finally {
+      setBudgetSaving(false);
+    }
   }
 
   async function deleteEvent(event: WeddingEvent) {
@@ -225,12 +280,56 @@ export default function WeddingScreen() {
           ) : (
             <ConsultPanel
               records={consults ?? []}
-              onOpen={() => (weddingId ? router.push(`/wedding/${weddingId}/consultations` as never) : null)}
+              onUpload={() =>
+                weddingId ? router.push(`/wedding/${weddingId}/consultations/upload` as never) : null
+              }
+              onOpen={(record) =>
+                weddingId
+                  ? router.push(`/wedding/${weddingId}/consultations/${record.id}` as never)
+                  : null
+              }
             />
           )}
         </ScrollView>
 
       </SafeAreaView>
+
+      <BottomSheet
+        visible={budgetOpen}
+        dismissible={false}
+        onRequestClose={() => undefined}
+        testID="initial-budget-sheet">
+        <SheetPanel style={styles.budgetSheet}>
+          <ThemedText type="t3">예산을 먼저 등록해주세요</ThemedText>
+          <ThemedText type="body" themeColor="textSecondary">
+            예산현황을 보려면 전체 예산이 필요해요. 등록한 뒤에는 언제든 바꿀 수 있어요.
+          </ThemedText>
+          <TextInput
+            value={budgetDraft}
+            onChangeText={(text) =>
+              setBudgetDraft(
+                text
+                  .replace(/[^0-9]/g, '')
+                  .slice(0, 12)
+                  .replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+              )
+            }
+            keyboardType="number-pad"
+            placeholder="예: 30,000,000"
+            placeholderTextColor={theme.textDisabled}
+            accessibilityLabel="전체 예산"
+            style={[styles.budgetInput, { color: theme.text, borderColor: theme.fieldBorder }]}
+          />
+          <ActionButton
+            variant="primary"
+            size="xlarge"
+            label={budgetSaving ? '등록하는 중…' : '예산 등록'}
+            disabled={!budgetReady || budgetSaving}
+            onPress={() => void saveInitialBudget()}
+          />
+        </SheetPanel>
+      </BottomSheet>
+
       <Toast message={toast} onHidden={() => setToast(null)} />
     </ThemedView>
   );
@@ -517,7 +616,15 @@ function BudgetPanel({ expenses }: { expenses: ExpenseSummaryResponse | null }) 
 /* ────────────────────────────────────────────
    상담기록 패널 — 행: 업체 · 날짜 · 금액 / 상태. 비면 점선 상자.
 ──────────────────────────────────────────── */
-function ConsultPanel({ records, onOpen }: { records: ConsultationRecord[]; onOpen: () => void }) {
+function ConsultPanel({
+  records,
+  onUpload,
+  onOpen,
+}: {
+  records: ConsultationRecord[];
+  onUpload: () => void;
+  onOpen: (record: ConsultationRecord) => void;
+}) {
   const theme = useTheme();
 
   return (
@@ -543,7 +650,7 @@ function ConsultPanel({ records, onOpen }: { records: ConsultationRecord[]; onOp
                 key={record.id}
                 accessibilityRole="button"
                 accessibilityLabel={`${record.vendorLabel ?? '업체 미확인'} 상담기록`}
-                onPress={onOpen}
+                onPress={() => onOpen(record)}
                 style={[
                   styles.consultRow,
                   index < records.length - 1 ? { borderBottomWidth: Border.hairline, borderBottomColor: theme.border } : null,
@@ -571,7 +678,7 @@ function ConsultPanel({ records, onOpen }: { records: ConsultationRecord[]; onOp
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={CONSULT_EMPTY_TITLE}
-        onPress={onOpen}
+        onPress={onUpload}
         style={[styles.consultEmpty, { borderColor: theme.border }]}>
         <ProductSymbol name="mic" size={Layout.iconRow} color={theme.textAssistive} />
         <ThemedText type="t7" themeColor="textAssistive">
@@ -601,6 +708,13 @@ function consultAmount(record: ConsultationRecord): number | null {
    사다리에 없는 값은 같은 값의 기존 토큰을 주석과 함께 쓴다(저장소 관례).
 ──────────────────────────────────────────── */
 const styles = StyleSheet.create({
+  budgetSheet: { flexShrink: 1 },
+  budgetInput: {
+    height: Layout.field,
+    borderRadius: Radius.input,
+    borderWidth: 1,
+    paddingHorizontal: Layout.fieldPaddingX,
+  },
   container: { flex: 1 },
   safeArea: { flex: 1 },
   /* 제목 `px-5 pb-5 pt-6` — 좌우는 정본 24 · 위 24 · 아래 20(같은 값의 listGap). 28은 스케일에 없어 t2(26)다. */
