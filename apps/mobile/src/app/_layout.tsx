@@ -66,21 +66,36 @@ const ENTRY_ROUTE = {
 } as const;
 
 export default function RootLayout() {
-  // 구버전 웹뷰가 URL에 남긴 자격증명은 어떤 화면도 그리기 전에 제거한다.
-  stripLegacyWebShellToken();
+  /*
+   * 웹 정적 export의 첫 HTML과 브라우저의 첫 렌더는 반드시 같은 답을 내야 한다.
+   * OAuth query · window.opener · userAgent는 서버에 없으므로 render 중 읽지 않는다.
+   * 첫 hydration은 기존 스플래시를 그대로 쓰고, effect에서만 브라우저 상태를 읽는다.
+   */
+  const [browserReady, setBrowserReady] = useState(Platform.OS !== 'web');
+  const [authPopup, setAuthPopup] = useState(false);
 
-  if (isAuthPopup()) {
-    // 훅을 하나도 부르지 않고 빈 화면을 돌려준다 — 부팅을 시작하지 않는다.
-    // opener에게 결과를 넘기는 일은 completeAuthPopup()이 따로 한다(is-auth-popup.ts).
-    completeAuthPopup();
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
 
-    return null;
-  }
+    // 구버전 웹뷰가 URL에 남긴 자격증명은 제품 화면을 열기 전에 제거한다.
+    stripLegacyWebShellToken();
 
-  return <RootLayoutContent />;
+    if (isAuthPopup()) {
+      // opener에게 결과를 넘긴 뒤 이 창에서는 소비자 부팅을 시작하지 않는다.
+      completeAuthPopup();
+      setAuthPopup(true);
+      return;
+    }
+
+    setBrowserReady(true);
+  }, []);
+
+  if (authPopup) return null;
+
+  return <RootLayoutContent browserReady={browserReady} />;
 }
 
-function RootLayoutContent() {
+function RootLayoutContent({ browserReady }: { browserReady: boolean }) {
   /*
    * **글꼴은 Pretendard이고, 여기서 싣지 않는다.** 이 주석은 2026-09-17까지
    * 「글꼴을 싣지 않는다 — 시스템 서체다」라고 적고 있었는데 **사실과 달랐다.**
@@ -115,14 +130,12 @@ function RootLayoutContent() {
    * `completeKakaoRedirect()`가 URL의 `code`를 지워 버리므로 나중에 다시 물어볼 수 없고,
    * 「로그인하는 중이에요」를 이 부팅이 맡는다는 것도 같은 순간에 정해야 한다.
    */
-  const [signingIn] = useState(() => {
-    const returning = hasKakaoReturn();
-
-    if (returning) claimSigningInMessageForBoot();
-
-    return returning;
-  });
-  const [minimumShown, setMinimumShown] = useState(() => hasKakaoReturn());
+  /*
+   * hydration 중에는 브라우저 query를 읽지 않는다. 서버와 브라우저 모두
+   * signingIn=false · minimumShown=false로 시작한 뒤 browserReady 이후 판정한다.
+   */
+  const [signingIn, setSigningIn] = useState(false);
+  const [minimumShown, setMinimumShown] = useState(false);
   /*
    * 카카오톡·인스타그램 등의 인앱 브라우저로 열렸으면 바깥 브라우저로 넘긴다
    * (`features/inapp-browser`). 부팅의 첫 순간에 한 번만 한다 — 화면을 그리고
@@ -133,7 +146,7 @@ function RootLayoutContent() {
    * 안내다(iOS의 인스타그램·페이스북·라인 — 사파리를 강제로 띄우는 공개 API가
    * 없다).
    */
-  const [inAppNotice] = useState(escapeInAppBrowser);
+  const [inAppNotice, setInAppNotice] = useState<ReturnType<typeof escapeInAppBrowser>>({ kind: 'none' });
   const redirected = useRef(false);
   /** 웹 OAuth 복귀에서 pending Pick을 끝낸 뒤 돌아갈 실제 제품 화면. */
   const postSignInRoute = useRef<string | null>(null);
@@ -146,6 +159,23 @@ function RootLayoutContent() {
   const isAdminPath = Platform.OS === 'web' && (pathname === '/admin' || pathname.startsWith('/admin/'));
   const theme = useTheme();
   const stackScreenOptions = useStackScreenOptions();
+
+  useEffect(() => {
+    // 관리자 콘솔은 소비자 OAuth·인앱 브라우저 판정을 하지 않는다.
+    if (isAdminPath || !browserReady) return;
+
+    const returning = hasKakaoReturn();
+
+    if (returning) {
+      claimSigningInMessageForBoot();
+      setSigningIn(true);
+      // OAuth 복귀는 스플래시 최소 노출을 다시 기다리지 않는다.
+      setMinimumShown(true);
+    }
+
+    // userAgent/window.location도 hydration 뒤에만 읽는다.
+    setInAppNotice(escapeInAppBrowser());
+  }, [browserReady, isAdminPath]);
   /*
    * 라우터가 화면 뒤에 까는 색. 기본값(react-navigation `DefaultTheme`)은
    * rgb(242,242,242)로 우리 토큰에 없는 회색이라, 화면이 그려지기 전 한 프레임과
@@ -182,16 +212,16 @@ function RootLayoutContent() {
      * 겪을지 알 수 없고, 화면마다 고치면 빠진 화면에서 또 난다. 경로가 바뀔 때마다
      * (모든 내비게이션이 지나는 단 하나의 자리) 여기서 포커스를 놓는다.
      */
-    if (Platform.OS !== 'web') return;
+    if (Platform.OS !== 'web' || !browserReady) return;
 
     const active = document.activeElement;
 
     if (active instanceof HTMLElement && active !== document.body) active.blur();
-  }, [pathname]);
+  }, [browserReady, pathname]);
 
   useEffect(() => {
-    // 관리자 콘솔은 자체 인증을 사용한다. 소비자 세션 부팅으로 건드리지 않는다.
-    if (isAdminPath) return;
+    // 관리자 콘솔은 자체 인증을 사용한다. hydration 전에도 소비자 부팅을 시작하지 않는다.
+    if (isAdminPath || !browserReady) return;
 
     let cancelled = false;
 
@@ -241,23 +271,24 @@ function RootLayoutContent() {
     return () => {
       cancelled = true;
     };
-  }, [entryAttempt, isAdminPath]);
+  }, [browserReady, entryAttempt, isAdminPath]);
 
   useEffect(() => {
-    if (signingIn) return;
+    if (isAdminPath || !browserReady || signingIn) return;
 
     const timer = setTimeout(() => setMinimumShown(true), SPLASH_MINIMUM_MS);
 
     return () => clearTimeout(timer);
-  }, [signingIn]);
+  }, [browserReady, isAdminPath, signingIn]);
 
   useEffect(() => {
     /*
-     * 우리 스플래시가 뜨자마자 네이티브 스플래시를 내린다. 첫 화면을 정할 때까지
-     * 기다리면 그동안 우리 것이 가려져 애니메이션을 아무도 못 본다.
+     * 웹은 hydration이 끝난 뒤에만 브라우저 상태를 확정한다. 그 전에는 정적 HTML과
+     * 같은 스플래시를 유지한다. 네이티브는 browserReady=true로 바로 들어온다.
      */
+    if (!browserReady) return;
     SplashScreen.hideAsync();
-  }, []);
+  }, [browserReady]);
 
   useEffect(() => {
     /*
@@ -315,7 +346,7 @@ function RootLayoutContent() {
     }} />;
   }
 
-  if (!isAdminPath && (entry === null || !minimumShown)) {
+  if (!isAdminPath && (!browserReady || entry === null || !minimumShown)) {
     return signingIn ? <SigningInView /> : <SplashView />;
   }
 
