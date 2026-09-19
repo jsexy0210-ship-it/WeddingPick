@@ -51,7 +51,7 @@ describe('transient completion flow navigation', () => {
     const end = source.indexOf('const levels =', start);
     const done = source.slice(start, end);
 
-    expect(done).toContain('router.replace(\`/capture/verify-status/');
+    expect(done).toContain('router.replace(`/capture/verify-status/');
     expect(done).toContain('label="결과로 돌아가기" onPress={depthBack}');
     expect(done).not.toContain('router.back()');
   });
@@ -63,7 +63,8 @@ describe('transient completion flow navigation', () => {
       screen('(tabs)', 'my', 'biz', 'benefit.tsx'),
     ];
 
-    for (const source of files) {
+    expect(files[0]).toContain('onPress: depthBack');
+    for (const source of files.slice(1)) {
       expect(source).toContain('onPress={depthBack}');
     }
   });
@@ -72,8 +73,8 @@ describe('transient completion flow navigation', () => {
     const write = screen('(tabs)', 'search', '[vendorId]', 'write-review.tsx');
     const edit = screen('(tabs)', 'search', '[vendorId]', 'edit-review.tsx');
 
-    expect(write).toContain('dismissToOrReplace(\`/search/\${vendorId}/reviews\`)');
-    expect(edit).toContain('dismissToOrReplace(\`/search/\${vendorId}/reviews\`)');
+    expect(write).toContain('dismissToOrReplace(`/search/${vendorId}/reviews`)');
+    expect(edit).toContain('dismissToOrReplace(`/search/${vendorId}/reviews`)');
   });
 
   it('배우자 연결·Pick 인증·탈퇴 완료는 replace로 완료 화면을 폐기한다', () => {
