@@ -83,10 +83,12 @@ export default function RootLayout() {
     if (isAuthPopup()) {
       // opener에게 결과를 넘긴 뒤 이 창에서는 소비자 부팅을 시작하지 않는다.
       completeAuthPopup();
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- hydration이 끝난 뒤에만 팝업 상태를 확정한다
       setAuthPopup(true);
       return;
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 서버 snapshot과 첫 브라우저 render를 맞춘 뒤 전환한다
     setBrowserReady(true);
   }, []);
 
@@ -168,12 +170,15 @@ function RootLayoutContent({ browserReady }: { browserReady: boolean }) {
 
     if (returning) {
       claimSigningInMessageForBoot();
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- OAuth query는 hydration 뒤에만 상태로 승격한다
       setSigningIn(true);
       // OAuth 복귀는 스플래시 최소 노출을 다시 기다리지 않는다.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 같은 bootstrap 전환의 최소 노출 상태다
       setMinimumShown(true);
     }
 
     // userAgent/window.location도 hydration 뒤에만 읽는다.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 브라우저 환경 판정 결과를 hydration 뒤에만 반영한다
     setInAppNotice(escapeInAppBrowser());
   }, [browserReady, isAdminPath]);
   /*
