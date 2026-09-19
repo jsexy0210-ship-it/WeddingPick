@@ -11,7 +11,6 @@ import {
   Badge,
   CheckBox,
   Field,
-  Hero,
   ListRow,
   Section,
 } from '@/features/wedding/screen-kit';
@@ -104,7 +103,7 @@ export default function AddWeddingEventRoute() {
             contentContainerStyle={styles.content}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}>
-            <Hero title="어떤 일정을 넣을까요?" />
+            <ThemedText type="t2">어떤 일정을 넣을까요?</ThemedText>
 
             <View style={styles.fields}>
               <Field
@@ -132,7 +131,7 @@ export default function AddWeddingEventRoute() {
               />
             </View>
 
-            <Section label="알림">
+            <Section label="알림" style={styles.sheetSection}>
               <ListRow
                 left={<CheckBox checked={notifyEnabled} />}
                 title="하루 전에 알려주기"
@@ -182,5 +181,6 @@ const styles = StyleSheet.create({
   content: { paddingBottom: Spacing.two, gap: Spacing.three },
   fields: { gap: Spacing.three },
   actions: { flexDirection: 'row', gap: Spacing.two },
+  sheetSection: { paddingHorizontal: 0 },
   spacer: { paddingHorizontal: Layout.gutter },
 });
