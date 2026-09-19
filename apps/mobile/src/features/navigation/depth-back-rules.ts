@@ -335,9 +335,13 @@ function fill(target: string, route: string, pathname: string): string {
     if (isDynamic(slot) && actual[i]) values[paramName(slot)] = actual[i]!;
   });
 
-  const filled = segmentsOf(target).map((slot) => (isDynamic(slot) ? (values[paramName(slot)] ?? slot) : slot));
+  const [targetPath, query] = target.split('?');
+  const filled = segmentsOf(targetPath ?? target).map((slot) =>
+    isDynamic(slot) ? (values[paramName(slot)] ?? slot) : slot
+  );
+  const path = filled.length > 0 ? `/${filled.join('/')}` : '/';
 
-  return filled.length > 0 ? `/${filled.join('/')}` : '/';
+  return query ? `${path}?${query}` : path;
 }
 
 /**
