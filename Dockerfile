@@ -53,10 +53,15 @@ COPY spec/font-subsets.json ./spec/font-subsets.json
 COPY spec/strings.ko.json ./spec/strings.ko.json
 
 
-# 상담 녹음 클리핑은 worker 전용 이미지에만 둔다.
-# API 요청 경로는 현재 audio-clip/consultation-reader를 import하지 않으므로,
-# ffmpeg를 API 이미지에 싣지 않아도 현재 운영 경로는 유지된다.
+# 운영 worker는 현재 상담 녹음 클리핑 경로를 호출하지 않는다.
+# API와 동일한 최소 런타임을 쓰고, ffmpeg는 활성 production 이미지에서 제외한다.
 FROM runtime-base AS worker-runtime
+CMD ["/opt/tsx/node_modules/.bin/tsx", "apps/api/src/worker.ts"]
+
+
+# 상담 녹음 분류 경로를 다시 연결할 때만 명시적으로 선택하는 보존 target이다.
+# 현재 production deploy에서는 이 target을 build/deploy하지 않는다.
+FROM runtime-base AS media-worker-runtime
 RUN apk add --no-cache ffmpeg
 CMD ["/opt/tsx/node_modules/.bin/tsx", "apps/api/src/worker.ts"]
 
