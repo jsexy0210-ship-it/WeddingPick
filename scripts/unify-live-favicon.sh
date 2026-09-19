@@ -22,6 +22,16 @@ for role in app admin web; do
   fi
 done
 
+for role in app admin web; do
+  favicon_backup="$backup_dir/$role-favicon.png"
+  favicon_absent_marker="$backup_dir/$role-favicon.absent"
+  if sudo -n test -f "$release_root/$role/favicon.png"; then
+    sudo -n cp -p "$release_root/$role/favicon.png" "$favicon_backup"
+  else
+    : > "$favicon_absent_marker"
+  fi
+done
+
 restore() {
   set +e
   for role in app admin web; do
@@ -29,11 +39,24 @@ restore() {
       sudo -n tar -C "$release_root/$role" -xzf "$backup_dir/$role-html.tgz" >/dev/null 2>&1 || true
     fi
   done
+
+  for role in app admin web; do
+    favicon_backup="$backup_dir/$role-favicon.png"
+    favicon_absent_marker="$backup_dir/$role-favicon.absent"
+    if [ -f "$favicon_backup" ]; then
+      sudo -n cp -p "$favicon_backup" "$release_root/$role/favicon.png" >/dev/null 2>&1 || true
+    elif [ -f "$favicon_absent_marker" ]; then
+      sudo -n rm -f "$release_root/$role/favicon.png" >/dev/null 2>&1 || true
+    fi
+  done
 }
 trap 'status=$?; if [ "$status" -ne 0 ]; then restore; fi; exit "$status"' EXIT
 
-# 같은 바이트 하나를 443 root에서 서비스한다.
-sudo -n install -m 0644 "$CANONICAL" "$release_root/app/favicon.png"
+# app/admin/web 세 origin이 절대경로 /favicon.png에서 같은 바이트를 서비스한다.
+for role in app admin web; do
+  sudo -n install -m 0644 "$CANONICAL" "$release_root/$role/favicon.png"
+  cmp -s "$CANONICAL" "$release_root/$role/favicon.png"
+done
 
 python3 - "$release_root" "$VERSION" <<'PY'
 from pathlib import Path
