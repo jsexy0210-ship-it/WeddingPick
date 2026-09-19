@@ -374,6 +374,7 @@ function decodeCursor(cursor: string): [string, string] | null {
 
 export function registerReviewRoutes(app: FastifyInstance, context: AppContext): void {
   const auth = { preHandler: requireUser(context) };
+  const operatorAuth = { preHandler: requireOperatorUser(context) };
   /* 읽기는 로그인 없이. 쓰기·신고는 여전히 로그인이 필요하다(아래 참조). */
   const open = { preHandler: optionalUser(context) };
 
@@ -435,6 +436,30 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
         minimumBodyLength: MINIMUM_BODY_LENGTH,
         packageSiblings,
       };
+    }
+  );
+
+  /**
+   * 후기 사진 업로드 자리. 파일은 API를 지나지 않고 저장소로 바로 간다.
+   * 열쇠에 사용자 id를 넣어 다른 사람이 만든 업로드를 후기로 가로채지 못하게 한다.
+   */
+  app.post(
+    '/v1/reviews/media/upload-target',
+    auth,
+    async (request) => {
+      const userId = currentUserId(request);
+      const body = createReviewMediaUploadTargetRequestSchema.parse(request.body);
+      const extension = REVIEW_IMAGE_TYPES[body.mimeType];
+
+      if (!extension) {
+        throw new ApiError('invalid_request', 'JPG · PNG · WebP 사진만 올릴 수 있어요.');
+      }
+
+      return context.storage.createUploadTarget({
+        storageKey: `reviews/${userId}/${randomUUID()}.${extension}`,
+        mimeType: body.mimeType,
+        expiresInSeconds: 600,
+      });
     }
   );
 
@@ -519,6 +544,38 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
         vendor.id
       );
 
+      const mediaKeys = new Set<string>();
+      for (const media of body.media) {
+        const extension = REVIEW_IMAGE_TYPES[media.mimeType];
+        const expectedPrefix = `reviews/${userId}/`;
+        const expectedSuffix = extension ? `.${extension}` : '';
+
+        if (
+          !extension ||
+          !media.storageKey.startsWith(expectedPrefix) ||
+          !media.storageKey.endsWith(expectedSuffix) ||
+          mediaKeys.has(media.storageKey)
+        ) {
+          throw new ApiError('invalid_request', '후기 사진 업로드 정보를 다시 확인해주세요.');
+        }
+        mediaKeys.add(media.storageKey);
+
+        let bytes: Buffer;
+        try {
+          bytes = await context.storage.download(media.storageKey);
+        } catch {
+          throw new ApiError('invalid_request', '사진이 다 올라오지 않았어요. 다시 올려주세요.');
+        }
+
+        if (
+          bytes.length === 0 ||
+          bytes.length > REVIEW_IMAGE_MAX_BYTES ||
+          !reviewImageBytesMatch(bytes, media.mimeType)
+        ) {
+          throw new ApiError('invalid_request', '사진 형식이나 크기를 확인해주세요.');
+        }
+      }
+
       const client = await context.pool.connect();
 
       try {
@@ -564,6 +621,15 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
             `INSERT INTO structured.review_checklist_answers (review_id, item, answer)
              VALUES ($1, $2, $3::checklist_answer)`,
             [reviewId, answer.key, answer.answer]
+          );
+        }
+
+        for (const [position, media] of body.media.entries()) {
+          await client.query(
+            `INSERT INTO structured.review_media
+               (review_id, storage_key, mime_type, position, rights_confirmed_at)
+             VALUES ($1, $2, $3, $4, now())`,
+            [reviewId, media.storageKey, media.mimeType, position]
           );
         }
 
