@@ -6,6 +6,11 @@ const fragments = [
   ['on', 'render.com'].join(''),
   ['RENDER', '_'].join(''),
   ['render', '.yaml'].join(''),
+  ['render', '-env'].join(''),
+  ['render', '-deploy'].join(''),
+  ['render', '-region'].join(''),
+  ['render', '-pipeline'].join(''),
+  ['render', '.com'].join(''),
 ];
 const providerName = ['Ren', 'der'].join('');
 
