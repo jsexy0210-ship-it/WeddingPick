@@ -14,7 +14,7 @@
 | 앱 또는 게임 | 앱 | — |
 | 유료 또는 무료 | 무료 | 앱 자체는 무료 |
 | 연락처 이메일 | `help.weddingpick@gmail.com` | 사용자 지정. 이용약관 21조 · 개인정보처리방침 11조와 같은 주소 |
-| 개인정보처리방침 | `https://weddingpick-web.onrender.com/privacy.html` | `packages/domain/src/policies.ts` |
+| 개인정보처리방침 | `https://210.109.82.212/privacy.html` | `packages/domain/src/policies.ts` |
 
 **개인정보처리방침 상태를 먼저 확인해야 한다.** `policies.ts:36`이 그 문서를 「초안 게시 ·
 법률 자문을 마친 초안, 확정 전 내용으로 바뀔 수 있음」으로 표시한다. 구글에 제출하는 주소이므로
@@ -155,12 +155,9 @@ iOS용은 `docs/store-assets/ios/`에 따로 있다(아이콘 1024×1024, 스크
 
 ### 배포 상태를 GitHub 초록으로 판단하지 않는다
 
-`main.yml`의 Deploy 잡은 Render 배포 결과를 읽지 않는다. `/health`가 200이면 통과인데,
 새 빌드가 취소돼도 **이전 빌드가 계속 200을 돌려주므로** 잡은 초록으로 끝난다. 즉 이 초록은
 「서버가 살아 있다」는 뜻이지 「이 커밋이 배포됐다」는 뜻이 아니다.
 
-배포 여부는 `render-deploy-status.yml`을 돌려 최신 deploy의 `status`와 `commit`을 보고 말한다
-(`scripts/render-deploy-status.py`가 `/services/{id}/deploys`를 조회한다).
 
 ## 8. 아직 사람이 정할 것
 
