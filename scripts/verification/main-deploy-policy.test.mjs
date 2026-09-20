@@ -49,7 +49,10 @@ test('runtime inputs and database writes use the production deployment boundary'
   assert.match(dbWorkflow, /cancel-in-progress: false/);
 });
 
-test('admin smoke rejects the retired redirect placeholder', () => {
-  assert.match(cutoverWorkflow, /grep -Fq '웨딩픽 관리자' \/tmp\/admin\.html/);
+test('admin smoke separates candidate identity from public route checks', () => {
+  assert.doesNotMatch(cutoverWorkflow, /grep -Fq '웨딩픽 관리자' \/tmp\/admin\.html/);
+  assert.match(cutoverWorkflow, /\/_expo\/static\/js\/web\//);
+  assert.match(cutoverWorkflow, /관리자 콘솔 주소가 바뀌었어요/);
   assert.match(installAppWeb, /grep -Fq '웨딩픽 관리자' "\$admin_smoke"/);
+  assert.match(installAppWeb, /grep -RFq '\\uc6e8\\ub529\\ud53d \\uad00\\ub9ac\\uc790'/);
 });
