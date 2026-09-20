@@ -142,7 +142,7 @@ describeWithDb('API', () => {
   });
 
   describe('업로드', () => {
-    it('장마다 서명 URL을 하나씩 준다', async () => {
+    it('장마다 인증 업로드 경로를 하나씩 준다', async () => {
       const { headers } = await signInAs(test);
       const weddingId = await createWedding(test, headers);
 
@@ -161,6 +161,42 @@ describeWithDb('API', () => {
 
       expect(response.statusCode).toBe(201);
       expect(response.json().uploads).toHaveLength(2);
+      expect(response.json().uploads[0].uploadPath).toMatch(
+        /^\/v1\/documents\/[0-9a-f-]+\/pages\/0$/
+      );
+    });
+
+    it('인증된 사용자만 자기 문서 페이지를 API로 올린다', async () => {
+      const owner = await signInAs(test, 'upload-owner');
+      const stranger = await signInAs(test, 'upload-stranger');
+      const weddingId = await createWedding(test, owner.headers);
+
+      const created = await test.app.inject({
+        method: 'POST',
+        url: '/v1/documents/uploads',
+        headers: owner.headers,
+        payload: { weddingId, pages: [{ mimeType: 'image/jpeg', sizeBytes: 7 }] },
+      });
+      const upload = created.json().uploads[0];
+
+      const denied = await test.app.inject({
+        method: 'PUT',
+        url: upload.uploadPath,
+        headers: { ...stranger.headers, 'content-type': 'application/octet-stream' },
+        payload: Buffer.from('receipt'),
+      });
+      expect(denied.statusCode).toBe(403);
+
+      const accepted = await test.app.inject({
+        method: 'PUT',
+        url: upload.uploadPath,
+        headers: { ...owner.headers, 'content-type': 'application/octet-stream' },
+        payload: Buffer.from('receipt'),
+      });
+      expect(accepted.statusCode).toBe(204);
+      await expect(test.context.storage.download(upload.storageKey)).resolves.toEqual(
+        Buffer.from('receipt')
+      );
     });
 
     it('장이 없으면 거절한다', async () => {

@@ -50,10 +50,10 @@
 복사할 때는 기존 객체를 삭제하지 않는 `copy --ignore-existing` 방식으로 수행하고, 객체 수와
 용량을 대조한다. `sync`처럼 대상 객체를 삭제할 수 있는 명령은 사용하지 않는다.
 
-브라우저는 결제 증빙 원본을 API 서버가 발급한 서명 URL로 버킷에 직접 `PUT`한다. API 배포는
-`scripts/configure-kakao-storage-cors.sh`로 `https://210.109.82.212`의 `PUT`과
-`Content-Type`만 허용하는 규칙을 첫 번째에 유지하고, 설정 read-back과 실제 OPTIONS preflight를
-모두 확인한다. 검증이 실패하면 같은 실행에서 직전 버킷 CORS 정책을 복구하고 배포를 중단한다.
+브라우저는 결제 증빙 원본을 인증된 동일 출처 API에 한 장씩 `PUT`하고, API가 소유권과 10MB
+제한을 확인한 뒤 Object Storage에 기록한다. 카카오 Object Storage의 브라우저 CORS 경로는
+프로젝트 ID가 필요하므로 문서 업로드에 직접 서명 URL을 사용하지 않는다. 후기 등 기존 서명 URL
+계약은 이번 범위에서 유지한다.
 
 ## 검증 범위
 

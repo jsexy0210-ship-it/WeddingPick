@@ -23,6 +23,12 @@ const EXTENSION: Record<string, string> = {
 export function registerDocumentRoutes(app: FastifyInstance, context: AppContext): void {
   const auth = { preHandler: requireUser(context) };
 
+  app.addContentTypeParser(
+    'application/octet-stream',
+    { parseAs: 'buffer', bodyLimit: MAX_FILE_SIZE },
+    (_request, body, done) => done(null, body)
+  );
+
   app.post('/v1/documents/uploads', auth, async (request, reply) => {
     const userId = currentUserId(request);
     const body = createUploadRequestSchema.parse(request.body);
@@ -122,11 +128,52 @@ export function registerDocumentRoutes(app: FastifyInstance, context: AppContext
       uploads: uploads.map((upload) => ({
         pageIndex: upload.pageIndex,
         uploadUrl: upload.uploadUrl,
+        uploadPath: `/v1/documents/${documentId}/pages/${upload.pageIndex}`,
         storageKey: upload.storageKey,
         expiresAt: upload.expiresAt.toISOString(),
       })),
     });
   });
+
+  app.put<{
+    Params: { rawDocumentId: string; pageIndex: string };
+    Body: Buffer;
+  }>(
+    '/v1/documents/:rawDocumentId/pages/:pageIndex',
+    { ...auth, bodyLimit: MAX_FILE_SIZE },
+    async (request, reply) => {
+      const userId = currentUserId(request);
+      const pageIndex = Number(request.params.pageIndex);
+
+      if (!Number.isInteger(pageIndex) || pageIndex < 0) {
+        throw new ApiError('invalid_request', '올릴 페이지가 올바르지 않습니다.');
+      }
+
+      const { rows } = await context.pool.query<{
+        owner_user_id: string;
+        storage_key: string;
+        mime_type: string;
+      }>(
+        `SELECT d.owner_user_id, p.storage_key, p.mime_type
+           FROM originals.raw_documents d
+           JOIN originals.raw_document_pages p ON p.raw_document_id = d.id
+          WHERE d.id = $1 AND p.page_index = $2`,
+        [request.params.rawDocumentId, pageIndex]
+      );
+      const page = rows[0];
+
+      if (!page) throw notFound('업로드 페이지');
+      if (page.owner_user_id !== userId) {
+        throw new ApiError('forbidden', '접근 권한이 없습니다.');
+      }
+      if (!Buffer.isBuffer(request.body) || request.body.length === 0) {
+        throw new ApiError('invalid_request', '올릴 파일이 비어 있습니다.');
+      }
+
+      await context.storage.upload(page.storage_key, request.body, page.mime_type);
+      return reply.status(204).send();
+    }
+  );
 
   app.post<{ Params: { rawDocumentId: string }; Body: { weddingId?: string } }>(
     '/v1/documents/:rawDocumentId/complete',

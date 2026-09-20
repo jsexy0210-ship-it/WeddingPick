@@ -24,6 +24,10 @@ export function createLocalStorage(baseUrl = 'http://localhost:3000/dev-storage'
       };
     },
 
+    async upload(storageKey, bytes) {
+      files.set(storageKey, bytes);
+    },
+
     async download(storageKey) {
       const bytes = files.get(storageKey);
 

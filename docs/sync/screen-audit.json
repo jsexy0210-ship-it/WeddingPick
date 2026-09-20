@@ -141,19 +141,19 @@
     "baselineCommit": "86ef75e480ce9148bac0a2a09d14814d1871a6f3",
     "routes": ["/capture", "/capture/payment/register", "/community?tab=review"],
     "screenIds": ["WP-RPT-002", "WP-RPT-007"],
-    "scope": "독립 제보 홈 제거, Pick 인증 제보내역 통합·앨범 3장, 라운지 후기 작성 배경 유지, 브라우저 스토리지 업로드 CORS",
+    "scope": "독립 제보 홈 제거, Pick 인증 제보내역 통합·사진 한 장, 라운지 후기 작성 배경 유지, 동일 출처 문서 업로드",
     "supersededBy": "canonicalDesign20260920이 앨범 선택을 사진 한 장으로 되돌렸다. 독립 제보 홈 제거·제보내역 통합·라운지 배경 결정은 유지한다.",
     "fixed": [
       "/capture는 더 이상 독립 UI를 그리지 않고 Pick 인증 동의로 연결한다.",
-      "Pick 인증 화면에 최근 내 제보내역을 보여주고, 앨범 선택은 한 건당 최대 3장으로 제한한다.",
+      "Pick 인증 화면에 최근 내 제보내역을 보여주고, 전달 정본에 따라 사진 한 장만 선택한다.",
       "라운지 후기 업체 선택과 작성 시트를 /community?tab=review 위에 열어 홈이나 업체 상세로 배경이 바뀌지 않는다.",
       "Pick 인증 진입 출처를 안전한 from 값으로 유지해 Back이 예산현황·Pick·업체상세·내 제보내역으로 돌아간다.",
-      "API 배포가 운영 Object Storage의 PUT·Content-Type CORS를 설정하고 read-back·실제 preflight를 통과해야 계속하도록 한다."
+      "카카오 Object Storage의 CORS 전용 경로 제약을 피하도록 문서 파일은 인증된 동일 출처 API가 받아 저장소에 기록한다."
     ],
-    "verification": "Mobile Jest 64스위트 539건, typecheck, Expo lint 오류 0, 웹 정적 export 259라우트, CORS 정책 시험 4건을 통과했다.",
+    "verification": "캡처 관련 Mobile Jest 3스위트 8건, API·모바일·API 계약 typecheck, 배포 정책 17건을 통과했다. 동일 출처 API 업로드는 CI의 분리 DB에서 소유권·저장 시험을 실행한다.",
     "limits": [
-      "운영 사용자의 사진을 전송하지 않아 실제 3장 업로드는 정적 계약·빌드로 검증했다.",
-      "운영 CORS 적용과 수정본 브라우저 재검증은 병합 후 배포에서 확인한다.",
+      "운영 사용자의 사진을 전송하지 않아 실제 한 장 업로드는 정적 계약·빌드로 검증했다.",
+      "운영 API 프록시 업로드와 수정본 브라우저 재검증은 병합 후 배포에서 확인한다.",
       "네이티브 실기기 앨범 다중 선택은 아직 확인하지 않았다."
     ]
   }

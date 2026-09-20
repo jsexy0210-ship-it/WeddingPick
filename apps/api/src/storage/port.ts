@@ -7,8 +7,8 @@ export type UploadTarget = {
 /**
  * 원본 파일 저장소.
  *
- * 파일 본체는 API 서버를 거치지 않는다. 앱이 서명된 URL로 바로 올리므로 계약서 원본이
- * 지나는 경로가 하나 줄어든다.
+ * 브라우저 문서 업로드는 API가 인증과 크기를 확인한 뒤 저장소에 쓴다. 후기 이미지처럼
+ * 직접 업로드가 필요한 곳은 서명 URL을 계속 사용할 수 있다.
  */
 export type Storage = {
   createUploadTarget(input: {
@@ -16,6 +16,9 @@ export type Storage = {
     mimeType: string;
     expiresInSeconds: number;
   }): Promise<UploadTarget>;
+
+  /** 인증된 문서 업로드를 저장소에 쓴다. */
+  upload(storageKey: string, bytes: Buffer, mimeType: string): Promise<void>;
 
   /** 워커가 문서를 읽을 때. */
   download(storageKey: string): Promise<Buffer>;
