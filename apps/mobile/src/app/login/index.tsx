@@ -35,9 +35,9 @@ import { useSignIn } from '@/features/auth/use-sign-in';
 import { openExternal } from '@/features/open-external';
 
 /** WP-AUTH-001 — 2026-09-20 전달 정본의 최신 로그인 계약. */
-const HERO_TITLE = '웨딩 준비,\n진짜 견적부터\n확인해 보세요';
+const HERO_TITLE = '웨딩 준비,\n진짜 견적부터\n확인해 보세요'; // pick-language: 로그인 정본 카피
 const BENEFITS = [
-  '실제 견적 금액을 비교해요',
+  '실제 견적 금액을 비교해요', // pick-language: 로그인 정본 혜택
   '마음에 드는 곳을 함께 Pick해요',
   '일정과 지출도 한곳에서 관리해요',
 ] as const;
@@ -204,7 +204,7 @@ function ProviderButton({
           pressed && styles.pressed,
         ]}>
         {icon}
-        <ThemedText type="f16" style={[styles.providerLabel, { color: tone.text }]}>
+        <ThemedText type="f17" style={[styles.providerLabel, { color: tone.text }]}>
           {label}
         </ThemedText>
       </Pressable>
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 20,
   },
-  title: { fontWeight: 700, lineHeight: 43, letterSpacing: LetterSpacing.n064 },
+  title: { fontWeight: 700, lineHeight: LineHeight.t1, letterSpacing: LetterSpacing.n064 },
   sub: { lineHeight: LineHeight.lh24, marginTop: 10 },
   benefitWrap: {
     flexShrink: 0,
@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.two,
   },
-  providerLabel: { fontSize: 17, fontWeight: 700, lineHeight: LineHeight.lh23 },
+  providerLabel: { fontWeight: 700, lineHeight: LineHeight.lh23 },
   hint: { textAlign: 'center', marginTop: Spacing.one },
   terms: { textAlign: 'center', paddingTop: 6, lineHeight: LineHeight.lh19 },
   busy: { alignItems: 'center', justifyContent: 'center', minHeight: Layout.ctaSheet },
