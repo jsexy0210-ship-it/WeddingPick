@@ -29,7 +29,7 @@ describe('createKakaoProvider', () => {
       provider.verify({
         authorizationCode: 'one-time-code',
         state: 'state-value',
-        redirectUri: 'https://weddingpick-app-web.onrender.com/login',
+        redirectUri: 'https://210.109.82.212/login',
         codeVerifier: 'v'.repeat(43),
       })
     ).rejects.toThrow('id_token이 없다');
@@ -39,7 +39,7 @@ describe('createKakaoProvider', () => {
     expect(tokenBody.get('grant_type')).toBe('authorization_code');
     expect(tokenBody.get('client_id')).toBe('rest-api-key');
     expect(tokenBody.get('client_secret')).toBe('server-only-secret');
-    expect(tokenBody.get('redirect_uri')).toBe('https://weddingpick-app-web.onrender.com/login');
+    expect(tokenBody.get('redirect_uri')).toBe('https://210.109.82.212/login');
     expect(tokenBody.get('code')).toBe('one-time-code');
     expect(tokenBody.get('code_verifier')).toBe('v'.repeat(43));
   });
@@ -153,7 +153,7 @@ describe('createNaverProvider', () => {
     const provider = createNaverProvider({
       clientId: 'client-id',
       clientSecret: 'server-only-secret',
-      allowedRedirectUris: ['https://weddingpickl.onrender.com/v1/auth/naver/callback'],
+      allowedRedirectUris: ['https://210.109.82.212/v1/auth/naver/callback'],
       fetchImpl: fetchImpl as unknown as typeof fetch,
     });
 
@@ -162,7 +162,7 @@ describe('createNaverProvider', () => {
       provider.verify({
         authorizationCode: 'one-time-code',
         state: 'state-value',
-        redirectUri: 'https://weddingpickl.onrender.com/v1/auth/naver/callback',
+        redirectUri: 'https://210.109.82.212/v1/auth/naver/callback',
         codeVerifier: 'v'.repeat(43),
       })
     ).resolves.toMatchObject({
@@ -181,7 +181,7 @@ describe('createNaverProvider', () => {
     const provider = createNaverProvider({
       clientId: 'client-id',
       clientSecret: 'server-only-secret',
-      allowedRedirectUris: ['https://weddingpickl.onrender.com/v1/auth/naver/callback'],
+      allowedRedirectUris: ['https://210.109.82.212/v1/auth/naver/callback'],
       fetchImpl: fetchImpl as unknown as typeof fetch,
     });
 
