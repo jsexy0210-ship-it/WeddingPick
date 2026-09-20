@@ -13,6 +13,11 @@ on:
         required: true
         type: string
         default: '3'
+      expected_plan_hash:
+        description: 'Approved disk-cleanup plan hash (required only when apply=true)'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -41,7 +46,9 @@ jobs:
       - name: Print deterministic cleanup plan
         env:
           WEDDINGPICK_RETENTION_KEEP: ${{ inputs.retain }}
-        run: node ./scripts/cleanup-kakao-retention.mjs
+        run: |
+          node ./scripts/cleanup-kakao-retention.mjs
+          bash ./scripts/cleanup-kakao-disk.sh
 
   apply:
     name: Apply approved retention cleanup
@@ -65,3 +72,9 @@ jobs:
           WEDDINGPICK_RETENTION_KEEP: ${{ inputs.retain }}
           WP_RETENTION_APPROVED: '1'
         run: node ./scripts/cleanup-kakao-retention.mjs --apply
+
+      - name: Recheck and remove only approved unreferenced disk candidates
+        env:
+          WP_RETENTION_APPROVED: '1'
+          WP_CLEANUP_EXPECTED_PLAN_HASH: ${{ inputs.expected_plan_hash }}
+        run: bash ./scripts/cleanup-kakao-disk.sh --apply
