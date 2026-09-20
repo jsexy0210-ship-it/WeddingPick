@@ -2,6 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
+
+function jobBlock(source, name) {
+  const marker = `  ${name}:\n`;
+  const start = source.indexOf(marker);
+  assert.notEqual(start, -1, `job ${name} must exist`);
+  const rest = source.slice(start + marker.length);
+  const next = rest.search(/\n  [a-zA-Z0-9_-]+:\n/);
+  return next === -1 ? source.slice(start) : source.slice(start, start + marker.length + next);
+}
+
 const activeAdminDeploymentFiles = [
   'scripts/split-admin-dist.mjs',
   'scripts/install-kakao-app-web.sh',
@@ -57,4 +67,23 @@ test('legacy admin cutover marker is read-only and cannot mutate Nginx', () => {
   assert.doesNotMatch(source, /runs-on: \[self-hosted/);
   assert.doesNotMatch(source, /install-kakao-|rollback-kakao-|systemctl|nginx/);
   assert.match(source, /https:\/\/210\.109\.82\.212\/admin\/login/);
+});
+
+test('all Kakao write entry points that can affect admin wait for the 443 CI lock', () => {
+  const main = readFileSync('.github/workflows/main.yml', 'utf8');
+  for (const name of [
+    'probe-kakao-static-ports',
+    'enable-kakao-static-cors',
+    'preview-kakao-admin-web',
+    'preview-kakao-app-web',
+  ]) {
+    const job = jobBlock(main, name);
+    assert.match(job, /needs: \[ci\]/);
+    assert.match(job, /needs\.ci\.result == 'success'/);
+  }
+
+  const cutover = jobBlock(main, 'cutover-kakao-app-web');
+  assert.match(cutover, /needs: \[ci, api-tests, non-db-tests, db-tests, repair-kakao-runner, stage-kakao-static\]/);
+  assert.match(cutover, /needs\.ci\.result == 'success'/);
+  assert.match(cutover, /needs\.stage-kakao-static\.outputs\.candidate_sha == github\.sha/);
 });
