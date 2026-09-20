@@ -2,8 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const ADMIN_ORIGIN = 'https://210.109.82.212';
-
 const activeAdminDeploymentFiles = [
   'scripts/split-admin-dist.mjs',
   'scripts/install-kakao-app-web.sh',
@@ -15,6 +13,7 @@ const activeAdminDeploymentFiles = [
   '.github/workflows/pr-validation.yml',
   '.github/workflows/cutover-kakao-app-web.yml',
   '.github/workflows/cutover-kakao-admin-web.yml',
+  '.github/workflows/preview-kakao-admin-web.yml',
   '.github/workflows/enable-kakao-static-cors.yml',
   '.github/workflows/probe-kakao-static-ports.yml',
 ];
