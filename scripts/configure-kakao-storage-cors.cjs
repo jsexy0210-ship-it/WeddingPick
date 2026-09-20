@@ -2,6 +2,8 @@
 
 const UPLOAD_ORIGIN = 'https://210.109.82.212';
 const MAX_CORS_RULES = 10;
+const VERIFY_ATTEMPTS = 30;
+const VERIFY_INTERVAL_MS = 2000;
 
 const UPLOAD_RULE = Object.freeze({
   AllowedOrigins: [UPLOAD_ORIGIN],
@@ -35,12 +37,11 @@ function planUploadCorsRules(currentRules = []) {
 
 function normalizeRule(rule) {
   return {
-    AllowedOrigins: rule.AllowedOrigins ?? [],
-    AllowedMethods: rule.AllowedMethods ?? [],
-    AllowedHeaders: rule.AllowedHeaders ?? [],
-    ExposeHeaders: rule.ExposeHeaders ?? [],
-    MaxAgeSeconds: rule.MaxAgeSeconds ?? 0,
-    ID: rule.ID ?? null,
+    AllowedOrigins: [...(rule.AllowedOrigins ?? [])].sort(),
+    AllowedMethods: (rule.AllowedMethods ?? []).map((value) => value.toUpperCase()).sort(),
+    AllowedHeaders: (rule.AllowedHeaders ?? []).map((value) => value.toLowerCase()).sort(),
+    ExposeHeaders: (rule.ExposeHeaders ?? []).map((value) => value.toLowerCase()).sort(),
+    MaxAgeSeconds: Number(rule.MaxAgeSeconds ?? 0),
   };
 }
 
@@ -69,10 +70,10 @@ async function loadRules(client, bucket, GetBucketCorsCommand) {
 const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 async function waitForAppliedRules(client, bucket, GetBucketCorsCommand, plannedRules) {
-  for (let attempt = 0; attempt < 10; attempt += 1) {
+  for (let attempt = 0; attempt < VERIFY_ATTEMPTS; attempt += 1) {
     const appliedRules = await loadRules(client, bucket, GetBucketCorsCommand);
     if (sameRules(appliedRules, plannedRules)) return;
-    if (attempt < 9) await wait(1000);
+    if (attempt < VERIFY_ATTEMPTS - 1) await wait(VERIFY_INTERVAL_MS);
   }
   throw new Error('storage_cors_readback_mismatch');
 }
@@ -108,13 +109,13 @@ async function verifyPreflight(endpoint, bucket) {
 
 async function waitForPreflight(endpoint, bucket) {
   let lastError;
-  for (let attempt = 0; attempt < 10; attempt += 1) {
+  for (let attempt = 0; attempt < VERIFY_ATTEMPTS; attempt += 1) {
     try {
       await verifyPreflight(endpoint, bucket);
       return;
     } catch (error) {
       lastError = error;
-      if (attempt < 9) await wait(1000);
+      if (attempt < VERIFY_ATTEMPTS - 1) await wait(VERIFY_INTERVAL_MS);
     }
   }
   throw lastError;
@@ -191,7 +192,7 @@ module.exports = {
 
 if (process.env.WP_EXECUTE_STORAGE_CORS === '1') {
   main().catch((error) => {
-    console.error(`kakao_storage_upload_cors=failed:${error?.name ?? 'Error'}`);
+    console.error(`kakao_storage_upload_cors=failed:${error?.message ?? error?.name ?? 'Error'}`);
     process.exitCode = 1;
   });
 }
