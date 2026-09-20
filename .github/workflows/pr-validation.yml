@@ -65,12 +65,12 @@ jobs:
 
       - name: Deployment policy regression tests
         run: |
-          node --test scripts/check-render-retired.test.mjs
+          node --test scripts/check-kakao-only-hosting.test.mjs
           node --test scripts/verification/admin-origin-443.test.mjs
           node --test scripts/verification/docker-runtime-scope.test.mjs
 
-      - name: Reject retired deployment paths
-        run: node scripts/check-render-retired.mjs
+      - name: Enforce Kakao-only hosting
+        run: node scripts/check-kakao-only-hosting.mjs
 
       - name: Typecheck
         run: npm run typecheck
