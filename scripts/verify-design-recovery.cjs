@@ -106,6 +106,8 @@ function loungeHarness() {
     '@/features/community/lounge-reviews':loungeReviewHelpers,
     '@/features/loading/delayed-loader':{DelayedLoader:'Loader',DelayedLoadingView:'Loading'},
     '@/features/wedding/screen-kit':{NavBar:'NavBar'},'../../../../../../spec/strings.ko.json':strings,
+    '../search/[vendorId]/write-review':{ReviewWriteSheet:'ReviewWriteSheet'},
+    './review/write':{LoungeReviewVendorSheet:'LoungeReviewVendorSheet'},
   }).default;
   return{h,pushed,replaced,render:()=>h.render(screen)};
 }
@@ -192,7 +194,7 @@ function splitFixture(script,role,missingAdmin=false) {
   });
   await check('lounge verified review action is restricted to review tab',async()=>{
     const l=loungeHarness();l.render();l.h.commit();await flush();const action=find(l.render(),'NavBar')[0].props.right;
-    assert.equal(action.label,'글쓰기');action.onPress();assert.equal(l.pushed[0],'/community/review/write');
+    assert.equal(action.label,'글쓰기');action.onPress();assert.equal(l.pushed[0],'/community?tab=review&write=review');
   });
   await check('lounge back defaults to home',async()=>{
     const l=loungeHarness();l.render();l.h.commit();await flush();

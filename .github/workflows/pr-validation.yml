@@ -68,6 +68,7 @@ jobs:
           node --test scripts/check-render-retired.test.mjs
           node --test scripts/verification/admin-origin-443.test.mjs
           node --test scripts/verification/docker-runtime-scope.test.mjs
+          node --test scripts/verification/kakao-storage-cors.test.mjs
 
       - name: Reject retired deployment paths
         run: node scripts/check-render-retired.mjs

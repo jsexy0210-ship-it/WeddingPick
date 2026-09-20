@@ -21,6 +21,7 @@ import {
 import { PermissionSheet } from '@/features/permissions/permission-sheet';
 import type { CapturedPage } from '@/features/capture/types';
 import { uploadPaymentProof } from '@/features/capture/upload';
+import { MyReportSummary } from '@/features/capture/my-report-summary';
 import {
   Layout,
   ProductSymbol,
@@ -60,8 +61,7 @@ const S = {
   hint1: R['upload.note1'],
   hint2: R['upload.note2'],
   hint3: R['upload.note3'],
-  /** 사진 한 장이 전부다(v3.24). 시안의 «{n}장으로 계속하기»에서 n은 늘 1이다. */
-  submit: R['upload.cta'].replace('{n}', '1'),
+  submit: R['upload.cta'],
   sending: '보내는 중…',
   doneTitle: '제보 접수됐어요',
   doneSub: '확인이 끝나면 알려드려요',
@@ -76,6 +76,7 @@ const S = {
 
 /** 2열 격자 타일 — (390−48−11)/2 = 165.5 → 시안 166. */
 const TILE_GAP = Layout.gap2col;
+const MAX_PAYMENT_PROOF_IMAGES = 3;
 
 /** 검수를 기다리는 칸을 한 줄로. 값을 지어내지 않고 무엇을 보고 있는지만 말한다. */
 function checkingValue(fields: PaymentProofField[]): string {
@@ -91,10 +92,11 @@ function checkingValue(fields: PaymentProofField[]): string {
  * Pick 인증 — 자료 선택(WP-RPT-002) → 제출 완료(WP-RPT-007).
  * 핸드오프 11-report-review #12a · #12c · CHANGELOG v3.24.
  *
- *   선택   hero · 2열 격자(촬영하기 · 앨범에서 고르기 · 고른 사진) · 안내 3줄 체크 · dock «1장으로 계속하기»
+ *   선택   hero · 2열 격자(촬영하기 · 앨범에서 고르기 · 고른 사진 최대 3장) · 안내 3줄 체크 · dock «n장으로 계속하기»
  *   완료   체크 원 72 · «제보 접수됐어요» · 카드(다음 · 내 지출 또는 확인 중 · 원본) · dock «확인»
  *
- * **사용자 행동은 사진 한 장, 끝이다**(v3.24). 확인 화면(WP-RPT-004) · 업체 확인
+ * **사용자 행동은 사진 선택, 끝이다.** 앨범에서는 한 제보에 최대 3장을 고를 수 있다.
+ * 확인 화면(WP-RPT-004) · 업체 확인
  * (WP-RPT-005) · 분할 묶기(WP-RPT-006) · 증빙 없는 수동 입력(WP-RPT-010)이 전부
  * 폐기됐다. 금액·업체·날짜를 적을 칸이 이 화면에 없고, 보낼 자리도 계약에 없다 —
  * 읽는 것은 서버가 하고, 못 읽으면 접수는 성립하되 검수를 기다린다.
@@ -105,10 +107,10 @@ function checkingValue(fields: PaymentProofField[]): string {
 export default function RegisterPaymentProofScreen() {
   const theme = useTheme();
   /** 촬영 화면이 찍은 사진을 이 파라미터로 되돌려준다(`/capture/camera?purpose=payment`). */
-  const shot = useLocalSearchParams<{ photoUri?: string; photoMime?: string }>();
+  const shot = useLocalSearchParams<{ photoUri?: string; photoMime?: string; from?: string }>();
 
-  const [picture, setPicture] = useState<CapturedPage | null>(() =>
-    shot.photoUri ? createPage('camera', { uri: shot.photoUri, mimeType: shot.photoMime ?? 'image/jpeg' }) : null
+  const [pictures, setPictures] = useState<CapturedPage[]>(() =>
+    shot.photoUri ? [createPage('camera', { uri: shot.photoUri, mimeType: shot.photoMime ?? 'image/jpeg' })] : []
   );
   /** 사진 권한 설명 시트(WP-SHT-016). null이면 닫혀 있다. */
   const [permission, setPermission] = useState<Exclude<PhotoPermissionState, 'granted'> | null>(null);
@@ -134,9 +136,9 @@ export default function RegisterPaymentProofScreen() {
     setError(null);
 
     try {
-      const pages = await pickFromLibrary();
+      const pages = await pickFromLibrary(MAX_PAYMENT_PROOF_IMAGES);
 
-      if (pages.length > 0) setPicture(pages[0] ?? null);
+      if (pages.length > 0) setPictures(pages.slice(0, MAX_PAYMENT_PROOF_IMAGES));
     } catch (caught) {
       setError(
         caught instanceof PermissionDeniedError || caught instanceof Error
@@ -147,18 +149,18 @@ export default function RegisterPaymentProofScreen() {
   }
 
   /**
-   * 사진 한 장을 올리고 그대로 접수한다.
+   * 고른 사진을 한 원본 묶음으로 올리고 그대로 접수한다.
    *
    * 올리기와 접수를 한 번에 묶는다. 갈라두면 올라간 원본만 남고 제보는 없는 상태가
    * 생기고, 그 원본은 무엇에 쓰려던 것인지 아무도 모른 채 24시간을 기다린다.
    */
   async function submit() {
-    if (!picture || sending) return;
+    if (pictures.length === 0 || sending) return;
     setSending(true);
     setError(null);
 
     try {
-      const rawDocumentId = await uploadPaymentProof([picture]);
+      const rawDocumentId = await uploadPaymentProof(pictures);
 
       setDone(await registerPaymentProof({ rawDocumentId }));
     } catch (caught) {
@@ -217,21 +219,31 @@ export default function RegisterPaymentProofScreen() {
 
         {/* 2열 격자 — 촬영 · 앨범 · 고른 사진. 시안 11-report-review #12a. */}
         <View style={styles.grid}>
-          <Tile label={S.shoot} disabled={sending} onPress={() => router.push('/capture/camera?purpose=payment')} />
+          <Tile
+            label={S.shoot}
+            disabled={sending}
+            onPress={() =>
+              router.push({
+                pathname: '/capture/camera',
+                params: { purpose: 'payment', ...(shot.from ? { from: shot.from } : {}) },
+              } as never)
+            }
+          />
           <Tile label={S.album} disabled={sending} onPress={() => void openAlbum()} />
-          {picture ? (
+          {pictures.map((picture, index) => (
             <Pressable
+              key={picture.id}
               accessibilityRole="button"
-              accessibilityLabel={S.remove}
+              accessibilityLabel={`${index + 1}번째 ${S.remove}`}
               disabled={sending}
-              onPress={() => setPicture(null)}
+              onPress={() => setPictures((current) => current.filter((item) => item.id !== picture.id))}
               style={({ pressed }) => [styles.pickedTile, (pressed || sending) && styles.pressed]}>
-              <Image source={{ uri: picture.uri }} style={styles.picked} accessibilityLabel="고른 자료" />
+              <Image source={{ uri: picture.uri }} style={styles.picked} accessibilityLabel={`고른 자료 ${index + 1}`} />
               <View style={[styles.removeDot, { backgroundColor: theme.text }]}>
                 <ProductSymbol name="close" size={12} color={theme.onTint} />
               </View>
             </Pressable>
-          ) : null}
+          ))}
         </View>
 
         <Section>
@@ -245,13 +257,15 @@ export default function RegisterPaymentProofScreen() {
             {error}
           </ThemedText>
         ) : null}
+
+        <MyReportSummary />
       </ScrollView>
 
       <Dock>
         <DockButton
           variant="primary"
-          label={sending ? S.sending : S.submit}
-          disabled={picture === null || sending}
+          label={sending ? S.sending : S.submit.replace('{n}', String(pictures.length))}
+          disabled={pictures.length === 0 || sending}
           onPress={() => void submit()}
         />
       </Dock>

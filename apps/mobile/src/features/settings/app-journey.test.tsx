@@ -11,7 +11,11 @@ import AutocompleteScreen from '@/app/(tabs)/search/autocomplete';
 import PriceReportScreen from '@/app/(tabs)/search/[vendorId]/price-report';
 
 jest.mock('react-native', () => Object.setPrototypeOf({ Switch: 'Switch' }, jest.requireActual('react-native')));
-jest.mock('expo-router', () => ({ router: { push: jest.fn() }, Redirect: 'Redirect', useLocalSearchParams: () => ({ q: '검수' }) }));
+jest.mock('expo-router', () => ({
+  router: { push: jest.fn() },
+  Redirect: 'Redirect',
+  useLocalSearchParams: () => ({ q: '검수', vendorId: 'vendor-1' }),
+}));
 jest.mock('@/api/client', () => ({
   listNotifications: jest.fn(), readNotification: jest.fn(), readAllNotifications: jest.fn(),
   getSettings: jest.fn(), updateSettings: jest.fn(), searchVendors: jest.fn(), listVendorRegions: jest.fn(),
@@ -119,7 +123,9 @@ describe.each([['알림 설정', NotificationSettingsScreen], ['계정', Account
 it('폐기된 수동 가격 제보 링크는 Pick 인증 동의로 연결한다', async () => {
   mockSession.state = { status: 'signedIn' };
   await mount(<PriceReportScreen />);
-  expect(tree.root.findByType('Redirect' as never).props.href).toBe('/capture/payment/consent');
+  expect(tree.root.findByType('Redirect' as never).props.href).toBe(
+    '/capture/payment/consent?from=vendor/vendor-1'
+  );
 });
 
 /*

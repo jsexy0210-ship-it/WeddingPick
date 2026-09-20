@@ -45,6 +45,10 @@ jobs:
           sudo -n docker version >/dev/null
           echo 'Runner and production environment file are ready; secret values are not printed.'
 
+      - name: Configure and verify browser upload CORS
+        shell: bash
+        run: bash scripts/configure-kakao-storage-cors.sh
+
       - name: Build and deploy with rollback
         shell: bash
         env:
@@ -94,7 +98,7 @@ jobs:
             git merge-base --is-ancestor "$GITHUB_SHA" "$latest_main" || return 1
 
             paths="$(git diff --name-only "$GITHUB_SHA" "$latest_main")"
-            if grep -Eq '^(apps/api/|packages/(api-contract|db|domain)/|spec/(glossary|font-subsets|strings\.ko)\.json$|package(-lock)?\.json$|Dockerfile$|\.dockerignore$|scripts/update-kakao-worker\.sh$|\.github/workflows/(main|repair-kakao-runner|deploy-kakao-api)\.yml$)' <<< "$paths"; then
+            if grep -Eq '^(apps/api/|packages/(api-contract|db|domain)/|spec/(glossary|font-subsets|strings\.ko)\.json$|package(-lock)?\.json$|Dockerfile$|\.dockerignore$|scripts/(update-kakao-worker\.sh|configure-kakao-storage-cors\.(sh|cjs))$|\.github/workflows/(main|repair-kakao-runner|deploy-kakao-api)\.yml$)' <<< "$paths"; then
               echo "A newer main commit changes API runtime/deploy files: $latest_main" >&2
               return 1
             fi

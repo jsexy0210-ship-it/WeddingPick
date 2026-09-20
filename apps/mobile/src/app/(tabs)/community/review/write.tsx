@@ -1,13 +1,12 @@
 import type { VendorSummary } from '@weddingpick/api-contract';
 import { VENDOR_CATEGORY_LABEL, regionLabel } from '@weddingpick/domain';
-import { router } from 'expo-router';
+import { Redirect, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { searchVendors } from '@/api/client';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
-import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import {
   Border,
   Layout,
@@ -18,18 +17,29 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 
-import CommunityScreen from '../../index';
-
 const DEBOUNCE_MS = 250;
 
 /**
  * 라운지 후기 글쓰기 진입.
  *
- * 업체를 먼저 고른 뒤 기존 업체 후기 작성 BottomSheet로 이어진다. 별도 전체 화면을
- * 만들지 않고 라운지를 바닥에 남긴다. 업체를 고르기 전에는 후기 계약을 만들 수
- * 없으므로 샘플 업체나 임의 vendorId를 지어내지 않는다.
+ * 예전 주소는 라운지 후기 URL로 보낸다. 업체 선택 시트는 라운지 root가 직접 렌더해
+ * 숨은 하위 탭 아래로 HOME이 비치지 않게 한다. 업체를 고르기 전에는 후기 계약을
+ * 만들 수 없으므로 샘플 업체나 임의 vendorId를 지어내지 않는다.
  */
 export default function LoungeReviewWriteRoute() {
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  const href = `/community?tab=review&write=review${from === 'my' ? '&from=my' : ''}`;
+
+  return <Redirect href={href as never} />;
+}
+
+export function LoungeReviewVendorSheet({
+  onClose,
+  onChoose,
+}: {
+  onClose: () => void;
+  onChoose: (vendorId: string) => void;
+}) {
   const theme = useTheme();
   const [query, setQuery] = useState('');
   const [vendors, setVendors] = useState<VendorSummary[] | null>(null);
@@ -65,19 +75,8 @@ export default function LoungeReviewWriteRoute() {
     setFailed(false);
   }
 
-  function close() {
-    dismissToOrReplace('/community');
-  }
-
-  function choose(vendorId: string) {
-    router.replace(`/search/${encodeURIComponent(vendorId)}/write-review` as never);
-  }
-
   return (
-    <View style={styles.host}>
-      <CommunityScreen />
-
-      <BottomSheet visible onRequestClose={close} testID="lounge-review-write-sheet">
+    <BottomSheet visible onRequestClose={onClose} testID="lounge-review-write-sheet">
         <SheetPanel style={styles.sheet}>
           <View style={styles.head}>
             <View style={styles.headRow}>
@@ -86,7 +85,7 @@ export default function LoungeReviewWriteRoute() {
                 accessibilityRole="button"
                 accessibilityLabel="후기 작성 닫기"
                 hitSlop={12}
-                onPress={close}
+                onPress={onClose}
                 style={styles.close}>
                 <ProductSymbol name="close" size={20} color={theme.textAssistive} />
               </Pressable>
@@ -138,7 +137,7 @@ export default function LoungeReviewWriteRoute() {
                   key={vendor.id}
                   accessibilityRole="button"
                   accessibilityLabel={`${vendor.name} 후기 쓰기`}
-                  onPress={() => choose(vendor.id)}
+                  onPress={() => onChoose(vendor.id)}
                   style={({ pressed }) => [
                     styles.row,
                     { borderBottomColor: theme.border },
@@ -157,13 +156,11 @@ export default function LoungeReviewWriteRoute() {
             )}
           </ScrollView>
         </SheetPanel>
-      </BottomSheet>
-    </View>
+    </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  host: { flex: 1 },
   sheet: { flexShrink: 1 },
   head: { gap: Spacing.one },
   headRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

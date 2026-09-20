@@ -16,7 +16,7 @@ const QUALITY_MIN_PIXELS = 480 * 640;
  * 카메라 입력. 두 여정이 같은 화면을 쓰고, 찍은 사진이 가는 곳만 다르다.
  *
  *   견적서 정리(기본)  한 건이 여러 장인 경우가 많아 연속 촬영 → `/capture/review`
- *   Pick 인증(payment) 사진 한 장이 전부다(v3.24) → 한 장 찍고 제보 화면으로 되돌아간다
+ *   Pick 인증(payment) 카메라로는 한 장을 찍고 제보 화면으로 되돌아간다
  *
  * **되돌아가는 것이 요점이다.** 예전에는 Pick 인증의 «촬영하기»도 견적서 묶음에
  * 사진을 넣고 견적서 확인 화면으로 갔다 — 결제 증빙을 찍은 사람이 견적서 정리
@@ -24,8 +24,8 @@ const QUALITY_MIN_PIXELS = 480 * 640;
  */
 export default function CameraScreen() {
   const [permission, requestPermission] = useCameraPermissions();
-  const { purpose } = useLocalSearchParams<{ purpose?: string }>();
-  /** Pick 인증은 사진 한 장이다. 연속 촬영도, 견적서 묶음에 넣는 것도 하지 않는다. */
+  const { purpose, from } = useLocalSearchParams<{ purpose?: string; from?: string }>();
+  /** Pick 인증의 카메라 입력은 한 장이다. 앨범에서는 최대 3장을 고를 수 있다. */
   const forPayment = purpose === 'payment';
   const { pages, addPages } = useCaptureDraft();
   const cameraRef = useRef<CameraView>(null);
@@ -77,7 +77,7 @@ export default function CameraScreen() {
         if (forPayment) {
           router.replace({
             pathname: '/capture/payment/register',
-            params: { photoUri: photo.uri, photoMime: 'image/jpeg' },
+            params: { photoUri: photo.uri, photoMime: 'image/jpeg', ...(from ? { from } : {}) },
           } as never);
           return;
         }

@@ -34,6 +34,31 @@ import VendorDetailScreen from './index';
  */
 export default function WriteReviewRoute() {
   const { vendorId } = useLocalSearchParams<{ vendorId: string }>();
+
+  function closeSheet() {
+    dismissToOrReplace(`/search/${vendorId}`);
+  }
+
+  return (
+    <View style={styles.host}>
+      <VendorDetailScreen />
+      <ReviewWriteSheet vendorId={vendorId} onClose={closeSheet} />
+    </View>
+  );
+}
+
+/** 라운지와 업체 상세에서 같은 후기 폼을 각자의 화면 위에 연다. */
+export function ReviewWriteSheet({
+  vendorId,
+  onClose,
+  onSubmitted,
+  supportingText = '업체 정보를 보던 화면을 남겨둔 채 작성해요.',
+}: {
+  vendorId: string;
+  onClose: () => void;
+  onSubmitted?: () => void;
+  supportingText?: string;
+}) {
   const theme = useTheme();
 
   const [form, setForm] = useState<ReviewForm | null>(null);
@@ -80,7 +105,7 @@ export default function WriteReviewRoute() {
     (photos.length === 0 || rightsConfirmed);
 
   function closeSheet() {
-    dismissToOrReplace(`/search/${vendorId}`);
+    onClose();
   }
 
   function requestClose() {
@@ -132,7 +157,7 @@ export default function WriteReviewRoute() {
       });
 
       // 저장 뒤 부모 화면으로 돌아간다. 별도 성공 Alert는 띄우지 않는다.
-      closeSheet();
+      (onSubmitted ?? closeSheet)();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '후기를 남기지 못했어요.');
     } finally {
@@ -141,16 +166,13 @@ export default function WriteReviewRoute() {
   }
 
   return (
-    <View style={styles.host}>
-      <VendorDetailScreen />
-
-      <BottomSheet visible onRequestClose={requestClose} testID="review-write-sheet">
+    <BottomSheet visible onRequestClose={requestClose} testID="review-write-sheet">
         <SheetPanel>
           <View style={styles.sheetHead}>
-            <ThemedText type="t4">후기 작성</ThemedText>
-            <ThemedText type="t7" themeColor="textSecondary">
-              업체 정보를 보던 화면을 남겨둔 채 작성해요.
-            </ThemedText>
+              <ThemedText type="t4">후기 작성</ThemedText>
+              <ThemedText type="t7" themeColor="textSecondary">
+                {supportingText}
+              </ThemedText>
           </View>
 
           {loadError ? (
@@ -406,8 +428,7 @@ export default function WriteReviewRoute() {
             </>
           )}
         </SheetPanel>
-      </BottomSheet>
-    </View>
+    </BottomSheet>
   );
 }
 

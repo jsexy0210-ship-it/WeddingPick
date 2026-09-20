@@ -32,6 +32,8 @@ import { DelayedLoader, DelayedLoadingView } from '@/features/loading/delayed-lo
 import { appendLoungeReviewPage, loungeReviewCategory } from '@/features/community/lounge-reviews';
 import { NavBar } from '@/features/wedding/screen-kit';
 import strings from '../../../../../../spec/strings.ko.json';
+import { ReviewWriteSheet } from '../search/[vendorId]/write-review';
+import { LoungeReviewVendorSheet } from './review/write';
 
 const S = strings.community;
 const R = strings.review;
@@ -56,8 +58,17 @@ type LoungeReview = LoungeReviewListResponse['reviews'][number];
  */
 export default function CommunityScreen() {
   const { state, refresh } = useSession();
-  const params = useLocalSearchParams<{ from?: string; tab?: string }>();
-  const [tab, setTab] = useState<Tab>(params.tab === 'feed' ? 'feed' : 'review');
+  const params = useLocalSearchParams<{
+    from?: string | string[];
+    tab?: string | string[];
+    write?: string | string[];
+    vendorId?: string | string[];
+  }>();
+  const from = Array.isArray(params.from) ? params.from[0] : params.from;
+  const requestedTab = Array.isArray(params.tab) ? params.tab[0] : params.tab;
+  const write = Array.isArray(params.write) ? params.write[0] : params.write;
+  const writeVendorId = Array.isArray(params.vendorId) ? params.vendorId[0] : params.vendorId;
+  const [tab, setTab] = useState<Tab>(requestedTab === 'feed' ? 'feed' : 'review');
   const [category, setCategory] = useState<CategoryLabel>('전체');
   const [reviews, setReviews] = useState<Loaded<LoungeReviewListResponse>>({ status: 'loading' });
   const [reviewMoreLoading, setReviewMoreLoading] = useState(false);
@@ -69,6 +80,8 @@ export default function CommunityScreen() {
   const reviewLoadingMore = useRef(false);
   const categoryRef = useRef<CategoryLabel>('전체');
   const isSignedIn = state.status === 'signedIn';
+  const communityReviewHref = `/community?tab=review${from === 'my' ? '&from=my' : ''}`;
+  const communityWriteHref = `${communityReviewHref}&write=review`;
 
   const loadReviews = useCallback((label: CategoryLabel, cursor?: string) => {
     if (!isSignedIn) return;
@@ -156,10 +169,14 @@ export default function CommunityScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <NavBar
           title={S.title}
-          onBack={() => router.replace(params.from === 'my' ? '/my' : '/')}
+          onBack={() => router.replace(from === 'my' ? '/my' : '/')}
           right={
             tab === 'review'
-              ? { label: S.write, brand: true, onPress: () => router.push('/community/review/write' as never) }
+              ? {
+                  label: S.write,
+                  brand: true,
+                  onPress: () => router.push(communityWriteHref as never),
+                }
               : undefined
           }
         />
@@ -231,6 +248,26 @@ export default function CommunityScreen() {
           )}
         </ScrollView>
       </SafeAreaView>
+      {write === 'review' ? (
+        writeVendorId ? (
+          <ReviewWriteSheet
+            vendorId={writeVendorId}
+            supportingText="라운지 후기에 머물러 작성해요."
+            onClose={() => router.replace(communityReviewHref as never)}
+            onSubmitted={() => {
+              loadReviews(categoryRef.current);
+              router.replace(communityReviewHref as never);
+            }}
+          />
+        ) : (
+          <LoungeReviewVendorSheet
+            onClose={() => router.replace(communityReviewHref as never)}
+            onChoose={(vendorId) =>
+              router.replace(`${communityWriteHref}&vendorId=${encodeURIComponent(vendorId)}` as never)
+            }
+          />
+        )
+      ) : null}
     </ThemedView>
   );
 }
@@ -289,7 +326,10 @@ function ReviewList({
         body={category === '전체' ? S['review.empty.body'] : '다른 업종의 후기를 먼저 둘러보세요'}
         action={
           category === '전체'
-            ? { label: S['review.empty.cta'], onPress: () => router.push('/capture/payment/consent' as never) }
+            ? {
+                label: S['review.empty.cta'],
+                onPress: () => router.push('/capture/payment/consent?from=community' as never),
+              }
             : undefined
         }
       />

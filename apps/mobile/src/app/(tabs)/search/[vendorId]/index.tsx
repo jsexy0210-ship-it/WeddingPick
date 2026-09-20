@@ -670,8 +670,8 @@ export default function VendorDetailScreen() {
             {wantsPickProof ? (
               <ActionButton
                 label="Pick 인증"
-                hint="낸 금액이 보이는 사진 한 장이면 업체와 금액을 자동으로 읽어요"
-                onPress={() => router.push('/capture/payment/consent')}
+                hint="낸 금액이 보이는 사진 1~3장에서 업체와 금액을 자동으로 읽어요"
+                onPress={() => router.push(`/capture/payment/consent?from=vendor/${encodeURIComponent(vendorId)}`)}
               />
             ) : null}
           </View>

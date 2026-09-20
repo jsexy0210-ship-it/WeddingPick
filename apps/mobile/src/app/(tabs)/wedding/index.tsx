@@ -700,7 +700,7 @@ function BudgetPanel({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Pick 인증"
-          onPress={() => router.push('/capture/payment/consent' as never)}
+          onPress={() => router.push('/capture/payment/consent?from=budget' as never)}
           style={({ pressed }) => [
             styles.proofButton,
             { backgroundColor: theme.tint },

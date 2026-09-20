@@ -73,7 +73,7 @@ export default function MyReportsScreen() {
         <Dock
           primary={{
             label: empty ? S.emptyCta : S.newProof,
-            onPress: () => router.push('/capture/payment/consent'),
+            onPress: () => router.push('/capture/payment/consent?from=reports'),
           }}
         />
       }>

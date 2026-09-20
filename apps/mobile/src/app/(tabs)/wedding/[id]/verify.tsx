@@ -65,7 +65,7 @@ export default function VerifyScreen() {
               variant="primary"
               label="새 문서 촬영하기"
               hint="처음부터 새 문서를 찍어 올려요"
-              onPress={() => router.push('/capture')}
+              onPress={() => router.push('/capture/quote/consent')}
             />
           </ThemedView>
         </ScrollView>

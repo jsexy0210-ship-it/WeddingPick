@@ -115,7 +115,7 @@ export default function AddExpenseRoute() {
     setSaving(null);
     if (!ok) return;
 
-    router.replace('/capture/payment/consent' as never);
+    router.replace('/capture/payment/consent?from=budget' as never);
   }
 
   return (

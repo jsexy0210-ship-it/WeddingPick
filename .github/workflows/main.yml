@@ -85,6 +85,7 @@ jobs:
           node --test scripts/verification/static-cutover-order.test.mjs
           node --test scripts/verification/docker-runtime-scope.test.mjs
           node --test scripts/verification/kakao-retention-cleanup-policy.test.mjs
+          node --test scripts/verification/kakao-storage-cors.test.mjs
           node --test scripts/verification/ci-workspace-parallelism.test.mjs
           node --test scripts/verification/main-deploy-policy.test.mjs
 
@@ -359,7 +360,7 @@ jobs:
           if [[ "$live_revision" =~ ^[0-9a-f]{40}$ ]] && git cat-file -e "$live_revision^{commit}" 2>/dev/null; then
             if git merge-base --is-ancestor "$live_revision" "$GITHUB_SHA"; then
               paths="$(git diff --name-only "$live_revision" "$GITHUB_SHA")"
-              if ! grep -Eq '^(apps/api/|packages/(api-contract|db|domain)/|spec/(glossary|font-subsets|strings\.ko)\.json$|package(-lock)?\.json$|Dockerfile$|\.dockerignore$|scripts/update-kakao-worker\.sh$|\.github/workflows/(main|repair-kakao-runner|deploy-kakao-api)\.yml$)' <<< "$paths"; then
+              if ! grep -Eq '^(apps/api/|packages/(api-contract|db|domain)/|spec/(glossary|font-subsets|strings\.ko)\.json$|package(-lock)?\.json$|Dockerfile$|\.dockerignore$|scripts/(update-kakao-worker\.sh|configure-kakao-storage-cors\.(sh|cjs))$|\.github/workflows/(main|repair-kakao-runner|deploy-kakao-api)\.yml$)' <<< "$paths"; then
                 changed=false
               fi
             fi
