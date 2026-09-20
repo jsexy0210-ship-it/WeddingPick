@@ -1,121 +1,37 @@
 # WeddingPick 프로젝트 상태
 
-## 현재 기준 — 2026-09-18 13:58 KST
+## 현재 운영 기준 — 2026-09-20
 
-- 운영 API와 앱웹은 KakaoCloud VM `https://210.109.82.212`의 443을 함께 사용한다. `/health`와 `/v1/*`는 API 프록시, 그 밖은 staged app-web 정적 파일이다.
-- **앱웹 443 공개 #1006 성공**: 외부 GitHub runner에서 `/`, `/login`, `/health`, `/v1/auth/providers` 모두 정상 확인했다.
-- **관리자 443 운영 경로 확인**: 관리자 `https://210.109.82.212/admin/login`은 앱웹/API와 같은 443에서 `/admin` 경로로 제공하며 이 경로를 운영 정본으로 고정한다. 별도 관리자 포트는 다시 도입하지 않는다.
-- 웹사이트 확인 경로는 `https://210.109.82.212/website.html`, 개인정보처리방침 `/privacy.html`, 이용약관 `/terms.html`이며, 웹사이트 전용 `:9443` 전환은 관리자와 분리해 별도 검증한다.
-- 웹 카카오 로그인 코드는 `window.location.origin + /setup`을 Redirect URI로 사용한다. 현재 앱웹 origin에서는 `https://210.109.82.212/setup`이다. Kakao Developers의 REST API 키 Redirect URI에 이 값을 정확히 등록해야 실제 로그인 완료가 가능하다.
-- Kakao 공식 규칙상 Redirect URI는 요청값과 프로토콜·호스트·포트·경로·마지막 슬래시까지 일치해야 하며 미등록 값은 `KOE006`으로 거부된다.
-- Kakao VM IP 인증서는 Let's Encrypt이며 SAN에 `210.109.82.212`가 있고 `snap.certbot.renew.timer`가 활성 상태다.
-- Kakao Object Storage `weddingpick-prod-media` / `kr-central-2`는 운영 컨테이너에서 HeadBucket·ListObjectsV2 읽기 검증이 성공했다.
-- 운영 DB 읽기 전용 감사 결과 분석 pending 0, stuck running 0, raw document pages 0, 내부 업체 이미지 0, 상담 음성 0, 파기 대상 0이다. 현재 DB가 참조하는 NCP→Kakao 이관 대상 파일은 **0개**다.
-- 런타임은 `RUN_WORKER_IN_API=false`, `RETENTION_MODE=automatic`이다. 별도 `weddingpick-worker` 배포 경로와 기동 smoke는 구현·검증됐고, 다음 완료 배포에서는 API·worker가 같은 image revision으로 상주하는지 확인한다.
-- Render는 더 이상 빌드·배포하지 않는다. 기존 Render 정적 서비스는 전환 검증 중 임시 잔존일 뿐이며 새 변경을 올리지 않는다.
-- `claude/rn-preview`는 최신 디자인 정본이 아니며 배포 소스로 사용하지 않는다.
-- 보고 시 **코드 반영 / CI 통과 / API 배포 / 화면 후보 스테이징 / 화면 공개 / 실제 기능 검증**을 서로 다른 상태로 기록한다.
+Source of Truth는 최신 GitHub `main`이다.
 
-## 이전 배포 기록 — 2026-09-13 KST
+### 운영 주소
 
-앱 출시를 제외한 웹·API·관리자 배포를 진행한다. 기준 main은 `bcd8771484baa906aa24a0f4a0f88e27185359e9`이며 PR208·218·219와 검토 수정사항을 통합했다. 최종 CI·배포 결과는 [master-status.json의 webApiRelease20260913](docs/sync/master-status.json)을 따른다. 아래 9월 10~11일 기록은 당시의 이력이며 현재 배포 버전을 뜻하지 않는다.
+| 대상 | 주소 |
+| --- | --- |
+| 사용자 앱 | `https://210.109.82.212/login` |
+| 관리자 | `https://210.109.82.212/admin/login` |
+| API | `https://210.109.82.212/v1/*` |
+| Health | `https://210.109.82.212/health` |
 
-- 운영 DB의 누락 `0210_import_runs_held_count` 적용 후 기존 API health 적용118·기대115·미적용0 확인. 과거 이름 변경 이력3개는 보존했다.
-- 싱가포르 API를 기본 주소로 연결하고, CI·기존 production 승인·DB migration·API 동일 SHA Live와 health 확인 후 정적 사이트를 배포하도록 묶었다. HTTP200만으로 성공 처리하지 않는다.
-- 별도 관리자 사이트의 잘못된 빌드 명령·publish 경로를 복구했다. 기존 main Live와 관리자 로그인 화면은 확인했으나 실제 관리자 계정 로그인은 별도 검증이 필요하다. 앱 웹 관리자 경로는 복구용으로 유지한다.
-- 광고 전체 운영 관문을 실제 노출 SQL에 연결하고 등급 변경의 감사 이력을 남긴다. 기능 배포가 광고 실운영 활성화를 뜻하지 않는다.
-- 공공데이터 최근 읽기전용 수집은 전체3346·서울834·경기537, 연결 누락0으로 확인했다. 과거 서울0건은 첫 페이지 연결 실패였으며 업종별 결과와 실패 사유를 분리해 기록한다.
-- 개인정보 처리방침은 싱가포르 운영 API와 미국 잔존 서비스를 구분하고 9월18일 시행 예정일을 표시한다. 실제 공지 게시 확인은 배포 후 기록한다.
+앱과 관리자는 같은 443 origin과 같은 immutable static release SHA를 사용한다. 관리자 별도 포트는 사용하지 않는다.
 
-## 이전 점검 기록
+### 배포
 
-**확인 기준: 2026-09-10 KST, `main`의 `e34193ee1644c664f107d529002ae53ef775389a`.** 이 문서는 해당 시점의 검증 결과다. 이후 작업에서는 최신 `main`과 배포 버전을 다시 확인한다. 이번 저장소 정리는 문서·자료 정합성 작업이며 아래 제품 결함의 해결이나 출시 완료를 뜻하지 않는다.
+- `main` push → CI → 정적 변경 빌드 → Kakao VM 후보 스테이징 → 앱/관리자 443 자동 cutover.
+- 공개 검증 대상은 `/login`, `/admin/login`, `/health`, `/v1/auth/providers`다.
+- 후보 SHA가 최신 main과 다르면 공개하지 않는다.
+- 공개 검증 실패 시 직전 release/Nginx 설정으로 rollback한다.
+- 코드 반영, CI 통과, 후보 스테이징, 화면 공개, 실제 로그인 검증은 각각 구분해서 보고한다.
 
-기준 저장소는 [`jsexy0210-ship-it/WeddingPick`](https://github.com/jsexy0210-ship-it/WeddingPick)이다. 문서의 적용 범위는 [AI_START_HERE.md](AI_START_HERE.md)를 따른다. 통합정책 v3.15와 디자인 핸드오프 v3.27은 별개 계열이며, 최신 사용자 지시가 우선한다.
+### 제품·디자인
 
-## 제품·검수 상태
+2026-09-20 병합된 UI 정리에는 로그인 로더, Android root Back 종료 흐름, 공통 DepthHeader, 온보딩 지역 전체값 제거, 취향 4개 선택, 중복 홈 로더 제거, 홈 비교 연결, 검색 헤더/정렬, Pick 탭 3개, 최초 예산 만원 단위 입력이 포함된다.
 
-- 2026-09-11 KST, 가입 복구 PR192는 main `516a4df`에 반영됐고 앱 웹·현재 관리자 Render Live를 01:18:51 KST 확인했다. 관리자 PR189·191 통합은 로컬 검수 완료 후 최종 CI·DB migration·배포를 진행하는 단계다. 미연결 공개 기준·약관 편집의 거짓 성공을 차단했다. 상세 검증과 남은 범위는 `docs/sync/master-status.json`의 `pendingAdminDeployment`를 따른다.
+실기기 Android/iOS 인증·Back·overlay 회귀는 별도 QA 증거가 필요하다.
 
-- 2026-09-11 KST, `eccf540` 기준 가입 복구 수정: 재실행 시 가입 상태보다 먼저 회원 전용 API를 호출하던 순서와 초기 상태 조회 실패 시 가입 저장을 생략하던 경합을 수정했다. 모바일 264시험·타입 검사 통과, lint 오류 0·기존 경고 2. 분리된 로컬 API와 390×844 웹에서 미완료 계정의 `/setup` 복귀 및 가입→설정 저장 순서를 확인했다. 운영 계정의 실제 실패 요청·배포 적용과 네이티브 검증은 별도다. 상세는 `docs/sync/master-status.json`의 `signupRecovery`를 따른다.
+### 런타임
 
-- 앱·관리자 실제 로그인 후 주요 경로를 검수했다. 관리자 응답 계약 불일치 8개 화면과 실제 저장·작업 실행이 없는 성공 응답을 확인했다.
-- 별점·수동 가격 제보 잔존, 뒤로 이동, 지역 중복, 검수용 표본 표시 문제가 남아 있다. 구현 파일 존재를 완료 근거로 삼지 않는다.
-- 최신 사용자 디자인 ZIP 420개 파일을 구조 검증하고 주요 화면과 대조했다. ZIP 내부에도 검색·제보·나이 확인 등 명세 충돌이 있어 원본 일괄 덮어쓰기는 하지 않았다.
-- RN 셸 + 하이브리드 전환은 확정 방향이다. 전 화면 전환·동작·디자인 검수가 완료된 상태는 아니다. `apps/web`는 별도 제품으로 유지한다.
-- 전 화면 동일 상태의 390×844 픽셀 대조, 관리자 1,920×1,080 대조, 실기기 카메라·푸시·로그인, 실제 업로드·저장 결과 검증은 미완료다. 정밀 성능 수치는 미측정이다.
-
-상세 증거와 재현 범위:
-
-- [앱·관리자 통합 검수](docs/INFORMATION_AUDIT_2026-09-10.md)
-- [최신 디자인 ZIP 대조](docs/DESIGN_ZIP_AUDIT_2026-09-10.md)
-- [인프라 접근·연결 점검](docs/INFRA_ACCESS_AUDIT_2026-09-10.md)
-
-## 현재 운영 주소·인프라
-
-| 대상 | 확인한 사실과 한계 |
-|---|---|
-| GitHub | 저장소·Actions 실행·로그 조회 가능. 조회 가능과 배포 통제 완료는 별개 |
-| KakaoCloud API | `https://210.109.82.212`. #979에서 자동배포 성공 확인 |
-| Render SG API | 사용자가 중지함. 재배포·재활성화하지 않음 |
-| Render 앱 웹 Preview | `https://weddingpick-app-web.onrender.com`. 정적 서비스 유지, 최신 main 반영 여부 별도 검증 필요 |
-| Render 관리자 | `https://weddingpick-admin.onrender.com/admin`. 정적 서비스 유지, 최신 main 반영 여부 별도 검증 필요 |
-| Render 웹사이트 | `https://weddingpick-web.onrender.com`. 정적 서비스 유지, 최신 main 반영 여부 별도 검증 필요 |
-| Neon | 프로젝트 콘솔 접근, production 브랜치의 `neondb`·`weddingpick_staging` 존재 확인. 이번 점검에서는 직접 SQL 실행 안 함 |
-| Kakao Object Storage | `weddingpick-prod-media` / `kr-central-2` 운영 기준. HeadBucket·ListObjectsV2 읽기 검증 성공. 현재 운영 DB가 참조하는 NCP→Kakao 이관 대상 파일은 0개로 확인. NCP `weddingpick-test`는 과거/이관 원본으로만 취급하며 새 운영 저장소로 사용하지 않음 |
-| Expo/EAS | Owner 계정·프로젝트·기존 빌드 조회 가능. 최근 조회 빌드는 아래 표 참조 |
-| Kakao Developers | 앱 콘솔 접근. `age_range` 필수 동의·`birthyear` 권한 없음 확인. 현재 카카오 단일 로그인 구현과 구분해 동의·안내 문서를 맞춰야 함 |
-| App Store Connect | iOS 1.0 ‘제출 준비 중’, TestFlight 1.0.0 빌드 2 ‘제출 준비 완료’. 스토어 출시·실기기 검증 완료가 아님 |
-| Google Play | 앱 상태 ‘임시’. 앱 설정·비공개 테스트·프로덕션 액세스 절차 미완료 |
-| Cloudflare | 연결 계정 인증 가능, zone 목록 비어 있음. 현재 사용하지 않는 도메인 부재를 장애로 분류하지 않음 |
-
-`weddingpick.kr`은 **폐기했다**(2026-09-11 대표 지시). 2026-09-10의 「보유하되 미사용·폐기 대상 아님」을 뒤집은 결정이다. DNS 연결·커스텀 도메인 전환을 과제로 두지 않고, 다시 붙이자고 제안하지도 않는다. **앱웹과 API는 KakaoCloud `https://210.109.82.212`가 운영 기준**이고, Render 정적 서비스는 웹사이트 전환이 끝날 때까지만 임시 잔존본으로 본다. 관리자는 KakaoCloud 443 `/admin`이 운영 정본이다.
-
-Render의 환경변수 선언은 [infra/render-env.yml](infra/render-env.yml), 반영 경로는 [render-env-sync.yml](.github/workflows/render-env-sync.yml)이다. 서비스 표시 이름과 URL 호스트는 다를 수 있으므로 오래된 이름만으로 리소스를 삭제하거나 대체하지 않는다. 남은 별도 DB·관리자 리소스의 사용 여부는 추가 확인 대상이다.
-
-## DB 확인 결과
-
-운영 API `/health`에서 `database: "ok"`, `schema.ok: true`, 적용 106개·기대 103개·미적용 0개를 확인했다. 저장소 기준 밖의 이력 3개는 이전 번호 변경 기록으로 설명돼 있으며 임의 삭제하지 않는다. 이 결과는 관리자 응답 계약·전체 DB 기능의 정상 증거가 아니다.
-
-[DB Inventory 실행 34476381128](https://github.com/jsexy0210-ship-it/WeddingPick/actions/runs/34476381128)은 전체 success 표시와 달리 `PRODUCTION_DATABASE_URL` 대상 조회에서 호스트 이름 해석 오류 `EAI_AGAIN`을 남겼다. 공개 API health 성공과 GitHub의 별도 DB 연결 실패를 구분해야 한다. Secret 변경이나 migration은 이번 점검에서 실행하지 않았다.
-
-스테이징 DB가 운영과 같은 Neon 브랜치에 존재함은 확인했지만, 최신 마이그레이션 적용 수는 이번에 재검증하지 않았다. 과거 ‘73/92’를 현재 수치로 재사용하거나 상태를 모른 채 마이그레이션을 실행하지 않는다.
-
-## 웹·네이티브 버전 차이
-
-| 대상 | 최근 확인한 배포·빌드 |
-|---|---|
-| Render API·앱 웹·웹사이트 | 2026-09-10 22:19:16 KST, `e34193e` |
-| EAS Android preview | 2026-09-04 생성, `33701bf`, FINISHED |
-| EAS Android production | 2026-09-04 생성, `e4e3327`, FINISHED |
-| EAS iOS production | 2026-09-03 생성, `3e10bbc`, FINISHED |
-
-EAS 최근 5개 조회 기준이다. 실제 기기 설치 버전과 TestFlight 빌드 연결은 미확인이다. 과거 iOS 빌드 실패 기록만으로 현재 인증서·권한 오류가 계속된다고 단정하거나 자격증명을 재생성하지 않는다.
-
-## CI/CD와 속도 확인 범위
-
-- Render API 자동배포는 폐기됐다. 현재 API는 `main → CI / Deploy → 운영 revision 누적 diff 확인 → KakaoCloud API/worker 배포` 경로를 사용한다. DB migration은 자동배포와 분리된 수동 production 승인 작업이다.
-- HTTP 200만으로 health를 통과시키는 검사와 실제 `schema.ok` 판정이 다를 수 있다. 배포 관문과 DB 검사 실패 전파를 함께 보완해야 한다.
-- 워크플로 목록과 트리거는 [.github/workflows/](.github/workflows/)의 현재 파일이 기준이다. 과거의 ‘10개·중복 없음’ 목록은 현황 근거에서 제외했다.
-- 운영 API는 KakaoCloud, DB는 Neon, 파일은 KakaoCloud Object Storage를 사용한다. 과거 Render/Ohio 성능 수치는 현재 수치로 재사용하지 않고 실제 응답 시간·DB 왕복 지연은 현행 구성에서 다시 계측한다.
-- 앱 진입의 장시간 요청 대기·인증 오류 구분과 관리자 요청 타임아웃 문제는 코드 검수 결과이며, 측정된 속도 수치가 아니다.
-
-## 다음 작업 우선순위
-
-1. 관리자 API·화면의 공유 응답 계약과 렌더링 오류, FAQ 저장·재계산의 실제 실행을 연결한다. 정상 0건·미연결·오류를 구분한다.
-2. 배포 승인·CI·migration·health 판정을 연결하고, GitHub DB 연결 실패와 스테이징 현황을 재확인한다.
-3. 최신 디자인 원본의 화면별 충돌을 정리하고, 폐기 흐름·별점·나이 안내·이동·지역·표본 표시를 수정한다. 화면 ID별 증거를 남긴다.
-4. 인증·초기 로딩 대기와 오류 표시를 개선하고 실제 기기·네트워크에서 성능을 측정한다.
-5. 격리 환경의 업로드·저장·작업 완료 시험 후 RN 권한·카메라·푸시를 실기기로 검수한다. 확인된 소스 버전으로 빌드·스토어 절차를 이어간다.
-6. `SBIZ_API_KEY`(운영계정, 활용기간 2026-09-08~2028-09-08)를 GitHub Secrets에 등록한다 →
-   `public-data.yml`의 `lookup_level`로 업종코드를 조사한다 → 저장소 Variables `SBIZ_UPJONG_CODES`에 넣는다.
-   (`collect.ts`의 하드코딩 `'Q'`는 제거했다 — 코드는 이제 설정에서만 온다.
-   `storeListInUpjong` 403이 남아 있으면 포털에서 그 기능의 활용신청 승인을 먼저 받아야 한다.)
-
-광고 실운영 전환 등 별도 확정이 필요한 제품 결정은 기존 정책·사용자 지시에 따른다. 콘솔 접근이나 문서 정리가 그 실행 승인을 대체하지 않는다.
-
-## 갱신 규칙
-
-현재 상태와 미완료 검증만 유지하고 과거 작업은 검수 보고서·Git 이력으로 추적한다. 새 검증으로 상태를 바꿀 때 확인 날짜·커밋·환경·증거를 함께 적는다. `docs/sync/`의 체크리스트·작업 상태·화면 점검도 같은 증거로 갱신한다.
-
-출시 준비율은 완료 기준과 실제 검증 증거가 확정될 때까지 **미측정**이다. 문서 공정률·파일 수·CI 통과율을 출시 준비율로 바꾸지 않는다.
+- 운영 API와 worker는 Kakao VM 기준으로 관리한다.
+- 운영 DB는 Neon을 사용한다.
+- 운영 파일 저장소는 Kakao Object Storage를 기준으로 한다.
+- 앱 출시용 EAS production 빌드는 별도 출시 판단 범위다.
