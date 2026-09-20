@@ -137,7 +137,7 @@
           "/setup"
         ]
       },
-      "visualVerification": "pending-390x844-side-by-side",
+      "visualVerification": "verified-390x844-default-checked-and-focus-2026-09-20",
       "sourceReferences": [
         {
           "file": "apps/mobile/src/app/login/age-required.tsx",

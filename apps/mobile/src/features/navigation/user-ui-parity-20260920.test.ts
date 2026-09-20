@@ -8,6 +8,18 @@ const mobile = (path: string) => readFileSync(join(MOBILE, path), 'utf8');
 const root = (path: string) => readFileSync(join(ROOT, path), 'utf8');
 
 describe('2026-09-20 사용자 공통 UI 회귀', () => {
+  it('로그인은 정본 카피·Pick 마크·연령 동의 상태를 유지한다', () => {
+    const s = mobile('app/login/index.tsx');
+    expect(s).toContain("const HERO_TITLE = '웨딩 준비,\\n진짜 견적부터\\n확인해 보세요'");
+    expect(s).toContain("'실제 견적 금액을 비교해요'");
+    expect(s).toContain("'마음에 드는 곳을 함께 Pick해요'");
+    expect(s).toContain("'일정과 지출도 한곳에서 관리해요'");
+    expect(s).toContain('<WeddingMark size={64} color={theme.tint} />');
+    expect(s).toContain('visible={!showRemembered}');
+    expect(s).toContain('const ageBlocked = !showRemembered && !ageChecked;');
+    expect(s).not.toContain('다른 계정으로 시작하기');
+  });
+
   it('Kakao 복귀는 기본 로더와 진행 문구를 같이 둔다', () => {
     const s = mobile('features/auth/signing-in-view.tsx');
     expect(s).toContain('<DelayedLoader size={40} />');
