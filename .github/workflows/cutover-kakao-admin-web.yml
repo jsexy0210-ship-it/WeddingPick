@@ -1,4 +1,4 @@
-name: Cutover Kakao Admin Web
+name: Verify Kakao Admin on 443
 
 on:
   workflow_call:
@@ -6,50 +6,25 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: weddingpick-kakao-vm-write
-  cancel-in-progress: false
-
+# 관리자 운영 origin은 https://210.109.82.212/admin 으로 고정됐다.
+# 이 옛 cutover workflow는 더 이상 Nginx를 쓰지 않는다. 실제 정적 release 전환은
+# app-web 443 cutover가 app과 admin을 같은 immutable release로 함께 갱신한다.
 jobs:
-  install:
-    name: Enable Kakao admin and web static sites
-    environment: production
-    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-      - run: bash ./scripts/install-kakao-static-sites.sh
-
   verify:
-    name: Verify public admin and web
-    needs: [install]
+    name: Verify canonical admin 443 route
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Verify admin login page
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --connect-timeout 5 --max-time 15             https://210.109.82.212:8443/admin/login > /tmp/admin.html
+          curl --fail --silent --show-error --connect-timeout 5 --max-time 15 \
+            https://210.109.82.212/admin/login > /tmp/admin.html
           grep -qi '<html' /tmp/admin.html
 
-      - name: Verify website privacy page
+      - name: Verify API still works
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --connect-timeout 5 --max-time 15             https://210.109.82.212:9443/privacy.html > /tmp/privacy.html
-          grep -qi '<html' /tmp/privacy.html
-
-  rollback:
-    name: Roll back Kakao admin and web on failure
-    if: ${{ always() && needs.install.result == 'success' && needs.verify.result != 'success' }}
-    needs: [install, verify]
-    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-      - run: bash ./scripts/rollback-kakao-static-sites.sh
+          curl --fail --silent --show-error --connect-timeout 5 --max-time 15 \
+            https://210.109.82.212/health |
+            python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get("ok") is True and d.get("database")=="ok" else 1)'
