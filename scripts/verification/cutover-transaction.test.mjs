@@ -395,9 +395,12 @@ shellTest('failed release update restores the immediately previous live release 
     const previousConfig = readFileSync(h.conf, 'utf8');
     const releaseB = 'release-b';
     const sourceB = path.join(h.root, 'static-releases', releaseB, 'app');
+    const adminB = path.join(h.root, 'static-releases', releaseB, 'admin', 'admin');
     mkdirSync(sourceB, { recursive: true });
+    mkdirSync(adminB, { recursive: true });
     writeFileSync(path.join(sourceB, 'index.html'), '<html>b</html>', 'utf8');
     writeFileSync(path.join(sourceB, 'login.html'), '<html>b-login</html>', 'utf8');
+    writeFileSync(path.join(adminB, 'login.html'), '<html>b-admin</html>', 'utf8');
 
     const second = run(h.installPath, [releaseB], {
       ...h.env,
@@ -422,9 +425,12 @@ shellTest('explicit update rollback restores the previous app and verifies login
 
     const releaseB = 'release-b';
     const sourceB = path.join(h.root, 'static-releases', releaseB, 'app');
+    const adminB = path.join(h.root, 'static-releases', releaseB, 'admin', 'admin');
     mkdirSync(sourceB, { recursive: true });
+    mkdirSync(adminB, { recursive: true });
     writeFileSync(path.join(sourceB, 'index.html'), '<html>b</html>', 'utf8');
     writeFileSync(path.join(sourceB, 'login.html'), '<html>b-login</html>', 'utf8');
+    writeFileSync(path.join(adminB, 'login.html'), '<html>b-admin</html>', 'utf8');
     assert.equal(run(h.installPath, [releaseB], h.env).status, 0);
 
     const rollback = run(h.updateRollbackPath, [], h.env);
@@ -446,9 +452,12 @@ shellTest('update rollback fails closed before changing Nginx when the recorded 
 
     const releaseB = 'release-b';
     const sourceB = path.join(h.root, 'static-releases', releaseB, 'app');
+    const adminB = path.join(h.root, 'static-releases', releaseB, 'admin', 'admin');
     mkdirSync(sourceB, { recursive: true });
+    mkdirSync(adminB, { recursive: true });
     writeFileSync(path.join(sourceB, 'index.html'), '<html>b</html>', 'utf8');
     writeFileSync(path.join(sourceB, 'login.html'), '<html>b-login</html>', 'utf8');
+    writeFileSync(path.join(adminB, 'login.html'), '<html>b-admin</html>', 'utf8');
     assert.equal(run(h.installPath, [releaseB], h.env).status, 0);
     const liveBConfig = readFileSync(h.conf, 'utf8');
 
