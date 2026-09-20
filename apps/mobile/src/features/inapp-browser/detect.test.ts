@@ -37,7 +37,7 @@ const UA = {
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15',
 } as const;
 
-const URL_IN_APP = 'https://weddingpick-app-web.onrender.com/login?wp_ext=1';
+const URL_IN_APP = 'https://210.109.82.212/login?wp_ext=1';
 
 describe('인앱 브라우저 판별', () => {
   it.each([
@@ -103,7 +103,7 @@ describe('탈출 방법 결정', () => {
   it('안드로이드 기타 인앱은 크롬을 지목한 intent 주소로 넘긴다', () => {
     expect(planInAppEscape(UA.instagramAndroid, URL_IN_APP)).toEqual({
       kind: 'open',
-      href: 'intent://weddingpick-app-web.onrender.com/login?wp_ext=1#Intent;scheme=https;package=com.android.chrome;end',
+      href: 'intent://210.109.82.212/login?wp_ext=1#Intent;scheme=https;package=com.android.chrome;end',
     });
   });
 
