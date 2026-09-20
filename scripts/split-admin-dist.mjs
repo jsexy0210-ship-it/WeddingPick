@@ -1,26 +1,10 @@
 #!/usr/bin/env node
 /**
- * 관리자 콘솔 출처 분리 — 배포 산출물을 역할에 맞게 깎는다.
+ * Expo web export를 앱용/관리자용 산출물로 분리한다.
  *
- *   node scripts/split-admin-dist.mjs app     (weddingpick-app-web 가 쓴다)
- *   node scripts/split-admin-dist.mjs admin   (weddingpick-admin 이 쓴다)
- *
- * **왜 render.yaml의 `routes`가 아니라 이 스크립트인가.**
- * 두 가지 이유다.
- *
- *   1. 이 저장소의 Blueprint sync가 깨져 있다(render.yaml 머리말, 2026-09-07).
- *      `render.yaml`에 적은 `routes`가 Render에 반영된다는 보장이 없다 —
- *      지금 그 파일은 사실상 문서다.
- *   2. Render 정적 사이트에서 route 규칙과 실재하는 파일 중 무엇이 이기는지
- *      확인하지 못했다. 추측 위에 경계를 세우지 않는다.
- *
- * 파일이 없으면 규칙 해석과 무관하게 없다. 그래서 산출물을 직접 깎는다.
- *
- * **이 분리로 얻는 것은 출처 분리 하나다.** 관리자 토큰이 사용자 앱과 다른
- * localStorage에 들어가고, 사용자 화면 쪽 XSS가 관리자 토큰에 닿지 못한다.
- * 얻지 못하는 것은 docs/admin-origin-split.md에 적어 두었다 — 정적 사이트라
- * 앞단 인증도 IP 제한도 걸 수 없고, 화면 코드는 주소를 알면 누구나 받는다.
- * 지켜야 할 것은 화면이 아니라 정보이고, 그건 API가 토큰으로 막는다.
+ * 앱과 관리자는 같은 KakaoCloud 443 origin을 사용하지만, Nginx에서 /admin 경로를
+ * 별도 immutable directory로 고정해 앱 release와 관리자 release가 같은 SHA인지 검증한다.
+ * 관리자 경로는 https://210.109.82.212/admin 으로 고정하며 환경변수로 origin을 바꾸지 않는다.
  */
 
 import { existsSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
