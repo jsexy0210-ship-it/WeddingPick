@@ -19,6 +19,7 @@ import {
 import { FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { AdminFormModal } from './_ui';
 
 type Meta = {
   ogTitle: string;
@@ -72,6 +73,7 @@ export function OgCardPanel() {
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -219,6 +221,11 @@ export function OgCardPanel() {
       <Text style={styles.lead}>
         카카오톡이나 슬랙에 주소를 붙이면 뜨는 카드예요. 설정은 저장할 수 있고, 사이트에는 별도 배포 후 반영돼요.
       </Text>
+      <View style={styles.actions}>
+        <Pressable style={[styles.button, styles.buttonPrimary]} onPress={() => setEditing(true)}>
+          <Text style={styles.buttonPrimaryText}>링크 미리보기 수정</Text>
+        </Pressable>
+      </View>
 
       <View style={styles.row}>
         <View style={styles.card}>
@@ -272,9 +279,10 @@ export function OgCardPanel() {
         </View>
       </View>
 
-      <View style={styles.field}>
-        <Text style={styles.fieldLabel}>카드 그림</Text>
-        <View style={styles.imageActions}>
+      <AdminFormModal visible={editing} title="링크 미리보기 수정" onClose={() => setEditing(false)}>
+        <View style={styles.field}>
+          <Text style={styles.fieldLabel}>카드 그림</Text>
+          <View style={styles.imageActions}>
           <Pressable
             style={[styles.button, styles.buttonPrimary]}
             onPress={() => void uploadImage()}
@@ -298,11 +306,11 @@ export function OgCardPanel() {
                 ? '아래 「그림 주소」에 적어 둔 그림을 쓰고 있어요.'
                 : '저장소에 든 기본 그림을 쓰고 있어요.'}
           </Text>
+          </View>
+          <Text style={styles.fieldHint}>
+            PNG · JPG · WebP. 카드에서 잘리지 않는 크기는 1200×630이에요.
+          </Text>
         </View>
-        <Text style={styles.fieldHint}>
-          PNG · JPG · WebP. 카드에서 잘리지 않는 크기는 1200×630이에요.
-        </Text>
-      </View>
 
       {FIELDS.map((field) => (
         <View key={field.key} style={styles.field}>
@@ -323,11 +331,15 @@ export function OgCardPanel() {
 
       {notice ? <Text style={styles.notice}>{notice}</Text> : null}
 
-      <View style={styles.actions}>
-        <Pressable style={[styles.button, styles.buttonPrimary]} onPress={save} disabled={saving}>
-          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonPrimaryText}>저장</Text>}
-        </Pressable>
-      </View>
+        <View style={styles.actions}>
+          <Pressable style={styles.button} onPress={() => setEditing(false)} disabled={saving || uploading}>
+            <Text style={styles.buttonText}>취소</Text>
+          </Pressable>
+          <Pressable style={[styles.button, styles.buttonPrimary]} onPress={save} disabled={saving}>
+            {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonPrimaryText}>저장</Text>}
+          </Pressable>
+        </View>
+      </AdminFormModal>
     </ScrollView>
   );
 }

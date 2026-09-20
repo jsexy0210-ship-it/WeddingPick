@@ -62,7 +62,7 @@ describe('관리자 로그인 — 들어간 뒤 다시 로그인으로 오지 �
     if (!watchesToken) return;
 
     expect(code(login)).not.toContain('window.location.assign');
-    expect(code(login)).toContain("router.replace('/admin/queue'");
+    expect(code(login)).toContain("router.replace('/admin/home'");
   });
 
   it('저장은 곧바로도 쓴다 — AsyncStorage 웹 구현이 쓰기를 미룬다', () => {

@@ -23,7 +23,12 @@ import { myMonthlyDrawResponseSchema, myRewardPayoutResponseSchema, myRewardsRes
 import { loungeReviewListResponseSchema, reportReasonListResponseSchema, reviewCommentListResponseSchema, reviewListResponseSchema } from './reviews';
 import { settingsSchema } from './settings';
 import { signupStateSchema } from './signup';
-import { weddingFeedDetailSchema, weddingFeedListResponseSchema } from './wedding-feed';
+import {
+  adminWeddingFeedResponseSchema,
+  adminWeddingFeedTaxonomySchema,
+  weddingFeedDetailSchema,
+  weddingFeedListResponseSchema,
+} from './wedding-feed';
 import { weddingEventListResponseSchema } from './wedding-events';
 import { expenseSummaryResponseSchema } from './wedding-plan';
 import {
@@ -83,6 +88,8 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/faq', faqListResponseSchema],
   ['GET /v1/wedding-feed', weddingFeedListResponseSchema],
   ['GET /v1/wedding-feed/:id', weddingFeedDetailSchema],
+  ['GET /v1/admin/wedding-feed', adminWeddingFeedResponseSchema],
+  ['GET /v1/admin/wedding-feed/taxonomy', adminWeddingFeedTaxonomySchema],
 ]);
 
 /**
@@ -101,7 +108,6 @@ const NO_CONTRACT = new Set([
   'GET /v1/admin/dashboard',
   'GET /v1/admin/members-trend',
   'GET /v1/admin/briefing',
-  'GET /v1/admin/wedding-feed',
   /* 박람회 관리(0410) — 관리자 전용이라 사용자 계약이 없다. 위 admin 넷과 같은 자리다. */
   'GET /v1/admin/expos',
   'GET /v1/admin/expos/deletion-preview',

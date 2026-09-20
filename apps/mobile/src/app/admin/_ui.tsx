@@ -5,7 +5,7 @@
  * `docs/design/handoff/ADMIN.md`의 「공통 규칙」이다. 화면마다 배너·카드·표를
  * 따로 그리면 여섯 규칙 중 무엇 하나는 반드시 어긋난다 — 여기 한 곳에서만 그린다.
  *
- *   1. 상단 배너가 상태를 먼저 말한다 — `StatusBanner` (초록 · 주황 · 빨강)
+ *   1. 넓은 상태 띠는 관리자 전 화면에서 사용하지 않는다
  *   2. 빈 상태가 정상 상태다 — `EmptyState`
  *   3. 숫자는 tabular-nums — `Kpi` · `Row.num` · `DataTable` 셀이 전부 붙인다
  *   4. 표는 카드 안에서만 가로 스크롤 — `DataTable`
@@ -20,7 +20,7 @@
  * 값은 전부 `spec/tokens.json`에서 온다 — 이 파일에 hex를 적지 않는다.
  */
 import { type ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { AdminSpacing as A, Colors, FontSize, LineHeight, Radius, Spacing } from '@weddingpick/ui';
 
@@ -55,18 +55,6 @@ const TONE_FG: Record<Tone, string> = {
   ok: C.positive,
   warn: C.cautionary,
   bad: C.negative,
-};
-
-const TONE_BG: Record<Tone, string> = {
-  ok: C.positiveBackground,
-  warn: C.adminBannerWarn,
-  bad: C.negativeBackground,
-};
-
-const TONE_ICON_BG: Record<Tone, string> = {
-  ok: C.adminBannerOkIcon,
-  warn: C.cautionaryBackground,
-  bad: C.adminBannerBadIcon,
 };
 
 const KIND_FG: Record<Kind, string> = {
@@ -265,7 +253,7 @@ export function AdminTabShell({ tabs, active, onChange, children }: AdminTabShel
   );
 }
 
-/* ── 1. 상단 배너 ──────────────────────────────────────────── */
+/* ── 넓은 상태 띠 폐기 ─────────────────────────────────────── */
 
 export type StatusBannerProps = {
   tone: Tone;
@@ -276,25 +264,50 @@ export type StatusBannerProps = {
 };
 
 /**
- * 지금 사람이 봐야 할 것을 맨 위에서 먼저 말한다. 화면마다 하나만 둔다.
- * 문제가 없을 때 이 배너를 빼면 「볼 것이 없다」는 사실이 화면에서 사라진다 — 초록으로 남긴다.
+ * 작은 표 상태 배지는 유지하지만 화면 폭을 채우는 상태 띠는 그리지 않는다.
+ * 다만 요청 실패까지 숨기면 운영자가 원인을 알 수 없으므로, 실패만 배경 없는 문장과
+ * 닫기 동작으로 남긴다.
  */
 export function StatusBanner({ tone, title, detail, cta }: StatusBannerProps) {
+  if (tone !== 'bad') return null;
+
   return (
-    <View style={[styles.banner, { backgroundColor: TONE_BG[tone] }]}>
-      <View style={[styles.bannerIcon, { backgroundColor: TONE_ICON_BG[tone] }]}>
-        <Text style={[styles.bannerIconMark, { color: TONE_FG[tone] }]}>{tone === 'ok' ? '✓' : '!'}</Text>
-      </View>
-      <View style={styles.bannerText}>
-        <Text style={[styles.bannerTitle, { color: TONE_FG[tone] }]}>{title}</Text>
-        {detail ? <Text style={styles.bannerDetail}>{detail}</Text> : null}
-      </View>
+    <View style={styles.inlineError}>
+      <Text style={styles.inlineErrorText}>{detail ?? title}</Text>
       {cta ? (
-        <Pressable onPress={cta.onPress} style={styles.bannerCta}>
-          <Text style={[styles.bannerCtaLabel, { color: TONE_FG[tone] }]}>{cta.label}</Text>
+        <Pressable onPress={cta.onPress}>
+          <Text style={styles.inlineErrorAction}>{cta.label}</Text>
         </Pressable>
       ) : null}
     </View>
+  );
+}
+
+export function AdminFormModal({
+  visible,
+  title,
+  onClose,
+  children,
+}: {
+  visible: boolean;
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.formModalOverlay}>
+        <View style={styles.formModalCard}>
+          <View style={styles.formModalHeader}>
+            <Text style={styles.formModalTitle}>{title}</Text>
+            <Pressable onPress={onClose} style={styles.formModalClose}>
+              <Text style={styles.formModalCloseText}>닫기</Text>
+            </Pressable>
+          </View>
+          <ScrollView contentContainerStyle={styles.formModalBody}>{children}</ScrollView>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -721,29 +734,31 @@ export type ConfirmCardProps = {
  */
 export function ConfirmCard({ title, body, items, cta, danger, children, onConfirm, onCancel }: ConfirmCardProps) {
   return (
-    <View style={styles.confirmWrap}>
-      <View style={styles.confirmCard}>
-        <Text style={styles.confirmTitle}>{title}</Text>
-        <Text style={styles.confirmBody}>{body}</Text>
-        <View style={styles.confirmList}>
-          {items.map((it) => (
-            <View key={it} style={styles.confirmItem}>
-              <View style={styles.confirmDot} />
-              <Text style={styles.confirmItemText}>{it}</Text>
-            </View>
-          ))}
-        </View>
-        {children}
-        <View style={styles.confirmActions}>
-          <Pressable onPress={onCancel} style={styles.btnGhost}>
-            <Text style={styles.btnGhostLabel}>취소</Text>
-          </Pressable>
-          <Pressable onPress={onConfirm} style={[styles.btnPrimary, danger && styles.btnDanger]}>
-            <Text style={styles.btnPrimaryLabel}>{cta}</Text>
-          </Pressable>
+    <Modal visible transparent animationType="fade" onRequestClose={onCancel}>
+      <View style={styles.confirmWrap}>
+        <View style={styles.confirmCard}>
+          <Text style={styles.confirmTitle}>{title}</Text>
+          <Text style={styles.confirmBody}>{body}</Text>
+          <View style={styles.confirmList}>
+            {items.map((it) => (
+              <View key={it} style={styles.confirmItem}>
+                <View style={styles.confirmDot} />
+                <Text style={styles.confirmItemText}>{it}</Text>
+              </View>
+            ))}
+          </View>
+          {children}
+          <View style={styles.confirmActions}>
+            <Pressable onPress={onCancel} style={styles.btnGhost}>
+              <Text style={styles.btnGhostLabel}>취소</Text>
+            </Pressable>
+            <Pressable onPress={onConfirm} style={[styles.btnPrimary, danger && styles.btnDanger]}>
+              <Text style={styles.btnPrimaryLabel}>{cta}</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
-    </View>
+    </Modal>
   );
 }
 
@@ -848,32 +863,43 @@ const styles = StyleSheet.create({
     gap: A.gridGap,
   },
 
-  banner: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: A.bannerGap,
-    paddingVertical: A.bannerPaddingY,
-    paddingHorizontal: A.bannerPaddingX,
-    borderRadius: Radius.medium,
-  },
-  bannerIcon: { width: A.bannerIcon, height: A.bannerIcon, borderRadius: Radius.pill, alignItems: 'center', justifyContent: 'center' },
-  bannerIconMark: { fontSize: FontSize.t7, fontWeight: '700' },
-  bannerText: { flex: 1, minWidth: 0, gap: A.stackGap },
-  bannerTitle: { fontSize: FontSize.adminBanner, lineHeight: LineHeight.adminBanner, fontWeight: '700' },
-  bannerDetail: {
+  inlineError: { flexDirection: 'row', alignItems: 'center', gap: A.tableGap },
+  inlineErrorText: {
+    flex: 1,
+    maxWidth: FLOW_MAX,
     fontSize: FontSize.micro,
     lineHeight: LineHeight.adminCell,
-    color: C.textSecondary,
-    maxWidth: FLOW_MAX,
+    color: C.negative,
   },
-  bannerCta: {
-    height: A.bannerCtaHeight,
-    paddingHorizontal: A.cardGap,
-    borderRadius: Radius.control,
+  inlineErrorAction: { fontSize: FontSize.micro, fontWeight: '700', color: C.negative },
+
+  formModalOverlay: {
+    flex: 1,
+    alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: C.background,
+    padding: A.bodyPaddingX,
+    backgroundColor: C.scrim,
   },
-  bannerCtaLabel: { fontSize: FontSize.micro, fontWeight: '700' },
+  formModalCard: {
+    width: '100%',
+    maxWidth: 760,
+    maxHeight: 880,
+    borderRadius: Radius.medium,
+    backgroundColor: C.background,
+    overflow: 'hidden',
+  },
+  formModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: A.cardPadding,
+    paddingVertical: A.tableGap,
+    borderBottomWidth: 1,
+    borderBottomColor: C.line,
+  },
+  formModalTitle: { flex: 1, fontSize: FontSize.t5, lineHeight: LineHeight.t5, fontWeight: '700', color: C.text },
+  formModalClose: { paddingHorizontal: A.btnPaddingX, paddingVertical: A.stackGap },
+  formModalCloseText: { fontSize: FontSize.micro, fontWeight: '700', color: C.textSecondary },
+  formModalBody: { padding: A.cardPadding, gap: A.cardGap },
 
   kpiRow: { flexDirection: 'row', gap: A.gridGap },
   kpiCard: {
@@ -1042,7 +1068,13 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
 
-  confirmWrap: { alignItems: 'flex-start' },
+  confirmWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: A.bodyPaddingX,
+    backgroundColor: C.scrim,
+  },
   confirmCard: {
     width: '100%',
     maxWidth: A.confirmWidth,

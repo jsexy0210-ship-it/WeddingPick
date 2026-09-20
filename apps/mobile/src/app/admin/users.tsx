@@ -1,9 +1,9 @@
 /**
  * WP-ADM-020 사용자 · 계정 — 이제 「계정·권한」 화면의 탭 하나(앱 회원)다.
  *
- * 가입 · 로그인 수단 · Pick 인증 · 탈퇴 상태. **탈퇴를 접수한 계정도 보인다** —
- * 이 화면의 첫 번째 쓰임이 «탈퇴했는데 회원정보가 남았는가»를 확인하는 것이다.
- * 삭제가 끝난 계정은 행이 없어 안 보인다 — 그것이 정상이다.
+ * 가입 · 로그인 수단 · Pick 인증. 카카오 로그인을 거친 일반 회원만 보인다.
+ * 관리자·운영 표본·신원 없는 탈퇴 실패 행은 앱 회원이 아니며 탈퇴 처리는 별도
+ * 운영 큐에서 원인과 재시도를 관리한다.
  *
  * 정지·차단 같은 상태 변경은 없다 — 서버에 그런 상태가 없다. 없는 버튼을 두면
  * 눌러도 아무 일이 없고, 그게 «되는 줄» 알게 만든다.
@@ -50,9 +50,6 @@ type UserRecord = {
 };
 
 type UserListData = { users: UserRecord[]; total: number; hasMore: boolean; nextCursor: string | null };
-type Filter = 'all' | 'active' | 'withdrawn';
-
-const FILTER_LABEL: Record<Filter, string> = { all: '전체', active: '활성', withdrawn: '탈퇴 접수' };
 
 /* withdrawal-admin.ts의 STATUS_LABEL과 같은 말을 쓴다. */
 const WITHDRAWAL_LABEL: Record<WithdrawalStatus, string> = {
@@ -68,7 +65,7 @@ const WITHDRAWAL_COLOR: Record<WithdrawalStatus, string> = {
   deletion_pending: Colors.light.textAssistive,
 };
 const PROVIDER_LABEL: Record<string, string> = {
-  kakao: '카카오', apple: '애플', google: '구글', naver: '네이버', email: '이메일',
+  kakao: '카카오',
 };
 
 function statusOf(u: UserRecord): { label: string; color: string } {
@@ -94,7 +91,6 @@ function UsersPanel() {
   const [rev, setRev] = useState(0);
   const [search, setSearch] = useState('');
   const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState<Filter>('all');
   const [selected, setSelected] = useState<UserRecord | null>(null);
   const [acting, setActing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -109,7 +105,6 @@ function UsersPanel() {
     setLoading(true);
     const params = new URLSearchParams();
     if (query) params.set('search', query);
-    if (filter !== 'all') params.set('status', filter);
     const qs = params.toString();
     apiFetch(`/v1/admin/users${qs ? `?${qs}` : ''}`)
       .then((d) => {
@@ -124,7 +119,7 @@ function UsersPanel() {
         setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [rev, query, filter]);
+  }, [rev, query]);
 
   /* 삭제에 실패한 탈퇴 계정을 다시 지운다 — withdrawal-admin retry와 같은 길. */
   async function retryDeletion() {
@@ -215,23 +210,12 @@ function UsersPanel() {
           <View style={styles.searchBox}>
             <TextInput
               style={styles.searchInput}
-              placeholder="이름 · 이메일 · 닉네임 · ID 검색 (Enter)"
+              placeholder="카카오 회원 이름 · 이메일 · 닉네임 · ID 검색 (Enter)"
               value={search}
               onChangeText={setSearch}
               onSubmitEditing={() => setQuery(search.trim())}
               returnKeyType="search"
             />
-            <View style={styles.filterRow}>
-              {(['all', 'active', 'withdrawn'] as Filter[]).map((f) => (
-                <Pressable
-                  key={f}
-                  style={[styles.filterBtn, filter === f && styles.filterBtnActive]}
-                  onPress={() => setFilter(f)}
-                >
-                  <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>{FILTER_LABEL[f]}</Text>
-                </Pressable>
-              ))}
-            </View>
             <Text style={styles.totalText}>총 {formatCount(data.total)}명</Text>
           </View>
           <ScrollView>
@@ -453,11 +437,6 @@ const styles = StyleSheet.create({
   colVer: { width: 70 },
   colJoined: { width: 90 },
   colDeleted: { width: 90 },
-  filterRow: { flexDirection: 'row', gap: 6 },
-  filterBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: Colors.light.fieldBorder },
-  filterBtnActive: { borderColor: Colors.light.tint, backgroundColor: 'rgba(255,111,97,0.08)' },
-  filterText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
-  filterTextActive: { color: Colors.light.tint, fontWeight: '700' },
   retryAction: { marginTop: 12, paddingVertical: 10, borderRadius: 6, backgroundColor: Colors.light.tint, alignItems: 'center' },
   retryActionText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   actionNote: { fontSize: FontSize.t7, color: Colors.light.positive, marginTop: 8 },
