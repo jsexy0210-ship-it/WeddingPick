@@ -202,7 +202,7 @@ export default function CompareScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <PickSectionTabs active="compare" compareIds={(ids ?? '').split(',').filter(Boolean)} />
+        <PickSectionTabs active="compare" />
         {/* nav 56 · 뒤로 + «스튜디오 3곳 비교» */}
         <View style={styles.navBar}>
           <BackButton />

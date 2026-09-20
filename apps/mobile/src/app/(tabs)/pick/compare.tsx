@@ -24,6 +24,7 @@ import { useDepthBack } from '@/features/navigation/depth-back';
 import { getCurrentUser, getVendor, listCandidates } from '@/api/client';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 import { PICK_COMPARE_MAX, PICK_COMPARE_MIN } from '@/features/pick/canonical-rules';
+import { PickSectionTabs } from '@/features/pick/pick-section-tabs';
 
 /**
  * 비교 후보 선택 · WP-CMP-001 · WP-SHT-004. 시안 17-sheets-states.dc.html SHT-004.
@@ -126,8 +127,10 @@ export default function PickCompareScreen() {
 
         /* 업종은 파라미터가 먼저, 없으면 고정 업체의 업종을 따른다. */
         const groupCategory = category ?? fixedVendor?.category ?? null;
-        const group = res.groups.find((g) => g.category === groupCategory);
-        const candidates = group?.candidates ?? [];
+        const candidates =
+          groupCategory === null
+            ? res.groups.flatMap((group) => group.candidates)
+            : (res.groups.find((group) => group.category === groupCategory)?.candidates ?? []);
 
         const rest = candidates
           .filter((c) => c.vendorId !== fixed)
@@ -196,9 +199,13 @@ export default function PickCompareScreen() {
       const next = new Set(prev);
       if (next.has(option.vendorId)) {
         next.delete(option.vendorId);
-      } else if (next.size < MAX_COMPARE) {
-        next.add(option.vendorId);
+        return next;
       }
+
+      const selectedCategory =
+        options?.find((candidate) => prev.has(candidate.vendorId))?.category ?? null;
+      if (selectedCategory !== null && option.category !== selectedCategory) return prev;
+      if (next.size < MAX_COMPARE) next.add(option.vendorId);
       return next;
     });
   }
@@ -224,6 +231,7 @@ export default function PickCompareScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      <PickSectionTabs active="compare" />
       <BottomSheet visible={visible} onRequestClose={dismiss}>
         <SheetPanel>
           <View style={styles.headline}>
@@ -242,7 +250,12 @@ export default function PickCompareScreen() {
               <>
                 {options.map((o) => {
                   const isSelected = selected.has(o.vendorId);
-                  const isDisabled = !isSelected && selected.size >= MAX_COMPARE;
+                  const selectedCategory =
+                    options.find((candidate) => selected.has(candidate.vendorId))?.category ?? null;
+                  const isDisabled =
+                    !isSelected &&
+                    (selected.size >= MAX_COMPARE ||
+                      (selectedCategory !== null && o.category !== selectedCategory));
                   return (
                     <CandidateRow
                       key={o.vendorId}

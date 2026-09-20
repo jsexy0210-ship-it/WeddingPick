@@ -101,15 +101,10 @@ export default function RecommendationsScreen() {
   if (error) return <ErrorView message={error} onBack={back} onRetry={load} />;
   if (state === null) return <SkeletonView />;
 
-  const compareIds = (candidates.page?.groups ?? [])
-    .flatMap((group) => group.candidates)
-    .slice(0, 3)
-    .map((candidate) => candidate.vendorId);
-
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <PickSectionTabs active="recommendations" compareIds={compareIds} />
+        <PickSectionTabs active="recommendations" />
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <ThemedText type="f26" style={styles.bold}>

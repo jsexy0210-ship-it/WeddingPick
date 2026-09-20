@@ -156,10 +156,6 @@ export default function PickScreen() {
   const visible = filter === 'all' ? rows : rows.filter((row) => row.candidate.category === filter);
   const partner = me?.spouseLinked ? (me.partnerDisplayName ?? TERMS.spouse) : null;
   const weddingId = me?.weddingId ?? null;
-  const compareTabIds =
-    compare.size >= MIN_COMPARE
-      ? Array.from(compare)
-      : rows.slice(0, PICK_COMPARE_MAX).map((row) => row.candidate.vendorId);
 
   function showToast(message: string, undo: UndoCandidate | null = null) {
     setUndoCandidate(undo);
@@ -296,7 +292,7 @@ export default function PickScreen() {
             </View>
           ) : (
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-              <PickSectionTabs active="pick" compareIds={compareTabIds} />
+              <PickSectionTabs active="pick" />
               <Header me={me} partner={partner} total={page?.total ?? 0} />
 
               {/* 비교 배너 — 피그마 `compareIds.length >= 2`: 잉크 면 · radius 16 · 안쪽 16/14. */}

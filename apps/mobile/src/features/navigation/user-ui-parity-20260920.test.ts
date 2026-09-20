@@ -58,7 +58,8 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(s).toContain("label: '나의 Pick'");
     expect(s).toContain("label: '웨딩픽 추천'");
     expect(s).toContain("label: '비교함'");
-    expect(s).toContain("pathname: '/search/compare'");
+    expect(s).toContain("router.replace('/pick/compare'");
+    expect(mobile('app/(tabs)/pick/compare.tsx')).toContain("pathname: '/search/compare'");
   });
   it('최초 예산은 만원 입력을 원으로 환산한다', () => {
     const s = mobile('app/(tabs)/wedding/index.tsx');
