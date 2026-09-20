@@ -30,8 +30,14 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
   });
   it('온보딩 지역 전체값을 만들지 않고 스타일 4종을 허용한다', () => {
     const region = mobile('features/onboarding/region-picker-sheet.tsx');
+    const style = root('packages/domain/src/style.ts');
+    const setup = mobile('app/setup.tsx');
+    const taste = mobile('app/(tabs)/my/taste.tsx');
     expect(region).not.toContain("const WHOLE = '전체'");
-    expect(root('packages/domain/src/style.ts')).toContain('STYLE_PICK_MAX = WEDDING_STYLES.length');
+    expect(style).toContain('STYLE_PICK_MAX = WEDDING_STYLES.length');
+    expect(style).not.toContain('STYLE_PICK_LIMIT_TOAST');
+    expect(setup).not.toContain('STYLE_PICK_LIMIT_TOAST');
+    expect(taste).not.toContain('STYLE_PICK_LIMIT_TOAST');
   });
   it('setup 완료 뒤 Home 두 번째 로더를 생략한다', () => {
     expect(mobile('app/setup.tsx')).toContain('markNextHomeLoadingCoveredBySetup()');

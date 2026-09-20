@@ -34,6 +34,7 @@ function depthHeaderTitle(pathname: string): string {
     [/^\/my\/guide(?:\/|$)/, '고객지원'],
     [/^\/my\/privacy(?:\/|$)/, '개인정보처리방침'],
     [/^\/my\/settings(?:\/|$)/, '설정'],
+    [/^\/my\/contact(?:\/|$)/, '문의하기'],
     [/^\/my\/rebuttals(?:\/|$)/, '후기 반론'],
     [/^\/my\/vendor-claims(?:\/|$)/, '업체 관계자 인증'],
     [/^\/my\/biz\/claim(?:\/|$)/, '업체 인증'],
