@@ -1,7 +1,7 @@
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { listMyReports } from '@/api/client';
-import CaptureScreen from '@/app/(tabs)/capture';
+import { MyReportSummary } from '@/features/capture/my-report-summary';
 
 let mockFocus: () => (() => void) | undefined;
 jest.mock('expo-router', () => ({
@@ -9,10 +9,9 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('@/api/client', () => ({ listMyReports: jest.fn() }));
 jest.mock('@/api/config', () => ({ isServerConfigured: true }));
-jest.mock('@/features/capture/capture-draft', () => ({ useCaptureDraft: () => ({ pages: [] }) }));
 jest.mock('@/features/loading/delayed-loader', () => ({ DelayedLoader: 'Loading' }));
 jest.mock('@/features/wedding/screen-kit', () => ({
-  Badge: 'Badge', Band: 'Band', Hero: 'Hero', ListRow: 'ListRow', NavBar: 'NavBar', Screen: 'Screen', Section: 'Section',
+  Badge: 'Badge', Band: 'Band', ListRow: 'ListRow', Section: 'Section',
 }));
 jest.mock('@weddingpick/ui', () => ({
   ActionButton: 'ActionButton', ThemedText: 'ThemedText', ProductSymbol: 'ProductSymbol',
@@ -26,7 +25,7 @@ function deferred() {
 }
 let tree: ReactTestRenderer;
 let blur: (() => void) | undefined;
-async function mount() { await act(async () => { tree = create(<CaptureScreen />); }); }
+async function mount() { await act(async () => { tree = create(<MyReportSummary />); }); }
 async function focus() { await act(async () => { blur = mockFocus(); }); }
 afterEach(async () => { await act(async () => { blur?.(); tree.unmount(); }); });
 
@@ -34,6 +33,7 @@ it('대기·실패를 제보 0건으로 표시하지 않고 재시도 후 빈 �
   const request = deferred();
   jest.mocked(listMyReports).mockReturnValueOnce(request.promise as never).mockResolvedValueOnce({ reports: [] });
   await mount(); await focus();
+  expect(tree.root.findByType('Section' as never).props.title).toBe('내 제보내역');
   expect(tree.root.findAllByType('ListRow' as never)).toHaveLength(0);
   expect(tree.root.findAllByType('Loading' as never)).toHaveLength(1);
   await act(async () => request.reject(new Error('offline')));

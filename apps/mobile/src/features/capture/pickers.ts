@@ -38,8 +38,8 @@ export async function photoPermissionState(): Promise<PhotoPermissionState> {
   return current.canAskAgain ? 'ask' : 'blocked';
 }
 
-/** 사진 앨범에서 견적서·계약서 사진을 여러 장 고른다. 취소하면 빈 배열. */
-export async function pickFromLibrary(): Promise<CapturedPage[]> {
+/** 사진 앨범에서 사진을 여러 장 고른다. 취소하면 빈 배열. */
+export async function pickFromLibrary(selectionLimit = 0): Promise<CapturedPage[]> {
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
   if (!permission.granted) {
@@ -49,6 +49,7 @@ export async function pickFromLibrary(): Promise<CapturedPage[]> {
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
     allowsMultipleSelection: true,
+    ...(selectionLimit > 0 ? { selectionLimit, orderedSelection: selectionLimit > 1 } : {}),
     quality: 1,
   });
 
@@ -56,7 +57,9 @@ export async function pickFromLibrary(): Promise<CapturedPage[]> {
     return [];
   }
 
-  return result.assets.map((asset) =>
+  const assets = selectionLimit > 0 ? result.assets.slice(0, selectionLimit) : result.assets;
+
+  return assets.map((asset) =>
     createPage('library', {
       uri: asset.uri,
       mimeType: asset.mimeType ?? 'image/jpeg',

@@ -84,7 +84,7 @@ export default function DocumentSetScreen() {
                     variant="primary"
                     label="분석 시작"
                     hint="이 문서를 올려 업체·금액·계약조건을 분석해요"
-                    onPress={() => router.push('/capture')}
+                    onPress={() => router.push('/capture/quote/consent')}
                   />
                 ) : null}
               </ThemedView>

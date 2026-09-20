@@ -55,13 +55,14 @@ describe('depthBackTarget — 대표 경로', () => {
     ['/progress', '/', '준비 현황 → 홈'],
 
     // ── 폴더만 있고 화면이 없는 칸은 건너뛴다 ───────────────────────
-    ['/capture/result/q-1', '/capture', '`/capture/result`는 화면이 아니다'],
-    ['/capture/analysis/a-1', '/capture', '`/capture/analysis`는 화면이 아니다'],
-    ['/capture/payment/consent', '/capture', '`/capture/payment`는 화면이 아니다'],
-    ['/capture/sample', '/capture', '샘플 → 제보 홈'],
+    ['/capture/result/q-1', '/wedding', '견적서 결과 → 웨딩노트'],
+    ['/capture/analysis/a-1', '/wedding', '견적서 분석 → 웨딩노트'],
+    ['/capture/payment/consent', '/my/reports', '직접 진입한 Pick 인증 동의 → 내 제보내역'],
+    ['/capture/payment/register', '/my/reports', '직접 진입한 Pick 인증 → 내 제보내역'],
+    ['/capture/sample', '/my/guide', '샘플 → MY 사용법'],
 
     // ── 예외표 ────────────────────────────────────────────────────
-    ['/capture', '/my', '제보는 Root 탭이 아니다 — WP-RPT-001 entry'],
+    ['/capture', '/my/reports', '삭제된 제보 홈 → 내 제보내역'],
     ['/capture/verify/q-1', '/capture/result/q-1', '자료 확인 신청 → 그 자료의 결과 확인'],
     ['/capture/verify-status/rq-1', '/my/reports', 'WP-RPT-008 처리 결과 → 내 제보 내역'],
     ['/search/compare', '/pick', 'WP-CMP-002 비교 결과 → Pick'],
@@ -94,6 +95,7 @@ describe('depthBackTarget — 대표 경로', () => {
     expect(depthBackTarget('/search/v-101/write-review?from=vendor/v-101')).toBe('/search/v-101');
     expect(depthBackTarget('/search/v-101/review/r-1?from=community')).toBe('/community');
     expect(depthBackTarget('/capture/payment/register?from=budget')).toBe('/wedding?tab=budget');
+    expect(depthBackTarget('/capture/payment/consent?from=reports')).toBe('/my/reports');
     expect(depthBackTarget('/community?from=https%3A%2F%2Fevil.example')).toBe('/');
     expect(depthBackTarget('/community?from=%2Fadmin')).toBe('/');
     expect(depthBackTarget('/community?from=%E0%A4%A')).toBe('/');

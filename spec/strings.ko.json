@@ -592,9 +592,9 @@
   "report": {
     "title": "Pick 인증",
     "hero": "얼마 냈는지 알려주면\n다음 사람이 덜 헤매요",
-    "sub": "사진 한 장이면 자동으로 정리돼요",
+    "sub": "사진을 올리면 자동으로 정리돼요",
     "kind.pickVerify": "Pick 인증",
-    "kind.pickVerifyDesc": "낸 금액이 보이는 사진 한 장이면 업체와 금액을 자동으로 읽어요",
+    "kind.pickVerifyDesc": "낸 금액이 보이는 사진 1~3장에서 업체와 금액을 자동으로 읽어요",
     "kind.price": "가격 제보",
     "kind.priceDesc": "증빙 없이 들은 금액만 알려주는 방법이에요",
     "kind.vendorInfo": "업체정보 제보",

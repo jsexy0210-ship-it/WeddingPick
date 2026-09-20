@@ -14,11 +14,11 @@ export const paymentProofFieldSchema = z.enum(PAYMENT_PROOF_FIELDS);
 export const paymentProofReviewStateSchema = z.enum(PAYMENT_PROOF_REVIEW_STATES);
 
 /**
- * 결제인증 등록 — **사진 한 장.**
+ * 결제인증 등록 — **한 건의 사진 1~3장.**
  *
  * 디자인 핸드오프 v3.24가 제보를 «사진 찍기 또는 업로드»로 압축했다. 확인 화면
  * (WP-RPT-004)·업체 확인(WP-RPT-005)·분할 묶기(WP-RPT-006)·증빙 없는 가격 입력
- * (WP-RPT-010)이 전부 폐기됐고, 모든 금액은 사진 한 장에서만 나온다.
+ * (WP-RPT-010)이 전부 폐기됐고, 모든 금액은 사진 원본 묶음에서만 나온다.
  *
  * 그래서 **금액·업체·날짜를 받지 않는다.** 받을 자리가 없으니 앱이 지어낸 값을
  * 보낼 수도, 서버가 그것을 믿을 수도 없다. 읽는 것은 서버가 하고, 못 읽으면
@@ -31,7 +31,7 @@ export const paymentProofReviewStateSchema = z.enum(PAYMENT_PROOF_REVIEW_STATES)
  * 찍혀 있었는지는 서버가 읽어 종류만 남긴다.
  */
 export const registerPaymentProofRequestSchema = z.object({
-  /** 올린 원본. 이것 하나가 사용자의 행동 전부다. */
+  /** 올린 원본 묶음. 이 id 하나가 1~3장을 묶는다. */
   rawDocumentId: idSchema,
   /** 어느 업체인지 이미 알고 들어왔으면(업체 상세에서 시작한 경우). */
   vendorId: idSchema.optional(),

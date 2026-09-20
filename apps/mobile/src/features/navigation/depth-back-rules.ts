@@ -20,7 +20,7 @@
  *
  *   1. 현재 경로가 예외표(`DEPTH_BACK_EXCEPTIONS`)에 있으면 거기 적힌 곳으로 간다.
  *   2. 아니면 마지막 조각을 하나씩 떼며 **실재하는 라우트**를 만날 때까지 올라간다.
- *      `/capture/result/[quoteId]` → `/capture/result`(라우트 아님) → `/capture`(라우트).
+ *      `/capture/result/[quoteId]` → 예외표의 웨딩노트로 간다.
  *   3. 끝까지 없으면 홈(`/`).
  *
  * 2번이 `ROUTES`를 필요로 한다 — 폴더가 있다고 화면이 있는 것은 아니기 때문이다.
@@ -239,8 +239,10 @@ export const NO_BACK_ROUTES: readonly string[] = [
  *
  * | 라우트                              | 간다              | 근거                                                                     |
  * | ---------------------------------- | ---------------- | ------------------------------------------------------------------------ |
- * | `/capture`                         | `/my`            | 제보는 Root 탭이 아니다(WP-NAV-006). WP-RPT-001 entry «MY · 맥락형 4곳» —   |
- * |                                    |                  | 대표 진입점이 MY 제보 메뉴다. 폴더상 부모는 홈이라 계층 계산이 틀린다.       |
+ * | `/capture`                         | `/my/reports`    | 독립 제보 홈은 삭제되었고 예전 링크는 Pick 인증으로 전환된다.       |
+ * | `/capture/payment/*`               | `/my/reports`    | 진입 출처가 없는 직접 링크에서는 내 제보내역이 논리 부모다.              |
+ * | `/capture/analysis·result/*`     | `/wedding`       | 견적서 분석과 결과는 웨딩노트 문서 여정에서 열린다.                    |
+ * | `/capture/sample`                  | `/my/guide`      | 샘플은 MY 사용법에서만 열린다.                                      |
  * | `/capture/verify/[quoteId]`        | `/capture/result/[quoteId]` | 자료 확인 신청은 WP-RPT-004 결과 확인에서만 들어간다. 폴더만 갈라져 있다.  |
  * | `/capture/verify-status/[requestId]` | `/my/reports`  | WP-RPT-008 처리 결과. entry «알림 · 내 제보 내역».                          |
  * | `/search/compare`                  | `/pick`          | WP-CMP-002 비교 결과. 후보를 고른 곳이 Pick이다(WP-PICK-003). 검색 폴더에    |
@@ -254,7 +256,13 @@ export const NO_BACK_ROUTES: readonly string[] = [
  */
 export const DEPTH_BACK_EXCEPTIONS: Readonly<Record<string, string>> = {
   '/community/feed/[id]': '/community?tab=feed',
-  '/capture': '/my',
+  '/capture': '/my/reports',
+  '/capture/analysis/[id]': '/wedding',
+  '/capture/payment/consent': '/my/reports',
+  '/capture/payment/register': '/my/reports',
+  '/capture/quote/consent': '/wedding',
+  '/capture/result/[quoteId]': '/wedding',
+  '/capture/sample': '/my/guide',
   '/capture/verify/[quoteId]': '/capture/result/[quoteId]',
   '/capture/verify-status/[requestId]': '/my/reports',
   '/search/compare': '/pick',
@@ -289,6 +297,7 @@ const ORIGIN_AWARE_ROUTES: readonly string[] = [
   '/search/[vendorId]',
   '/search/[vendorId]/write-review',
   '/search/[vendorId]/review/[reviewId]',
+  '/capture/payment/consent',
   '/capture/payment/register',
 ];
 
@@ -399,6 +408,7 @@ function originTarget(route: string, pathname: string): string | null {
     wedding: '/wedding',
     budget: '/wedding?tab=budget',
     community: '/community',
+    reports: '/my/reports',
     recommendations: '/recommendations',
   };
   const vendor = from.match(/^vendor\/([^/?#]+)$/);

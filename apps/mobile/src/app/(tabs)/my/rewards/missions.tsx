@@ -39,7 +39,7 @@ const MISSION_ROUTE: Record<MissionKey, string> = {
   setup: '/setup',
   first_pick: '/search',
   partner: '/wedding/partner',
-  payment_proof: '/capture',
+  payment_proof: '/capture/payment/consent?from=my',
 };
 
 /**

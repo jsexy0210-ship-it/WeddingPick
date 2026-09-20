@@ -1,5 +1,5 @@
 import { PAYMENT_PROOF_CONSENT_POINTS, PAYMENT_PROOF_RETENTION_HOURS } from '@weddingpick/domain';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
@@ -22,6 +22,8 @@ import { CheckBox, Dock, DockButton, Hero, ListRow, NavBar, NoteCard, Screen, Se
  * 이미 동의한 사람은 이 화면을 지나지 않는다 — 매번 같은 안내를 읽게 하면 관문이 된다.
  */
 export default function PaymentProofConsentScreen() {
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  const registerHref = `/capture/payment/register${from ? `?from=${encodeURIComponent(from)}` : ''}`;
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [checked, setChecked] = useState<boolean[]>(PAYMENT_PROOF_CONSENT_POINTS.map(() => false));
@@ -31,11 +33,11 @@ export default function PaymentProofConsentScreen() {
   useEffect(() => {
     void getSettings()
       .then((settings) => {
-        if (settings.paymentConsent) router.replace('/capture/payment/register');
+        if (settings.paymentConsent) router.replace(registerHref as never);
       })
       // 못 물어보면 그냥 보여준다. 동의 화면을 한 번 더 보는 것이 최악은 아니다.
       .catch(() => undefined);
-  }, []);
+  }, [registerHref]);
 
   function toggle(index: number) {
     setChecked((prev) => prev.map((v, i) => (i === index ? !v : v)));
@@ -53,7 +55,7 @@ export default function PaymentProofConsentScreen() {
     try {
       /* 동의를 서버에 남긴 뒤에 넘어간다. 화면만 지나가게 두면 «동의했다»는 사실이 어디에도 없다. */
       await grantPaymentConsent();
-      router.replace('/capture/payment/register');
+      router.replace(registerHref as never);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '동의를 저장하지 못했어요.');
     } finally {

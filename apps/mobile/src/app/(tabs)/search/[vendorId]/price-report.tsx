@@ -1,4 +1,4 @@
-import { Redirect } from 'expo-router';
+import { Redirect, useLocalSearchParams } from 'expo-router';
 
 import { useSession } from '@/features/auth/use-session';
 import { FullScreenError } from '@/features/errors/full-screen-error';
@@ -13,11 +13,12 @@ import { DelayedLoadingView } from '@/features/loading/delayed-loader';
  * 같은 모양이라 같이 막는다.
  */
 export default function PriceReportScreen() {
+  const { vendorId } = useLocalSearchParams<{ vendorId: string }>();
   const { state, refresh } = useSession();
 
   if (state.status === 'error') return <FullScreenError kind={state.kind} onRetry={() => void refresh()} />;
   if (state.status === 'loading') return <DelayedLoadingView />;
   if (state.status === 'signedOut') return <Redirect href="/login" />;
 
-  return <Redirect href="/capture/payment/consent" />;
+  return <Redirect href={`/capture/payment/consent?from=vendor/${encodeURIComponent(vendorId)}` as never} />;
 }

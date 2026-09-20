@@ -14,7 +14,7 @@ import { SAMPLE_COMPARISON, SAMPLE_QUOTE } from '@/features/sample/sample-quote'
  *
  * 화면 위아래로 샘플임을 알린다 — 여기 숫자는 지어낸 것이고 실제 업체·계약이 아니다.
  *
- * nav «샘플»의 뒤로는 제보 홈(`/capture`)이다 — 샘플은 거기서만 들어온다.
+ * 샘플에서 실제 자료로 이어질 때는 견적서 동의 관문을 먼저 지난다.
  */
 export default function SampleScreen() {
   return (
@@ -39,7 +39,7 @@ export default function SampleScreen() {
           <ActionButton
             variant="primary"
             label="내 자료로 해보기"
-            onPress={() => router.replace('/capture')}
+            onPress={() => router.replace('/capture/quote/consent')}
           />
         </ThemedView>
       </View>

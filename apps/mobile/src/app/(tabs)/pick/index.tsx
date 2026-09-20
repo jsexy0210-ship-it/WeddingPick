@@ -445,7 +445,7 @@ function Header({ me, partner, total }: { me: CurrentUser; partner: string | nul
               </ThemedText>
             </View>
             <Pressable
-              onPress={() => router.push('/capture/payment/consent')}
+              onPress={() => router.push('/capture/payment/consent?from=pick')}
               accessibilityRole="button"
               accessibilityLabel={PICK_VERIFY_LABEL}
               style={(state) => {

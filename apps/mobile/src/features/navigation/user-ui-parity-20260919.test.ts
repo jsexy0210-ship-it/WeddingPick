@@ -31,7 +31,7 @@ describe('2026-09-19 사용자 화면 검수 회귀', () => {
     const community = readApp('(tabs)/community/index.tsx');
 
     expect(home).toContain("router.push('/community?tab=feed'");
-    expect(community).toContain("params.tab === 'feed'");
+    expect(community).toContain("requestedTab === 'feed'");
     expect(community).toContain("{ value: 'feed', label: '웨딩피드' }");
   });
 

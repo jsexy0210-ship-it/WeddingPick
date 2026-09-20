@@ -1,6 +1,6 @@
 import type { MaskedIdentifierKind, PaymentMethod } from '@weddingpick/domain';
 
-/** 읽어달라고 넘기는 이미지 한 장. */
+/** 읽어달라고 넘기는 원본 묶음의 이미지 한 장. */
 export type ProofImage = { mimeType: string; bytes: Buffer };
 
 /**

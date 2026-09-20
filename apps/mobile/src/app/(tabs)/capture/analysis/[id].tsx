@@ -22,8 +22,8 @@ const FAILURE_MESSAGE = {
  * A-06 분석 중 · WP-RPT-003. 시안 11-report-review 12b — statusBar 위에 **close nav**(제목
  * 없이 ✕만)를 두고 본문은 가운데 정렬이다.
  *
- * ✕는 흐름 밖으로 빠지는 문이라 Depth Back으로 제보 홈(`/capture`)에 내려놓는다 —
- * 중간 단계(이미지 선택)로 되돌리면 방금 취소한 것을 다시 고르는 화면이 나온다.
+ * ✕는 흐름 밖으로 빠지는 문이라 문서가 모이는 웨딩노트로 내려놓는다. 다시 촬영은
+ * 견적서 동의 관문을 거쳐 시작한다.
  */
 export default function AnalysisScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -73,7 +73,7 @@ export default function AnalysisScreen() {
       <ErrorView
         title="분석하지 못했어요"
         message={failure ? FAILURE_MESSAGE[failure] : (error ?? undefined)}
-        onRetry={() => router.replace('/capture')}
+        onRetry={() => router.replace('/capture/quote/consent')}
         retryLabel="다시 촬영하기"
       />
     );
