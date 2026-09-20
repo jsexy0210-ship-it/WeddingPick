@@ -34,9 +34,6 @@ export const WEDDING_STYLE_NOTE: Record<WeddingStyle, string> = {
 export const STYLE_PICK_MIN = 1;
 export const STYLE_PICK_MAX = WEDDING_STYLES.length;
 
-/** 모든 스타일을 고른 뒤 추가하려 할 때의 방어 문구. */
-export const STYLE_PICK_LIMIT_TOAST = `스타일은 ${STYLE_PICK_MAX}개까지 고를 수 있어요`;
-
 export function isWeddingStyle(value: unknown): value is WeddingStyle {
   return typeof value === 'string' && (WEDDING_STYLES as readonly string[]).includes(value);
 }
