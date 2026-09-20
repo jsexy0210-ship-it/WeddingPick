@@ -61,7 +61,7 @@ async function main() {
   const dir = process.argv[2] ?? path.join(__dirname, '..', 'eval', 'cases');
   const analyzer = createGeminiAnalyzer({
     apiKey: process.env.GEMINI_API_KEY ?? '',
-    model: process.env.GEMINI_MODEL ?? 'gemini-2.5-flash-lite',
+    model: process.env.GEMINI_MODEL ?? 'gemini-3.5-flash-lite',
   });
   const cases = await loadCases(dir);
 
