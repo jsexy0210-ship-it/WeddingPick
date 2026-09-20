@@ -21,6 +21,8 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+      - name: Enforce admin 443 origin lock
+        run: bash ./scripts/assert-admin-origin-443.sh
       - run: bash ./scripts/probe-kakao-static-ports.sh
 
   public-probe:
