@@ -13,9 +13,6 @@ import type { Storage } from './port';
  * 스토리지에도 붙는다.
  */
 
-/** 단일 문서 페이지의 최대 파일 크기 (10MB) */
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
-
 export function createS3Storage(options: {
   bucket: string;
   region: string;
@@ -35,18 +32,12 @@ export function createS3Storage(options: {
 
   return {
     async createUploadTarget({ storageKey, mimeType, expiresInSeconds }) {
-      // PutObject 메타데이터로 최대 크기 제약 설정
-      // 클라이언트가 이 크기를 초과하면 S3에서 요청 거절
       const uploadUrl = await getSignedUrl(
         client,
         new PutObjectCommand({
           Bucket: options.bucket,
           Key: storageKey,
           ContentType: mimeType,
-          // 메타데이터로 최대 크기 전달 (클라이언트 검증용)
-          Metadata: {
-            'max-file-size': String(MAX_FILE_SIZE),
-          },
         }),
         { expiresIn: expiresInSeconds }
       );
@@ -56,6 +47,17 @@ export function createS3Storage(options: {
         uploadUrl,
         expiresAt: new Date(Date.now() + expiresInSeconds * 1000),
       };
+    },
+
+    async upload(storageKey, bytes, mimeType) {
+      await client.send(
+        new PutObjectCommand({
+          Bucket: options.bucket,
+          Key: storageKey,
+          Body: bytes,
+          ContentType: mimeType,
+        })
+      );
     },
 
     async download(storageKey) {

@@ -21,7 +21,7 @@ export const createUploadRequestSchema = z.object({
     .array(
       z.object({
         mimeType: uploadMimeTypeSchema,
-        sizeBytes: z.int().positive().max(20 * 1024 * 1024),
+        sizeBytes: z.int().positive().max(10 * 1024 * 1024),
       })
     )
     .min(1)
@@ -29,8 +29,8 @@ export const createUploadRequestSchema = z.object({
 });
 
 /**
- * 파일 본체는 API 서버를 거치지 않고 스토리지로 바로 올린다.
- * 서명된 URL이라 스토리지 제공자가 바뀌어도 계약은 그대로다.
+ * 브라우저는 인증된 API 경로로 파일을 올린다. `uploadUrl`은 이전 앱 호환을 위해
+ * 유지하고, 새 앱은 `uploadPath`를 사용한다.
  */
 export const createUploadResponseSchema = z.object({
   rawDocumentId: idSchema,
@@ -39,6 +39,7 @@ export const createUploadResponseSchema = z.object({
       z.object({
         pageIndex: z.int().nonnegative(),
         uploadUrl: z.url(),
+        uploadPath: z.string().startsWith('/v1/documents/'),
         storageKey: z.string().min(1),
         expiresAt: timestampSchema,
       })

@@ -1,11 +1,11 @@
-import { completeUpload, createUpload, ensureWedding } from '@/api/client';
+import { completeUpload, createUpload, ensureWedding, uploadDocumentPage } from '@/api/client';
 import type { CapturedPage } from '@/features/capture/types';
 
 /**
  * 촬영한 장들을 올리고 분석을 시작한다.
  *
- * 파일 본체는 API 서버를 거치지 않는다. 서명된 URL로 스토리지에 바로 올리므로
- * 계약서 원본이 지나는 경로가 하나 줄어든다.
+ * 파일 본체는 인증된 API 경로로 보낸다. 카카오 Object Storage의 브라우저 CORS 경로에
+ * 기대지 않으므로 웹과 앱이 같은 업로드 흐름을 쓴다.
  */
 export async function uploadForAnalysis(pages: CapturedPage[]): Promise<{ analysisId: string }> {
   const { rawDocumentId, weddingId } = await uploadPages(pages, 'document');
@@ -59,21 +59,10 @@ async function uploadPages(
     })),
   });
 
-  await Promise.all(
-    uploads.map(async (upload) => {
-      const page = pages[upload.pageIndex]!;
-
-      const response = await fetch(upload.uploadUrl, {
-        method: 'PUT',
-        headers: { 'content-type': page.mimeType },
-        body: files[upload.pageIndex]!,
-      });
-
-      if (!response.ok) {
-        throw new Error(`업로드 실패 (${response.status})`);
-      }
-    })
-  );
+  // 여러 장을 동시에 메모리에 쌓지 않도록 한 장씩 보낸다.
+  for (const upload of uploads) {
+    await uploadDocumentPage(upload.uploadPath, files[upload.pageIndex]!);
+  }
 
   return { rawDocumentId, weddingId };
 }

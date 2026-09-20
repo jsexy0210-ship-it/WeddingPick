@@ -729,6 +729,15 @@ export async function createUpload(input: {
   });
 }
 
+export async function uploadDocumentPage(uploadPath: string, body: Blob): Promise<void> {
+  await request(uploadPath, z.null(), {
+    method: 'PUT',
+    headers: { 'content-type': 'application/octet-stream' },
+    body,
+    signal: AbortSignal.timeout(60_000),
+  });
+}
+
 /** 업로드가 끝났음을 알린다. 분석 작업이 만들어진다. */
 export async function completeUpload(rawDocumentId: string, weddingId: string) {
   return request(`/v1/documents/${rawDocumentId}/complete`, completeUploadResponseSchema, {
