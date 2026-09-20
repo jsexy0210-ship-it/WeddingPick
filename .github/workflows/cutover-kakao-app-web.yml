@@ -48,6 +48,8 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+      - name: Enforce admin 443 origin lock
+        run: bash ./scripts/assert-admin-origin-443.sh
       - name: Cut over with local smoke
         env:
           RELEASE_SHA: ${{ inputs.release_sha }}
