@@ -184,10 +184,7 @@ if [ -n "\${MOCK_CURL_FAIL_MATCH:-}" ] && [[ "$url" == *"\${MOCK_CURL_FAIL_MATCH
 fi
 
 case "$url" in
-  */admin/login)
-    admin_root="$(awk '/location \^~ \/admin\// { in_admin=1 } in_admin && $1=="root" { gsub(/;/,"",$2); print $2; exit }' "\${MOCK_NGINX_CONF:?}")"
-    body="$(cat "$admin_root/admin/login.html")"
-    ;;
+  */admin/login) body="$(cat "\${MOCK_ADMIN_HTML:?}")" ;;
   */website.html) body='<html>web</html>' ;;
   */privacy.html) body='<html>privacy</html>' ;;
   */health) body='{"ok":true}' ;;
@@ -202,7 +199,9 @@ if [ -n "$out" ]; then printf '%s' "$body" > "$out"; else printf '%s' "$body"; f
     ...process.env,
     PATH: `${bin}:${process.env.PATH ?? ''}`,
     MOCK_STATE_DIR: state,
-    MOCK_NGINX_CONF: conf,
+    MOCK_ADMIN_HTML: existingPreview
+      ? path.join(liveRoot, 'admin', 'admin', 'login.html')
+      : path.join(sourceRoot, 'admin', 'admin', 'login.html'),
   };
 
   return {

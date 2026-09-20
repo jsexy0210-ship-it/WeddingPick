@@ -191,10 +191,7 @@ fi
 
 case "$url" in
   */health) body='{"ok":true,"database":"ok"}' ;;
-  */admin/login)
-    admin_root="$(awk '/location \^~ \/admin\// { in_admin=1 } in_admin && $1=="root" { gsub(/;/,"",$2); print $2; exit }' "\${MOCK_NGINX_CONF:?}")"
-    body="$(cat "$admin_root/admin/login.html")"
-    ;;
+  */admin/login) body="$(cat "\${MOCK_ADMIN_HTML:?}")" ;;
   */login) body='<html>login</html>' ;;
   */v1/auth/providers) body='{"providers":[]}' ;;
   *) body='ok' ;;
@@ -212,7 +209,7 @@ fi
     ...process.env,
     PATH: `${bin}:${process.env.PATH ?? ''}`,
     MOCK_STATE_DIR: state,
-    MOCK_NGINX_CONF: conf,
+    MOCK_ADMIN_HTML: path.join(releaseAdmin, 'login.html'),
   };
 
   return {
@@ -437,7 +434,10 @@ shellTest('explicit update rollback restores the previous app and verifies login
     writeFileSync(path.join(sourceB, 'index.html'), '<html>b</html>', 'utf8');
     writeFileSync(path.join(sourceB, 'login.html'), '<html>b-login</html>', 'utf8');
     writeFileSync(path.join(adminB, 'login.html'), adminHtml('b-admin'), 'utf8');
-    assert.equal(run(h.installPath, [releaseB], h.env).status, 0);
+    assert.equal(run(h.installPath, [releaseB], {
+      ...h.env,
+      MOCK_ADMIN_HTML: path.join(adminB, 'login.html'),
+    }).status, 0);
 
     const rollback = run(h.updateRollbackPath, [], h.env);
     assert.equal(rollback.status, 0, rollback.stderr || rollback.stdout);
@@ -464,7 +464,10 @@ shellTest('update rollback fails closed before changing Nginx when the recorded 
     writeFileSync(path.join(sourceB, 'index.html'), '<html>b</html>', 'utf8');
     writeFileSync(path.join(sourceB, 'login.html'), '<html>b-login</html>', 'utf8');
     writeFileSync(path.join(adminB, 'login.html'), adminHtml('b-admin'), 'utf8');
-    assert.equal(run(h.installPath, [releaseB], h.env).status, 0);
+    assert.equal(run(h.installPath, [releaseB], {
+      ...h.env,
+      MOCK_ADMIN_HTML: path.join(adminB, 'login.html'),
+    }).status, 0);
     const liveBConfig = readFileSync(h.conf, 'utf8');
 
     rmSync(path.join(h.servedApp, 'login.html'), { force: true });
