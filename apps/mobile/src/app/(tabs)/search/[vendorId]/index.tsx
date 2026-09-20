@@ -41,6 +41,7 @@ import {
 } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { DepthHeader } from '@/components/depth-header';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import { InfoDot, InfoSheet, type InfoTopic } from '@/features/common/info-sheet';
 import { savePendingAction } from '@/features/auth/pending-action';
 import { readCurrentUserSnapshot } from '@/features/loading/current-user-snapshot';
@@ -150,6 +151,7 @@ function formatYearMonth(iso: string): string {
  * reasons는 검색·TOP3에서 넘어올 때만 존재한다. 이 화면에서 직접 접근하면 없다.
  */
 export default function VendorDetailScreen() {
+  const depthBack = useDepthBack();
   const params = useLocalSearchParams<{ vendorId: string; reasons?: string }>();
   const vendorId = params.vendorId;
   const theme = useTheme();
@@ -242,7 +244,7 @@ export default function VendorDetailScreen() {
   }, []);
 
   if (error) {
-    return <ErrorView message={error} onBack={() => router.back()} />;
+    return <ErrorView message={error} onBack={depthBack} />;
   }
 
   if (!vendor) {

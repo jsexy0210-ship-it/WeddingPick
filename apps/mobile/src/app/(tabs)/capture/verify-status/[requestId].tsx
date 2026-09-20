@@ -8,6 +8,7 @@ import { getVerificationRequest } from '@/api/client';
 import { formatDateDot, formatMonthDayDot } from '@/features/common/format-date';
 import { ErrorView, Layout, Spacing } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import {
   Badge,
   Dock,
@@ -81,6 +82,7 @@ function stepsOf(req: VerificationRequest): { label: string; sub: string; done: 
  * 접수 · 확인 중 · 보완 필요 · 반영 · 반영 안 됨 다섯 상태를 한 화면이 맡는다.
  */
 export default function VerifyStatusScreen() {
+  const depthBack = useDepthBack();
   const { requestId } = useLocalSearchParams<{ requestId: string }>();
   const [req, setReq] = useState<VerificationRequest | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -94,7 +96,7 @@ export default function VerifyStatusScreen() {
   useEffect(load, [load]);
 
   if (error) {
-    return <ErrorView message={error} onBack={() => router.back()} onRetry={load} />;
+    return <ErrorView message={error} onBack={depthBack} onRetry={load} />;
   }
 
   if (!req) {

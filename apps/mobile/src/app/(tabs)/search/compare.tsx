@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { compareVendors, getCurrentUser, recordComparison } from '@/api/client';
 import { DepthHeader } from '@/components/depth-header';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import { savePendingAction } from '@/features/auth/pending-action';
 import { PickDoneSheet } from '@/features/pick/pick-sheets';
 import { PickSectionTabs } from '@/features/pick/pick-section-tabs';
@@ -71,6 +72,7 @@ const ROW_SOURCE = '업체 정보 출처';
 const SOURCE_FROM_DOCUMENT = '올려주신 문서에서 확인한 업체예요';
 
 export default function CompareScreen() {
+  const depthBack = useDepthBack();
   const { ids } = useLocalSearchParams<{ ids?: string }>();
   const theme = useTheme();
   const [result, setResult] = useState<VendorComparisonResponse | null>(null);
@@ -109,7 +111,7 @@ export default function CompareScreen() {
       <ErrorView
         title="비교할 수 없어요"
         message={error ?? '견줄 업체를 두 곳 이상 골라주세요.'}
-        onBack={() => router.back()}
+        onBack={depthBack}
       />
     );
   }

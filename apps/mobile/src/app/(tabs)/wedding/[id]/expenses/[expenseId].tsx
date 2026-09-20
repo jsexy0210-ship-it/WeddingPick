@@ -7,6 +7,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { getExpenseDetail, removeExpense } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
 import { formatDateDot, formatMonthDayDot } from '@/features/common/format-date';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import { ErrorView, Layout, Spacing, ThemedText } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import {
@@ -34,6 +35,7 @@ import {
  * 내려온다(서버 계약). 시안의 «수정»은 금액 · 날짜를 고치는 API가 없어 «삭제»로 대신한다.
  */
 export default function ExpenseDetailScreen() {
+  const depthBack = useDepthBack();
   const { id, expenseId } = useLocalSearchParams<{ id: string; expenseId: string }>();
   const [detail, setDetail] = useState<ExpenseDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +49,7 @@ export default function ExpenseDetailScreen() {
   useEffect(load, [load]);
 
   if (error && !detail) {
-    return <ErrorView message={error} onBack={() => router.back()} onRetry={load} />;
+    return <ErrorView message={error} onBack={depthBack} onRetry={load} />;
   }
 
   if (!detail) {

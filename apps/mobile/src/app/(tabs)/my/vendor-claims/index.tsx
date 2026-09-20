@@ -60,7 +60,7 @@ export default function MyVendorClaimsScreen() {
           {claims.length === 0 ? (
             <ThemedText type="t6" themeColor="textSecondary">
               아직 신청한 업체가 없어요. 업체 화면에서 이 업체의 관계자예요를
-              눌러 신청해주세요
+              눌러 신청해 주세요
             </ThemedText>
           ) : null}
 

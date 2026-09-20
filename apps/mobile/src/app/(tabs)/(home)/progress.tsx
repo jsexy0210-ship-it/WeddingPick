@@ -27,6 +27,7 @@ import {
   HOME_TOTAL,
   type CategoryStatus,
 } from '@/features/home/state';
+import { useDepthBack } from '@/features/navigation/depth-back';
 
 /**
  * 준비 현황 전체. WP-HOME-009 · SPEC §13.9.
@@ -67,6 +68,7 @@ type ProgressData = {
 };
 
 export default function ProgressScreen() {
+  const depthBack = useDepthBack();
   const [data, setData] = useState<ProgressData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -120,7 +122,7 @@ export default function ProgressScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <NavBar title="준비 현황" onBack={() => router.back()} />
+        <NavBar title="준비 현황" onBack={depthBack} />
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <ThemedView style={styles.hero}>

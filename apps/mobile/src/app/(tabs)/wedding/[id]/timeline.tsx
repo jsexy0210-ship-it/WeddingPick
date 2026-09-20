@@ -1,11 +1,12 @@
 import type { WeddingTask, WeddingTaskListResponse } from '@weddingpick/api-contract';
 import { formatCount } from '@weddingpick/domain';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { listWeddingTasks } from '@/api/client';
 import { formatMonthDayDot } from '@/features/common/format-date';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import { ErrorView, Layout, Radius, SkeletonView, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import { Hero, NavBar, Screen } from '@/features/wedding/screen-kit';
 
@@ -23,6 +24,7 @@ const LINE = 2;
  * 최근 것이 위다. 편집은 하지 않는다 — 읽기 전용 기록이다.
  */
 export default function TimelineScreen() {
+  const depthBack = useDepthBack();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [page, setPage] = useState<WeddingTaskListResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +40,7 @@ export default function TimelineScreen() {
 
   useEffect(load, [load]);
 
-  if (error) return <ErrorView message={error} onBack={() => router.back()} onRetry={load} />;
+  if (error) return <ErrorView message={error} onBack={depthBack} onRetry={load} />;
   if (!page) return <SkeletonView />;
 
   const sorted = [...page.tasks].sort((a, b) => {

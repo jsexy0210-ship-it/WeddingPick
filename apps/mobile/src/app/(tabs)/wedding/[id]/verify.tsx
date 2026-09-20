@@ -67,7 +67,6 @@ export default function VerifyScreen() {
               hint="처음부터 새 문서를 찍어 올려요"
               onPress={() => router.push('/capture')}
             />
-            <ActionButton label="돌아가기" onPress={() => router.back()} />
           </ThemedView>
         </ScrollView>
       </SafeAreaView>

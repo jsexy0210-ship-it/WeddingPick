@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listCandidates } from '@/api/client';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import { BackBar } from '@/components/back-bar';
 import {
   ActionButton,
@@ -25,6 +26,7 @@ import {
  * 남은 자리를 보여준다 — 스키마 주석이 화면이 말할 수 있어야 한다고 명시한다.
  */
 export default function WeddingCandidatesScreen() {
+  const depthBack = useDepthBack();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [page, setPage] = useState<CandidateListResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +40,7 @@ export default function WeddingCandidatesScreen() {
   useEffect(load, [load]);
 
   if (error) {
-    return <ErrorView message={error} onBack={() => router.back()} onRetry={load} />;
+    return <ErrorView message={error} onBack={depthBack} onRetry={load} />;
   }
 
   if (!page) {
@@ -125,7 +127,6 @@ export default function WeddingCandidatesScreen() {
             hint="담기·빼기·결정은 Pick 탭에서 해요"
             onPress={() => router.push('/pick')}
           />
-          <ActionButton label="돌아가기" onPress={() => router.back()} />
         </ScrollView>
       </SafeAreaView>
     </ThemedView>

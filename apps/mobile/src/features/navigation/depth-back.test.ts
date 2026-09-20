@@ -1,10 +1,13 @@
 import {
   DEPTH_BACK_EXCEPTIONS,
+  HISTORY_BACK_ROUTES,
   NO_BACK_ROUTES,
   ROUTES,
   depthBackTarget,
   hasDepthBack,
+  hasHistoryBack,
   matchRoute,
+  resolveBackAction,
 } from './depth-back-rules';
 
 /** 테스트 러너(CommonJS)의 전역. 앱 번들에는 들어가지 않는다. */
@@ -64,6 +67,7 @@ describe('depthBackTarget — 대표 경로', () => {
     ['/search/compare', '/pick', 'WP-CMP-002 비교 결과 → Pick'],
     ['/pick/done', '/pick', 'WP-PICK-006 결정 완료 → Pick(끝난 확인 시트로 돌아가지 않는다)'],
     ['/pick/removed', '/pick/history', '제거된 후보 → 결정 내역'],
+    ['/my/faq/payment', '/my/guide', 'FAQ 질문 상세 → FAQ 목록'],
     ['/my/referral', '/my/rewards', '초대 현황 → 혜택'],
 
     ...['candidates', 'changelog', 'conflict', 'decided', 'map', 'notes', 'quotes', 'tasks', 'timeline', 'visit-notes'].map((part): [string, string, string] => [
@@ -82,6 +86,17 @@ describe('depthBackTarget — 대표 경로', () => {
   it('쿼리와 끝 슬래시를 무시한다', () => {
     expect(depthBackTarget('/search/v-101/images?index=2')).toBe('/search/v-101');
     expect(depthBackTarget('/my/rewards/npay/')).toBe('/my/rewards');
+  });
+
+  it('공유 화면은 허용된 진입 출처로 돌아가고 모르는 출처는 추측하지 않는다', () => {
+    expect(depthBackTarget('/community?from=my')).toBe('/my');
+    expect(depthBackTarget('/search/v-101?from=pick')).toBe('/pick');
+    expect(depthBackTarget('/search/v-101/write-review?from=vendor/v-101')).toBe('/search/v-101');
+    expect(depthBackTarget('/search/v-101/review/r-1?from=community')).toBe('/community');
+    expect(depthBackTarget('/capture/payment/register?from=budget')).toBe('/wedding?tab=budget');
+    expect(depthBackTarget('/community?from=https%3A%2F%2Fevil.example')).toBe('/');
+    expect(depthBackTarget('/community?from=%2Fadmin')).toBe('/');
+    expect(depthBackTarget('/community?from=%E0%A4%A')).toBe('/');
   });
 
   it('Root 5탭에서는 더 올라가지 않는다', () => {
@@ -146,6 +161,58 @@ describe('규칙의 앞뒤가 맞는가', () => {
 
       expect(depthBackTarget(concrete)).not.toBe(concrete);
     }
+  });
+
+  it('모든 사용자 라우트의 Depth 목적지가 실재하는 라우트다', () => {
+    for (const route of ROUTES.filter((r) => r !== '/' && !r.startsWith('/admin'))) {
+      const concrete = route.replace(/\[[^\]]+\]/g, 'x');
+
+      expect(matchRoute(depthBackTarget(concrete))).not.toBeNull();
+    }
+  });
+
+  it('모든 MY 상세는 MY 계층 안의 명시된 부모로 돌아간다', () => {
+    for (const route of ROUTES.filter((r) => r.startsWith('/my/'))) {
+      const concrete = route.replace(/\[[^\]]+\]/g, 'x');
+      const target = depthBackTarget(concrete).split('?')[0];
+
+      expect(target === '/my' || target?.startsWith('/my/')).toBe(true);
+    }
+  });
+
+  it('History 예외는 실재하는 Back 화면만 중복 없이 가리킨다', () => {
+    expect(new Set(HISTORY_BACK_ROUTES).size).toBe(HISTORY_BACK_ROUTES.length);
+
+    for (const route of HISTORY_BACK_ROUTES) {
+      const concrete = route.replace(/\[[^\]]+\]/g, 'x');
+
+      expect(ROUTES).toContain(route);
+      expect(hasHistoryBack(concrete)).toBe(true);
+      expect(hasDepthBack(concrete)).toBe(!NO_BACK_ROUTES.includes(route));
+    }
+  });
+});
+
+describe('resolveBackAction — Android/공용 Back 정책', () => {
+  it('홈만 종료하고 다른 Root 탭은 홈으로 보낸다', () => {
+    expect(resolveBackAction('/', true)).toEqual({ kind: 'exit' });
+
+    for (const route of ['/search', '/pick', '/wedding', '/my']) {
+      expect(resolveBackAction(route, true)).toEqual({ kind: 'depth', target: '/' });
+    }
+  });
+
+  it('하위 화면은 history가 있어도 논리 부모로 보낸다', () => {
+    expect(resolveBackAction('/my/profile', true)).toEqual({ kind: 'depth', target: '/my' });
+    expect(resolveBackAction('/community?from=my', true)).toEqual({ kind: 'depth', target: '/my' });
+  });
+
+  it('명시된 History 화면만 기록을 쓴다', () => {
+    expect(resolveBackAction('/community/feed/f-1', true)).toEqual({ kind: 'history' });
+    expect(resolveBackAction('/community/feed/f-1', false)).toEqual({
+      kind: 'depth',
+      target: '/community?tab=feed',
+    });
   });
 });
 

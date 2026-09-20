@@ -13,12 +13,13 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(s).toContain('<DelayedLoader size={40} />');
     expect(s).toContain('{SIGNING_IN_MESSAGE}');
   });
-  it('Android Root/no-history Back은 2회 앱 종료를 쓴다', () => {
+  it('Android Back도 화면 계층을 따르고 홈에서만 2회 앱 종료를 쓴다', () => {
     const s = mobile('app/(tabs)/_layout.tsx');
     expect(s).toContain("BackHandler.addEventListener('hardwareBackPress'");
     expect(s).toContain("setExitToast('뒤로가기를 한 번 더 누르면 앱이 종료돼요')");
     expect(s).toContain('BackHandler.exitApp()');
-    expect(s).toContain('TAB_ROOTS.includes(pathname)');
+    expect(s).toContain('resolveBackAction(backPathname, router.canGoBack())');
+    expect(s).toContain("action.kind === 'depth'");
   });
   it('2Depth 헤더는 DepthHeader 하나를 쓴다', () => {
     expect(mobile('components/back-bar.tsx')).toContain('<DepthHeader');

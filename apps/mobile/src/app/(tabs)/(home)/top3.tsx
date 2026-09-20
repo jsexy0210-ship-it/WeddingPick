@@ -8,7 +8,6 @@ import {
   priceLine,
   type VendorCategory,
 } from '@weddingpick/domain';
-import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,7 +15,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { getTop3 } from '@/api/client';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import {
-  ActionButton,
   EmptyView,
   ErrorView,
   FilterChip,
@@ -31,6 +29,7 @@ import {
 } from '@weddingpick/ui';
 import { DelayedRecommendingBody } from '@/features/loading/delayed-loader';
 import { BackBar } from '@/components/back-bar';
+import { useDepthBack } from '@/features/navigation/depth-back';
 
 /**
  * TOP3 전체보기. WP-HOME-004.
@@ -39,6 +38,7 @@ import { BackBar } from '@/components/back-bar';
  * 추천 이유와 실 제보를 함께 표시한다.
  */
 export default function Top3Screen() {
+  const depthBack = useDepthBack();
   const [category, setCategory] = useState<VendorCategory>('hall');
   const [data, setData] = useState<Top3Response | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -87,7 +87,7 @@ export default function Top3Screen() {
           </ScrollView>
 
           {error ? (
-            <ErrorView message={error} onBack={() => router.back()} onRetry={load} />
+            <ErrorView message={error} onBack={depthBack} onRetry={load} />
           ) : !data ? (
             /* 추천 계산 — 업종 순회 로딩(WP-ST-015). */
             <View style={styles.recommending}>
@@ -119,7 +119,6 @@ export default function Top3Screen() {
             <EmptyView title="이 업종은 아직 추천할 만큼 자료가 모이지 않았어요." />
           )}
 
-          <ActionButton label="돌아가기" onPress={() => router.back()} />
         </ScrollView>
       </SafeAreaView>
     </ThemedView>

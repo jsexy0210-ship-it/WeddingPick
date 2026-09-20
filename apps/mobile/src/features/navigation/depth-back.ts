@@ -1,56 +1,68 @@
-import { router, usePathname } from 'expo-router';
+import { router, useLocalSearchParams, usePathname } from 'expo-router';
 import { useCallback } from 'react';
 
-import { depthBackTarget } from './depth-back-rules';
+import { resolveBackAction } from './depth-back-rules';
 
 export {
   DEPTH_BACK_EXCEPTIONS,
+  HISTORY_BACK_ROUTES,
   NO_BACK_ROUTES,
   ROUTES,
   TAB_ROOTS,
   depthBackTarget,
   hasDepthBack,
+  hasHistoryBack,
   matchRoute,
+  resolveBackAction,
 } from './depth-back-rules';
 
+/** `usePathname()`에서 빠지는 안전한 진입 출처만 Depth 계산에 다시 붙인다. */
+export function withBackOrigin(pathname: string, from?: string | string[]): string {
+  const value = Array.isArray(from) ? from[0] : from;
+
+  return value ? `${pathname}?from=${encodeURIComponent(value)}` : pathname;
+}
+
 /**
- * 좌상단 뒤로가기 실행 — **History 우선, 없으면 Depth Back**(2026-09-15 대표 지시로
- * 정책 변경). 규칙은 `depth-back-rules.ts`에 있고, 여기서는 옮기기만 한다.
+ * 좌상단 뒤로가기 실행 — **Depth Back이 기본**이다(SPEC §14.5).
+ * 규칙은 `depth-back-rules.ts`에 있고, 여기서는 옮기기만 한다.
  *
- *   1. 현재 스택에 방문 기록이 있으면(`router.canGoBack()`) `router.back()` — 실제
- *      직전 화면으로 되돌아간다. 탭은 각자 독립된 스택이라(`app/(tabs)/_layout.tsx`
- *      아래 탭마다 자기 `<Stack>`) 탭을 넘나든 이동은 여기 걸리지 않는다 — 탭 전환은
- *      Back 히스토리가 아니다.
- *   2. 기록이 없으면(딥링크·알림 등 직접 진입) `depthBackTarget`이 계산한 부모로
- *      간다 — `router.dismissTo`를 쓴다. 부모가 이미 스택에 있으면 그 화면으로
- *      되돌아가고(스크롤·입력값이 남는다), 없으면 현재 화면을 부모로 갈아끼운다.
+ *   1. `HISTORY_BACK_ROUTES`에 적힌 시트·같은 계층 상세이고 현재 스택에 방문 기록이
+ *      있을 때만 `router.back()`으로 탭·스크롤 상태를 복원한다.
+ *   2. 그 외에는 방문 기록을 보지 않고 `depthBackTarget`이 계산한 부모로 간다.
+ *      부모가 스택에 있으면 `dismissTo`로 그 화면까지 접고, 직접 진입이라 부모가
+ *      없으면 현재 화면을 부모로 갈아끼운다.
  *
  * 화면마다 `if (canGoBack) back() else fallback`을 따로 적던 것(`pick/compare.tsx`
  * `pick/confirm.tsx` `wedding/[id]/expenses/add.tsx` `wedding/[id]/events/new.tsx`
  * `search/index.tsx`)을 여기 한 곳으로 모았다.
  *
- * 안드로이드 하드웨어 뒤로가기 · 웹 브라우저 뒤로가기는 건드리지 않는다 — 그쪽은
- * 원래부터 History Back이고, 방문 순서를 되짚는 것이 맞다.
+ * 이 함수는 공용 화면 Back 계약이다. 작성 중 확인이나 완료 CTA처럼 별도 행동이 필요한
+ * 화면은 이 함수를 거치지 않고 화면이 직접 처리한다.
  */
 export function useDepthBack(): () => void {
   const pathname = usePathname();
+  const { from } = useLocalSearchParams<{ from?: string | string[] }>();
+  const backPathname = withBackOrigin(pathname, from);
 
   return useCallback(() => {
-    if (router.canGoBack()) {
+    const action = resolveBackAction(backPathname, router.canGoBack());
+    if (action.kind === 'history') {
       router.back();
       return;
     }
-    dismissToOrReplace(depthBackTarget(pathname));
-  }, [pathname]);
+    if (action.kind === 'depth') dismissToOrReplace(action.target);
+  }, [backPathname]);
 }
 
 /** 훅을 쓸 수 없는 자리(이벤트 핸들러 안 등)를 위한 같은 동작. */
 export function goDepthBack(pathname: string): void {
-  if (router.canGoBack()) {
+  const action = resolveBackAction(pathname, router.canGoBack());
+  if (action.kind === 'history') {
     router.back();
     return;
   }
-  dismissToOrReplace(depthBackTarget(pathname));
+  if (action.kind === 'depth') dismissToOrReplace(action.target);
 }
 
 /**

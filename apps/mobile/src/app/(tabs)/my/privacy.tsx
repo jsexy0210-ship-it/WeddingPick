@@ -1,5 +1,4 @@
 import { POLICY_DOCUMENTS } from '@weddingpick/domain';
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -98,7 +97,7 @@ export default function PrivacyScreen() {
           <ThemedView style={styles.header}>
             <ThemedText type="t2">개인정보처리방침</ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">
-              자주 묻는 세 가지를 먼저 적었어요. 전문은 아래에서 볼 수 있어요.
+              자주 묻는 내용을 먼저 정리했어요. 전문은 아래에서 볼 수 있어요.
             </ThemedText>
           </ThemedView>
 
@@ -110,7 +109,7 @@ export default function PrivacyScreen() {
           {policy?.url ? (
             <ActionButton
               variant="primary"
-              label="전문 보기"
+              label="개인정보처리방침 전문 보기"
               onPress={() => {
                 void openExternal(policy.url!, { title: policy.title });
               }}
@@ -126,7 +125,6 @@ export default function PrivacyScreen() {
             </ThemedText>
           </ThemedView>
 
-          <ActionButton variant="secondary" label="돌아가기" onPress={() => router.back()} />
         </ScrollView>
       </SafeAreaView>
     </ThemedView>

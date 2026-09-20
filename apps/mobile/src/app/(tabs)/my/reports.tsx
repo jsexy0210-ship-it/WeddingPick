@@ -13,10 +13,10 @@ import { Badge, Dock, EmptyBox, Hero, Section, SubScreen } from '@/features/sett
 const S = {
   title: 'Pick 인증내역',
   newProof: '새로 인증하기',
-  empty: '아직 Pick 인증내역이 없어요',
+  empty: '금액이 보이는 영수증이나 결제 화면으로 첫 Pick 인증을 시작해 보세요.',
   emptyCta: '첫 Pick 인증하기',
   hero: (total: number, used: number) => [`${formatCount(total)}건 인증했고`, `${formatCount(used)}건이 반영됐어요`],
-  heroEmpty: ['아직 Pick 인증한 것이', '없어요'],
+  heroEmpty: ['아직 Pick 인증내역이', '없어요'],
   inUse: '반영됨',
   checking: '확인 중',
   needsCheck: '보완 필요',

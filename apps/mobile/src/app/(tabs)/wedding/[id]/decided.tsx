@@ -6,6 +6,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { listDecisions } from '@/api/client';
 import { formatDateDot, formatMonthDayDot } from '@/features/common/format-date';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import { ActionButton, ErrorView, Layout, ProductSymbol, SkeletonView, Spacing, useTheme } from '@weddingpick/ui';
 import { Badge, Hero, ListRow, NavBar, RowValue, Screen, Section } from '@/features/wedding/screen-kit';
 
@@ -32,6 +33,7 @@ const S = {
  * 그래서 두 곳을 같은 업종으로 결정했다면 금액은 둘을 가르지 못한다 — 그대로 둔다.
  */
 export default function DecidedVendorsScreen() {
+  const depthBack = useDepthBack();
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme();
   const [page, setPage] = useState<DecisionListResponse | null>(null);
@@ -46,7 +48,7 @@ export default function DecidedVendorsScreen() {
   useEffect(load, [load]);
 
   if (error) {
-    return <ErrorView message={error} onBack={() => router.back()} onRetry={load} />;
+    return <ErrorView message={error} onBack={depthBack} onRetry={load} />;
   }
 
   if (!page) {

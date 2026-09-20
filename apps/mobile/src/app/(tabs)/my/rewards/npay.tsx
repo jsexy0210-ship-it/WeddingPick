@@ -56,13 +56,13 @@ export default function NpayPayoutScreen() {
   const open = payout.open;
   const last = payout.history[0];
   const phoneNormalized = normalizeMobilePhone(phone);
-  const phoneError = phone.length >= 12 && phoneNormalized === null ? '휴대폰 번호를 확인해주세요' : undefined;
+  const phoneError = phone.length >= 12 && phoneNormalized === null ? '휴대폰 번호를 확인해 주세요' : undefined;
   const canSend =
     !sending && payout.receivableKrw > 0 && name.trim().length > 0 && phoneNormalized !== null && consent;
 
   async function send() {
     if (phoneNormalized === null) {
-      setToast('휴대폰 번호를 확인해주세요');
+      setToast('휴대폰 번호를 확인해 주세요');
       return;
     }
     setSending(true);

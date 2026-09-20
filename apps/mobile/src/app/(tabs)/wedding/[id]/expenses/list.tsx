@@ -6,6 +6,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { getExpenses } from '@/api/client';
 import { formatDateDot } from '@/features/common/format-date';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import { ActionButton, ErrorView, FilterChip, Layout, SkeletonView, Spacing } from '@weddingpick/ui';
 import { Hero, ListRow, NavBar, RowValue, Screen, Section } from '@/features/wedding/screen-kit';
 
@@ -29,6 +30,7 @@ const FILTERS: { key: Filter; label: string }[] = [
  * 행을 누르면 지출 상세(WP-OUR-010). 삭제는 상세에서 한다 — 목록의 줄마다 단추를 두지 않는다.
  */
 export default function ExpenseListScreen() {
+  const depthBack = useDepthBack();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [page, setPage] = useState<ExpenseSummaryResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +45,7 @@ export default function ExpenseListScreen() {
   useFocusEffect(load);
 
   if (error) {
-    return <ErrorView message={error} onBack={() => router.back()} onRetry={load} />;
+    return <ErrorView message={error} onBack={depthBack} onRetry={load} />;
   }
 
   if (!page) {

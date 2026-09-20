@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import strings from '../../../../../../../spec/strings.ko.json';
 import { listQuotes } from '@/api/client';
 import { formatDateDot } from '@/features/common/format-date';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import { BackBar } from '@/components/back-bar';
 import {
   ActionButton,
@@ -77,6 +78,7 @@ function QuoteCard({ quote }: { quote: Quote }) {
  * 적으면 사용자가 무엇을 보고 있는지 알 수 없다(journey-open-03).
  */
 export default function WeddingQuotesScreen() {
+  const depthBack = useDepthBack();
   const { id } = useLocalSearchParams<{ id: string }>();
   /** 지금 이어받는 중인 커서. 같은 것을 두 번 붙이지 않으려고 든다. */
   const loadingCursor = useRef<string | null>(null);
@@ -122,7 +124,7 @@ export default function WeddingQuotesScreen() {
   if (loading) return <SkeletonView />;
 
   if (error && quotes.length === 0) {
-    return <ErrorView message={error} onBack={() => router.back()} onRetry={load} />;
+    return <ErrorView message={error} onBack={depthBack} onRetry={load} />;
   }
 
   return (
@@ -159,7 +161,6 @@ export default function WeddingQuotesScreen() {
             <ActionButton label="더 보기" onPress={() => void loadMore()} />
           ) : null}
 
-          <ActionButton label="돌아가기" onPress={() => router.back()} />
         </ScrollView>
       </SafeAreaView>
     </ThemedView>

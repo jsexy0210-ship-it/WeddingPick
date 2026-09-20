@@ -1,11 +1,12 @@
 import type { Notification } from '@weddingpick/api-contract';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 
 import { listNotifications } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { formatDateDot } from '@/features/common/format-date';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import { ErrorView, SkeletonView, Spacing } from '@weddingpick/ui';
 import { Hero, ListRow, NavBar, RowValue, Screen, Section, relativeTime } from '@/features/wedding/screen-kit';
 
@@ -35,6 +36,7 @@ function groupLabel(iso: string, now: number): string {
  * 아바타는 서버가 그 값을 주지 않아 넣지 않았다.
  */
 export default function ChangelogScreen() {
+  const depthBack = useDepthBack();
   useLocalSearchParams<{ id: string }>();
   const [notifications, setNotifications] = useState<Notification[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +74,7 @@ export default function ChangelogScreen() {
           setError(null);
           load();
         }}
-        onBack={() => router.back()}
+        onBack={depthBack}
       />
     );
   }

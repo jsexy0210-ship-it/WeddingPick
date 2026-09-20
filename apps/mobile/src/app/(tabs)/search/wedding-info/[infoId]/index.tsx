@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getWeddingInfo } from '@/api/client';
 import { BackBar } from '@/components/back-bar';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import {
   ActionButton,
   ErrorView,
@@ -63,6 +64,7 @@ function WeddingInfoDetailSkeleton() {
  * 상태: 로딩 → 오류 / 상세 있음.
  */
 export default function WeddingInfoDetailScreen() {
+  const depthBack = useDepthBack();
   const { infoId } = useLocalSearchParams<{ infoId: string }>();
   const [info, setInfo] = useState<WeddingInfoDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -91,7 +93,7 @@ export default function WeddingInfoDetailScreen() {
         message={error}
         onRetry={load}
         retryLabel="다시 시도"
-        onBack={() => router.back()}
+        onBack={depthBack}
         backLabel="돌아가기"
       />
     );
@@ -177,7 +179,6 @@ export default function WeddingInfoDetailScreen() {
             />
           </ThemedView>
 
-          <ActionButton label="돌아가기" onPress={() => router.back()} />
         </ScrollView>
       </SafeAreaView>
     </ThemedView>

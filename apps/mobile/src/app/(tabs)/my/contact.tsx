@@ -119,10 +119,10 @@ export default function ContactScreen() {
             </ThemedText>
             <ActionButton
               variant="primary"
-              label="확인"
+              label="문의 내역 보기"
               onPress={() => setAcknowledgement(null)}
             />
-            <ActionButton label="돌아가기" onPress={depthBack} />
+            <ActionButton label="문의 마치기" onPress={depthBack} />
           </ThemedView>
         </SafeAreaView>
       </ThemedView>
@@ -165,7 +165,7 @@ export default function ContactScreen() {
           {!isServerConfigured ? (
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="small" themeColor="textSecondary">
-                이 빌드는 서버에 붙어 있지 않아 문의를 보낼 수 없어요.
+                지금은 문의를 보낼 수 없어요. 잠시 후 다시 시도해 주세요.
               </ThemedText>
             </ThemedView>
           ) : null}

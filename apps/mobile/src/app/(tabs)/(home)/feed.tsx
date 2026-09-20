@@ -10,8 +10,8 @@ import {
 } from '@/features/home/content';
 import { WeddingContent } from '@/features/home/wedding-content';
 import { BackBar } from '@/components/back-bar';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import {
-  ActionButton,
   EmptyView,
   ErrorView,
   FilterChip,
@@ -52,6 +52,7 @@ const S = strings.weddingFeed;
  * 유지하면 됩니다」). 탭은 추리는 도구이고 배지는 무엇에 관한 글인지를 말한다.
  */
 export default function FeedScreen() {
+  const depthBack = useDepthBack();
   const [items, setItems] = useState<readonly WeddingContentItem[] | null>(null);
   const [tabs, setTabs] = useState<readonly WeddingFeedTabItem[]>([]);
   const [tab, setTab] = useState<string | null>(null);
@@ -91,7 +92,7 @@ export default function FeedScreen() {
     return items.filter((item) => wanted.has(item.categoryLabel));
   }, [items, tabs, tab]);
 
-  if (error) return <ErrorView message={error} onBack={() => router.back()} onRetry={load} />;
+  if (error) return <ErrorView message={error} onBack={depthBack} onRetry={load} />;
   if (!items) return <SkeletonView />;
 
   return (
@@ -139,7 +140,6 @@ export default function FeedScreen() {
             />
           )}
 
-          <ActionButton label="돌아가기" onPress={() => router.back()} />
         </ScrollView>
       </SafeAreaView>
     </ThemedView>

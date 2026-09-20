@@ -10,6 +10,7 @@ import { ActionButton, ErrorView, Layout, Spacing, ThemedText } from '@weddingpi
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import { DateTimeField, combineDayTime, splitDayTime } from '@/features/wedding/event-form';
 import {
   Badge,
@@ -57,6 +58,7 @@ function eyebrowOf(event: WeddingEvent, now: number): string {
  * 불러 id로 찾는다.
  */
 export default function WeddingEventDetailScreen() {
+  const depthBack = useDepthBack();
   const { id, eventId } = useLocalSearchParams<{ id: string; eventId: string }>();
 
   const [event, setEvent] = useState<WeddingEvent | null>(null);
@@ -95,11 +97,11 @@ export default function WeddingEventDetailScreen() {
   useEffect(load, [load]);
 
   if (error && !event) {
-    return <ErrorView message={error} onBack={() => router.back()} onRetry={load} />;
+    return <ErrorView message={error} onBack={depthBack} onRetry={load} />;
   }
 
   if (notFound) {
-    return <ErrorView title="일정을 찾을 수 없어요" onBack={() => router.back()} onRetry={load} />;
+    return <ErrorView title="일정을 찾을 수 없어요" onBack={depthBack} onRetry={load} />;
   }
 
   if (!event || now === null) {

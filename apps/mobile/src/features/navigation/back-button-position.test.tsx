@@ -37,10 +37,14 @@ import { NavBar } from '@/features/wedding/screen-kit';
 jest.mock('expo-router', () => ({
   router: { dismissTo: jest.fn(), replace: jest.fn() },
   usePathname: () => '/my/guide',
+  useLocalSearchParams: () => ({}),
 }));
 
 /** 시안 backBtn·navBack에서 나오는 값. 화살표 왼쪽 끝이 화면 왼쪽에서 떨어진 거리. */
 const CANONICAL_ICON_LEFT = 20;
+const CANONICAL_NAV_HEIGHT = 56;
+const CANONICAL_NAV_PADDING_LEFT = 12;
+const CANONICAL_NAV_PADDING_RIGHT = 20;
 
 let tree: ReactTestRenderer;
 
@@ -120,5 +124,15 @@ it('두 막대는 같은 치수를 쓴다 — 높이 · 좌우 패딩', () => {
   expect(fromBackBar.height).toBe(fromNavBar.height);
   expect(fromBackBar.paddingLeft).toBe(fromNavBar.paddingLeft);
   expect(fromBackBar.paddingRight).toBe(fromNavBar.paddingRight);
-  expect(fromBackBar.paddingLeft).toBe(Layout.navPaddingLeft);
+  expect(fromBackBar).toMatchObject({
+    height: CANONICAL_NAV_HEIGHT,
+    paddingLeft: CANONICAL_NAV_PADDING_LEFT,
+    paddingRight: CANONICAL_NAV_PADDING_RIGHT,
+  });
+  expect(Layout.navPaddingLeft).toBe(CANONICAL_NAV_PADDING_LEFT);
+  expect(Layout.navPaddingRight).toBe(CANONICAL_NAV_PADDING_RIGHT);
+});
+
+it('사용자 화면 콘텐츠는 정본 좌우 Gutter 24를 쓴다', () => {
+  expect(Layout.gutter).toBe(24);
 });

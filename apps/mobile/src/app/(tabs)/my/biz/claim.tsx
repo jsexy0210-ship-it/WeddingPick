@@ -118,7 +118,7 @@ export default function BizClaimScreen() {
           {!isServerConfigured ? (
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="t6" themeColor="textSecondary">
-                이 빌드는 서버에 붙어 있지 않아 검색할 수 없어요.
+                지금은 업체를 검색할 수 없어요. 잠시 후 다시 시도해 주세요.
               </ThemedText>
             </ThemedView>
           ) : null}
@@ -150,12 +150,11 @@ export default function BizClaimScreen() {
           ) : query.trim().length >= 2 && !searching ? (
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="t6" themeColor="textSecondary">
-                검색 결과가 없어요. 업체 이름을 다시 확인해주세요.
+                검색 결과가 없어요. 업체 이름을 다시 확인해 주세요.
               </ThemedText>
             </ThemedView>
           ) : null}
 
-          <ActionButton label="돌아가기" onPress={() => router.back()} />
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
