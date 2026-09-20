@@ -17,8 +17,8 @@ import {
   type BadgeKind,
   type ThemeColor,
 } from '@weddingpick/ui';
+import { DepthHeader } from '@/components/depth-header';
 import { formatMonthDayDot } from '@/features/common/format-date';
-import { useDepthBack } from '@/features/navigation/depth-back';
 
 /**
  * 웨딩일정 · 제보 하위 화면의 공용 조각 — 핸드오프 08-schedule-sub · 08c · 11-report-review ·
@@ -67,39 +67,19 @@ export type NavBarProps = {
  * `fallback`을 적던 자리를 없앴다 — 규칙이 현재 경로에서 부모를 계산한다.
  */
 export function NavBar({ title, variant = 'back', onBack, right }: NavBarProps) {
-  const theme = useTheme();
-  const depthBack = useDepthBack();
-
-  return (
-    <View style={styles.nav}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={variant === 'close' ? '닫기' : '뒤로'}
-        onPress={onBack ?? depthBack}
-        style={({ pressed }) => [styles.navButton, pressed && styles.pressed]}>
-        <ProductSymbol
-          name={variant === 'close' ? 'close' : 'chevronLeft'}
-          size={Layout.iconTab}
-          color={theme.text}
-        />
-      </Pressable>
-      <ThemedText type="t5" numberOfLines={1} style={styles.navTitle}>
-        {title ?? ''}
+  const action = right ? (
+    <Pressable
+      accessibilityRole="button"
+      disabled={right.disabled}
+      onPress={right.onPress}
+      hitSlop={8}
+      style={({ pressed }) => [pressed && styles.pressed, right.disabled && styles.disabled]}>
+      <ThemedText type="t6" themeColor={right.brand ? 'tint' : 'textSecondary'} style={styles.bold}>
+        {right.label}
       </ThemedText>
-      {right ? (
-        <Pressable
-          accessibilityRole="button"
-          disabled={right.disabled}
-          onPress={right.onPress}
-          hitSlop={8}
-          style={({ pressed }) => [pressed && styles.pressed, right.disabled && styles.disabled]}>
-          <ThemedText type="t6" themeColor={right.brand ? 'tint' : 'textSecondary'} style={styles.bold}>
-            {right.label}
-          </ThemedText>
-        </Pressable>
-      ) : null}
-    </View>
-  );
+    </Pressable>
+  ) : undefined;
+  return <DepthHeader title={title} variant={variant} onBack={onBack} right={action} />;
 }
 
 export type HeroProps = {

@@ -14,6 +14,7 @@
  */
 
 let spent = false;
+let nextHomeLoadingCoveredBySetup = false;
 
 /**
  * 전체 화면 로딩을 지금 써도 되는가. **부르면 소모된다** — 한 번 true를 받은
@@ -26,7 +27,18 @@ export function takeFullScreenLoading(): boolean {
   return true;
 }
 
+export function markNextHomeLoadingCoveredBySetup(): void {
+  nextHomeLoadingCoveredBySetup = true;
+}
+
+export function takeHomeLoadingCoveredBySetup(): boolean {
+  if (!nextHomeLoadingCoveredBySetup) return false;
+  nextHomeLoadingCoveredBySetup = false;
+  return true;
+}
+
 /** 테스트에서만 쓴다. 실행 상태를 처음으로 되돌린다. */
 export function resetFullScreenLoadingForTest(): void {
   spent = false;
+  nextHomeLoadingCoveredBySetup = false;
 }

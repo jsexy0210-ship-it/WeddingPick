@@ -1,4 +1,9 @@
-import { resetFullScreenLoadingForTest, takeFullScreenLoading } from './first-run';
+import {
+  markNextHomeLoadingCoveredBySetup,
+  resetFullScreenLoadingForTest,
+  takeFullScreenLoading,
+  takeHomeLoadingCoveredBySetup,
+} from './first-run';
 
 describe('전체 화면 로딩 예산', () => {
   beforeEach(resetFullScreenLoadingForTest);
@@ -14,6 +19,13 @@ describe('전체 화면 로딩 예산', () => {
    * 자연히 처음으로 돌아간다. 저장소에 남기면 「재시작해도 안 나온다」가 되어
    * 사용자가 말한 「최초 또는 앱 재시작 시」와 어긋난다.
    */
+  it('setup 로더가 다음 Home 로더를 한 번만 덮는다', () => {
+    expect(takeHomeLoadingCoveredBySetup()).toBe(false);
+    markNextHomeLoadingCoveredBySetup();
+    expect(takeHomeLoadingCoveredBySetup()).toBe(true);
+    expect(takeHomeLoadingCoveredBySetup()).toBe(false);
+  });
+
   it('재시작하면 다시 쓸 수 있다', () => {
     expect(takeFullScreenLoading()).toBe(true);
 

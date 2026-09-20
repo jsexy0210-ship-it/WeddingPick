@@ -93,7 +93,10 @@ export function SigningInBody({
 export function SigningInView() {
   return (
     <ThemedView style={styles.container}>
-      <SigningInBody size={40} show="message" />
+      <DelayedLoader size={40} />
+      <ThemedText type="small" themeColor="textAssistive">
+        {SIGNING_IN_MESSAGE}
+      </ThemedText>
     </ThemedView>
   );
 }
