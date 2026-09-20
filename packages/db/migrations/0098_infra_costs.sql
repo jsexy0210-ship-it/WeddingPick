@@ -1,7 +1,7 @@
 -- 인프라 비용을 하루 한 번 적어 둔다.
 --
 -- 2026-09-10 사용자 결정 — 「A. 하루 한 번 수집」. 지금은 AI 호출 비용만 보이고
--- (WP-ADM-050) Render · Neon · Object Storage 요금은 각 콘솔에 들어가야 알 수 있다.
+-- (WP-ADM-050) Neon · Object Storage · GitHub 요금은 각 콘솔에 들어가야 알 수 있다.
 -- 세 곳을 따로 열어보는 동안에는 「이번 달에 얼마 나가고 있나」에 아무도 답하지 못한다.
 --
 -- **분 단위로 볼 값이 아니다.** 인프라 요금은 하루 단위로도 충분히 빠르고, 화면을 열
@@ -27,7 +27,7 @@ CREATE TABLE structured.infra_costs (
   period_start  date        NOT NULL,
   period_end    date        NOT NULL,
 
-  -- 금액과 통화. Render는 USD, 네이버 클라우드는 KRW다. 환산하지 않는다 —
+  -- 금액과 통화는 공급자가 돌려준 원본 통화를 그대로 둔다. 환산하지 않는다 —
   -- 환산은 보는 쪽에서 그날 환율로 한다. 여기서 바꾸면 원본을 잃는다.
   amount        numeric(14, 4) NOT NULL CHECK (amount >= 0),
   currency      text        NOT NULL CHECK (currency ~ '^[A-Z]{3}$'),
