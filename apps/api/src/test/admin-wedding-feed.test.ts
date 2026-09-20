@@ -22,6 +22,7 @@ jest.mock('../auth/plugin', () => ({
 }));
 
 const pool = { query: jest.fn(), connect: jest.fn() };
+const originalGeminiApiKey = process.env.GEMINI_API_KEY;
 
 function app(context?: Partial<AppContext>) {
   const instance = Fastify();
@@ -38,10 +39,16 @@ function app(context?: Partial<AppContext>) {
 beforeEach(() => {
   pool.query.mockReset();
   pool.connect.mockReset();
+  delete process.env.GEMINI_API_KEY;
+});
+
+afterAll(() => {
+  if (originalGeminiApiKey === undefined) delete process.env.GEMINI_API_KEY;
+  else process.env.GEMINI_API_KEY = originalGeminiApiKey;
 });
 
 describe('웨딩피드 관리자 라우트', () => {
-  it('목록은 posts · runs · remainingTopics를 그대로 준다 — posts 안에 다시 감싸지 않는다', async () => {
+  it('목록은 글·실행 기록과 자동 작성 준비 상태를 함께 준다', async () => {
     pool.query
       .mockResolvedValueOnce({
         rows: [
@@ -68,13 +75,19 @@ describe('웨딩피드 관리자 라우트', () => {
     const response = await app().inject({ method: 'GET', url: '/v1/admin/wedding-feed' });
 
     expect(response.statusCode).toBe(200);
-    const body = response.json<{ posts: unknown[]; runs: unknown[]; remainingTopics: number }>();
+    const body = response.json<{
+      posts: unknown[];
+      runs: unknown[];
+      remainingTopics: number;
+      automation: { manualReady: boolean; scheduledEnabled: boolean };
+    }>();
 
     expect(Array.isArray(body.posts)).toBe(true);
     expect(body.posts).toHaveLength(1);
     expect(body.posts[0]).toMatchObject({ title: '스드메 예산 짜는 법', status: 'draft' });
     expect(Array.isArray(body.runs)).toBe(true);
     expect(typeof body.remainingTopics).toBe('number');
+    expect(body.automation).toEqual({ manualReady: false, scheduledEnabled: false });
   });
 
   it('등록은 표에 INSERT한다', async () => {
@@ -146,6 +159,7 @@ describe('웨딩피드 관리자 라우트', () => {
    * 여기서는 라우트가 그 값을 그대로 넘기는지만 본다 — 실제로 부르지 않는다.
    */
   it('지금 쓰기는 config.geminiModel로 제미나이 작성기를 부른다', async () => {
+    process.env.GEMINI_API_KEY = 'test-key';
     const runGeneration = jest
       .spyOn(weddingFeed, 'runGeneration')
       .mockResolvedValue({ created: 1, skipped: null });
@@ -166,6 +180,22 @@ describe('웨딩피드 관리자 라우트', () => {
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({ created: 1, skipped: null });
     expect(runGeneration.mock.calls[0]?.[0]).toMatchObject({ model: '시험용-모델', trigger: 'manual' });
+    delete process.env.GEMINI_API_KEY;
+  });
+
+  it('Gemini 연결이 없으면 실행 기록을 만들기 전에 원인을 알려준다', async () => {
+    delete process.env.GEMINI_API_KEY;
+
+    const response = await app({ config: { geminiModel: '시험용-모델' } } as Partial<AppContext>).inject({
+      method: 'POST',
+      url: '/v1/admin/wedding-feed/generate',
+    });
+
+    expect(response.statusCode).toBe(500);
+    expect(response.json()).toMatchObject({
+      error: { message: expect.stringContaining('자동 작성 서버 설정') },
+    });
+    expect(pool.query).not.toHaveBeenCalled();
   });
 });
 

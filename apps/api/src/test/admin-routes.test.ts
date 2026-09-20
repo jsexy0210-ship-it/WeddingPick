@@ -170,9 +170,15 @@ describeWithDb('관리자 콘솔 라우트', () => {
   });
 
   describe('계정 목록', () => {
-    it('탈퇴를 접수한 계정도 상태와 함께 보인다', async () => {
+    it('카카오 일반 회원만 보이고 관리자·신원 없는 탈퇴 행은 제외한다', async () => {
       const operator = await operatorHeaders();
       const leaving = await signInAs(test, 'leaving-user');
+      const kakao = await signInAs(test, 'kakao-user');
+
+      await test.pool.query(
+        `UPDATE identity.identities SET provider = 'kakao' WHERE user_id = $1`,
+        [kakao.userId]
+      );
 
       await test.pool.query(
         `UPDATE structured.users SET display_name = '떠난사람', deleted_at = now() WHERE id = $1`,
@@ -189,22 +195,20 @@ describeWithDb('관리자 콘솔 라우트', () => {
       expect(all.statusCode).toBe(200);
 
       const users = all.json<{ users: { id: string; withdrawal: unknown; provider: string | null }[] }>().users;
-      const gone = users.find((u) => u.id === leaving.userId);
-
-      expect(gone).toMatchObject({
-        provider: 'apple',
-        withdrawal: { status: 'failed', failure: { message: 'removed_candidates FK', attemptCount: 1 } },
-      });
-      expect(users.find((u) => u.id === operator.userId)).toMatchObject({ withdrawal: null, isOperator: true });
+      expect(users).toEqual([
+        expect.objectContaining({ id: kakao.userId, provider: 'kakao', isOperator: false }),
+      ]);
+      expect(users.find((u) => u.id === leaving.userId)).toBeUndefined();
+      expect(users.find((u) => u.id === operator.userId)).toBeUndefined();
 
       const withdrawn = await get('/v1/admin/users?status=withdrawn', operator.headers);
 
-      expect(withdrawn.json<{ users: { id: string }[]; total: number }>()).toMatchObject({ total: 1 });
-      expect(withdrawn.json<{ users: { id: string }[] }>().users.map((u) => u.id)).toEqual([leaving.userId]);
+      expect(withdrawn.json<{ users: { id: string }[]; total: number }>()).toMatchObject({ total: 0 });
+      expect(withdrawn.json<{ users: { id: string }[] }>().users).toEqual([]);
 
       const searched = await get('/v1/admin/users?search=떠난', operator.headers);
 
-      expect(searched.json<{ users: { id: string }[] }>().users.map((u) => u.id)).toEqual([leaving.userId]);
+      expect(searched.json<{ users: { id: string }[] }>().users).toEqual([]);
     });
 
     it('삭제에 실패한 탈퇴 계정을 다시 지운다', async () => {

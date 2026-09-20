@@ -14,10 +14,11 @@ import { loadAdminToken, readAdminTokenSync, subscribeAdminToken } from './_sess
  * 화면인지**(운영 · 조회 · 서버 연결 전)로 갈랐는데, 「운영」 한 묶음에 19개가
  * 몰렸다. 처음엔 아홉 주제 묶음(그룹 헤더 + 그 아래 여러 줄)으로 다시 짰는데,
  * 대표님이 「비슷한 유형끼리 탭 메뉴로 구성해도 된다」고 한 번 더 넓히면서
- * **그룹 하나 = 사이드바 줄 하나 + 그 화면 안의 탭**으로 바뀌었다. 그래서 지금
- * 사이드바는 **아홉 줄뿐이다** —
+ * **그룹 하나 = 사이드바 줄 하나 + 그 화면 안의 탭**으로 바뀌었다. 웨딩피드는
+ * 현재 사용자 홈에 바로 나가는 콘텐츠라 별도 줄로 다시 올렸다. 그래서 지금
+ * 사이드바는 **열 줄이다** —
  *
- *   대시보드 · 확인 필요 · 업체·행사 · 후기·신고 · 광고·마케팅 · 자동화 ·
+ *   대시보드 · 웨딩피드 콘텐츠 · 확인 필요 · 업체·행사 · 후기·신고 · 광고·마케팅 · 자동화 ·
  *   통계·수익 · 계정·권한 · 사이트·기록
  *
  * 옛 화면 34개(로그인 제외 33개)는 사라지지 않았다 — 각 그룹의 대표 화면 파일이
@@ -43,17 +44,18 @@ import { loadAdminToken, readAdminTokenSync, subscribeAdminToken } from './_sess
 type NavEntry = { key: string; label: string; href: string };
 
 /**
- * **아홉 줄 — 2026-09-15 대표 확정(탭 재편).** 순서는 대표님이 준 목록 순서를
+ * **열 줄.** 기존 아홉 그룹에 현재 사용자 홈과 직접 연결되는 웨딩피드 콘텐츠를
+ * 독립 메뉴로 올렸다. 순서는 대표님이 준 목록 순서를
  * 그대로 따른다. 각 `href`는 그 그룹의 **대표 화면**(첫 탭)이고, 나머지는 그 화면
  * 안의 탭이다 — 예를 들어 「자동화」를 누르면 `/admin/automation`이 열리고
  * 안에서 처리 상태 탭이 기본으로 선택된다.
  *
- * **업체·행사의 박람회 관리, 사이트·기록의 웨딩피드 관리는 MASTER 지시로 자리를
- * 정했다**(각각 `vendors.tsx` · `faq.tsx`의 `TABS` 끝) — 이 사이드바 자체는
- * 그룹 대표 화면만 가리키므로 줄이 늘지 않는다.
+ * 박람회 관리는 `vendors.tsx`의 탭에 남고, 웨딩피드 관리는 현재 프론트 콘텐츠와
+ * 바로 대응하도록 독립 메뉴가 됐다.
  */
 const NAV: NavEntry[] = [
   { key: 'home', label: '대시보드', href: '/admin/home' },
+  { key: 'wedding-feed', label: '웨딩피드 콘텐츠', href: '/admin/wedding-feed' },
   { key: 'queue', label: '확인 필요', href: '/admin/queue' },
   { key: 'vendors', label: '업체·행사', href: '/admin/vendors' },
   { key: 'rebuttal', label: '후기·신고', href: '/admin/rebuttal' },
@@ -113,7 +115,7 @@ function Sidebar({ pathname }: { pathname: string }) {
       {/*
         로그아웃은 2026-09-15에 여기(사이드바 맨 아래)에서 상단 바 우측 고정
         영역(`_ui.tsx`의 `Page`)으로 옮겨갔다 — 대표 지시. 이 자리는 비워 둔다,
-        메뉴를 9개로 줄이는 중에 다른 것을 채우지 않는다.
+        메뉴 영역에 별도 동작을 채우지 않는다.
       */}
     </View>
   );
@@ -187,8 +189,12 @@ export default function AdminLayout() {
     );
   }
 
-  /* 로그인 화면은 사이드바 없이 홀로 선다 — 아직 들어온 것이 아니다. */
-  if (pathname === LOGIN_PATH) return <Slot />;
+  /* 로그인한 사람이 로그인 주소를 다시 열어도 기본 화면인 대시보드로 돌아간다. */
+  if (pathname === LOGIN_PATH) {
+    if (!checked) return <View style={styles.root} />;
+
+    return token ? <Redirect href={'/admin/home' as never} /> : <Slot />;
+  }
 
   /*
    * 확인이 끝나기 전에는 아무것도 그리지 않는다. 저장소를 읽는 것은 한 번의

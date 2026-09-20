@@ -6,9 +6,7 @@
  * (넷 다 사용자에게 노출되는 문구·카드 또는 그 기록). 이 파일 맨 아래
  * `SiteContentShell`이 그 껍데기고, 여기 있던 본문은 `FaqPanel`로 이름만 바꿨다.
  *
- * **웨딩피드 관리는 2026-09-15에 다섯 번째 탭으로 붙었다.** `main`이 그 화면을
- * FAQ·링크 미리보기와 같은 「문구 · 카드」 묶음에 두고 있었고, 운영자가 직접 쓰고
- * 고치는 노출 콘텐츠라는 성격도 같아 이 탭 묶음에 넣었다.
+ * 웨딩피드 관리는 현재 사용자 홈과 바로 대응하도록 독립 메뉴로 옮겼다.
  */
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -31,7 +29,6 @@ import { AdminTabShell, ConfirmCard, type AdminTabDef } from './_ui';
 import { TermsPanel } from './terms';
 import { OgCardPanel } from './og-card';
 import { AuditLogPanel } from './audit-log';
-import { WeddingFeedPanel } from './wedding-feed';
 
 type FaqItem = {
   id: string;
@@ -364,30 +361,26 @@ function FaqPanel() {
       </Modal>
 
       {/* 지우기 전 확인. 무엇이 사라지는지 항목으로 적는다. */}
-      <Modal visible={asking !== null} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          {asking ? (
-            <ConfirmCard
-              title="이 질문을 지울까요?"
-              body={`「${asking.question}」 — 지우면 되돌릴 수 없어요.`}
-              items={[
-                asking.published
-                  ? '사용자 화면의 자주 묻는 것에서 바로 사라져요'
-                  : '비공개 항목이라 사용자 화면은 그대로예요',
-                '이 질문의 답도 함께 지워져요',
-                asking.key
-                  ? `이 질문으로 가는 주소(/my/faq/${asking.key})가 「찾는 질문이 없어요」로 바뀌어요`
-                  : '이 질문으로 가는 주소가 「찾는 질문이 없어요」로 바뀌어요',
-                '지운 뒤에는 다시 등록해야 해요 — 되살리는 단추가 없어요',
-              ]}
-              cta="지우기"
-              danger
-              onConfirm={() => void deleteFaq(asking)}
-              onCancel={() => setAsking(null)}
-            />
-          ) : null}
-        </View>
-      </Modal>
+      {asking ? (
+        <ConfirmCard
+          title="이 질문을 지울까요?"
+          body={`「${asking.question}」 — 지우면 되돌릴 수 없어요.`}
+          items={[
+            asking.published
+              ? '사용자 화면의 자주 묻는 것에서 바로 사라져요'
+              : '비공개 항목이라 사용자 화면은 그대로예요',
+            '이 질문의 답도 함께 지워져요',
+            asking.key
+              ? `이 질문으로 가는 주소(/my/faq/${asking.key})가 「찾는 질문이 없어요」로 바뀌어요`
+              : '이 질문으로 가는 주소가 「찾는 질문이 없어요」로 바뀌어요',
+            '지운 뒤에는 다시 등록해야 해요 — 되살리는 단추가 없어요',
+          ]}
+          cta="지우기"
+          danger
+          onConfirm={() => void deleteFaq(asking)}
+          onCancel={() => setAsking(null)}
+        />
+      ) : null}
     </View>
   );
 }
@@ -397,12 +390,10 @@ const TABS: AdminTabDef[] = [
   { key: 'terms', label: '약관 · 방침' },
   { key: 'og-card', label: '링크 미리보기' },
   { key: 'audit-log', label: '감사 기록' },
-  { key: 'wedding-feed', label: '웨딩피드 관리' },
 ];
 
 /**
- * 「사이트·기록」 — FAQ 관리 · 약관·방침 · 링크 미리보기 · 감사 기록 · 웨딩피드
- * 관리를 탭 다섯으로 묶는다.
+ * 「사이트·기록」 — FAQ 관리 · 약관·방침 · 링크 미리보기 · 감사 기록을 묶는다.
  *
  * **약관·방침의 「조회만」 딱지는 2026-09-16에 뗐다** — 대표 지시 「개인정보처리방침
  * 이용약관 마케팅 약관도 동일하게 내가 수정가능하도록 하고」. 본문이 표로 왔고
@@ -424,7 +415,6 @@ export default function SiteContentShell() {
       {active === 'terms' && <TermsPanel />}
       {active === 'og-card' && <OgCardPanel />}
       {active === 'audit-log' && <AuditLogPanel />}
-      {active === 'wedding-feed' && <WeddingFeedPanel />}
     </AdminTabShell>
   );
 }

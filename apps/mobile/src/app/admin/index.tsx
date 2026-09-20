@@ -1,5 +1,5 @@
 import { Redirect } from 'expo-router';
 
 export default function AdminIndex() {
-  return <Redirect href={'/admin/queue' as never} />;
+  return <Redirect href={'/admin/home' as never} />;
 }

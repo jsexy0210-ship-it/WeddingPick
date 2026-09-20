@@ -185,26 +185,6 @@ export function AdsGatePanel() {
 
       {!loading && !error && data && (
         <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
-          {/* 현재 상태 */}
-          {/*
-            **지금 봐야 할 것이 맨 위다**(v3.27). 이 화면에서 그것은 단계 번호가
-            아니라 «광고가 지금 나가는가»다 — 그것 하나 때문에 여기 들어온다.
-          */}
-          <View style={[styles.statusBanner, data.activated ? styles.bannerGreen : styles.bannerBlue]}>
-            <Text style={styles.bannerTitle}>
-              {data.activated
-                ? '광고 전체 스위치가 켜져 있어요'
-                : data.canActivate
-                  ? '광고 전체 스위치가 꺼져 있어요'
-                  : data.readyForProduction
-                    ? '실운영 전환 준비 완료'
-                    : `아직 안 나가요 · 단계 ${data.currentPhase} 진행 중`}
-            </Text>
-            {data.blockers.length > 0 && (
-              <Text style={styles.bannerSub}>차단 요인: {data.blockers.join(', ')}</Text>
-            )}
-          </View>
-
           {/* 게이트 단계 */}
           {data.steps.map((step, i) => (
             <View key={step.id} style={styles.stepCard}>
@@ -461,14 +441,6 @@ const styles = StyleSheet.create({
   errorText: { fontSize: FontSize.t6, color: Colors.light.negative, marginBottom: 16 },
   retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: Colors.light.tint },
   retryText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
-  statusBanner: {
-    borderRadius: 10,
-    padding: 16,
-  },
-  bannerGreen: { backgroundColor: Colors.light.positiveBackground, borderWidth: 1, borderColor: Colors.light.positive },
-  bannerBlue: { backgroundColor: Colors.light.accentBackground, borderWidth: 1, borderColor: Colors.light.accent },
-  bannerTitle: { fontSize: FontSize.t6, fontWeight: '700', color: Colors.light.text, marginBottom: 4 },
-  bannerSub: { fontSize: FontSize.t7, color: Colors.light.negative },
   stepCard: {
     backgroundColor: Colors.light.background,
     borderRadius: 10,

@@ -11,21 +11,14 @@
  * 작성은 빼」로 뺐고, 제미나이면 값이 다르다는 것을 확인한 뒤 「제미나이로 되돌린다」로
  * 되살렸다. 지금 작성기는 `createGeminiFeedWriter`다.
  *
- * **자동 루프는 꺼져 있다.** `WEDDING_FEED_AUTOWRITE`를 배포에 넣지 않았다 — 이
- * 단추로 한 편 써 보고 품질을 확인한 뒤에 켜는 것이 순서다.
+ * 자동 루프는 `WEDDING_FEED_AUTOWRITE=true`일 때만 돈다. 관리자 응답이 수동 작성
+ * 준비 여부와 예약 작성 상태를 따로 내려 화면이 둘을 같은 것으로 오해하지 않게 한다.
  *
  * 규칙과 한도는 `packages/domain/src/wedding-feed.ts` 한 곳에서만 온다 — 여기서
  * 값을 다시 적으면 화면과 서버가 다른 길이를 막게 된다.
  *
- * **2026-09-15 — 「사이트·기록」 화면의 탭 하나로 자리 잡았다.** `main`의 옛
- * 사이드바는 이 화면을 FAQ·링크 미리보기와 같은 「문구 · 카드」 묶음에 두었는데,
- * 그 묶음이 그대로 「사이트·기록」 탭 넷(FAQ 관리 · 약관·방침 · 링크 미리보기 ·
- * 감사 기록)이 됐다 — 웨딩피드도 사용자에게 노출되는 콘텐츠를 관리자가 직접
- * 쓰고 고치는 화면이라 같은 자리다. `faq.tsx`의 `TABS` 끝에 추가했다. 이 파일
- * 맨 아래 `WeddingFeedRedirect`가 옛 주소를 `/admin/faq?tab=wedding-feed`로
- * 보내고, 본문은 `WeddingFeedPanel`로 이름만 바꿨다.
+ * 사용자 홈에 바로 나가는 콘텐츠라 관리자 사이드바의 독립 메뉴에서 연다.
  */
-import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -35,7 +28,6 @@ import {
   WEDDING_FEED_SOURCE_LABEL,
   WEDDING_FEED_STATUSES,
   WEDDING_FEED_STATUS_LABEL,
-  WEDDING_FEED_TARGET_PUBLISHED,
   WEDDING_FEED_TAXONOMY_LIMITS,
   type WeddingFeedStatus,
 } from '@weddingpick/domain';
@@ -47,13 +39,13 @@ import { apiFetch } from './_api';
 import {
   Card,
   CardGrid,
+  AdminFormModal,
   ConfirmCard,
   type Col,
   DataTable,
   LoadError,
   Page,
   Rows,
-  StatusBanner,
   type TableRow,
 } from './_ui';
 
@@ -87,7 +79,12 @@ type Run = {
   trigger: 'schedule' | 'manual';
 };
 
-type FeedData = { posts: Post[]; runs: Run[]; remainingTopics: number };
+type FeedData = {
+  posts: Post[];
+  runs: Run[];
+  remainingTopics: number;
+  automation: { manualReady: boolean; scheduledEnabled: boolean };
+};
 
 /**
  * 탭과 카테고리 — 2026-09-16 대표 지시 「탭별 카테고리별로 다 설정 가능해야한다」.
@@ -180,7 +177,7 @@ const STATUS_KIND: Record<WeddingFeedStatus, 'ok' | 'warn' | 'dim'> = {
   archived: 'dim',
 };
 
-export function WeddingFeedPanel() {
+export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
   const [data, setData] = useState<FeedData | null>(null);
   const [taxonomy, setTaxonomy] = useState<Taxonomy | null>(null);
   const [loading, setLoading] = useState(true);
@@ -258,8 +255,6 @@ export function WeddingFeedPanel() {
     editing !== null && !activeCategories.some((c) => c.name === form.categoryLabel);
   const groupName = (id: string | null) =>
     id === null ? '없음' : (groups.find((g) => g.id === id)?.name ?? '없음');
-  const publishedCount = posts.filter((p) => p.status === 'published').length;
-  const draftCount = posts.filter((p) => p.status === 'draft').length;
 
   function openNew() {
     setForm(BLANK_FORM);
@@ -557,31 +552,9 @@ export function WeddingFeedPanel() {
     ],
   }));
 
-  /*
-   * 어느 탭에도 안 든 카테고리. **이것이 맨 위에 떠야 한다** — 그 카테고리의 글은
-   * 「전체」에서만 보이고, 오류도 안 나고 목록에서는 멀쩡해 보여서 운영자가
-   * 「왜 이 글이 탭에 안 뜨지」를 묻기 전까지 아무도 모른다.
-   */
-  const ungrouped = taxonomy?.ungrouped ?? [];
-
-  const bannerTone = error ? 'bad' : ungrouped.length > 0 || draftCount > 0 ? 'warn' : 'ok';
-  const bannerTitle = error
-    ? '목록을 불러오지 못했어요'
-    : ungrouped.length > 0
-      ? `어느 탭에도 들지 않은 카테고리 ${ungrouped.length}개가 있어요`
-      : draftCount > 0
-        ? `검토를 기다리는 초안 ${draftCount}건이 있어요`
-        : `공개 글 ${publishedCount}건이 돌고 있어요`;
-  const bannerDetail = error
-    ? error
-    : ungrouped.length > 0
-      ? `${ungrouped.join(' · ')} — 이 카테고리로 쓴 글은 「전체」에서만 보여요. 탭을 정해 주세요.`
-      : `공개 ${publishedCount}건 · 초안 ${draftCount}건 · 목표 ${WEDDING_FEED_TARGET_PUBLISHED}건` +
-        (data ? ` · 자동 작성이 쓸 수 있는 주제 ${data.remainingTopics}개 남음` : '');
-
   return (
     <Page
-      embedded
+      embedded={embedded}
       title="웨딩피드 관리"
       sub="홈 아래쪽에 깔리는 읽을거리 — 직접 쓰거나 자동 작성이 채운다"
       action={{
@@ -596,14 +569,29 @@ export function WeddingFeedPanel() {
 
       {!loading && !error && data ? (
         <>
-          <StatusBanner tone={bannerTone} title={bannerTitle} detail={actionMsg ?? generateMsg ?? bannerDetail} />
+          <AdminFormModal
+            visible={generateMsg !== null || actionMsg !== null}
+            title={actionMsg ? '처리 결과' : '자동 작성 결과'}
+            onClose={() => {
+              setActionMsg(null);
+              setGenerateMsg(null);
+            }}
+          >
+            <Text style={styles.resultText}>{actionMsg ?? generateMsg}</Text>
+          </AdminFormModal>
 
           <CardGrid>
             <Card title="글 목록" sub="등록 · 수정 · 삭제는 직접 한다" action={{ label: '+ 새 글', onPress: openNew, kind: 'brand' }} full>
               <DataTable cols={COLS} rows={rows} empty="등록된 글이 없어요" />
             </Card>
 
-            <Card title="자동 작성 기록" sub="최근 것부터. 아무것도 안 나온 바퀴도 남는다" full>
+            <Card
+              title="자동 작성 기록"
+              sub={`${data.automation.manualReady ? '지금 작성 가능' : '서버 설정 필요'} · ${
+                data.automation.scheduledEnabled ? '예약 작성 켜짐' : '예약 작성 꺼짐'
+              } · 남은 주제 ${data.remainingTopics}개`}
+              full
+            >
               {data.runs.length === 0 ? (
                 <Text style={styles.emptyRuns}>아직 돈 적이 없어요.</Text>
               ) : (
@@ -644,8 +632,12 @@ export function WeddingFeedPanel() {
             </Card>
           </CardGrid>
 
-          {editingGroup ? (
-            <Card title={editingGroup === 'new' ? '새 탭' : '탭 수정'} full>
+          <AdminFormModal
+            visible={editingGroup !== null}
+            title={editingGroup === 'new' ? '새 탭' : '탭 수정'}
+            onClose={() => setEditingGroup(null)}
+          >
+            {editingGroup ? (
               <View style={styles.form}>
                 <Text style={styles.fieldLabel}>탭 이름</Text>
                 <TextInput
@@ -713,20 +705,21 @@ export function WeddingFeedPanel() {
                   </Pressable>
                 </View>
               </View>
-            </Card>
-          ) : null}
+            ) : null}
+          </AdminFormModal>
 
-          {editingCategory ? (
-            <Card
-              title={editingCategory === 'new' ? '새 카테고리' : '카테고리 수정'}
-              note={
-                editingCategory !== 'new' && editingCategory.postCount > 0
-                  ? `이름을 고치면 이 카테고리로 쓴 글 ${editingCategory.postCount.toLocaleString('ko-KR')}편의 카드 위 줄도 함께 바뀌어요.`
-                  : undefined
-              }
-              full
-            >
+          <AdminFormModal
+            visible={editingCategory !== null}
+            title={editingCategory === 'new' ? '새 카테고리' : '카테고리 수정'}
+            onClose={() => setEditingCategory(null)}
+          >
+            {editingCategory ? (
               <View style={styles.form}>
+                {editingCategory !== 'new' && editingCategory.postCount > 0 ? (
+                  <Text style={styles.hint}>
+                    이름을 고치면 이 카테고리로 쓴 글 {editingCategory.postCount.toLocaleString('ko-KR')}편의 카드 위 줄도 함께 바뀌어요.
+                  </Text>
+                ) : null}
                 <Text style={styles.fieldLabel}>카테고리 이름</Text>
                 <TextInput
                   style={styles.input}
@@ -845,11 +838,15 @@ export function WeddingFeedPanel() {
                   </Pressable>
                 </View>
               </View>
-            </Card>
-          ) : null}
+            ) : null}
+          </AdminFormModal>
 
-          {editing ? (
-            <Card title={editing === 'new' ? '새 글 작성' : '글 수정'} full>
+          <AdminFormModal
+            visible={editing !== null}
+            title={editing === 'new' ? '새 글 작성' : '글 수정'}
+            onClose={() => setEditing(null)}
+          >
+            {editing ? (
               <View style={styles.form}>
                 {/*
                   **자유 입력이 아니라 고르기다**(2026-09-16 대표 지시).
@@ -961,8 +958,8 @@ export function WeddingFeedPanel() {
                   </Pressable>
                 </View>
               </View>
-            </Card>
-          ) : null}
+            ) : null}
+          </AdminFormModal>
 
           {deletingGroup ? (
             <ConfirmCard
@@ -1046,15 +1043,15 @@ export function WeddingFeedPanel() {
   );
 }
 
-/** 옛 주소 — 「사이트·기록」의 웨딩피드 관리 탭으로 보낸다. */
-export default function WeddingFeedRedirect() {
-  return <Redirect href="/admin/faq?tab=wedding-feed" />;
+export default function WeddingFeedScreen() {
+  return <WeddingFeedPanel embedded={false} />;
 }
 
 const C = Colors.light;
 
 const styles = StyleSheet.create({
   emptyRuns: { fontSize: FontSize.micro, color: C.textAssistive },
+  resultText: { fontSize: FontSize.t7, lineHeight: LineHeight.t7Loose, color: C.text },
   form: { gap: Spacing.two },
   fieldLabel: { fontSize: FontSize.tab, fontWeight: '700', color: C.textAssistive, marginTop: Spacing.two },
   input: {

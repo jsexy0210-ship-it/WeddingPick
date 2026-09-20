@@ -68,6 +68,12 @@ export const adminWeddingFeedResponseSchema = z.object({
   runs: z.array(weddingFeedRunSchema),
   /** 자동 작성이 쓸 수 있는 주제가 몇 개 남았나. 0이면 더 쓸 것이 없다. */
   remainingTopics: z.number().int(),
+  automation: z.object({
+    /** 관리자가 지금 한 번 쓰기를 실행할 서버 설정이 준비됐는가. 비밀값은 내리지 않는다. */
+    manualReady: z.boolean(),
+    /** 워커가 주기적으로 초안을 채우도록 켜져 있는가. */
+    scheduledEnabled: z.boolean(),
+  }),
 });
 
 export type AdminWeddingFeedResponse = z.infer<typeof adminWeddingFeedResponseSchema>;

@@ -809,9 +809,9 @@ const routes = {
   'GET /v1/admin/members-trend': {
     bucket: 'month',
     points: [
-      { at: '2026-07-01T00:00:00.000Z', signups: 120, total: 1200 },
-      { at: '2026-08-01T00:00:00.000Z', signups: 150, total: 1350 },
-      { at: '2026-09-01T00:00:00.000Z', signups: 90, total: 1440 },
+      { at: '2026-07-01T00:00:00.000Z', signups: 120, withdrawals: 8, total: 1200 },
+      { at: '2026-08-01T00:00:00.000Z', signups: 150, withdrawals: 11, total: 1350 },
+      { at: '2026-09-01T00:00:00.000Z', signups: 90, withdrawals: 6, total: 1440 },
     ],
     current: 1440,
   },
@@ -885,6 +885,34 @@ const routes = {
       },
     ],
     remainingTopics: 16,
+    automation: {
+      manualReady: true,
+      scheduledEnabled: false,
+    },
+  },
+  'GET /v1/admin/wedding-feed/taxonomy': {
+    groups: [
+      { id: '00000000-0000-4000-8000-0000000000a1', name: '준비 가이드', sortOrder: 0, active: true },
+    ],
+    categories: [
+      {
+        id: '00000000-0000-4000-8000-0000000000b1',
+        name: '예산',
+        groupId: '00000000-0000-4000-8000-0000000000a1',
+        sortOrder: 0,
+        active: true,
+        postCount: 1,
+      },
+      {
+        id: '00000000-0000-4000-8000-0000000000b2',
+        name: '웨딩홀',
+        groupId: '00000000-0000-4000-8000-0000000000a1',
+        sortOrder: 1,
+        active: true,
+        postCount: 1,
+      },
+    ],
+    ungrouped: [],
   },
   /* WP-ADM 박람회 관리(admin/expos.tsx) — 검수 대기 한 건 · 정상 한 건을 함께 둔다. */
   'GET /v1/admin/expos': {

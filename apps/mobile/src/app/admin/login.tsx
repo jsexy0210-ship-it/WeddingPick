@@ -100,7 +100,7 @@ export default function AdminLoginScreen() {
        * 지금은 레이아웃이 경로가 바뀔 때마다 토큰을 다시 읽는다. 그래서 이 한 줄로
        * 들어가고, 번들을 다시 파싱할 일이 없다.
        */
-      router.replace('/admin/queue' as never);
+      router.replace('/admin/home' as never);
     } catch {
       setError('서버에 닿지 못했어요. 잠시 뒤 다시 시도해주세요');
     } finally {

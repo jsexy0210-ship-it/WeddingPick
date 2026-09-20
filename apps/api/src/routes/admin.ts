@@ -1067,9 +1067,13 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
    * `posts` 키 하나에 다시 넣어, 실제 글 배열이 `posts.posts`에 있었다 — 부르는
    * 데가 없어서 아무도 겪지 않았을 뿐인 버그다.
    */
-  app.get('/v1/admin/wedding-feed', auth, async () =>
-    weddingFeed.listForAdmin(context.pool, context.storage)
-  );
+  app.get('/v1/admin/wedding-feed', auth, async () => ({
+    ...(await weddingFeed.listForAdmin(context.pool, context.storage)),
+    automation: {
+      manualReady: Boolean(process.env.GEMINI_API_KEY),
+      scheduledEnabled: process.env.WEDDING_FEED_AUTOWRITE === 'true',
+    },
+  }));
 
   app.post<{ Body: unknown }>('/v1/admin/wedding-feed', auth, async (request) =>
     weddingFeed.create(
@@ -1171,15 +1175,19 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
    * 지금 한 번 쓰게 한다. 평소에는 워커가 스스로 돌지만, 운영자가 「지금 필요하다」고
    * 판단하는 자리가 있다.
    *
-   * 클로드로 쓴다(2026-09-15 대표 지시 — 제미나이는 녹음·OCR에만, `CLAUDE.md` 참고).
-   * 모델은 분석 워커와 같은 설정(`config.geminiModel`)에서 온다.
+   * 제미나이로 쓴다. 모델은 분석 워커와 같은 설정(`config.geminiModel`)에서 온다.
    */
   app.post('/v1/admin/wedding-feed/generate', auth, async () => {
     const model = context.config.geminiModel;
+    const apiKey = process.env.GEMINI_API_KEY ?? '';
+
+    if (!apiKey) {
+      throw new ApiError('internal', '자동 작성 서버 설정이 필요합니다. 운영 환경의 Gemini 연결을 확인해주세요.');
+    }
 
     return weddingFeed.runGeneration({
       pool: context.pool,
-      writer: createGeminiFeedWriter({ apiKey: process.env.GEMINI_API_KEY ?? '', model }),
+      writer: createGeminiFeedWriter({ apiKey, model }),
       model,
       trigger: 'manual',
     });
@@ -1187,10 +1195,9 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
 
   // ─── Users ────────────────────────────────────────────────────────────────
   /*
-   * 계정 목록. **탈퇴를 접수한 계정도 보인다** — 이 화면의 첫 번째 쓰임이
-   * «탈퇴했는데 회원정보가 남았는가»를 확인하는 것이라, 탈퇴 계정을 숨기면 그
-   * 질문에 답할 수 없다(2026-09-08 · 0080 트리거 버그가 그렇게 묻혔다).
-   * 삭제가 끝난 계정은 행 자체가 없어 여기 없다 — 그것이 정상이다.
+   * 앱 회원 목록. 카카오 로그인을 거친 일반 회원만 보인다. 관리자 계정·운영
+   * 표본·로그인 신원이 없는 내부 행은 이 화면의 대상이 아니다. 탈퇴 중인 계정은
+   * 신원을 먼저 지우므로 `/v1/admin/withdrawals`에서 원인과 재시도를 관리한다.
    *
    * 이메일·닉네임은 identity.identities에서 온다(structured.users에는 식별자만).
    * 상태는 withdrawal-admin과 같은 기준으로 센다 — 두 화면이 다른 말을 하지
@@ -1199,23 +1206,30 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   app.get('/v1/admin/users', auth, async (request) => {
     const q = request.query as Record<string, string | undefined>;
     const search = (q['search'] ?? '').trim();
-    const filter = q['status'];
     const cursor = q['cursor'];
     const limit = 25;
 
-    const clauses: string[] = [];
+    const clauses: string[] = [
+      'u.is_operator = false',
+      'u.deleted_at IS NULL',
+      `NOT EXISTS (
+         SELECT 1 FROM structured.admin_accounts aa WHERE aa.user_id = u.id
+       )`,
+      `EXISTS (
+         SELECT 1 FROM identity.identities app_identity
+         WHERE app_identity.user_id = u.id AND app_identity.provider = 'kakao'
+       )`,
+    ];
     const params: unknown[] = [];
     let idx = 1;
-
-    if (filter === 'withdrawn') clauses.push('u.deleted_at IS NOT NULL');
-    else if (filter === 'active') clauses.push('u.deleted_at IS NULL');
 
     if (search) {
       clauses.push(
         `(u.display_name ILIKE $${idx} OR u.id::text = $${idx + 1}
           OR EXISTS (
             SELECT 1 FROM identity.identities i
-            WHERE i.user_id = u.id AND (i.email ILIKE $${idx} OR i.nickname ILIKE $${idx})
+            WHERE i.user_id = u.id AND i.provider = 'kakao'
+              AND (i.email ILIKE $${idx} OR i.nickname ILIKE $${idx})
           ))`
       );
       params.push(`%${search}%`, search);
@@ -1279,7 +1293,7 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
        LEFT JOIN LATERAL (
          SELECT provider, email, nickname, last_login_at
          FROM identity.identities
-         WHERE user_id = u.id
+         WHERE user_id = u.id AND provider = 'kakao'
          ORDER BY last_login_at DESC
          LIMIT 1
        ) i ON true
