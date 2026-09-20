@@ -62,6 +62,7 @@ test('app cutover owns admin under /admin on the same 443 server', () => {
   const workflow = readFileSync('.github/workflows/cutover-kakao-app-web.yml', 'utf8');
   assert.match(workflow, /https:\/\/210\.109\.82\.212\/admin\/login/);
   assert.match(workflow, /\/_expo\/static\/js\/web\//);
+  assert.doesNotMatch(workflow, /grep -Fq '웨딩픽 관리자'/);
   assert.match(workflow, /관리자 콘솔 주소가 바뀌었어요/);
 
   assert.match(install, /cmp -s "\$admin_smoke" "\$admin_target\/admin\/login\.html"/);
