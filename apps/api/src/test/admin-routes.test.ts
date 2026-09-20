@@ -201,10 +201,13 @@ describeWithDb('관리자 콘솔 라우트', () => {
       expect(users.find((u) => u.id === leaving.userId)).toBeUndefined();
       expect(users.find((u) => u.id === operator.userId)).toBeUndefined();
 
-      const withdrawn = await get('/v1/admin/users?status=withdrawn', operator.headers);
+      /* 예전 화면의 상태 파라미터가 와도 탈퇴 행을 다시 노출하지 않는다. */
+      const legacyStatus = await get('/v1/admin/users?status=withdrawn', operator.headers);
 
-      expect(withdrawn.json<{ users: { id: string }[]; total: number }>()).toMatchObject({ total: 0 });
-      expect(withdrawn.json<{ users: { id: string }[] }>().users).toEqual([]);
+      expect(legacyStatus.json<{ users: { id: string }[]; total: number }>()).toMatchObject({ total: 1 });
+      expect(legacyStatus.json<{ users: { id: string }[] }>().users).toEqual([
+        expect.objectContaining({ id: kakao.userId }),
+      ]);
 
       const searched = await get('/v1/admin/users?search=떠난', operator.headers);
 
