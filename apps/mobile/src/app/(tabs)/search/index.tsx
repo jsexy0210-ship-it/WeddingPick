@@ -31,7 +31,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ApiError, listVendorRegions, searchVendors } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { savePendingAction } from '@/features/auth/pending-action';
-import { useDepthBack } from '@/features/navigation/depth-back';
 import { PickDoneSheet, UnpickSheet } from '@/features/pick/pick-sheets';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
 import {
@@ -97,7 +96,6 @@ import { DelayedLoader } from '@/features/loading/delayed-loader';
 /* 헤더 · 칩 문구 — spec/strings.ko.json `search`. 피그마 `Search.tsx`(2026-09-14 정본)에서 왔다. */
 const TITLE = '검색';
 const PLACEHOLDER = '업체 이름, 지역, 카테고리 검색';
-const BACK_LABEL = '홈으로 돌아가기';
 const CLEAR_LABEL = '검색어 지우기';
 
 /** 자동완성은 결과보다 빨리 따라와야 한다(시안 WP-SRCH-002). */
@@ -166,7 +164,6 @@ function countTail(item: VendorSummary): string {
 
 export default function SearchScreen() {
   const theme = useTheme();
-  const depthBack = useDepthBack();
   const entry = useLocalSearchParams<EntryParams>();
   const [filters, setFilters] = useState<Filters>({
     q: '',
@@ -466,11 +463,6 @@ export default function SearchScreen() {
    * 걸린 조건을 비운다. 검색 홈이 없어진 뒤로 «돌아갈 곳»이 아니라 «비우는 자리»다
    * (2026-09-11 대표 지시). 화면은 결과에 머문 채 조건 없는 목록으로 돌아간다.
    */
-  /** 헤더 ← — 온 곳으로 돌아간다(피그마 `navigate("/")`). 이력이 없으면(딥링크) 홈. */
-  function goBack() {
-    depthBack();
-  }
-
   /** 자동완성 «업체» 행 — 결과를 건너뛰고 상세로(SPEC §13.7). 검색어는 최근 검색에 남긴다. */
   function openVendorFromAutocomplete(item: VendorSummary) {
     addRecentSearch(trimmedQ, recentSearches).then(setRecentSearches);
@@ -921,29 +913,17 @@ export default function SearchScreen() {
 
         {/* ── 헤더 ── */}
         {/*
-          피그마 `Search.tsx` 헤더(2026-09-14 정본 · 최상위 규칙 1). 루트 시안 16a의
-          두 줄(«검색» 제목 56 + 검색창 60)은 이 앞에 있었고, 피그마가 그 자리를 이긴다.
-          한 덩어리다: 위 12 · 아래 16 · 아래 선 1. 첫 줄은 ← 36 원 + 제목(20/700)과
-          부제(13 · muted), 12 아래에 검색창(48 · radius 16 · 회색 면)과 필터 단추(48 정사각).
+          검색은 Root 5탭의 1Depth다. 제목 줄은 다른 Root와 같은 56 · 좌우 24 · 26/700이고
+          뒤로가기를 두지 않는다. 검색창(48 · radius 16 · 회색 면)과 필터 단추(48 정사각)는
+          제목 줄 아래에 이어진다.
 
           제목은 피그마의 «업체 탐색»이 아니라 «업체 검색»이다 — «탐색»은 금지어(CLAUDE.md 용어).
-          ←는 언제나 선다: 검색은 탭에서 내려왔고(2026-09-14) 홈의 검색바로 들어오므로 돌아갈
-          곳이 있다. 뒤로 갈 이력이 없으면(딥링크) 홈으로 간다.
         */}
         <ThemedView style={[styles.header, { borderBottomColor: theme.border }]}>
           <View style={styles.headerTitleRow}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={BACK_LABEL}
-              onPress={goBack}
-              style={styles.headerBack}>
-              <ProductSymbol name="arrowLeft" size={Layout.iconRow} color={theme.text} />
-            </Pressable>
-            <View style={styles.headerTitleText}>
-              <ThemedText type="f20" style={[styles.bold, styles.title]}>
-                {TITLE}
-              </ThemedText>
-            </View>
+            <ThemedText type="f26" style={[styles.bold, styles.title]}>
+              {TITLE}
+            </ThemedText>
           </View>
           <View style={styles.headerSearchRow}>
             {renderSearchBox()}
@@ -1224,38 +1204,24 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
   },
 
-  // ── 헤더 — 피그마 `Search.tsx`(2026-09-14 정본) ──
-  /* 규격서 search.txt 「div 430×134 pad 12 20 16 20」 — 위 12 · 좌우 20(pageX) · 아래 16 · 아래 선 1. */
+  // ── Root 1Depth 제목 56 + 검색 도구 48 ──
   header: {
-    paddingTop: Layout.inlineGap,
-    paddingBottom: Spacing.three,
-    paddingHorizontal: Layout.pageX,
     borderBottomWidth: Border.hairline,
   },
-  /* `mb-3 flex items-center gap-2` — ← 와 제목 사이 8, 아래 12. */
+  /* 홈 · Pick · 웨딩노트 · MY와 같은 제목 규칙 — 56 · 좌우 24 · 26/700. */
   headerTitleRow: {
+    height: Layout.navBar,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
-    marginBottom: Layout.inlineGap,
-  },
-  headerTitleText: {
-    flex: 1,
-    minWidth: 0,
-  },
-  /* ← `h-9 w-9 rounded-full` — 36 원. */
-  headerBack: {
-    width: Layout.headerBack,
-    height: Layout.headerBack,
-    borderRadius: Radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: Layout.gutter,
   },
   /* 검색창과 필터 단추 `flex gap-2`. */
   headerSearchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
+    paddingHorizontal: Layout.gutter,
+    paddingBottom: Spacing.three,
   },
   /* 필터 단추 `h-12 w-12 rounded-2xl bg-secondary` — 48 정사각 · radius 16. */
   headerFilterBtn: {
@@ -1353,10 +1319,9 @@ const styles = StyleSheet.create({
   tracked: {
     letterSpacing: LetterSpacing.p05,
   },
-  /* 규격서 제목 «lh 28 · ls -0.4px». */
+  /* Root 1Depth 제목 — MY와 같은 26/700 · ls -0.65px. */
   title: {
-    lineHeight: LineHeight.lh28,
-    letterSpacing: LetterSpacing.n04,
+    letterSpacing: LetterSpacing.n065,
   },
   /* `micro`는 기본이 700이다. 피그마에서 regular인 작은 글자(부제 · 지역 · 결과 수 · 꼬리)는 400으로 되돌린다. */
   regular: {

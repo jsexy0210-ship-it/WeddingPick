@@ -15,9 +15,10 @@ export function PickSectionTabs({ active }: { active: PickSection }) {
 
   function move(next: PickSection) {
     if (next === active) return;
-    if (next === 'pick') return void router.replace('/pick');
-    if (next === 'recommendations') return void router.replace('/recommendations' as never);
-    router.replace('/pick/wedding_info_company' as never);
+    router.replace({
+      pathname: '/pick',
+      params: next === 'pick' ? {} : { section: next },
+    } as never);
   }
 
   return (

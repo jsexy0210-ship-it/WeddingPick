@@ -63,13 +63,28 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(s).not.toContain("const SUBTITLE = '우리 조건에 맞는 선택만 모았어요'");
     expect(s).toContain("sortSlot: { position: 'absolute', right: Layout.pageX }");
   });
-  it('Pick 3탭과 compare 연결을 유지한다', () => {
+  it('Pick 3보기는 같은 Root 안에서 전환하고 compare로 이어진다', () => {
     const s = mobile('features/pick/pick-section-tabs.tsx');
     expect(s).toContain("label: '나의 Pick'");
     expect(s).toContain("label: '웨딩픽 추천'");
     expect(s).toContain("label: '비교함'");
-    expect(s).toContain("router.replace('/pick/wedding_info_company'");
+    expect(s).toContain("pathname: '/pick'");
+    expect(s).not.toContain("router.replace('/recommendations'");
+    expect(s).not.toContain("router.replace('/pick/wedding_info_company'");
+
+    const pick = mobile('app/(tabs)/pick/index.tsx');
+    expect(pick).toContain("requestedSection === 'recommendations' || requestedSection === 'compare'");
+    expect(pick).toContain("section === 'recommendations'");
+    expect(pick).toContain("section === 'compare'");
+    expect(pick).toContain('<RecommendationsContent />');
+    expect(pick).toContain('<CompareBasket');
+
+    const recommendations = mobile('app/(tabs)/(home)/recommendations.tsx');
+    expect(recommendations).toContain("pathname: '/pick'");
+    expect(recommendations).toContain("section: 'recommendations'");
+    expect(recommendations).not.toContain('useDepthBack');
     expect(mobile('app/(tabs)/pick/[category].tsx')).toContain("pathname: '/search/compare'");
+    expect(mobile('app/(tabs)/pick/[category].tsx')).not.toContain('<PickSectionTabs');
   });
   it('최초 예산은 만원 입력을 원으로 환산한다', () => {
     const s = mobile('app/(tabs)/wedding/index.tsx');

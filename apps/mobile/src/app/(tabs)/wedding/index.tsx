@@ -28,7 +28,7 @@ import type {
   ExpenseSummaryResponse,
   WeddingEvent,
 } from '@weddingpick/api-contract';
-import { TERMS, isBeforeWedding, lifecycle, manwon } from '@weddingpick/domain';
+import { TERMS, budgetView, isBeforeWedding, lifecycle, manwon } from '@weddingpick/domain';
 import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
@@ -39,6 +39,7 @@ import {
   Border,
   Elevation,
   Layout,
+  LetterSpacing,
   ProductSymbol,
   Radius,
   Spacing,
@@ -109,6 +110,7 @@ export default function WeddingScreen({
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [events, setEvents] = useState<WeddingEvent[] | null>(null);
   const [expenses, setExpenses] = useState<ExpenseSummaryResponse | null>(null);
+  const [expensesError, setExpensesError] = useState(false);
   const [consults, setConsults] = useState<ConsultationRecord[] | null>(null);
   const [tab, setTab] = useState<Tab>(initialTab ?? parseTab(params.tab) ?? 'calendar');
   const [toast, setToast] = useState<string | null>(null);
@@ -131,7 +133,15 @@ export default function WeddingScreen({
         const weddingId = current.weddingId;
         // 세 목록은 따로 도착한다 — 가장 느린 것이 나머지를 가리지 않게 각각 반영한다.
         void listWeddingEvents(weddingId).then((r) => { if (active) setEvents(r.events); }).catch(() => undefined);
-        void getExpenses(weddingId).then((r) => { if (active) setExpenses(r); }).catch(() => undefined);
+        void getExpenses(weddingId)
+          .then((r) => {
+            if (!active) return;
+            setExpenses(r);
+            setExpensesError(false);
+          })
+          .catch(() => {
+            if (active) setExpensesError(true);
+          });
         void listConsultations(weddingId).then((r) => { if (active) setConsults(r.records); }).catch(() => undefined);
       })
       .catch(() => undefined);
@@ -176,7 +186,7 @@ export default function WeddingScreen({
 
   const header = (
     <View style={styles.header}>
-      <ThemedText type="f28" style={styles.bold}>
+      <ThemedText type="f26" style={[styles.bold, styles.rootTitle]}>
         {TERMS.ourWedding}
       </ThemedText>
       {!weddingOver && weddingId ? (
@@ -215,17 +225,47 @@ export default function WeddingScreen({
   const budgetManwon = Number(budgetDraft.replace(/[^\d]/g, ''));
   const budgetAmount = budgetManwon * 10_000;
   const budgetReady = Number.isFinite(budgetManwon) && budgetManwon > 0;
+  const budgetIsSet = expenses?.budget.set === true;
 
-  async function saveInitialBudget() {
+  function openBudgetEditor() {
+    if (!expenses || !expenses.budget.set) return;
+    setBudgetDraft(
+      String(Math.round(expenses.budget.budget / 10_000)).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+    );
+    setBudgetOpen(true);
+  }
+
+  function retryExpenses() {
+    if (!weddingId) return;
+    setExpensesError(false);
+    setExpenses(null);
+    void getExpenses(weddingId)
+      .then(setExpenses)
+      .catch(() => setExpensesError(true));
+  }
+
+  async function saveBudget() {
     if (!weddingId || !budgetReady || budgetSaving) return;
+    const editing = budgetIsSet;
     setBudgetSaving(true);
     try {
       await setBudget(weddingId, budgetAmount);
-      const next = await getExpenses(weddingId);
-      setExpenses(next);
+      setExpenses((current) =>
+        current
+          ? {
+              ...current,
+              budget: budgetView({ budget: budgetAmount, spent: current.paidTotal }),
+            }
+          : current
+      );
       setBudgetOpen(false);
+      setToast(editing ? '총예산을 바꿨어요' : '총예산을 등록했어요');
     } catch {
-      setToast('예산을 등록하지 못했어요. 다시 시도해주세요.');
+      setToast(
+        editing
+          ? '총예산을 바꾸지 못했어요. 잠시 후 다시 시도해 주세요.'
+          : '총예산을 등록하지 못했어요. 잠시 후 다시 시도해 주세요.'
+      );
     } finally {
       setBudgetSaving(false);
     }
@@ -282,7 +322,12 @@ export default function WeddingScreen({
               }
             />
           ) : tab === 'budget' ? (
-            <BudgetPanel expenses={expenses} />
+            <BudgetPanel
+              expenses={expenses}
+              error={expensesError}
+              onEditBudget={openBudgetEditor}
+              onRetry={retryExpenses}
+            />
           ) : (
             <ConsultPanel
               records={consults ?? []}
@@ -302,13 +347,17 @@ export default function WeddingScreen({
 
       <BottomSheet
         visible={budgetOpen}
-        dismissible={false}
-        onRequestClose={() => undefined}
+        dismissible={budgetIsSet && !budgetSaving}
+        onRequestClose={() => setBudgetOpen(false)}
         testID="initial-budget-sheet">
         <SheetPanel style={styles.budgetSheet}>
-          <ThemedText type="t3">예산을 먼저 등록해주세요</ThemedText>
+          <ThemedText type="t3">
+            {budgetIsSet ? '총예산을 바꿔볼까요?' : '총예산을 정해볼까요?'}
+          </ThemedText>
           <ThemedText type="body" themeColor="textSecondary">
-            예산현황을 보려면 전체 예산이 필요해요. 등록한 뒤에는 언제든 바꿀 수 있어요.
+            {budgetIsSet
+              ? '바꾼 예산으로 남은 금액과 사용률을 다시 계산해요.'
+              : '총예산을 입력하면 남은 금액과 사용률을 함께 보여드려요.'}
           </ThemedText>
           <View style={[styles.budgetInputWrap, { borderColor: theme.fieldBorder }]}>
             <TextInput
@@ -322,6 +371,7 @@ export default function WeddingScreen({
                 )
               }
               keyboardType="number-pad"
+              editable={!budgetSaving}
               placeholder="예: 5,000"
               placeholderTextColor={theme.textDisabled}
               accessibilityLabel="전체 예산 만원 단위"
@@ -332,9 +382,9 @@ export default function WeddingScreen({
           <ActionButton
             variant="primary"
             size="xlarge"
-            label={budgetSaving ? '등록하는 중…' : '예산 등록'}
+            label={budgetSaving ? '저장하는 중…' : budgetIsSet ? '변경 내용 저장' : '총예산 등록'}
             disabled={!budgetReady || budgetSaving}
-            onPress={() => void saveInitialBudget()}
+            onPress={() => void saveBudget()}
           />
         </SheetPanel>
       </BottomSheet>
@@ -522,8 +572,37 @@ function CalendarPanel({
    예산현황 패널 — 총 사용액 · 총 예산 · 가로 진행바 8 · 잔여/사용률 · 항목별 막대
    04-wedding-note 정본은 원형 그래프를 쓰지 않는다.
 ──────────────────────────────────────────── */
-function BudgetPanel({ expenses }: { expenses: ExpenseSummaryResponse | null }) {
+function BudgetPanel({
+  expenses,
+  error,
+  onEditBudget,
+  onRetry,
+}: {
+  expenses: ExpenseSummaryResponse | null;
+  error: boolean;
+  onEditBudget: () => void;
+  onRetry: () => void;
+}) {
   const theme = useTheme();
+
+  if (!expenses) {
+    return (
+      <View style={[styles.panel, { backgroundColor: theme.background, borderColor: theme.border }]}>
+        <ThemedText type="t6" style={styles.bold}>
+          {TABS[2].label}
+        </ThemedText>
+        <View style={styles.budgetSummary}>
+          <ThemedText type="t6" themeColor={error ? 'negative' : 'textSecondary'}>
+            {error ? '예산을 불러오지 못했어요' : '예산을 불러오는 중이에요'}
+          </ThemedText>
+          {error ? (
+            <ActionButton label="다시 불러오기" onPress={onRetry} />
+          ) : null}
+        </View>
+      </View>
+    );
+  }
+
   const budget = expenses?.budget;
   const set = budget?.set === true ? budget : null;
   const total = set?.budget ?? 0;
@@ -534,9 +613,23 @@ function BudgetPanel({ expenses }: { expenses: ExpenseSummaryResponse | null }) 
 
   return (
     <View style={[styles.panel, { backgroundColor: theme.background, borderColor: theme.border }]}>
-      <ThemedText type="t6" style={styles.bold}>
-        {TABS[2].label}
-      </ThemedText>
+      <View style={styles.budgetPanelHead}>
+        <ThemedText type="t6" style={[styles.bold, styles.grow]}>
+          {TABS[2].label}
+        </ThemedText>
+        {set ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="총예산 수정"
+            onPress={onEditBudget}
+            hitSlop={Spacing.two}
+            style={({ pressed }) => (pressed ? styles.pressed : null)}>
+            <ThemedText type="f13" themeColor="tint" style={styles.bold}>
+              총예산 수정
+            </ThemedText>
+          </Pressable>
+        ) : null}
+      </View>
 
       {set ? (
         <View style={styles.budgetSummary}>
@@ -735,12 +828,10 @@ const styles = StyleSheet.create({
   },
   container: { flex: 1 },
   safeArea: { flex: 1 },
-  /* 제목 `px-5 pb-5 pt-6` — 좌우는 정본 24 · 위 24 · 아래 20(같은 값의 listGap). 28은 스케일에 없어 t2(26)다. */
-  /* 규격서 our-wedding.txt 「header 430×86 pad 24 20 20 20」 · 제목 «28/700 · lh 42». */
+  /* Root 1Depth 제목 — 홈 · 검색 · Pick · MY와 같은 56 · 좌우 24 · 26/700. */
   header: {
-    paddingHorizontal: Layout.pageX,
-    paddingTop: Spacing.four,
-    paddingBottom: Layout.listGap,
+    height: Layout.navBar,
+    paddingHorizontal: Layout.gutter,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -751,6 +842,7 @@ const styles = StyleSheet.create({
   scrollContent: { paddingBottom: Spacing.four },
 
   bold: { fontWeight: 700 },
+  rootTitle: { letterSpacing: LetterSpacing.n065 },
   regular: { fontWeight: 400 },
   /* 규격서의 굵기 600 · 500 — spec/tokens.json typography.$weights의 피그마 예외. */
   semibold: { fontWeight: 600 },
@@ -878,6 +970,11 @@ const styles = StyleSheet.create({
   // ── 예산현황 ──
   /* 정본 sumRow + track + sumNote. 원형 그래프를 쓰지 않는다. */
   budgetSummary: { marginTop: Spacing.three },
+  budgetPanelHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Layout.inlineGap,
+  },
   budgetSummaryRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
