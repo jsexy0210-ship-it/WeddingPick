@@ -2,7 +2,7 @@
 /*
  * node_modules가 **반쯤 풀린 상태**인지 보고, 그렇다면 다시 설치한다.
  *
- * 2026-09-09, Render의 weddingpick-app-web이 네 번 연속 빌드에 실패했다. GitHub CI는
+ * 2026-09-09, 이전 앱 웹 빌드가 네 번 연속 실패했다. GitHub CI는
  * 초록이었고 로컬 `npm run export:web`도 exit 0이었다. 빌드 로그의 실제 원인은 이랬다:
  *
  *   ==> cache extraction failed, continuing without cache

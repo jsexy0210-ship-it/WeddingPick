@@ -92,8 +92,8 @@
 
 ### CI·승인·운영 배포 순서가 하나로 연결되지 않음
 
-- `.github/workflows/main.yml:11`은 Render main 자동배포가 Actions와 독립임을 명시한다. `:105,114,141`의 CI·승인 의존성은 마이그레이션을 제어하지만 Render의 자동배포를 막지 않는다.
-- 초기 SHA `e5f3b581` 검수에서 Actions 실행 `34474697265`는 staging 대기였으나 Render 상태 실행 `34474995900`의 로그는 API `autoDeploy=yes`, 같은 SHA 배포 완료를 보여줬다. 이는 당시 확인한 증거이며, 최신 SHA 배포 완료를 주장하는 자료가 아니다.
+- `.github/workflows/main.yml:11`은 이전 호스팅 main 자동배포가 Actions와 독립임을 명시한다. `:105,114,141`의 CI·승인 의존성은 마이그레이션을 제어하지만 이전 호스팅의 자동배포를 막지 않는다.
+- 초기 SHA `e5f3b581` 검수에서 Actions 실행 `34474697265`는 staging 대기였으나 이전 호스팅 상태 실행 `34474995900`의 로그는 API `autoDeploy=yes`, 같은 SHA 배포 완료를 보여줬다. 이는 당시 확인한 증거이며, 최신 SHA 배포 완료를 주장하는 자료가 아니다.
 - `apps/api/src/server.ts:145–158`은 `schema.ok=false`여도 HTTP 200·`ok:true`를 반환한다. `main.yml:183,233`은 본문을 버리고 HTTP 200만 검사하므로 스키마 미적용도 성공으로 통과할 수 있다. 배포 SHA도 검증하지 않는다.
 - `scripts/render-trigger-deploy.py:60–63`은 검증된 SHA를 지정하지 않고 최신 main을 배포한다. 다른 재배포 경로까지 함께 통제해야 한다.
 

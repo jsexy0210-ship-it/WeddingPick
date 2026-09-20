@@ -85,8 +85,8 @@ ADMIN_LOGIN_ID
 ADMIN_PASSWORD_HASH
 ```
 
-`infra/render-env.yml`의 `secrets` 목록에 이름을 더하면 GitHub Secrets의 같은 이름에서
-Render로 흘러간다. 값을 이 파일에 적지 않는다.
+`삭제된 이전 호스팅 환경 선언`의 `secrets` 목록에 이름을 더하면 GitHub Secrets의 같은 이름에서
+이전 호스팅로 흘러간다. 값을 이 파일에 적지 않는다.
 
 ### 해시는 사람이 만든다
 
@@ -118,7 +118,7 @@ npm run admin:password-hash    # 표준입력으로 받아 해시만 찍는다
 | 인증 게이트 | `apps/mobile/src/app/admin/_layout.tsx` — 운영자 세션이 없으면 로그인으로 |
 | 로그인 API | `POST /v1/admin/sessions` |
 | 해시 도구 | `apps/api/src/admin-password.ts` |
-| 환경변수 이름 | `infra/render-env.yml` |
+| 환경변수 이름 | `삭제된 이전 호스팅 환경 선언` |
 
 `admin/index.tsx`의 무조건 리다이렉트를 먼저 없앤다 — 인증을 확인하기 전에 내부 화면으로
 보내는 줄이 지금 문제의 시작이다.
@@ -156,13 +156,13 @@ npm run admin:password-hash    # 표준입력으로 받아 해시만 찍는다
 
 「반영하기」가 당길 **배포 훅 주소**가 있어야 한다.
 
-1. Render → `weddingpick-web` → Settings → Deploy Hook에서 주소를 만든다
-2. GitHub Secrets에 `RENDER_WEB_DEPLOY_HOOK`으로 넣는다
-3. `infra/render-env.yml`이 이미 그 이름을 선언해 두었으므로 env sync가 API로 흘려보낸다
+1. 이전 호스팅 → `weddingpick-web` → Settings → Deploy Hook에서 주소를 만든다
+2. GitHub Secrets에 `삭제된_배포_훅`으로 넣는다
+3. `삭제된 이전 호스팅 환경 선언`이 이미 그 이름을 선언해 두었으므로 env sync가 API로 흘려보낸다
 
 없으면 저장은 되고 「반영하기」만 무엇이 빠졌는지 말한다.
 
-**Render API 키를 쓰지 않는다.** API 키는 계정의 모든 서비스를 건드릴 수 있어 인터넷에 열린 서버에 두기에는 넓다. 배포 훅은 웹 서비스 하나만 다시 배포하는 주소다.
+**이전 호스팅 API 키를 쓰지 않는다.** API 키는 계정의 모든 서비스를 건드릴 수 있어 인터넷에 열린 서버에 두기에는 넓다. 배포 훅은 웹 서비스 하나만 다시 배포하는 주소다.
 
 ### 비워두면 기본값
 
@@ -267,5 +267,5 @@ Actions → **관리자 운영 권한** → Run workflow → 사용자 id를 넣
 
 슈퍼 관리자를 전부 잃었다면(모두 꺼졌거나 지워졌다면) 환경변수 경로가 저절로 다시 열린다.
 `ADMIN_LOGIN_ID` · `ADMIN_PASSWORD_HASH`로 들어가 계정 관리에서 슈퍼 관리자를 새로 만들면 된다.
-값은 GitHub Secrets → `render-env-sync`로 들어가는 그 값이고, 만드는 도구는 위에 적힌
+값은 GitHub Secrets → `삭제된 이전 호스팅 동기화`로 들어가는 그 값이고, 만드는 도구는 위에 적힌
 `scripts/admin-password-hash.ts` 그대로다.

@@ -170,7 +170,9 @@ sudo -n nginx -t
 sudo -n systemctl reload nginx
 
 curl --fail --silent --show-error --connect-timeout 5 --max-time 10   https://210.109.82.212/admin/login -o /tmp/wp-admin-preview.html
-grep -qi '<html' /tmp/wp-admin-preview.html
+cmp -s /tmp/wp-admin-preview.html "$admin_root/admin/login.html"
+grep -Fq '/_expo/static/js/web/' /tmp/wp-admin-preview.html
+! grep -Eq '관리자 콘솔 주소가 바뀌었어요|210\.109\.82\.212:8443' /tmp/wp-admin-preview.html
 
 curl --fail --silent --show-error --connect-timeout 5 --max-time 10   https://210.109.82.212/website.html -o /tmp/wp-web-preview.html
 grep -qi '<html' /tmp/wp-web-preview.html

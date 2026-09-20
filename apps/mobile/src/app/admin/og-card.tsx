@@ -243,7 +243,7 @@ export function OgCardPanel() {
               <Text style={styles.previewDesc} numberOfLines={2}>
                 {shown('ogDescription')}
               </Text>
-              <Text style={styles.previewHost}>210.109.82.212:9443</Text>
+              <Text style={styles.previewHost}>210.109.82.212</Text>
             </View>
           </View>
         </View>

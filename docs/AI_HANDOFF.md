@@ -5,7 +5,7 @@
 > 새 세션이 시작되면 이 파일을 먼저 읽어라. 작업이 끝나면 이 파일을 업데이트하고 커밋해라.
 >
 > **현행 인프라 우선 규칙 — 2026-09-18:** API와 앱웹 443은 KakaoCloud가 운영 기준이다.
-> Render API는 중지됐고 Render 빌드·재배포 경로는 폐기됐다. 아래의 Render 장애·배포 절차는
+> 이전 호스팅 API는 중지됐고 이전 호스팅 빌드·재배포 경로는 폐기됐다. 아래의 이전 호스팅 장애·배포 절차는
 > 당시 이력으로만 읽고 실행 지침으로 재사용하지 않는다. 현재 상태는 `PROJECT_STATUS.md`,
 > 배포 절차는 `docs/deployment.md`, 실제 동작은 최신 `main`을 따른다.
 
@@ -15,7 +15,7 @@
 
 - PR #288이 main에 병합돼 신규 웹뷰는 URL query로 세션 토큰을 전달하지 않는다. 구버전 `wp_token`은 제거만 하고 인증에 사용하지 않는다.
 - 관리자 401은 세션 만료로 처리하고 403은 권한 부족으로 분리해 유효한 세션을 지우지 않는다. 로그아웃은 캡처한 관리자 서버 세션 폐기를 시도한다.
-- 운영 API는 KakaoCloud VM이 기준이며 Render API 배포 경로는 폐기됐다. main push 자동 CI/배포는 유지한다.
+- 운영 API는 KakaoCloud VM이 기준이며 이전 호스팅 API 배포 경로는 폐기됐다. main push 자동 CI/배포는 유지한다.
 - API 컨테이너는 `RUN_WORKER_IN_API=false`를 강제하고 별도 `weddingpick-worker`를 같은 이미지로 갱신한다. 운영 검증에서는 두 컨테이너의 revision 일치까지 확인한다.
 - 운영 DB 쓰기·정적 컷오버는 `production` environment 승인 게이트를 사용한다. 롤백은 실패 시 승인 대기로 막지 않는다.
 
@@ -33,11 +33,11 @@
 
 ---
 
-## 과거 기록: Render 배포가 멈춰 있었다 — 2026-09-09 05:24 실측
+## 과거 기록: 이전 호스팅 배포가 멈춰 있었다 — 2026-09-09 05:24 실측
 
-> **현재 상태가 아니다.** Render API/빌드 경로는 2026-09-18 기준 폐기됐다. 이 절은 당시 장애 원인과 교훈을 보존하는 이력이며, 현재 배포 복구 절차로 사용하지 않는다.
+> **현재 상태가 아니다.** 이전 호스팅 API/빌드 경로는 2026-09-18 기준 폐기됐다. 이 절은 당시 장애 원인과 교훈을 보존하는 이력이며, 현재 배포 복구 절차로 사용하지 않는다.
 
-**Render 워크스페이스의 빌드 시간이 소진됐다. 코드 문제가 아니다.**
+**이전 호스팅 워크스페이스의 빌드 시간이 소진됐다. 코드 문제가 아니다.**
 
 ```
 ==> Build canceled: your workspace has run out of build pipeline minutes
@@ -46,11 +46,11 @@
 
 서비스 이벤트 이름이 `pipeline_minutes_exhausted`다. **빌드가 시작조차 못 하고 취소된다.**
 2026-09-09에 main에 들어간 커밋이 전부 이 벽에 부딪혔다 — 04:50 · 04:56 · 05:02 · 05:03 · 05:14
-다섯 회차 전부 `deploy_ended · failed`. Render 서비스 4개가 모두 「Failed deploy」다(DB는 정상).
+다섯 회차 전부 `deploy_ended · failed`. 이전 호스팅 서비스 4개가 모두 「Failed deploy」다(DB는 정상).
 
 ### 여기서 배운 것 — 「배포 성공」을 GitHub만 보고 말하지 마라
 
-`main.yml`의 Deploy 잡은 **Render에 배포를 요청하는 데까지만** 초록이다. 그 뒤 Render가
+`main.yml`의 Deploy 잡은 **이전 호스팅에 배포를 요청하는 데까지만** 초록이다. 그 뒤 이전 호스팅이
 자기 인프라에서 빌드하다 실패해도 GitHub은 초록으로 끝난다. 오늘 여러 세션이 「배포까지
 성공」이라고 보고했고 전부 틀렸다. **배포 확인은 `render-deploy-status.yml`을 돌려
 `deploy_ended`의 `deployStatus`를 봐야 한다.**
@@ -58,12 +58,12 @@
 ### 풀리기 전까지
 
 머지는 해도 된다(코드는 main에 쌓인다). 다만 **화면에는 아무것도 반영되지 않는다.**
-「배포 확인」을 완료로 적지 마라. 사람이 Render 대시보드 → Workspace Settings →
+「배포 확인」을 완료로 적지 마라. 사람이 이전 호스팅 대시보드 → Workspace Settings →
 Build Pipeline에서 요금제나 빌드 지출 한도를 올려야 한다.
 
 ### 곁가지
 
-`weddingpick-api`(Oregon)가 `render.yaml`에 없는 서비스인데 워크스페이스에 떠 있다.
+`weddingpick-api`(Oregon)가 `삭제된 이전 호스팅 선언`에 없는 서비스인데 워크스페이스에 떠 있다.
 정리 대상인지 확인이 필요하다 — 쓰지 않는다면 빌드 시간을 갉아먹고 있을 수 있다.
 
 ---
@@ -80,10 +80,10 @@ Build Pipeline에서 요금제나 빌드 지출 한도를 올려야 한다.
 | 공공데이터 계정 | **운영계정 하나로 통일** | `SBIZ_API_KEY` 시크릿에는 **운영계정 키**만 넣는다. 개발계정 키는 하루 1,000건이고 오퍼레이션마다 승인 범위가 달라 같은 코드가 어떤 날은 되고 어떤 날은 403이다. 포털 활용신청을 운영계정으로 올려 승인받은 뒤 시크릿을 교체한다. 코드는 `collect.ts`의 `assertServiceOk`가 resultCode를 읽어 무엇을 해야 하는지 말해준다 |
 | 카카오 동의항목 · 만 14세 | **로그인 화면 체크박스로 되돌렸다**(2026-09-09 사용자 오더 「14세 로그인 바꾸기 이전으로 싹다 롤백」) | `fd111f0` 직전 상태다 — 로그인 화면의 「만 14세 이상이에요」 체크박스로 자기 신고를 받고, 서버는 그 값을 믿는다. 카카오 출생 연도 판정 · 경계 나이 차단 · 수집 항목 안내 블록은 **전부 되돌렸다**. 되돌린 범위는 로그인 · 나이 · 카카오 동의항목 파일뿐이다(사용자가 범위를 그렇게 정했다) — 탈퇴 화면 문구와 온보딩 완료 문구는 그대로 두었다. **주의**: 카카오 콘솔에는 「필수 출생 연도 · 프로필」로 신청한 이력이 남아 있어 코드와 콘솔이 어긋난다. 다시 신청하기 전에 어느 쪽에 맞출지 사용자에게 확인한다 |
 | 후기 표기 | **별점 · 무조건 5.0 만점 환산** | **`SPEC.md` §6.1 「별점을 쓰지 않습니다 · 평점 숫자를 만들지 않습니다」와 용어집의 「별점 → 이용한 사람들의 경험」은 이 결정으로 무효다**(2026-09-09). 명세보다 사용자 결정이 앞선다. **되돌리지 마라** — 시안만 보고 3축 3지선다로 «고치면» 결정을 뒤집는 것이다. 평균은 서버가 이미 준다(`usageScore.average` 1~5). 그리는 곳: 업체 상세 ⑧ · 후기 목록 행. 컴포넌트는 `packages/ui/src/rating-stars.tsx` |
-| 관리자 화면 | **`/admin` 하나로 통일** | 관리자가 둘이었다. `weddingpick-app-web.onrender.com/admin`(expo 콘솔 27화면)만 남기고 `admin.html`·`weddingpick-admin` 서비스·`admin.weddingpick.kr`을 지웠다(2026-09-09 사용자 결정). **`admin.html`에만 있던 화면 넷은 사라졌다** — 개인정보 검토(`pii-reviews`) · 이의제기(`objections`) · 결정 브리핑·열린 결정(`decisions/*`). **넷 다 `/admin`에 새로 만들어 넣었다** — 개인정보 검토 · 후기 이의제기 · 자동 결정 현황(브리핑+열린 결정 한 화면). 없어진 기능은 없다. **2026-09-10에 이 통일 결정을 되돌렸다** — 관리자 콘솔을 다시 별도 출처(`weddingpick-admin.onrender.com/admin/*`)로 분리했다. 화면 코드는 그대로 두고 배포만 갈랐다. 얻는 것은 출처 분리 하나이고 IP 차단은 얻지 못한다 — 범위와 전환 절차는 `docs/admin-origin-split.md` |
-| 커스텀 도메인 | **폐기했다**(2026-09-11 대표 지시) | `weddingpick.kr` · `admin.weddingpick.kr` · `www.weddingpick.kr` **셋 다 이름 풀이가 안 된다**(2026-09-09 실측, `NXDOMAIN`). `main.yml`의 「Custom domains」 스텝은 Render 쪽에 **등록만** 하고, 실제 레코드는 등록처(가비아)에 사람이 넣어야 한다. 그래서 워크플로가 초록이어도 도메인은 죽어 있다. onrender 주소는 정상. **이 주소로 재현한 장애 보고는 전부 무효다** — 열린 적이 없다 |
+| 관리자 화면 | **`/admin` 하나로 통일** | 관리자가 둘이었다. `210.109.82.212/admin`(expo 콘솔 27화면)만 남기고 `admin.html`·`weddingpick-admin` 서비스·`admin.weddingpick.kr`을 지웠다(2026-09-09 사용자 결정). **`admin.html`에만 있던 화면 넷은 사라졌다** — 개인정보 검토(`pii-reviews`) · 이의제기(`objections`) · 결정 브리핑·열린 결정(`decisions/*`). **넷 다 `/admin`에 새로 만들어 넣었다** — 개인정보 검토 · 후기 이의제기 · 자동 결정 현황(브리핑+열린 결정 한 화면). 없어진 기능은 없다. **2026-09-10에 이 통일 결정을 되돌렸다** — 관리자 콘솔을 다시 별도 출처(`210.109.82.212/admin/*`)로 분리했다. 화면 코드는 그대로 두고 배포만 갈랐다. 얻는 것은 출처 분리 하나이고 IP 차단은 얻지 못한다 — 범위와 전환 절차는 `현재 KakaoCloud 단일 origin 운영 기준` |
+| 커스텀 도메인 | **폐기했다**(2026-09-11 대표 지시) | `weddingpick.kr` · `admin.weddingpick.kr` · `www.weddingpick.kr` **셋 다 이름 풀이가 안 된다**(2026-09-09 실측, `NXDOMAIN`). `main.yml`의 「Custom domains」 스텝은 이전 호스팅 쪽에 **등록만** 하고, 실제 레코드는 등록처(가비아)에 사람이 넣어야 한다. 그래서 워크플로가 초록이어도 도메인은 죽어 있다. onrender 주소는 정상. **이 주소로 재현한 장애 보고는 전부 무효다** — 열린 적이 없다 |
 | 광고 실운영 | **오더 대기** | 스토어 등록정보의 「광고 포함」은 «없음» |
-| 국외 이전 | **2026-09-09 당시 결정 기록** | 당시 Render/Neon/외부 처리자 기준으로 고지 원칙을 정한 기록이다. **현재 운영 인프라는 KakaoCloud API·앱웹 + KakaoCloud Object Storage + Neon PostgreSQL**이며 Render API는 폐기됐다. 현재 국외 이전·처리위탁 고지는 실제 운영 구성과 최신 개인정보처리방침을 기준으로 다시 판단한다. 이 행의 과거 미국/싱가포르 인프라 설명을 현재 구성으로 재사용하지 않는다. |
+| 국외 이전 | **2026-09-09 당시 결정 기록** | 당시 이전 호스팅/Neon/외부 처리자 기준으로 고지 원칙을 정한 기록이다. **현재 운영 인프라는 KakaoCloud API·앱웹 + KakaoCloud Object Storage + Neon PostgreSQL**이며 이전 호스팅 API는 폐기됐다. 현재 국외 이전·처리위탁 고지는 실제 운영 구성과 최신 개인정보처리방침을 기준으로 다시 판단한다. 이 행의 과거 미국/싱가포르 인프라 설명을 현재 구성으로 재사용하지 않는다. |
 | 릴리즈 프로덕션 빌드 | **보류 — 사용자가 「완료」라고 말할 때만 올린다**(2026-09-09) | `eas build --profile production` · `eas submit` · Play Console 업로드를 **누구도 먼저 하지 않는다.** 최종 검수는 사용자가 한다. 준비물(서비스 계정 JSON · 스크린샷 · 그래픽 이미지)은 갖춰 두되 올리지 않는다 |
 | 카카오 동의항목 콘솔 | **코드는 롤백됐고 콘솔 신청 이력은 남아 있다**(2026-09-09) | 1차 신청은 **필수** 출생 연도 · 프로필(닉네임·사진), 나머지 「사용 안 함」이었고 **반려**됐다(회원가입 절차 불명확 · 수집 항목 미기재 · 탈퇴 경로 누락). 그 대응으로 넣었던 코드는 사용자 오더로 롤백했다 — 지금 `scopes`와 `/v2/user/me`는 `fd111f0` 직전 값이다. 다시 심사에 넣으려면 코드와 콘솔을 어느 쪽으로 맞출지부터 정해야 한다 |
 
@@ -118,7 +118,7 @@ Build Pipeline에서 요금제나 빌드 지출 한도를 올려야 한다.
 판정 근거는 셋 중 하나다 — **PR이 병합돼 내용이 main에 있다**(48개), **tip이 main의
 조상이거나 main과 diff가 없다**(3개), **내용이 이미 main에 반영됐거나 폐기됐음을 diff로
 확인했다**(9개: 마이그레이션 재번호 `0061`·`0062`는 #40/#41로 이미 적용, `flyio-new-files`는
-Render를 쓰는 지금 쓰이지 않는 `fly.toml`, `design/*` 4개는 `design/search-vendor-clean`이
+이전 호스팅을 쓰는 지금 쓰이지 않는 `fly.toml`, `design/*` 4개는 `design/search-vendor-clean`이
 포함, 조사 스냅샷 브랜치 2개, `fix/render-sync-inputs-context`는 작성자가 진단 철회).
 
 지운 브랜치는 GitHub의 해당 PR 화면에서 되살릴 수 있다. tip SHA는 이 커밋 시점의
@@ -230,8 +230,8 @@ PR #99의 조사 보고서와 그 독립 재검증 결과에서 **코드로 확�
 
 | # | 항목 | 위치 · 근거 |
 |---|---|---|
-| N01 | **운영 카카오 로그인이 500으로 실패** | `POST /v1/auth/sessions → 500`. **스키마 가설은 2026-09-09 죽었다**(아래 DB-1). 같은 날 코드로 범위를 좁혔다 — 아래 «N01 좁힌 범위». 남은 것은 **검증 성공 이후의 DB 경로 세 곳**뿐이고, 다음 한 걸음은 재현 시 Render 로그의 스택·SQL 원문이다 |
-| G04 | **CORS 출처 누락** (메서드는 해소) | `infra/render-env.yml`의 `CORS_ORIGINS`에 admin 출처·커스텀 도메인이 없다. 도메인은 이미 활성이라 미래 위험이 아니라 현재 차단. **`server.ts`의 `methods`에 PATCH가 없던 절반은 #134로 해소됐다** |
+| N01 | **운영 카카오 로그인이 500으로 실패** | `POST /v1/auth/sessions → 500`. **스키마 가설은 2026-09-09 죽었다**(아래 DB-1). 같은 날 코드로 범위를 좁혔다 — 아래 «N01 좁힌 범위». 남은 것은 **검증 성공 이후의 DB 경로 세 곳**뿐이고, 다음 한 걸음은 재현 시 이전 호스팅 로그의 스택·SQL 원문이다 |
+| G04 | **CORS 출처 누락** (메서드는 해소) | `삭제된 이전 호스팅 환경 선언`의 `CORS_ORIGINS`에 admin 출처·커스텀 도메인이 없다. 도메인은 이미 활성이라 미래 위험이 아니라 현재 차단. **`server.ts`의 `methods`에 PATCH가 없던 절반은 #134로 해소됐다** |
 | G02 | **main 보호 규칙에 필수 PR·CI·리뷰 없음** | `rules/branches/main`이 `deletion`·`non_fast_forward` 2개만 반환. 실패한 변경의 병합을 막는 장치가 없다 |
 
 ### 높음
@@ -239,7 +239,7 @@ PR #99의 조사 보고서와 그 독립 재검증 결과에서 **코드로 확�
 | # | 항목 | 위치 · 근거 |
 |---|---|---|
 | 잔존-A′ | kill switch 6종(AI 3 · 통계 · 보상 · 자동게시)이 여전히 인메모리다 | `routes/admin.ts`의 `killSwitches` Map은 그대로다 — 껐다고 표시돼도 기능은 돌고 재시작하면 상태가 사라진다. **수집 출처 스위치만 #134로 DB(`import_switches`)에 연결됐다.** 나머지 6종은 각각 읽는 쪽을 만들어야 한다 |
-| G05 | staging 이름의 job이 운영 대상을 검사 | `main.yml`의 Staging·Production 두 job이 같은 `DATABASE_URL`과 같은 health URL(`weddingpickl.onrender.com`)을 쓴다. `db-migrate-staging.yml`이 `STAGING_DATABASE_URL`을 쓰던 유일한 자리였고 **2026-09-15에 지웠다**(스테이징 DB가 따로 없어 쓸 일이 없었다). **처리 방침은 `docs/release-env-split.md`가 정본이다** — 사용자 결정(2026-09-09) 「우선 현재 DB 그대로, 차후에 분리」로 §3의 0·0b·1·2는 나누는 날로 미뤄졌다. `PRODUCTION_DATABASE_URL`에 Render 내부망 주소가 들어 있어(`getaddrinfo EAI_AGAIN`) 이름부터 옮기면 어떤 워크플로도 운영 DB에 닿지 못한다 |
+| G05 | staging 이름의 job이 운영 대상을 검사 | `main.yml`의 Staging·Production 두 job이 같은 `DATABASE_URL`과 같은 health URL(`210.109.82.212`)을 쓴다. `db-migrate-staging.yml`이 `STAGING_DATABASE_URL`을 쓰던 유일한 자리였고 **2026-09-15에 지웠다**(스테이징 DB가 따로 없어 쓸 일이 없었다). **처리 방침은 `docs/release-env-split.md`가 정본이다** — 사용자 결정(2026-09-09) 「우선 현재 DB 그대로, 차후에 분리」로 §3의 0·0b·1·2는 나누는 날로 미뤄졌다. `PRODUCTION_DATABASE_URL`에 이전 호스팅 내부망 주소가 들어 있어(`getaddrinfo EAI_AGAIN`) 이름부터 옮기면 어떤 워크플로도 운영 DB에 닿지 못한다 |
 | DB-2 | 스테이징 DB가 19개 밀려 있다 | 적용 73 / 기대 92(0074~0091a 미적용, 2026-09-09 실측). 「스테이징에서 먼저 검수한다」가 지금 성립하지 않는다. **적용할 워크플로를 2026-09-15에 지웠다** — 나누는 날 다시 만든다. **N01 재현용으로서의 값은 없다** — 스키마 가설이 죽어 그 실험이 가르는 것이 없다 |
 
 ### 출시 전 처리
@@ -301,7 +301,7 @@ PR #99의 조사 보고서와 그 독립 재검증 결과에서 **코드로 확�
 | `markAgeVerified()` (같은 파일 166행) | `age_verified` · `age_gate` 갱신. `age_verdict === 'verified'`일 때만 |
 | `sessionEntry()` (같은 파일 135행) | `activated_at` · `weddings` 존재 여부 · `age_verified` 조회 |
 
-스키마가 정상인데 이 셋이 터진다면 데이터에 딸린 것이다(제약 위반·유일키 충돌 등). **다음 한 걸음은 재현 시 Render 로그의 스택·SQL 원문 하나다** — #100으로 로그는 살아 있다. 그것이 오면 위 셋 중 어디인지 즉시 갈린다.
+스키마가 정상인데 이 셋이 터진다면 데이터에 딸린 것이다(제약 위반·유일키 충돌 등). **다음 한 걸음은 재현 시 이전 호스팅 로그의 스택·SQL 원문 하나다** — #100으로 로그는 살아 있다. 그것이 오면 위 셋 중 어디인지 즉시 갈린다.
 
 한 가지 더 확인할 것: **500이 정말 500인지.** 브라우저에서 시작하는 흐름이면 CORS preflight 차단(G04)이 500처럼 보일 수 있다. 응답 본문과 상태 코드를 함께 봐야 한다.
 
@@ -317,16 +317,16 @@ PR #99의 조사 보고서와 그 독립 재검증 결과에서 **코드로 확�
 
 ### 외부 확인 필요 (저장소 안에서 확인 불가)
 
-- **카카오 로그인 재현 시 Render 로그의 스택·SQL 오류 원문** — N01의 다음 한 걸음. 위 «N01 좁힌 범위»의 셋 중 어디인지 즉시 갈린다
+- **카카오 로그인 재현 시 이전 호스팅 로그의 스택·SQL 오류 원문** — N01의 다음 한 걸음. 위 «N01 좁힌 범위»의 셋 중 어디인지 즉시 갈린다
 - 그때의 **응답 상태 코드와 본문** — 500이 진짜 500인지, CORS preflight 차단(G04)이 그렇게 보이는 것인지
-- 운영 Render `WeddingPickl`의 `DATABASE_URL`이 GitHub `DATABASE_URL`과 같은 DB인가
-- 분석 워커 서비스가 Render에 실제로 있는가 (저장소에 선언 없음)
+- 운영 이전 호스팅 `WeddingPickl`의 `DATABASE_URL`이 GitHub `DATABASE_URL`과 같은 DB인가
+- 분석 워커 서비스가 이전 호스팅에 실제로 있는가 (저장소에 선언 없음)
 - TestFlight / Play 제출·심사 상태
 - legacy branch protection API(`branches/main/protection`) 설정
 
 ### 권장 순서
 
-1. N01 — 재현 시 Render 로그의 스택·SQL 원문을 잡는다 → «N01 좁힌 범위»의 셋 중 하나로 확정 → 수정.
+1. N01 — 재현 시 이전 호스팅 로그의 스택·SQL 원문을 잡는다 → «N01 좁힌 범위»의 셋 중 하나로 확정 → 수정.
    스키마 갈래는 닫혔다(DB-1)
 2. G04 — `CORS_ORIGINS`에 admin 출처·커스텀 도메인 추가. 각 출처에서 preflight 통과 확인
 3. G02 — main 보호 규칙에 필수 PR + head CI 성공
@@ -417,10 +417,10 @@ P0 전체 항목의 완료 기준과 검증 증거가 확정되지 않아 P0 진
 
 | 구분 | 서비스 | 비고 |
 |---|---|---|
-| API | Render `weddingpickl` — `https://weddingpickl.onrender.com` | Node/Fastify, Docker. 환경변수 원본은 `infra/render-env.yml` |
-| 앱 웹 export | Render `weddingpick-app-web` — `https://weddingpick-app-web.onrender.com` | `apps/mobile` react-native-web 정적 빌드 |
-| 서비스 웹사이트 | Render `weddingpick-web` — `https://weddingpick-web.onrender.com` | `apps/web` 정적 빌드 |
-| 관리자 | Render `weddingpick-admin` — `https://weddingpick-admin.onrender.com/admin/*` | `apps/mobile` 같은 export를 `scripts/split-admin-dist.mjs admin`으로 깎은 것. `admin.html`은 2026-09-09에 없어졌다 |
+| API | 이전 호스팅 `weddingpickl` — `https://210.109.82.212` | Node/Fastify, Docker. 환경변수 원본은 `삭제된 이전 호스팅 환경 선언` |
+| 앱 웹 export | 이전 호스팅 `weddingpick-app-web` — `https://210.109.82.212` | `apps/mobile` react-native-web 정적 빌드 |
+| 서비스 웹사이트 | 이전 호스팅 `weddingpick-web` — `https://210.109.82.212` | `apps/web` 정적 빌드 |
+| 관리자 | 이전 호스팅 `weddingpick-admin` — `https://210.109.82.212/admin/*` | `apps/mobile` 같은 export를 `scripts/split-admin-dist.mjs admin`으로 깎은 것. `admin.html`은 2026-09-09에 없어졌다 |
 | DB | Neon PostgreSQL | `DATABASE_URL` |
 | 원본 문서 저장소 | NCP Object Storage (S3 호환) — 버킷 `weddingpick-test` | `STORAGE_DRIVER=s3` + `S3_BUCKET` · `S3_REGION` · `S3_ENDPOINT` · `AWS_ACCESS_KEY_ID` · `AWS_SECRET_ACCESS_KEY` |
 | 모바일 빌드·배포 | Expo EAS · Apple Developer · Google Play Console | `release.yml` · `eas-*.yml` · `android-apk.yml` |
@@ -430,20 +430,20 @@ P0 전체 항목의 완료 기준과 검증 증거가 확정되지 않아 P0 진
 | 공공데이터 수집 | 소상공인진흥공단 API(무료) | `SBIZ_API_KEY`, `public-data.yml` |
 | CI/CD | GitHub Actions | 아래 표 |
 
-**사용하지 않음(삭제됨, 2026-09-08)**: Resend(비밀번호 재설정 메일 — 이메일 로그인과 함께 삭제), Fly.io(Render로 대체), Backblaze B2(NCP Object Storage로 대체).
+**사용하지 않음(삭제됨, 2026-09-08)**: Resend(비밀번호 재설정 메일 — 이메일 로그인과 함께 삭제), Fly.io(이전 호스팅로 대체), Backblaze B2(NCP Object Storage로 대체).
 
 ### GitHub Actions 워크플로
 | 파일 | 역할 |
 |---|---|
-| `main.yml` | main push 시 CI → DB 마이그레이션 → Render 배포·헬스체크. **PR CI는 2026-09-15에 껐다**(대표 지시 「CI가 너무 많다」) |
-| `keep-warm.yml` | Render 무료 플랜 API가 잠들지 않게 주기적으로 `/health` 호출 |
+| `main.yml` | main push 시 CI → DB 마이그레이션 → 이전 호스팅 배포·헬스체크. **PR CI는 2026-09-15에 껐다**(대표 지시 「CI가 너무 많다」) |
+| `keep-warm.yml` | 이전 호스팅 무료 플랜 API가 잠들지 않게 주기적으로 `/health` 호출 |
 | `db-migrate.yml` | Neon 운영 DB 마이그레이션 적용 |
 | `db-status.yml` | DB 마이그레이션 적용 상태 조회 |
 | `db-seed-samples.yml` | 샘플 업체·이미지 시드 |
 | `db-delete-test-user.yml` | 테스트 계정 삭제(`apps/api/src/scripts/delete-test-user.ts`) |
-| `render-env-sync.yml` | `infra/render-env.yml`을 Render 서비스 환경변수로 upsert |
-| `render-trigger-deploy.yml` | Render 배포 수동 트리거 |
-| `render-deploy-status.yml` | Render 배포 상태 조회 |
+| `삭제된 이전 호스팅 동기화.yml` | `삭제된 이전 호스팅 환경 선언`을 이전 호스팅 서비스 환경변수로 upsert |
+| `render-trigger-deploy.yml` | 이전 호스팅 배포 수동 트리거 |
+| `render-deploy-status.yml` | 이전 호스팅 배포 상태 조회 |
 | `public-data.yml` | 공공데이터(소상공인진흥공단) 수집 |
 | `android-apk.yml` | Android APK 빌드 |
 | `eas-apk-preview.yml` | EAS preview APK |
@@ -457,17 +457,17 @@ P0 전체 항목의 완료 기준과 검증 증거가 확정되지 않아 P0 진
 `Bundle (web)` 스텝에서 이미 매번 빌드 검증됨)를 실제로 호스팅해서, 네이티브 쉘이
 자기 자신의 웹 빌드를 웹뷰로 띄우는 구조를 검증한 POC다.
 
-**인프라(2026-09-08 정리)**: 운영 인프라는 **Render**다(API: `weddingpickl.onrender.com`).
+**인프라(2026-09-08 정리)**: 운영 인프라는 **이전 호스팅**다(API: `210.109.82.212`).
 이전 Fly.io 설정·문서는 저장소에서 모두 지웠다 — §인프라 현황의 서버 표가 현재 기준이다.
 
-### 1. 웹 번들 호스팅 — Render 정적 사이트, 설정만 추가함
-- `main`에 없던 `render.yaml`을 새로 만들었다 — `claude/session-a4bq31`의
+### 1. 웹 번들 호스팅 — 이전 호스팅 정적 사이트, 설정만 추가함
+- `main`에 없던 `삭제된 이전 호스팅 선언`을 새로 만들었다 — `claude/session-a4bq31`의
   실제 운영 정의(`weddingpick-web`/`weddingpick-admin`/`weddingpick-api`)를
   그대로 옮기고, 새 서비스 `weddingpick-app-web`을 추가했다.
 - `weddingpick-app-web`: `buildCommand: npm run export:web --workspace
   @weddingpick/mobile`, `staticPublishPath: ./apps/mobile/dist`, expo-router
   클라이언트 라우팅을 위한 `/* → /index.html` rewrite 포함.
-- **실제 Render 서비스 생성·배포는 하지 않았다.** 새 유료 리소스이므로 사용자
+- **실제 이전 호스팅 서비스 생성·배포는 하지 않았다.** 새 유료 리소스이므로 사용자
   승인이 필요하다 — 아래 "사용자 직접 조치 필요" 8번 참고.
 
 ### 2. 웹뷰 쉘 — 홈 · Pick 두 화면에 opt-in으로 배선
@@ -523,20 +523,20 @@ P0 전체 항목의 완료 기준과 검증 증거가 확정되지 않아 P0 진
 
 ## 🚨 사용자 직접 조치 필요 (Claude 불가)
 
-### 8. 하이브리드 웹뷰 쉘 POC — Render 서비스 생성 필요 (2026-09-04, 도메인 확정 2026-09-05)
-**상태**: `render.yaml`에 `weddingpick-app-web` 정의만 추가됨, 실제 서비스
+### 8. 하이브리드 웹뷰 쉘 POC — 이전 호스팅 서비스 생성 필요 (2026-09-04, 도메인 확정 2026-09-05)
+**상태**: `삭제된 이전 호스팅 선언`에 `weddingpick-app-web` 정의만 추가됨, 실제 서비스
 미생성.
 
 **도메인 결정(2026-09-05, 사용자 확정)**: 커스텀 도메인을 별도로 붙이지 않고
-Render 기본 서브도메인 `weddingpick-app-web.onrender.com`을 그대로 쓴다. DNS
+이전 호스팅 기본 서브도메인 `210.109.82.212`을 그대로 쓴다. DNS
 등록·연결 작업이 필요 없다.
 
-**필요한 조치(사용자만 가능 — Claude는 Render 대시보드 접근 권한 없음)**:
-1. Render 대시보드에서 이 저장소의 Blueprint(`render.yaml`)를 동기화하거나
+**필요한 조치(사용자만 가능 — Claude는 이전 호스팅 대시보드 접근 권한 없음)**:
+1. 이전 호스팅 대시보드에서 이 저장소의 Blueprint(`삭제된 이전 호스팅 선언`)를 동기화하거나
    `weddingpick-app-web` 정적 사이트를 수동 생성 (새 유료 리소스 — 생성
    여부·요금제 확인 필요). 이름을 `weddingpick-app-web`으로 두면 위 도메인이
    그대로 나온다.
-2. 생성·배포가 끝나면 운영자는 브라우저로 `https://weddingpick-app-web.onrender.com`에
+2. 생성·배포가 끝나면 운영자는 브라우저로 `https://210.109.82.212`에
    바로 접속해 `apps/mobile`의 실제 화면(react-native-web export)을 검수할 수
    있다 — 이 용도만으로는 네이티브 앱 빌드나 아래 3번 설정이 필요 없다.
 
@@ -812,7 +812,7 @@ production DB에는 아직 미적용. `db-migrate.yml` 워크플로 실행 필�
 ## 백엔드 API 현황
 
 - **테스트**: 524개 통과 (백엔드 관리 세션 기준, 2026-09-02)
-- **서버**: `https://weddingpickl.onrender.com` (Render)
+- **서버**: `https://210.109.82.212` (이전 호스팅)
 - **미확인**: 프로덕션 환경 전체 API 엔드포인트 수, 커버리지 %
 
 ---
@@ -824,7 +824,7 @@ WeddingPickl/
 ├── apps/
 │   ├── mobile/              # Expo Router 모바일 앱
 │   │   └── src/app/         # 42개 라우터 파일 (화면)
-│   └── api/                 # Hono API 서버 (Render 배포)
+│   └── api/                 # Hono API 서버 (이전 호스팅 배포)
 ├── packages/
 │   ├── db/
 │   │   └── migrations/      # 0001 ~ 0052 SQL 파일
@@ -864,8 +864,8 @@ WeddingPickl/
 6. **[AI/사용자]** 카카오맵 전환 잔여 경로·의존성 정리, Android/iOS 외부 링크 실기기 검증 (위 6번)
 7. **[사용자]** 카카오 REST API 키 발급 → `scripts/geocode-vendors.mts` 실행해 업체 좌표 채우기
 8. **[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인
-9. **[사용자]** `weddingpick-app-web` Render 정적 사이트 생성(도메인 확정: 기본
-   서브도메인 `weddingpick-app-web.onrender.com` 그대로 사용, 2026-09-05) — 위
+9. **[사용자]** `weddingpick-app-web` 이전 호스팅 정적 사이트 생성(도메인 확정: 기본
+   서브도메인 `210.109.82.212` 그대로 사용, 2026-09-05) — 위
    "사용자 직접 조치 필요" 8번 참고. 생성되면 운영자가 그 URL로 실제 앱 화면을
    바로 검수할 수 있다.
 9. **[완료]** WP-PICK-006 결정 완료 화면(`pick/done.tsx`) 구현 — PR #51 포함

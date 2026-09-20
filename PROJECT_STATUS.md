@@ -1,18 +1,18 @@
 # WeddingPick 프로젝트 상태
 
-## 현재 기준 — 2026-09-18 13:58 KST
+## 현재 기준 — 2026-09-20 KST
 
 - 운영 API와 앱웹은 KakaoCloud VM `https://210.109.82.212`의 443을 함께 사용한다. `/health`와 `/v1/*`는 API 프록시, 그 밖은 staged app-web 정적 파일이다.
 - **앱웹 443 공개 #1006 성공**: 외부 GitHub runner에서 `/`, `/login`, `/health`, `/v1/auth/providers` 모두 정상 확인했다.
 - **관리자 443 운영 경로 확인**: 관리자 `https://210.109.82.212/admin/login`은 앱웹/API와 같은 443에서 `/admin` 경로로 제공하며 이 경로를 운영 정본으로 고정한다. 별도 관리자 포트는 다시 도입하지 않는다.
-- 웹사이트 확인 경로는 `https://210.109.82.212/website.html`, 개인정보처리방침 `/privacy.html`, 이용약관 `/terms.html`이며, 웹사이트 전용 `:9443` 전환은 관리자와 분리해 별도 검증한다.
+- **2026-09-20 관리자 복구**: 최신 정적 후보 `fe83d0ef4bc932c07c9709397350bae32d8b9c2a`를 실행 `35490119852`로 전환했다. `/admin/login`은 실제 관리자 번들을 반환하고 별도 포트 안내문이 없으며, 사용자·관리자 화면의 브라우저 오류 0건과 `/health`의 `ok=true`, `database=ok`를 확인했다.
+- 웹사이트 확인 경로는 `https://210.109.82.212/website.html`, 개인정보처리방침 `/privacy.html`, 이용약관 `/terms.html`이다. 공개 주소에는 별도 포트를 사용하지 않는다.
 - 웹 카카오 로그인 코드는 `window.location.origin + /setup`을 Redirect URI로 사용한다. 현재 앱웹 origin에서는 `https://210.109.82.212/setup`이다. Kakao Developers의 REST API 키 Redirect URI에 이 값을 정확히 등록해야 실제 로그인 완료가 가능하다.
 - Kakao 공식 규칙상 Redirect URI는 요청값과 프로토콜·호스트·포트·경로·마지막 슬래시까지 일치해야 하며 미등록 값은 `KOE006`으로 거부된다.
 - Kakao VM IP 인증서는 Let's Encrypt이며 SAN에 `210.109.82.212`가 있고 `snap.certbot.renew.timer`가 활성 상태다.
 - Kakao Object Storage `weddingpick-prod-media` / `kr-central-2`는 운영 컨테이너에서 HeadBucket·ListObjectsV2 읽기 검증이 성공했다.
 - 운영 DB 읽기 전용 감사 결과 분석 pending 0, stuck running 0, raw document pages 0, 내부 업체 이미지 0, 상담 음성 0, 파기 대상 0이다. 현재 DB가 참조하는 NCP→Kakao 이관 대상 파일은 **0개**다.
 - 런타임은 `RUN_WORKER_IN_API=false`, `RETENTION_MODE=automatic`이다. 별도 `weddingpick-worker` 배포 경로와 기동 smoke는 구현·검증됐고, 다음 완료 배포에서는 API·worker가 같은 image revision으로 상주하는지 확인한다.
-- Render는 더 이상 빌드·배포하지 않는다. 기존 Render 정적 서비스는 전환 검증 중 임시 잔존일 뿐이며 새 변경을 올리지 않는다.
 - `claude/rn-preview`는 최신 디자인 정본이 아니며 배포 소스로 사용하지 않는다.
 - 보고 시 **코드 반영 / CI 통과 / API 배포 / 화면 후보 스테이징 / 화면 공개 / 실제 기능 검증**을 서로 다른 상태로 기록한다.
 
@@ -35,7 +35,7 @@
 
 ## 제품·검수 상태
 
-- 2026-09-11 KST, 가입 복구 PR192는 main `516a4df`에 반영됐고 앱 웹·현재 관리자 Render Live를 01:18:51 KST 확인했다. 관리자 PR189·191 통합은 로컬 검수 완료 후 최종 CI·DB migration·배포를 진행하는 단계다. 미연결 공개 기준·약관 편집의 거짓 성공을 차단했다. 상세 검증과 남은 범위는 `docs/sync/master-status.json`의 `pendingAdminDeployment`를 따른다.
+- 2026-09-11 KST, 가입 복구 PR192는 main `516a4df`에 반영됐다. 관리자 PR189·191 통합은 로컬 검수 완료 후 최종 CI·DB migration·배포를 진행하는 단계였다. 미연결 공개 기준·약관 편집의 거짓 성공을 차단했다. 상세 검증과 남은 범위는 `docs/sync/master-status.json`의 `pendingAdminDeployment`를 따른다.
 
 - 2026-09-11 KST, `eccf540` 기준 가입 복구 수정: 재실행 시 가입 상태보다 먼저 회원 전용 API를 호출하던 순서와 초기 상태 조회 실패 시 가입 저장을 생략하던 경합을 수정했다. 모바일 264시험·타입 검사 통과, lint 오류 0·기존 경고 2. 분리된 로컬 API와 390×844 웹에서 미완료 계정의 `/setup` 복귀 및 가입→설정 저장 순서를 확인했다. 운영 계정의 실제 실패 요청·배포 적용과 네이티브 검증은 별도다. 상세는 `docs/sync/master-status.json`의 `signupRecovery`를 따른다.
 
@@ -57,10 +57,9 @@
 |---|---|
 | GitHub | 저장소·Actions 실행·로그 조회 가능. 조회 가능과 배포 통제 완료는 별개 |
 | KakaoCloud API | `https://210.109.82.212`. #979에서 자동배포 성공 확인 |
-| Render SG API | 사용자가 중지함. 재배포·재활성화하지 않음 |
-| Render 앱 웹 Preview | `https://weddingpick-app-web.onrender.com`. 정적 서비스 유지, 최신 main 반영 여부 별도 검증 필요 |
-| Render 관리자 | `https://weddingpick-admin.onrender.com/admin`. 정적 서비스 유지, 최신 main 반영 여부 별도 검증 필요 |
-| Render 웹사이트 | `https://weddingpick-web.onrender.com`. 정적 서비스 유지, 최신 main 반영 여부 별도 검증 필요 |
+| 사용자 로그인 | `https://210.109.82.212/login` |
+| 관리자 로그인 | `https://210.109.82.212/admin/login` |
+| 웹사이트·약관 | 같은 443의 `/website.html` · `/privacy.html` · `/terms.html` |
 | Neon | 프로젝트 콘솔 접근, production 브랜치의 `neondb`·`weddingpick_staging` 존재 확인. 이번 점검에서는 직접 SQL 실행 안 함 |
 | Kakao Object Storage | `weddingpick-prod-media` / `kr-central-2` 운영 기준. HeadBucket·ListObjectsV2 읽기 검증 성공. 현재 운영 DB가 참조하는 NCP→Kakao 이관 대상 파일은 0개로 확인. NCP `weddingpick-test`는 과거/이관 원본으로만 취급하며 새 운영 저장소로 사용하지 않음 |
 | Expo/EAS | Owner 계정·프로젝트·기존 빌드 조회 가능. 최근 조회 빌드는 아래 표 참조 |
@@ -69,9 +68,7 @@
 | Google Play | 앱 상태 ‘임시’. 앱 설정·비공개 테스트·프로덕션 액세스 절차 미완료 |
 | Cloudflare | 연결 계정 인증 가능, zone 목록 비어 있음. 현재 사용하지 않는 도메인 부재를 장애로 분류하지 않음 |
 
-`weddingpick.kr`은 **폐기했다**(2026-09-11 대표 지시). 2026-09-10의 「보유하되 미사용·폐기 대상 아님」을 뒤집은 결정이다. DNS 연결·커스텀 도메인 전환을 과제로 두지 않고, 다시 붙이자고 제안하지도 않는다. **앱웹과 API는 KakaoCloud `https://210.109.82.212`가 운영 기준**이고, Render 정적 서비스는 웹사이트 전환이 끝날 때까지만 임시 잔존본으로 본다. 관리자는 KakaoCloud 443 `/admin`이 운영 정본이다.
-
-Render의 환경변수 선언은 [infra/render-env.yml](infra/render-env.yml), 반영 경로는 [render-env-sync.yml](.github/workflows/render-env-sync.yml)이다. 서비스 표시 이름과 URL 호스트는 다를 수 있으므로 오래된 이름만으로 리소스를 삭제하거나 대체하지 않는다. 남은 별도 DB·관리자 리소스의 사용 여부는 추가 확인 대상이다.
+`weddingpick.kr`은 **폐기했다**(2026-09-11 대표 지시). DNS 연결·커스텀 도메인 전환을 과제로 두지 않는다. 앱웹·관리자·웹사이트·API는 KakaoCloud `https://210.109.82.212`의 443을 운영 기준으로 사용한다.
 
 ## DB 확인 결과
 
@@ -85,7 +82,7 @@ Render의 환경변수 선언은 [infra/render-env.yml](infra/render-env.yml), �
 
 | 대상 | 최근 확인한 배포·빌드 |
 |---|---|
-| Render API·앱 웹·웹사이트 | 2026-09-10 22:19:16 KST, `e34193e` |
+| KakaoCloud API·앱 웹·관리자 | 최신 `main` 후보와 실제 운영 revision을 배포별로 대조 |
 | EAS Android preview | 2026-09-04 생성, `33701bf`, FINISHED |
 | EAS Android production | 2026-09-04 생성, `e4e3327`, FINISHED |
 | EAS iOS production | 2026-09-03 생성, `3e10bbc`, FINISHED |
@@ -94,10 +91,10 @@ EAS 최근 5개 조회 기준이다. 실제 기기 설치 버전과 TestFlight �
 
 ## CI/CD와 속도 확인 범위
 
-- Render API 자동배포는 폐기됐다. 현재 API는 `main → CI / Deploy → 운영 revision 누적 diff 확인 → KakaoCloud API/worker 배포` 경로를 사용한다. DB migration은 자동배포와 분리된 수동 production 승인 작업이다.
+- API는 `main → CI / Deploy → 운영 revision 누적 diff 확인 → KakaoCloud API/worker 배포` 경로를 사용한다. DB migration은 자동배포와 분리된 수동 production 승인 작업이다.
 - HTTP 200만으로 health를 통과시키는 검사와 실제 `schema.ok` 판정이 다를 수 있다. 배포 관문과 DB 검사 실패 전파를 함께 보완해야 한다.
 - 워크플로 목록과 트리거는 [.github/workflows/](.github/workflows/)의 현재 파일이 기준이다. 과거의 ‘10개·중복 없음’ 목록은 현황 근거에서 제외했다.
-- 운영 API는 KakaoCloud, DB는 Neon, 파일은 KakaoCloud Object Storage를 사용한다. 과거 Render/Ohio 성능 수치는 현재 수치로 재사용하지 않고 실제 응답 시간·DB 왕복 지연은 현행 구성에서 다시 계측한다.
+- 운영 API는 KakaoCloud, DB는 Neon, 파일은 KakaoCloud Object Storage를 사용한다. 과거 해외 호스팅 성능 수치는 현재 수치로 재사용하지 않고 실제 응답 시간·DB 왕복 지연은 현행 구성에서 다시 계측한다.
 - 앱 진입의 장시간 요청 대기·인증 오류 구분과 관리자 요청 타임아웃 문제는 코드 검수 결과이며, 측정된 속도 수치가 아니다.
 
 ## 다음 작업 우선순위

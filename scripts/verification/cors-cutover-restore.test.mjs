@@ -82,13 +82,13 @@ if [ "\${1:-}" = "-" ]; then
   awk '
     BEGIN { done=0 }
     /^CORS_ORIGINS=/ {
-      print "CORS_ORIGINS=https://210.109.82.212,https://210.109.82.212:9443"
+      print "CORS_ORIGINS=https://210.109.82.212"
       done=1
       next
     }
     { print }
     END {
-      if (!done) print "CORS_ORIGINS=https://210.109.82.212,https://210.109.82.212:9443"
+      if (!done) print "CORS_ORIGINS=https://210.109.82.212"
     }
   ' "$env_file" > "$tmp"
   mv "$tmp" "$env_file"
@@ -349,7 +349,7 @@ shellTest('successful CORS cutover keeps the new API and retains the old recover
     const cors = readFileSync(h.envFile, 'utf8');
     assert.match(cors, /https:\/\/210\.109\.82\.212(?:,|\n)/);
     assert.doesNotMatch(cors, /https:\/\/210\.109\.82\.212:8443/);
-    assert.match(cors, /https:\/\/210\.109\.82\.212:9443/);
+    assert.doesNotMatch(cors, /https:\/\/210\.109\.82\.212:9443/);
     assert.equal(existsSync(path.join(h.root, '.cors-cutover-backup')), true);
   } finally {
     h.cleanup();

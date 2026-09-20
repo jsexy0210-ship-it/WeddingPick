@@ -66,7 +66,7 @@ function buildBody(
 
 /** UTM 링크 생성 */
 function buildUtmUrl(channel: MarketingChannel, format: MarketingFormat, jobKey: string): string {
-  const base = 'https://weddingpick.app';
+  const base = 'https://210.109.82.212';
   const params = new URLSearchParams({
     utm_source: channel,
     utm_medium: 'owned',

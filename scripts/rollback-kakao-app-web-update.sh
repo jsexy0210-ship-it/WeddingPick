@@ -59,11 +59,16 @@ for i in $(seq 1 20); do
     login_ok=1
   fi
   if [ "$previous_live" != NONE ] && grep -Fq 'location ^~ /admin/' "$backup" 2>/dev/null; then
-    if curl --fail --silent --show-error --connect-timeout 5 --max-time 10 https://210.109.82.212/admin/login 2>/dev/null | grep -qi '<html'; then
+    admin_smoke="$(mktemp)"
+    if curl --fail --silent --show-error --connect-timeout 5 --max-time 10 https://210.109.82.212/admin/login -o "$admin_smoke" 2>/dev/null &&
+       cmp -s "$admin_smoke" "$previous_admin_target/admin/login.html" &&
+       grep -Fq '/_expo/static/js/web/' "$admin_smoke" &&
+       ! grep -Eq '관리자 콘솔 주소가 바뀌었어요|210\.109\.82\.212:8443' "$admin_smoke"; then
       admin_ok=1
     else
       admin_ok=0
     fi
+    rm -f "$admin_smoke"
   fi
   if [ "$health_ok" -eq 1 ] && [ "$login_ok" -eq 1 ] && [ "$admin_ok" -eq 1 ]; then
     rm -f "$TX_BACKUP_MARKER" "$TX_LIVE_MARKER" "$TX_TARGET_MARKER"

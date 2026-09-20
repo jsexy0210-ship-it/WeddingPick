@@ -63,10 +63,10 @@
 
 ## 4. 국외 이전 — 나라와 보관 조건이 확인 전이다
 
-방침 5항이 Anthropic · Render · Neon · Expo를 전부 **미국**으로 적었다.
+방침 5항이 Anthropic · 이전 호스팅 · Neon · Expo를 전부 **미국**으로 적었다.
 
-- **리전은 회사 소재지가 아니다.** Render·Neon이 미국 회사여도 서버는 싱가포르 등에
-  있을 수 있다. `render.yaml`에 리전 설정이 **없어서** 기본값을 쓰고 있고, Neon은
+- **리전은 회사 소재지가 아니다.** 이전 호스팅·Neon이 미국 회사여도 서버는 싱가포르 등에
+  있을 수 있다. `삭제된 이전 호스팅 선언`에 리전 설정이 **없어서** 기본값을 쓰고 있고, Neon은
   프로젝트를 만들 때 고른 리전이다. 배포 설정에서 확인해야 한다
 - **Anthropic 행의 「이전 목적 달성 시까지 보유합니다」는 우리 쪽 기준이다.** 우리가
   24시간 안에 지운다고 외부 사본이 함께 없어지지 않는다. 무보관 조건을 별도로 적용받지
@@ -84,5 +84,5 @@ packages/domain/src/payment-proof.ts      24시간
 packages/domain/src/policy.ts             30일 · 심사 중 예외
 packages/domain/src/release-gate.ts       시행일 환경변수
 apps/web/src/subpages.ts                  방침 본문
-render.yaml                               리전 설정 없음
+삭제된 이전 호스팅 선언                               리전 설정 없음
 ```

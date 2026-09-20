@@ -10,7 +10,7 @@
  *
  * 사용:
  *   node scripts/audit/preview-login-probe.mjs
- *   node scripts/audit/preview-login-probe.mjs --base-url https://weddingpick-app-web.onrender.com
+ *   node scripts/audit/preview-login-probe.mjs --base-url https://210.109.82.212
  */
 import { createRequire } from 'node:module';
 import { execSync } from 'node:child_process';
@@ -53,7 +53,7 @@ function trustedSpkiHashes() {
 
 function parseArgs(argv) {
   const opts = {
-    baseUrl: 'https://weddingpick-app-web.onrender.com',
+    baseUrl: 'https://210.109.82.212',
     out: join('/tmp', 'weddingpick-preview-login-probe'),
   };
   for (let i = 0; i < argv.length; i += 1) {

@@ -24,6 +24,7 @@ const rollbackSource = readFileSync(
   'utf8',
 );
 const shellTest = process.platform === 'win32' ? test.skip : test;
+const adminHtml = (label) => `<html>웨딩픽 관리자 ${label}<script src="/_expo/static/js/web/entry.js"></script></html>`;
 
 function writeExecutable(file, content) {
   writeFileSync(file, content, 'utf8');
@@ -66,7 +67,7 @@ function makeHarness({ staleMarker = false, existingPreview = false } = {}) {
   writeFileSync(conf, baseline, 'utf8');
   writeFileSync(path.join(root, 'static-live-app'), releaseSha + '\n', 'utf8');
   writeFileSync(path.join(liveRoot, 'app', 'index.html'), '<html>app</html>', 'utf8');
-  writeFileSync(path.join(sourceRoot, 'admin', 'admin', 'login.html'), '<html>admin</html>', 'utf8');
+  writeFileSync(path.join(sourceRoot, 'admin', 'admin', 'login.html'), adminHtml('admin'), 'utf8');
   writeFileSync(path.join(sourceRoot, 'web', 'index.html'), '<html>web</html>', 'utf8');
   writeFileSync(path.join(sourceRoot, 'web', 'privacy.html'), '<html>privacy</html>', 'utf8');
 
@@ -74,7 +75,7 @@ function makeHarness({ staleMarker = false, existingPreview = false } = {}) {
   if (staleMarker || existingPreview) {
     mkdirSync(path.join(liveRoot, 'admin', 'admin'), { recursive: true });
     mkdirSync(path.join(liveRoot, 'web'), { recursive: true });
-    writeFileSync(path.join(liveRoot, 'admin', 'admin', 'login.html'), '<html>LIVE-ADMIN</html>', 'utf8');
+    writeFileSync(path.join(liveRoot, 'admin', 'admin', 'login.html'), adminHtml('LIVE-ADMIN'), 'utf8');
     writeFileSync(path.join(liveRoot, 'web', 'privacy.html'), '<html>LIVE-WEB</html>', 'utf8');
     mkdirSync(backupDir, { recursive: true });
   }
@@ -183,7 +184,7 @@ if [ -n "\${MOCK_CURL_FAIL_MATCH:-}" ] && [[ "$url" == *"\${MOCK_CURL_FAIL_MATCH
 fi
 
 case "$url" in
-  */admin/login) body='<html>admin</html>' ;;
+  */admin/login) body="$(cat "\${MOCK_ADMIN_HTML:?}")" ;;
   */website.html) body='<html>web</html>' ;;
   */privacy.html) body='<html>privacy</html>' ;;
   */health) body='{"ok":true}' ;;
@@ -194,6 +195,15 @@ if [ -n "$out" ]; then printf '%s' "$body" > "$out"; else printf '%s' "$body"; f
 `,
   );
 
+  const env = {
+    ...process.env,
+    PATH: `${bin}:${process.env.PATH ?? ''}`,
+    MOCK_STATE_DIR: state,
+    MOCK_ADMIN_HTML: existingPreview
+      ? path.join(liveRoot, 'admin', 'admin', 'login.html')
+      : path.join(sourceRoot, 'admin', 'admin', 'login.html'),
+  };
+
   return {
     base,
     root,
@@ -203,11 +213,7 @@ if [ -n "$out" ]; then printf '%s' "$body" > "$out"; else printf '%s' "$body"; f
     baseline,
     marker,
     liveRoot,
-    env: {
-      ...process.env,
-      PATH: `${bin}:${process.env.PATH ?? ''}`,
-      MOCK_STATE_DIR: state,
-    },
+    env,
     cleanup() {
       rmSync(base, { recursive: true, force: true });
     },
@@ -303,7 +309,7 @@ shellTest('stale preview rollback marker fails before served files or nginx conf
     assert.equal(readFileSync(h.conf, 'utf8'), h.baseline);
     assert.equal(
       readFileSync(path.join(h.liveRoot, 'admin', 'admin', 'login.html'), 'utf8'),
-      '<html>LIVE-ADMIN</html>',
+      adminHtml('LIVE-ADMIN'),
     );
     assert.equal(
       readFileSync(path.join(h.liveRoot, 'web', 'privacy.html'), 'utf8'),
@@ -322,7 +328,7 @@ shellTest('re-running the same preview release preserves served admin and web fi
     assert.equal(result.status, 0, result.stderr || result.stdout);
     assert.equal(
       readFileSync(path.join(h.liveRoot, 'admin', 'admin', 'login.html'), 'utf8'),
-      '<html>LIVE-ADMIN</html>',
+      adminHtml('LIVE-ADMIN'),
     );
     assert.equal(
       readFileSync(path.join(h.liveRoot, 'web', 'privacy.html'), 'utf8'),

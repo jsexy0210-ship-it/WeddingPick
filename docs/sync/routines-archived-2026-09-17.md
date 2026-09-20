@@ -346,10 +346,10 @@ MASTER다. 네가 요청한 대로 SHA `b285f0b0`을 봤다. **만든 것은 옳
 
 `apps/mobile/package.json`의 `export:web`에 `build-preview.mjs` 호출을 박아 두었다.
 
-    render.yaml:80   weddingpick-app-web  buildCommand: npm run export:web --workspace @weddingpick/mobile && …
-    render.yaml:146  weddingpick-admin    buildCommand: npm run export:web --workspace @weddingpick/mobile && …
+    삭제된 이전 호스팅 선언:80   weddingpick-app-web  buildCommand: npm run export:web --workspace @weddingpick/mobile && …
+    삭제된 이전 호스팅 선언:146  weddingpick-admin    buildCommand: npm run export:web --workspace @weddingpick/mobile && …
 
-**Render 배포가 `export:web`을 부른다.** 이 브랜치가 어떤 경로로든 main에 닿는 순간 **앱 웹과 관리자 두 곳 모두 로그인 우회와 픽스처 가로채기가 박힌 채로 배포된다.**
+**이전 호스팅 배포가 `export:web`을 부른다.** 이 브랜치가 어떤 경로로든 main에 닿는 순간 **앱 웹과 관리자 두 곳 모두 로그인 우회와 픽스처 가로채기가 박힌 채로 배포된다.**
 
 네 커밋 메시지는 「claude/rn-preview 전용. main에 올리지 않는다」고 적었다. **그것은 약속이지 장치가 아니다.** CLAUDE.md가 이미 못박아 둔 자리다 — 「캡처일 때는 통과」를 제품 코드에 넣지 않는다. 그 구멍이 운영에 나간다.
 
@@ -362,7 +362,7 @@ MASTER다. 네가 요청한 대로 SHA `b285f0b0`을 봤다. **만든 것은 옳
     "export:web":  "node ../../scripts/ensure-modules.mjs && expo export --platform web"
     "preview:web": "npm run export:web && node ../../scripts/build-preview.mjs"
 
-대표님 프리뷰를 만들 때만 `preview:web`을 부른다. Render는 계속 `export:web`을 부르므로 브랜치가 어디로 가든 우회가 배포에 섞이지 않는다. `scripts/screenshot-screens.mjs` 쪽 변경(11줄)은 그대로 둬도 되는지 네가 판단해라 — 그건 캡처 도구이고 배포가 부르지 않는다.
+대표님 프리뷰를 만들 때만 `preview:web`을 부른다. 이전 호스팅은 계속 `export:web`을 부르므로 브랜치가 어디로 가든 우회가 배포에 섞이지 않는다. `scripts/screenshot-screens.mjs` 쪽 변경(11줄)은 그대로 둬도 되는지 네가 판단해라 — 그건 캡처 도구이고 배포가 부르지 않는다.
 
 ## 다음
 
@@ -595,7 +595,7 @@ claude/date-picker-wheel 날짜 선택 휠 3열 — 대표 지시. #213 다음 �
 4. **#208 CI와 겹침.** `apps/web/src/subpages.ts`는 약관 세션 것이다. 다른 브랜치가 건드리면 충돌한다.
 5. **마이그레이션 번호 충돌.** 0210 공공데이터 · 0230 관리자 · 0240 제보 흐름이 잡혀 있다.
 
-**막힌 세션을 풀어준다.** `claude/auth-narrow`와 `claude/report-flow-root`가 판단 대기로 서 있다. 결정은 이미 났다 — 로그인은 코드·빌드 설정에서 네이버·구글을 지우되 Render 환경변수는 남긴다, 제보는 WP-RPT-010을 되살리지 않고 WP-RPT-004 인식 실패 하나로 간다. 아직 안 전했으면 전한다.
+**막힌 세션을 풀어준다.** `claude/auth-narrow`와 `claude/report-flow-root`가 판단 대기로 서 있다. 결정은 이미 났다 — 로그인은 코드·빌드 설정에서 네이버·구글을 지우되 이전 호스팅 환경변수는 남긴다, 제보는 WP-RPT-010을 되살리지 않고 WP-RPT-004 인식 실패 하나로 간다. 아직 안 전했으면 전한다.
 
 **아무것도 안 바뀌었으면 대표님께 알리지 않는다.** 조용히 다음 주기를 기다린다. 보고는 **끝난 것 · 막힌 것 · 판단이 필요한 것**이 있을 때만, 짧게 한다.
 
@@ -676,7 +676,7 @@ claude/date-picker-wheel 날짜 선택 휠 3열 — 대표 지시. #213 다음 �
 
 1. 브랜치 ↔ PR 대조 — PR 없이 main에도 없는 브랜치(「보이지 않는 완료」)
 2. 열린 PR의 병목 — CI 빨간색 · 충돌 · 초안으로 멈춤 · 같은 파일 두 PR · 마이그레이션 번호 겹침
-3. 운영 — main 최신 커밋과 Render 세 서비스 live 커밋이 같은지, 반복 실패가 있는지
+3. 운영 — main 최신 커밋과 이전 호스팅 세 서비스 live 커밋이 같은지, 반복 실패가 있는지
 4. 돌고 있는 전담 세션과 브랜치·PR 맞춰보기
 
 **지난번과 달라진 것만** MASTER(session_01RHos8CRUgW7VXAnxs2BwjD)에 보낸다. 아무것도 안 바뀌었으면 보내지 않는다 — 매시간 「이상 없음」이 오면 다음부터 아무도 안 읽는다.
@@ -697,9 +697,9 @@ MASTER다. 사용자 지침 — **작업을 마치면 PR을 건다.** 브랜치�
 2. **초록으로 만든다** — typecheck · lint · 카피 린트 · jest.
 3. **PR을 건다.** 무엇을 어떻게 했는지, 못 한 것과 판단 필요한 것을 **따로** 적는다. draft로 올려도 되고 머지 여부는 MASTER가 정한다.
 
-**앞서 보낸 정정을 다시 확인해라** — Render Static Site는 앞단 인증도 IP 허용목록도 걸 수 없다. 「분리하면 네트워크 단에서 막을 수 있다」는 내 잘못된 설명이었다. 분리의 값어치는 그것이 아니라 배포 주기와 주소를 가르는 데 있다. PR 본문에 그 근거를 적어라.
+**앞서 보낸 정정을 다시 확인해라** — 이전 호스팅 Static Site는 앞단 인증도 IP 허용목록도 걸 수 없다. 「분리하면 네트워크 단에서 막을 수 있다」는 내 잘못된 설명이었다. 분리의 값어치는 그것이 아니라 배포 주기와 주소를 가르는 데 있다. PR 본문에 그 근거를 적어라.
 
-`render.yaml`을 손댔다면 주의할 것: 그 파일은 값의 원본이 아니다(Blueprint sync가 동작하지 않는다). 실제 설정은 대시보드와 `infra/render-env.yml`에 있고, `render-env-sync`는 **서비스를 이름으로 정확히 찾는다** — 이름이 한 글자만 달라도 조용히 건너뛴다.
+`삭제된 이전 호스팅 선언`을 손댔다면 주의할 것: 그 파일은 값의 원본이 아니다(Blueprint sync가 동작하지 않는다). 실제 설정은 대시보드와 `삭제된 이전 호스팅 환경 선언`에 있고, `삭제된 이전 호스팅 동기화`는 **서비스를 이름으로 정확히 찾는다** — 이름이 한 글자만 달라도 조용히 건너뛴다.
 ```
 
 ## 인앱 브라우저 — PR 걸어라
@@ -968,7 +968,7 @@ MASTER 결정이다. 물어본 둘 다 승인이며, 이 방향으로 확정해 
     자기 권한 이상을 줄 수 없다.
 
 (2) 환경변수 전용 부트스트랩(코드에 id 없음 · 복구는 환경에서만) — 승인.
-    ADMIN_LOGIN_ID / ADMIN_PASSWORD_HASH는 이미 GitHub Secrets → render-env-sync로
+    ADMIN_LOGIN_ID / ADMIN_PASSWORD_HASH는 이미 GitHub Secrets → 삭제된 이전 호스팅 동기화로
     운영 API 서버에 들어가 있다(2026-09-10 확인). 같은 메커니즘만 쓴다.
     **코드·주석·커밋·PR 본문에 실제 아이디나 해시를 적지 않는다.**
 

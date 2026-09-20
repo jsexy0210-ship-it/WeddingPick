@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const shellTest = process.platform === 'win32' ? test.skip : test;
+const adminHtml = (label) => `<html>웨딩픽 관리자 ${label}<script src="/_expo/static/js/web/entry.js"></script></html>`;
 const appInstallSource = readFileSync(
   path.join(repoRoot, 'scripts/install-kakao-app-web.sh'),
   'utf8',
@@ -91,7 +92,7 @@ function makeHarness({ includeLogin = true } = {}) {
   const baseline = 'server {\n  listen 443 ssl;\n  # API_ONLY_BASELINE\n}\n';
   writeFileSync(conf, baseline, 'utf8');
   writeFileSync(path.join(releaseApp, 'index.html'), '<html>app</html>', 'utf8');
-  writeFileSync(path.join(releaseAdmin, 'login.html'), '<html>admin</html>', 'utf8');
+  writeFileSync(path.join(releaseAdmin, 'login.html'), adminHtml('admin'), 'utf8');
   if (includeLogin) {
     writeFileSync(path.join(releaseApp, 'login.html'), '<html>login</html>', 'utf8');
   }
@@ -190,7 +191,7 @@ fi
 
 case "$url" in
   */health) body='{"ok":true,"database":"ok"}' ;;
-  */admin/login) body='<html>웨딩픽 관리자</html>' ;;
+  */admin/login) body="$(cat "\${MOCK_ADMIN_HTML:?}")" ;;
   */login) body='<html>login</html>' ;;
   */v1/auth/providers) body='{"providers":[]}' ;;
   *) body='ok' ;;
@@ -208,6 +209,7 @@ fi
     ...process.env,
     PATH: `${bin}:${process.env.PATH ?? ''}`,
     MOCK_STATE_DIR: state,
+    MOCK_ADMIN_HTML: path.join(releaseAdmin, 'login.html'),
   };
 
   return {
@@ -401,7 +403,7 @@ shellTest('failed release update restores the immediately previous live release 
     mkdirSync(adminB, { recursive: true });
     writeFileSync(path.join(sourceB, 'index.html'), '<html>b</html>', 'utf8');
     writeFileSync(path.join(sourceB, 'login.html'), '<html>b-login</html>', 'utf8');
-    writeFileSync(path.join(adminB, 'login.html'), '<html>b-admin</html>', 'utf8');
+    writeFileSync(path.join(adminB, 'login.html'), adminHtml('b-admin'), 'utf8');
 
     const second = run(h.installPath, [releaseB], {
       ...h.env,
@@ -431,8 +433,11 @@ shellTest('explicit update rollback restores the previous app and verifies login
     mkdirSync(adminB, { recursive: true });
     writeFileSync(path.join(sourceB, 'index.html'), '<html>b</html>', 'utf8');
     writeFileSync(path.join(sourceB, 'login.html'), '<html>b-login</html>', 'utf8');
-    writeFileSync(path.join(adminB, 'login.html'), '<html>b-admin</html>', 'utf8');
-    assert.equal(run(h.installPath, [releaseB], h.env).status, 0);
+    writeFileSync(path.join(adminB, 'login.html'), adminHtml('b-admin'), 'utf8');
+    assert.equal(run(h.installPath, [releaseB], {
+      ...h.env,
+      MOCK_ADMIN_HTML: path.join(adminB, 'login.html'),
+    }).status, 0);
 
     const rollback = run(h.updateRollbackPath, [], h.env);
     assert.equal(rollback.status, 0, rollback.stderr || rollback.stdout);
@@ -458,8 +463,11 @@ shellTest('update rollback fails closed before changing Nginx when the recorded 
     mkdirSync(adminB, { recursive: true });
     writeFileSync(path.join(sourceB, 'index.html'), '<html>b</html>', 'utf8');
     writeFileSync(path.join(sourceB, 'login.html'), '<html>b-login</html>', 'utf8');
-    writeFileSync(path.join(adminB, 'login.html'), '<html>b-admin</html>', 'utf8');
-    assert.equal(run(h.installPath, [releaseB], h.env).status, 0);
+    writeFileSync(path.join(adminB, 'login.html'), adminHtml('b-admin'), 'utf8');
+    assert.equal(run(h.installPath, [releaseB], {
+      ...h.env,
+      MOCK_ADMIN_HTML: path.join(adminB, 'login.html'),
+    }).status, 0);
     const liveBConfig = readFileSync(h.conf, 'utf8');
 
     rmSync(path.join(h.servedApp, 'login.html'), { force: true });

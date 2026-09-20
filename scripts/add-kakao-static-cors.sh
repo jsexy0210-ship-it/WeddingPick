@@ -68,7 +68,6 @@ path = Path(sys.argv[1])
 text = path.read_text(encoding='utf-8')
 wanted = [
     'https://210.109.82.212',
-    'https://210.109.82.212:9443',
 ]
 lines = text.splitlines()
 found = False

@@ -18,10 +18,10 @@
 **부르는 자리가 틀렸다.**
 
     apps/mobile/package.json   "export:web": "... && node ../../scripts/build-preview.mjs"
-    render.yaml:80             weddingpick-app-web  buildCommand: npm run export:web …
-    render.yaml:146            weddingpick-admin    buildCommand: npm run export:web …
+    삭제된 이전 호스팅 선언:80             weddingpick-app-web  buildCommand: npm run export:web …
+    삭제된 이전 호스팅 선언:146            weddingpick-admin    buildCommand: npm run export:web …
 
-Render 배포가 `export:web`을 부른다. **이 브랜치가 main에 닿는 순간 앱 웹과 관리자
+이전 호스팅 배포가 `export:web`을 부른다. **이 브랜치가 main에 닿는 순간 앱 웹과 관리자
 두 곳 모두 로그인 우회와 픽스처 가로채기가 박힌 채로 배포된다.**
 
 커밋 메시지는 「claude/rn-preview 전용. main에 올리지 않는다」고 적었다. 그것은
@@ -38,7 +38,7 @@ Render 배포가 `export:web`을 부른다. **이 브랜치가 main에 닿는 �
     "export:web":  "node ../../scripts/ensure-modules.mjs && expo export --platform web"
     "preview:web": "npm run export:web && node ../../scripts/build-preview.mjs"
 
-대표님 프리뷰를 만들 때만 `preview:web`을 부른다. Render는 계속 `export:web`을
+대표님 프리뷰를 만들 때만 `preview:web`을 부른다. 이전 호스팅은 계속 `export:web`을
 부르므로 브랜치가 어디로 가든 우회가 배포에 섞이지 않는다.
 
 **세션에 남은 다른 요청(Bash 권한으로 빌드 검증)은 이 수정 뒤에 해도 늦지 않다.**

@@ -240,8 +240,22 @@ rm -f "$login_smoke"
 admin_smoke="$(mktemp)"
 curl --fail --silent --show-error --connect-timeout 5 --max-time 10 \
   https://210.109.82.212/admin/login -o "$admin_smoke"
-grep -qi '<html' "$admin_smoke"
-grep -Fq '웨딩픽 관리자' "$admin_smoke"
+if ! cmp -s "$admin_smoke" "$admin_target/admin/login.html"; then
+  echo 'Admin canonical route does not match the staged admin export.' >&2
+  exit 1
+fi
+if ! grep -Fq '/_expo/static/js/web/' "$admin_smoke"; then
+  echo 'Admin canonical route is missing the Expo web bundle marker.' >&2
+  exit 1
+fi
+if ! grep -Fq '웨딩픽 관리자' "$admin_smoke"; then
+  echo 'Admin canonical route is missing the admin login marker.' >&2
+  exit 1
+fi
+if grep -Eq '관리자 콘솔 주소가 바뀌었어요|210\.109\.82\.212:8443' "$admin_smoke"; then
+  echo 'Admin canonical route still serves a retired redirect stub.' >&2
+  exit 1
+fi
 rm -f "$admin_smoke"
 
 curl --fail --silent --show-error --connect-timeout 5 --max-time 10   https://210.109.82.212/v1/auth/providers | python3 -c 'import json,sys; json.load(sys.stdin)'

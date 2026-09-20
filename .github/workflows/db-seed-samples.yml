@@ -1,6 +1,6 @@
 # 업종별 샘플 업체 20곳씩을 스테이징 DB에 넣거나 걷어낸다 — 화면 검수용(2026-09-08 오더).
 # images = 샘플 업체 사진을 카카오(다음) 이미지 검색 결과로 바꾼다(검수용 · 출시 전 교체).
-#   로그인용 카카오 앱의 REST API 키를 infra/render-env.yml에서 읽어 쓴다 — 별도 시크릿 없음.
+#   카카오 REST API 키는 GitHub Secrets의 KAKAO_APP_KEY만 읽는다.
 #
 # 저장소의 apps/api/src/seed-samples.ts를 그대로 쓴다. 고정 시드라 몇 번을 돌려도
 # 같은 업체만 있고, remove는 vendor_source_records(source_key='sample') 표시를
@@ -59,9 +59,8 @@ jobs:
           # 이 워크플로는 검수용 샘플이고 remove는 업체·이미지·표본 계정을 지운다.
           # 운영 DB(DATABASE_URL)를 그대로 쓰던 것을 대상 선택으로 바꾼다.
           #
-          # **`production`은 여기서 닿지 않는다.** PRODUCTION_DATABASE_URL은 Render
-          # 내부망에서만 풀리는 이름이라 러너에서 getaddrinfo EAI_AGAIN으로 죽는다
-          # (2026-09-09 db-status.yml 실측). 운영 API가 실제로 쓰는 DB는
+          # **`production`은 여기서 닿지 않는다.** PRODUCTION_DATABASE_URL이 외부
+          # 러너에서 해석되지 않으면 실패한다. 운영 API가 실제로 쓰는 DB는
           # DATABASE_URL이고, 그것이 여기의 `default`다. 선택지는 남겨 둔다 —
           # 밖에서 닿는 주소가 그 이름에 들어오면 그때 그대로 쓴다.
           case "${TARGET:-staging}" in

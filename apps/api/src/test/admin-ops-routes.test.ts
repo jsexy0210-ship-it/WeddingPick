@@ -496,7 +496,7 @@ describeWithDb('관리자 운영·시스템 라우트', () => {
 
       /*
        * **시행일은 문서마다 다르다.** 배포 환경변수에 있던 값이 판으로 왔다
-       * (`infra/render-env.yml` — 약관 2026-09-10 · 방침 2026-09-21).
+       * (운영 공개값 — 약관 2026-09-10 · 방침 2026-09-21).
        */
       expect(docOf(body, 'terms')?.effectiveOn).toBe('2026-09-10');
       expect(docOf(body, 'privacy')?.effectiveOn).toBe('2026-09-21');
@@ -535,7 +535,7 @@ describeWithDb('관리자 운영·시스템 라우트', () => {
 
       // 국외 이전 표에는 실제 국외 처리만 남는다. KakaoCloud는 국내 처리라 들어오면 회귀다.
       expect(row('neon.tech')).toContain('싱가포르');
-      expect(table.rows.some((r) => r.join(' ').includes('Render Services'))).toBe(false);
+      expect(table.rows.some((r) => r.join(' ').includes('Retired hosting services'))).toBe(false);
       expect(table.rows.some((r) => r.join(' ').includes('KakaoCloud'))).toBe(false);
       expect(all).toContain('(주)카카오엔터프라이즈(KakaoCloud)');
       expect(all).toContain('기존 객체 저장');

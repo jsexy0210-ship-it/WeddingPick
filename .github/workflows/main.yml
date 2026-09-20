@@ -1,5 +1,5 @@
 # main 검증과 KakaoCloud API 배포를 한 실행으로 묶는다.
-# Render 배포 경로는 폐기했다. 운영 및 정적 사이트 잔여 작업은 docs/deployment.md를 따른다.
+# 운영 및 정적 사이트 배포는 KakaoCloud 경로만 사용하며 docs/deployment.md를 따른다.
 # 이 워크플로 성공을 정적 사이트 전환 완료로 해석하지 않는다.
 # 관리자 운영 경로는 app-web과 같은 443의 /admin으로 고정한다.
 # [cutover-admin-web]은 현재 경로 검증만 하며 Nginx를 변경하지 않는다.
@@ -26,7 +26,6 @@ jobs:
       actions: read
     outputs:
       stage_static: ${{ steps.static_changes.outputs.changed }}
-      probe_static_ports: ${{ steps.port_probe_request.outputs.requested }}
 
     services:
       postgres:
@@ -73,20 +72,6 @@ jobs:
           echo "changed=$changed" >> "$GITHUB_OUTPUT"
           echo "Last staged static revision: ${staged_sha:-unknown}"
           echo "Static staging required: $changed"
-
-      - name: 카카오 정적 포트 검사 요청 확인
-        id: port_probe_request
-        shell: bash
-        env:
-          HEAD_MESSAGE: ${{ github.event.head_commit.message }}
-        run: |
-          set -euo pipefail
-          requested=false
-          if grep -Fq '[probe-static-ports]' <<< "${HEAD_MESSAGE:-}"; then
-            requested=true
-          fi
-          echo "requested=$requested" >> "$GITHUB_OUTPUT"
-          echo "Static port probe requested: $requested"
 
       - uses: actions/setup-node@v5
         with:
@@ -283,14 +268,6 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/audit-kakao-legal.yml
-
-  probe-kakao-static-ports:
-    name: Probe Kakao Website Port
-    needs: [ci]
-    if: ${{ always() && needs.ci.result == 'success' && github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[probe-static-ports]') }}
-    permissions:
-      contents: read
-    uses: ./.github/workflows/probe-kakao-static-ports.yml
 
   enable-kakao-static-cors:
     name: Enable Kakao Static CORS
