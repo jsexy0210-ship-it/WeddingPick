@@ -15,14 +15,17 @@ if [ -z "$release_sha" ]; then
 fi
 test -n "$release_sha"
 
-source_dir="$ROOT/static-releases/$release_sha/app"
+release_root="$ROOT/static-releases/$release_sha"
+source_dir="$release_root/app"
+admin_source_dir="$release_root/admin"
 test -f "$source_dir/index.html"
 if [ ! -f "$source_dir/login.html" ] && [ ! -f "$source_dir/login/index.html" ]; then
   echo "App login export was not found in release: $release_sha" >&2
   find "$source_dir" -maxdepth 2 -type f -name 'login*.html' -o -path '*/login/index.html' 2>/dev/null | head -20 >&2 || true
   exit 1
 fi
-echo "Using staged app release: $release_sha"
+test -f "$admin_source_dir/admin/login.html"
+echo "Using staged app/admin release: $release_sha"
 
 if [ -e "$TX_BACKUP_MARKER" ] || [ -e "$TX_LIVE_MARKER" ] || [ -e "$TX_TARGET_MARKER" ]; then
   echo 'An app-web update transaction is still pending; refusing to overwrite rollback state.' >&2
@@ -30,6 +33,7 @@ if [ -e "$TX_BACKUP_MARKER" ] || [ -e "$TX_LIVE_MARKER" ] || [ -e "$TX_TARGET_MA
 fi
 
 target="/var/www/weddingpick/releases/$release_sha/app"
+admin_target="/var/www/weddingpick/releases/$release_sha/admin"
 
 # 이미 app-web이 443을 소유하는 상태에서 보존 marker가 깨졌다면 새 설정을 쓰기 전에
 # 중단한다. 현재 app config를 API-only backup으로 덮어쓰면 rollback 경로가 사라진다.
@@ -66,6 +70,13 @@ if [ "$app_web_is_live" = true ]; then
     echo "App-web live marker does not match the active Nginx root: $live_sha" >&2
     exit 1
   fi
+  if grep -Fq 'location ^~ /admin/' "$CONF" 2>/dev/null; then
+    live_admin_target="/var/www/weddingpick/releases/$live_sha/admin"
+    if ! grep -Fq "root $live_admin_target;" "$CONF" 2>/dev/null; then
+      echo "Admin 443 route does not match the active release: $live_sha" >&2
+      exit 1
+    fi
+  fi
 fi
 
 if [ "$live_sha" = "$release_sha" ] && grep -Fq "root $target;" "$CONF" 2>/dev/null; then
@@ -80,8 +91,17 @@ else
   sudo -n mkdir -p "$(dirname "$target")"
   sudo -n rm -rf "$target"
   sudo -n cp -a "$source_dir" "$target"
-  sudo -n chmod -R a+rX /var/www/weddingpick
 fi
+
+# 관리자도 같은 immutable release를 443의 /admin 아래에서 제공한다.
+# 별도 포트는 사용하지 않는다.
+if [ -f "$admin_target/admin/login.html" ]; then
+  echo "Admin release $release_sha is already prepared; preserving served files."
+else
+  sudo -n rm -rf "$admin_target"
+  sudo -n cp -a "$admin_source_dir" "$admin_target"
+fi
+sudo -n chmod -R a+rX /var/www/weddingpick
 
 cert="$(sudo -n nginx -T 2>/dev/null | awk '$1=="ssl_certificate" && $2 !~ /_key/ {gsub(/;/,"",$2); print $2; exit}')"
 key="$(sudo -n nginx -T 2>/dev/null | awk '$1=="ssl_certificate_key" {gsub(/;/,"",$2); print $2; exit}')"
@@ -179,6 +199,17 @@ server {
         proxy_read_timeout 60s;
     }
 
+    # 관리자 운영 경로는 443의 /admin으로 고정한다.
+    location = /admin {
+        return 302 /admin/home;
+    }
+
+    location ^~ /admin/ {
+        root $admin_target;
+        try_files \$uri \$uri.html \$uri/index.html =404;
+        add_header X-Robots-Tag "noindex, nofollow" always;
+    }
+
     location / {
         try_files \$uri \$uri.html \$uri/index.html /index.html;
     }
@@ -198,10 +229,16 @@ curl --fail --silent --show-error --connect-timeout 5 --max-time 10 \
 grep -qi '<html' "$login_smoke"
 rm -f "$login_smoke"
 
+admin_smoke="$(mktemp)"
+curl --fail --silent --show-error --connect-timeout 5 --max-time 10 \
+  https://210.109.82.212/admin/login -o "$admin_smoke"
+grep -qi '<html' "$admin_smoke"
+rm -f "$admin_smoke"
+
 curl --fail --silent --show-error --connect-timeout 5 --max-time 10   https://210.109.82.212/v1/auth/providers | python3 -c 'import json,sys; json.load(sys.stdin)'
 
 printf '%s\n' "$release_sha" > "$LIVE_MARKER"
 rm -f "$tmp"
 tmp=''
 trap - EXIT
-echo "Kakao app web enabled locally from release $release_sha; public verification is still pending."
+echo "Kakao app web + admin 443 routes enabled locally from release $release_sha; public verification is still pending."
