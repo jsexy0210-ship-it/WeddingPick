@@ -24,7 +24,9 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(mobile('components/back-bar.tsx')).toContain('<DepthHeader');
     expect(mobile('features/wedding/screen-kit.tsx')).toContain('<DepthHeader');
     expect(mobile('features/settings/my-kit.tsx')).toContain('<DepthHeader');
-    expect(mobile('components/depth-header.tsx')).not.toContain('sub?:');
+    const depth = mobile('components/depth-header.tsx');
+    expect(depth).not.toContain('sub?:');
+    expect(depth).toContain('depthHeaderTitle(pathname)');
   });
   it('온보딩 지역 전체값을 만들지 않고 스타일 4종을 허용한다', () => {
     const region = mobile('features/onboarding/region-picker-sheet.tsx');
