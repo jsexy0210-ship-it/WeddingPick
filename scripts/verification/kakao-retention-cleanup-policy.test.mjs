@@ -39,9 +39,12 @@ test('cleanup defaults to dry-run and rechecks each candidate before delete', ()
 test('disk cleanup protects runtime references and requires the approved exact plan', () => {
   assert.match(diskCleanup, /docker ps -aq/);
   assert.match(diskCleanup, /protected_image_ids/);
+  assert.match(diskCleanup, /container_ids="\$\(sudo -n docker ps -aq\)"/);
+  assert.doesNotMatch(diskCleanup, /docker inspect[^\n]*\|\| true/);
   assert.match(diskCleanup, /\^weddingpick-\(api\|worker\):\[0-9a-f\]\{40\}\$/);
   assert.match(diskCleanup, /static-live-app/);
   assert.match(diskCleanup, /latest-candidate/);
+  assert.match(diskCleanup, /Cleanup protection marker is not readable/);
   assert.match(diskCleanup, /WP_CLEANUP_EXPECTED_PLAN_HASH/);
   assert.match(diskCleanup, /Cleanup plan changed or the approved plan hash is missing/);
   assert.match(diskCleanup, /docker inspect -f '\{\{\.State\.Running\}\}' weddingpick-api/);

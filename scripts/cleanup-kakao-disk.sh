@@ -31,50 +31,70 @@ assert_runtime_healthy() {
   health_ok "$PUBLIC_HEALTH_URL"
 }
 
+read_optional_marker() {
+  local path="$1"
+  if [ ! -e "$path" ]; then
+    return 0
+  fi
+  if [ ! -r "$path" ]; then
+    echo "Cleanup protection marker is not readable: $path" >&2
+    return 1
+  fi
+  cat "$path"
+}
+
 collect_plan() {
   local output="$1"
   local image_id image_ref live candidate dir name kept_recent
+  local container_ids image_refs recent_dirs all_dirs
   declare -A protected_image_ids=()
   declare -A keep_release=()
 
   : > "$output"
+  container_ids="$(sudo -n docker ps -aq)"
   while IFS= read -r container_id; do
-    image_id="$(sudo -n docker inspect -f '{{.Image}}' "$container_id" 2>/dev/null || true)"
+    [ -n "$container_id" ] || continue
+    image_id="$(sudo -n docker inspect -f '{{.Image}}' "$container_id")"
     [ -n "$image_id" ] && protected_image_ids["$image_id"]=1
-  done < <(sudo -n docker ps -aq)
+  done <<< "$container_ids"
 
+  image_refs="$(sudo -n docker images --format '{{.Repository}}:{{.Tag}}' | sort -u)"
   while IFS= read -r image_ref; do
     [[ "$image_ref" =~ ^weddingpick-(api|worker):[0-9a-f]{40}$ ]] || continue
     image_id="$(sudo -n docker image inspect -f '{{.Id}}' "$image_ref" 2>/dev/null || true)"
     if [ -n "$image_id" ] && [ -z "${protected_image_ids[$image_id]:-}" ]; then
       printf 'image\t%s\t%s\n' "$image_ref" "$image_id" >> "$output"
     fi
-  done < <(sudo -n docker images --format '{{.Repository}}:{{.Tag}}' | sort -u)
+  done <<< "$image_refs"
 
   if [ -d "$RELEASES" ]; then
-    live="$(cat "$ROOT/static-live-app" 2>/dev/null || true)"
-    candidate="$(cat "$RELEASES/latest-candidate" 2>/dev/null || true)"
+    live="$(read_optional_marker "$ROOT/static-live-app")"
+    candidate="$(read_optional_marker "$RELEASES/latest-candidate")"
     [[ "$live" =~ ^[0-9a-f]{40}$ ]] && keep_release["$live"]=1
     [[ "$candidate" =~ ^[0-9a-f]{40}$ ]] && keep_release["$candidate"]=1
     [[ "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ ]] && keep_release["$GITHUB_SHA"]=1
 
     kept_recent=0
+    recent_dirs="$(find "$RELEASES" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -nr | cut -d' ' -f2-)"
     while IFS= read -r dir; do
+      [ -n "$dir" ] || continue
       name="$(basename "$dir")"
       [[ "$name" =~ ^[0-9a-f]{40}$ ]] || continue
       if [ "$kept_recent" -lt 2 ]; then
         keep_release["$name"]=1
         kept_recent=$((kept_recent + 1))
       fi
-    done < <(find "$RELEASES" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -nr | cut -d' ' -f2-)
+    done <<< "$recent_dirs"
 
+    all_dirs="$(find "$RELEASES" -mindepth 1 -maxdepth 1 -type d -print)"
     while IFS= read -r dir; do
+      [ -n "$dir" ] || continue
       name="$(basename "$dir")"
       [[ "$name" =~ ^[0-9a-f]{40}$ ]] || continue
       if [ -z "${keep_release[$name]:-}" ]; then
         printf 'release\t%s\n' "$name" >> "$output"
       fi
-    done < <(find "$RELEASES" -mindepth 1 -maxdepth 1 -type d -print)
+    done <<< "$all_dirs"
   fi
 
   sort -o "$output" "$output"
