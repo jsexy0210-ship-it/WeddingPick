@@ -42,7 +42,7 @@ jest.mock('@/features/settings/my-kit', () => ({
 }));
 jest.mock('@weddingpick/ui', () => ({
   ErrorView: 'ErrorView', ThemedText: 'ThemedText', Toast: 'Toast', ThemedView: 'ThemedView', ActionButton: 'ActionButton', Skeleton: 'Skeleton',
-  Layout: {}, Radius: {}, Spacing: {}, useTheme: () => ({}), readWebInteractionState: () => ({}),
+  Border: { hairline: 1 }, Layout: {}, Radius: {}, Spacing: {}, useTheme: () => ({}), readWebInteractionState: () => ({}),
 }));
 
 const notice = { id: 'n-1', kind: 'partner', kindLabel: '배우자', title: '연결됐어요', body: '확인해주세요',
@@ -117,6 +117,25 @@ describe.each([['알림 설정', NotificationSettingsScreen], ['계정', Account
     const toggle = tree.root.findAllByType(Switch)[0]!;
     expect(toggle.props.value).toBe(true);
     expect(toggle.props.disabled).toBe(false);
+  });
+});
+
+describe('정본 알림 설정', () => {
+  it('서비스 알림 한 줄로 전체 푸시와 가격 변동 푸시를 함께 바꾼다', async () => {
+    jest.mocked(updateSettings).mockResolvedValue({
+      ...settings,
+      pushEnabled: false,
+      priceChangeEnabled: false,
+    } as never);
+
+    await mount(<NotificationSettingsScreen />);
+    await act(async () => tree.root.findAllByType(Switch)[0]!.props.onValueChange(false));
+
+    expect(updateSettings).toHaveBeenCalledWith({
+      pushEnabled: false,
+      priceChangeEnabled: false,
+    });
+    expect(tree.root.findAllByType(Switch)).toHaveLength(3);
   });
 });
 

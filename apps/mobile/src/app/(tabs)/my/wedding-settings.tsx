@@ -15,9 +15,19 @@ import {
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { ErrorView, Layout, Toast } from '@weddingpick/ui';
+import {
+  Border,
+  ErrorView,
+  Layout,
+  ProductSymbol,
+  Radius,
+  Spacing,
+  ThemedText,
+  Toast,
+  useTheme,
+} from '@weddingpick/ui';
 import { ApiError, completeSetup, getCurrentUser } from '@/api/client';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { useDepthBack } from '@/features/navigation/depth-back';
@@ -26,7 +36,7 @@ import { DatePickerSheet } from '@/features/onboarding/date-picker-sheet';
 import { UNDECIDED_LABEL, type Answers } from '@/features/onboarding/flow';
 import { PrepStatus } from '@/features/onboarding/prep-status';
 import { RegionPicker } from '@/features/onboarding/region-picker';
-import { NoteBox, Row, Rows, Section, SubScreen } from '@/features/settings/my-kit';
+import { NoteBox, Section, SubScreen } from '@/features/settings/my-kit';
 
 /** 준비 현황이 받는 업종 — 계약이 «기타»를 받지 않는다(`preparationCategorySchema`). */
 type PreparedCategory = Exclude<VendorCategory, 'etc'>;
@@ -74,6 +84,7 @@ type Editing = 'region' | 'budget' | 'prepared' | null;
  * 합치면서 그 화면이 곧 «스타일»(`/my/taste`)이 됐다. 같은 화면을 두 줄로 세우지 않는다.
  */
 export default function WeddingSettingsScreen() {
+  const theme = useTheme();
   const depthBack = useDepthBack();
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -156,23 +167,19 @@ export default function WeddingSettingsScreen() {
   return (
     <SubScreen title={S.title}>
       <Section>
-        <Rows>
-          <Row
-            name={S.date}
-            tail={dateValue}
-            tailDim
-            chevron
+        <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.track }]}>
+          <SettingRow
+            label={S.date}
+            value={dateValue}
             onPress={() => {
               setEditing(null);
               setDateOpen(true);
             }}
           />
 
-          <Row
-            name={S.region}
-            tail={current.region ?? UNDECIDED_LABEL}
-            tailDim
-            chevron
+          <SettingRow
+            label={S.region}
+            value={current.region ?? UNDECIDED_LABEL}
             onPress={() => toggle('region')}
           />
           {editing === 'region' ? (
@@ -188,11 +195,9 @@ export default function WeddingSettingsScreen() {
             </View>
           ) : null}
 
-          <Row
-            name={S.prepared}
-            tail={preparedValue}
-            tailDim
-            chevron
+          <SettingRow
+            label={S.prepared}
+            value={preparedValue}
             onPress={() => toggle('prepared')}
           />
           {editing === 'prepared' ? (
@@ -206,11 +211,9 @@ export default function WeddingSettingsScreen() {
             </View>
           ) : null}
 
-          <Row
-            name={S.budget}
-            tail={current.budgetBracket ? BUDGET_BRACKET_LABEL[current.budgetBracket] : S.none}
-            tailDim
-            chevron
+          <SettingRow
+            label={S.budget}
+            value={current.budgetBracket ? BUDGET_BRACKET_LABEL[current.budgetBracket] : S.none}
             onPress={() => toggle('budget')}
           />
           {editing === 'budget' ? (
@@ -225,14 +228,13 @@ export default function WeddingSettingsScreen() {
             </View>
           ) : null}
 
-          <Row
-            name={S.style}
-            tail={styleValue}
-            tailDim
-            chevron
+          <SettingRow
+            label={S.style}
+            value={styleValue}
+            last
             onPress={() => router.push('/my/taste' as never)}
           />
-        </Rows>
+        </View>
       </Section>
 
       <Section>
@@ -252,6 +254,42 @@ export default function WeddingSettingsScreen() {
 
       <Toast message={toast} onHidden={() => setToast(null)} />
     </SubScreen>
+  );
+}
+
+/** 4-3 정본: 작은 라벨 위에 현재 값을 놓는 64px 2단 행. */
+function SettingRow({
+  label,
+  value,
+  last = false,
+  onPress,
+}: {
+  label: string;
+  value: string;
+  last?: boolean;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+
+  return (
+    <View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${label} ${value}`}
+        onPress={onPress}
+        style={({ pressed }) => [styles.settingRow, pressed && styles.pressed]}>
+        <View style={styles.settingText}>
+          <ThemedText type="f13" themeColor="textAssistive" numberOfLines={1}>
+            {label}
+          </ThemedText>
+          <ThemedText type="f15" numberOfLines={1} style={styles.settingValue}>
+            {value}
+          </ThemedText>
+        </View>
+        <ProductSymbol name="chevronRight" size={Layout.iconInline} color={theme.textDisabled} />
+      </Pressable>
+      {!last ? <View style={[styles.divider, { backgroundColor: theme.border }]} /> : null}
+    </View>
   );
 }
 
@@ -281,6 +319,22 @@ function onlyPrepared(categories: readonly VendorCategory[]): PreparedCategory[]
 }
 
 const styles = StyleSheet.create({
+  card: {
+    borderWidth: Border.hairline,
+    borderRadius: Radius.medium,
+    overflow: 'hidden',
+  },
+  settingRow: {
+    minHeight: Layout.rowMinHeight + Spacing.two,
+    paddingHorizontal: Spacing.three,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Layout.inlineGap,
+  },
+  settingText: { flex: 1, minWidth: 0, gap: Spacing.half },
+  settingValue: { fontWeight: '700' },
+  divider: { height: Border.hairline },
+  pressed: { opacity: 0.6 },
   /* 펼친 편집기 — 행 아래 · 아래 여백만 준다. 부품이 제 여백을 갖고 있다. */
   /*
    * 펼쳐지는 편집기(`RegionPicker` · `BudgetGrid` · `PrepStatus`)는 **온보딩에서 그대로

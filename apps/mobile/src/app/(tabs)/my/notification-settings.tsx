@@ -1,8 +1,8 @@
 import type { Settings } from '@weddingpick/api-contract';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Switch } from 'react-native';
+import { StyleSheet, Switch, View } from 'react-native';
 
-import { ErrorView, Layout, Toast, useTheme } from '@weddingpick/ui';
+import { Border, ErrorView, Layout, Radius, Toast, useTheme } from '@weddingpick/ui';
 import { getSettings, updateSettings } from '@/api/client';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { NoteBox, Row, Rows, Section, SubScreen } from '@/features/settings/my-kit';
@@ -13,8 +13,6 @@ const S = {
   group: '알림 수신',
   service: '서비스 알림',
   serviceMeta: '일정 · Pick 변화 · 제보 결과',
-  price: '가격 변동 알림',
-  priceMeta: 'Pick한 곳의 제보 금액이 크게 바뀌면',
   marketing: '마케팅 알림',
   marketingMeta: '혜택 · 이벤트',
   night: '야간 수신',
@@ -27,7 +25,7 @@ const S = {
 /**
  * 알림 설정. 스위치를 누르면 바로 저장한다 — 토글은 상태 변경이지 제출이 아니다.
  *
- * 네 줄은 시안 13-my-sub WP-MY-007 «알림 수신»과 00-ia WP-NOTI-003이 정한 것이다.
+ * 세 줄은 시안 13-my-sub WP-MY-007 «알림 수신»과 00-ia WP-NOTI-003이 정한 것이다.
  * **배우자 공유는 여기 없다** — 시안에서 그 스위치는 배우자 연결 관리(WP-MY-006)
  * «각자 보는 것»에 있고, 없는 자리를 여기에 만들지 않는다.
  *
@@ -54,14 +52,17 @@ export default function NotificationSettingsScreen() {
   useEffect(load, [load]);
 
   async function toggle(
-    key: 'pushEnabled' | 'priceChangeEnabled' | 'marketingEnabled' | 'nightPushEnabled',
+    key: 'service' | 'marketingEnabled' | 'nightPushEnabled',
     value: boolean
   ) {
     if (!settings || savingRef.current) return;
     savingRef.current = true;
     setSaving(true);
-    setSettings({ ...settings, [key]: value });
-    await updateSettings({ [key]: value })
+    const patch = key === 'service'
+      ? { pushEnabled: value, priceChangeEnabled: value }
+      : { [key]: value };
+    setSettings({ ...settings, ...patch });
+    await updateSettings(patch)
       .then(setSettings)
       .catch(() => {
         setSettings(settings);
@@ -85,60 +86,49 @@ export default function NotificationSettingsScreen() {
   return (
     <SubScreen title={S.title} contentStyle={{ paddingTop: Layout.rowPaddingY }}>
       <Section title={S.group}>
-        <Rows>
-          <Row
-            name={S.service}
-            meta={S.serviceMeta}
-            right={
-              <Switch
-                disabled={saving}
-                value={settings.pushEnabled}
-                onValueChange={(next) => void toggle('pushEnabled', next)}
-                accessibilityLabel={S.service}
-                {...switchProps}
-              />
-            }
-          />
-          <Row
-            name={S.price}
-            meta={S.priceMeta}
-            right={
-              <Switch
-                disabled={saving}
-                value={settings.priceChangeEnabled}
-                onValueChange={(next) => void toggle('priceChangeEnabled', next)}
-                accessibilityLabel={S.price}
-                {...switchProps}
-              />
-            }
-          />
-          <Row
-            name={S.marketing}
-            meta={S.marketingMeta}
-            right={
-              <Switch
-                disabled={saving}
-                value={settings.marketingEnabled}
-                onValueChange={(next) => void toggle('marketingEnabled', next)}
-                accessibilityLabel={S.marketing}
-                {...switchProps}
-              />
-            }
-          />
-          <Row
-            name={S.night}
-            meta={S.nightMeta}
-            right={
-              <Switch
-                disabled={saving}
-                value={settings.nightPushEnabled}
-                onValueChange={(next) => void toggle('nightPushEnabled', next)}
-                accessibilityLabel={S.night}
-                {...switchProps}
-              />
-            }
-          />
-        </Rows>
+        <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.track }]}>
+          <Rows>
+            <Row
+              name={S.service}
+              meta={S.serviceMeta}
+              right={
+                <Switch
+                  disabled={saving}
+                  value={settings.pushEnabled && settings.priceChangeEnabled}
+                  onValueChange={(next) => void toggle('service', next)}
+                  accessibilityLabel={S.service}
+                  {...switchProps}
+                />
+              }
+            />
+            <Row
+              name={S.marketing}
+              meta={S.marketingMeta}
+              right={
+                <Switch
+                  disabled={saving}
+                  value={settings.marketingEnabled}
+                  onValueChange={(next) => void toggle('marketingEnabled', next)}
+                  accessibilityLabel={S.marketing}
+                  {...switchProps}
+                />
+              }
+            />
+            <Row
+              name={S.night}
+              meta={S.nightMeta}
+              right={
+                <Switch
+                  disabled={saving}
+                  value={settings.nightPushEnabled}
+                  onValueChange={(next) => void toggle('nightPushEnabled', next)}
+                  accessibilityLabel={S.night}
+                  {...switchProps}
+                />
+              }
+            />
+          </Rows>
+        </View>
       </Section>
 
       <Section>
@@ -149,3 +139,11 @@ export default function NotificationSettingsScreen() {
     </SubScreen>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    borderWidth: Border.hairline,
+    borderRadius: Radius.medium,
+    overflow: 'hidden',
+  },
+});
