@@ -13,6 +13,8 @@ import {
   SocialColors,
   SocialLogo,
   Spacing,
+  ProductSymbol,
+  readWebInteractionState,
   ThemedText,
   ThemedView,
   WeddingMark,
@@ -26,58 +28,21 @@ import {
   providerTone,
   useAuthProviders,
 } from '@/features/auth/providers';
-import {
-  clearRememberedAccount,
-  loadRememberedAccount,
-  type RememberedAccount,
-} from '@/features/auth/remembered-account';
+import { loadRememberedAccount, type RememberedAccount } from '@/features/auth/remembered-account';
 import { bootOwnsSigningInMessage, takePendingSignInError } from '@/features/auth/sign-in-handoff';
-import { CheckDot } from '@/features/settings/my-kit';
 import { SigningInBody, signingInMessage } from '@/features/auth/signing-in-view';
 import { useSignIn } from '@/features/auth/use-sign-in';
 import { openExternal } from '@/features/open-external';
 
-/**
- * 로그인 — 규격서 docs/design/figma-export/06-onboarding-login.dc.html(2026-09-15 대표 지시 「규격서의 수를 그대로」).
- *
- *   div 430×932  pad 64 24 32 24
- *     p "WEDDING, LESS OVERWHELMING" · 10/400 primary · lh 15 · ls 2.4px   ← **넣지 않는다**(아래)
- *     h1 "결정은 가볍게, 준비는 단단하게." · 42/700 #1A1C20 · lh 45 · ls -1.05px · mar 20 0 0 0
- *     p "흩어진 웨딩 정보를 …" · 15/400 #868B94 · lh 28 · mar 20 0 0 0 · (max-w 300)
- *     div 382×82  pad 20 · mar 48 0 0 0 · bg #EE8888 6% · r28 · border 1 #E4868D 15%
- *       div flex · gap 12 · align center
- *         span 40×40 "✦" · 18/400 #FFFFFF · lh 28 · bg primary · r9999
- *         p "나에게 맞는 순서부터" · 14/700 · lh 20      p "예산, 지역, 날짜를 기준으로 시작해요" · 12/400 #868B94 · mar 2 0 0 0
- *     div 382×132  pad 40 0 0 0
- *       button 382×56  "카카오로 3초 만에 시작하기" · 15/700 #191600 · lh 23 · gap 8 · bg #FEE500 · r16
- *         span 20×20 "k" …(카카오 심볼 자리)
- *       p "시작하면 웨딩픽 이용약관과 개인정보 처리방침에 동의하게 됩니다." · 11/400 #868B94 · lh 20 · mar 16 0 0 0
- *
- * **규격서와 다르게 둔 것과 근거.**
- * - **영문 eyebrow(`WEDDING, LESS OVERWHELMING`)는 넣지 않는다 — 되살리지 마라.**
- *   2026-09-15 대표 지시 「위와 같이 온보딩, 전체 메뉴에 이런 형식에 맞지 않는 화면 있으면
- *   싹다 찾아서 삭제해」다. 한국어로 옮기는 것도 아니고 **줄째 없앤다.** 제목은 규격서와
- *   같은 자리에 둔다 — eyebrow가 차지하던 높이를 위 여백으로 돌렸다
- *   (`Layout.headTopLogin` = 64 + lh 15 + mar 20 = 99). `extract-figma-export.mjs`를 다시
- *   돌리면 규격서에는 영문이 되살아나므로, 「규격서에 있는데 왜 없냐」며 되돌리지 않는다.
- * - 안내 카드 면 `#EE8888 6%` · 테두리 `#E4868D 15%`는 토큰에 없다 — 색은 MASTER 몫이라 `tintSurface` ·
- *   `tintBorder`로 두고 PR에 보고했다.
- * - 카카오 단추 안의 «k» 글자 배지는 카카오 공식 심볼(`SocialLogo`)로 그린다 — 카카오 로그인 버튼 디자인
- *   가이드가 요구하는 자리라 글자로 대신하지 않는다. 크기(20)와 사이(8)는 규격서다.
- * - 애플 · 개발용 제공자, 만 14세 확인, 기억된 계정 카드(WP-AUTH-008)는 규격서에 없는 기존 정본이라
- *   그대로 둔다(CLAUDE.md 3번). 카카오 단추 규격(56 · r16 · 15/700)을 같이 쓴다.
- */
-
-const HERO_TITLE = '웨딩 준비,\n여기서 같이 해요';
-const HERO_SUB = '실 제보로 고르고 배우자와 함께 정해요';
+/** WP-AUTH-001 — 2026-09-20 전달 정본의 최신 로그인 계약. */
+const HERO_TITLE = '웨딩 준비,\n진짜 견적부터\n확인해 보세요'; // pick-language: 로그인 정본 카피
 const BENEFITS = [
-  '실 제보로 실제 금액대를 볼 수 있어요',
-  '배우자와 일정과 지출을 같이 봐요',
-  '기기를 바꿔도 고른 곳이 그대로 있어요',
+  '실제 견적 금액을 비교해요', // pick-language: 로그인 정본 혜택
+  '마음에 드는 곳을 함께 Pick해요',
+  '일정과 지출도 한곳에서 관리해요',
 ] as const;
 
 const AGE_CONFIRM_LABEL = '만 14세 이상이에요';
-const AGE_CONFIRM_NOTICE = '만 14세 이상인지 확인하면 시작할 수 있어요';
 
 /** WP-AUTH-008 마지막 계정 카드의 배지 — strings.ko.json `onboarding.auth.remember.recentLabel`. */
 const RECENT_LOGIN_BADGE = '최근 로그인';
@@ -87,8 +52,7 @@ const KAKAO_PROVIDER_NAME = '카카오';
 export default function LoginScreen() {
   const theme = useTheme();
   const { providers, error: loadError } = useAuthProviders();
-  const { signIn, busy, busyProvider, error, retry, dismissError, reportError, needsAgeConfirm } =
-    useSignIn();
+  const { signIn, busy, busyProvider, error, retry, dismissError, reportError } = useSignIn();
   /** «만 14세 이상이에요»를 사람이 눌렀는가. 기본값은 꺼짐 — 미리 켜두지 않는다. */
   const [ageChecked, setAgeChecked] = useState(false);
   /** undefined = 아직 안 읽음, null = 기억된 계정 없음(WP-AUTH-001). */
@@ -108,47 +72,42 @@ export default function LoginScreen() {
   const primary = options.find((provider) => provider.provider === 'kakao' && !provider.isDevelopmentStandIn)
     ?? options[0]
     ?? null;
-  /* 만 14세 확인이 필요한데 아직 안 눌렀으면 어느 제공자든 시작하지 않는다. */
-  const ageBlocked = needsAgeConfirm && !ageChecked;
-
-  async function switchAccount() {
-    await clearRememberedAccount();
-    setRemembered(null);
-  }
+  /* 신규 로그인은 화면에서 연령 확인을 먼저 받아야 시작할 수 있다. 로그인 유지는 다시 묻지 않는다. */
+  const ageBlocked = !showRemembered && !ageChecked;
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <View style={styles.hero}>
-            <View style={[styles.markBox, { backgroundColor: theme.tint }]}>
-              <WeddingMark size={34} color={theme.onTint} />
+          <View style={styles.brandBlock}>
+            <View style={styles.markBox}>
+              <WeddingMark size={64} color={theme.tint} />
             </View>
             <ThemedText type="f32" style={styles.title}>
               {showRemembered && remembered
                 ? `${remembered.displayName ? `${remembered.displayName}님,\n` : ''}다시 오셨네요`
                 : HERO_TITLE}
             </ThemedText>
-            <ThemedText type="f16" themeColor="textSecondary" style={styles.sub}>
-              {showRemembered && remembered?.weddingDate
-                ? remainingLine(remembered.weddingDate)
-                : HERO_SUB}
-            </ThemedText>
-          </View>
+            {showRemembered && remembered?.weddingDate ? (
+              <ThemedText type="f16" themeColor="textSecondary" style={styles.sub}>
+                {remainingLine(remembered.weddingDate)}
+              </ThemedText>
+            ) : null}
 
-          <View style={styles.benefitWrap}>
-            {showRemembered && remembered ? (
-              <RememberedAccountCard account={remembered} />
-            ) : (
-              BENEFITS.map((benefit) => (
-                <View key={benefit} style={styles.benefitRow}>
-                  <View style={[styles.benefitDot, { backgroundColor: theme.tint }]} />
-                  <ThemedText type="f16" themeColor="textSecondary" style={styles.benefitText}>
-                    {benefit}
-                  </ThemedText>
-                </View>
-              ))
-            )}
+            <View style={styles.benefitWrap}>
+              {showRemembered && remembered ? (
+                <RememberedAccountCard account={remembered} />
+              ) : (
+                BENEFITS.map((benefit) => (
+                  <View key={benefit} style={styles.benefitRow}>
+                    <View style={[styles.benefitDot, { backgroundColor: theme.tint }]} />
+                    <ThemedText type="f15" themeColor="textSecondary" style={styles.benefitText}>
+                      {benefit}
+                    </ThemedText>
+                  </View>
+                ))
+              )}
+            </View>
           </View>
 
           <View style={styles.authBlock}>
@@ -163,20 +122,16 @@ export default function LoginScreen() {
             ) : (
               <>
                 <AgeConfirmRow
-                  visible={needsAgeConfirm}
+                  visible={!showRemembered}
                   checked={ageChecked}
                   onToggle={() => setAgeChecked((was) => !was)}
                 />
 
                 {primary ? (
                   <ProviderButton
-                    tone={
-                      showRemembered && primary.provider !== 'apple'
-                        ? { background: theme.tint, text: theme.onTint }
-                        : (providerTone(primary) ?? { background: theme.tint, text: theme.onTint })
-                    }
+                    tone={providerTone(primary) ?? { background: theme.tint, text: theme.onTint }}
                     icon={
-                      primary.isDevelopmentStandIn || (showRemembered && primary.provider !== 'apple') ? null : (
+                      primary.isDevelopmentStandIn ? null : (
                         <SocialLogo provider={primary.provider} size={KAKAO_LOGO} />
                       )
                     }
@@ -189,18 +144,6 @@ export default function LoginScreen() {
                     disabled={busy || !canSignInWith(primary) || ageBlocked}
                     onPress={() => signIn(primary, { ageAcknowledged: ageChecked })}
                   />
-                ) : null}
-
-                {showRemembered ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="다른 계정으로 시작하기"
-                    onPress={() => void switchAccount()}
-                    style={({ pressed }) => [styles.otherButton, pressed && styles.pressed]}>
-                    <ThemedText type="f16" themeColor="textSecondary" style={styles.bold}>
-                      다른 계정으로 시작하기
-                    </ThemedText>
-                  </Pressable>
                 ) : null}
 
                 <ThemedText type="f13" themeColor="textAssistive" style={styles.terms}>
@@ -261,7 +204,7 @@ function ProviderButton({
           pressed && styles.pressed,
         ]}>
         {icon}
-        <ThemedText type="f15" style={[styles.providerLabel, { color: tone.text }]}>
+        <ThemedText type="f17" style={[styles.providerLabel, { color: tone.text }]}>
           {label}
         </ThemedText>
       </Pressable>
@@ -289,26 +232,39 @@ function AgeConfirmRow({
   checked: boolean;
   onToggle: () => void;
 }) {
+  const theme = useTheme();
   if (!visible) return null;
 
   return (
-    <View style={styles.ageConfirm}>
-      <ThemedText type="f12" themeColor="textSecondary">
-        {AGE_CONFIRM_NOTICE}
-      </ThemedText>
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked }}
+      accessibilityLabel={AGE_CONFIRM_LABEL}
+      onPress={onToggle}
+      style={(state) => {
+        const { focused } = readWebInteractionState(state);
 
-      <Pressable
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked }}
-        accessibilityLabel={AGE_CONFIRM_LABEL}
-        onPress={onToggle}
-        style={styles.ageConfirmRow}>
-        <CheckDot on={checked} />
-        <ThemedText type="f14" themeColor="textStrong" style={styles.grow}>
-          {AGE_CONFIRM_LABEL}
-        </ThemedText>
-      </Pressable>
-    </View>
+        return [
+          styles.ageConfirmRow,
+          { borderBottomColor: theme.line },
+          focused
+            ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: 2 }
+            : null,
+        ];
+      }}>
+      <View
+        style={[
+          styles.ageCheck,
+          checked
+            ? { backgroundColor: theme.tint }
+            : { borderWidth: Border.checkbox, borderColor: theme.track },
+        ]}>
+        {checked ? <ProductSymbol name="check" size={12} color={theme.onTint} /> : null}
+      </View>
+      <ThemedText type="f15" themeColor="textSecondary" style={styles.grow}>
+        {AGE_CONFIRM_LABEL}
+      </ThemedText>
+    </Pressable>
   );
 }
 
@@ -377,36 +333,32 @@ const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
   content: { flexGrow: 1 },
-  hero: {
-    flexGrow: 1,
-    justifyContent: 'flex-end',
-    paddingTop: 64,
+  brandBlock: {
+    flex: 1,
+    paddingTop: 88,
     paddingHorizontal: Layout.gutter,
   },
   markBox: {
     width: 64,
     height: 64,
-    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Spacing.four,
+    marginBottom: 20,
   },
-  title: { fontWeight: 700, letterSpacing: LetterSpacing.n052 },
+  title: { fontWeight: 700, lineHeight: LineHeight.t1, letterSpacing: LetterSpacing.n064 },
   sub: { lineHeight: LineHeight.lh24, marginTop: 10 },
   benefitWrap: {
     flexShrink: 0,
-    paddingTop: Spacing.four + Spacing.four,
-    paddingHorizontal: Layout.gutter,
-  },
-  benefitRow: {
-    minHeight: 48,
-    paddingVertical: 11,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    paddingTop: 24,
     gap: 10,
   },
-  benefitDot: { width: 6, height: 6, borderRadius: Radius.pill, marginTop: 8 },
-  benefitText: { flex: 1, lineHeight: LineHeight.lh24 },
+  benefitRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 9,
+  },
+  benefitDot: { width: 5, height: 5, borderRadius: Radius.pill, marginTop: 9 },
+  benefitText: { flex: 1, lineHeight: LineHeight.lh23 },
   authBlock: {
     flexShrink: 0,
     paddingTop: Spacing.four + Spacing.four,
@@ -415,8 +367,20 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   section: { gap: Layout.cardGap },
-  ageConfirm: { gap: Layout.cardGap },
-  ageConfirmRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Layout.rowPaddingY },
+  ageConfirmRow: {
+    height: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderBottomWidth: Border.hairline,
+  },
+  ageCheck: {
+    width: 18,
+    height: 18,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   grow: { flex: 1 },
   card: { borderRadius: Radius.medium, padding: Spacing.three, gap: Spacing.one },
   provider: {
@@ -428,16 +392,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.two,
   },
-  providerLabel: { fontWeight: 700, lineHeight: LineHeight.lh24 },
+  providerLabel: { fontWeight: 700, lineHeight: LineHeight.lh23 },
   hint: { textAlign: 'center', marginTop: Spacing.one },
-  otherButton: {
-    minHeight: 52,
-    borderRadius: Radius.control,
-    backgroundColor: '#F2F3F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Layout.gutter,
-  },
   terms: { textAlign: 'center', paddingTop: 6, lineHeight: LineHeight.lh19 },
   busy: { alignItems: 'center', justifyContent: 'center', minHeight: Layout.ctaSheet },
   accountWrap: {},

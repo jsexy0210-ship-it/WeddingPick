@@ -63,6 +63,7 @@ export type ThemedTextProps = TextProps & {
     | 'f14'
     | 'f15'
     | 'f16'
+    | 'f17'
     | 'f18'
     | 'f20'
     | 'f24'
@@ -145,6 +146,7 @@ const STYLE_FOR: Record<TextType, keyof typeof styles> = {
   f14: 'f14',
   f15: 'f15',
   f16: 'f16',
+  f17: 'f17',
   f18: 'f18',
   f20: 'f20',
   f24: 'f24',
@@ -192,6 +194,7 @@ const ANDROID_LETTER_SPACING_EM: Record<keyof typeof styles, number> = {
   f14: 0,
   f15: 0,
   f16: 0,
+  f17: 0,
   f18: 0,
   f20: 0,
   f24: 0,
@@ -267,6 +270,7 @@ const styles = StyleSheet.create({
   f14: { fontSize: FontSize.f14, lineHeight: LineHeight.lh20, fontWeight: 400 },
   f15: { fontSize: FontSize.f15, lineHeight: LineHeight.lh22, fontWeight: 400 },
   f16: { fontSize: FontSize.f16, lineHeight: LineHeight.lh24, fontWeight: 400 },
+  f17: { fontSize: FontSize.f17, lineHeight: LineHeight.lh23, fontWeight: 400 },
   f18: { fontSize: FontSize.f18, lineHeight: LineHeight.lh28, fontWeight: 400 },
   f20: { fontSize: FontSize.f20, lineHeight: LineHeight.lh28, fontWeight: 400 },
   f24: { fontSize: FontSize.f24, lineHeight: LineHeight.lh32, fontWeight: 400 },

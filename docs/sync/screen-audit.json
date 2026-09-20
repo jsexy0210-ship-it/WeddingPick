@@ -12,7 +12,7 @@
     "systemRefsAfterSourceScan": 1,
     "excludedOrNonRoute": 19,
     "unmappedImplementationRefs": 30,
-    "visualComplete": 0,
+    "visualComplete": 1,
     "exceptions": [
       "검색 Root Back 삭제 유지",
       "삭제·통합된 독립 페이지를 되살리지 않고 현재 라우트에 적용"
@@ -22,7 +22,7 @@
       "검색 Root는 Back 없이 즉시 결과를 표시했다.",
       "검색 제목·결과 헤더·카드 배치는 전달 정본과 달랐다."
     ],
-    "note": "이번 숫자는 누락 추적 대장이다. 동일 상태 390×844 원본·실제 캡처 대조가 없어 시각 완료는 0으로 둔다."
+    "note": "이번 숫자는 누락 추적 대장이다. WP-AUTH-001만 최신 v3.13 계약과 390×844 기본·체크·포커스 실제 캡처를 대조해 시각 완료로 기록했다. 나머지는 완료로 처리하지 않는다."
   },
   "recordedDate": "2026-09-10",
   "timezone": "Asia/Seoul",

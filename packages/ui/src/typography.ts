@@ -81,6 +81,8 @@ export const FontSize = {
   f14: 14,
   f15: 15,
   f16: 16,
+  /** 로그인 카카오 CTA. 06-onboarding-login.dc.html `17/700 · lh 23`. */
+  f17: 17,
   f18: 18,
   f20: 20,
   f24: 24,
