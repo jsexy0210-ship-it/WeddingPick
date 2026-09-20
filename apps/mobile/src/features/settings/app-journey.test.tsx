@@ -2,11 +2,12 @@ import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { Switch } from 'react-native';
 import { router } from 'expo-router';
-import { listNotifications, readNotification, readAllNotifications, getSettings, updateSettings, searchVendors, listVendorRegions } from '@/api/client';
+import { listNotifications, readNotification, readAllNotifications, getCurrentUser, getSettings, setDisplayName, updateSettings, searchVendors, listVendorRegions } from '@/api/client';
 import NotificationsScreen from '@/app/(tabs)/my/notifications';
 import NotificationSettingsScreen from '@/app/(tabs)/my/notification-settings';
 import AccountScreen from '@/app/(tabs)/my/account';
 import SettingsScreen from '@/app/(tabs)/my/settings';
+import ProfileScreen from '@/app/(tabs)/my/profile';
 import AutocompleteScreen from '@/app/(tabs)/search/autocomplete';
 import PriceReportScreen from '@/app/(tabs)/search/[vendorId]/price-report';
 
@@ -18,7 +19,7 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('@/api/client', () => ({
   listNotifications: jest.fn(), readNotification: jest.fn(), readAllNotifications: jest.fn(),
-  getSettings: jest.fn(), updateSettings: jest.fn(), searchVendors: jest.fn(), listVendorRegions: jest.fn(),
+  getCurrentUser: jest.fn(), getSettings: jest.fn(), setDisplayName: jest.fn(), updateSettings: jest.fn(), searchVendors: jest.fn(), listVendorRegions: jest.fn(),
 }));
 jest.mock('@/components/back-bar', () => ({ BackBar: 'BackBar' }));
 /*
@@ -37,17 +38,19 @@ jest.mock('@/features/common/bottom-sheet', () => ({ BottomSheet: 'BottomSheet',
 jest.mock('@/features/wedding/screen-kit', () => ({ NavBar: 'NavBar' }));
 jest.mock('@/features/loading/delayed-loader', () => ({ DelayedLoadingView: 'Loading' }));
 jest.mock('@/features/settings/my-kit', () => ({
-  EmptyBox: 'EmptyBox', NavAction: 'NavAction', Section: 'Section', SubScreen: 'SubScreen',
-  NoteBox: 'NoteBox', Row: (props: { right?: React.ReactNode }) => props.right ?? null, Rows: 'Rows',
+  Avatar: 'Avatar', EmptyBox: 'EmptyBox', NavAction: 'NavAction', Section: 'Section', SubScreen: 'SubScreen',
+  NoteBox: 'NoteBox', Row: (props: { right?: React.ReactNode }) =>
+    jest.requireActual('react').createElement('Row', props, props.right), Rows: 'Rows',
 }));
 jest.mock('@weddingpick/ui', () => ({
   ErrorView: 'ErrorView', ThemedText: 'ThemedText', Toast: 'Toast', ThemedView: 'ThemedView', ActionButton: 'ActionButton', Skeleton: 'Skeleton',
-  Border: { hairline: 1 }, Layout: {}, Radius: {}, Spacing: {}, useTheme: () => ({}), readWebInteractionState: () => ({}),
+  Border: { hairline: 1 }, FontSize: {}, Layout: {}, Radius: {}, Spacing: {}, useTheme: () => ({}), readWebInteractionState: () => ({}),
 }));
 
 const notice = { id: 'n-1', kind: 'partner', kindLabel: '배우자', title: '연결됐어요', body: '확인해주세요',
   targetId: null, createdAt: '2026-09-10T00:00:00Z', readAt: null };
-const settings = { pushEnabled: true, priceChangeEnabled: true };
+const settings = { pushEnabled: true, priceChangeEnabled: true, marketingEnabled: false, nightPushEnabled: false };
+const currentUser = { userId: 'user-1', displayName: '지수' };
 function deferred() {
   let resolve!: (value: unknown) => void;
   let reject!: (reason?: unknown) => void;
@@ -59,7 +62,9 @@ async function mount(element: React.ReactElement) { await act(async () => { tree
 afterEach(async () => { if (tree) await act(async () => tree.unmount()); });
 beforeEach(() => {
   jest.mocked(listNotifications).mockResolvedValue({ notifications: [notice], unread: 7, total: 7 } as never);
+  jest.mocked(getCurrentUser).mockResolvedValue(currentUser as never);
   jest.mocked(getSettings).mockResolvedValue(settings as never);
+  jest.mocked(setDisplayName).mockResolvedValue({ displayName: '지수' } as never);
 });
 
 describe('알림 이동과 읽음 복구', () => {
@@ -137,6 +142,38 @@ describe('정본 알림 설정', () => {
     });
     expect(tree.root.findAllByType(Switch)).toHaveLength(3);
   });
+
+  it('분리 저장된 서비스 알림 중 하나라도 켜져 있으면 켜짐으로 표시한다', async () => {
+    jest.mocked(getSettings).mockResolvedValueOnce({
+      ...settings,
+      priceChangeEnabled: false,
+    } as never);
+    jest.mocked(updateSettings).mockResolvedValue({
+      ...settings,
+      pushEnabled: false,
+      priceChangeEnabled: false,
+    } as never);
+
+    await mount(<NotificationSettingsScreen />);
+    const service = tree.root.findAllByType(Switch)[0]!;
+    expect(service.props.value).toBe(true);
+    await act(async () => service.props.onValueChange(false));
+    expect(updateSettings).toHaveBeenCalledWith({
+      pushEnabled: false,
+      priceChangeEnabled: false,
+    });
+  });
+});
+
+it('프로필의 배우자 노출 이름만 displayName 편집을 연다', async () => {
+  await mount(<ProfileScreen />);
+  const rows = tree.root.findAllByType('Row' as never);
+  const accountName = rows.find((node) => node.props.name === '이름');
+  const partnerName = rows.find((node) => node.props.name === '배우자에게 보이는 이름');
+  expect(accountName?.props.tail).toBe('연결 계정에서 확인');
+  expect(accountName?.props.onPress).toBeUndefined();
+  expect(partnerName?.props.tail).toBe('지수');
+  expect(partnerName?.props.onPress).toEqual(expect.any(Function));
 });
 
 it('폐기된 수동 가격 제보 링크는 Pick 인증 동의로 연결한다', async () => {

@@ -253,6 +253,7 @@ export function Row({
   onPress,
   right,
   accessibilityLabel,
+  inset,
 }: {
   lead?: ReactNode;
   name: string;
@@ -271,6 +272,8 @@ export function Row({
   /** 꼬리 자리에 직접 놓는 것(스위치 · 로고). */
   right?: ReactNode;
   accessibilityLabel?: string;
+  /** 테두리 카드 안 행의 정본 좌우 여백(16). 구분선 폭은 카드 전체를 유지한다. */
+  inset?: boolean;
 }) {
   const theme = useTheme();
   const nameColor: ThemeColor = danger ? 'negative' : off ? 'textDisabled' : 'text';
@@ -313,11 +316,16 @@ export function Row({
           accessibilityRole="button"
           accessibilityLabel={accessibilityLabel}
           onPress={onPress}
-          style={({ pressed }) => [styles.row, meta ? styles.rowTall : null, pressed && styles.pressed]}>
+          style={({ pressed }) => [
+            styles.row,
+            inset ? styles.rowInset : null,
+            meta ? styles.rowTall : null,
+            pressed && styles.pressed,
+          ]}>
           {body}
         </Pressable>
       ) : (
-        <View style={[styles.row, meta ? styles.rowTall : null]}>{body}</View>
+        <View style={[styles.row, inset ? styles.rowInset : null, meta ? styles.rowTall : null]}>{body}</View>
       )}
       <View style={[styles.hr, { backgroundColor: theme.border }]} />
     </View>
@@ -553,6 +561,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     paddingVertical: Layout.sectionHeadGap,
   },
+  rowInset: { paddingHorizontal: Spacing.three },
   rowText: { flex: 1, minWidth: 0, gap: Spacing.half },
   hr: { height: 1 },
 

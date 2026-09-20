@@ -31,6 +31,7 @@ const S = {
   name: '이름',
   partnerName: '배우자에게 보이는 이름',
   nameEmpty: '정하기',
+  nameUnavailable: '연결 계정에서 확인',
   notifications: '알림',
   service: '서비스 알림',
   serviceMeta: '일정 · Pick 변화 · 인증 결과',
@@ -65,8 +66,8 @@ const S = {
  * 알림 설정은 시안대로 세 토글을 이 화면에서 바로 바꾼다. 서비스 알림은 서버의 전체 푸시와
  * 가격 변동 푸시를 함께 켜고 끈다 — 정본은 둘을 한 줄로 합쳤다.
  *
- * 이름만 바꾼다. 사진 바꾸기 · 제공자별 연결 계정은 계약이 없어 두지 않는다. 배우자에게
- * 보이는 이름은 별도 저장값이 없으므로 같은 이름을 보여주고 같은 편집 시트를 연다.
+ * API의 displayName은 배우자와 후기에 보일 이름이다. 법적·연결 계정 이름은 읽기 계약이 없으므로
+ * 같은 값으로 가장하지 않고 연결 계정에서 확인하도록 표시한다. 사진 바꾸기도 저장 계약이 없어 두지 않는다.
  */
 export default function ProfileScreen() {
   const theme = useTheme();
@@ -172,13 +173,9 @@ export default function ProfileScreen() {
           <Rows>
             <Row
               name={S.name}
-              tail={me.displayName ?? S.nameEmpty}
-              tailDim={!me.displayName}
-              chevron
-              onPress={() => {
-                setNameDraft(me.displayName ?? '');
-                setNameOpen(true);
-              }}
+              tail={S.nameUnavailable}
+              tailDim
+              inset
             />
             <Row
               name={S.partnerName}
@@ -189,6 +186,7 @@ export default function ProfileScreen() {
                 setNameDraft(me.displayName ?? '');
                 setNameOpen(true);
               }}
+              inset
             />
           </Rows>
         </View>
@@ -206,12 +204,13 @@ export default function ProfileScreen() {
               right={
                 <Switch
                   disabled={settingsSaving}
-                  value={settings.pushEnabled && settings.priceChangeEnabled}
+                  value={settings.pushEnabled || settings.priceChangeEnabled}
                   onValueChange={(next) => void toggleSetting('service', next)}
                   accessibilityLabel={S.service}
                   {...switchProps}
                 />
               }
+              inset
             />
             <Row
               name={S.marketing}
@@ -225,6 +224,7 @@ export default function ProfileScreen() {
                   {...switchProps}
                 />
               }
+              inset
             />
             <Row
               name={S.night}
@@ -238,6 +238,7 @@ export default function ProfileScreen() {
                   {...switchProps}
                 />
               }
+              inset
             />
           </Rows>
         </View>
@@ -247,9 +248,9 @@ export default function ProfileScreen() {
       <Section title={S.account}>
         <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.track }]}>
           <Rows>
-            <Row name={S.social} tail={S.connected} tailBadge="ok" />
-            <Row name={S.logout} chevron onPress={confirmSignOut} />
-            <Row name={S.withdraw} off chevron onPress={() => router.push('/my/withdrawal' as never)} />
+            <Row name={S.social} tail={S.connected} tailBadge="ok" inset />
+            <Row name={S.logout} chevron onPress={confirmSignOut} inset />
+            <Row name={S.withdraw} off chevron onPress={() => router.push('/my/withdrawal' as never)} inset />
           </Rows>
         </View>
       </Section>

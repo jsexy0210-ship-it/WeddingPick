@@ -94,12 +94,13 @@ export default function NotificationSettingsScreen() {
               right={
                 <Switch
                   disabled={saving}
-                  value={settings.pushEnabled && settings.priceChangeEnabled}
+                  value={settings.pushEnabled || settings.priceChangeEnabled}
                   onValueChange={(next) => void toggle('service', next)}
                   accessibilityLabel={S.service}
                   {...switchProps}
                 />
               }
+              inset
             />
             <Row
               name={S.marketing}
@@ -113,6 +114,7 @@ export default function NotificationSettingsScreen() {
                   {...switchProps}
                 />
               }
+              inset
             />
             <Row
               name={S.night}
@@ -126,6 +128,7 @@ export default function NotificationSettingsScreen() {
                   {...switchProps}
                 />
               }
+              inset
             />
           </Rows>
         </View>
