@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 
 
 function jobBlock(source, name) {
@@ -12,24 +13,23 @@ function jobBlock(source, name) {
   return next === -1 ? source.slice(start) : source.slice(start, start + marker.length + next);
 }
 
-const activeAdminDeploymentFiles = [
-  'scripts/split-admin-dist.mjs',
-  'scripts/install-kakao-app-web.sh',
-  'scripts/install-kakao-preview-routes.sh',
-  'scripts/install-kakao-static-sites.sh',
-  'scripts/add-kakao-static-cors.sh',
-  'scripts/probe-kakao-static-ports.sh',
-  '.github/workflows/main.yml',
-  '.github/workflows/pr-validation.yml',
-  '.github/workflows/cutover-kakao-app-web.yml',
-  '.github/workflows/cutover-kakao-admin-web.yml',
-  '.github/workflows/preview-kakao-admin-web.yml',
-  '.github/workflows/enable-kakao-static-cors.yml',
-  '.github/workflows/probe-kakao-static-ports.yml',
-];
+function activeDeploymentFiles() {
+  const workflows = readdirSync('.github/workflows')
+    .filter((name) => /\.ya?ml$/.test(name))
+    .map((name) => join('.github/workflows', name));
+
+  const scripts = readdirSync('scripts')
+    .filter((name) => {
+      const path = join('scripts', name);
+      return statSync(path).isFile() && /\.(?:sh|mjs|cjs|js)$/.test(name) && name !== 'assert-admin-origin-443.sh';
+    })
+    .map((name) => join('scripts', name));
+
+  return [...workflows, ...scripts];
+}
 
 test('active admin deployment paths never reference port 8443', () => {
-  for (const file of activeAdminDeploymentFiles) {
+  for (const file of activeDeploymentFiles()) {
     const source = readFileSync(file, 'utf8');
     assert.doesNotMatch(
       source,
@@ -45,10 +45,10 @@ test('admin redirect origin is hard-coded to canonical 443 and cannot be overrid
   assert.doesNotMatch(source, /process\.env\.ADMIN_ORIGIN/);
 });
 
-test('workflows cannot override the locked admin origin', () => {
-  for (const file of ['.github/workflows/main.yml', '.github/workflows/pr-validation.yml']) {
-    const source = readFileSync(file, 'utf8');
-    assert.doesNotMatch(source, /ADMIN_ORIGIN/);
+test('no workflow can override the locked admin origin', () => {
+  for (const name of readdirSync('.github/workflows').filter((entry) => /\.ya?ml$/.test(entry))) {
+    const source = readFileSync(join('.github/workflows', name), 'utf8');
+    assert.doesNotMatch(source, /ADMIN_ORIGIN/, `${name} must not override the admin origin`);
   }
 });
 
