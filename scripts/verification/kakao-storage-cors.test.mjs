@@ -9,6 +9,7 @@ const {
   UPLOAD_ORIGIN,
   UPLOAD_RULE,
   planUploadCorsRules,
+  sameRules,
 } = require('../configure-kakao-storage-cors.cjs');
 
 test('브라우저 결제 증빙 PUT에 필요한 Origin, 메서드, 헤더를 좁게 허용한다', () => {
@@ -45,6 +46,17 @@ test('카카오 스토리지의 최대 규칙 수를 넘기면 기존 정책을 
   assert.throws(() => planUploadCorsRules(rules), /storage_cors_rule_limit_exceeded/);
 });
 
+test('서버가 붙인 ID와 헤더 대소문자·배열 순서는 같은 CORS 규칙으로 비교한다', () => {
+  const readBack = [{
+    ...UPLOAD_RULE,
+    ID: 'server-generated-id',
+    AllowedHeaders: ['content-type'],
+    ExposeHeaders: ['etag'],
+  }];
+
+  assert.equal(sameRules(readBack, [UPLOAD_RULE]), true);
+});
+
 test('API 배포가 버킷 정책 적용과 preflight 검증을 호출한다', () => {
   const workflow = readFileSync('.github/workflows/deploy-kakao-api.yml', 'utf8');
   const wrapper = readFileSync('scripts/configure-kakao-storage-cors.sh', 'utf8');
@@ -56,4 +68,6 @@ test('API 배포가 버킷 정책 적용과 preflight 검증을 호출한다', (
   assert.match(runtime, /Access-Control-Request-Method': 'PUT'/);
   assert.match(runtime, /Access-Control-Request-Headers': 'content-type'/);
   assert.match(runtime, /kakao_storage_upload_preflight=ok/);
+  assert.match(runtime, /const VERIFY_ATTEMPTS = 30/);
+  assert.match(runtime, /error\?\.message/);
 });
