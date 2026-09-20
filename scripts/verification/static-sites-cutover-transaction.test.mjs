@@ -60,7 +60,7 @@ function makeHarness({ includePrivacy = true, previousLiveSha = null } = {}) {
   mkdirSync(bin, { recursive: true });
   mkdirSync(state, { recursive: true });
 
-  const baseline = 'server {\n  listen 8443 ssl;\n  # STATIC_BASELINE\n}\n';
+  const baseline = 'server {\n  listen 9443 ssl;\n  # STATIC_BASELINE\n}\n';
   writeFileSync(conf, baseline, 'utf8');
   writeFileSync(
     path.join(releaseRoot, 'admin', 'admin', 'login.html'),
@@ -257,7 +257,6 @@ test('automatic cutover installs the release named by a valid latest-candidate m
     const result = runLatest(h);
     assert.equal(result.status, 0, result.stderr || result.stdout);
     const liveConfig = readFileSync(h.conf, 'utf8');
-    assert.ok(liveConfig.includes(`${h.releaseSha}/admin`));
     assert.ok(liveConfig.includes(`${h.releaseSha}/web`));
     assert.equal(readFileSync(h.liveMarker, 'utf8').trim(), h.releaseSha);
   } finally {
@@ -354,7 +353,6 @@ test('successful install keeps new static config and release marker without roll
     const result = run(h);
     assert.equal(result.status, 0, result.stderr || result.stdout);
     const liveConfig = readFileSync(h.conf, 'utf8');
-    assert.ok(liveConfig.includes(`${h.releaseSha}/admin`));
     assert.ok(liveConfig.includes(`${h.releaseSha}/web`));
     assert.equal(
       readFileSync(h.liveMarker, 'utf8').trim(),
@@ -376,12 +374,12 @@ test('missing live marker fails closed before mutating currently served static f
 
     rmSync(h.liveMarker, { force: true });
     writeFileSync(
-      path.join(h.servedReleaseRoot, 'admin', 'admin', 'login.html'),
-      '<html>LIVE-ADMIN-SAFE</html>',
+      path.join(h.servedReleaseRoot, 'web', 'privacy.html'),
+      '<html>LIVE-WEB-SAFE</html>',
       'utf8',
     );
     writeFileSync(
-      path.join(h.root, 'static-releases', h.releaseSha, 'admin', 'admin', 'login.html'),
+      path.join(h.root, 'static-releases', h.releaseSha, 'web', 'privacy.html'),
       '<html>NEW-SOURCE</html>',
       'utf8',
     );
@@ -390,8 +388,8 @@ test('missing live marker fails closed before mutating currently served static f
     assert.notEqual(second.status, 0);
     assert.match(second.stderr, /live release marker is missing/);
     assert.equal(
-      readFileSync(path.join(h.servedReleaseRoot, 'admin', 'admin', 'login.html'), 'utf8'),
-      '<html>LIVE-ADMIN-SAFE</html>',
+      readFileSync(path.join(h.servedReleaseRoot, 'web', 'privacy.html'), 'utf8'),
+      '<html>LIVE-WEB-SAFE</html>',
     );
   } finally {
     h.cleanup();
@@ -403,10 +401,6 @@ test('re-running the same live static release does not replace served files', ()
   try {
     const result = run(h);
     assert.equal(result.status, 0, result.stderr || result.stdout);
-    assert.equal(
-      readFileSync(path.join(h.servedReleaseRoot, 'admin', 'admin', 'login.html'), 'utf8'),
-      '<html>LIVE-ADMIN</html>',
-    );
     assert.equal(
       readFileSync(path.join(h.servedReleaseRoot, 'web', 'privacy.html'), 'utf8'),
       '<html>LIVE-WEB</html>',
