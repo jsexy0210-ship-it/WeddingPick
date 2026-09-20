@@ -87,12 +87,10 @@ const configSchema = z.object({
    * 상담기록·Pick 인증을 Gemini로 읽을 때 쓰는 모델.
    *
    * **기본값을 둔다.** 값이 빠진 채 배포돼도 서버는 뜨고, 이름 없이 호출해 400을
-   * 받는 일이 없다. 다만 `gemini-2.5-flash-lite`는 **2026년 10월 16일에 없어진다** —
-   * 그날 전에 운영 환경파일의 `GEMINI_MODEL`을 갈아끼운다. 여기 적힌
-   * 기본값도 그때 함께 고친다(둘 중 하나만 고치면 환경변수를 안 넣은 배포에서
-   * 없어진 모델을 부른다).
+   * 받는 일이 없다. 운영 환경파일의 `GEMINI_MODEL`과 이 기본값은 항상 함께
+   * 바꾼다(둘 중 하나만 고치면 환경변수를 안 넣은 배포에서 다른 모델을 부른다).
    */
-  geminiModel: z.string().default('gemini-2.5-flash-lite'),
+  geminiModel: z.string().default('gemini-3.5-flash-lite'),
 
   /** 제공자별 설정이 없으면 그 제공자 로그인만 막힌다. 서비스 전체가 멈추지는 않는다. */
   appleClientId: z.string().optional(),
