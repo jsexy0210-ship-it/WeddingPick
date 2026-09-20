@@ -31,7 +31,7 @@ jobs:
     strategy:
       matrix:
         origin:
-          - https://210.109.82.212:8443
+          - https://210.109.82.212
           - https://210.109.82.212:9443
     steps:
       - name: Verify preflight
