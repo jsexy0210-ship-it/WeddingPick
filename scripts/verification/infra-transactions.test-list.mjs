@@ -13,8 +13,6 @@ export const infraRegressionTests = Object.freeze({
     'scripts/verification/cutover-transaction.test.mjs',
     'scripts/verification/live-favicon-rollback.test.mjs',
     'scripts/verification/preview-route-rollback.test.mjs',
-    'scripts/verification/static-port-probe-transaction.test.mjs',
-    'scripts/verification/static-sites-cutover-transaction.test.mjs',
     'scripts/verification/worker-cutover-restore.test.mjs',
   ]),
   source: Object.freeze([

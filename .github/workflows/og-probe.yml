@@ -11,7 +11,7 @@ on:
       web_origin:
         description: '공유 링크를 확인할 공개 웹사이트 origin'
         required: false
-        default: 'https://210.109.82.212:9443'
+        default: 'https://210.109.82.212'
         type: string
 
 permissions:

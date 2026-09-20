@@ -18,7 +18,7 @@
 
 **본 것:** `apps/web/src/subpages.ts` 네 표(제1항 수집 항목 · 제4항 수탁자 · 제5항 국외 이전 ·
 보유기간) · `packages/db/migrations/` · `apps/api/src/auth/` · `apps/api/src/analysis/` ·
-`apps/api/src/retention/` · `render.yaml` · `infra/render-env.yml` · `apps/web/src/legal-pages.test.ts` ·
+`apps/api/src/retention/` · `삭제된 이전 호스팅 선언` · `삭제된 이전 호스팅 환경 선언` · `apps/web/src/legal-pages.test.ts` ·
 `apps/mobile/src/app/(tabs)/my/privacy.tsx` · `apps/api/src/push/expo.ts` ·
 `apps/api/src/storage/s3.ts`
 
@@ -65,22 +65,22 @@
 **방침 문장** (`apps/web/src/subpages.ts:402`, `:421`, 제5항)
 
 > 국가 칸: 「싱가포르(**운영 API 및 백그라운드 처리**) · 전 세계(정적 웹 전송망, 사업자 소재지: 미국)」
-> 표 아래: 「… Render의 운영 API와 Neon의 정보 저장소는 싱가포르 리전을 사용하며,
+> 표 아래: 「… 이전 호스팅의 운영 API와 Neon의 정보 저장소는 싱가포르 리전을 사용하며,
 > **백그라운드 처리도 같은 운영 API 안에서 이루어져** 싱가포르 리전에 있습니다.」
 
 **코드 사실 — 저장소 안에서 근거 두 벌이 서로 어긋난다**
 
 | 자리 | 적힌 것 |
 | --- | --- |
-| `render.yaml:264-271` | `weddingpick-worker`가 **별도 서비스**로 선언돼 있다(`type: worker` · `runtime: docker` · `dockerCommand: npm run worker` · `autoDeploy: false`). 운영 API 안이 아니다 |
-| `CLAUDE.md` 배포 구조 표 | 「Render **다섯** 서비스 전부 branch=main · autoDeploy=false」 — 워커를 있는 것으로 센다 |
-| `apps/api/src/index.ts:105-106` | 「그 프로세스는 한 번도 배포된 적이 없다 — **`render.yaml`에 `type: worker` 서비스가 없었다**」 |
+| `삭제된 이전 호스팅 선언:264-271` | `weddingpick-worker`가 **별도 서비스**로 선언돼 있다(`type: worker` · `runtime: docker` · `dockerCommand: npm run worker` · `autoDeploy: false`). 운영 API 안이 아니다 |
+| `CLAUDE.md` 배포 구조 표 | 「이전 호스팅 **다섯** 서비스 전부 branch=main · autoDeploy=false」 — 워커를 있는 것으로 센다 |
+| `apps/api/src/index.ts:105-106` | 「그 프로세스는 한 번도 배포된 적이 없다 — **`삭제된 이전 호스팅 선언`에 `type: worker` 서비스가 없었다**」 |
 | `apps/web/src/legal-pages.test.ts:64-66` | 「워커 프로세스는 배포된 적이 없어 루프가 운영 API 프로세스 안에서 돈다」 |
 
-`index.ts:105-106`의 근거가 지금 `render.yaml`에서 틀렸다. `render.yaml:264`에 `type: worker`
+`index.ts:105-106`의 근거가 지금 `삭제된 이전 호스팅 선언`에서 틀렸다. `삭제된 이전 호스팅 선언:264`에 `type: worker`
 서비스가 **있다.**
 
-**리전을 적은 줄이 저장소에 한 줄도 없다.** `render.yaml` 전체에 `region:` 키가 없고, Render는
+**리전을 적은 줄이 저장소에 한 줄도 없다.** `삭제된 이전 호스팅 선언` 전체에 `region:` 키가 없고, 이전 호스팅은
 지정이 없으면 기본 리전에 만든다. 방침이 말하는 싱가포르는 저장소 어디에도 고정돼 있지 않다.
 
 **거짓을 지키는 시험이 다시 있다.** `apps/web/src/legal-pages.test.ts:87`이
@@ -88,11 +88,11 @@
 방침 문장이 사실과 어긋났는데 그 문장을 지키는 시험이 붙어 있어, 고치려 하면 빨개져서
 되돌리게 된다.
 
-**판정: 다르다.** 「백그라운드 처리도 같은 운영 API 안에서 이루어져」는 `render.yaml`이 별도
+**판정: 다르다.** 「백그라운드 처리도 같은 운영 API 안에서 이루어져」는 `삭제된 이전 호스팅 선언`이 별도
 워커 서비스를 선언하고 있는 한 성립하지 않는다.
 
-**못 봤다:** `weddingpick-worker`가 Render에 실제로 배포돼 도는지, 그 리전이 어디인지.
-Render 콘솔을 보지 않았다. `docs/render-region-move.md:7-9`(2026-09-13 마스터 확인)은 「별도
+**못 봤다:** `weddingpick-worker`가 이전 호스팅에 실제로 배포돼 도는지, 그 리전이 어디인지.
+이전 호스팅 콘솔을 보지 않았다. `삭제된 이전 인프라 검토 기록:7-9`(2026-09-13 마스터 확인)은 「별도
 워커는 **Oregon**」이라고 적었고, `legal-pages.test.ts:64-66`은 「2026-09-14에 없앴다」고 적는다.
 **둘 중 어느 쪽이 지금인지 저장소만 봐서는 알 수 없다.**
 
@@ -134,7 +134,7 @@ Render 콘솔을 보지 않았다. `docs/render-region-move.md:7-9`(2026-09-13 �
 
 ### 마감이 사흘 뒤다 — 시행일 2026-09-18
 
-`infra/render-env.yml:66` · `:88` `LEGAL_PRIVACY_EFFECTIVE_ON: '2026-09-18'`.
+`삭제된 이전 호스팅 환경 선언:66` · `:88` `LEGAL_PRIVACY_EFFECTIVE_ON: '2026-09-18'`.
 같은 파일 `:62-64`가 적어 둔 것: 「**이 날짜는 마감이다** — 그날까지 API가 싱가포르에 있어야
 방침과 사실이 맞는다. 이전이 늦어질 것 같으면 서버를 서두르지 말고 이 값을 미룬다.」
 
@@ -143,7 +143,7 @@ Render 콘솔을 보지 않았다. `docs/render-region-move.md:7-9`(2026-09-13 �
 사실이 문안과 다르면 그 구간이 그대로 어긋난 고지가 된다.
 
 **판정: 못 봤다.** 사흘 안에 리전을 확인하고, 안 맞으면 날짜를 미루는 쪽이 절차서가 정한
-순서다(`docs/render-region-move.md` §0 · §7).
+순서다(`삭제된 이전 인프라 검토 기록` §0 · §7).
 
 ---
 
@@ -226,7 +226,7 @@ Npay 수령(`packages/db/migrations/0092_reward_payouts.sql:22-38`)은 `recipien
 
 **네이버클라우드** — 방침 제4항은 「클라우드·객체 저장 / 서비스 정보 및 업로드 원본의
 시한부 저장 / 네이버클라우드 주식회사」로 적고, **제5항 국외 이전 표에는 넣지 않았다.**
-`render.yaml:285-288`이 `S3_REGION: kr-standard` · `S3_ENDPOINT: https://kr.object.ncloudstorage.com`
+`삭제된 이전 호스팅 선언:285-288`이 `S3_REGION: kr-standard` · `S3_ENDPOINT: https://kr.object.ncloudstorage.com`
 로 국내를 가리킨다. 국내 저장이므로 국외 이전 표에 없는 것이 맞다. 앱 요약
 (`apps/mobile/src/app/(tabs)/my/privacy.tsx:52-53`)도 「원본 이미지는 국내 저장소에 둬요」로
 같이 적는다. **같다.**
@@ -251,8 +251,8 @@ Npay 수령(`packages/db/migrations/0092_reward_payouts.sql:22-38`)은 `recipien
 
 ### 못 본 것 — 다음 주기에 본다
 
-1. Render · Neon의 **실제 리전**. 콘솔을 보지 않았다.
-2. `weddingpick-worker`가 실제로 배포돼 도는지. `render.yaml`은 선언하고 두 주석은 없다고 적는다.
+1. 이전 호스팅 · Neon의 **실제 리전**. 콘솔을 보지 않았다.
+2. `weddingpick-worker`가 실제로 배포돼 도는지. `삭제된 이전 호스팅 선언`은 선언하고 두 주석은 없다고 적는다.
 3. 카카오 동의항목에서 **성별 · 휴대전화번호가 실제로 넘어오는지.** 카카오 콘솔을 보지 않았다.
    (실명은 넘어온 적이 있다 — `sessions.ts:73-76`이 증거다.)
 4. `deleteGeminiFile()` **실패 경로**. 남은 사본을 다시 지우러 가는 자리가 있는지.

@@ -59,7 +59,7 @@ export function buildServer(context: AppContext): FastifyInstance {
    */
   const app = Fastify({
     /*
-     * **Render는 프록시 뒤에 있다.** 이것이 없으면 `request.ip`가 모든 요청에서
+     * **운영 API는 Nginx 프록시 뒤에 있다.** 이것이 없으면 `request.ip`가 모든 요청에서
      * 프록시 주소 하나로 같아진다. 관리자 로그인의 밀어보기 방어가 IP로 세는데,
      * 그러면 남이 다섯 번 틀린 것 때문에 진짜 관리자가 기다리게 된다 — 방어가
      * 그대로 남을 막는 도구가 된다.
@@ -138,7 +138,7 @@ export function buildServer(context: AppContext): FastifyInstance {
 
   app.get('/health', async (_request, reply) => {
     // 프로세스가 살아 있는 것만으로는 배포 상태를 보장하지 않는다. DB까지
-    // 확인해 Render 헬스체크가 실제로 요청을 처리할 수 있는 인스턴스만 통과시킨다.
+    // 확인해 배포 헬스체크가 실제로 요청을 처리할 수 있는 인스턴스만 통과시킨다.
     try {
       await context.pool.query('SELECT 1');
 
@@ -147,7 +147,7 @@ export function buildServer(context: AppContext): FastifyInstance {
        * 스키마가 코드보다 뒤에 있어도 헬스체크는 초록이었고, 인증 API는 전부
        * 500이었다. 무엇이 밀렸는지 여기서 바로 보이게 한다.
        *
-       * 밀렸다고 503을 주지는 않는다 — Render 헬스체크가 실패하면 인스턴스가
+       * 밀렸다고 503을 주지는 않는다 — 배포 헬스체크가 실패하면 인스턴스가
        * 계속 교체되어, 정작 확인하려던 것을 볼 수 없게 된다. 상태만 알리고
        * 판단은 사람이 한다.
        */

@@ -5,6 +5,7 @@ import { join } from 'node:path';
 
 
 function jobBlock(source, name) {
+  source = source.replace(/\r\n/g, '\n');
   const marker = `  ${name}:\n`;
   const start = source.indexOf(marker);
   assert.notEqual(start, -1, `job ${name} must exist`);
@@ -60,6 +61,11 @@ test('app cutover owns admin under /admin on the same 443 server', () => {
 
   const workflow = readFileSync('.github/workflows/cutover-kakao-app-web.yml', 'utf8');
   assert.match(workflow, /https:\/\/210\.109\.82\.212\/admin\/login/);
+  assert.match(workflow, /\/_expo\/static\/js\/web\//);
+  assert.match(workflow, /관리자 콘솔 주소가 바뀌었어요/);
+
+  assert.match(install, /cmp -s "\$admin_smoke" "\$admin_target\/admin\/login\.html"/);
+  assert.match(install, /\/_expo\/static\/js\/web\//);
 });
 
 test('runtime-mutating workflows recheck the 443 lock immediately before writes', () => {
@@ -68,7 +74,6 @@ test('runtime-mutating workflows recheck the 443 lock immediately before writes'
     '.github/workflows/preview-kakao-app-web.yml',
     '.github/workflows/preview-kakao-admin-web.yml',
     '.github/workflows/enable-kakao-static-cors.yml',
-    '.github/workflows/probe-kakao-static-ports.yml',
   ]) {
     const source = readFileSync(file, 'utf8');
     assert.match(source, /bash \.\/scripts\/assert-admin-origin-443\.sh/);
@@ -80,12 +85,13 @@ test('legacy admin cutover marker is read-only and cannot mutate Nginx', () => {
   assert.doesNotMatch(source, /runs-on: \[self-hosted/);
   assert.doesNotMatch(source, /install-kakao-|rollback-kakao-|systemctl|nginx/);
   assert.match(source, /https:\/\/210\.109\.82\.212\/admin\/login/);
+  assert.match(source, /\/_expo\/static\/js\/web\//);
+  assert.match(source, /관리자 콘솔 주소가 바뀌었어요/);
 });
 
 test('all Kakao write entry points that can affect admin wait for the 443 CI lock', () => {
   const main = readFileSync('.github/workflows/main.yml', 'utf8');
   for (const name of [
-    'probe-kakao-static-ports',
     'enable-kakao-static-cors',
     'preview-kakao-admin-web',
     'preview-kakao-app-web',

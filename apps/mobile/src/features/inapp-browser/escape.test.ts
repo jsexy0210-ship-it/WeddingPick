@@ -58,7 +58,7 @@ beforeEach(() => {
   store.clear();
   define('history', { replaceState });
   define('sessionStorage', sessionStorageStub);
-  setLocation('https://weddingpick-app-web.onrender.com/login');
+  setLocation('https://210.109.82.212/login');
   setUserAgent(CHROME_UA);
 });
 
@@ -76,28 +76,28 @@ describe('건드리지 않는 자리', () => {
     setUserAgent(KAKAO_UA);
 
     expect(escapeInAppBrowser()).toEqual({ kind: 'none' });
-    expect(window.location.href).toBe('https://weddingpick-app-web.onrender.com/login');
+    expect(window.location.href).toBe('https://210.109.82.212/login');
   });
 
   it('일반 브라우저는 그냥 둔다', () => {
     expect(escapeInAppBrowser()).toEqual({ kind: 'none' });
-    expect(window.location.href).toBe('https://weddingpick-app-web.onrender.com/login');
+    expect(window.location.href).toBe('https://210.109.82.212/login');
   });
 
   it('관리자 콘솔에서는 하지 않는다 — PC에서 쓰는 화면이다', () => {
-    setLocation('https://weddingpick-app-web.onrender.com/admin/vendors');
+    setLocation('https://210.109.82.212/admin/vendors');
     setUserAgent(KAKAO_UA);
 
     expect(escapeInAppBrowser()).toEqual({ kind: 'none' });
-    expect(window.location.href).toBe('https://weddingpick-app-web.onrender.com/admin/vendors');
+    expect(window.location.href).toBe('https://210.109.82.212/admin/vendors');
   });
 
   it('네이티브 쉘의 웹뷰(wp_token)에서는 하지 않는다', () => {
-    setLocation('https://weddingpick-app-web.onrender.com/?wp_token=abc');
+    setLocation('https://210.109.82.212/?wp_token=abc');
     setUserAgent(KAKAO_UA);
 
     expect(escapeInAppBrowser()).toEqual({ kind: 'none' });
-    expect(window.location.href).toBe('https://weddingpick-app-web.onrender.com/?wp_token=abc');
+    expect(window.location.href).toBe('https://210.109.82.212/?wp_token=abc');
   });
 
   /**
@@ -105,12 +105,12 @@ describe('건드리지 않는 자리', () => {
    * 이 브라우저의 저장소에 있다. 여기서 넘기면 코드만 건너가고 로그인이 깨진다.
    */
   it('카카오에서 돌아온 직후에는 하지 않는다', () => {
-    setLocation('https://weddingpick-app-web.onrender.com/setup?code=xyz');
+    setLocation('https://210.109.82.212/setup?code=xyz');
     setUserAgent(KAKAO_UA);
     mockHasKakaoReturn.mockReturnValue(true);
 
     expect(escapeInAppBrowser()).toEqual({ kind: 'none' });
-    expect(window.location.href).toBe('https://weddingpick-app-web.onrender.com/setup?code=xyz');
+    expect(window.location.href).toBe('https://210.109.82.212/setup?code=xyz');
   });
 });
 
@@ -121,7 +121,7 @@ describe('바깥 브라우저로 넘기기', () => {
   it('카카오톡 인앱은 openExternal 스킴으로 넘기고 돌아올 표식을 붙인다', () => {
     setUserAgent(KAKAO_UA);
 
-    const href = kakaoHref('https://weddingpick-app-web.onrender.com/login?wp_ext=1');
+    const href = kakaoHref('https://210.109.82.212/login?wp_ext=1');
 
     /* 자동으로 옮기고도 누를 자리를 남긴다 — 스킴 이동이 막히는 인앱이 있다. */
     expect(escapeInAppBrowser()).toEqual({ kind: 'manual', href });
@@ -129,23 +129,23 @@ describe('바깥 브라우저로 넘기기', () => {
   });
 
   it('원래 주소의 쿼리를 잃지 않는다', () => {
-    setLocation('https://weddingpick-app-web.onrender.com/search?q=hall&sort=new');
+    setLocation('https://210.109.82.212/search?q=hall&sort=new');
     setUserAgent(KAKAO_UA);
 
     escapeInAppBrowser();
 
     expect(window.location.href).toBe(
-      kakaoHref('https://weddingpick-app-web.onrender.com/search?q=hall&sort=new&wp_ext=1')
+      kakaoHref('https://210.109.82.212/search?q=hall&sort=new&wp_ext=1')
     );
   });
 
   it('안드로이드 기타 인앱은 크롬을 지목한 intent 주소로 넘긴다', () => {
     setUserAgent(INSTAGRAM_ANDROID_UA);
 
-    expect(window.location.href).toBe('https://weddingpick-app-web.onrender.com/login');
+    expect(window.location.href).toBe('https://210.109.82.212/login');
     expect(escapeInAppBrowser()).toEqual({
       kind: 'manual',
-      href: 'intent://weddingpick-app-web.onrender.com/login?wp_ext=1#Intent;scheme=https;package=com.android.chrome;end',
+      href: 'intent://210.109.82.212/login?wp_ext=1#Intent;scheme=https;package=com.android.chrome;end',
     });
   });
 
@@ -158,7 +158,7 @@ describe('바깥 브라우저로 넘기기', () => {
     setUserAgent(INSTAGRAM_IOS_UA);
 
     expect(escapeInAppBrowser()).toEqual({ kind: 'guide' });
-    expect(window.location.href).toBe('https://weddingpick-app-web.onrender.com/login');
+    expect(window.location.href).toBe('https://210.109.82.212/login');
   });
 });
 
@@ -173,27 +173,27 @@ describe('되풀이 막기', () => {
     setUserAgent(KAKAO_UA);
     escapeInAppBrowser();
 
-    setLocation('https://weddingpick-app-web.onrender.com/login');
+    setLocation('https://210.109.82.212/login');
 
     expect(escapeInAppBrowser()).toEqual({
       kind: 'manual',
-      href: kakaoHref('https://weddingpick-app-web.onrender.com/login?wp_ext=1'),
+      href: kakaoHref('https://210.109.82.212/login?wp_ext=1'),
     });
-    expect(window.location.href).toBe('https://weddingpick-app-web.onrender.com/login');
+    expect(window.location.href).toBe('https://210.109.82.212/login');
   });
 
   it('표식이 붙어 돌아온 주소에서는 표식을 지우고 자동으로 옮기지 않는다', () => {
-    setLocation('https://weddingpick-app-web.onrender.com/login?wp_ext=1');
+    setLocation('https://210.109.82.212/login?wp_ext=1');
     setUserAgent(KAKAO_UA);
 
     escapeInAppBrowser();
 
     expect(replaceState).toHaveBeenCalledWith(null, '', '/login');
-    expect(window.location.href).toBe('https://weddingpick-app-web.onrender.com/login?wp_ext=1');
+    expect(window.location.href).toBe('https://210.109.82.212/login?wp_ext=1');
   });
 
   it('표식과 함께 온 다른 쿼리는 남긴다', () => {
-    setLocation('https://weddingpick-app-web.onrender.com/search?wp_ext=1&q=hall');
+    setLocation('https://210.109.82.212/search?wp_ext=1&q=hall');
     setUserAgent(KAKAO_UA);
 
     escapeInAppBrowser();
@@ -203,21 +203,21 @@ describe('되풀이 막기', () => {
 
   /** 표식을 지운 주소로 다시 물어도, 누를 자리에는 표식이 다시 붙는다. */
   it('표식을 지운 뒤 그 창이 다시 떠도 자동으로 옮기지 않는다', () => {
-    setLocation('https://weddingpick-app-web.onrender.com/login?wp_ext=1');
+    setLocation('https://210.109.82.212/login?wp_ext=1');
     setUserAgent(KAKAO_UA);
     escapeInAppBrowser();
 
-    setLocation('https://weddingpick-app-web.onrender.com/login');
+    setLocation('https://210.109.82.212/login');
 
     expect(escapeInAppBrowser()).toEqual({
       kind: 'manual',
-      href: kakaoHref('https://weddingpick-app-web.onrender.com/login?wp_ext=1'),
+      href: kakaoHref('https://210.109.82.212/login?wp_ext=1'),
     });
-    expect(window.location.href).toBe('https://weddingpick-app-web.onrender.com/login');
+    expect(window.location.href).toBe('https://210.109.82.212/login');
   });
 
   it('일반 브라우저에서는 표식이 붙어 와도 아무것도 남기지 않는다', () => {
-    setLocation('https://weddingpick-app-web.onrender.com/login?wp_ext=1');
+    setLocation('https://210.109.82.212/login?wp_ext=1');
 
     expect(escapeInAppBrowser()).toEqual({ kind: 'none' });
     expect(replaceState).toHaveBeenCalledWith(null, '', '/login');

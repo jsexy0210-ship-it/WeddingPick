@@ -304,7 +304,7 @@ SQL과 코드가 같은 값을 쓰며, 한쪽만 고치면 필터가 갈린다 �
   브랜치에서 일하고 PR을 걸되, `main`에 얹는 것은 MASTER가 한다 — 브랜치는 넘기는 통로다.
 - **`main` 푸시는 현행 `CI / Deploy`를 자동 실행한다.** CI가 초록이면 정적 변경은
   Kakao 후보 폴더에 스테이징되고, API 변경은 운영 컨테이너 SHA→현재 main 누적 차이를 기준으로
-  production 승인 뒤 KakaoCloud API + 별도 worker에 배포된다. **Render 재배포는 하지 않는다.**
+  production 승인 뒤 KakaoCloud API + 별도 worker에 배포된다. **이전 호스팅 재배포는 하지 않는다.**
   DB migration은 별도 수동 `DB Migrate` workflow다.
 - **올리기 전에 typecheck · lint · 카피 린트 · jest 전체를 다 돌린다.** 초록이 아니면
   올리지 않는다 — 승인하는 사람에게는 목록만 보인다.
@@ -317,7 +317,7 @@ SQL과 코드가 같은 값을 쓰며, 한쪽만 고치면 필터가 갈린다 �
 
 ## 보고할 때
 
-**사람에게 말하는 모든 시각은 KST로 바꿔 적는다.** GitHub Actions · Render · DB 로그는
+**사람에게 말하는 모든 시각은 KST로 바꿔 적는다.** GitHub Actions · 이전 호스팅 · DB 로그는
 전부 UTC다. UTC + 9 = KST이고 한국은 서머타임을 쓰지 않는다. `21:06 KST`처럼 시간대를 함께
 적는다. **저장하는 값과 cron은 UTC 그대로 둔다** — 거기까지 바꾸면 스케줄이 아홉 시간 밀린다.
 

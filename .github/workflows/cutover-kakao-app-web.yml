@@ -72,7 +72,8 @@ jobs:
           set -euo pipefail
           curl --fail --silent --show-error --connect-timeout 5 --max-time 15 \
             https://210.109.82.212/admin/login > /tmp/admin.html
-          grep -qi '<html' /tmp/admin.html
+          grep -Fq '/_expo/static/js/web/' /tmp/admin.html
+          ! grep -Eq '관리자 콘솔 주소가 바뀌었어요|210\.109\.82\.212:8443' /tmp/admin.html
 
       - name: API routes remain proxied
         run: |

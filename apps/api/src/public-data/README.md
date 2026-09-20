@@ -33,7 +33,7 @@ npm run public-data:import --workspace @weddingpick/api -- --source sbiz --file 
 End Point `https://apis.data.go.kr/B553077/api/open/sdsc2`, 상세기능 19종, 각 일일 트래픽 1,000,000.
 이용허락범위 제한 없음이라 별도 출처표시 의무는 없다 — 화면 문구는 바꾸지 않는다.
 
-키는 `SBIZ_API_KEY`로만 읽는다(GitHub Secrets → `infra/render-env.yml`이 Render로 전달).
+키는 `SBIZ_API_KEY`로만 읽는다(GitHub Secrets 또는 카카오 VM 운영 환경파일로 전달).
 저장소·문서·로그·리포트 JSON 어디에도 키 값을 적지 않는다.
 
 ## 전국 수집 (sbiz-all)

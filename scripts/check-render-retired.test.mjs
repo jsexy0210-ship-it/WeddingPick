@@ -28,7 +28,10 @@ test('rejects the old API as health or APK default', () => {
   assert.equal(inspectDeploymentFiles([{ path: '.github/workflows/api-health.yml', content: 'default: https://weddingpickl-sg.onrender.com' }]).length, 1);
 });
 test('preserves active Kakao API and static web origins', () => {
-  assert.deepEqual(inspectDeploymentFiles([{ path: '.github/workflows/android-apk.yml', content: 'API: https://210.109.82.212\nWEB: https://weddingpick-app-web.onrender.com' }]), []);
+  assert.deepEqual(inspectDeploymentFiles([{ path: '.github/workflows/android-apk.yml', content: 'API: https://210.109.82.212\nWEB: https://210.109.82.212' }]), []);
+});
+test('rejects the retired static web origin', () => {
+  assert.equal(inspectDeploymentFiles([{ path: '.github/workflows/android-apk.yml', content: 'WEB: https://weddingpick-app-web.onrender.com' }]).length, 1);
 });
 test('rejects the retired Naver Render callback in active runtime config', () => {
   assert.equal(inspectDeploymentFiles([{ path: '.github/workflows/android-apk.yml', content: 'CALLBACK: https://weddingpickl-sg.onrender.com/v1/auth/naver/callback' }]).length, 1);

@@ -125,7 +125,7 @@ head와 최근 브랜치도 알아서 걸러낸다. `dry_run`을 켠 채 돌려 
 
 | 브랜치 | 무엇이 있나 | 판단 |
 |---|---|---|
-| `fix/render-sync-inputs-context` | `render-env-sync.yml` (+2 −7) | **가져올 값어치 있음.** `main`에 없는 정리다 |
+| `fix/render-sync-inputs-context` | `삭제된 이전 호스팅 동기화.yml` (+2 −7) | **가져올 값어치 있음.** `main`에 없는 정리다 |
 | `claude/audit-review-2026-09-07` | 감사 보고서 1건 (342줄) | 감사 보고서는 09-07 두 건 · 09-09 한 건으로 3건이라 한도 안이다. 남긴다 |
 | `codex/github-audit-handoff-20260907` | 감사 산출물 5건 (1,157줄, CSV 포함) | 위와 같은 세대. 남긴다 |
 

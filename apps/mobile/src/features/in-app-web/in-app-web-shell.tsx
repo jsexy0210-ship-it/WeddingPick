@@ -25,7 +25,7 @@ import {
  * `spec/strings.ko.json` `inAppBrowser.shell*`의 확정 카피.
  *
  * 머리에 적는 이름은 부르는 쪽이 준다(`openExternal(url, { title })`) — 주소의
- * 호스트를 쓰면 `weddingpick-web.onrender.com`이 사용자 화면에 뜬다.
+ * 호스트를 쓰면 `210.109.82.212`가 사용자 화면에 뜬다.
  */
 const S = {
   close: '닫기',

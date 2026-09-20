@@ -31,7 +31,7 @@ main 쪽이 더 최신**이다.
 | `apps/api/src/routes/admin.ts` | main에 광고 관문 라우트 61줄이 있고 브랜치엔 없다 |
 | `apps/mobile/src/app/admin/ads-gate.tsx` | main이 291줄 더 많다. 브랜치는 옛 뼈대다 |
 | `scripts/og-probe.py` | main은 싱가포르 주소, 브랜치는 옛 Ohio 주소다 |
-| `render.yaml` | 브랜치가 옛 판이다 |
+| `삭제된 이전 호스팅 선언` | 브랜치가 옛 판이다 |
 | `docs/sync/master-status.json` | 인계 기록이라 내용 비교 대상이 아니다 |
 
 **3-dot diff(`main...SHA`)로 보면 34파일 +1,942줄이라 「안 들어간 것이 많다」로

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -41,13 +41,11 @@ export function inspectDeploymentFiles(files) {
     }
     if (!runtimeFile(path)) continue;
     const active = content.split('\n').filter(line => !/^\s*(?:#|\/\/|\*|\/\*)/.test(line)).join('\n');
-    if (/\bapi\.render\.com\b/i.test(active)
+    if (/https:\/\/[^/\s"'`]+\.onrender\.com\b/i.test(active)
+        || /\bapi\.render\.com\b/i.test(active)
         || /\bRENDER_(?:API_KEY|WEB_DEPLOY_HOOK)\b/.test(active)
         || /(?:scripts\/render-(?:env-sync|trigger-deploy|deploy-status)\.py|infra\/render-env\.yml)/.test(active)) {
-      violations.push(`${path}: retired Render deployment dependency`);
-    }
-    if (/https:\/\/weddingpickl-sg\.onrender\.com/.test(active)) {
-      violations.push(`${path}: obsolete Render API default`);
+      violations.push(`${path}: retired hosting dependency`);
     }
     if (path.startsWith('apps/mobile/src/') && active.includes('/v1/admin/site-meta/publish')) {
       violations.push(`${path}: retired site publication action`);
@@ -58,7 +56,7 @@ export function inspectDeploymentFiles(files) {
 
 export function checkRepository(root = process.cwd()) {
   const paths = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' }).split('\0').filter(Boolean);
-  const files = paths.filter(path => retiredPaths.includes(path) || runtimeFile(path))
+  const files = paths.filter(path => existsSync(resolve(root, path)) && (retiredPaths.includes(path) || runtimeFile(path)))
     .map(path => ({ path, content: readFileSync(resolve(root, path), 'utf8') }));
   return inspectDeploymentFiles(files);
 }
@@ -68,7 +66,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
     const failures = checkRepository();
     for (const failure of failures) console.error(failure);
     if (failures.length) process.exitCode = 1;
-    else console.log('Deployment policy OK: no active Render deployment entry points.');
+    else console.log('Deployment policy OK: no active retired-hosting entry points.');
   } catch {
     console.error('Deployment policy check could not inspect tracked source files.');
     process.exitCode = 1;

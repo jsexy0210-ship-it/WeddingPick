@@ -98,7 +98,7 @@ describeWithDb('API', () => {
             provider: 'kakao',
             authorizationCode: 'x',
             state: 'state',
-            redirectUri: 'https://weddingpick-app-web.onrender.com/login',
+            redirectUri: 'https://210.109.82.212/login',
           },
         });
 

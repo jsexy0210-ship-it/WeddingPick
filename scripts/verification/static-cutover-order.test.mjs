@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const main = readFileSync('.github/workflows/main.yml', 'utf8');
-const stage = readFileSync('.github/workflows/stage-kakao-static.yml', 'utf8');
+const main = readFileSync('.github/workflows/main.yml', 'utf8').replace(/\r\n/g, '\n');
+const stage = readFileSync('.github/workflows/stage-kakao-static.yml', 'utf8').replace(/\r\n/g, '\n');
 
 function jobBlock(source, name) {
   const marker = `  ${name}:\n`;

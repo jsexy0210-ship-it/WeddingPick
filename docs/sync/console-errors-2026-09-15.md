@@ -27,9 +27,9 @@
 **고치는 길은 하나뿐이고 그 값이 크다.** `web.output`을 `"single"`로 바꾸면 미리 그리는
 HTML이 없어져 어긋날 것도 없어진다. 실제로 해 봤고(PR #255) **배포가 깨진다** —
 `single`은 `dist/admin`을 만들지 않고, `scripts/split-admin-dist.mjs app`이 그 폴더가
-없으면 exit 1을 낸다. `render.yaml`의 buildCommand가 `&&`로 이어져 있어서
+없으면 exit 1을 낸다. `삭제된 이전 호스팅 선언`의 buildCommand가 `&&`로 이어져 있어서
 **app-web과 admin 두 정적 사이트의 빌드가 «둘 다» 실패한다.** 되살리려면 관리자 오리진
-분리(`render.yaml` + `split-admin-dist.mjs`)를 다시 설계해야 한다.
+분리(`삭제된 이전 호스팅 선언` + `split-admin-dist.mjs`)를 다시 설계해야 한다.
 
 **그래서 정한다 — 콘솔 줄 하나를 없애려고 배포 구조를 다시 짜지 않는다.** 사용자에게
 보이는 증상이 없고, 관리자 오리진 분리는 보안 경계라 더 무겁다. 되돌린 커밋은
