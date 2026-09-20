@@ -91,9 +91,15 @@ export const STEP_TITLE_LINES: Record<QuestionStep, readonly [string, string]> =
  */
 export const DONE_TITLE_LINES = ['선택한 정보로', '준비할게요'] as const;
 
-/** 질문 아래 한 줄 — 06-onboarding-login 시안에 적힌 문구 그대로. */
+/**
+ * 질문 아래 한 줄.
+ *
+ * 06-onboarding-login의 1/3은 «웨딩픽이 추천드려요»라고 그리지만 `spec/glossary.json`은
+ * «추천드려요»를 값매김 표현으로 금지한다. 보이는 디자인보다 용어·금지어 정책이
+ * 우선하므로 같은 뜻을 준비 순서로 풀어 쓴다.
+ */
 export const STEP_DESCRIPTION: Record<QuestionStep, string> = {
-  date: '남은 기간에 맞춰 웨딩픽이 추천드려요',
+  date: '남은 기간에 맞춰 준비 순서를 잡아드릴게요',
   region: '선택한 지역으로 좁혀드려요',
   style: '마음에 드는 스타일을 골라주세요',
 };

@@ -31,10 +31,11 @@ describe('히어로 문구', () => {
     expect(STEP_TITLE_LINES.style.join(' ')).toBe('어떤 스타일을 좋아하세요?');
 
     expect(STEP_DESCRIPTION).toEqual({
-      date: '남은 기간에 맞춰 웨딩픽이 추천드려요',
+      date: '남은 기간에 맞춰 준비 순서를 잡아드릴게요',
       region: '선택한 지역으로 좁혀드려요',
       style: '마음에 드는 스타일을 골라주세요',
     });
+    expect(STEP_DESCRIPTION.date).not.toContain('추천드려요');
 
     expect(STYLE_DESCRIPTION).toEqual({
       URBAN: '모던하고 세련된 도심 분위기',
