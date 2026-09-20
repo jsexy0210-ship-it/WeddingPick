@@ -27,6 +27,15 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     const depth = mobile('components/depth-header.tsx');
     expect(depth).not.toContain('sub?:');
     expect(depth).toContain('depthHeaderTitle(pathname)');
+    for (const path of [
+      'app/(tabs)/pick/[category].tsx',
+      'app/(tabs)/search/compare.tsx',
+      'app/(tabs)/search/[vendorId]/index.tsx',
+      'app/(tabs)/search/[vendorId]/review/[reviewId].tsx',
+    ]) {
+      expect(mobile(path)).toContain('<DepthHeader');
+      expect(mobile(path)).not.toContain('<BackButton');
+    }
   });
   it('온보딩 지역 전체값을 만들지 않고 스타일 4종을 허용한다', () => {
     const region = mobile('features/onboarding/region-picker-sheet.tsx');
@@ -58,8 +67,8 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(s).toContain("label: '나의 Pick'");
     expect(s).toContain("label: '웨딩픽 추천'");
     expect(s).toContain("label: '비교함'");
-    expect(s).toContain("router.replace('/pick/compare'");
-    expect(mobile('app/(tabs)/pick/compare.tsx')).toContain("pathname: '/search/compare'");
+    expect(s).toContain("router.replace('/pick/wedding_info_company'");
+    expect(mobile('app/(tabs)/pick/[category].tsx')).toContain("pathname: '/search/compare'");
   });
   it('최초 예산은 만원 입력을 원으로 환산한다', () => {
     const s = mobile('app/(tabs)/wedding/index.tsx');

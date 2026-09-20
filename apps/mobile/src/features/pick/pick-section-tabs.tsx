@@ -17,7 +17,7 @@ export function PickSectionTabs({ active }: { active: PickSection }) {
     if (next === active) return;
     if (next === 'pick') return void router.replace('/pick');
     if (next === 'recommendations') return void router.replace('/recommendations' as never);
-    router.replace('/pick/compare' as never);
+    router.replace('/pick/wedding_info_company' as never);
   }
 
   return (
