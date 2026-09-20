@@ -67,7 +67,6 @@ artifact 초과분은 $0.25/GB-month. 캐시는 저장소별 기본 10GB이며 �
 Neon은 플랜별 컴퓨트·저장 과금과 scale-to-zero 설정에 따라 증가액이 달라진다.
 현재 10건만으로 월 요금을 정할 수 없다. [공식 요금](https://neon.com/pricing),
 [scale-to-zero 설명](https://neon.com/docs/introduction/scale-to-zero).
-[공식 무료 서비스 제한](https://render.com/docs/free).
 
 ## 외부 트래픽·메모리
 
