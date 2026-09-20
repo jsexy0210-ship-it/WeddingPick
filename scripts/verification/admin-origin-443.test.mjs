@@ -62,6 +62,19 @@ test('app cutover owns admin under /admin on the same 443 server', () => {
   assert.match(workflow, /https:\/\/210\.109\.82\.212\/admin\/login/);
 });
 
+test('runtime-mutating workflows recheck the 443 lock immediately before writes', () => {
+  for (const file of [
+    '.github/workflows/cutover-kakao-app-web.yml',
+    '.github/workflows/preview-kakao-app-web.yml',
+    '.github/workflows/preview-kakao-admin-web.yml',
+    '.github/workflows/enable-kakao-static-cors.yml',
+    '.github/workflows/probe-kakao-static-ports.yml',
+  ]) {
+    const source = readFileSync(file, 'utf8');
+    assert.match(source, /bash \.\/scripts\/assert-admin-origin-443\.sh/);
+  }
+});
+
 test('legacy admin cutover marker is read-only and cannot mutate Nginx', () => {
   const source = readFileSync('.github/workflows/cutover-kakao-admin-web.yml', 'utf8');
   assert.doesNotMatch(source, /runs-on: \[self-hosted/);
