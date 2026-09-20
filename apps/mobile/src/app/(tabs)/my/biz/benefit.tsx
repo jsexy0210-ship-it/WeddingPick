@@ -89,7 +89,7 @@ export default function BizBenefitScreen() {
             <ThemedText type="t6" themeColor="textSecondary">
               담당자 확인 후 게재 여부를 알려드려요.
             </ThemedText>
-            <ActionButton variant="primary" label="확인" onPress={depthBack} />
+            <ActionButton variant="primary" label="업체 문의로 돌아가기" onPress={depthBack} />
           </ThemedView>
         </SafeAreaView>
       </ThemedView>
@@ -193,7 +193,7 @@ export default function BizBenefitScreen() {
           {!isServerConfigured ? (
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="t6" themeColor="textSecondary">
-                이 빌드는 서버에 붙어 있지 않아 제출할 수 없어요.
+                지금은 혜택을 보낼 수 없어요. 잠시 후 다시 시도해 주세요.
               </ThemedText>
             </ThemedView>
           ) : null}
@@ -207,11 +207,10 @@ export default function BizBenefitScreen() {
           <ActionButton
             variant="primary"
             label={busy ? '제출 중…' : '등록 요청하기'}
-            hint={canSubmit ? undefined : '업체 이름, 혜택 제목, 혜택 상세를 입력해주세요'}
+            hint={canSubmit ? undefined : '업체 이름, 혜택 제목, 혜택 상세를 입력해 주세요'}
             disabled={busy || !canSubmit || !isServerConfigured}
             onPress={() => void submit()}
           />
-          <ActionButton label="돌아가기" onPress={depthBack} />
         </ScrollView>
       </SafeAreaView>
     </ThemedView>

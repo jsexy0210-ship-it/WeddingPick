@@ -11,10 +11,12 @@ import { formatDateDot } from '@/features/common/format-date';
 import { useDocumentStore } from '@/features/documents/document-store';
 import { BackBar } from '@/components/back-bar';
 import { confirmAlert } from '@/components/confirm-alert';
+import { useDepthBack } from '@/features/navigation/depth-back';
 
 
 /** A-12 견적 상세. 저장된 묶음을 다시 열어보고, 인증 신청과 삭제로 이어진다. */
 export default function DocumentSetScreen() {
+  const depthBack = useDepthBack();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { sets, ready, removeSet } = useDocumentStore();
   const set = sets.find((item) => item.id === id);
@@ -25,7 +27,7 @@ export default function DocumentSetScreen() {
     return (
       <ErrorView
         title="문서를 찾을 수 없어요"
-        onRetry={() => router.back()}
+        onRetry={depthBack}
         retryLabel="내 웨딩으로"
       />
     );

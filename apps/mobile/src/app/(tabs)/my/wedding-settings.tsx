@@ -20,6 +20,7 @@ import { StyleSheet, View } from 'react-native';
 import { ErrorView, Layout, Toast } from '@weddingpick/ui';
 import { ApiError, completeSetup, getCurrentUser } from '@/api/client';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import { BudgetGrid } from '@/features/onboarding/budget-grid';
 import { DatePickerSheet } from '@/features/onboarding/date-picker-sheet';
 import { UNDECIDED_LABEL, type Answers } from '@/features/onboarding/flow';
@@ -32,7 +33,7 @@ type PreparedCategory = Exclude<VendorCategory, 'etc'>;
 
 /** screens.json WP-MY-003 layout · `spec/strings.ko.json` `my.setting.*`. */
 const S = {
-  title: '내 웨딩설정',
+  title: '내 웨딩 설정',
   date: '예식일',
   region: '지역',
   budget: BUDGET_BRACKET_FIELD_LABEL,
@@ -42,7 +43,7 @@ const S = {
   passed: '지났어요',
   none: '아직 안 골랐어요',
   preparedCount: (n: number) => `${formatCount(n)}개 정함`,
-  saved: '바꿨어요',
+  saved: '설정을 바꿨어요',
   noteTitle: '바꾸면 추천이 다시 계산돼요',
   noteBody: 'Pick한 곳과 지출 기록은 그대로 남아요.',
   loadError: '지금 설정을 불러오지 못했어요',
@@ -73,6 +74,7 @@ type Editing = 'region' | 'budget' | 'prepared' | null;
  * 합치면서 그 화면이 곧 «스타일»(`/my/taste`)이 됐다. 같은 화면을 두 줄로 세우지 않는다.
  */
 export default function WeddingSettingsScreen() {
+  const depthBack = useDepthBack();
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -88,7 +90,7 @@ export default function WeddingSettingsScreen() {
       .catch((caught: Error) => setError(caught.message ?? S.loadError));
   }, []);
 
-  if (error) return <ErrorView message={error} onBack={() => router.back()} />;
+  if (error) return <ErrorView message={error} onBack={depthBack} />;
   if (me === null) return <DelayedLoadingView />;
 
   const current = me;

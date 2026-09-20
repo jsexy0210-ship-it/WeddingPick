@@ -25,6 +25,7 @@ import { Layout, ProductSymbol, Spacing, ThemedText, Toast, useTheme } from '@we
 import { getWithdrawalNotice, withdraw } from '@/api/client';
 import { wipeDevice } from '@/api/session';
 import { ConfirmSheet } from '@/features/common/confirm-sheet';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import {
   CheckDot,
   Dock,
@@ -40,13 +41,13 @@ import {
 
 /** `spec/strings.ko.json` `withdraw.*` · 시안 13b-withdrawal. */
 const S = {
-  title: '회원탈퇴',
+  title: '회원 탈퇴',
   sheetCancel: '취소',
-  done: '확인',
+  done: '로그인으로 돌아가기',
   supportTitle: '문의가 필요하면',
-  supportBody: '웨딩픽 웹사이트 고객지원으로 연락해주세요. 처리 내역을 확인해드려요.',
+  supportBody: '웨딩픽 웹사이트 고객지원으로 연락해 주세요. 처리 내역을 확인해 드려요.',
   loadFail: '탈퇴 안내를 불러오지 못했어요',
-  fail: '탈퇴하지 못했어요. 잠시 뒤에 다시 시도해주세요',
+  fail: '탈퇴하지 못했어요. 잠시 후 다시 시도해 주세요',
 } as const;
 
 /**
@@ -60,6 +61,7 @@ const S = {
  */
 export default function WithdrawalScreen() {
   const theme = useTheme();
+  const depthBack = useDepthBack();
   const [notice, setNotice] = useState<WithdrawalNotice | null>(null);
   const [agreed, setAgreed] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -125,7 +127,7 @@ export default function WithdrawalScreen() {
       title={S.title}
       dock={
         <Dock
-          secondary={{ label: WITHDRAWAL_CANCEL, onPress: () => router.back() }}
+          secondary={{ label: WITHDRAWAL_CANCEL, onPress: depthBack }}
           primary={{
             label: WITHDRAWAL_SUBMIT,
             danger: true,

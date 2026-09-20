@@ -186,7 +186,7 @@ export default function MyScreen() {
     {
       title: S['group.support'],
       rows: [
-        { key: 'faq', label: 'FAQ', icon: 'info', onPress: () => router.push({ pathname: '/my/guide', params: { mode: 'faq' } } as never) },
+        { key: 'faq', label: '자주 묻는 질문', icon: 'info', onPress: () => router.push({ pathname: '/my/guide', params: { mode: 'faq' } } as never) },
         { key: 'contact', label: S['item.contact'], icon: 'headset', tail: data.inquiries !== null ? count(data.inquiries) : undefined, onPress: () => guestPush('/my/contact') },
       ],
     },

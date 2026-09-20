@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { acceptWeddingInvite, previewWeddingInvite } from '@/api/client';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import { Layout, ProductSymbol, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import {
   Avatar,
@@ -56,6 +57,7 @@ const RING = 72;
  * 초대한 사람의 이름 · 예식일은 서버가 주지 않아(개인정보) 미리보기에 적지 않는다.
  */
 export default function JoinScreen() {
+  const depthBack = useDepthBack();
   const theme = useTheme();
   const params = useLocalSearchParams<{ code?: string }>();
   const [typed, setTyped] = useState<string | null>(null);
@@ -195,7 +197,7 @@ export default function JoinScreen() {
 
       {usable ? (
         <Dock>
-          <DockButton label={S.later} onPress={() => router.back()} />
+          <DockButton label={S.later} onPress={depthBack} />
           <DockButton variant="primary" label={busy ? '연결 중…' : S.accept} disabled={busy} onPress={() => void join()} />
         </Dock>
       ) : (

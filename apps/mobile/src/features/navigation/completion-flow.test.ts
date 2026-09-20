@@ -93,6 +93,6 @@ describe('transient completion flow navigation', () => {
     const contact = screen('(tabs)', 'my', 'contact.tsx');
 
     expect(contact).toContain('onPress={() => setAcknowledgement(null)}');
-    expect(contact).toContain('label="돌아가기" onPress={depthBack}');
+    expect(contact).toContain('label="문의 마치기" onPress={depthBack}');
   });
 });

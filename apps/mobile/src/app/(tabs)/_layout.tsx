@@ -1,9 +1,13 @@
-import { router, Tabs, usePathname, useSegments } from 'expo-router';
+import { router, Tabs, useLocalSearchParams, usePathname, useSegments } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { BackHandler, Platform } from 'react-native';
 
 import { Toast } from '@weddingpick/ui';
-import { TAB_ROOTS } from '@/features/navigation/depth-back-rules';
+import {
+  dismissToOrReplace,
+  resolveBackAction,
+  withBackOrigin,
+} from '@/features/navigation/depth-back';
 import { OFF_TAB_ROUTES, ROOT_TABS } from '@/features/navigation/root-tabs';
 import { RootTabBar } from '@/features/navigation/tab-bar';
 import { useTabScreenOptions } from '@/features/navigation/screen-options';
@@ -31,6 +35,8 @@ export default function TabLayout() {
    */
   const segments: readonly string[] = useSegments();
   const pathname = usePathname();
+  const { from } = useLocalSearchParams<{ from?: string | string[] }>();
+  const backPathname = withBackOrigin(pathname, from);
   const lastExitBackAt = useRef(0);
   const [exitToast, setExitToast] = useState<string | null>(null);
   const onCamera = segments.includes('camera');
@@ -40,8 +46,16 @@ export default function TabLayout() {
     if (Platform.OS !== 'android') return;
 
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      const atRoot = TAB_ROOTS.includes(pathname);
-      if (!atRoot && router.canGoBack()) return false;
+      const action = resolveBackAction(backPathname, router.canGoBack());
+
+      /* 같은 목록 안에서만 History를 허용한다. 기본 처리에 맡겨 스크롤·탭 상태를 살린다. */
+      if (action.kind === 'history') return false;
+
+      /* 하위 화면은 논리 부모로, 홈이 아닌 Root 탭은 홈으로 간다. */
+      if (action.kind === 'depth') {
+        dismissToOrReplace(action.target);
+        return true;
+      }
 
       const now = Date.now();
       if (now - lastExitBackAt.current <= 2_000) {
@@ -55,7 +69,7 @@ export default function TabLayout() {
     });
 
     return () => subscription.remove();
-  }, [pathname]);
+  }, [backPathname]);
   /*
    * Pick 완료는 transient route다. 이 화면을 떠날 때만 Pick nested Stack을 root로 접는다.
    * category/compare → search 상세처럼 아직 진행 중인 교차 탐색에서는 false라 Back 문맥을 보존한다.

@@ -26,11 +26,11 @@ const S = {
   sub: (n: number) => `지금은 ${n}개를 골랐어요`,
   noteTitle: '바꾸면 추천이 다시 계산돼요',
   noteBody: 'Pick한 곳과 지출 기록은 그대로 남아요.',
-  savedTitle: '스타일 저장 완료',
+  savedTitle: '스타일을 저장했어요',
   savedBody: '고른 스타일로 홈 추천이 새로 만들어져요.',
-  ok: '확인',
+  ok: 'MY로 돌아가기',
   loadError: '지금 고른 스타일을 불러오지 못했어요.',
-  saveError: '저장하지 못했어요.',
+  saveError: '스타일을 저장하지 못했어요',
 } as const;
 
 type Loaded = {

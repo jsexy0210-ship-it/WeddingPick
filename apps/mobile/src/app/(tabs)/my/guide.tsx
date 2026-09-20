@@ -25,7 +25,7 @@ export default function GuideScreen() {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
-          <BackBar title="FAQ" />
+          <BackBar title="자주 묻는 질문" />
           <ScrollView contentContainerStyle={styles.content}>
             <ThemedView style={styles.section}>
               <ThemedText type="subtitle">자주 찾는 질문</ThemedText>
@@ -51,8 +51,8 @@ export default function GuideScreen() {
               <ThemedView type="backgroundElement" style={styles.card}>
                 <ThemedText type="small" themeColor="textSecondary">
                   {faq.failed
-                    ? 'FAQ를 불러오지 못했어요. 잠시 뒤에 다시 열어주세요.'
-                    : '아직 등록된 FAQ가 없어요.'}
+                    ? '질문을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'
+                    : '아직 등록된 질문이 없어요.'}
                 </ThemedText>
               </ThemedView>
             )}
@@ -69,7 +69,7 @@ export default function GuideScreen() {
         <BackBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.section}>
-            <ThemedText type="subtitle">자주 묻는 것</ThemedText>
+            <ThemedText type="subtitle">자주 묻는 질문</ThemedText>
             {/*
               아코디언이 아니라 상세로 보낸다(WP-FAQ-003). 접었다 펴는 것만으로는
               답을 읽은 뒤에 할 수 있는 일이 없다 — 상세에는 관련 질문과
@@ -93,8 +93,8 @@ export default function GuideScreen() {
               <ThemedView type="backgroundElement" style={styles.card}>
                 <ThemedText type="small" themeColor="textSecondary">
                   {faq.failed
-                    ? '자주 묻는 것을 불러오지 못했어요. 잠시 뒤에 다시 열어주세요.'
-                    : '아직 올려둔 질문이 없어요.'}
+                    ? '질문을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'
+                    : '아직 등록된 질문이 없어요.'}
                 </ThemedText>
               </ThemedView>
             ) : null}
@@ -112,7 +112,7 @@ export default function GuideScreen() {
           </ThemedView>
 
           <ThemedView style={styles.section}>
-            <ThemedText type="subtitle">분석 안내</ThemedText>
+            <ThemedText type="subtitle">자료를 읽는 방법</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
               웨딩픽이 올려주신 자료를 어떻게 읽고, 무엇을 보장하지 않는지 알려드려요.
             </ThemedText>
@@ -156,7 +156,6 @@ export default function GuideScreen() {
               hint="자료를 올리기 전에 결과가 어떤 모습인지 볼 수 있어요"
               onPress={() => router.push('/capture/sample')}
             />
-            <ActionButton label="돌아가기" onPress={() => router.back()} />
           </ThemedView>
 
           <ThemedText type="t7" themeColor="textAssistive">

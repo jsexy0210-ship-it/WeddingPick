@@ -2,27 +2,19 @@
  * Depth Back — 화면 계층에서 **한 단계 위**로 가는 fallback 규칙. 앱 전체가 이 파일
  * 하나만 쓴다.
  *
- * ## 지금은 언제 이 표를 보는가 (2026-09-15 대표 지시로 정책 변경)
+ * ## 언제 이 표를 보는가 (SPEC §14.5)
  *
- * 좌상단 뒤로가기 버튼은 이제 **History 우선**이다(`depth-back.ts` `useDepthBack` ·
- * `goDepthBack`) — 현재 화면 스택에 방문 기록이 있으면(`router.canGoBack()`) 실제
- * 직전 화면으로 돌아간다. **이 표는 기록이 없을 때만**(딥링크·알림 등 직접 진입) 쓰는
- * fallback이다.
+ * 좌상단 뒤로가기 버튼의 기본은 **Depth Back**이다(`depth-back.ts` `useDepthBack` ·
+ * `goDepthBack`). 방문 기록이 있더라도 이 표가 정한 논리 부모로 간다. 그래야 MY 상세를
+ * 검색이나 알림에서 열었어도 MY 홈으로 돌아가고, 우연히 앞에 있던 화면으로 튀지 않는다.
  *
- *   History Back  방문 순서를 되짚는다. 안드로이드 하드웨어 버튼 · 웹 브라우저 뒤로 ·
- *                 iOS 가장자리 스와이프가 그것이고, **그대로 둔다**(막지 않는다). 탭은
- *                 각자 독립된 스택이라 탭 전환은 여기 잡히지 않는다 — Back 히스토리가
- *                 아니다.
- *   Depth Back    History가 없을 때의 fallback. 화면 계층에서 한 단계 위로 간다.
+ *   History Back  방문 순서를 되짚는다. 시트 닫기와 목록 상태 복원이 필요한 명시 화면만
+ *                 쓴다. 안드로이드 하드웨어 버튼은 아래 `resolveBackAction`으로 같은 정책을
+ *                 계산한다.
+ *   Depth Back    기본값. 화면 계층에서 한 단계 위로 간다.
  *
- * **예전(2026-09-15 이전)에는 버튼이 늘 이 표만 보고 History를 아예 안 봤다.** 그전에는
- * `canGoBack() ? back() : replace(fallback)`이었는데, 그때는 기록이 있으면 무조건 따라가
- * MY에서 검색 결과로 들어갔다가 뒤로 누르면 MY가 아니라 직전에 있던 다른 탭으로 튀었다
- * (탭마다 독립 스택이 아니었던 시절 얘기다 — 지금은 `app/(tabs)/_layout.tsx` 아래
- * 탭마다 자기 `<Stack>`이 있어 탭 넘나든 이동이 애초에 그 탭 스택의 기록에 안 잡힌다).
- * 화면마다 `fallback`을 따로 적어둔 것도 서로 어긋났다(`BackButton` `/search` · `SubScreen`
- * `/my` · `NavBar` `/wedding`). 셋을 없애고 **현재 경로에서 부모를 계산**하는 표 하나로
- * 모은 것이 지금 이 파일이고, 그 계산은 그대로 fallback으로 남았다.
+ * History Back은 아래 `HISTORY_BACK_ROUTES`에 적힌 같은 계층의 목록/상세 또는 시트에만
+ * 허용한다. 화면마다 `canGoBack()`을 임의로 쓰지 않는다.
  *
  * ## 계산 방법
  *
@@ -195,6 +187,23 @@ export const ROUTES: readonly string[] = [
 export const TAB_ROOTS: readonly string[] = ['/', '/search', '/pick', '/wedding', '/my'];
 
 /**
+ * SPEC §14.5가 허용한 History Back 예외.
+ *
+ * - 피드 상세 둘은 목록의 탭·스크롤 위치를 복원한다.
+ * - 비교 후보 선택과 최종 결정 확인은 화면이 아니라 기존 화면 위에 열린 시트라 연 자리만 닫는다.
+ * - 문서 확인은 촬영·선택 직후의 확인 단계라 직전 업로드 화면으로 돌아간다.
+ *
+ * 직접 진입처럼 history가 없으면 `depthBackTarget`의 논리 부모를 쓴다.
+ */
+export const HISTORY_BACK_ROUTES: readonly string[] = [
+  '/feed/[id]',
+  '/community/feed/[id]',
+  '/pick/compare',
+  '/pick/confirm',
+  '/capture/review',
+];
+
+/**
  * 뒤로가기 버튼을 두지 않는 화면.
  *
  *   Root 5탭            위가 없다. 05-root.
@@ -239,6 +248,7 @@ export const NO_BACK_ROUTES: readonly string[] = [
  * | `/pick/done`                       | `/pick`          | WP-PICK-006 결정 완료. **히스토리로 돌려보내면 방금 끝낸 확인 시트로 돌아간다.** |
  * |                                    |                  | 계층 계산과 값이 같지만, 이 화면은 History Back을 쓰면 안 된다는 근거를 남긴다. |
  * | `/pick/removed`                    | `/pick/history`  | 제거된 후보는 WP-PICK-007 결정 내역의 «제거된 후보 보기»에서만 들어간다.      |
+ * | `/my/faq/[faqKey]`                 | `/my/guide`      | 질문 상세는 FAQ 목록에서 연다. 폴더상 `/my`로 바로 보내면 목록을 건너뛴다.   |
  * | `/my/referral`                     | `/my/rewards`    | 초대 현황은 혜택(WP-EVT) 아래다. 폴더가 `my/` 바로 아래라 계층 계산이 틀린다. |
  * | `/wedding/[id]/complete`           | `/wedding`       | WP-OUR-013 예식 완료 → 서버 웨딩일정 탭. `[id]` 문서 상세와 식별자가 다르다.        |
  */
@@ -250,6 +260,7 @@ export const DEPTH_BACK_EXCEPTIONS: Readonly<Record<string, string>> = {
   '/search/compare': '/pick',
   '/pick/done': '/pick',
   '/pick/removed': '/pick/history',
+  '/my/faq/[faqKey]': '/my/guide',
   '/my/referral': '/my/rewards',
   // 이 경로의 id는 서버 weddingId다. /wedding/[id]는 로컬 문서 상세이므로 그곳으로 보내지 않는다.
   '/wedding/[id]/candidates': '/wedding',
@@ -272,11 +283,40 @@ export const DEPTH_BACK_EXCEPTIONS: Readonly<Record<string, string>> = {
   '/wedding/[id]/visit-notes': '/wedding',
 };
 
+/** SPEC §14.5에서 진입 출처를 `from`으로 넘기라고 정한 공유 화면. */
+const ORIGIN_AWARE_ROUTES: readonly string[] = [
+  '/community',
+  '/search/[vendorId]',
+  '/search/[vendorId]/write-review',
+  '/search/[vendorId]/review/[reviewId]',
+  '/capture/payment/register',
+];
+
 /** `/a/b/?x=1#y` → `['a','b']`. 쿼리·해시·끝 슬래시를 떨군다. */
 function segmentsOf(path: string): string[] {
   const bare = path.split('?')[0]!.split('#')[0]!;
 
   return bare.split('/').filter((segment) => segment.length > 0);
+}
+
+function decodeQueryPart(value: string): string | null {
+  try {
+    return decodeURIComponent(value.replace(/\+/g, ' '));
+  } catch {
+    return null;
+  }
+}
+
+function queryValue(pathname: string, key: string): string | null {
+  const query = pathname.split('?')[1]?.split('#')[0];
+  if (!query) return null;
+
+  for (const pair of query.split('&')) {
+    const [encodedKey, encodedValue = ''] = pair.split('=');
+    if (decodeQueryPart(encodedKey ?? '') === key) return decodeQueryPart(encodedValue);
+  }
+
+  return null;
 }
 
 function isDynamic(segment: string): boolean {
@@ -344,6 +384,29 @@ function fill(target: string, route: string, pathname: string): string {
   return query ? `${path}?${query}` : path;
 }
 
+/** 공유 화면의 `from` 값을 실재하는 논리 부모로 바꾼다. 모르는 값은 추측하지 않는다. */
+function originTarget(route: string, pathname: string): string | null {
+  if (!ORIGIN_AWARE_ROUTES.includes(route)) return null;
+
+  const from = queryValue(pathname, 'from');
+  if (!from) return null;
+
+  const aliases: Readonly<Record<string, string>> = {
+    home: '/',
+    my: '/my',
+    search: '/search',
+    pick: '/pick',
+    wedding: '/wedding',
+    budget: '/wedding?tab=budget',
+    community: '/community',
+    recommendations: '/recommendations',
+  };
+  const vendor = from.match(/^vendor\/([^/?#]+)$/);
+  const target = aliases[from] ?? (vendor ? `/search/${vendor[1]}` : null);
+
+  return target && matchRoute(target) ? target : null;
+}
+
 /**
  * 지금 이 경로에서 뒤로가기가 갈 곳. **부모가 있으면 부모, 없으면 그 위**로 올라간다.
  *
@@ -353,6 +416,9 @@ export function depthBackTarget(pathname: string): string {
   const route = matchRoute(pathname);
 
   if (route) {
+    const origin = originTarget(route, pathname);
+    if (origin) return origin;
+
     const exception = DEPTH_BACK_EXCEPTIONS[route];
 
     if (exception) return fill(exception, route, pathname);
@@ -374,4 +440,30 @@ export function hasDepthBack(pathname: string): boolean {
   const route = matchRoute(pathname) ?? `/${segmentsOf(pathname).join('/')}`;
 
   return !NO_BACK_ROUTES.includes(route) && !route.startsWith('/admin');
+}
+
+/** SPEC §14.5의 명시된 History Back 화면인가. */
+export function hasHistoryBack(pathname: string): boolean {
+  const route = matchRoute(pathname);
+
+  return route !== null && HISTORY_BACK_ROUTES.includes(route);
+}
+
+export type BackAction =
+  | { kind: 'exit' }
+  | { kind: 'history' }
+  | { kind: 'depth'; target: string };
+
+/**
+ * SPEC §14.5의 화면/안드로이드 Back 결정을 부작용 없이 계산한다.
+ * 홈만 종료 대상이고, 다른 Root 탭은 홈, 하위 화면은 Depth 부모로 간다.
+ */
+export function resolveBackAction(pathname: string, canGoBack: boolean): BackAction {
+  const route = matchRoute(pathname);
+
+  if (route === '/') return { kind: 'exit' };
+  if (route && TAB_ROOTS.includes(route)) return { kind: 'depth', target: '/' };
+  if (hasHistoryBack(pathname) && canGoBack) return { kind: 'history' };
+
+  return { kind: 'depth', target: depthBackTarget(pathname) };
 }

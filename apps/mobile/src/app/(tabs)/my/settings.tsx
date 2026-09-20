@@ -117,7 +117,7 @@ export default function SettingsScreen() {
       'Pick 인증 동의를 철회할까요',
       '앞으로 Pick 인증을 할 수 없어요. 이미 올린 자료는 내 제보내역에서 지울 수 있어요',
       [
-        { text: '그만두기', style: 'cancel' },
+        { text: '동의 유지하기', style: 'cancel' },
         {
           text: '철회하기',
           style: 'destructive',
@@ -137,7 +137,7 @@ export default function SettingsScreen() {
   function confirmSignOut() {
     // 파괴적 동작은 컨펌을 거친다. 핸드오프 인터랙션 규칙.
     confirmAlert('로그아웃할까요', '기기에 저장된 문서는 그대로 남아요', [
-      { text: '그만두기', style: 'cancel' },
+      { text: '계속 이용하기', style: 'cancel' },
       {
         text: '로그아웃',
         style: 'destructive',
@@ -212,7 +212,7 @@ export default function SettingsScreen() {
               value={settings.spouseLinked ? '배우자와 함께' : '혼자'}
               onPress={() => router.push('/wedding/partner')}
             />
-            <ActionButton label="회원탈퇴" onPress={() => router.push('/my/withdrawal' as never)} />
+            <ActionButton label="회원 탈퇴" onPress={() => router.push('/my/withdrawal' as never)} />
           </Section>
 
           <Section title="내 활동">

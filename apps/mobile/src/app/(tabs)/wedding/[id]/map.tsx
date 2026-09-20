@@ -16,6 +16,7 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import { openExternal } from '@/features/open-external';
 import { getMapVendors } from '@/api/client';
 import { BackBar } from '@/components/back-bar';
@@ -41,6 +42,7 @@ type PinnedVendor = {
 };
 
 export default function WeddingMapScreen() {
+  const depthBack = useDepthBack();
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme();
 
@@ -65,7 +67,7 @@ export default function WeddingMapScreen() {
         message={error}
         onRetry={load}
         retryLabel="다시 시도"
-        onBack={() => router.back()}
+        onBack={depthBack}
         backLabel="돌아가기"
       />
     );
@@ -158,7 +160,6 @@ export default function WeddingMapScreen() {
               onPress={() => openKakao(selected)}
             />
           ) : null}
-          <ActionButton size="large" label="돌아가기" onPress={() => router.back()} />
         </ThemedView>
       </SafeAreaView>
     </ThemedView>

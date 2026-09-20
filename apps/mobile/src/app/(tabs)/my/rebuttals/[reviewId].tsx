@@ -24,6 +24,7 @@ import {
 } from '@weddingpick/ui';
 import { createRebuttal, listMyRebuttals, updateRebuttal } from '@/api/client';
 import { BackBar } from '@/components/back-bar';
+import { useDepthBack } from '@/features/navigation/depth-back';
 
 /**
  * 업체 반론 등록. 디자인 핸드오프 20번.
@@ -32,6 +33,7 @@ import { BackBar } from '@/components/back-bar';
  * 반론이 하나뿐이라 **쓰기와 고치기가 사실상 같은 일**이기 때문이다.
  */
 export default function WriteRebuttalScreen() {
+  const depthBack = useDepthBack();
   const { reviewId } = useLocalSearchParams<{ reviewId: string }>();
   const theme = useTheme();
   const [existing, setExisting] = useState<MyRebuttal | null>(null);
@@ -146,7 +148,7 @@ export default function WriteRebuttalScreen() {
             disabled={sending}
             onPress={send}
           />
-          <ActionButton label="그만두기" onPress={() => router.back()} />
+          <ActionButton label="작성 그만두기" onPress={depthBack} />
         </ScrollView>
       </SafeAreaView>
     </ThemedView>

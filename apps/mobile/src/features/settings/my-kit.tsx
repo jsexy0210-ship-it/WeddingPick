@@ -496,23 +496,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
 
-  /* navBack 56 · padding 0 20 0 12 · gap 8 — component.navBack. 뒤로 40 원형. */
-  nav: {
-    height: Layout.navBar,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingLeft: Layout.navPaddingLeft,
-    paddingRight: Layout.navPaddingRight,
-    gap: Layout.navGap,
-  },
-  back: {
-    width: Layout.iconButton,
-    height: Layout.iconButton,
-    borderRadius: Radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  navTitle: { flex: 1, minWidth: 0 },
   navAction: { minHeight: Layout.touchTarget, justifyContent: 'center' },
   pressed: { opacity: 0.6 },
   disabled: { opacity: 0.4 },

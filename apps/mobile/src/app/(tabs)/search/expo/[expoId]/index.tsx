@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { getExpo, toggleExpoNotify, type ExpoDetail, type ExpoStatus } from '@/api/client';
 import { BackBar } from '@/components/back-bar';
 import { openExternal } from '@/features/open-external';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import {
   ActionButton,
   ErrorView,
@@ -56,6 +57,7 @@ function ExpoDetailSkeleton() {
  * 종료된 박람회는 종료 안내만 보여준다.
  */
 export default function ExpoDetailScreen() {
+  const depthBack = useDepthBack();
   const theme = useTheme();
   const { expoId } = useLocalSearchParams<{ expoId: string }>();
   const [expo, setExpo] = useState<ExpoDetail | null>(null);
@@ -106,7 +108,7 @@ export default function ExpoDetailScreen() {
         title={error}
         onRetry={retry}
         retryLabel="다시 시도"
-        onBack={() => router.back()}
+        onBack={depthBack}
         backLabel="돌아가기"
       />
     );

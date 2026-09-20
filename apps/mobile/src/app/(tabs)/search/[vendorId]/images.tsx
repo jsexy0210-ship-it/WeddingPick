@@ -1,5 +1,5 @@
 import type { VendorPhoto } from '@weddingpick/api-contract';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   Image,
@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listVendorPhotos } from '@/api/client';
 import { formatDateDot } from '@/features/common/format-date';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import {
   Colors,
   EmptyView,
@@ -45,6 +46,7 @@ import {
  * 상태 안내는 둔다.
  */
 export default function VendorImagesScreen() {
+  const depthBack = useDepthBack();
   const { vendorId } = useLocalSearchParams<{ vendorId: string }>();
 
   const [photos, setPhotos] = useState<VendorPhoto[] | null>(null);
@@ -62,7 +64,7 @@ export default function VendorImagesScreen() {
       <ErrorView
         title="사진을 불러오지 못했어요"
         message={error}
-        onBack={() => router.back()}
+        onBack={depthBack}
       />
     );
   }
@@ -78,7 +80,7 @@ export default function VendorImagesScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="돌아가기"
-            onPress={() => router.back()}
+            onPress={depthBack}
             style={styles.backBtn}>
             <ThemedText type="t6">돌아가기</ThemedText>
           </Pressable>

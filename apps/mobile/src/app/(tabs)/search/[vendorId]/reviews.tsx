@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { listReportReasons, listVendorReviews, reportReview } from '@/api/client';
 import { formatDateDot } from '@/features/common/format-date';
 import { BackBar } from '@/components/back-bar';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import { Badge } from '@/features/wedding/screen-kit';
 import {
   ActionButton,
@@ -30,6 +31,7 @@ import {
  * 글은 미인증도 보인다. 그 차이를 각 글의 확인 표시가 말한다.
  */
 export default function VendorReviewsScreen() {
+  const depthBack = useDepthBack();
   const { vendorId } = useLocalSearchParams<{ vendorId: string }>();
   const theme = useTheme();
   /** 지금 이어받는 중인 커서. 같은 것을 두 번 붙이지 않으려고 든다. */
@@ -68,7 +70,7 @@ export default function VendorReviewsScreen() {
         <ThemedText type="small" themeColor="textSecondary">
           {error}
         </ThemedText>
-        <ActionButton label="돌아가기" onPress={() => router.back()} />
+        <ActionButton label="돌아가기" onPress={depthBack} />
       </Frame>
     );
   }
@@ -334,7 +336,6 @@ export default function VendorReviewsScreen() {
             <ActionButton label="더 보기" onPress={() => void loadMore(page.nextCursor!)} />
           ) : null}
 
-          <ActionButton label="돌아가기" onPress={() => router.back()} />
         </ScrollView>
       </SafeAreaView>
     </ThemedView>

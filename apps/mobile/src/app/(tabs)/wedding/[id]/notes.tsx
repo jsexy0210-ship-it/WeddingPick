@@ -14,6 +14,7 @@ import {
 } from '@/api/client';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 import { confirmAlert } from '@/components/confirm-alert';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import {
   ActionButton,
   ErrorView,
@@ -77,6 +78,7 @@ function isVendorNote(note: WeddingNote): boolean {
  * 들어오면(`vendorId` · `vendorLabel`) 쓰기 시트를 연 채로 시작한다.
  */
 export default function WeddingNotesScreen() {
+  const depthBack = useDepthBack();
   const {
     id,
     vendorId: paramVendorId,
@@ -115,7 +117,7 @@ export default function WeddingNotesScreen() {
   const freeNotes = useMemo(() => (page ? page.notes.filter((note) => !isVendorNote(note)) : []), [page]);
 
   if (error) {
-    return <ErrorView message={error} onBack={() => router.back()} onRetry={load} />;
+    return <ErrorView message={error} onBack={depthBack} onRetry={load} />;
   }
 
   if (!page || now === null) {

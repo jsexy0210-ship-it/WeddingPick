@@ -11,6 +11,7 @@ import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import {
   Border,
   Layout,
+  ProductSymbol,
   Radius,
   Spacing,
   ThemedText,
@@ -79,7 +80,17 @@ export default function LoungeReviewWriteRoute() {
       <BottomSheet visible onRequestClose={close} testID="lounge-review-write-sheet">
         <SheetPanel style={styles.sheet}>
           <View style={styles.head}>
-            <ThemedText type="t4">후기 쓰기</ThemedText>
+            <View style={styles.headRow}>
+              <ThemedText type="t4">후기 쓰기</ThemedText>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="후기 작성 닫기"
+                hitSlop={12}
+                onPress={close}
+                style={styles.close}>
+                <ProductSymbol name="close" size={20} color={theme.textAssistive} />
+              </Pressable>
+            </View>
             <ThemedText type="t7" themeColor="textSecondary">
               이용한 업체를 먼저 골라주세요.
             </ThemedText>
@@ -155,6 +166,8 @@ const styles = StyleSheet.create({
   host: { flex: 1 },
   sheet: { flexShrink: 1 },
   head: { gap: Spacing.one },
+  headRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  close: { minWidth: 44, minHeight: 44, alignItems: 'flex-end', justifyContent: 'center' },
   input: {
     minHeight: Layout.field,
     borderWidth: Border.hairline,

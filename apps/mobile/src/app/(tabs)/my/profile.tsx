@@ -38,7 +38,7 @@ const S = {
   withdraw: '회원 탈퇴',
   logoutTitle: '로그아웃할까요',
   logoutBody: '기기에 저장된 문서는 그대로 남아요',
-  stay: '그만두기',
+  stay: '계속 이용하기',
   logoutFail: '로그아웃하지 못했어요',
   note: '다른 사용자에게는 김OO처럼 일부만 보여요.',
   sheetTitle: '어떻게 불러드릴까요?',

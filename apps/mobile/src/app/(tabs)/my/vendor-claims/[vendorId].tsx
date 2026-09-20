@@ -28,6 +28,7 @@ import { createVendorClaim } from '@/api/client';
 import { pickFromLibrary } from '@/features/capture/pickers';
 import { uploadBusinessDocument } from '@/features/capture/upload';
 import { BackBar } from '@/components/back-bar';
+import { useDepthBack } from '@/features/navigation/depth-back';
 
 /**
  * 업체 관계자 인증 신청. 최종통합정책 v2.0 26번.
@@ -39,6 +40,7 @@ import { BackBar } from '@/components/back-bar';
  * 앱이 보내지 않는 메일을 기다리게 만들 수 없다.
  */
 export default function VendorClaimScreen() {
+  const depthBack = useDepthBack();
   const { vendorId, vendorName } = useLocalSearchParams<{
     vendorId: string;
     vendorName?: string;
@@ -231,7 +233,7 @@ export default function VendorClaimScreen() {
             disabled={sending}
             onPress={() => void send()}
           />
-          <ActionButton label="그만두기" onPress={() => router.back()} />
+          <ActionButton label="신청 그만두기" onPress={depthBack} />
         </ScrollView>
       </SafeAreaView>
     </ThemedView>

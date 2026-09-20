@@ -1,6 +1,6 @@
 import type { VisitNoteListResponse } from '@weddingpick/api-contract';
 import { manwon } from '@weddingpick/domain';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
@@ -8,6 +8,7 @@ import { addVisitNote, listVisitNotes, removeVisitNote } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
 import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
 import { formatDateDot } from '@/features/common/format-date';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import {
   ActionButton,
   ErrorView,
@@ -32,6 +33,7 @@ import { DateChip, Field, Hero, ListRow, NavBar, NoteCard, RowValue, Screen, Sec
  * 들어가지 않는다 — 들은 말이 남의 화면에 기준금액으로 나가면 들은 말을 사실로 파는 것이 된다.
  */
 export default function VisitNotesScreen() {
+  const depthBack = useDepthBack();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [page, setPage] = useState<VisitNoteListResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +55,7 @@ export default function VisitNotesScreen() {
   useEffect(load, [load]);
 
   if (error) {
-    return <ErrorView message={error} onBack={() => router.back()} onRetry={load} />;
+    return <ErrorView message={error} onBack={depthBack} onRetry={load} />;
   }
 
   if (!page) {

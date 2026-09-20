@@ -16,6 +16,7 @@ import { isServerConfigured } from '@/api/config';
 import strings from '../../../../../../spec/strings.ko.json';
 import { shareOrCopy } from '@/components/share-or-copy';
 import { formatDateTimeDot } from '@/features/common/format-date';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import { ErrorView, Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import {
@@ -82,6 +83,7 @@ const REMAINS: { title: string; sub: string }[] = [
  * 내려오고 서버는 해시만 들고 있어 다시 보여줄 수 없다. 혼자인 상태를 결핍으로 적지 않는다.
  */
 export default function PartnerScreen() {
+  const depthBack = useDepthBack();
   const theme = useTheme();
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [weddingId, setWeddingId] = useState<string | null>(null);
@@ -197,12 +199,12 @@ export default function PartnerScreen() {
       <ErrorView
         title={S.inviteNav}
         message="이 빌드는 서버에 붙어 있지 않아 연결할 수 없어요."
-        onBack={() => router.back()} onRetry={load} />
+        onBack={depthBack} onRetry={load} />
     );
   }
 
   if (!me || !weddingId) {
-    if (error) return <ErrorView message={error} onBack={() => router.back()} onRetry={load} />;
+    if (error) return <ErrorView message={error} onBack={depthBack} onRetry={load} />;
 
     return <DelayedLoadingView />;
   }

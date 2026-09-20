@@ -60,14 +60,14 @@ export default function MyRebuttalsScreen() {
       '반론을 지울까요',
       `${rebuttal.review.vendorName} 후기에 등록한 반론이 사라져요`,
       [
-        { text: '그만두기', style: 'cancel' },
+        { text: '그대로 두기', style: 'cancel' },
         {
           text: '지우기',
           style: 'destructive',
           onPress: () => {
             void removeRebuttal(rebuttal.id)
               .then(load)
-              .catch(() => confirmAlert('지우지 못했어요', '잠시 후 다시 시도해주세요.'));
+              .catch(() => confirmAlert('지우지 못했어요', '잠시 후 다시 시도해 주세요.'));
           },
         },
       ]
@@ -88,7 +88,7 @@ export default function MyRebuttalsScreen() {
           {rebuttals.length === 0 ? (
             <ThemedText type="t6" themeColor="textSecondary">
               아직 등록한 반론이 없어요. 반론은 답할 후기를 고른 뒤 그 후기 옆에서
-              등록해주세요
+              등록해 주세요
             </ThemedText>
           ) : null}
 

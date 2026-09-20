@@ -1,9 +1,7 @@
-import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { BackBar } from '@/components/back-bar';
 
 import {
-  ActionButton,
   Layout,
   Spacing,
   ThemedText,
@@ -21,12 +19,6 @@ export default function WeddingMapWebScreen() {
         <ThemedText type="t7" themeColor="textSecondary" style={styles.desc}>
           지도는 앱에서 이용할 수 있어요.
         </ThemedText>
-        <ActionButton
-          variant="secondary"
-          size="large"
-          label="돌아가기"
-          onPress={() => router.back()}
-        />
       </View>
     </ThemedView>
   );

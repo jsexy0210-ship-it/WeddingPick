@@ -7,7 +7,7 @@ import {
   formatTaskDate,
   lifecycle,
 } from '@weddingpick/domain';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,6 +19,7 @@ import {
   removeWeddingTask,
   updateWeddingTask,
 } from '@/api/client';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
 import { confirmAlert } from '@/components/confirm-alert';
 import { BackBar } from '@/components/back-bar';
@@ -48,6 +49,7 @@ import {
  * 적어, 이 값이 날짜를 안 따라간다는 것을 보이게 한다.
  */
 export default function WeddingTasksScreen() {
+  const depthBack = useDepthBack();
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme();
   const [page, setPage] = useState<WeddingTaskListResponse | null>(null);
@@ -76,7 +78,7 @@ export default function WeddingTasksScreen() {
   }, [id]);
 
   if (error) {
-    return <ErrorView message={error} onBack={() => router.back()} onRetry={load} />;
+    return <ErrorView message={error} onBack={depthBack} onRetry={load} />;
   }
 
   if (!page) {
@@ -233,7 +235,6 @@ export default function WeddingTasksScreen() {
             </ThemedView>
           ))}
 
-          <ActionButton label="돌아가기" onPress={() => router.back()} />
         </ScrollView>
       </SafeAreaView>
 
