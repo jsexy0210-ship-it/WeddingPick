@@ -91,9 +91,9 @@ export const STEP_TITLE_LINES: Record<QuestionStep, readonly [string, string]> =
  */
 export const DONE_TITLE_LINES = ['선택한 정보로', '준비할게요'] as const;
 
-/** 질문 아래 한 줄 — 서비스가 무엇을 해주는지(SPEC §13.6 첫 표 «설명»). */
+/** 질문 아래 한 줄 — 06-onboarding-login 시안에 적힌 문구 그대로. */
 export const STEP_DESCRIPTION: Record<QuestionStep, string> = {
-  date: '남은 기간에 맞춰 준비 순서를 잡아드릴게요',
+  date: '남은 기간에 맞춰 웨딩픽이 추천드려요',
   region: '선택한 지역으로 좁혀드려요',
   style: '마음에 드는 스타일을 골라주세요',
 };
