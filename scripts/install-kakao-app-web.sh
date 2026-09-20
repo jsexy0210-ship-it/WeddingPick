@@ -11,9 +11,17 @@ TX_TARGET_MARKER="$ROOT/.app-web-update-target"
 
 release_sha="${1:-}"
 if [ -z "$release_sha" ]; then
-  release_sha="$(find "$ROOT/static-releases" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %f\n' 2>/dev/null | sort -nr | awk 'NR==1{print $2}')"
+  candidate_marker="$ROOT/static-releases/latest-candidate"
+  if [ ! -r "$candidate_marker" ]; then
+    echo 'Validated static candidate marker was not found; refusing mtime fallback.' >&2
+    exit 1
+  fi
+  IFS= read -r release_sha < "$candidate_marker" || true
 fi
-test -n "$release_sha"
+if [[ ! "$release_sha" =~ ^[0-9a-f]{40}$ ]]; then
+  echo 'Validated static candidate marker or release SHA is invalid.' >&2
+  exit 1
+fi
 
 release_root="$ROOT/static-releases/$release_sha"
 source_dir="$release_root/app"
@@ -238,6 +246,10 @@ if ! cmp -s "$admin_smoke" "$admin_target/admin/login.html"; then
 fi
 if ! grep -Fq '/_expo/static/js/web/' "$admin_smoke"; then
   echo 'Admin canonical route is missing the Expo web bundle marker.' >&2
+  exit 1
+fi
+if ! grep -Fq '웨딩픽 관리자' "$admin_smoke"; then
+  echo 'Admin canonical route is missing the admin login marker.' >&2
   exit 1
 fi
 if grep -Eq '관리자 콘솔 주소가 바뀌었어요|210\.109\.82\.212:8443' "$admin_smoke"; then

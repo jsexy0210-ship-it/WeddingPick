@@ -24,7 +24,7 @@ const rollbackSource = readFileSync(
   'utf8',
 );
 const shellTest = process.platform === 'win32' ? test.skip : test;
-const adminHtml = (label) => `<html>${label}<script src="/_expo/static/js/web/entry.js"></script></html>`;
+const adminHtml = (label) => `<html>웨딩픽 관리자 ${label}<script src="/_expo/static/js/web/entry.js"></script></html>`;
 
 function writeExecutable(file, content) {
   writeFileSync(file, content, 'utf8');
