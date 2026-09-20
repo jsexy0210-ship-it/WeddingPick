@@ -1,5 +1,26 @@
 {
   "schemaVersion": 1,
+  "canonicalDesign20260920": {
+    "dateKst": "2026-09-20",
+    "baselineCommit": "11f287d151a312e8f0ed5f923a7a9369c47ff5c6",
+    "authority": "사용자 전달 ZIP 2개를 원본으로 봉인하고 handoff 86파일, figma-export 13파일에 적용",
+    "integrity": "웨딩픽_프로젝트.zip SHA-256 89AF59C4CF286E338F39000D46836D1C2939DA7C1F106E9D9AB759648DD6671C, 웨딩픽_프로젝11트.zip SHA-256 F80CE61248A7AAABEBC460296AF72F66E1BA2281E165CB0EB9CFF6FC7CF8C1E1",
+    "exceptions": [
+      "검색 Root의 Back은 삭제 상태 유지",
+      "PR에서 삭제·통합한 제보 홈과 추천 독립 화면 및 이미 삭제된 MY·웨딩노트 하위 페이지는 되살리지 않음"
+    ],
+    "codeAlignment": [
+      "스타일은 최대 2개이며 3번째 선택은 정본 토스트로 막음",
+      "Pick 인증은 앱과 API에서 사진 한 장만 허용",
+      "검색 Root 제목은 정본의 업체 탐색으로 맞추고 Back 부재를 회귀 검사"
+    ],
+    "screenInventory": "screens.json의 실제 고유 ID 208개. 선언 합계는 189·202 등으로 서로 달라 design-screen-map.json의 실제 집합으로 누락을 검사한다.",
+    "mappingStatus": "208개 전부 대장에 등록. 구현 근거를 다시 연결해 route 123개, component 34개, state 1개, system 1개, 원본상 제외·비라우트 19개, 구현 참조 미연결 30개로 분류했다. 미연결과 390×844 미대조 항목은 완료가 아니다.",
+    "liveComparison": "제공된 공개 앱 웹에서 홈·검색을 모바일 폭으로 관찰했다. 검색 Back은 없고 즉시 결과를 보였으나 제목·결과 헤더·카드 배치가 정본과 달랐다. 공개 배포본은 PR462까지 반영됐고 이후 main 배포는 API CORS 단계 실패로 앱 전환이 건너뛰어졌다.",
+    "prAndDeletedPageReview": "PR462의 검색 Root·Pick 통합과 PR463의 제보 홈 리다이렉트·제보 요약 이동을 보존했다. PR463에서 늘어난 스타일·사진 수만 전달 ZIP과 충돌해 되돌렸다. PR465는 카카오 CORS 전용 경로 제약을 피해 문서 업로드만 인증된 동일 출처 API로 옮기고, 삭제된 CORS 검사 파일을 계속 호출하던 main·PR CI 누락을 함께 제거했다.",
+    "validation": "정본 검사 통과(ZIP 2·활성 99·화면 ID 208). 모바일 538건, 도메인 991건, 웹 67건, API 계약 58건 통과. 전체 workspace typecheck와 웹 정적 export 259라우트 통과. lint 오류 0·기존 경고 5. 로컬 Windows API 전체 검사는 307건 통과·7건 실패·905건 skip이며, 실패는 Git 파일 탐색 6건과 Node TAP 출력 형식 1건이다. DB가 없어 결제 인증 API 21건은 skip되어 최종 CI DB 검증이 필요하다.",
+    "completion": "정본 저장·무결성 검사·208개 추적 대장과 확인된 충돌 구현은 반영했다. 30개 미연결 화면과 전체 390×844 네이티브 대조가 남아 있어 전 화면 1:1 완료로 표시하지 않는다."
+  },
   "updatedDate": "2026-09-15",
   "pendingAdminDeployment": {
     "dateKst": "2026-09-11",

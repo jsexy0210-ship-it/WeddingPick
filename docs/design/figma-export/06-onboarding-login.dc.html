@@ -132,7 +132,7 @@ image-slot::part(empty){display:none !important}
 
   <div style="{{ col }}">
     <div style="{{ tag }}"><span style="{{ tagId }}">4</span>초기 설정 · 3/3</div>
-    <span style="{{ tagDesc }}">스타일 4종 고정입니다. 이미지를 쓰지 않고 버튼으로 고릅니다. 각 버튼에 어떤 느낌인지 한 줄을 붙여 말로 판단하게 합니다. 네 가지를 모두 선택할 수 있습니다.</span>
+    <span style="{{ tagDesc }}">스타일 4종 고정입니다. 이미지를 쓰지 않고 버튼으로 고릅니다. 각 버튼에 어떤 느낌인지 한 줄을 붙여 말로 판단하게 합니다. 3개째를 누르면 토스트로 알립니다.</span>
     <div style="{{ phone }}">
       <div style="{{ bar }}"><span>9:41</span></div>
       <div style="{{ stepNav }}"><div style="{{ progTrack }}"><span style="{{ prog100 }}"></span></div><span style="{{ stepLabel }}">3/3</span></div>
@@ -157,7 +157,7 @@ image-slot::part(empty){display:none !important}
             </div>
           </sc-for>
         </div>
-        
+        <div style="{{ toastWrap }}"><span style="{{ toast }}">스타일은 2개까지 고를 수 있어요</span></div>
       </div>
       <div style="{{ dockPair }}"><span style="{{ ctaGhost }}">이전</span><span style="{{ ctaWide }}">2개 선택</span></div>
     </div>
@@ -488,7 +488,7 @@ class Component extends DCLogic {
         diff('건너뛰기', '나중에', '뺌 · 미정 선택지로 대신', '설정 없이 홈에 가면 추천이 비어 있다'),
         diff('예식일 입력', '3지선다 (2027년 1월 15일 · 상반기 · 미정)', '휠 피커 + 아직 정하지 않았어요', '날짜를 고르게 해야 D-day가 나온다'),
         diff('중요한 것 질문', '예산 안에서 · 취향 뚜렷 · 정보 충분', '뺌', '추측 질문 대신 실제 값으로 판단'),
-        diff('스타일', '없음', '4종 버튼 · 모두 선택 가능', '이미지를 쓰지 않고 말로 판단한다'),
+        diff('스타일', '없음', '4종 버튼 · 최대 2개', '이미지를 쓰지 않고 말로 판단한다'),
         diff('제보 제목', '영수증 또는 계약서를 인증해주세요', '금액이 보이는 사진 한 장이면 돼요', '계약서를 요구하지 않는다'),
         diff('제보 이름', '가격 제보 · VERIFY THE FACTS', 'Pick 인증', '용어사전'),
         diff('업로드 UI', '검정 대형 카메라 버튼 + 보조 파일 링크', '카메라 · 앨범 2칸 동일 무게', '두 경로의 무게가 같다'),

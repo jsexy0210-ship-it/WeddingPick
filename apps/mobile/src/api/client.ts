@@ -1104,7 +1104,7 @@ export async function removeWeddingNote(weddingId: string, noteId: string): Prom
 }
 
 /**
- * 결제인증 등록 — **한 건의 사진 1~3장.**
+ * 결제인증 등록 — **사진 한 장.**
  *
  * 올린 원본 묶음 하나만 보낸다. 금액·업체·날짜를 보낼 자리가 요청 타입에 없어
  * 화면이 지어낸 값을 넣을 수 없고, 못 읽은 제보는 접수는 되되 검수를 기다린다.

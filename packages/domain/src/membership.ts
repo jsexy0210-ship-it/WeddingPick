@@ -90,7 +90,7 @@ export const MISSIONS: readonly Mission[] = [
   {
     key: 'payment_proof',
     title: 'Pick 인증 1건',
-    description: '낸 금액이 보이는 사진 1~3장이면 돼요',
+    description: '낸 금액이 보이는 사진 한 장이면 돼요',
   },
 ];
 

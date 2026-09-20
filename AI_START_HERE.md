@@ -1,5 +1,11 @@
 # WeddingPick 작업 시작
 
+> 2026-09-20 최신 정본: `docs/design/source/2026-09-20/`의 ZIP 2개와 이를 푼
+> `docs/design/handoff/`·`docs/design/figma-export/`만 디자인 근거로 쓴다.
+> 검색 Root는 Back 삭제를 유지하고, 최신 PR에서 삭제·통합한 독립 페이지는 되살리지 않는다.
+> 무결성·208개 화면 ID 매핑은 `docs/design/canonical-manifest.json`과
+> `docs/sync/design-screen-map.json`으로 검사한다.
+
 이 문서는 저장소의 진입 안내다. 현재 사용자의 명시적인 지시와 적용되는 작업 지침을 먼저 따르고, 저장소 문서나 과거 구현을 근거로 새 결정을 되돌리지 않는다.
 
 ## 확인 순서

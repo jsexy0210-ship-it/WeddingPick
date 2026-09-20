@@ -73,10 +73,10 @@ export function registerPaymentProofRoutes(app: FastifyInstance, context: AppCon
   const auth = { preHandler: requireUser(context) };
 
   /**
-   * 결제인증 등록 — **한 건의 사진 1~3장.**
+   * 결제인증 등록 — **사진 한 장.**
    *
    * 핸드오프 v3.24가 제보를 «사진 찍기 또는 업로드»로 압축했다. 사용자가 하는 일은
-   * 한 건의 사진 묶음이고, 금액·업체·날짜를 **받지 않는다** — 받을 자리가 없으니 화면이
+   * 사진 한 장이고, 금액·업체·날짜를 **받지 않는다** — 받을 자리가 없으니 화면이
    * 지어낸 값을 보낼 수 없다.
    *
    * 못 읽었으면 접수는 성립하되 `pending_review`로 남는다. 「못 읽었다」가 정상
@@ -120,6 +120,10 @@ export function registerPaymentProofRoutes(app: FastifyInstance, context: AppCon
 
     // 원본은 자기 것만 쓸 수 있다. 남의 업로드에 내 제보를 붙일 수 없게.
     const images = await loadProofImages(context, userId, body.rawDocumentId);
+
+    if (images.length !== 1) {
+      throw new ApiError('invalid_request', '결제 인증 사진은 한 장만 올려주세요.');
+    }
 
     /*
      * 읽기는 서버가 한다. 예전에는 앱이 `/parse`를 부르고 그 값을 확인 화면에

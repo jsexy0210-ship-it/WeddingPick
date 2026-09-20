@@ -1,0 +1,6556 @@
+{
+  "schemaVersion": 1,
+  "canonicalDate": "2026-09-20",
+  "source": "docs/design/handoff/screens.json",
+  "sourceDeclaredTotals": {
+    "total": 189,
+    "totalListed": 202,
+    "totalNote": "listed 201개 중 보류·폐기 15개를 빼면 구현 대상 186개"
+  },
+  "actualUniqueScreenIds": 208,
+  "counts": {
+    "system": 1,
+    "component": 34,
+    "excluded": 19,
+    "route": 123,
+    "unmapped": 30,
+    "state": 1
+  },
+  "note": "선언 합계가 서로 달라 실제 고유 ID 집합을 기준으로 한다. 기존 app-journey 감사와 소스의 화면 ID 참조를 구현 연결 보조 증거로 썼으며 390x844 대조 완료를 뜻하지 않는다.",
+  "screens": [
+    {
+      "id": "WP-APP-001",
+      "name": "앱 아이콘",
+      "groupId": "APP",
+      "designFiles": [
+        "웨딩픽 로그인.dc.html",
+        "웨딩픽 온보딩 v2.dc.html",
+        "웨딩픽 진입 온보딩.dc.html"
+      ],
+      "entry": "OS 런처",
+      "classification": "system",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-APP-002",
+      "name": "시작 로딩 화면",
+      "groupId": "APP",
+      "designFiles": [
+        "웨딩픽 로그인.dc.html",
+        "웨딩픽 온보딩 v2.dc.html",
+        "웨딩픽 진입 온보딩.dc.html"
+      ],
+      "entry": "앱 실행",
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/features/splash/splash-view.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-APP-003",
+      "name": "최초 실행 소개 · 보류",
+      "groupId": "APP",
+      "designFiles": [
+        "웨딩픽 로그인.dc.html",
+        "웨딩픽 온보딩 v2.dc.html",
+        "웨딩픽 진입 온보딩.dc.html"
+      ],
+      "entry": "연결하지 않음",
+      "classification": "excluded",
+      "implementationRefs": [],
+      "sourceDisposition": "보류. 실 앱개발에서 제외한다. 시안은 참고용으로만 남긴다",
+      "priorAudit": {
+        "excluded": true,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "not-applicable-unless-reactivated",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/_layout.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-AUTH-001",
+      "name": "로그인",
+      "groupId": "APP",
+      "designFiles": [
+        "웨딩픽 로그인.dc.html",
+        "웨딩픽 온보딩 v2.dc.html",
+        "웨딩픽 진입 온보딩.dc.html"
+      ],
+      "entry": "스플래시 직후 · 세션 만료",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/my",
+          "file": "apps/mobile/src/app/(tabs)/my/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/login/age-required",
+          "file": "apps/mobile/src/app/login/age-required.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/login",
+          "file": "apps/mobile/src/app/login/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/setup",
+          "file": "apps/mobile/src/app/setup.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/my",
+          "/login/age-required",
+          "/login",
+          "/setup"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/login/age-required.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/login/index.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/login/_layout.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/auth/use-sign-in.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/navigation/depth-back-rules.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-AUTH-002",
+      "name": "이메일 입력 · 보류",
+      "groupId": "APP",
+      "designFiles": [
+        "웨딩픽 로그인.dc.html",
+        "웨딩픽 온보딩 v2.dc.html",
+        "웨딩픽 진입 온보딩.dc.html"
+      ],
+      "entry": "연결하지 않음",
+      "classification": "excluded",
+      "implementationRefs": [
+        {
+          "route": "/login",
+          "file": "apps/mobile/src/app/login/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": "보류. 초기 버전에서 이메일 로그인을 쓰지 않는다. 시안과 명세는 남겨두고 어느 화면에서도 연결하지 않는다",
+      "priorAudit": {
+        "excluded": true,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/login"
+        ]
+      },
+      "visualVerification": "not-applicable-unless-reactivated",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/features/auth/auth-back-button.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-AUTH-003",
+      "name": "비밀번호 입력 · 보류",
+      "groupId": "APP",
+      "designFiles": [
+        "웨딩픽 로그인.dc.html",
+        "웨딩픽 온보딩 v2.dc.html",
+        "웨딩픽 진입 온보딩.dc.html"
+      ],
+      "entry": "연결하지 않음",
+      "classification": "excluded",
+      "implementationRefs": [],
+      "sourceDisposition": "보류. 초기 버전에서 이메일 로그인을 쓰지 않는다. 시안과 명세는 남겨두고 어느 화면에서도 연결하지 않는다",
+      "priorAudit": {
+        "excluded": true,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "not-applicable-unless-reactivated",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-AUTH-004",
+      "name": "비밀번호 만들기 · 보류",
+      "groupId": "APP",
+      "designFiles": [
+        "웨딩픽 로그인.dc.html",
+        "웨딩픽 온보딩 v2.dc.html",
+        "웨딩픽 진입 온보딩.dc.html"
+      ],
+      "entry": "연결하지 않음",
+      "classification": "excluded",
+      "implementationRefs": [],
+      "sourceDisposition": "보류. 초기 버전에서 이메일 로그인을 쓰지 않는다. 시안과 명세는 남겨두고 어느 화면에서도 연결하지 않는다",
+      "priorAudit": {
+        "excluded": true,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "not-applicable-unless-reactivated",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-AUTH-005",
+      "name": "입력 오류 · 보류",
+      "groupId": "APP",
+      "designFiles": [
+        "웨딩픽 로그인.dc.html",
+        "웨딩픽 온보딩 v2.dc.html",
+        "웨딩픽 진입 온보딩.dc.html"
+      ],
+      "entry": "연결하지 않음",
+      "classification": "excluded",
+      "implementationRefs": [],
+      "sourceDisposition": "보류. 초기 버전에서 이메일 로그인을 쓰지 않는다. 시안과 명세는 남겨두고 어느 화면에서도 연결하지 않는다",
+      "priorAudit": {
+        "excluded": true,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "not-applicable-unless-reactivated",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-AUTH-006",
+      "name": "비밀번호 찾기 · 보류",
+      "groupId": "APP",
+      "designFiles": [
+        "웨딩픽 로그인.dc.html",
+        "웨딩픽 온보딩 v2.dc.html",
+        "웨딩픽 진입 온보딩.dc.html"
+      ],
+      "entry": "연결하지 않음",
+      "classification": "excluded",
+      "implementationRefs": [],
+      "sourceDisposition": "보류. 초기 버전에서 이메일 로그인을 쓰지 않는다. 시안과 명세는 남겨두고 어느 화면에서도 연결하지 않는다",
+      "priorAudit": {
+        "excluded": true,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "not-applicable-unless-reactivated",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/features/auth/auth-back-button.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-AUTH-007",
+      "name": "메일 보냈어요 · 보류",
+      "groupId": "APP",
+      "designFiles": [
+        "웨딩픽 로그인.dc.html",
+        "웨딩픽 온보딩 v2.dc.html",
+        "웨딩픽 진입 온보딩.dc.html"
+      ],
+      "entry": "연결하지 않음",
+      "classification": "excluded",
+      "implementationRefs": [],
+      "sourceDisposition": "보류. 초기 버전에서 이메일 로그인을 쓰지 않는다. 시안과 명세는 남겨두고 어느 화면에서도 연결하지 않는다",
+      "priorAudit": {
+        "excluded": true,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "not-applicable-unless-reactivated",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-AUTH-008",
+      "name": "로그인 유지",
+      "groupId": "APP",
+      "designFiles": [
+        "웨딩픽 로그인.dc.html",
+        "웨딩픽 온보딩 v2.dc.html",
+        "웨딩픽 진입 온보딩.dc.html"
+      ],
+      "entry": "재실행 · 세션 유효",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/login",
+          "file": "apps/mobile/src/app/login/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/login"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/login/index.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/auth/finish-sign-in.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/auth/mask-email.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/auth/remembered-account.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-AUTH-009",
+      "name": "나이 확인 · 폐기",
+      "groupId": "APP",
+      "designFiles": [
+        "웨딩픽 로그인.dc.html",
+        "웨딩픽 온보딩 v2.dc.html",
+        "웨딩픽 진입 온보딩.dc.html"
+      ],
+      "entry": "연결하지 않음",
+      "classification": "excluded",
+      "implementationRefs": [
+        {
+          "route": "/login/age-required",
+          "file": "apps/mobile/src/app/login/age-required.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/login",
+          "file": "apps/mobile/src/app/login/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": "폐기. WP-AUTH-001의 만 14세 체크박스로 대체한다. 별도 화면을 두지 않는다",
+      "priorAudit": {
+        "excluded": true,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/login/age-required",
+          "/login"
+        ]
+      },
+      "visualVerification": "not-applicable-unless-reactivated",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/login/age-required.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/auth/sign-in-handoff.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/auth/use-sign-in.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/navigation/depth-back-rules.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/auth/age-range.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/domain/src/signup.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-AUTH-010",
+      "name": "이용 불가 안내",
+      "groupId": "APP",
+      "designFiles": [
+        "웨딩픽 로그인.dc.html",
+        "웨딩픽 온보딩 v2.dc.html",
+        "웨딩픽 진입 온보딩.dc.html"
+      ],
+      "entry": "WP-AUTH-001 · 체크하지 않고 시작 시도",
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-APP-004",
+      "name": "시작 · 폐기",
+      "groupId": "APP",
+      "designFiles": [
+        "웨딩픽 로그인.dc.html",
+        "웨딩픽 온보딩 v2.dc.html",
+        "웨딩픽 진입 온보딩.dc.html"
+      ],
+      "entry": "연결하지 않음",
+      "classification": "excluded",
+      "implementationRefs": [],
+      "sourceDisposition": "비회원 둘러보기 경로가 없어져 폐기한다. 스플래시 다음은 WP-AUTH-001",
+      "priorAudit": {
+        "excluded": true,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "not-applicable-unless-reactivated",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-APP-005",
+      "name": "재실행 · 로그인 상태 복원",
+      "groupId": "APP",
+      "designFiles": [
+        "웨딩픽 로그인.dc.html",
+        "웨딩픽 온보딩 v2.dc.html",
+        "웨딩픽 진입 온보딩.dc.html"
+      ],
+      "entry": "두 번째 이후 실행",
+      "classification": "excluded",
+      "implementationRefs": [],
+      "sourceDisposition": "화면 없음. 세션 복원 → 온보딩 완료 확인 → 웨딩 설정 복원 → 배우자 연결 복원 → 홈",
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "not-applicable-unless-reactivated",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-APP-006",
+      "name": "앱 진입 오류 안내",
+      "groupId": "APP",
+      "designFiles": [
+        "웨딩픽 로그인.dc.html",
+        "웨딩픽 온보딩 v2.dc.html",
+        "웨딩픽 진입 온보딩.dc.html"
+      ],
+      "entry": "초기 구동 실패",
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/features/errors/full-screen-error.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/errors/kind.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/ui/src/product-symbol.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-APP-007",
+      "name": "권한 요청",
+      "groupId": "APP",
+      "designFiles": [
+        "웨딩픽 로그인.dc.html",
+        "웨딩픽 온보딩 v2.dc.html",
+        "웨딩픽 진입 온보딩.dc.html"
+      ],
+      "entry": "기능 사용 시점",
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/features/permissions/permission-sheet.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-APP-020",
+      "name": "초기 설정 · 5개 질문",
+      "groupId": "APP",
+      "designFiles": [
+        "웨딩픽 로그인.dc.html",
+        "웨딩픽 온보딩 v2.dc.html",
+        "웨딩픽 진입 온보딩.dc.html"
+      ],
+      "entry": "로그인 성공 직후 · 최초 로그인",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/setup",
+          "file": "apps/mobile/src/app/setup.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/setup"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/setup.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/onboarding/budget-grid.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/onboarding/date-picker-sheet.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/onboarding/prep-status.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/ui/src/theme.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/ui/src/typography.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/domain/src/vendor.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-APP-023",
+      "name": "날짜 선택 시트",
+      "groupId": "APP",
+      "designFiles": [
+        "웨딩픽 로그인.dc.html",
+        "웨딩픽 온보딩 v2.dc.html",
+        "웨딩픽 진입 온보딩.dc.html"
+      ],
+      "entry": "WP-APP-020 1/5 예식일 필드",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/my/wedding-settings",
+          "file": "apps/mobile/src/app/(tabs)/my/wedding-settings.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/my/wedding-settings"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/wedding-settings.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/onboarding/calendar.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/onboarding/date-picker-sheet.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/onboarding/wheel.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/wedding/event-form.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/ui/src/theme.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-APP-021",
+      "name": "스타일 선택 · WP-APP-020 5/5에 통합",
+      "groupId": "APP",
+      "designFiles": [
+        "웨딩픽 로그인.dc.html",
+        "웨딩픽 온보딩 v2.dc.html",
+        "웨딩픽 진입 온보딩.dc.html"
+      ],
+      "entry": "WP-APP-020",
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": "WP-APP-020의 5번째 질문으로 흡수. 별도 ID 유지하되 별도 화면 아님",
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/api/src/routes/taste.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/domain/src/taste.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-APP-022",
+      "name": "초기 설정 완료",
+      "groupId": "APP",
+      "designFiles": [
+        "웨딩픽 로그인.dc.html",
+        "웨딩픽 온보딩 v2.dc.html",
+        "웨딩픽 진입 온보딩.dc.html"
+      ],
+      "entry": "WP-APP-021",
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/features/navigation/depth-back-rules.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-APP-008",
+      "name": "초기 설정 — 예식일 · 보류",
+      "groupId": "APP",
+      "designFiles": [
+        "웨딩픽 로그인.dc.html",
+        "웨딩픽 온보딩 v2.dc.html",
+        "웨딩픽 진입 온보딩.dc.html"
+      ],
+      "entry": "연결하지 않음",
+      "classification": "excluded",
+      "implementationRefs": [],
+      "sourceDisposition": "보류. 4단계 시안을 2단계로 개편했다. WP-APP-020~021을 쓴다. 시안은 참고용으로만 남긴다",
+      "priorAudit": {
+        "excluded": true,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "not-applicable-unless-reactivated",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-APP-009",
+      "name": "초기 설정 — 지역 · 보류",
+      "groupId": "APP",
+      "designFiles": [
+        "웨딩픽 로그인.dc.html",
+        "웨딩픽 온보딩 v2.dc.html",
+        "웨딩픽 진입 온보딩.dc.html"
+      ],
+      "entry": "연결하지 않음",
+      "classification": "excluded",
+      "implementationRefs": [],
+      "sourceDisposition": "보류. 4단계 시안을 2단계로 개편했다. WP-APP-020~021을 쓴다. 시안은 참고용으로만 남긴다",
+      "priorAudit": {
+        "excluded": true,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "not-applicable-unless-reactivated",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-APP-010",
+      "name": "초기 설정 — 총예산 · 보류",
+      "groupId": "APP",
+      "designFiles": [
+        "웨딩픽 로그인.dc.html",
+        "웨딩픽 온보딩 v2.dc.html",
+        "웨딩픽 진입 온보딩.dc.html"
+      ],
+      "entry": "연결하지 않음",
+      "classification": "excluded",
+      "implementationRefs": [],
+      "sourceDisposition": "보류. 4단계 시안을 2단계로 개편했다. WP-APP-020~021을 쓴다. 시안은 참고용으로만 남긴다",
+      "priorAudit": {
+        "excluded": true,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "not-applicable-unless-reactivated",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-APP-011",
+      "name": "초기 설정 — 스타일 선택 · 보류",
+      "groupId": "APP",
+      "designFiles": [
+        "웨딩픽 로그인.dc.html",
+        "웨딩픽 온보딩 v2.dc.html",
+        "웨딩픽 진입 온보딩.dc.html"
+      ],
+      "entry": "연결하지 않음",
+      "classification": "excluded",
+      "implementationRefs": [],
+      "sourceDisposition": "보류. 4단계 시안을 2단계로 개편했다. WP-APP-020~021을 쓴다. 시안은 참고용으로만 남긴다",
+      "priorAudit": {
+        "excluded": true,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "not-applicable-unless-reactivated",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-APP-012",
+      "name": "초기 설정 완료 · 보류",
+      "groupId": "APP",
+      "designFiles": [
+        "웨딩픽 로그인.dc.html",
+        "웨딩픽 온보딩 v2.dc.html",
+        "웨딩픽 진입 온보딩.dc.html"
+      ],
+      "entry": "연결하지 않음",
+      "classification": "excluded",
+      "implementationRefs": [],
+      "sourceDisposition": "보류. 4단계 시안을 2단계로 개편했다. WP-APP-020~021을 쓴다. 시안은 참고용으로만 남긴다",
+      "priorAudit": {
+        "excluded": true,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "not-applicable-unless-reactivated",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-NAV-001",
+      "name": "홈 탭",
+      "groupId": "NAV",
+      "designFiles": [
+        "웨딩픽 홈 진행상태.dc.html",
+        "웨딩픽 검색.dc.html",
+        "웨딩픽 Pick 탭.dc.html",
+        "웨딩픽 웨딩일정 MY.dc.html"
+      ],
+      "entry": null,
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-NAV-002",
+      "name": "검색 탭",
+      "groupId": "NAV",
+      "designFiles": [
+        "웨딩픽 홈 진행상태.dc.html",
+        "웨딩픽 검색.dc.html",
+        "웨딩픽 Pick 탭.dc.html",
+        "웨딩픽 웨딩일정 MY.dc.html"
+      ],
+      "entry": null,
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-NAV-003",
+      "name": "픽 탭",
+      "groupId": "NAV",
+      "designFiles": [
+        "웨딩픽 홈 진행상태.dc.html",
+        "웨딩픽 검색.dc.html",
+        "웨딩픽 Pick 탭.dc.html",
+        "웨딩픽 웨딩일정 MY.dc.html"
+      ],
+      "entry": null,
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-NAV-004",
+      "name": "웨딩일정 탭",
+      "groupId": "NAV",
+      "designFiles": [
+        "웨딩픽 홈 진행상태.dc.html",
+        "웨딩픽 검색.dc.html",
+        "웨딩픽 Pick 탭.dc.html",
+        "웨딩픽 웨딩일정 MY.dc.html"
+      ],
+      "entry": null,
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-NAV-005",
+      "name": "마이페이지 탭",
+      "groupId": "NAV",
+      "designFiles": [
+        "웨딩픽 홈 진행상태.dc.html",
+        "웨딩픽 검색.dc.html",
+        "웨딩픽 Pick 탭.dc.html",
+        "웨딩픽 웨딩일정 MY.dc.html"
+      ],
+      "entry": null,
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-NAV-006",
+      "name": "상황별 제보 진입점",
+      "groupId": "NAV",
+      "designFiles": [
+        "웨딩픽 홈 진행상태.dc.html",
+        "웨딩픽 검색.dc.html",
+        "웨딩픽 Pick 탭.dc.html",
+        "웨딩픽 웨딩일정 MY.dc.html"
+      ],
+      "entry": null,
+      "classification": "excluded",
+      "implementationRefs": [],
+      "sourceDisposition": "화면 없음. 4곳 고정 — MY 제보 메뉴 / 업체상세 제보 금액 하단 / 정보 부족 화면 / 웨딩일정 지출. 진입 문구와 위치를 통일",
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "not-applicable-unless-reactivated",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-HOME-001",
+      "name": "홈",
+      "groupId": "HOME",
+      "designFiles": [
+        "웨딩픽 홈 진행상태.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "Root 1",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/",
+          "file": "apps/mobile/src/app/(tabs)/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-HOME-002",
+      "name": "우선순위별 홈 콘텐츠 분기",
+      "groupId": "HOME",
+      "designFiles": [
+        "웨딩픽 홈 진행상태.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "내부 로직",
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-HOME-003",
+      "name": "오늘의 픽",
+      "groupId": "HOME",
+      "designFiles": [
+        "웨딩픽 홈 진행상태.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "WP-HOME-001",
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-HOME-004",
+      "name": "추천 상위 3곳 전체보기",
+      "groupId": "HOME",
+      "designFiles": [
+        "웨딩픽 홈 진행상태.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "홈 섹션 더보기",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/top3",
+          "file": "apps/mobile/src/app/(tabs)/(home)/top3.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/top3"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/(home)/top3.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-HOME-005",
+      "name": "다음 준비",
+      "groupId": "HOME",
+      "designFiles": [
+        "웨딩픽 홈 진행상태.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "WP-HOME-001",
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-HOME-006",
+      "name": "개인화 웨딩 소식",
+      "groupId": "HOME",
+      "designFiles": [
+        "웨딩픽 홈 진행상태.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "WP-HOME-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/feed",
+          "file": "apps/mobile/src/app/(tabs)/(home)/feed.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/feed"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/(home)/feed.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-HOME-007",
+      "name": "홈 편집",
+      "groupId": "HOME",
+      "designFiles": [
+        "웨딩픽 홈 진행상태.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "홈 우상단",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/",
+          "file": "apps/mobile/src/app/(tabs)/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/home-edit",
+          "file": "apps/mobile/src/app/home-edit.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/",
+          "/home-edit"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-HOME-008",
+      "name": "비회원 홈 · 폐기",
+      "groupId": "HOME",
+      "designFiles": [
+        "웨딩픽 홈 진행상태.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "연결하지 않음",
+      "classification": "excluded",
+      "implementationRefs": [],
+      "sourceDisposition": "비회원 이용 정책 폐기로 삭제한다. 로그아웃 상태는 WP-AUTH-001로 보낸다",
+      "priorAudit": {
+        "excluded": true,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "not-applicable-unless-reactivated",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-HOME-009",
+      "name": "준비 현황 전체",
+      "groupId": "HOME",
+      "designFiles": [
+        "웨딩픽 홈 진행상태.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "홈 준비 현황 «전체 보기»",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/progress",
+          "file": "apps/mobile/src/app/(tabs)/(home)/progress.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/my",
+          "file": "apps/mobile/src/app/(tabs)/my/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/wedding",
+          "file": "apps/mobile/src/app/(tabs)/wedding/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/progress",
+          "/my",
+          "/wedding"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/(home)/progress.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-SRCH-001",
+      "name": "검색 홈",
+      "groupId": "SRCH",
+      "designFiles": [
+        "웨딩픽 검색.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "Root 2",
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/search/index.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/search/recent-searches.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/ui/src/filter-chip.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-SRCH-002",
+      "name": "검색어 입력 · 자동완성",
+      "groupId": "SRCH",
+      "designFiles": [
+        "웨딩픽 검색.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "검색창 탭",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/search/autocomplete",
+          "file": "apps/mobile/src/app/(tabs)/search/autocomplete.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/search",
+          "file": "apps/mobile/src/app/(tabs)/search/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/search/autocomplete",
+          "/search"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/search/autocomplete.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/search/index.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-SRCH-003",
+      "name": "업종별 탐색 · 진입점 없음",
+      "groupId": "SRCH",
+      "designFiles": [
+        "웨딩픽 검색.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "연결하지 않음",
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": "검색 홈 업종 카드가 결과 화면으로 직행하므로 이 중간 화면은 쓰지 않는다. 결과 화면의 업종 필터 칩이 역할을 대신한다. 시안은 참고용",
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-SRCH-004",
+      "name": "검색 결과",
+      "groupId": "SRCH",
+      "designFiles": [
+        "웨딩픽 검색.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "WP-SRCH-002",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/top3",
+          "file": "apps/mobile/src/app/(tabs)/(home)/top3.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/search",
+          "file": "apps/mobile/src/app/(tabs)/search/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/top3",
+          "/search"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/(home)/top3.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-SRCH-005",
+      "name": "검색 필터",
+      "groupId": "SRCH",
+      "designFiles": [
+        "웨딩픽 검색.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "결과 상단",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/search/filter",
+          "file": "apps/mobile/src/app/(tabs)/search/filter.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/search",
+          "file": "apps/mobile/src/app/(tabs)/search/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/search/filter",
+          "/search"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/api/client.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/search/index.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/search/filter-sheet.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/routes/vendors.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/ui/src/theme.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/domain/src/budget-bands.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-SRCH-006",
+      "name": "검색 결과 정렬",
+      "groupId": "SRCH",
+      "designFiles": [
+        "웨딩픽 검색.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "결과 상단",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/search",
+          "file": "apps/mobile/src/app/(tabs)/search/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/search"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/search/index.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/search/sort-sheet.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-SRCH-007",
+      "name": "지도 보기",
+      "groupId": "SRCH",
+      "designFiles": [
+        "웨딩픽 검색.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "결과 상단 토글",
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-SRCH-008",
+      "name": "검색 결과 없음 · 오류",
+      "groupId": "SRCH",
+      "designFiles": [
+        "웨딩픽 검색.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "WP-SRCH-004",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/search",
+          "file": "apps/mobile/src/app/(tabs)/search/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/search"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/search/index.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-VEND-001",
+      "name": "업체 상세",
+      "groupId": "VEND",
+      "designFiles": [
+        "웨딩픽 핵심루프.dc.html",
+        "웨딩픽 업체상세 하위.dc.html"
+      ],
+      "entry": "검색 · 홈 · Pick · 소식",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/search/[vendorId]",
+          "file": "apps/mobile/src/app/(tabs)/search/[vendorId]/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/search/[vendorId]"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/search/[vendorId]/index.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/search/vendor-benefit.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/ui/src/theme.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/domain/src/vendor-detail.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-VEND-002",
+      "name": "이미지 전체보기",
+      "groupId": "VEND",
+      "designFiles": [
+        "웨딩픽 핵심루프.dc.html",
+        "웨딩픽 업체상세 하위.dc.html"
+      ],
+      "entry": "대표 이미지 탭",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/search/[vendorId]/images",
+          "file": "apps/mobile/src/app/(tabs)/search/[vendorId]/images.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/search/[vendorId]",
+          "file": "apps/mobile/src/app/(tabs)/search/[vendorId]/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/search/[vendorId]/images",
+          "/search/[vendorId]"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/api/client.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/search/[vendorId]/images.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/search/[vendorId]/index.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/routes/vendors.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-VEND-003",
+      "name": "제보 금액 상세",
+      "groupId": "VEND",
+      "designFiles": [
+        "웨딩픽 핵심루프.dc.html",
+        "웨딩픽 업체상세 하위.dc.html"
+      ],
+      "entry": "WP-VEND-001 ④",
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-VEND-004",
+      "name": "업체 안내",
+      "groupId": "VEND",
+      "designFiles": [
+        "웨딩픽 핵심루프.dc.html",
+        "웨딩픽 업체상세 하위.dc.html"
+      ],
+      "entry": "WP-VEND-001 ⑥",
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-VEND-005",
+      "name": "공식 정보",
+      "groupId": "VEND",
+      "designFiles": [
+        "웨딩픽 핵심루프.dc.html",
+        "웨딩픽 업체상세 하위.dc.html"
+      ],
+      "entry": "WP-VEND-001 ⑪",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/search/[vendorId]/fix-report",
+          "file": "apps/mobile/src/app/(tabs)/search/[vendorId]/fix-report.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/search/[vendorId]/fix-report"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/search/[vendorId]/fix-report.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-VEND-006",
+      "name": "정보 오류 제보",
+      "groupId": "VEND",
+      "designFiles": [
+        "웨딩픽 핵심루프.dc.html",
+        "웨딩픽 업체상세 하위.dc.html"
+      ],
+      "entry": "WP-VEND-001 ⑬ · WP-VEND-005",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/search/[vendorId]/fix-report",
+          "file": "apps/mobile/src/app/(tabs)/search/[vendorId]/fix-report.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/search/[vendorId]",
+          "file": "apps/mobile/src/app/(tabs)/search/[vendorId]/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/search/[vendorId]/fix-report",
+          "/search/[vendorId]"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/search/[vendorId]/fix-report.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/search/[vendorId]/index.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-CMP-001",
+      "name": "비교 후보 선택",
+      "groupId": "CMP",
+      "designFiles": [],
+      "entry": "검색 · Pick · 업체상세",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/pick/compare",
+          "file": "apps/mobile/src/app/(tabs)/pick/compare.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/pick",
+          "file": "apps/mobile/src/app/(tabs)/pick/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/pick/compare",
+          "/pick"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/pick/compare.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-CMP-002",
+      "name": "비교 결과",
+      "groupId": "CMP",
+      "designFiles": [],
+      "entry": "WP-CMP-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/pick/compare",
+          "file": "apps/mobile/src/app/(tabs)/pick/compare.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/search/compare",
+          "file": "apps/mobile/src/app/(tabs)/search/compare.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/search/[vendorId]",
+          "file": "apps/mobile/src/app/(tabs)/search/[vendorId]/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/pick/compare",
+          "/search/compare",
+          "/search/[vendorId]"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/pick/compare.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/search/compare.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/navigation/depth-back-rules.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-CMP-003",
+      "name": "비교 요약",
+      "groupId": "CMP",
+      "designFiles": [],
+      "entry": "WP-CMP-002 하단",
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-CMP-004",
+      "name": "비교 화면에서 픽하기",
+      "groupId": "CMP",
+      "designFiles": [],
+      "entry": "WP-CMP-002 dock",
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-PICK-001",
+      "name": "픽 홈",
+      "groupId": "PICK",
+      "designFiles": [
+        "웨딩픽 Pick 탭.dc.html",
+        "웨딩픽 핵심루프.dc.html"
+      ],
+      "entry": "Root 3",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/pick/history",
+          "file": "apps/mobile/src/app/(tabs)/pick/history.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/pick",
+          "file": "apps/mobile/src/app/(tabs)/pick/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/pick/history",
+          "/pick"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/pick/history.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/pick/index.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-PICK-002",
+      "name": "업종별 픽",
+      "groupId": "PICK",
+      "designFiles": [
+        "웨딩픽 Pick 탭.dc.html",
+        "웨딩픽 핵심루프.dc.html"
+      ],
+      "entry": "WP-PICK-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/pick/category",
+          "file": "apps/mobile/src/app/(tabs)/pick/category.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/pick/confirm",
+          "file": "apps/mobile/src/app/(tabs)/pick/confirm.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/pick/[category]",
+          "file": "apps/mobile/src/app/(tabs)/pick/[category].tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/pick/category",
+          "/pick/confirm",
+          "/pick/[category]"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/pick/category.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/pick/confirm.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/pick/[category].tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-PICK-003",
+      "name": "후보 비교",
+      "groupId": "PICK",
+      "designFiles": [
+        "웨딩픽 Pick 탭.dc.html",
+        "웨딩픽 핵심루프.dc.html"
+      ],
+      "entry": "WP-PICK-002",
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/features/navigation/depth-back-rules.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-PICK-004",
+      "name": "배우자 공동 결정",
+      "groupId": "PICK",
+      "designFiles": [
+        "웨딩픽 Pick 탭.dc.html",
+        "웨딩픽 핵심루프.dc.html"
+      ],
+      "entry": "WP-PICK-002",
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-PICK-005",
+      "name": "최종 결정 확인",
+      "groupId": "PICK",
+      "designFiles": [
+        "웨딩픽 Pick 탭.dc.html",
+        "웨딩픽 핵심루프.dc.html"
+      ],
+      "entry": "WP-PICK-003",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/pick/confirm",
+          "file": "apps/mobile/src/app/(tabs)/pick/confirm.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/pick/[category]",
+          "file": "apps/mobile/src/app/(tabs)/pick/[category].tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/pick/confirm",
+          "/pick/[category]"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/pick/confirm.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/pick/index.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/pick/[category].tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-PICK-006",
+      "name": "결정 완료",
+      "groupId": "PICK",
+      "designFiles": [
+        "웨딩픽 Pick 탭.dc.html",
+        "웨딩픽 핵심루프.dc.html"
+      ],
+      "entry": "WP-PICK-005",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/pick/confirm",
+          "file": "apps/mobile/src/app/(tabs)/pick/confirm.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/pick/done",
+          "file": "apps/mobile/src/app/(tabs)/pick/done.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/wedding/[id]/expenses/add",
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/expenses/add.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/pick/confirm",
+          "/pick/done",
+          "/wedding/[id]/expenses/add"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/pick/confirm.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/pick/done.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/navigation/depth-back-rules.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-PICK-007",
+      "name": "결정 내역",
+      "groupId": "PICK",
+      "designFiles": [
+        "웨딩픽 Pick 탭.dc.html",
+        "웨딩픽 핵심루프.dc.html"
+      ],
+      "entry": "WP-PICK-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/pick/history",
+          "file": "apps/mobile/src/app/(tabs)/pick/history.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/pick/removed",
+          "file": "apps/mobile/src/app/(tabs)/pick/removed.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/pick/history",
+          "/pick/removed"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/pick/history.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/pick/removed.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/navigation/depth-back-rules.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-PICK-008",
+      "name": "픽 해제",
+      "groupId": "PICK",
+      "designFiles": [
+        "웨딩픽 Pick 탭.dc.html",
+        "웨딩픽 핵심루프.dc.html"
+      ],
+      "entry": "WP-PICK-002",
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-OUR-001",
+      "name": "웨딩일정 홈",
+      "groupId": "OUR",
+      "designFiles": [
+        "웨딩픽 웨딩일정 MY.dc.html",
+        "웨딩픽 웨딩일정 하위.dc.html",
+        "웨딩픽 마감 화면.dc.html"
+      ],
+      "entry": "Root 4",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/wedding",
+          "file": "apps/mobile/src/app/(tabs)/wedding/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/wedding"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/wedding/index.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/wedding/complete-view.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-OUR-003",
+      "name": "결정한 업체",
+      "groupId": "OUR",
+      "designFiles": [
+        "웨딩픽 웨딩일정 MY.dc.html",
+        "웨딩픽 웨딩일정 하위.dc.html",
+        "웨딩픽 마감 화면.dc.html"
+      ],
+      "entry": "WP-OUR-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/wedding/[id]/decided",
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/decided.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/wedding/[id]/notes",
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/notes.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/wedding/[id]/decided",
+          "/wedding/[id]/notes"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/api/client.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/decided.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/notes.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/routes/candidates.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-OUR-004",
+      "name": "일정 목록",
+      "groupId": "OUR",
+      "designFiles": [
+        "웨딩픽 웨딩일정 MY.dc.html",
+        "웨딩픽 웨딩일정 하위.dc.html",
+        "웨딩픽 마감 화면.dc.html"
+      ],
+      "entry": "WP-OUR-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/wedding/[id]/events",
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/events/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/wedding/[id]/events"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-OUR-005",
+      "name": "일정 상세",
+      "groupId": "OUR",
+      "designFiles": [
+        "웨딩픽 웨딩일정 MY.dc.html",
+        "웨딩픽 웨딩일정 하위.dc.html",
+        "웨딩픽 마감 화면.dc.html"
+      ],
+      "entry": "WP-OUR-004",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/wedding/[id]/events/[eventId]",
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/events/[eventId].tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/wedding/[id]/events/[eventId]"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/events/[eventId].tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/wedding/event-form.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-OUR-006",
+      "name": "일정 추가",
+      "groupId": "OUR",
+      "designFiles": [
+        "웨딩픽 웨딩일정 MY.dc.html",
+        "웨딩픽 웨딩일정 하위.dc.html",
+        "웨딩픽 마감 화면.dc.html"
+      ],
+      "entry": "WP-OUR-004",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/wedding/[id]/events/new",
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/events/new.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/wedding/[id]/events/new"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/features/wedding/event-form.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-OUR-007",
+      "name": "준비 체크리스트",
+      "groupId": "OUR",
+      "designFiles": [
+        "웨딩픽 웨딩일정 MY.dc.html",
+        "웨딩픽 웨딩일정 하위.dc.html",
+        "웨딩픽 마감 화면.dc.html"
+      ],
+      "entry": "WP-OUR-001",
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-OUR-008",
+      "name": "지출 요약",
+      "groupId": "OUR",
+      "designFiles": [
+        "웨딩픽 웨딩일정 MY.dc.html",
+        "웨딩픽 웨딩일정 하위.dc.html",
+        "웨딩픽 마감 화면.dc.html"
+      ],
+      "entry": "WP-OUR-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/wedding",
+          "file": "apps/mobile/src/app/(tabs)/wedding/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/wedding/[id]/expenses",
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/expenses/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/wedding/[id]/expenses/list",
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/expenses/list.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/wedding",
+          "/wedding/[id]/expenses",
+          "/wedding/[id]/expenses/list"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/expenses/list.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-OUR-009",
+      "name": "지출 내역",
+      "groupId": "OUR",
+      "designFiles": [
+        "웨딩픽 웨딩일정 MY.dc.html",
+        "웨딩픽 웨딩일정 하위.dc.html",
+        "웨딩픽 마감 화면.dc.html"
+      ],
+      "entry": "WP-OUR-008",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/wedding/[id]/expenses",
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/expenses/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/wedding/[id]/expenses/list",
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/expenses/list.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/wedding/[id]/expenses",
+          "/wedding/[id]/expenses/list"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/expenses/list.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/routes/candidates.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-OUR-010",
+      "name": "지출 상세",
+      "groupId": "OUR",
+      "designFiles": [
+        "웨딩픽 웨딩일정 MY.dc.html",
+        "웨딩픽 웨딩일정 하위.dc.html",
+        "웨딩픽 마감 화면.dc.html"
+      ],
+      "entry": "WP-OUR-009",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/wedding/[id]/expenses/list",
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/expenses/list.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/wedding/[id]/expenses/[expenseId]",
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/expenses/[expenseId].tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/wedding/[id]/expenses/list",
+          "/wedding/[id]/expenses/[expenseId]"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/api/client.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/expenses/list.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/expenses/[expenseId].tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/routes/wedding-plan.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/domain/src/expense.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-OUR-011",
+      "name": "메모",
+      "groupId": "OUR",
+      "designFiles": [
+        "웨딩픽 웨딩일정 MY.dc.html",
+        "웨딩픽 웨딩일정 하위.dc.html",
+        "웨딩픽 마감 화면.dc.html"
+      ],
+      "entry": "WP-OUR-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/wedding/[id]/notes",
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/notes.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/wedding/[id]/notes"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/api/client.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/notes.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-OUR-012",
+      "name": "준비 타임라인",
+      "groupId": "OUR",
+      "designFiles": [
+        "웨딩픽 웨딩일정 MY.dc.html",
+        "웨딩픽 웨딩일정 하위.dc.html",
+        "웨딩픽 마감 화면.dc.html"
+      ],
+      "entry": "WP-OUR-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/wedding/[id]/timeline",
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/timeline.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/wedding/[id]/timeline"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/timeline.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-OUR-013",
+      "name": "예식 완료",
+      "groupId": "OUR",
+      "designFiles": [
+        "웨딩픽 웨딩일정 MY.dc.html",
+        "웨딩픽 웨딩일정 하위.dc.html",
+        "웨딩픽 마감 화면.dc.html"
+      ],
+      "entry": "예식일 경과",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/wedding",
+          "file": "apps/mobile/src/app/(tabs)/wedding/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/wedding/[id]/complete",
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/complete.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/wedding",
+          "/wedding/[id]/complete"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/complete.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/navigation/depth-back-rules.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/wedding/complete-view.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-OUR-014",
+      "name": "지출 추가 · Pick 인증 통합",
+      "groupId": "OUR",
+      "designFiles": [
+        "웨딩픽 웨딩일정 MY.dc.html",
+        "웨딩픽 웨딩일정 하위.dc.html",
+        "웨딩픽 마감 화면.dc.html"
+      ],
+      "entry": "웨딩일정 지출 · 결정 완료 직후 알림",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/capture/payment/register",
+          "file": "apps/mobile/src/app/(tabs)/capture/payment/register.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/pick/done",
+          "file": "apps/mobile/src/app/(tabs)/pick/done.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/wedding",
+          "file": "apps/mobile/src/app/(tabs)/wedding/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/wedding/[id]/expenses/add",
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/expenses/add.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/wedding/[id]/expenses/list",
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/expenses/list.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/wedding/[id]/expenses/[expenseId]",
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/expenses/[expenseId].tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/capture/payment/register",
+          "/pick/done",
+          "/wedding",
+          "/wedding/[id]/expenses/add",
+          "/wedding/[id]/expenses/list",
+          "/wedding/[id]/expenses/[expenseId]"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/pick/done.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/expenses/list.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/expenses/[expenseId].tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/wedding/expense-day.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-RPT-001",
+      "name": "제보 홈",
+      "groupId": "RPT",
+      "designFiles": [
+        "웨딩픽 제보 후기.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "MY · 맥락형 4곳",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/capture",
+          "file": "apps/mobile/src/app/(tabs)/capture/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/capture"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-RPT-002",
+      "name": "이미지 선택",
+      "groupId": "RPT",
+      "designFiles": [
+        "웨딩픽 제보 후기.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "WP-RPT-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/capture/payment/register",
+          "file": "apps/mobile/src/app/(tabs)/capture/payment/register.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/capture/payment/register"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/capture/payment/register.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-RPT-003",
+      "name": "문서 분석 중",
+      "groupId": "RPT",
+      "designFiles": [
+        "웨딩픽 제보 후기.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "WP-RPT-002",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/capture/analysis/[id]",
+          "file": "apps/mobile/src/app/(tabs)/capture/analysis/[id].tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/capture/analysis/[id]"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/capture/analysis/[id].tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-RPT-004",
+      "name": "자동 입력 결과 확인",
+      "groupId": "RPT",
+      "designFiles": [
+        "웨딩픽 제보 후기.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "WP-RPT-003",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/capture/payment/register",
+          "file": "apps/mobile/src/app/(tabs)/capture/payment/register.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/capture/result/[quoteId]",
+          "file": "apps/mobile/src/app/(tabs)/capture/result/[quoteId].tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/capture/payment/register",
+          "/capture/result/[quoteId]"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/capture/payment/register.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/capture/result/[quoteId].tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/navigation/depth-back-rules.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-RPT-005",
+      "name": "업체 확인",
+      "groupId": "RPT",
+      "designFiles": [
+        "웨딩픽 제보 후기.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "WP-RPT-004",
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/capture/payment/register.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-RPT-006",
+      "name": "분할 결제 연결",
+      "groupId": "RPT",
+      "designFiles": [
+        "웨딩픽 제보 후기.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "WP-RPT-004",
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/capture/payment/register.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-RPT-007",
+      "name": "제출 완료",
+      "groupId": "RPT",
+      "designFiles": [
+        "웨딩픽 제보 후기.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "WP-RPT-004",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/capture/payment/register",
+          "file": "apps/mobile/src/app/(tabs)/capture/payment/register.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/capture/payment/register"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/capture/payment/register.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/ui/src/theme.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-RPT-008",
+      "name": "처리 결과",
+      "groupId": "RPT",
+      "designFiles": [
+        "웨딩픽 제보 후기.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "알림 · 내 제보 내역",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/capture/verify-status/[requestId]",
+          "file": "apps/mobile/src/app/(tabs)/capture/verify-status/[requestId].tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/capture/verify-status/[requestId]"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/capture/verify-status/[requestId].tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/navigation/depth-back-rules.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-RPT-009",
+      "name": "내 제보 내역",
+      "groupId": "RPT",
+      "designFiles": [
+        "웨딩픽 제보 후기.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "WP-RPT-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/my/reports",
+          "file": "apps/mobile/src/app/(tabs)/my/reports.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/my/reports"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-RPT-010",
+      "name": "가격 제보",
+      "groupId": "RPT",
+      "designFiles": [
+        "웨딩픽 제보 후기.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "WP-RPT-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/search/[vendorId]/price-report",
+          "file": "apps/mobile/src/app/(tabs)/search/[vendorId]/price-report.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/search/[vendorId]/price-report"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/capture/payment/register.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/search/[vendorId]/price-report.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-RPT-011",
+      "name": "업체 정보 제보",
+      "groupId": "RPT",
+      "designFiles": [
+        "웨딩픽 제보 후기.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "WP-RPT-001 · 업체상세",
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-REV-001",
+      "name": "후기 목록",
+      "groupId": "REV",
+      "designFiles": [
+        "웨딩픽 제보 후기.dc.html",
+        "웨딩픽 마감 화면.dc.html",
+        "웨딩픽 잔여 화면.dc.html",
+        "웨딩픽 업체상세 하위.dc.html"
+      ],
+      "entry": "WP-VEND-001 ⑨",
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-REV-002",
+      "name": "후기 작성",
+      "groupId": "REV",
+      "designFiles": [
+        "웨딩픽 제보 후기.dc.html",
+        "웨딩픽 마감 화면.dc.html",
+        "웨딩픽 잔여 화면.dc.html",
+        "웨딩픽 업체상세 하위.dc.html"
+      ],
+      "entry": "업체상세 · MY",
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-REV-003",
+      "name": "후기 상세",
+      "groupId": "REV",
+      "designFiles": [
+        "웨딩픽 제보 후기.dc.html",
+        "웨딩픽 마감 화면.dc.html",
+        "웨딩픽 잔여 화면.dc.html",
+        "웨딩픽 업체상세 하위.dc.html"
+      ],
+      "entry": "WP-REV-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/my/reviews",
+          "file": "apps/mobile/src/app/(tabs)/my/reviews.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/my/reviews"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/reviews.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-REV-004",
+      "name": "내 후기",
+      "groupId": "REV",
+      "designFiles": [
+        "웨딩픽 제보 후기.dc.html",
+        "웨딩픽 마감 화면.dc.html",
+        "웨딩픽 잔여 화면.dc.html",
+        "웨딩픽 업체상세 하위.dc.html"
+      ],
+      "entry": "MY",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/my/reviews",
+          "file": "apps/mobile/src/app/(tabs)/my/reviews.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/my/reviews"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/reviews.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-REV-005",
+      "name": "후기 신고",
+      "groupId": "REV",
+      "designFiles": [
+        "웨딩픽 제보 후기.dc.html",
+        "웨딩픽 마감 화면.dc.html",
+        "웨딩픽 잔여 화면.dc.html",
+        "웨딩픽 업체상세 하위.dc.html"
+      ],
+      "entry": "WP-REV-003",
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-REV-006",
+      "name": "이용자 경험",
+      "groupId": "REV",
+      "designFiles": [
+        "웨딩픽 제보 후기.dc.html",
+        "웨딩픽 마감 화면.dc.html",
+        "웨딩픽 잔여 화면.dc.html",
+        "웨딩픽 업체상세 하위.dc.html"
+      ],
+      "entry": "WP-VEND-001 ⑧",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/search/[vendorId]/reviews",
+          "file": "apps/mobile/src/app/(tabs)/search/[vendorId]/reviews.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/search/[vendorId]/reviews"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/search/[vendorId]/reviews.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-REV-007",
+      "name": "업체 반론 표시",
+      "groupId": "REV",
+      "designFiles": [
+        "웨딩픽 제보 후기.dc.html",
+        "웨딩픽 마감 화면.dc.html",
+        "웨딩픽 잔여 화면.dc.html",
+        "웨딩픽 업체상세 하위.dc.html"
+      ],
+      "entry": "WP-REV-001",
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-EXPO-001",
+      "name": "박람회 목록",
+      "groupId": "EXPO",
+      "designFiles": [
+        "웨딩픽 마감 화면.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "검색 · 소식",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/search/expo",
+          "file": "apps/mobile/src/app/(tabs)/search/expo/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/search/expo"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/search/expo/index.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/routes/expos.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/seed-wedding-tabs.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-EXPO-002",
+      "name": "박람회 상세",
+      "groupId": "EXPO",
+      "designFiles": [
+        "웨딩픽 마감 화면.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "WP-EXPO-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/search/expo/[expoId]",
+          "file": "apps/mobile/src/app/(tabs)/search/expo/[expoId]/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/search/expo/[expoId]"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/search/expo/[expoId]/index.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/routes/expos.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-EXPO-003",
+      "name": "웨딩 정보 목록",
+      "groupId": "EXPO",
+      "designFiles": [
+        "웨딩픽 마감 화면.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "소식 · 검색",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/search/wedding-info",
+          "file": "apps/mobile/src/app/(tabs)/search/wedding-info/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/search/wedding-info"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/search/wedding-info/index.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/routes/wedding-info.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-EXPO-004",
+      "name": "웨딩 정보 상세",
+      "groupId": "EXPO",
+      "designFiles": [
+        "웨딩픽 마감 화면.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "WP-EXPO-003",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/search/wedding-info/[infoId]",
+          "file": "apps/mobile/src/app/(tabs)/search/wedding-info/[infoId]/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/search/wedding-info/[infoId]"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/search/wedding-info/[infoId]/index.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/routes/wedding-info.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-EXPO-005",
+      "name": "외부 달력에 일정 등록",
+      "groupId": "EXPO",
+      "designFiles": [
+        "웨딩픽 마감 화면.dc.html",
+        "웨딩픽 잔여 화면.dc.html"
+      ],
+      "entry": "WP-EXPO-002 · WP-OUR-005",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/search/expo/[expoId]/calendar",
+          "file": "apps/mobile/src/app/(tabs)/search/expo/[expoId]/calendar.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/search/expo/[expoId]/calendar"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-EVT-001",
+      "name": "혜택 모아보기",
+      "groupId": "EVT",
+      "designFiles": [],
+      "entry": "MY · 홈 하단",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/my/rewards",
+          "file": "apps/mobile/src/app/(tabs)/my/rewards/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/my/rewards"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/rewards/index.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/membership/use-benefit-data.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-EVT-002",
+      "name": "미션 4개",
+      "groupId": "EVT",
+      "designFiles": [],
+      "entry": "WP-EVT-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/my/membership",
+          "file": "apps/mobile/src/app/(tabs)/my/membership.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/my/rewards/missions",
+          "file": "apps/mobile/src/app/(tabs)/my/rewards/missions.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/my/membership",
+          "/my/rewards/missions"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/membership.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/rewards/missions.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/membership/use-benefit-data.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-EVT-003",
+      "name": "친구 초대",
+      "groupId": "EVT",
+      "designFiles": [],
+      "entry": "WP-EVT-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/my/referral",
+          "file": "apps/mobile/src/app/(tabs)/my/referral.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/my/referral"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/referral.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-EVT-004",
+      "name": "홍보 인증",
+      "groupId": "EVT",
+      "designFiles": [],
+      "entry": "WP-EVT-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/my/rewards/promotion",
+          "file": "apps/mobile/src/app/(tabs)/my/rewards/promotion.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/my/rewards/promotion"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/rewards/promotion.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-EVT-005",
+      "name": "월간 웨딩지원금",
+      "groupId": "EVT",
+      "designFiles": [],
+      "entry": "WP-EVT-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/my/rewards/fund",
+          "file": "apps/mobile/src/app/(tabs)/my/rewards/fund.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/my/rewards/fund"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/rewards/fund.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/domain/src/monthly-draw.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-EVT-006",
+      "name": "네이버페이 보상 수령",
+      "groupId": "EVT",
+      "designFiles": [],
+      "entry": "WP-EVT-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/my/rewards",
+          "file": "apps/mobile/src/app/(tabs)/my/rewards/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/my/rewards/npay",
+          "file": "apps/mobile/src/app/(tabs)/my/rewards/npay.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/my/rewards",
+          "/my/rewards/npay"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/api/client.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/rewards/index.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/rewards/npay.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/membership/use-benefit-data.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/reward-admin.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/reward-payout.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/routes/rewards.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/domain/src/reward-payout.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-EVT-007",
+      "name": "참여 · 지급 내역",
+      "groupId": "EVT",
+      "designFiles": [],
+      "entry": "WP-EVT-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/my/rewards/history",
+          "file": "apps/mobile/src/app/(tabs)/my/rewards/history.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/my/rewards/history"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/rewards/history.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-NOTI-001",
+      "name": "알림센터",
+      "groupId": "NOTI",
+      "designFiles": [
+        "웨딩픽 마감 화면.dc.html",
+        "웨딩픽 MY 하위.dc.html"
+      ],
+      "entry": "헤더 종 아이콘",
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-NOTI-002",
+      "name": "알림 유형별 연결",
+      "groupId": "NOTI",
+      "designFiles": [
+        "웨딩픽 마감 화면.dc.html",
+        "웨딩픽 MY 하위.dc.html"
+      ],
+      "entry": null,
+      "classification": "excluded",
+      "implementationRefs": [],
+      "sourceDisposition": "화면 없음. 딥링크 매핑",
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "not-applicable-unless-reactivated",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-NOTI-003",
+      "name": "알림 설정",
+      "groupId": "NOTI",
+      "designFiles": [
+        "웨딩픽 마감 화면.dc.html",
+        "웨딩픽 MY 하위.dc.html"
+      ],
+      "entry": "MY · 계정",
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/notification-settings.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/domain/src/notification.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/domain/src/signup.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-MY-001",
+      "name": "마이페이지 홈",
+      "groupId": "MY",
+      "designFiles": [
+        "웨딩픽 웨딩일정 MY.dc.html",
+        "웨딩픽 MY 하위.dc.html",
+        "웨딩픽 회원탈퇴.dc.html"
+      ],
+      "entry": "Root 5",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/my",
+          "file": "apps/mobile/src/app/(tabs)/my/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/my"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/index.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-MY-002",
+      "name": "프로필",
+      "groupId": "MY",
+      "designFiles": [
+        "웨딩픽 웨딩일정 MY.dc.html",
+        "웨딩픽 MY 하위.dc.html",
+        "웨딩픽 회원탈퇴.dc.html"
+      ],
+      "entry": "WP-MY-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/my/profile",
+          "file": "apps/mobile/src/app/(tabs)/my/profile.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/my/profile"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/profile.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-MY-003",
+      "name": "내 웨딩 설정",
+      "groupId": "MY",
+      "designFiles": [
+        "웨딩픽 웨딩일정 MY.dc.html",
+        "웨딩픽 MY 하위.dc.html",
+        "웨딩픽 회원탈퇴.dc.html"
+      ],
+      "entry": "WP-MY-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/my/wedding-settings",
+          "file": "apps/mobile/src/app/(tabs)/my/wedding-settings.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/my/wedding-settings"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/wedding-settings.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-MY-004",
+      "name": "스타일 다시 고르기",
+      "groupId": "MY",
+      "designFiles": [
+        "웨딩픽 웨딩일정 MY.dc.html",
+        "웨딩픽 MY 하위.dc.html",
+        "웨딩픽 회원탈퇴.dc.html"
+      ],
+      "entry": "WP-MY-003",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/my/taste",
+          "file": "apps/mobile/src/app/(tabs)/my/taste.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/my/wedding-settings",
+          "file": "apps/mobile/src/app/(tabs)/my/wedding-settings.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/my/taste",
+          "/my/wedding-settings"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/taste.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/wedding-settings.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-MY-005",
+      "name": "화면 설정",
+      "groupId": "MY",
+      "designFiles": [
+        "웨딩픽 웨딩일정 MY.dc.html",
+        "웨딩픽 MY 하위.dc.html",
+        "웨딩픽 회원탈퇴.dc.html"
+      ],
+      "entry": "WP-MY-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/my/display",
+          "file": "apps/mobile/src/app/(tabs)/my/display.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/my/display"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/display.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/settings/skin-preference.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-MY-006",
+      "name": "배우자 연결 관리",
+      "groupId": "MY",
+      "designFiles": [
+        "웨딩픽 웨딩일정 MY.dc.html",
+        "웨딩픽 MY 하위.dc.html",
+        "웨딩픽 회원탈퇴.dc.html"
+      ],
+      "entry": "WP-MY-001",
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/notification-settings.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-MY-007",
+      "name": "계정 관리",
+      "groupId": "MY",
+      "designFiles": [
+        "웨딩픽 웨딩일정 MY.dc.html",
+        "웨딩픽 MY 하위.dc.html",
+        "웨딩픽 회원탈퇴.dc.html"
+      ],
+      "entry": "WP-MY-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/my/account",
+          "file": "apps/mobile/src/app/(tabs)/my/account.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/my/notification-settings",
+          "file": "apps/mobile/src/app/(tabs)/my/notification-settings.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/my/account",
+          "/my/notification-settings"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/account.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/notification-settings.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/routes/settings.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-MY-008",
+      "name": "회원 탈퇴",
+      "groupId": "MY",
+      "designFiles": [
+        "웨딩픽 웨딩일정 MY.dc.html",
+        "웨딩픽 MY 하위.dc.html",
+        "웨딩픽 회원탈퇴.dc.html"
+      ],
+      "entry": "WP-MY-007",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/my/withdrawal",
+          "file": "apps/mobile/src/app/(tabs)/my/withdrawal.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/my/withdrawal"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/withdrawal.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/routes/withdrawal.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/withdrawal.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/domain/src/withdrawal.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-MY-009",
+      "name": "고객지원",
+      "groupId": "MY",
+      "designFiles": [
+        "웨딩픽 웨딩일정 MY.dc.html",
+        "웨딩픽 MY 하위.dc.html",
+        "웨딩픽 회원탈퇴.dc.html"
+      ],
+      "entry": "WP-MY-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/my/support",
+          "file": "apps/mobile/src/app/(tabs)/my/support.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/my/support"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/support.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-MY-010",
+      "name": "서비스 정보",
+      "groupId": "MY",
+      "designFiles": [
+        "웨딩픽 웨딩일정 MY.dc.html",
+        "웨딩픽 MY 하위.dc.html",
+        "웨딩픽 회원탈퇴.dc.html"
+      ],
+      "entry": "WP-MY-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/my/policies",
+          "file": "apps/mobile/src/app/(tabs)/my/policies.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/my/policies"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-CPL-001",
+      "name": "배우자 초대",
+      "groupId": "CPL",
+      "designFiles": [],
+      "entry": "WP-MY-006 · 웨딩일정",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/wedding/partner",
+          "file": "apps/mobile/src/app/(tabs)/wedding/partner.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/wedding/partner"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/wedding/partner.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-CPL-002",
+      "name": "초대 수락",
+      "groupId": "CPL",
+      "designFiles": [],
+      "entry": "초대 링크",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/wedding/join",
+          "file": "apps/mobile/src/app/(tabs)/wedding/join.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/wedding/join"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/wedding/join.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-CPL-003",
+      "name": "연결 완료",
+      "groupId": "CPL",
+      "designFiles": [],
+      "entry": "WP-CPL-002",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/wedding/join",
+          "file": "apps/mobile/src/app/(tabs)/wedding/join.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/wedding/join"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/wedding/join.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-CPL-004",
+      "name": "공동 편집 충돌 해결",
+      "groupId": "CPL",
+      "designFiles": [],
+      "entry": "동시 수정",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/wedding/[id]/conflict",
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/conflict.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/wedding/[id]/conflict"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/conflict.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-CPL-005",
+      "name": "변경 내역",
+      "groupId": "CPL",
+      "designFiles": [],
+      "entry": "웨딩일정 · WP-MY-006",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/wedding/[id]/changelog",
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/changelog.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/wedding/[id]/changelog"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/wedding/[id]/changelog.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/routes/wedding-plan.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-CPL-006",
+      "name": "연결 해제",
+      "groupId": "CPL",
+      "designFiles": [],
+      "entry": "WP-MY-006",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/wedding/partner",
+          "file": "apps/mobile/src/app/(tabs)/wedding/partner.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/wedding/partner"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/wedding/partner.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-BIZ-001",
+      "name": "문의 유형 선택",
+      "groupId": "BIZ",
+      "designFiles": [
+        "웨딩픽 업체문의.dc.html",
+        "웨딩픽 웨딩일정 MY.dc.html"
+      ],
+      "entry": "MY 하단 · 웹 Footer",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/my/biz",
+          "file": "apps/mobile/src/app/(tabs)/my/biz/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/my/biz"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/biz/index.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-BIZ-002",
+      "name": "소속 확인",
+      "groupId": "BIZ",
+      "designFiles": [
+        "웨딩픽 업체문의.dc.html",
+        "웨딩픽 웨딩일정 MY.dc.html"
+      ],
+      "entry": "WP-BIZ-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/my/biz/claim",
+          "file": "apps/mobile/src/app/(tabs)/my/biz/claim.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/my/biz/claim"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/biz/claim.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-BIZ-003",
+      "name": "문의 내역",
+      "groupId": "BIZ",
+      "designFiles": [
+        "웨딩픽 업체문의.dc.html",
+        "웨딩픽 웨딩일정 MY.dc.html"
+      ],
+      "entry": "WP-BIZ-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/my/biz/data",
+          "file": "apps/mobile/src/app/(tabs)/my/biz/data.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/my/biz/data"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/biz/data.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-BIZ-004",
+      "name": "반론 등록",
+      "groupId": "BIZ",
+      "designFiles": [
+        "웨딩픽 업체문의.dc.html",
+        "웨딩픽 웨딩일정 MY.dc.html"
+      ],
+      "entry": "WP-BIZ-001 · 후기 상세",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/my/biz/benefit",
+          "file": "apps/mobile/src/app/(tabs)/my/biz/benefit.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/my/biz/benefit"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/biz/benefit.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-BIZ-005",
+      "name": "자료 제공",
+      "groupId": "BIZ",
+      "designFiles": [
+        "웨딩픽 업체문의.dc.html",
+        "웨딩픽 웨딩일정 MY.dc.html"
+      ],
+      "entry": "WP-BIZ-001",
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/admin/images.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-BIZ-006",
+      "name": "혜택 등록",
+      "groupId": "BIZ",
+      "designFiles": [
+        "웨딩픽 업체문의.dc.html",
+        "웨딩픽 웨딩일정 MY.dc.html"
+      ],
+      "entry": "WP-BIZ-001",
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-BIZ-007",
+      "name": "광고 · 제휴 문의",
+      "groupId": "BIZ",
+      "designFiles": [
+        "웨딩픽 업체문의.dc.html",
+        "웨딩픽 웨딩일정 MY.dc.html"
+      ],
+      "entry": "WP-BIZ-001",
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-BIZ-008",
+      "name": "웹 하단 업체 문의 진입",
+      "groupId": "BIZ",
+      "designFiles": [
+        "웨딩픽 업체문의.dc.html",
+        "웨딩픽 웨딩일정 MY.dc.html"
+      ],
+      "entry": "웹 Footer",
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/web/src/subpages.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-FAQ-001",
+      "name": "자주 묻는 질문 홈",
+      "groupId": "FAQ",
+      "designFiles": [
+        "웨딩픽 FAQ.dc.html",
+        "웨딩픽 약관 방침.dc.html"
+      ],
+      "entry": "MY · 웹 Footer",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/my/faq/[faqKey]",
+          "file": "apps/mobile/src/app/(tabs)/my/faq/[faqKey].tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/my/faq/[faqKey]"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/faq/[faqKey].tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-FAQ-003",
+      "name": "질문 답변 상세",
+      "groupId": "FAQ",
+      "designFiles": [
+        "웨딩픽 FAQ.dc.html",
+        "웨딩픽 약관 방침.dc.html"
+      ],
+      "entry": "WP-FAQ-001",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/my/faq/[faqKey]",
+          "file": "apps/mobile/src/app/(tabs)/my/faq/[faqKey].tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/my/guide",
+          "file": "apps/mobile/src/app/(tabs)/my/guide.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/my/support",
+          "file": "apps/mobile/src/app/(tabs)/my/support.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/my/faq/[faqKey]",
+          "/my/guide",
+          "/my/support"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/faq/[faqKey].tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/guide.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/my/support.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/domain/src/faq.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-LEGAL-001",
+      "name": "이용약관 본문",
+      "groupId": "FAQ",
+      "designFiles": [
+        "웨딩픽 FAQ.dc.html",
+        "웨딩픽 약관 방침.dc.html"
+      ],
+      "entry": "MY · 가입 · 웹 Footer",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/my/policies",
+          "file": "apps/mobile/src/app/(tabs)/my/policies.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/my/policies"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-LEGAL-002",
+      "name": "개인정보처리방침 본문",
+      "groupId": "FAQ",
+      "designFiles": [
+        "웨딩픽 FAQ.dc.html",
+        "웨딩픽 약관 방침.dc.html"
+      ],
+      "entry": "MY · 가입 · 웹 Footer",
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-SHT-001",
+      "name": "다른 방법으로 시작 · 폐기",
+      "groupId": "SHT",
+      "designFiles": [],
+      "entry": "연결하지 않음",
+      "classification": "excluded",
+      "implementationRefs": [],
+      "sourceDisposition": "폐기. 카카오만 사용하므로 대체 로그인 진입 시트를 두지 않는다.",
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "not-applicable-unless-reactivated",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-SHT-002",
+      "name": "픽 완료",
+      "groupId": "SHT",
+      "designFiles": [],
+      "entry": "Pick 버튼",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/search",
+          "file": "apps/mobile/src/app/(tabs)/search/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/search/[vendorId]",
+          "file": "apps/mobile/src/app/(tabs)/search/[vendorId]/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/search",
+          "/search/[vendorId]"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/search/[vendorId]/index.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/pick/pick-sheets.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-SHT-003",
+      "name": "픽 해제 확인",
+      "groupId": "SHT",
+      "designFiles": [],
+      "entry": "Pick 해제",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/pick/[category]",
+          "file": "apps/mobile/src/app/(tabs)/pick/[category].tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/search",
+          "file": "apps/mobile/src/app/(tabs)/search/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/search/[vendorId]",
+          "file": "apps/mobile/src/app/(tabs)/search/[vendorId]/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/pick/[category]",
+          "/search",
+          "/search/[vendorId]"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/pick/[category].tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/search/[vendorId]/index.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/common/confirm-sheet.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/pick/pick-sheets.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-SHT-004",
+      "name": "비교 후보 선택",
+      "groupId": "SHT",
+      "designFiles": [],
+      "entry": "비교 버튼",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/pick/compare",
+          "file": "apps/mobile/src/app/(tabs)/pick/compare.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/pick/compare"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/pick/compare.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-SHT-005",
+      "name": "최종 결정 확인",
+      "groupId": "SHT",
+      "designFiles": [],
+      "entry": "비교 · Pick 목록",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/pick/confirm",
+          "file": "apps/mobile/src/app/(tabs)/pick/confirm.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/pick/confirm"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/pick/confirm.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-SHT-006",
+      "name": "예식일 입력",
+      "groupId": "SHT",
+      "designFiles": [],
+      "entry": "온보딩 · MY · 홈",
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-SHT-007",
+      "name": "지역 선택",
+      "groupId": "SHT",
+      "designFiles": [],
+      "entry": "온보딩 · 필터",
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-SHT-008",
+      "name": "예산 입력",
+      "groupId": "SHT",
+      "designFiles": [],
+      "entry": "온보딩 · MY",
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-SHT-009",
+      "name": "스타일 선택",
+      "groupId": "SHT",
+      "designFiles": [],
+      "entry": "온보딩 · MY",
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-SHT-010",
+      "name": "배우자 초대",
+      "groupId": "SHT",
+      "designFiles": [],
+      "entry": "WP-MY-006",
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-SHT-011",
+      "name": "공유",
+      "groupId": "SHT",
+      "designFiles": [],
+      "entry": "업체상세 · 비교",
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-SHT-012",
+      "name": "달력에 일정 등록",
+      "groupId": "SHT",
+      "designFiles": [],
+      "entry": "일정 · 박람회",
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-SHT-013",
+      "name": "신고",
+      "groupId": "SHT",
+      "designFiles": [],
+      "entry": "후기 · 업체",
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-SHT-014",
+      "name": "데이터 설명",
+      "groupId": "SHT",
+      "designFiles": [],
+      "entry": "금액 옆 ⓘ",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/search",
+          "file": "apps/mobile/src/app/(tabs)/search/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/search/[vendorId]",
+          "file": "apps/mobile/src/app/(tabs)/search/[vendorId]/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/search",
+          "/search/[vendorId]"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/search/index.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/(tabs)/search/[vendorId]/index.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/common/info-sheet.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-SHT-015",
+      "name": "기준금액 설명",
+      "groupId": "SHT",
+      "designFiles": [],
+      "entry": "기준금액 옆 ⓘ",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/search/[vendorId]",
+          "file": "apps/mobile/src/app/(tabs)/search/[vendorId]/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/search/[vendorId]"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/search/[vendorId]/index.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/common/info-sheet.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-SHT-016",
+      "name": "권한 요청 설명",
+      "groupId": "SHT",
+      "designFiles": [],
+      "entry": "제보 · 일정 · 위치",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/capture/payment/register",
+          "file": "apps/mobile/src/app/(tabs)/capture/payment/register.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/capture/payment/register"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/capture/payment/register.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/permissions/permission-sheet.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-SHT-017",
+      "name": "혜택 안내 시트",
+      "groupId": "SHT",
+      "designFiles": [],
+      "entry": "온보딩 완료 후 홈 최초 진입 1회 · 400ms 뒤",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/",
+          "file": "apps/mobile/src/app/(tabs)/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/features/home/benefit-sheet-seen.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/home/benefit-sheet.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/routes/rewards.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/ui/src/theme.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/domain/src/monthly-draw.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ST-001",
+      "name": "세션 만료",
+      "groupId": "ST",
+      "designFiles": [],
+      "entry": null,
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/components/states/guest-gate-sheet.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ST-002",
+      "name": "배우자 연결 상태",
+      "groupId": "ST",
+      "designFiles": [],
+      "entry": null,
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/components/states/spouse-connect-banner.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ST-003",
+      "name": "픽 상태",
+      "groupId": "ST",
+      "designFiles": [],
+      "entry": null,
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "packages/ui/src/pick-status-badge.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ST-004",
+      "name": "이미지 상태",
+      "groupId": "ST",
+      "designFiles": [],
+      "entry": null,
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "packages/ui/src/vendor-image.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ST-005",
+      "name": "데이터 상태",
+      "groupId": "ST",
+      "designFiles": [],
+      "entry": null,
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "packages/ui/src/data-tier-badge.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/ui/src/theme.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ST-006",
+      "name": "혜택 상태",
+      "groupId": "ST",
+      "designFiles": [],
+      "entry": null,
+      "classification": "state",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-ST-007",
+      "name": "불러오는 중",
+      "groupId": "ST",
+      "designFiles": [],
+      "entry": null,
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/search",
+          "file": "apps/mobile/src/app/(tabs)/search/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/search"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/search/index.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/loading/delayed-loader.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/ui/src/list-skeleton.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/ui/src/skeleton.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/ui/src/status-view.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ST-008",
+      "name": "콘텐츠 없음",
+      "groupId": "ST",
+      "designFiles": [],
+      "entry": null,
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "packages/ui/src/status-view.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ST-009",
+      "name": "오류",
+      "groupId": "ST",
+      "designFiles": [],
+      "entry": null,
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "packages/ui/src/status-view.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ST-010",
+      "name": "네트워크 오류",
+      "groupId": "ST",
+      "designFiles": [],
+      "entry": null,
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "packages/ui/src/status-view.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ST-011",
+      "name": "권한 거부",
+      "groupId": "ST",
+      "designFiles": [],
+      "entry": null,
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "packages/ui/src/status-view.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ST-012",
+      "name": "처리 중",
+      "groupId": "ST",
+      "designFiles": [],
+      "entry": null,
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/capture/analysis/[id]",
+          "file": "apps/mobile/src/app/(tabs)/capture/analysis/[id].tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/capture/analysis/[id]"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/capture/analysis/[id].tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/ui/src/circle-loader.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/ui/src/status-view.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/ui/src/step-list.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/ui/src/theme.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ST-013",
+      "name": "긴 콘텐츠 표시",
+      "groupId": "ST",
+      "designFiles": [],
+      "entry": null,
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "packages/ui/src/truncated-text.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ST-014",
+      "name": "점검 · 업데이트 안내",
+      "groupId": "ST",
+      "designFiles": [],
+      "entry": null,
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "packages/ui/src/status-view.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ST-015",
+      "name": "업종 순회 로딩",
+      "groupId": "ST",
+      "designFiles": [],
+      "entry": "추천 계산 · 첫 진입",
+      "classification": "route",
+      "implementationRefs": [
+        {
+          "route": "/top3",
+          "file": "apps/mobile/src/app/(tabs)/(home)/top3.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/",
+          "file": "apps/mobile/src/app/(tabs)/index.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        },
+        {
+          "route": "/setup",
+          "file": "apps/mobile/src/app/setup.tsx",
+          "priorReview": "source-actions-and-states-reviewed"
+        }
+      ],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": [
+          "/top3",
+          "/",
+          "/setup"
+        ]
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/(tabs)/(home)/top3.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/setup.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/loading/delayed-loader.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/features/loading/first-run.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/ui/src/category-icon.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/ui/src/status-view.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/ui/src/step-list.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ST-016",
+      "name": "로더 아이콘 세트 · 12업종",
+      "groupId": "ST",
+      "designFiles": [],
+      "entry": "순회 로딩 · 업종 칩 · 검색 업종",
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/features/search/category-icon-kind.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "packages/ui/src/category-icon.tsx",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-LAND-001",
+      "name": "랜딩",
+      "groupId": "WEB",
+      "designFiles": [
+        "웨딩픽 랜딩 v4.dc.html",
+        "웨딩픽 랜딩 하위페이지.dc.html",
+        "웨딩픽 웹.dc.html"
+      ],
+      "entry": "검색 유입 · 광고",
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-LAND-002",
+      "name": "서비스 소개",
+      "groupId": "WEB",
+      "designFiles": [
+        "웨딩픽 랜딩 v4.dc.html",
+        "웨딩픽 랜딩 하위페이지.dc.html",
+        "웨딩픽 웹.dc.html"
+      ],
+      "entry": "GNB",
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-LAND-003",
+      "name": "자주 묻는 질문",
+      "groupId": "WEB",
+      "designFiles": [
+        "웨딩픽 랜딩 v4.dc.html",
+        "웨딩픽 랜딩 하위페이지.dc.html",
+        "웨딩픽 웹.dc.html"
+      ],
+      "entry": "GNB · Footer",
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-LAND-004",
+      "name": "고객지원",
+      "groupId": "WEB",
+      "designFiles": [
+        "웨딩픽 랜딩 v4.dc.html",
+        "웨딩픽 랜딩 하위페이지.dc.html",
+        "웨딩픽 웹.dc.html"
+      ],
+      "entry": "GNB · Footer",
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-LAND-005",
+      "name": "이용약관",
+      "groupId": "WEB",
+      "designFiles": [
+        "웨딩픽 랜딩 v4.dc.html",
+        "웨딩픽 랜딩 하위페이지.dc.html",
+        "웨딩픽 웹.dc.html"
+      ],
+      "entry": "Footer",
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-LAND-006",
+      "name": "개인정보처리방침",
+      "groupId": "WEB",
+      "designFiles": [
+        "웨딩픽 랜딩 v4.dc.html",
+        "웨딩픽 랜딩 하위페이지.dc.html",
+        "웨딩픽 웹.dc.html"
+      ],
+      "entry": "Footer",
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": {
+        "excluded": false,
+        "review": "reference-and-route-index-only",
+        "sourceRoutes": []
+      },
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-WEB-001",
+      "name": "웹 홈",
+      "groupId": "WEB",
+      "designFiles": [
+        "웨딩픽 랜딩 v4.dc.html",
+        "웨딩픽 랜딩 하위페이지.dc.html",
+        "웨딩픽 웹.dc.html"
+      ],
+      "entry": "직접 진입",
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": null,
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/web/src/build.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/web/src/home-page.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-WEB-003",
+      "name": "웹 업체 상세",
+      "groupId": "WEB",
+      "designFiles": [
+        "웨딩픽 랜딩 v4.dc.html",
+        "웨딩픽 랜딩 하위페이지.dc.html",
+        "웨딩픽 웹.dc.html"
+      ],
+      "entry": "WP-WEB-001 · 검색 유입",
+      "classification": "component",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": null,
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/web/src/build.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/web/src/vendor-page.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ADM-001",
+      "name": "관리자 홈",
+      "groupId": "ADM",
+      "designFiles": [],
+      "entry": null,
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": null,
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/admin/home.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/dashboard-admin.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/routes/admin.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ADM-002",
+      "name": "일일 브리핑",
+      "groupId": "ADM",
+      "designFiles": [],
+      "entry": null,
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": null,
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/admin/briefing.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ADM-010",
+      "name": "제보 처리 현황",
+      "groupId": "ADM",
+      "designFiles": [],
+      "entry": null,
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": null,
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/admin/data-pipeline.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/data-pipeline-admin.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ADM-011",
+      "name": "확인 필요 목록",
+      "groupId": "ADM",
+      "designFiles": [],
+      "entry": null,
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": null,
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-ADM-012",
+      "name": "가격 통계",
+      "groupId": "ADM",
+      "designFiles": [],
+      "entry": null,
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": null,
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/admin/price-stats.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ADM-013",
+      "name": "이상치 · 조작 탐지",
+      "groupId": "ADM",
+      "designFiles": [],
+      "entry": null,
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": null,
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/admin/stats.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ADM-014",
+      "name": "업체 관리",
+      "groupId": "ADM",
+      "designFiles": [],
+      "entry": null,
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": null,
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/admin/vendors.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/routes/admin.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/vendor-admin.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ADM-015",
+      "name": "이미지 자동 수급",
+      "groupId": "ADM",
+      "designFiles": [],
+      "entry": null,
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": null,
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/admin/images.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/admin/_ui.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/routes/admin.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ADM-016",
+      "name": "이메일 회신 자동 매칭",
+      "groupId": "ADM",
+      "designFiles": [],
+      "entry": null,
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": null,
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/admin/email-matching.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ADM-020",
+      "name": "사용자 계정 관리",
+      "groupId": "ADM",
+      "designFiles": [],
+      "entry": null,
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": null,
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/admin/users.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ADM-021",
+      "name": "고객 의견 · 문의 관리",
+      "groupId": "ADM",
+      "designFiles": [],
+      "entry": null,
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": null,
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/admin/queue.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ADM-022",
+      "name": "후기 · 반론 관리",
+      "groupId": "ADM",
+      "designFiles": [],
+      "entry": null,
+      "classification": "unmapped",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": null,
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": []
+    },
+    {
+      "id": "WP-ADM-023",
+      "name": "업체 문의 처리 목록",
+      "groupId": "ADM",
+      "designFiles": [],
+      "entry": null,
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": null,
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/admin/biz-queue.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ADM-030",
+      "name": "마케팅 자동화",
+      "groupId": "ADM",
+      "designFiles": [],
+      "entry": null,
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": null,
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/admin/marketing.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ADM-031",
+      "name": "캠페인 · 보상 관리",
+      "groupId": "ADM",
+      "designFiles": [],
+      "entry": null,
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": null,
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/admin/campaigns.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/admin-ops.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ADM-032",
+      "name": "수익 현황",
+      "groupId": "ADM",
+      "designFiles": [],
+      "entry": null,
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": null,
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/admin/briefing.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/admin/revenue.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ADM-033",
+      "name": "광고 집행 관리",
+      "groupId": "ADM",
+      "designFiles": [],
+      "entry": null,
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": null,
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/admin/ads.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/admin-ops.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ADM-034",
+      "name": "광고 실운영 전환 조건 관리",
+      "groupId": "ADM",
+      "designFiles": [],
+      "entry": null,
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": null,
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/admin/ads-gate.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/admin-ops.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ADM-035",
+      "name": "자주 묻는 질문 관리",
+      "groupId": "ADM",
+      "designFiles": [],
+      "entry": null,
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": null,
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/admin/faq.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ADM-036",
+      "name": "약관 · 방침 관리",
+      "groupId": "ADM",
+      "designFiles": [],
+      "entry": null,
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": null,
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/admin/terms.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/admin-ops.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ADM-040",
+      "name": "자동화 상태",
+      "groupId": "ADM",
+      "designFiles": [],
+      "entry": null,
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": null,
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/admin/automation.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/mobile/src/app/admin/home.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/admin-ops.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/dashboard-admin.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ADM-041",
+      "name": "긴급 중지",
+      "groupId": "ADM",
+      "designFiles": [],
+      "entry": null,
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": null,
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/admin/kill-switch.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ADM-042",
+      "name": "변경 복구 관리",
+      "groupId": "ADM",
+      "designFiles": [],
+      "entry": null,
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": null,
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/admin/rollback.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/admin-ops.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ADM-050",
+      "name": "인공지능 사용량 · 비용",
+      "groupId": "ADM",
+      "designFiles": [],
+      "entry": null,
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": null,
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/admin/ai-usage.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ADM-051",
+      "name": "정책 규칙 관리",
+      "groupId": "ADM",
+      "designFiles": [],
+      "entry": null,
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": null,
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/admin/policy-engine.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/admin-ops.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    },
+    {
+      "id": "WP-ADM-052",
+      "name": "감사 기록",
+      "groupId": "ADM",
+      "designFiles": [],
+      "entry": null,
+      "classification": "route",
+      "implementationRefs": [],
+      "sourceDisposition": null,
+      "priorAudit": null,
+      "visualVerification": "pending-390x844-side-by-side",
+      "sourceReferences": [
+        {
+          "file": "apps/mobile/src/app/admin/audit-log.tsx",
+          "kind": "route-source",
+          "evidence": "screen-id-reference"
+        },
+        {
+          "file": "apps/api/src/admin-ops.ts",
+          "kind": "component-source",
+          "evidence": "screen-id-reference"
+        }
+      ]
+    }
+  ]
+}

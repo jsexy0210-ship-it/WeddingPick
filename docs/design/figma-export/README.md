@@ -1,8 +1,6 @@
 # Figma → 정본 시안
 
-이 폴더의 `.dc.html` 9개가 WeddingPick 화면 모양의 정본이다.
-화면 모양은 이 폴더만 기준으로 보고, 수치·토큰·문구·정책은 `../handoff/`를 따른다.
-다른 디자인 폴더나 복제본을 정본으로 사용하지 않는다.
+Figma Make 저장소(`jsexy0210-ship-it/weddingpick_figma`)의 화면을 정본 톤으로 옮긴 시안입니다.
 
 ```
 01-home.dc.html            홈

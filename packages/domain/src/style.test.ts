@@ -1,19 +1,26 @@
-import { STYLE_PICK_MAX, styleMatchReason, styleOverlap, toggleStyle, WEDDING_STYLES } from './style';
+import {
+  STYLE_PICK_LIMIT_TOAST,
+  STYLE_PICK_MAX,
+  styleMatchReason,
+  styleOverlap,
+  toggleStyle,
+  WEDDING_STYLES,
+} from './style';
 
 describe('스타일 4종', () => {
   it('넷뿐이다 — 업종별 세부 속성은 여기 없다', () => {
     expect([...WEDDING_STYLES]).toEqual(['URBAN', 'NATURAL', 'ROMANTIC', 'GLAMOROUS']);
   });
 
-  it('재클릭은 해제하고 네 가지를 모두 고를 수 있다', () => {
+  it('재클릭은 해제하고 세 번째 선택은 정본 문구로 막는다', () => {
     expect(toggleStyle([], 'URBAN').next).toEqual(['URBAN']);
     expect(toggleStyle(['URBAN'], 'URBAN').next).toEqual([]);
     const two = toggleStyle(['URBAN'], 'ROMANTIC');
     const three = toggleStyle(two.next, 'NATURAL');
-    const four = toggleStyle(three.next, 'GLAMOROUS');
-    expect(four.next).toEqual(['URBAN', 'ROMANTIC', 'NATURAL', 'GLAMOROUS']);
-    expect(four.limited).toBe(false);
-    expect(STYLE_PICK_MAX).toBe(4);
+    expect(three.next).toEqual(['URBAN', 'ROMANTIC']);
+    expect(three.limited).toBe(true);
+    expect(STYLE_PICK_MAX).toBe(2);
+    expect(STYLE_PICK_LIMIT_TOAST).toBe('스타일은 2개까지 고를 수 있어요');
   });
 
   it('교집합은 순서 가중치일 뿐 업체를 빼지 않는다', () => {
