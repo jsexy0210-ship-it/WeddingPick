@@ -66,6 +66,7 @@ jobs:
       - name: Deployment policy regression tests
         run: |
           node --test scripts/check-render-retired.test.mjs
+          node --test scripts/verification/admin-origin-443.test.mjs
           node --test scripts/verification/docker-runtime-scope.test.mjs
 
       - name: Reject retired deployment paths
@@ -115,7 +116,7 @@ jobs:
 
       - name: Package Kakao static candidates
         env:
-          ADMIN_ORIGIN: https://210.109.82.212:8443
+          ADMIN_ORIGIN: https://210.109.82.212
         run: node scripts/package-kakao-static.mjs
 
   api-tests:
