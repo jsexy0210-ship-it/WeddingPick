@@ -140,6 +140,7 @@ jobs:
       - name: Deployment policy regression tests
         run: |
           node --test scripts/check-render-retired.test.mjs
+          node --test scripts/verification/admin-origin-443.test.mjs
           node --test scripts/verification/static-cutover-order.test.mjs
           node --test scripts/verification/docker-runtime-scope.test.mjs
           node --test scripts/verification/kakao-retention-cleanup-policy.test.mjs
@@ -201,7 +202,7 @@ jobs:
       - name: Package Kakao static candidates
         if: steps.static_changes.outputs.changed == 'true'
         env:
-          ADMIN_ORIGIN: https://210.109.82.212:8443
+          ADMIN_ORIGIN: https://210.109.82.212
         run: node scripts/package-kakao-static.mjs
 
       - name: Upload Kakao static candidates
@@ -363,7 +364,7 @@ jobs:
     uses: ./.github/workflows/audit-kakao-legal.yml
 
   probe-kakao-static-ports:
-    name: Probe Kakao Static Ports
+    name: Probe Kakao Website Port
     if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[probe-static-ports]') }}
     permissions:
       contents: read
