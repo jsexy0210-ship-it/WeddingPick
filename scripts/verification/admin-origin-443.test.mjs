@@ -8,6 +8,7 @@ const activeAdminDeploymentFiles = [
   'scripts/split-admin-dist.mjs',
   'scripts/install-kakao-app-web.sh',
   'scripts/install-kakao-preview-routes.sh',
+  'scripts/install-kakao-static-sites.sh',
   'scripts/add-kakao-static-cors.sh',
   'scripts/probe-kakao-static-ports.sh',
   '.github/workflows/main.yml',
@@ -35,10 +36,10 @@ test('admin redirect origin is hard-coded to canonical 443 and cannot be overrid
   assert.doesNotMatch(source, /process\.env\.ADMIN_ORIGIN/);
 });
 
-test('main and PR packaging both use the canonical 443 admin origin', () => {
+test('workflows cannot override the locked admin origin', () => {
   for (const file of ['.github/workflows/main.yml', '.github/workflows/pr-validation.yml']) {
     const source = readFileSync(file, 'utf8');
-    assert.match(source, new RegExp(`ADMIN_ORIGIN: ${ADMIN_ORIGIN.replaceAll('.', '\\.')}`));
+    assert.doesNotMatch(source, /ADMIN_ORIGIN/);
   }
 });
 
