@@ -6,8 +6,8 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getCategoryRecommendations } from '@/api/client';
-import { BackBar } from '@/components/back-bar';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { PickSectionTabs } from '@/features/pick/pick-section-tabs';
 import { recommendationsAreComplete } from '@/features/home/canon-state';
 import strings from '../../../../../../spec/strings.ko.json';
 import {
@@ -101,10 +101,15 @@ export default function RecommendationsScreen() {
   if (error) return <ErrorView message={error} onBack={back} onRetry={load} />;
   if (state === null) return <SkeletonView />;
 
+  const compareIds = (candidates.page?.groups ?? [])
+    .flatMap((group) => group.candidates)
+    .slice(0, 3)
+    .map((candidate) => candidate.vendorId);
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <BackBar />
+        <PickSectionTabs active="recommendations" compareIds={compareIds} />
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <ThemedText type="f26" style={styles.bold}>

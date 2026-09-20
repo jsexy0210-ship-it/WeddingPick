@@ -18,6 +18,7 @@ import { compareVendors, getCurrentUser, recordComparison } from '@/api/client';
 import { BackButton } from '@/components/back-button';
 import { savePendingAction } from '@/features/auth/pending-action';
 import { PickDoneSheet } from '@/features/pick/pick-sheets';
+import { PickSectionTabs } from '@/features/pick/pick-section-tabs';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import strings from '../../../../../../spec/strings.ko.json';
@@ -201,6 +202,7 @@ export default function CompareScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <PickSectionTabs active="compare" compareIds={(ids ?? '').split(',').filter(Boolean)} />
         {/* nav 56 · 뒤로 + «스튜디오 3곳 비교» */}
         <View style={styles.navBar}>
           <BackButton />
