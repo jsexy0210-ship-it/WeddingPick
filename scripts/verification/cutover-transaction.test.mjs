@@ -16,7 +16,8 @@ import { fileURLToPath } from 'node:url';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const shellTest = process.platform === 'win32' ? test.skip : test;
-const adminHtml = (label) => `<html>웨딩픽 관리자 ${label}<script src="/_expo/static/js/web/entry.js"></script></html>`;
+const adminHtml = (label, includeMarker = true) =>
+  `<html>${includeMarker ? '웨딩픽 관리자 ' : ''}${label}<script src="/_expo/static/js/web/entry.js"></script></html>`;
 const appInstallSource = readFileSync(
   path.join(repoRoot, 'scripts/install-kakao-app-web.sh'),
   'utf8',
@@ -70,7 +71,7 @@ function readCount(file) {
   }
 }
 
-function makeHarness({ includeLogin = true } = {}) {
+function makeHarness({ includeLogin = true, adminMarkerInBundle = false } = {}) {
   const base = mkdtempSync(path.join(tmpdir(), 'wp-cutover-'));
   const root = path.join(base, 'root');
   const conf = path.join(base, 'etc', 'weddingpick-api');
@@ -80,11 +81,13 @@ function makeHarness({ includeLogin = true } = {}) {
   const releaseSha = 'a'.repeat(40);
   const releaseApp = path.join(root, 'static-releases', releaseSha, 'app');
   const releaseAdmin = path.join(root, 'static-releases', releaseSha, 'admin', 'admin');
+  const releaseAdminBundle = path.join(root, 'static-releases', releaseSha, 'admin', '_expo', 'static', 'js', 'web');
   const servedApp = path.join(root, 'var', 'www', 'weddingpick', 'releases', releaseSha, 'app');
 
   mkdirSync(path.dirname(conf), { recursive: true });
   mkdirSync(releaseApp, { recursive: true });
   mkdirSync(releaseAdmin, { recursive: true });
+  if (adminMarkerInBundle) mkdirSync(releaseAdminBundle, { recursive: true });
   mkdirSync(scripts, { recursive: true });
   mkdirSync(bin, { recursive: true });
   mkdirSync(state, { recursive: true });
@@ -92,7 +95,14 @@ function makeHarness({ includeLogin = true } = {}) {
   const baseline = 'server {\n  listen 443 ssl;\n  # API_ONLY_BASELINE\n}\n';
   writeFileSync(conf, baseline, 'utf8');
   writeFileSync(path.join(releaseApp, 'index.html'), '<html>app</html>', 'utf8');
-  writeFileSync(path.join(releaseAdmin, 'login.html'), adminHtml('admin'), 'utf8');
+  writeFileSync(path.join(releaseAdmin, 'login.html'), adminHtml('admin', !adminMarkerInBundle), 'utf8');
+  if (adminMarkerInBundle) {
+    writeFileSync(
+      path.join(releaseAdminBundle, 'entry.js'),
+      'const label="\\uc6e8\\ub529\\ud53d \\uad00\\ub9ac\\uc790";',
+      'utf8',
+    );
+  }
   if (includeLogin) {
     writeFileSync(path.join(releaseApp, 'login.html'), '<html>login</html>', 'utf8');
   }
@@ -287,6 +297,16 @@ shellTest('local public smoke failure restores the previous 443 config', () => {
         'A later EXIT trap must not replace rollback_on_error.',
       ].join(' '),
     );
+  } finally {
+    h.cleanup();
+  }
+});
+
+shellTest('admin login marker may be emitted into the Expo bundle', () => {
+  const h = makeHarness({ adminMarkerInBundle: true });
+  try {
+    const result = run(h.installPath, [h.releaseSha], h.env);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
   } finally {
     h.cleanup();
   }

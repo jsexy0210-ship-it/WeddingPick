@@ -248,7 +248,8 @@ if ! grep -Fq '/_expo/static/js/web/' "$admin_smoke"; then
   echo 'Admin canonical route is missing the Expo web bundle marker.' >&2
   exit 1
 fi
-if ! grep -Fq '웨딩픽 관리자' "$admin_smoke"; then
+if ! grep -Fq '웨딩픽 관리자' "$admin_smoke" \
+  && ! grep -RFq '\uc6e8\ub529\ud53d \uad00\ub9ac\uc790' "$admin_target/_expo/static/js/web"; then
   echo 'Admin canonical route is missing the admin login marker.' >&2
   exit 1
 fi
