@@ -15,9 +15,10 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { compareVendors, getCurrentUser, recordComparison } from '@/api/client';
-import { BackButton } from '@/components/back-button';
+import { DepthHeader } from '@/components/depth-header';
 import { savePendingAction } from '@/features/auth/pending-action';
 import { PickDoneSheet } from '@/features/pick/pick-sheets';
+import { PickSectionTabs } from '@/features/pick/pick-section-tabs';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import strings from '../../../../../../spec/strings.ko.json';
@@ -201,13 +202,8 @@ export default function CompareScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        {/* nav 56 · 뒤로 + «스튜디오 3곳 비교» */}
-        <View style={styles.navBar}>
-          <BackButton />
-          <ThemedText type="t5" numberOfLines={1} style={styles.navTitle}>
-            {categoryLabel} {vendors.length}곳 비교
-          </ThemedText>
-        </View>
+        <PickSectionTabs active="compare" />
+        <DepthHeader title={`${categoryLabel} ${vendors.length}곳 비교`} />
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           {/* hero · padding 12 24 24 · gap 14 · 후보 칩 3 */}

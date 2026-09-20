@@ -68,6 +68,7 @@ import {
   compareBasketLabel,
   pickCountLabel,
 } from '@/features/pick/canonical-rules';
+import { PickSectionTabs } from '@/features/pick/pick-section-tabs';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import { isWebShellScreen } from '@/features/webshell/config';
 import { WebShellView } from '@/features/webshell/WebShellView';
@@ -291,6 +292,7 @@ export default function PickScreen() {
             </View>
           ) : (
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+              <PickSectionTabs active="pick" />
               <Header me={me} partner={partner} total={page?.total ?? 0} />
 
               {/* 비교 배너 — 피그마 `compareIds.length >= 2`: 잉크 면 · radius 16 · 안쪽 16/14. */}

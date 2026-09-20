@@ -17,7 +17,7 @@ import {
   useTheme,
   type ThemeColor,
 } from '@weddingpick/ui';
-import { useDepthBack } from '@/features/navigation/depth-back';
+import { DepthHeader } from '@/components/depth-header';
 
 /**
  * MY 하위 · 혜택 화면 공통 부품. 디자인 핸드오프 `13-my-sub` · `15-events` · `13b-withdrawal`의
@@ -59,25 +59,11 @@ export function SubScreen({
   contentStyle?: StyleProp<ViewStyle>;
 }) {
   const theme = useTheme();
-  const depthBack = useDepthBack();
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-        <View style={styles.nav}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="뒤로"
-            hitSlop={Spacing.one}
-            onPress={onBack ?? depthBack}
-            style={({ pressed }) => [styles.back, pressed && styles.pressed]}>
-            <ProductSymbol name="chevronLeft" size={Layout.iconTab} color={theme.text} />
-          </Pressable>
-          <ThemedText type="t5" numberOfLines={1} style={styles.navTitle}>
-            {title}
-          </ThemedText>
-          {right}
-        </View>
+        <DepthHeader title={title} right={right} onBack={onBack} />
 
         <ScrollView
           style={styles.scroll}

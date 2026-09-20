@@ -1,10 +1,10 @@
 /**
- * 스타일 4종 — 핸드오프 v3.22 SPEC §13.6 «스타일 4종 · 최대 2개».
+ * 스타일 4종 — 사용자 취향은 네 가지를 모두 고를 수 있다.
  *
  * 사용자 화면에는 대표 스타일명 4개만 노출한다. 내부 값은 영문 태그다 — 한글 문자열을
  * DB 기준값으로 쓰지 않는다.
  *
- *   사용자   preferenceStyleTags: WeddingStyle[]   최소 1 · 최대 2
+ *   사용자   preferenceStyleTags: WeddingStyle[]   최소 1 · 최대 4
  *   업체     styleTags: WeddingStyle[]             개수 제한 없음
  *
  * **태그는 정렬 가중치로만 쓴다.** 태그가 다르다고 업체를 목록에서 빼지 않는다 — 교집합
@@ -32,17 +32,14 @@ export const WEDDING_STYLE_NOTE: Record<WeddingStyle, string> = {
 };
 
 export const STYLE_PICK_MIN = 1;
-export const STYLE_PICK_MAX = 2;
-
-/** 3번째를 고르려 할 때의 토스트. */
-export const STYLE_PICK_LIMIT_TOAST = `스타일은 ${STYLE_PICK_MAX}개까지 고를 수 있어요`;
+export const STYLE_PICK_MAX = WEDDING_STYLES.length;
 
 export function isWeddingStyle(value: unknown): value is WeddingStyle {
   return typeof value === 'string' && (WEDDING_STYLES as readonly string[]).includes(value);
 }
 
 /**
- * 스타일 토글 — 재클릭은 해제, 3번째는 추가하지 않는다(호출한 쪽이 토스트를 띄운다).
+ * 스타일 토글 — 재클릭은 해제하고, 네 가지는 모두 고를 수 있다.
  * 순서는 고른 순서를 지킨다.
  */
 export function toggleStyle(

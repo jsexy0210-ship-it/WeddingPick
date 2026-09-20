@@ -1,5 +1,4 @@
 import {
-  STYLE_PICK_LIMIT_TOAST,
   WEDDING_STYLES,
   WEDDING_STYLE_LABEL,
   combineRegion,
@@ -29,7 +28,10 @@ import {
 } from '@weddingpick/ui';
 
 import { DelayedRecommendingView } from '@/features/loading/delayed-loader';
-import { takeFullScreenLoading } from '@/features/loading/first-run';
+import {
+  markNextHomeLoadingCoveredBySetup,
+  takeFullScreenLoading,
+} from '@/features/loading/first-run';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { DatePickerSheet } from '@/features/onboarding/date-picker-sheet';
 import {
@@ -57,7 +59,6 @@ import {
   type Answers,
   type QuestionStep,
 } from '@/features/onboarding/flow';
-import { InlineToast, useInlineToast } from '@/features/onboarding/inline-toast';
 import { OptionRow } from '@/features/onboarding/option-row';
 import { QuestionHead } from '@/features/onboarding/question-head';
 import { RegionPickerSheet } from '@/features/onboarding/region-picker-sheet';
@@ -93,9 +94,9 @@ import {
  *
  * **미정을 억지로 받지 않는다.** 예식일 · 지역 «아직 정하지 않았어요», 준비 현황
  * «아직 시작 전이에요», 예산 «아직 모르겠어요». 스타일만 최소 1개 필수다 — 추천의
- * 근거라 없으면 첫 화면에 보여줄 것이 없다. 최대 2개, 3번째는 추가하지 않고 토스트
- * «2개까지 고를 수 있어요»(SPEC §13.6 «선택 정책»). 3/3은 건너뛰지 않는다. 이미 고른
- * 스타일이 서버에 있으면(다시 들어온 계정) 초기화하지 않고 복원해서 보여준다.
+ * 근거라 없으면 첫 화면에 보여줄 것이 없다. 네 가지 스타일은 모두 선택할 수 있고
+ * 개수 제한 토스트는 두지 않는다. 3/3은 건너뛰지 않는다. 이미 고른 스타일이 서버에
+ * 있으면(다시 들어온 계정) 초기화하지 않고 복원해서 보여준다.
  *
  * **스크롤은 화면 전체 하나다**(SPEC §13.5.5). 준비 현황이 뷰포트를 넘치면 화면이
  * 스크롤한다 — 목록 전용 스크롤을 두지 않는다. 3/3은 200 × 2행이라 스크롤이 없다.
@@ -146,7 +147,6 @@ export default function SetupScreen() {
   const stepRef = useRef<QuestionStep | 'done'>('date');
   const [sheetOpen, setSheetOpen] = useState(false);
   const [regionSheetOpen, setRegionSheetOpen] = useState(false);
-  const limitToast = useInlineToast();
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -341,6 +341,7 @@ export default function SetupScreen() {
        * 다시 띄우지 않도록 실행당 1회 예산도 여기서 소모한다.
        */
       void takeFullScreenLoading();
+      markNextHomeLoadingCoveredBySetup();
       const remainingLoadingMs = 3000 - (Date.now() - loadingStartedAt);
       if (remainingLoadingMs > 0) {
         await new Promise<void>((resolve) => setTimeout(resolve, remainingLoadingMs));
@@ -569,7 +570,7 @@ export default function SetupScreen() {
           </View>
         ) : null}
 
-        {/* 스타일 3/3 — 설명 한 줄이 붙은 4버튼, 최대 2개. 사진 타일은 쓰지 않는다. */}
+        {/* 스타일 3/3 — 설명 한 줄이 붙은 4버튼. 네 가지를 모두 고를 수 있다. 사진 타일은 쓰지 않는다. */}
         {step === 'style' ? (
           <View style={styles.styleOptions}>
             {WEDDING_STYLES.map((style) => (
@@ -580,21 +581,14 @@ export default function SetupScreen() {
                 description={STYLE_DESCRIPTION[style]}
                 selected={chosenStyles.includes(style)}
                 onPress={() => {
-                  const { next, limited } = toggleStyle(chosenStyles, style);
-
-                  if (limited) limitToast.show(STYLE_PICK_LIMIT_TOAST);
-                  else update({ style: next });
+                  const { next } = toggleStyle(chosenStyles, style);
+                  update({ style: next });
                 }}
               />
             ))}
           </View>
         ) : null}
 
-        {step === 'style' ? (
-          <View style={styles.toastWrap}>
-            <InlineToast toast={limitToast.toast} onHidden={limitToast.hide} placement="inline" />
-          </View>
-        ) : null}
       </StepFrame>
 
       <RegionPickerSheet

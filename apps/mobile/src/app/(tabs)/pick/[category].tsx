@@ -34,11 +34,12 @@ import {
   listCandidates,
   removeCandidate,
 } from '@/api/client';
-import { BackButton } from '@/components/back-button';
+import { DepthHeader } from '@/components/depth-header';
 import { confirmAlert } from '@/components/confirm-alert';
 import { DialogToast } from '@/components/confirm-alert-toast';
 import { useDepthBack } from '@/features/navigation/depth-back';
 import { PICK_COMPARE_MAX, PICK_COMPARE_MIN } from '@/features/pick/canonical-rules';
+import { PickSectionTabs } from '@/features/pick/pick-section-tabs';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 
 /**
@@ -256,25 +257,24 @@ export default function CategoryPickScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        {/* nav 56 · 뒤로 40 + 제목 18 + «편집» 16 700 */}
-        <View style={styles.navBar}>
-          <BackButton />
-          <ThemedText type="t5" numberOfLines={1} style={styles.navTitle}>
-            {categoryLabel} {TERMS.pick}
-          </ThemedText>
-          {!isDecided && candidates.length > 0 ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={editing ? EDIT_DONE : EDIT}
-              hitSlop={Spacing.two}
-              onPress={() => setEditing((on) => !on)}
-              style={styles.navAction}>
-              <ThemedText type="t6" themeColor="textSecondary" style={styles.bold}>
-                {editing ? EDIT_DONE : EDIT}
-              </ThemedText>
-            </Pressable>
-          ) : null}
-        </View>
+        <PickSectionTabs active={category === 'wedding_info_company' ? 'compare' : 'pick'} />
+        <DepthHeader
+          title={`${categoryLabel} ${TERMS.pick}`}
+          right={
+            !isDecided && candidates.length > 0 ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={editing ? EDIT_DONE : EDIT}
+                hitSlop={Spacing.two}
+                onPress={() => setEditing((on) => !on)}
+                style={styles.navAction}>
+                <ThemedText type="t6" themeColor="textSecondary" style={styles.bold}>
+                  {editing ? EDIT_DONE : EDIT}
+                </ThemedText>
+              </Pressable>
+            ) : undefined
+          }
+        />
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           {/* hero · padding 12 24 24 · gap 8 */}

@@ -28,7 +28,7 @@ const SCREEN = 'apps/mobile/src/app/(tabs)/search/[vendorId]/index.tsx';
  * 자리를 실제로 그리는 줄에만 있는 조각을 고른다.
  */
 const ANCHORS: Record<string, string> = {
-  name: 'styles.navTitle',
+  name: '<DepthHeader title={vendor.name} />',
   key_conditions: 'VENDOR_CATEGORY_LABEL[vendor.category]',
   verified_data: 'type="t4">{TERMS.verifiedData}',
   pick: 'styles.actionRow',

@@ -1,5 +1,9 @@
-import { Tabs, useSegments } from 'expo-router';
+import { router, Tabs, usePathname, useSegments } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { BackHandler, Platform } from 'react-native';
 
+import { Toast } from '@weddingpick/ui';
+import { TAB_ROOTS } from '@/features/navigation/depth-back-rules';
 import { OFF_TAB_ROUTES, ROOT_TABS } from '@/features/navigation/root-tabs';
 import { RootTabBar } from '@/features/navigation/tab-bar';
 import { useTabScreenOptions } from '@/features/navigation/screen-options';
@@ -26,7 +30,32 @@ export default function TabLayout() {
    * 여기서 알고 싶은 것은 "카메라 화면인가" 하나뿐이라 그 유니온이 필요 없다.
    */
   const segments: readonly string[] = useSegments();
+  const pathname = usePathname();
+  const lastExitBackAt = useRef(0);
+  const [exitToast, setExitToast] = useState<string | null>(null);
   const onCamera = segments.includes('camera');
+
+  useEffect(() => {
+    lastExitBackAt.current = 0;
+    if (Platform.OS !== 'android') return;
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      const atRoot = TAB_ROOTS.includes(pathname);
+      if (!atRoot && router.canGoBack()) return false;
+
+      const now = Date.now();
+      if (now - lastExitBackAt.current <= 2_000) {
+        BackHandler.exitApp();
+        return true;
+      }
+
+      lastExitBackAt.current = now;
+      setExitToast('뒤로가기를 한 번 더 누르면 앱이 종료돼요');
+      return true;
+    });
+
+    return () => subscription.remove();
+  }, [pathname]);
   /*
    * Pick 완료는 transient route다. 이 화면을 떠날 때만 Pick nested Stack을 root로 접는다.
    * category/compare → search 상세처럼 아직 진행 중인 교차 탐색에서는 false라 Back 문맥을 보존한다.
@@ -40,7 +69,8 @@ export default function TabLayout() {
   const screenOptions = useTabScreenOptions();
 
   return (
-    <Tabs
+    <>
+      <Tabs
       backBehavior="firstRoute"
       tabBar={(props) => (onCamera ? null : <RootTabBar {...props} />)}
       screenOptions={screenOptions}>
@@ -73,6 +103,8 @@ export default function TabLayout() {
           }}
         />
       ))}
-    </Tabs>
+      </Tabs>
+      <Toast message={exitToast} onHidden={() => setExitToast(null)} />
+    </>
   );
 }

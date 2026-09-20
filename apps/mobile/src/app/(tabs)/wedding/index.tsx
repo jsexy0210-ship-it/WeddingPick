@@ -212,8 +212,9 @@ export default function WeddingScreen({
     else router.push(`/wedding/${weddingId}/consultations/upload` as never);
   }
 
-  const budgetAmount = Number(budgetDraft.replace(/[^\d]/g, ''));
-  const budgetReady = Number.isFinite(budgetAmount) && budgetAmount > 0;
+  const budgetManwon = Number(budgetDraft.replace(/[^\d]/g, ''));
+  const budgetAmount = budgetManwon * 10_000;
+  const budgetReady = Number.isFinite(budgetManwon) && budgetManwon > 0;
 
   async function saveInitialBudget() {
     if (!weddingId || !budgetReady || budgetSaving) return;
@@ -309,22 +310,25 @@ export default function WeddingScreen({
           <ThemedText type="body" themeColor="textSecondary">
             예산현황을 보려면 전체 예산이 필요해요. 등록한 뒤에는 언제든 바꿀 수 있어요.
           </ThemedText>
-          <TextInput
-            value={budgetDraft}
-            onChangeText={(text) =>
-              setBudgetDraft(
-                text
-                  .replace(/[^0-9]/g, '')
-                  .slice(0, 12)
-                  .replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-              )
-            }
-            keyboardType="number-pad"
-            placeholder="예: 30,000,000"
-            placeholderTextColor={theme.textDisabled}
-            accessibilityLabel="전체 예산"
-            style={[styles.budgetInput, { color: theme.text, borderColor: theme.fieldBorder }]}
-          />
+          <View style={[styles.budgetInputWrap, { borderColor: theme.fieldBorder }]}>
+            <TextInput
+              value={budgetDraft}
+              onChangeText={(text) =>
+                setBudgetDraft(
+                  text
+                    .replace(/[^0-9]/g, '')
+                    .slice(0, 8)
+                    .replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                )
+              }
+              keyboardType="number-pad"
+              placeholder="예: 5,000"
+              placeholderTextColor={theme.textDisabled}
+              accessibilityLabel="전체 예산 만원 단위"
+              style={[styles.budgetInput, { color: theme.text }]}
+            />
+            <ThemedText type="t6" themeColor="textSecondary">만원</ThemedText>
+          </View>
           <ActionButton
             variant="primary"
             size="xlarge"
@@ -714,11 +718,20 @@ function consultAmount(record: ConsultationRecord): number | null {
 ──────────────────────────────────────────── */
 const styles = StyleSheet.create({
   budgetSheet: { flexShrink: 1 },
-  budgetInput: {
+  budgetInputWrap: {
     height: Layout.field,
     borderRadius: Radius.input,
     borderWidth: 1,
     paddingHorizontal: Layout.fieldPaddingX,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  budgetInput: {
+    flex: 1,
+    minWidth: 0,
+    height: '100%',
+    paddingVertical: 0,
   },
   container: { flex: 1 },
   safeArea: { flex: 1 },

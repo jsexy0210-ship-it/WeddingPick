@@ -40,7 +40,7 @@ import {
   listVendorReviews,
 } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
-import { BackButton } from '@/components/back-button';
+import { DepthHeader } from '@/components/depth-header';
 import { InfoDot, InfoSheet, type InfoTopic } from '@/features/common/info-sheet';
 import { savePendingAction } from '@/features/auth/pending-action';
 import { readCurrentUserSnapshot } from '@/features/loading/current-user-snapshot';
@@ -340,18 +340,7 @@ export default function VendorDetailScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        {/*
-          상단 내비 — 피그마 `VendorDetailPage` 헤더(2026-09-14 정본): 56 · 좌우 16 · ← 40 원 ·
-          업체명 14/700 가운데 · 아래 선. 오른쪽의 «공유»(링크 복사)는 우리 앱에 그 기능이
-          없어 두지 않는다 — 제목은 그 자리만큼(40) 오른쪽을 비워 가운데를 맞춘다.
-        */}
-        <View style={[styles.navBar, { borderBottomColor: theme.border }]}>
-          <BackButton />
-          {/* 규격서 vendor-1.txt: 제목 «14/700 · lh 20 · pad 0 40 0 0». */}
-          <ThemedText type="f16" numberOfLines={1} style={[styles.bold, styles.navTitle]}>
-            {vendor.name}
-          </ThemedText>
-        </View>
+        <DepthHeader title={vendor.name} />
 
         <ScrollView
           style={styles.scroll}

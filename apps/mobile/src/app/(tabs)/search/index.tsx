@@ -95,8 +95,7 @@ import { DelayedLoader } from '@/features/loading/delayed-loader';
  * 웨딩일정 · 준비 현황이 한꺼번에 흔들린다(2026-09-11 MASTER 판단 — 그대로 둔다).
  */
 /* 헤더 · 칩 문구 — spec/strings.ko.json `search`. 피그마 `Search.tsx`(2026-09-14 정본)에서 왔다. */
-const TITLE = '업체 검색';
-const SUBTITLE = '우리 조건에 맞는 선택만 모았어요';
+const TITLE = '검색';
 const PLACEHOLDER = '업체 이름, 지역, 카테고리 검색';
 const BACK_LABEL = '홈으로 돌아가기';
 const CLEAR_LABEL = '검색어 지우기';
@@ -855,12 +854,14 @@ export default function SearchScreen() {
             </ThemedText>
             <DelayedLoader active={refreshing} size={20} />
           </View>
-          <DropdownChip
-            label={SORT_LABEL[filters.sort]}
-            active={false}
-            accessibilityLabel={`정렬: ${SORT_LABEL[filters.sort]}`}
-            onPress={() => setSortOpen(true)}
-          />
+          <View style={styles.sortSlot}>
+            <DropdownChip
+              label={SORT_LABEL[filters.sort]}
+              active={false}
+              accessibilityLabel={`정렬: ${SORT_LABEL[filters.sort]}`}
+              onPress={() => setSortOpen(true)}
+            />
+          </View>
         </View>
 
         {/* 결과 목록 */}
@@ -939,12 +940,8 @@ export default function SearchScreen() {
               <ProductSymbol name="arrowLeft" size={Layout.iconRow} color={theme.text} />
             </Pressable>
             <View style={styles.headerTitleText}>
-              {/* 규격서: 제목 «20/700 · lh 28 · ls -0.4px» · 부제 «11/400 #868B94 · lh 17». */}
               <ThemedText type="f20" style={[styles.bold, styles.title]}>
                 {TITLE}
-              </ThemedText>
-              <ThemedText type="f11" themeColor="textAssistive">
-                {SUBTITLE}
               </ThemedText>
             </View>
           </View>
@@ -1489,13 +1486,16 @@ const styles = StyleSheet.create({
   },
   /* 결과 수 `mb-3 px-5` — 아래 12. 새로고침 표시가 같은 줄에 붙는다, 사이 4. */
   countRow: {
+    minHeight: Layout.chip,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.one,
+    justifyContent: 'center',
     paddingHorizontal: Layout.pageX,
     marginBottom: Layout.inlineGap,
+    position: 'relative',
   },
-  countText: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  countText: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.one },
+  sortSlot: { position: 'absolute', right: Layout.pageX },
   /* 목록 `px-5 space-y-3` + 바깥 `pb-4` — 카드 사이 12 · 아래 16. */
   resultList: {
     paddingHorizontal: Layout.pageX,

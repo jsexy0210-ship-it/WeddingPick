@@ -29,7 +29,7 @@ import {
   ThemedView,
   useTheme,
 } from '@weddingpick/ui';
-import { BackButton } from '@/components/back-button';
+import { DepthHeader } from '@/components/depth-header';
 import { formatDateDot } from '@/features/common/format-date';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { useSession } from '@/features/auth/use-session';
@@ -183,12 +183,7 @@ export default function ReviewDetailScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-        <View style={styles.navBar}>
-          <BackButton />
-          <ThemedText type="f14" numberOfLines={1} style={[styles.bold, styles.navTitle]}>
-            {TITLE}
-          </ThemedText>
-        </View>
+        <DepthHeader title={TITLE} />
 
         {review === undefined ? (
           <View style={styles.center}>

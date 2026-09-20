@@ -1,5 +1,4 @@
 import {
-  STYLE_PICK_LIMIT_TOAST,
   STYLE_PICK_MIN,
   WEDDING_STYLES,
   WEDDING_STYLE_LABEL,
@@ -13,7 +12,6 @@ import { StyleSheet, View } from 'react-native';
 import { ApiError, completeSetup, getCurrentUser } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
 import { STEP_TITLE_LINES } from '@/features/onboarding/flow';
-import { InlineToast, useInlineToast } from '@/features/onboarding/inline-toast';
 import { OptionRow } from '@/features/onboarding/option-row';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { useDepthBack } from '@/features/navigation/depth-back';
@@ -43,7 +41,7 @@ type Loaded = {
 
 /**
  * 스타일 다시 고르기 · WP-MY-004. 지금 고른 것을 먼저 보여주고 바꾸게 한다. 저장은 헤더 오른쪽
- * «저장»이다(시안 navRight). 규칙은 온보딩 3/3과 같다 — 최소 1 · 최대 2 · 3번째는 토스트.
+ * «저장»이다(시안 navRight). 규칙은 온보딩 3/3과 같다 — 최소 1개, 네 가지 모두 선택 가능.
  *
  * **보기는 온보딩 3/3과 같은 `OptionRow` 넷이다**(2026-09-15 대표 지시 「타일로 하지마
  * 버튼으로 통일한다」). 사진 2×2 타일을 쓰던 자리다 — 피그마 규격서에 타일이 없고,
@@ -62,7 +60,6 @@ export default function StyleScreen() {
   const [saving, setSaving] = useState(false);
   // 저장 완료·불러오기 실패에서 나가는 길은 Depth Back이다 — 딥링크로 들어와도 MY로 간다.
   const depthBack = useDepthBack();
-  const limitToast = useInlineToast();
 
   useEffect(() => {
     void getCurrentUser()
@@ -119,10 +116,8 @@ export default function StyleScreen() {
             label={WEDDING_STYLE_LABEL[style]}
             selected={loaded.chosen.includes(style)}
             onPress={() => {
-              const { next, limited } = toggleStyle(loaded.chosen, style);
-
-              if (limited) limitToast.show(STYLE_PICK_LIMIT_TOAST);
-              else setLoaded({ ...loaded, chosen: next });
+              const { next } = toggleStyle(loaded.chosen, style);
+              setLoaded({ ...loaded, chosen: next });
             }}
           />
         ))}
@@ -138,7 +133,6 @@ export default function StyleScreen() {
         <NoteBox title={S.noteTitle} body={S.noteBody} />
       </Section>
 
-      <InlineToast toast={limitToast.toast} onHidden={limitToast.hide} />
     </SubScreen>
   );
 }
