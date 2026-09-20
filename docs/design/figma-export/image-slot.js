@@ -124,7 +124,7 @@
       return false;
     }
   };
-  // Render-time referral normalization for links back to Unsplash:
+  // Runtime referral normalization for links back to Unsplash:
   // appends utm_source/utm_medium when absent, preserves every existing
   // query param, never overwrites an existing utm_source, and passes
   // non-Unsplash URLs through untouched. Input is an ABSOLUTE validated
@@ -550,7 +550,7 @@
       // the stored value still points at the OLD image until the encode
       // lands, so that clear would unmask the stale image mid-replace.
       this._swapGen = 0;
-      // Render-owned swap in flight: set when _render assigns a new src,
+      // Runtime-owned swap in flight: set when _render assigns a new src,
       // cleared only by the img's own load/error (or the empty branch).
       // img.complete CANNOT stand in for this — setting src only QUEUES
       // the current-request swap (a microtask), so synchronously after an
@@ -1199,7 +1199,7 @@
         };
         // Unsplash's prescribed credit is TWO links — the photographer's
         // name to their profile (credit-href) and 'Unsplash' to the
-        // homepage. Render that split whenever the text has the canonical
+        // homepage. Draw that split whenever the text has the canonical
         // shape; other text keeps the legacy single-link rendering.
         const m = /^Photo by (.+) on Unsplash$/.exec(credit);
         if (m) {
