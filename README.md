@@ -36,11 +36,8 @@ npm run build --workspace @weddingpick/web
 
 ## 운영 주소
 
-- 앱 웹: `https://210.109.82.212/` (KakaoCloud 443, 2026-09-18 외부 확인)
-- API: `https://210.109.82.212` (같은 443에서 `/v1/*` · `/health`)
-- 관리자: `https://210.109.82.212/admin` (KakaoCloud 443 고정)
-- 웹사이트: `https://weddingpick-web.onrender.com` 임시 공개본. Kakao `:9443` 전환 대기
+- 앱 웹 로그인: `https://210.109.82.212/login`
+- 관리자 로그인: `https://210.109.82.212/admin/login`
+- API: `https://210.109.82.212` (`/v1/*`, `/health`)
 
-Render 웹사이트 정적 주소는 전환 완료 전의 임시 공개본이며 **새 빌드·재배포 대상으로 사용하지 않는다.** 관리자는 KakaoCloud 443 `/admin`이 정본이며 별도 관리자 포트로 되돌리지 않는다.
-
-`weddingpick.kr`은 **폐기했다**(2026-09-11 대표 지시). 2026-09-10의 「보유하되 미사용」을 뒤집은 결정이다. 다시 붙이자고 제안하지 않는다.
+운영 배포는 GitHub `main`만 기준으로 하며, 정적 앱/관리자는 CI 성공 후 같은 커밋 SHA로 443에 자동 반영한다.
