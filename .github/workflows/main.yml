@@ -364,14 +364,16 @@ jobs:
 
   probe-kakao-static-ports:
     name: Probe Kakao Website Port
-    if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[probe-static-ports]') }}
+    needs: [ci]
+    if: ${{ always() && needs.ci.result == 'success' && github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[probe-static-ports]') }}
     permissions:
       contents: read
     uses: ./.github/workflows/probe-kakao-static-ports.yml
 
   enable-kakao-static-cors:
     name: Enable Kakao Static CORS
-    if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[enable-static-cors]') }}
+    needs: [ci]
+    if: ${{ always() && needs.ci.result == 'success' && github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[enable-static-cors]') }}
     permissions:
       contents: read
     uses: ./.github/workflows/enable-kakao-static-cors.yml
@@ -393,24 +395,29 @@ jobs:
 
   preview-kakao-admin-web:
     name: Preview Kakao Admin and Website
-    if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[preview-admin-web]') }}
+    needs: [ci]
+    if: ${{ always() && needs.ci.result == 'success' && github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[preview-admin-web]') }}
     permissions:
       contents: read
     uses: ./.github/workflows/preview-kakao-admin-web.yml
 
   preview-kakao-app-web:
     name: Preview Kakao App Web
-    if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[preview-app-web]') }}
+    needs: [ci]
+    if: ${{ always() && needs.ci.result == 'success' && github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[preview-app-web]') }}
     permissions:
       contents: read
     uses: ./.github/workflows/preview-kakao-app-web.yml
 
   cutover-kakao-app-web:
     name: Cutover Kakao App Web
-    if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[cutover-app-web]') }}
+    needs: [ci, api-tests, non-db-tests, db-tests, repair-kakao-runner, stage-kakao-static]
+    if: ${{ always() && github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[cutover-app-web]') && needs.ci.result == 'success' && needs.api-tests.result == 'success' && needs.non-db-tests.result == 'success' && needs.db-tests.result == 'success' && (needs.repair-kakao-runner.result == 'success' || needs.repair-kakao-runner.result == 'skipped') && (needs.ci.outputs.stage_static != 'true' || (needs.stage-kakao-static.result == 'success' && needs.stage-kakao-static.outputs.candidate_sha == github.sha)) }}
     permissions:
       contents: read
     uses: ./.github/workflows/cutover-kakao-app-web.yml
+    with:
+      release_sha: ${{ needs.stage-kakao-static.outputs.candidate_sha }}
 
   stage-kakao-static:
     name: Stage Kakao Static
