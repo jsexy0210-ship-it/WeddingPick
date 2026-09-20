@@ -34,4 +34,4 @@ if [ -r "$LIVE_BACKUP_MARKER" ]; then
   rm -f "$LIVE_BACKUP_MARKER"
 fi
 
-echo 'Kakao static admin/web nginx config and live marker rolled back.'
+echo 'Kakao website static nginx config and live marker rolled back.'
