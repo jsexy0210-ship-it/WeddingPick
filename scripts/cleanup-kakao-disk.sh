@@ -31,8 +31,9 @@ assert_runtime_healthy() {
   health_ok "$PUBLIC_HEALTH_URL"
 }
 
-read_optional_marker() {
+read_release_marker() {
   local path="$1"
+  local value
   if [ ! -e "$path" ]; then
     return 0
   fi
@@ -40,7 +41,12 @@ read_optional_marker() {
     echo "Cleanup protection marker is not readable: $path" >&2
     return 1
   fi
-  cat "$path"
+  value="$(cat "$path")"
+  if [[ ! "$value" =~ ^[0-9a-f]{40}$ ]]; then
+    echo "Cleanup protection marker is invalid: $path" >&2
+    return 1
+  fi
+  printf '%s\n' "$value"
 }
 
 collect_plan() {
@@ -68,8 +74,8 @@ collect_plan() {
   done <<< "$image_refs"
 
   if [ -d "$RELEASES" ]; then
-    live="$(read_optional_marker "$ROOT/static-live-app")"
-    candidate="$(read_optional_marker "$RELEASES/latest-candidate")"
+    live="$(read_release_marker "$ROOT/static-live-app")"
+    candidate="$(read_release_marker "$RELEASES/latest-candidate")"
     [[ "$live" =~ ^[0-9a-f]{40}$ ]] && keep_release["$live"]=1
     [[ "$candidate" =~ ^[0-9a-f]{40}$ ]] && keep_release["$candidate"]=1
     [[ "${GITHUB_SHA:-}" =~ ^[0-9a-f]{40}$ ]] && keep_release["$GITHUB_SHA"]=1

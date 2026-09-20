@@ -45,6 +45,8 @@ test('disk cleanup protects runtime references and requires the approved exact p
   assert.match(diskCleanup, /static-live-app/);
   assert.match(diskCleanup, /latest-candidate/);
   assert.match(diskCleanup, /Cleanup protection marker is not readable/);
+  assert.match(diskCleanup, /Cleanup protection marker is invalid/);
+  assert.match(diskCleanup, /! "\$value" =~ \^\[0-9a-f\]\{40\}\$/);
   assert.match(diskCleanup, /WP_CLEANUP_EXPECTED_PLAN_HASH/);
   assert.match(diskCleanup, /Cleanup plan changed or the approved plan hash is missing/);
   assert.match(diskCleanup, /docker inspect -f '\{\{\.State\.Running\}\}' weddingpick-api/);
