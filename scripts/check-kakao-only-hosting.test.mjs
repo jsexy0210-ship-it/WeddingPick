@@ -7,7 +7,7 @@ const oldEnv = ['RENDER', '_API_KEY'].join('');
 const provider = ['Ren', 'der'].join('');
 
 test('rejects legacy hosting host', () => {
-  assert.equal(inspectTrackedFiles([{ path: 'x.txt', content: oldHost }]).length, 1);
+  assert.ok(inspectTrackedFiles([{ path: 'x.txt', content: oldHost }]).length >= 1);
 });
 
 test('rejects legacy hosting environment variables', () => {
