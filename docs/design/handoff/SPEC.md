@@ -1177,7 +1177,7 @@ GLAMOROUS  럭셔리 · 풍성함 · 장식적 · 강한 존재감
 ```
 type WeddingStyle = 'URBAN' | 'NATURAL' | 'ROMANTIC' | 'GLAMOROUS'
 
-사용자   preferenceStyleTags: WeddingStyle[]   최소 1 · 최대 2
+사용자   preferenceStyleTags: WeddingStyle[]   최소 1 · 최대 4
 업체     styleTags: WeddingStyle[]             개수 제한 없음
 ```
 
