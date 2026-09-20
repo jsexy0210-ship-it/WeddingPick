@@ -24,7 +24,8 @@ if [ -r "$MARKER" ]; then
     echo "Preview rollback backup is missing: $backup" >&2
     exit 1
   fi
-elif grep -Fq 'location ^~ /admin/' "$CONF" 2>/dev/null; then
+elif grep -Fq 'location = /website.html' "$CONF" 2>/dev/null ||
+     grep -Fq 'location ^~ /v/' "$CONF" 2>/dev/null; then
   echo 'Preview routes are active but their rollback marker is missing.' >&2
   exit 1
 fi

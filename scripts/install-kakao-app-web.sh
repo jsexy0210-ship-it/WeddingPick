@@ -11,9 +11,17 @@ TX_TARGET_MARKER="$ROOT/.app-web-update-target"
 
 release_sha="${1:-}"
 if [ -z "$release_sha" ]; then
-  release_sha="$(find "$ROOT/static-releases" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %f\n' 2>/dev/null | sort -nr | awk 'NR==1{print $2}')"
+  candidate_marker="$ROOT/static-releases/latest-candidate"
+  if [ ! -r "$candidate_marker" ]; then
+    echo 'Validated static candidate marker was not found; refusing mtime fallback.' >&2
+    exit 1
+  fi
+  IFS= read -r release_sha < "$candidate_marker" || true
 fi
-test -n "$release_sha"
+if [[ ! "$release_sha" =~ ^[0-9a-f]{40}$ ]]; then
+  echo 'Validated static candidate marker or release SHA is invalid.' >&2
+  exit 1
+fi
 
 release_root="$ROOT/static-releases/$release_sha"
 source_dir="$release_root/app"
@@ -233,6 +241,7 @@ admin_smoke="$(mktemp)"
 curl --fail --silent --show-error --connect-timeout 5 --max-time 10 \
   https://210.109.82.212/admin/login -o "$admin_smoke"
 grep -qi '<html' "$admin_smoke"
+grep -Fq '웨딩픽 관리자' "$admin_smoke"
 rm -f "$admin_smoke"
 
 curl --fail --silent --show-error --connect-timeout 5 --max-time 10   https://210.109.82.212/v1/auth/providers | python3 -c 'import json,sys; json.load(sys.stdin)'

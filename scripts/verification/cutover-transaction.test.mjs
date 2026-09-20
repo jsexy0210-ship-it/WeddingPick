@@ -76,7 +76,7 @@ function makeHarness({ includeLogin = true } = {}) {
   const scripts = path.join(base, 'scripts');
   const bin = path.join(base, 'bin');
   const state = path.join(base, 'state');
-  const releaseSha = 'release-a';
+  const releaseSha = 'a'.repeat(40);
   const releaseApp = path.join(root, 'static-releases', releaseSha, 'app');
   const releaseAdmin = path.join(root, 'static-releases', releaseSha, 'admin', 'admin');
   const servedApp = path.join(root, 'var', 'www', 'weddingpick', 'releases', releaseSha, 'app');
@@ -190,6 +190,7 @@ fi
 
 case "$url" in
   */health) body='{"ok":true,"database":"ok"}' ;;
+  */admin/login) body='<html>웨딩픽 관리자</html>' ;;
   */login) body='<html>login</html>' ;;
   */v1/auth/providers) body='{"providers":[]}' ;;
   *) body='ok' ;;
@@ -374,7 +375,7 @@ shellTest('successful install clears rollback-on-exit and keeps app-web live', (
     const result = run(h.installPath, [h.releaseSha], h.env);
     assert.equal(result.status, 0, result.stderr || result.stdout);
     const live = readFileSync(h.conf, 'utf8');
-    assert.match(live, /releases\/release-a\/app/);
+    assert.ok(live.includes('/releases/' + h.releaseSha + '/app'));
     assert.equal(
       readFileSync(path.join(h.root, 'static-live-app'), 'utf8').trim(),
       h.releaseSha,
@@ -393,7 +394,7 @@ shellTest('failed release update restores the immediately previous live release 
     assert.equal(finalized.status, 0, finalized.stderr || finalized.stdout);
 
     const previousConfig = readFileSync(h.conf, 'utf8');
-    const releaseB = 'release-b';
+    const releaseB = 'b'.repeat(40);
     const sourceB = path.join(h.root, 'static-releases', releaseB, 'app');
     const adminB = path.join(h.root, 'static-releases', releaseB, 'admin', 'admin');
     mkdirSync(sourceB, { recursive: true });
@@ -423,7 +424,7 @@ shellTest('explicit update rollback restores the previous app and verifies login
     assert.equal(run(h.installPath, [h.releaseSha], h.env).status, 0);
     assert.equal(run(h.finalizePath, [], h.env).status, 0);
 
-    const releaseB = 'release-b';
+    const releaseB = 'b'.repeat(40);
     const sourceB = path.join(h.root, 'static-releases', releaseB, 'app');
     const adminB = path.join(h.root, 'static-releases', releaseB, 'admin', 'admin');
     mkdirSync(sourceB, { recursive: true });
@@ -450,7 +451,7 @@ shellTest('update rollback fails closed before changing Nginx when the recorded 
     assert.equal(run(h.installPath, [h.releaseSha], h.env).status, 0);
     assert.equal(run(h.finalizePath, [], h.env).status, 0);
 
-    const releaseB = 'release-b';
+    const releaseB = 'b'.repeat(40);
     const sourceB = path.join(h.root, 'static-releases', releaseB, 'app');
     const adminB = path.join(h.root, 'static-releases', releaseB, 'admin', 'admin');
     mkdirSync(sourceB, { recursive: true });

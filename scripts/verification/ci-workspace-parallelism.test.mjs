@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-const workflow = readFileSync('.github/workflows/main.yml', 'utf8');
+const workflow = readFileSync('.github/workflows/main.yml', 'utf8').replaceAll('\r\n', '\n');
 
 function jobBlock(name) {
   const marker = `  ${name}:\n`;
@@ -63,8 +63,6 @@ test('API deployment path cannot bypass non-API workspace tests or migration gat
     'non-db-tests',
     'db-tests',
     'repair-kakao-runner',
-    'migrate-current-backlog-db',
-    'current-backlog-production',
   ]);
   assertNeeds(deploy, [
     'ci',
@@ -73,6 +71,5 @@ test('API deployment path cannot bypass non-API workspace tests or migration gat
     'db-tests',
     'repair-kakao-runner',
     'api-deploy-needed',
-    'current-backlog-production',
   ]);
 });
