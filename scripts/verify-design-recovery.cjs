@@ -120,7 +120,7 @@ function splitFixture(script,role,missingAdmin=false) {
     fs.writeFileSync(path.join(dist,name),'synthetic-fixture-not-a-real-font');
   }
   // 테스트는 명시한 임시 폴더만 정리한다. 상속된 배포 경로를 사용하지 않는다.
-  const env={...process.env,WEDDINGPICK_DIST_DIR:dist,ADMIN_ORIGIN:'https://admin.example.test'};
+  const env={...process.env,WEDDINGPICK_DIST_DIR:dist};
   const run=spawnSync(process.execPath,[path.join(dir,'scripts/split-admin-dist.mjs'),role],{encoding:'utf8',timeout:5000,env});
   return{dir,dist,run,exists:name=>fs.existsSync(path.join(dist,name)),read:name=>fs.readFileSync(path.join(dist,name),'utf8'),
     cleanup:()=>fs.rmSync(dir,{recursive:true,force:true})};

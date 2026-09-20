@@ -33,6 +33,8 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+      - name: Enforce admin 443 origin lock
+        run: bash ./scripts/assert-admin-origin-443.sh
       - name: Publish latest staged app-web with local smoke
         run: bash ./scripts/install-kakao-app-web.sh
 

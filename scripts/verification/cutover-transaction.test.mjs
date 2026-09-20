@@ -78,10 +78,12 @@ function makeHarness({ includeLogin = true } = {}) {
   const state = path.join(base, 'state');
   const releaseSha = 'release-a';
   const releaseApp = path.join(root, 'static-releases', releaseSha, 'app');
+  const releaseAdmin = path.join(root, 'static-releases', releaseSha, 'admin', 'admin');
   const servedApp = path.join(root, 'var', 'www', 'weddingpick', 'releases', releaseSha, 'app');
 
   mkdirSync(path.dirname(conf), { recursive: true });
   mkdirSync(releaseApp, { recursive: true });
+  mkdirSync(releaseAdmin, { recursive: true });
   mkdirSync(scripts, { recursive: true });
   mkdirSync(bin, { recursive: true });
   mkdirSync(state, { recursive: true });
@@ -89,6 +91,7 @@ function makeHarness({ includeLogin = true } = {}) {
   const baseline = 'server {\n  listen 443 ssl;\n  # API_ONLY_BASELINE\n}\n';
   writeFileSync(conf, baseline, 'utf8');
   writeFileSync(path.join(releaseApp, 'index.html'), '<html>app</html>', 'utf8');
+  writeFileSync(path.join(releaseAdmin, 'login.html'), '<html>admin</html>', 'utf8');
   if (includeLogin) {
     writeFileSync(path.join(releaseApp, 'login.html'), '<html>login</html>', 'utf8');
   }
@@ -392,9 +395,12 @@ shellTest('failed release update restores the immediately previous live release 
     const previousConfig = readFileSync(h.conf, 'utf8');
     const releaseB = 'release-b';
     const sourceB = path.join(h.root, 'static-releases', releaseB, 'app');
+    const adminB = path.join(h.root, 'static-releases', releaseB, 'admin', 'admin');
     mkdirSync(sourceB, { recursive: true });
+    mkdirSync(adminB, { recursive: true });
     writeFileSync(path.join(sourceB, 'index.html'), '<html>b</html>', 'utf8');
     writeFileSync(path.join(sourceB, 'login.html'), '<html>b-login</html>', 'utf8');
+    writeFileSync(path.join(adminB, 'login.html'), '<html>b-admin</html>', 'utf8');
 
     const second = run(h.installPath, [releaseB], {
       ...h.env,
@@ -419,9 +425,12 @@ shellTest('explicit update rollback restores the previous app and verifies login
 
     const releaseB = 'release-b';
     const sourceB = path.join(h.root, 'static-releases', releaseB, 'app');
+    const adminB = path.join(h.root, 'static-releases', releaseB, 'admin', 'admin');
     mkdirSync(sourceB, { recursive: true });
+    mkdirSync(adminB, { recursive: true });
     writeFileSync(path.join(sourceB, 'index.html'), '<html>b</html>', 'utf8');
     writeFileSync(path.join(sourceB, 'login.html'), '<html>b-login</html>', 'utf8');
+    writeFileSync(path.join(adminB, 'login.html'), '<html>b-admin</html>', 'utf8');
     assert.equal(run(h.installPath, [releaseB], h.env).status, 0);
 
     const rollback = run(h.updateRollbackPath, [], h.env);
@@ -443,9 +452,12 @@ shellTest('update rollback fails closed before changing Nginx when the recorded 
 
     const releaseB = 'release-b';
     const sourceB = path.join(h.root, 'static-releases', releaseB, 'app');
+    const adminB = path.join(h.root, 'static-releases', releaseB, 'admin', 'admin');
     mkdirSync(sourceB, { recursive: true });
+    mkdirSync(adminB, { recursive: true });
     writeFileSync(path.join(sourceB, 'index.html'), '<html>b</html>', 'utf8');
     writeFileSync(path.join(sourceB, 'login.html'), '<html>b-login</html>', 'utf8');
+    writeFileSync(path.join(adminB, 'login.html'), '<html>b-admin</html>', 'utf8');
     assert.equal(run(h.installPath, [releaseB], h.env).status, 0);
     const liveBConfig = readFileSync(h.conf, 'utf8');
 

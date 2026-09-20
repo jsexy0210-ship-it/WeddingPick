@@ -48,13 +48,15 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+      - name: Enforce admin 443 origin lock
+        run: bash ./scripts/assert-admin-origin-443.sh
       - name: Cut over with local smoke
         env:
           RELEASE_SHA: ${{ inputs.release_sha }}
         run: bash ./scripts/install-kakao-app-web.sh "$RELEASE_SHA"
 
   verify:
-    name: Verify public app and API routes
+    name: Verify public app, admin and API routes
     needs: [cutover]
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -64,6 +66,13 @@ jobs:
           set -euo pipefail
           curl --fail --silent --show-error --connect-timeout 5 --max-time 15             https://210.109.82.212/login > /tmp/login.html
           grep -qi '<html' /tmp/login.html
+
+      - name: Admin login stays on canonical 443 origin
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --connect-timeout 5 --max-time 15 \
+            https://210.109.82.212/admin/login > /tmp/admin.html
+          grep -qi '<html' /tmp/admin.html
 
       - name: API routes remain proxied
         run: |

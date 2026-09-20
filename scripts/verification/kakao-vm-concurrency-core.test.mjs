@@ -7,7 +7,6 @@ import test from 'node:test';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const workflows = [
   '.github/workflows/preview-kakao-admin-web.yml',
-  '.github/workflows/cutover-kakao-admin-web.yml',
   '.github/workflows/enable-kakao-static-cors.yml',
   '.github/workflows/probe-kakao-static-ports.yml',
 ];

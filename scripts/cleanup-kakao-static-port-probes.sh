@@ -58,4 +58,4 @@ sudo -n systemctl reload nginx
 rm -f "$MARKER"
 trap - EXIT
 cleanup_tmp
-echo 'Temporary 8443/9443 HTTPS probes removed and previous Nginx state restored.'
+echo 'Temporary 9443 website HTTPS probe removed and previous Nginx state restored.'

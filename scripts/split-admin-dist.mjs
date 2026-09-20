@@ -33,10 +33,11 @@ const DIST = process.env.WEDDINGPICK_DIST_DIR
   : join(ROOT, 'apps', 'mobile', 'dist');
 
 /*
- * 관리자 출처. 기본값은 운영 주소이고, 스테이징처럼 다른 곳에 올릴 때만
- * 환경변수로 덮는다. 비밀이 아니다 — 브라우저 주소창에 그대로 보이는 값이다.
+ * 관리자 운영 출처는 KakaoCloud 443의 /admin으로 고정한다.
+ * ADMIN_ORIGIN 환경변수로 덮지 않는다. 다시 별도 포트로 바꾸려면
+ * admin-origin-443 회귀 게이트 자체를 명시적으로 변경해야 한다.
  */
-const ADMIN_ORIGIN = (process.env.ADMIN_ORIGIN || 'https://210.109.82.212:8443').replace(/\/+$/, '');
+const ADMIN_ORIGIN = 'https://210.109.82.212';
 
 /*
  * 관리자 출처에 남길 것. 이 목록에 없는 최상위 항목은 지운다.

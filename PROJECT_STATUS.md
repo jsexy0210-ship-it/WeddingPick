@@ -4,8 +4,8 @@
 
 - 운영 API와 앱웹은 KakaoCloud VM `https://210.109.82.212`의 443을 함께 사용한다. `/health`와 `/v1/*`는 API 프록시, 그 밖은 staged app-web 정적 파일이다.
 - **앱웹 443 공개 #1006 성공**: 외부 GitHub runner에서 `/`, `/login`, `/health`, `/v1/auth/providers` 모두 정상 확인했다.
-- **관리자·웹사이트 443 임시 확인 경로 #1012 성공**: 관리자 `https://210.109.82.212/admin/login`, 웹사이트 `https://210.109.82.212/website.html`, 개인정보처리방침 `/privacy.html`, 이용약관 `/terms.html`을 외부 runner에서 확인했고 API health도 유지됐다.
-- 관리자 443 노출은 **확인용 임시 경로**다. 최종 운영은 기존 결정대로 사용자 앱과 다른 origin으로 분리한다. 현재 `:8443`·`:9443`은 VM 내부 Nginx는 정상이나 KakaoCloud Security Group에서 외부 timeout이다.
+- **관리자 443 운영 경로 확인**: 관리자 `https://210.109.82.212/admin/login`은 앱웹/API와 같은 443에서 `/admin` 경로로 제공하며 이 경로를 운영 정본으로 고정한다. 별도 관리자 포트는 다시 도입하지 않는다.
+- 웹사이트 확인 경로는 `https://210.109.82.212/website.html`, 개인정보처리방침 `/privacy.html`, 이용약관 `/terms.html`이며, 웹사이트 전용 `:9443` 전환은 관리자와 분리해 별도 검증한다.
 - 웹 카카오 로그인 코드는 `window.location.origin + /setup`을 Redirect URI로 사용한다. 현재 앱웹 origin에서는 `https://210.109.82.212/setup`이다. Kakao Developers의 REST API 키 Redirect URI에 이 값을 정확히 등록해야 실제 로그인 완료가 가능하다.
 - Kakao 공식 규칙상 Redirect URI는 요청값과 프로토콜·호스트·포트·경로·마지막 슬래시까지 일치해야 하며 미등록 값은 `KOE006`으로 거부된다.
 - Kakao VM IP 인증서는 Let's Encrypt이며 SAN에 `210.109.82.212`가 있고 `snap.certbot.renew.timer`가 활성 상태다.
@@ -69,7 +69,7 @@
 | Google Play | 앱 상태 ‘임시’. 앱 설정·비공개 테스트·프로덕션 액세스 절차 미완료 |
 | Cloudflare | 연결 계정 인증 가능, zone 목록 비어 있음. 현재 사용하지 않는 도메인 부재를 장애로 분류하지 않음 |
 
-`weddingpick.kr`은 **폐기했다**(2026-09-11 대표 지시). 2026-09-10의 「보유하되 미사용·폐기 대상 아님」을 뒤집은 결정이다. DNS 연결·커스텀 도메인 전환을 과제로 두지 않고, 다시 붙이자고 제안하지도 않는다. **앱웹과 API는 KakaoCloud `https://210.109.82.212`가 운영 기준**이고, Render 정적 서비스는 관리자·웹사이트 분리 전환이 끝날 때까지만 임시 공개본으로 남긴다.
+`weddingpick.kr`은 **폐기했다**(2026-09-11 대표 지시). 2026-09-10의 「보유하되 미사용·폐기 대상 아님」을 뒤집은 결정이다. DNS 연결·커스텀 도메인 전환을 과제로 두지 않고, 다시 붙이자고 제안하지도 않는다. **앱웹과 API는 KakaoCloud `https://210.109.82.212`가 운영 기준**이고, Render 정적 서비스는 웹사이트 전환이 끝날 때까지만 임시 잔존본으로 본다. 관리자는 KakaoCloud 443 `/admin`이 운영 정본이다.
 
 Render의 환경변수 선언은 [infra/render-env.yml](infra/render-env.yml), 반영 경로는 [render-env-sync.yml](.github/workflows/render-env-sync.yml)이다. 서비스 표시 이름과 URL 호스트는 다를 수 있으므로 오래된 이름만으로 리소스를 삭제하거나 대체하지 않는다. 남은 별도 DB·관리자 리소스의 사용 여부는 추가 확인 대상이다.
 

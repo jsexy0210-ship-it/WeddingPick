@@ -82,13 +82,13 @@ if [ "\${1:-}" = "-" ]; then
   awk '
     BEGIN { done=0 }
     /^CORS_ORIGINS=/ {
-      print "CORS_ORIGINS=https://210.109.82.212,https://210.109.82.212:8443,https://210.109.82.212:9443"
+      print "CORS_ORIGINS=https://210.109.82.212,https://210.109.82.212:9443"
       done=1
       next
     }
     { print }
     END {
-      if (!done) print "CORS_ORIGINS=https://210.109.82.212,https://210.109.82.212:8443,https://210.109.82.212:9443"
+      if (!done) print "CORS_ORIGINS=https://210.109.82.212,https://210.109.82.212:9443"
     }
   ' "$env_file" > "$tmp"
   mv "$tmp" "$env_file"
@@ -346,8 +346,10 @@ shellTest('successful CORS cutover keeps the new API and retains the old recover
     assert.equal(state(path.join(h.dockerState, 'worker_in_api')), 'false');
     assert.match(state(path.join(h.dockerState, 'old_name')), /^\/weddingpick-api-cors-previous-/);
     assert.equal(state(path.join(h.dockerState, 'removed_old')), '0');
-    assert.match(readFileSync(h.envFile, 'utf8'), /https:\/\/210\.109\.82\.212:8443/);
-    assert.match(readFileSync(h.envFile, 'utf8'), /https:\/\/210\.109\.82\.212:9443/);
+    const cors = readFileSync(h.envFile, 'utf8');
+    assert.match(cors, /https:\/\/210\.109\.82\.212(?:,|\n)/);
+    assert.doesNotMatch(cors, /https:\/\/210\.109\.82\.212:8443/);
+    assert.match(cors, /https:\/\/210\.109\.82\.212:9443/);
     assert.equal(existsSync(path.join(h.root, '.cors-cutover-backup')), true);
   } finally {
     h.cleanup();

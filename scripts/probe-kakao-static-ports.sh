@@ -60,17 +60,6 @@ trap rollback_on_error EXIT
 TMP="$(mktemp)"
 cat >"$TMP" <<EOF
 server {
-    listen 8443 ssl;
-    listen [::]:8443 ssl;
-    server_name _;
-    ssl_certificate $cert;
-    ssl_certificate_key $key;
-    location / {
-        add_header X-WeddingPick-Probe static-admin always;
-        return 204;
-    }
-}
-server {
     listen 9443 ssl;
     listen [::]:9443 ssl;
     server_name _;
@@ -90,4 +79,4 @@ sudo -n systemctl reload nginx
 rm -f "$TMP" || true
 TMP=""
 trap - EXIT
-echo 'Temporary 8443/9443 HTTPS probes are active.'
+echo 'Temporary 9443 website HTTPS probe is active.'
