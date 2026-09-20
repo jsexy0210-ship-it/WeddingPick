@@ -115,8 +115,6 @@ jobs:
         run: npm run build --workspace @weddingpick/web
 
       - name: Package Kakao static candidates
-        env:
-          ADMIN_ORIGIN: https://210.109.82.212
         run: node scripts/package-kakao-static.mjs
 
   api-tests:
