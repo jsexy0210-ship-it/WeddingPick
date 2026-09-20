@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 실제 배포 프리뷰(예: weddingpick-app-web.onrender.com)를 열어 경로마다
+ * 실제 배포 프리뷰(예: 210.109.82.212)를 열어 경로마다
  * 콘솔 오류 · 실패한 네트워크 요청 · 첫 로드 시간을 찍는다. 코드는 건드리지
  * 않는다 — 읽기 전용 검수 도구다.
  *
@@ -10,7 +10,7 @@
  *
  * 사용:
  *   node scripts/audit/preview-probe.mjs
- *   node scripts/audit/preview-probe.mjs --base-url https://weddingpick-app-web.onrender.com \
+ *   node scripts/audit/preview-probe.mjs --base-url https://210.109.82.212 \
  *     --route / --route /login
  *
  * 이 컨테이너처럼 아웃바운드 HTTPS가 정책 프록시로 재종단되는 환경이면
@@ -61,7 +61,7 @@ function trustedSpkiHashes() {
 
 function parseArgs(argv) {
   const opts = {
-    baseUrl: 'https://weddingpick-app-web.onrender.com',
+    baseUrl: 'https://210.109.82.212',
     routes: [],
     out: join('/tmp', 'weddingpick-preview-probe'),
     viewport: { width: 430, height: 932 },
