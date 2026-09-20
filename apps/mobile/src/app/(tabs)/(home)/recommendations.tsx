@@ -1,13 +1,10 @@
 import type { CategoryRecommendation, VendorCandidate, VendorSummary } from '@weddingpick/api-contract';
 import { nextStepsCountLine, type VendorCategory } from '@weddingpick/domain';
-import { router, useFocusEffect } from 'expo-router';
+import { Redirect, router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getCategoryRecommendations } from '@/api/client';
-import { useDepthBack } from '@/features/navigation/depth-back';
-import { PickSectionTabs } from '@/features/pick/pick-section-tabs';
 import { recommendationsAreComplete } from '@/features/home/canon-state';
 import strings from '../../../../../../spec/strings.ko.json';
 import {
@@ -15,7 +12,7 @@ import {
   EmptyView,
   ErrorView,
   Layout,
-  MaxContentWidth,
+  LetterSpacing,
   Radius,
   SeedIcon,
   SkeletonView,
@@ -46,8 +43,13 @@ type State = {
   remainingCategories: readonly VendorCategory[];
 };
 
-export default function RecommendationsScreen() {
-  const back = useDepthBack();
+/** 예전 저장 링크도 Pick 1Depth의 추천 보기로 모은다. */
+export default function RecommendationsRoute() {
+  return <Redirect href={{ pathname: '/pick', params: { section: 'recommendations' } }} />;
+}
+
+/** Pick 루트 안에서 탭·하단 네비게이션을 공유하는 추천 본문. */
+export function RecommendationsContent() {
   const version = useRef(0);
   const [state, setState] = useState<State | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -98,59 +100,56 @@ export default function RecommendationsScreen() {
     else load();
   }
 
-  if (error) return <ErrorView message={error} onBack={back} onRetry={load} />;
+  if (error) return <ErrorView message={error} onRetry={load} />;
   if (state === null) return <SkeletonView />;
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <PickSectionTabs active="recommendations" />
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <View style={styles.header}>
-            <ThemedText type="f26" style={styles.bold}>
-              {S['recommend.title']}
-            </ThemedText>
-            {state.groups.length === 0 ? null : (
-              <ThemedText type="f13" numeric themeColor="textAssistive" style={styles.sub}>
-                {nextStepsCountLine(state.remaining)}
-              </ThemedText>
-            )}
-          </View>
+    <>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <ThemedText type="f26" style={[styles.bold, styles.title]}>
+            {S['recommend.title']}
+          </ThemedText>
+        </View>
+        {state.groups.length === 0 ? null : (
+          <ThemedText type="f13" numeric themeColor="textAssistive" style={styles.sub}>
+            {nextStepsCountLine(state.remaining)}
+          </ThemedText>
+        )}
 
-          {state.groups.length === 0 ? (
-            recommendationsAreComplete(state) ? (
-              <RecommendationsDone onOpenNote={() => router.push('/wedding')} />
-            ) : (
-              <EmptyView
-                title={S['recommend.empty']}
-                actionLabel={S['recommend.more']}
-                onAction={() => router.push('/search')}
-              />
-            )
+        {state.groups.length === 0 ? (
+          recommendationsAreComplete(state) ? (
+            <RecommendationsDone onOpenNote={() => router.push('/wedding')} />
           ) : (
-            <PickRecommend
-              groups={state.groups}
-              open={open}
-              onToggle={toggle}
-              /*
-               * 「다음 준비」 요약은 홈에만 둔다 — 여기가 그 더보기가 오는 곳이라, 같은 줄을
-               * 다시 두면 자기 자신으로 가는 단추가 된다.
-               */
-              remaining={state.remaining}
-              remainingCategories={[]}
-              isPicked={(vendorId) => candidates.candidateFor(vendorId) !== null}
-              onPressVendor={(vendorId) => router.push(`/search/${vendorId}`)}
-              onPressPick={(vendor) => void onPressPick(vendor)}
-              onPressCompare={(category) => router.push(`/pick/${category}`)}
-              /* 홈의 「더보기」와 이름을 구분한다(§13) — 이쪽은 검색으로 간다. */
-              onPressSearchMore={(category) => router.push(`/search?category=${category}`)}
-              onPressMore={() => undefined}
-              /* 화면 제목이 이미 「웨딩픽 추천」이다 — 섹션 제목을 한 번 더 두지 않는다. */
-              heading={false}
+            <EmptyView
+              title={S['recommend.empty']}
+              actionLabel={S['recommend.more']}
+              onAction={() => router.push('/search')}
             />
-          )}
-        </ScrollView>
-      </SafeAreaView>
+          )
+        ) : (
+          <PickRecommend
+            groups={state.groups}
+            open={open}
+            onToggle={toggle}
+            /*
+             * 「다음 준비」 요약은 홈에만 둔다 — 여기가 그 더보기가 오는 곳이라, 같은 줄을
+             * 다시 두면 자기 자신으로 가는 단추가 된다.
+             */
+            remaining={state.remaining}
+            remainingCategories={[]}
+            isPicked={(vendorId) => candidates.candidateFor(vendorId) !== null}
+            onPressVendor={(vendorId) => router.push(`/search/${vendorId}`)}
+            onPressPick={(vendor) => void onPressPick(vendor)}
+            onPressCompare={(category) => router.push(`/pick/${category}`)}
+            /* 홈의 「더보기」와 이름을 구분한다(§13) — 이쪽은 검색으로 간다. */
+            onPressSearchMore={(category) => router.push(`/search?category=${category}`)}
+            onPressMore={() => undefined}
+            /* 화면 제목이 이미 「웨딩픽 추천」이다 — 섹션 제목을 한 번 더 두지 않는다. */
+            heading={false}
+          />
+        )}
+      </ScrollView>
 
       <PickDoneSheet visible={pickDoneOpen} onDismiss={() => setPickDoneOpen(false)} />
       <UnpickSheet
@@ -161,7 +160,7 @@ export default function RecommendationsScreen() {
         onDismiss={() => setUnpickTarget(null)}
       />
       <Toast message={toast} onHidden={() => setToast(null)} />
-    </ThemedView>
+    </>
   );
 }
 
@@ -195,12 +194,16 @@ function RecommendationsDone({ onOpenNote }: { onOpenNote: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
-  safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
+  scroll: { flex: 1 },
   content: { paddingBottom: Spacing.five },
-  header: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionHeadGap },
+  header: {
+    height: Layout.navBar,
+    paddingHorizontal: Layout.gutter,
+    justifyContent: 'center',
+  },
   bold: { fontWeight: 700 },
-  sub: { marginTop: Spacing.half },
+  title: { letterSpacing: LetterSpacing.n065 },
+  sub: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionHeadGap },
   doneSection: { paddingHorizontal: Layout.gutter, paddingTop: Spacing.two },
   doneCard: {
     borderRadius: Radius.medium,

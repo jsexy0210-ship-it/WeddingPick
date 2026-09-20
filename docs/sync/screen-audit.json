@@ -94,5 +94,22 @@
       "업체 후기 API 응답이 현재 앱 계약보다 오래되어 후기 화면이 응답 형식 오류를 표시한다. 이 UI 작업에서 서버 계약은 변경하지 않았다."
     ],
     "note": "이 기록은 이번 탐색·Back·문구 범위에 한정한다. 전 제품 화면의 디자인·기능 완료를 뜻하지 않는다."
+  },
+  "rootDepthAndBudget20260920": {
+    "dateKst": "2026-09-20",
+    "baselineCommit": "742883bcef90944c7ed91bd3dcb1b57eb6b6b7c5",
+    "routes": ["/", "/search", "/pick", "/wedding", "/my", "/recommendations"],
+    "screenIds": ["WP-HOME-001", "WP-SRCH-001", "WP-PICK-001", "WP-OUR-001", "WP-MY-001"],
+    "scope": "Root 1Depth 제목 헤더 통일, Pick 세 보기 흡수, 웨딩노트 총예산 수정",
+    "fixed": [
+      "홈·검색·Pick·웨딩노트·MY 제목행을 높이 56, 좌우 24, 26/700, Back 없음으로 통일했다.",
+      "나의 Pick·웨딩픽 추천·비교함을 /pick의 section으로 전환해 세 보기에서 Root 하단 내비게이션을 유지한다. 기존 /recommendations는 Pick 추천 보기로 연결한다.",
+      "웨딩노트 예산현황에서 현재 총예산을 만원 단위로 수정하고 저장 즉시 남은 금액과 사용률을 다시 계산한다. 로딩·실패·재시도와 저장 중 상태를 구분한다."
+    ],
+    "verification": "Mobile Jest 61스위트 531건, typecheck, Expo lint 오류 0, 웹 정적 export 259라우트 통과. 390×844 실제 수정본 브라우저 관찰과 네이티브 실기기 검수는 병합·배포 전 미완료다.",
+    "limits": [
+      "총예산 저장은 운영 사용자 값을 바꾸지 않기 위해 운영 DB에서 실행하지 않았다.",
+      "이번 기록은 지정한 Root 헤더·Pick 구조·예산 수정 범위에 한정하며 전 화면 픽셀 검수 완료를 뜻하지 않는다."
+    ]
   }
 }

@@ -39,7 +39,6 @@ import { confirmAlert } from '@/components/confirm-alert';
 import { DialogToast } from '@/components/confirm-alert-toast';
 import { useDepthBack } from '@/features/navigation/depth-back';
 import { PICK_COMPARE_MAX, PICK_COMPARE_MIN } from '@/features/pick/canonical-rules';
-import { PickSectionTabs } from '@/features/pick/pick-section-tabs';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 
 /**
@@ -257,7 +256,6 @@ export default function CategoryPickScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <PickSectionTabs active={category === 'wedding_info_company' ? 'compare' : 'pick'} />
         <DepthHeader
           title={`${categoryLabel} ${TERMS.pick}`}
           right={
