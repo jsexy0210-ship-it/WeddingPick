@@ -14,6 +14,9 @@ jobs:
   migrate:
     environment: production
     runs-on: ubuntu-latest
+    concurrency:
+      group: weddingpick-kakao-vm-write
+      cancel-in-progress: false
 
     steps:
       - uses: actions/checkout@v5

@@ -3,7 +3,7 @@
 # 이 워크플로 성공을 정적 사이트 전환 완료로 해석하지 않는다.
 # 관리자 운영 경로는 app-web과 같은 443의 /admin으로 고정한다.
 # [cutover-admin-web]은 현재 경로 검증만 하며 Nginx를 변경하지 않는다.
-# 실제 app/admin 정적 release 전환은 [cutover-app-web] 하나가 함께 수행한다.
+# 실제 app/admin 정적 release 전환은 전체 검증과 staging 성공 뒤 자동 수행한다.
 name: CI / Deploy
 
 on:
@@ -14,51 +14,6 @@ on:
 # 실행 전체를 취소하지 않는다. CI job만 최신 main을 남기고 오래된 검증은 취소한다.
 # 이미 시작된 운영 배포는 reusable workflow 자체의 concurrency가 끝까지 보호한다.
 jobs:
-  current-backlog-production:
-    name: Current backlog production gate
-    if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-    outputs:
-      auto: ${{ steps.gate.outputs.auto }}
-      pr_number: ${{ steps.gate.outputs.pr_number }}
-      environment_name: ${{ steps.gate.outputs.environment_name }}
-    steps:
-      - name: Allow only the backlog that was open on 2026-09-19
-        id: gate
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPOSITORY: ${{ github.repository }}
-          ALLOWED_PRS: '329 334 336 340 342 345 352 359 370 373 377 388 402 406 410 412 413 414 415 417 418 419 431 437 438'
-        run: |
-          set -euo pipefail
-          auto=false
-          pr_number=''
-          environment_name=production
-
-          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
-            associated_prs="$(gh api "repos/$REPOSITORY/commits/$GITHUB_SHA/pulls" --jq '.[] | select(.base.ref == "main" and .merged_at != null) | .number' 2>/dev/null || true)"
-            for pr in $associated_prs; do
-              case " $ALLOWED_PRS " in
-                *" $pr "*)
-                  auto=true
-                  pr_number="$pr"
-                  environment_name=production-current-backlog-auto
-                  break
-                  ;;
-              esac
-            done
-          fi
-
-          echo "auto=$auto" >> "$GITHUB_OUTPUT"
-          echo "pr_number=$pr_number" >> "$GITHUB_OUTPUT"
-          echo "environment_name=$environment_name" >> "$GITHUB_OUTPUT"
-          echo "Current-backlog auto production: $auto"
-          echo "Associated allowed PR: ${pr_number:-none}"
-
   ci:
     name: CI
     if: ${{ !contains(github.event.head_commit.message || '', '[probe-only]') }}
@@ -146,7 +101,7 @@ jobs:
           node --test scripts/verification/docker-runtime-scope.test.mjs
           node --test scripts/verification/kakao-retention-cleanup-policy.test.mjs
           node --test scripts/verification/ci-workspace-parallelism.test.mjs
-          node --test scripts/verification/current-backlog-db-migration.test.mjs
+          node --test scripts/verification/main-deploy-policy.test.mjs
 
       - name: Reject retired deployment paths
         run: node scripts/check-render-retired.mjs
@@ -308,39 +263,6 @@ jobs:
       - name: Run DB tests
         run: npm run test --workspace @weddingpick/db
 
-  migrate-current-backlog-db:
-    name: Migrate DB for current backlog
-    needs: [ci, api-tests, non-db-tests, db-tests, current-backlog-production]
-    if: ${{ needs.current-backlog-production.outputs.auto == 'true' && (needs.current-backlog-production.outputs.pr_number == '417' || needs.current-backlog-production.outputs.pr_number == '431') }}
-    environment: production-current-backlog-auto
-    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
-    timeout-minutes: 15
-    concurrency:
-      group: weddingpick-kakao-api-cutover
-      cancel-in-progress: false
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - name: Run pending migrations against the live API database
-        shell: bash
-        run: |
-          set -euo pipefail
-          DATABASE_URL="$(sudo -n docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' weddingpick-api | sed -n 's/^DATABASE_URL=//p' | tail -n1)"
-          test -n "$DATABASE_URL"
-          export DATABASE_URL
-          npm run migrate --workspace @weddingpick/db
-          unset DATABASE_URL
-          echo 'Production DB migration completed without printing connection values.'
-
   audit-kakao-data:
     name: Audit Kakao Data State
     if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[audit-kakao-data]') }}
@@ -411,8 +333,8 @@ jobs:
 
   cutover-kakao-app-web:
     name: Cutover Kakao App Web
-    needs: [ci, api-tests, non-db-tests, db-tests, repair-kakao-runner, stage-kakao-static]
-    if: ${{ always() && github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[cutover-app-web]') && needs.ci.result == 'success' && needs.api-tests.result == 'success' && needs.non-db-tests.result == 'success' && needs.db-tests.result == 'success' && (needs.repair-kakao-runner.result == 'success' || needs.repair-kakao-runner.result == 'skipped') && (needs.ci.outputs.stage_static != 'true' || (needs.stage-kakao-static.result == 'success' && needs.stage-kakao-static.outputs.candidate_sha == github.sha)) }}
+    needs: [ci, api-tests, non-db-tests, db-tests, repair-kakao-runner, stage-kakao-static, deploy-kakao]
+    if: ${{ always() && github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && needs.ci.result == 'success' && needs.api-tests.result == 'success' && needs.non-db-tests.result == 'success' && needs.db-tests.result == 'success' && (needs.repair-kakao-runner.result == 'success' || needs.repair-kakao-runner.result == 'skipped') && needs.ci.outputs.stage_static == 'true' && needs.stage-kakao-static.result == 'success' && needs.stage-kakao-static.outputs.candidate_sha == github.sha && (needs.deploy-kakao.result == 'success' || needs.deploy-kakao.result == 'skipped') }}
     permissions:
       contents: read
     uses: ./.github/workflows/cutover-kakao-app-web.yml
@@ -430,16 +352,16 @@ jobs:
 
   repair-kakao-runner:
     name: Repair Kakao Runner
-    needs: [ci, api-tests, non-db-tests, db-tests, current-backlog-production]
-    if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || needs.current-backlog-production.outputs.auto == 'true') && !contains(github.event.head_commit.message || '', '[skip-api-deploy]') }}
+    needs: [ci, api-tests, non-db-tests, db-tests]
+    if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && needs.ci.result == 'success' && needs.api-tests.result == 'success' && needs.non-db-tests.result == 'success' && needs.db-tests.result == 'success' && !contains(github.event.head_commit.message || '', '[skip-api-deploy]') }}
     permissions:
       contents: read
     uses: ./.github/workflows/repair-kakao-runner.yml
 
   api-deploy-needed:
     name: Detect Kakao API catch-up
-    needs: [ci, api-tests, non-db-tests, db-tests, repair-kakao-runner, migrate-current-backlog-db, current-backlog-production]
-    if: ${{ always() && github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || needs.current-backlog-production.outputs.auto == 'true') && ((needs.current-backlog-production.outputs.pr_number != '417' && needs.current-backlog-production.outputs.pr_number != '431') || needs.migrate-current-backlog-db.result == 'success') && (needs.repair-kakao-runner.result == 'success' || needs.repair-kakao-runner.result == 'skipped') && !contains(github.event.head_commit.message || '', '[skip-api-deploy]') }}
+    needs: [ci, api-tests, non-db-tests, db-tests, repair-kakao-runner]
+    if: ${{ always() && github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && needs.ci.result == 'success' && needs.api-tests.result == 'success' && needs.non-db-tests.result == 'success' && needs.db-tests.result == 'success' && (needs.repair-kakao-runner.result == 'success' || needs.repair-kakao-runner.result == 'skipped') && !contains(github.event.head_commit.message || '', '[skip-api-deploy]') }}
     runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
     timeout-minutes: 5
     outputs:
@@ -460,7 +382,7 @@ jobs:
           if [[ "$live_revision" =~ ^[0-9a-f]{40}$ ]] && git cat-file -e "$live_revision^{commit}" 2>/dev/null; then
             if git merge-base --is-ancestor "$live_revision" "$GITHUB_SHA"; then
               paths="$(git diff --name-only "$live_revision" "$GITHUB_SHA")"
-              if ! grep -Eq '^(apps/api/|packages/(api-contract|db|domain)/|package(-lock)?\.json$|Dockerfile$|\.dockerignore$|scripts/update-kakao-worker\.sh$|\.github/workflows/deploy-kakao-api\.yml$)' <<< "$paths"; then
+              if ! grep -Eq '^(apps/api/|packages/(api-contract|db|domain)/|spec/(glossary|font-subsets|strings\.ko)\.json$|package(-lock)?\.json$|Dockerfile$|\.dockerignore$|scripts/update-kakao-worker\.sh$|\.github/workflows/(main|repair-kakao-runner|deploy-kakao-api)\.yml$)' <<< "$paths"; then
                 changed=false
               fi
             fi
@@ -471,21 +393,10 @@ jobs:
 
   deploy-kakao:
     name: KakaoCloud API
-    needs: [ci, api-tests, non-db-tests, db-tests, repair-kakao-runner, api-deploy-needed, current-backlog-production]
-    if: ${{ always() && needs.ci.result == 'success' && needs.api-tests.result == 'success' && needs.non-db-tests.result == 'success' && needs.db-tests.result == 'success' && (needs.repair-kakao-runner.result == 'success' || needs.repair-kakao-runner.result == 'skipped') && needs.api-deploy-needed.result == 'success' && needs.api-deploy-needed.outputs.changed == 'true' && needs.current-backlog-production.result == 'success' }}
+    needs: [ci, api-tests, non-db-tests, db-tests, repair-kakao-runner, api-deploy-needed]
+    if: ${{ always() && needs.ci.result == 'success' && needs.api-tests.result == 'success' && needs.non-db-tests.result == 'success' && needs.db-tests.result == 'success' && (needs.repair-kakao-runner.result == 'success' || needs.repair-kakao-runner.result == 'skipped') && needs.api-deploy-needed.result == 'success' && needs.api-deploy-needed.outputs.changed == 'true' }}
     permissions:
       contents: read
     uses: ./.github/workflows/deploy-kakao-api.yml
     with:
-      environment_name: ${{ needs.current-backlog-production.outputs.environment_name }}
-
-  auto-cutover-current-backlog-app-web:
-    name: Production App Web (current backlog)
-    needs: [current-backlog-production, migrate-current-backlog-db, stage-kakao-static, deploy-kakao]
-    if: ${{ always() && needs.current-backlog-production.outputs.auto == 'true' && ((needs.current-backlog-production.outputs.pr_number != '417' && needs.current-backlog-production.outputs.pr_number != '431') || needs.migrate-current-backlog-db.result == 'success') && needs.stage-kakao-static.result == 'success' && (needs.deploy-kakao.result == 'success' || needs.deploy-kakao.result == 'skipped') }}
-    permissions:
-      contents: read
-    uses: ./.github/workflows/cutover-kakao-app-web.yml
-    with:
-      release_sha: ${{ github.sha }}
-      environment_name: ${{ needs.current-backlog-production.outputs.environment_name }}
+      environment_name: production

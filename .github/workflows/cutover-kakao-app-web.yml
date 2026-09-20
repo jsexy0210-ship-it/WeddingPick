@@ -73,6 +73,7 @@ jobs:
           curl --fail --silent --show-error --connect-timeout 5 --max-time 15 \
             https://210.109.82.212/admin/login > /tmp/admin.html
           grep -qi '<html' /tmp/admin.html
+          grep -Fq '웨딩픽 관리자' /tmp/admin.html
 
       - name: API routes remain proxied
         run: |

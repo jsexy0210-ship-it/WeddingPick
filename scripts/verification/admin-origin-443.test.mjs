@@ -83,7 +83,7 @@ test('legacy admin cutover marker is read-only and cannot mutate Nginx', () => {
 });
 
 test('all Kakao write entry points that can affect admin wait for the 443 CI lock', () => {
-  const main = readFileSync('.github/workflows/main.yml', 'utf8');
+  const main = readFileSync('.github/workflows/main.yml', 'utf8').replaceAll('\r\n', '\n');
   for (const name of [
     'probe-kakao-static-ports',
     'enable-kakao-static-cors',
@@ -96,7 +96,7 @@ test('all Kakao write entry points that can affect admin wait for the 443 CI loc
   }
 
   const cutover = jobBlock(main, 'cutover-kakao-app-web');
-  assert.match(cutover, /needs: \[ci, api-tests, non-db-tests, db-tests, repair-kakao-runner, stage-kakao-static\]/);
+  assert.match(cutover, /needs: \[ci, api-tests, non-db-tests, db-tests, repair-kakao-runner, stage-kakao-static, deploy-kakao\]/);
   assert.match(cutover, /needs\.ci\.result == 'success'/);
   assert.match(cutover, /needs\.stage-kakao-static\.outputs\.candidate_sha == github\.sha/);
 });
