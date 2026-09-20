@@ -7,6 +7,7 @@ import {
 } from '@weddingpick/api-contract';
 import {
   type BudgetBandKey,
+  budgetBand,
   DISCLOSURE_THRESHOLDS,
   formatCount,
   priceLine,
@@ -94,7 +95,7 @@ import { DelayedLoader } from '@/features/loading/delayed-loader';
  * 웨딩일정 · 준비 현황이 한꺼번에 흔들린다(2026-09-11 MASTER 판단 — 그대로 둔다).
  */
 /* 헤더 · 칩 문구 — spec/strings.ko.json `search`. 피그마 `Search.tsx`(2026-09-14 정본)에서 왔다. */
-const TITLE = '검색';
+const TITLE = '업체 탐색';
 const PLACEHOLDER = '업체 이름, 지역, 카테고리 검색';
 const CLEAR_LABEL = '검색어 지우기';
 
@@ -507,6 +508,7 @@ export default function SearchScreen() {
 
   /** 필터 칩에 적는 수. 시트가 거는 조건만 센다 — 정렬은 따로 고르는 자리다. */
   const activeFilterCount = [
+    filters.category,
     filters.region,
     filters.budget,
     filters.onlyVerified ? 'verified' : null,
@@ -838,21 +840,43 @@ export default function SearchScreen() {
           업종 칩 일곱(전체 · 웨딩홀 · …)이 여기 서 있었다(루트 시안 16a). 피그마가
           그 자리를 드롭다운 칩으로 바꿨고 업종은 필터 시트의 첫 그룹으로 갔다.
         */}
-        {/* 결과 수와 정렬을 한 줄에 둔다. 조건 필터 칩은 이 결과 화면에서 노출하지 않는다. */}
-        <View style={[styles.countRow, { backgroundColor: theme.background }]}>
-          <View style={styles.countText}>
-            <ThemedText type="f12" themeColor="textAssistive" numeric style={styles.medium}>
-              {formatCount(total)}개 업체
-            </ThemedText>
-            <DelayedLoader active={refreshing} size={20} />
-          </View>
-          <View style={styles.sortSlot}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ backgroundColor: theme.background }}
+          contentContainerStyle={styles.filterRow}>
+          <DropdownChip
+            label={filters.category ? VENDOR_CATEGORY_LABEL[filters.category] : '카테고리'}
+            active={filters.category !== null}
+            onPress={() => setFilterOpen(true)}
+          />
+          <DropdownChip
+            label={filters.region ?? '지역'}
+            active={filters.region !== null}
+            onPress={() => setFilterOpen(true)}
+          />
+          <DropdownChip
+            label={budgetBand(filters.budget)?.label ?? '가격'}
+            active={filters.budget !== null}
+            onPress={() => setFilterOpen(true)}
+          />
+          <View style={[styles.chipDivider, { backgroundColor: theme.border }]} />
+          <View style={styles.sortChip}>
             <DropdownChip
               label={SORT_LABEL[filters.sort]}
               active={false}
               accessibilityLabel={`정렬: ${SORT_LABEL[filters.sort]}`}
               onPress={() => setSortOpen(true)}
             />
+          </View>
+        </ScrollView>
+
+        <View style={[styles.countRow, { backgroundColor: theme.background }]}>
+          <View style={styles.countText}>
+            <ThemedText type="f12" themeColor="textAssistive" numeric style={styles.medium}>
+              {formatCount(total)}개 업체
+            </ThemedText>
+            <DelayedLoader active={refreshing} size={20} />
           </View>
         </View>
 
@@ -913,17 +937,21 @@ export default function SearchScreen() {
 
         {/* ── 헤더 ── */}
         {/*
-          검색은 Root 5탭의 1Depth다. 제목 줄은 다른 Root와 같은 56 · 좌우 24 · 26/700이고
-          뒤로가기를 두지 않는다. 검색창(48 · radius 16 · 회색 면)과 필터 단추(48 정사각)는
-          제목 줄 아래에 이어진다.
+          검색은 Root 5탭의 1Depth라 뒤로가기를 두지 않는다. 나머지는 정본대로 위 12 ·
+          좌우 20 · 아래 16이며 제목 20/700과 결과 수 11/17, 검색창 48을 한 덩어리로 둔다.
 
-          제목은 피그마의 «업체 탐색»이 아니라 «업체 검색»이다 — «탐색»은 금지어(CLAUDE.md 용어).
+          제목은 2026-09-20 전달 정본의 «업체 탐색»이다. 검색 Root에는 Back을 두지 않는다.
         */}
         <ThemedView style={[styles.header, { borderBottomColor: theme.border }]}>
           <View style={styles.headerTitleRow}>
-            <ThemedText type="f26" style={[styles.bold, styles.title]}>
-              {TITLE}
-            </ThemedText>
+            <View style={styles.headerTitleText}>
+              <ThemedText type="f20" style={[styles.bold, styles.title]}>
+                {TITLE}
+              </ThemedText>
+              <ThemedText type="f11" themeColor="textAssistive" numeric>
+                {formatCount(total)}곳
+              </ThemedText>
+            </View>
           </View>
           <View style={styles.headerSearchRow}>
             {renderSearchBox()}
@@ -1204,24 +1232,28 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
   },
 
-  // ── Root 1Depth 제목 56 + 검색 도구 48 ──
+  // ── 검색 Root 헤더 — Back만 제외하고 02-search 정본 수치 유지 ──
   header: {
+    paddingTop: Layout.inlineGap,
+    paddingBottom: Spacing.three,
+    paddingHorizontal: Layout.pageX,
     borderBottomWidth: Border.hairline,
   },
-  /* 홈 · Pick · 웨딩노트 · MY와 같은 제목 규칙 — 56 · 좌우 24 · 26/700. */
   headerTitleRow: {
-    height: Layout.navBar,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Layout.gutter,
+    marginBottom: Layout.inlineGap,
+  },
+  headerTitleText: {
+    flex: 1,
+    minWidth: 0,
+    gap: Spacing.half,
   },
   /* 검색창과 필터 단추 `flex gap-2`. */
   headerSearchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
-    paddingHorizontal: Layout.gutter,
-    paddingBottom: Spacing.three,
   },
   /* 필터 단추 `h-12 w-12 rounded-2xl bg-secondary` — 48 정사각 · radius 16. */
   headerFilterBtn: {
@@ -1422,8 +1454,8 @@ const styles = StyleSheet.create({
   // ── 결과 — 피그마 `Search.tsx`(2026-09-14 정본) ──
   /* 칩 줄 `flex items-center gap-2 px-5 pt-3 pb-2` — 위 12 · 아래 8 · 칩 사이 8. 넘치면 줄을 바꾼다. */
   filterRow: {
+    minWidth: '100%',
     flexDirection: 'row',
-    flexWrap: 'wrap',
     alignItems: 'center',
     gap: Spacing.two,
     paddingHorizontal: Layout.pageX,
@@ -1433,6 +1465,11 @@ const styles = StyleSheet.create({
   /* 정렬 칩 `ml-auto` — 오른쪽 끝에 붙는다. */
   sortChip: {
     marginLeft: 'auto',
+  },
+  chipDivider: {
+    width: Border.hairline,
+    height: Layout.iconInline,
+    marginHorizontal: Spacing.one,
   },
   /* 칩 `h-9 px-3.5 rounded-full border gap-1` — 36 · 좌우 14 · 라벨↔꺾쇠 4. */
   dropChip: {
@@ -1454,13 +1491,11 @@ const styles = StyleSheet.create({
     minHeight: Layout.chip,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     paddingHorizontal: Layout.pageX,
     marginBottom: Layout.inlineGap,
-    position: 'relative',
   },
-  countText: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.one },
-  sortSlot: { position: 'absolute', right: Layout.pageX },
+  countText: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   /* 목록 `px-5 space-y-3` + 바깥 `pb-4` — 카드 사이 12 · 아래 16. */
   resultList: {
     paddingHorizontal: Layout.pageX,

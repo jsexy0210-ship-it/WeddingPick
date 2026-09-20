@@ -20,7 +20,7 @@ import { common } from '../../../../../spec/strings.ko.json';
  * 처음 들어온 사람에게 다섯 번 묻던 것을 세 번으로 줄인 것뿐이다.
  *
  * **3/3은 스타일이다.** 최신 06 정본도 4개 텍스트 버튼(도시적인 · 자연스러운 ·
- * 로맨틱한 · 화려한)으로 같은 계약을 쓴다. 최소 1개, 네 가지 모두 선택할 수 있다.
+ * 로맨틱한 · 화려한)으로 같은 계약을 쓴다. 최소 1개, 최대 2개다.
  *
  * 예식일은 3열 날짜 휠, 지역은 시/도 · 시/군/구 2열 휠 바텀시트다. 진행 화면에는
  * 선택한 값을 56px 필드로 보여준다.
@@ -179,7 +179,7 @@ export function summarizeStyles(styles: readonly WeddingStyle[]): string {
 
 /**
  * 답 줄과 완료 요약에 적는 값. 답하지 않았으면 null. 미정은 «미정»이고, 스타일은
- * 최대 네 가지라 고른 값을 순서대로 모두 적는다.
+ * 최대 두 가지라 고른 값을 순서대로 모두 적는다.
  */
 export function answerSummary(step: QuestionStep, answers: Answers): string | null {
   switch (step) {

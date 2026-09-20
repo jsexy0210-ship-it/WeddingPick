@@ -25,7 +25,7 @@ const QUALITY_MIN_PIXELS = 480 * 640;
 export default function CameraScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const { purpose, from } = useLocalSearchParams<{ purpose?: string; from?: string }>();
-  /** Pick 인증의 카메라 입력은 한 장이다. 앨범에서는 최대 3장을 고를 수 있다. */
+  /** Pick 인증은 카메라와 앨범 모두 한 장만 받는다. */
   const forPayment = purpose === 'payment';
   const { pages, addPages } = useCaptureDraft();
   const cameraRef = useRef<CameraView>(null);

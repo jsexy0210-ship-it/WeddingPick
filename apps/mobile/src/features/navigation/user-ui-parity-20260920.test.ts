@@ -38,16 +38,16 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
       expect(mobile(path)).not.toContain('<BackButton');
     }
   });
-  it('온보딩 지역 전체값을 만들지 않고 스타일 4종을 허용한다', () => {
+  it('온보딩 지역 전체값을 만들지 않고 스타일은 최대 2개로 제한한다', () => {
     const region = mobile('features/onboarding/region-picker-sheet.tsx');
     const style = root('packages/domain/src/style.ts');
     const setup = mobile('app/setup.tsx');
     const taste = mobile('app/(tabs)/my/taste.tsx');
     expect(region).not.toContain("const WHOLE = '전체'");
-    expect(style).toContain('STYLE_PICK_MAX = WEDDING_STYLES.length');
-    expect(style).not.toContain('STYLE_PICK_LIMIT_TOAST');
-    expect(setup).not.toContain('STYLE_PICK_LIMIT_TOAST');
-    expect(taste).not.toContain('STYLE_PICK_LIMIT_TOAST');
+    expect(style).toContain('STYLE_PICK_MAX = 2');
+    expect(style).toContain('STYLE_PICK_LIMIT_TOAST');
+    expect(setup).toContain('STYLE_PICK_LIMIT_TOAST');
+    expect(taste).toContain('STYLE_PICK_LIMIT_TOAST');
   });
   it('setup 완료 뒤 Home 두 번째 로더를 생략한다', () => {
     expect(mobile('app/setup.tsx')).toContain('markNextHomeLoadingCoveredBySetup()');
@@ -59,9 +59,11 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
   });
   it('검색 제목/결과 머리 계약을 유지한다', () => {
     const s = mobile('app/(tabs)/search/index.tsx');
-    expect(s).toContain("const TITLE = '검색'");
+    expect(s).toContain("const TITLE = '업체 탐색'");
     expect(s).not.toContain("const SUBTITLE = '우리 조건에 맞는 선택만 모았어요'");
-    expect(s).toContain("sortSlot: { position: 'absolute', right: Layout.pageX }");
+    expect(s).toContain('styles.filterRow');
+    expect(s).toContain("budgetBand(filters.budget)?.label ?? '가격'");
+    expect(s).not.toContain('sortSlot:');
   });
   it('Pick 3보기는 같은 Root 안에서 전환하고 compare로 이어진다', () => {
     const s = mobile('features/pick/pick-section-tabs.tsx');

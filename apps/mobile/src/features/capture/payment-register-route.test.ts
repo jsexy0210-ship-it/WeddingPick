@@ -20,11 +20,11 @@ it('없어진 /capture 화면은 동의 관문을 거쳐 Pick 인증 등록으�
   expect(capture).not.toContain('<Screen>');
 });
 
-it('등록 화면은 내 제보내역과 최대 3장 선택을 한 흐름에 둔다', () => {
-  expect(register).toContain('const MAX_PAYMENT_PROOF_IMAGES = 3');
-  expect(register).toContain('pickFromLibrary(MAX_PAYMENT_PROOF_IMAGES)');
+it('등록 화면은 내 제보내역과 사진 한 장 선택을 한 흐름에 둔다', () => {
+  expect(register).toContain('pickFromLibrary(1)');
   expect(register).toContain('<MyReportSummary />');
-  expect(register).toContain('uploadPaymentProof(pictures)');
+  expect(register).toContain('uploadPaymentProof([picture])');
+  expect(register).not.toContain('MAX_PAYMENT_PROOF_IMAGES');
 });
 
 it('견적서 샘플과 분석 재시도는 없어진 제보 홈 대신 견적서 동의로 이어진다', () => {

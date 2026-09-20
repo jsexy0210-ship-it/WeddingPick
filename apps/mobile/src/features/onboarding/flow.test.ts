@@ -44,7 +44,6 @@ describe('히어로 문구', () => {
     });
     expect(styleCta(0)).toBe('0개 선택');
     expect(styleCta(2)).toBe('2개 선택');
-    expect(styleCta(4)).toBe('4개 선택');
   });
 
   it('높임 어미를 겹치지 않는다 — «하시나요» «좋으세요»를 쓰지 않는다', () => {

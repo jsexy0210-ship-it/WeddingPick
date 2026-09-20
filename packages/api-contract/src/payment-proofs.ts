@@ -14,7 +14,7 @@ export const paymentProofFieldSchema = z.enum(PAYMENT_PROOF_FIELDS);
 export const paymentProofReviewStateSchema = z.enum(PAYMENT_PROOF_REVIEW_STATES);
 
 /**
- * 결제인증 등록 — **한 건의 사진 1~3장.**
+ * 결제인증 등록 — **사진 한 장.**
  *
  * 디자인 핸드오프 v3.24가 제보를 «사진 찍기 또는 업로드»로 압축했다. 확인 화면
  * (WP-RPT-004)·업체 확인(WP-RPT-005)·분할 묶기(WP-RPT-006)·증빙 없는 가격 입력
@@ -31,7 +31,7 @@ export const paymentProofReviewStateSchema = z.enum(PAYMENT_PROOF_REVIEW_STATES)
  * 찍혀 있었는지는 서버가 읽어 종류만 남긴다.
  */
 export const registerPaymentProofRequestSchema = z.object({
-  /** 올린 원본 묶음. 이 id 하나가 1~3장을 묶는다. */
+  /** 올린 사진 한 장의 원본. */
   rawDocumentId: idSchema,
   /** 어느 업체인지 이미 알고 들어왔으면(업체 상세에서 시작한 경우). */
   vendorId: idSchema.optional(),
