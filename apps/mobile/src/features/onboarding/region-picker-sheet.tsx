@@ -10,7 +10,7 @@ import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 
 import { Wheel, WheelGroup } from './wheel';
 
-/** 고른 지역. `district`가 null이면 시/도 전체다. */
+/** 고른 지역. 시/군/구가 없는 지역만 `district: null`이다. */
 export type PickedRegion = { region: WeddingRegion; district: string | null };
 
 /**
@@ -71,16 +71,18 @@ function SheetBody({
 
   /* 고른 것이 없으면 첫 시/도에서 시작한다 — 짐작으로 지역을 정하지 않는다. */
   const [region, setRegion] = useState<WeddingRegion>(value?.region ?? WEDDING_REGIONS[0]);
-  const [district, setDistrict] = useState<string>(value?.district ?? WHOLE);
+  const [district, setDistrict] = useState<string | null>(value?.district ?? null);
 
   /*
-   * 시/군/구 목록. 맨 위는 언제나 «전체»다 — 시/도만 고르고 더 좁히지 않는 것이
-   * 답이 아닌 것은 아니다. 「그 외」는 구가 없어 «전체» 하나만 선다.
+   * «전체»는 선택지로 두지 않는다. 시/군/구가 있는 시/도는 반드시 구체 값을 고르고,
+   * 구 목록이 없는 «그 외»만 district=null을 유지한다.
    */
-  const districts = [WHOLE, ...(REGION_DISTRICTS[region] ?? [])];
-  /* 시/도를 굴리면 지난 구가 새 목록에 없을 수 있다 — 그때는 «전체»로 당긴다. */
-  const current = districts.includes(district) ? district : WHOLE;
-  const picked: PickedRegion = { region, district: current === WHOLE ? null : current };
+  const districts = REGION_DISTRICTS[region] ?? [];
+  const current =
+    district !== null && districts.includes(district)
+      ? district
+      : (districts[0] ?? null);
+  const picked: PickedRegion = { region, district: current };
 
   return (
     <SheetPanel style={styles.sheet}>
@@ -106,14 +108,16 @@ function SheetBody({
           value={region}
           onChange={setRegion}
         />
-        <Wheel
-          accessibilityLabel={S.district}
-          flex={FLEX_DISTRICT}
-          items={districts}
-          format={(item) => item}
-          value={current}
-          onChange={setDistrict}
-        />
+        {current !== null ? (
+          <Wheel
+            accessibilityLabel={S.district}
+            flex={FLEX_DISTRICT}
+            items={districts}
+            format={(item) => item}
+            value={current}
+            onChange={setDistrict}
+          />
+        ) : null}
       </WheelGroup>
 
       <View style={styles.cta}>
@@ -123,8 +127,6 @@ function SheetBody({
   );
 }
 
-/** 시/군/구를 더 좁히지 않았을 때 휠에 서는 말. 값으로는 `district: null`이다. */
-const WHOLE = '전체';
 
 const S = {
   title: '지역 선택',

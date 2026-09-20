@@ -5,16 +5,15 @@ describe('스타일 4종', () => {
     expect([...WEDDING_STYLES]).toEqual(['URBAN', 'NATURAL', 'ROMANTIC', 'GLAMOROUS']);
   });
 
-  it('재클릭은 해제, 3번째는 추가하지 않는다', () => {
+  it('재클릭은 해제하고 네 가지를 모두 고를 수 있다', () => {
     expect(toggleStyle([], 'URBAN').next).toEqual(['URBAN']);
     expect(toggleStyle(['URBAN'], 'URBAN').next).toEqual([]);
     const two = toggleStyle(['URBAN'], 'ROMANTIC');
-    expect(two.next).toEqual(['URBAN', 'ROMANTIC']);
-    expect(two.limited).toBe(false);
-    const third = toggleStyle(two.next, 'NATURAL');
-    expect(third.next).toEqual(['URBAN', 'ROMANTIC']);
-    expect(third.limited).toBe(true);
-    expect(STYLE_PICK_MAX).toBe(2);
+    const three = toggleStyle(two.next, 'NATURAL');
+    const four = toggleStyle(three.next, 'GLAMOROUS');
+    expect(four.next).toEqual(['URBAN', 'ROMANTIC', 'NATURAL', 'GLAMOROUS']);
+    expect(four.limited).toBe(false);
+    expect(STYLE_PICK_MAX).toBe(4);
   });
 
   it('교집합은 순서 가중치일 뿐 업체를 빼지 않는다', () => {

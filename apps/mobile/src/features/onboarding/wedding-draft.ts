@@ -62,7 +62,7 @@ export type WeddingDraft = {
   budgetBracket: WeddingBudgetBracket | null;
   /** 준비 현황(3/5). 빈 배열 = «아직 시작 전이에요». */
   preparedCategories?: VendorCategory[];
-  /** 스타일(5/5). 고른 순서 그대로 최소 1 · 최대 2. */
+  /** 스타일. 고른 순서 그대로 최소 1 · 최대 4. */
   styleTags?: WeddingStyle[];
 };
 
@@ -169,7 +169,7 @@ function readCategories(value: unknown): VendorCategory[] | undefined {
 
 /**
  * undefined = 칸이 없음(옛 초안 · 배열이 아님). 네 스타일 밖의 값은 버리고, 중복을 걷고,
- * 최대 2개(`STYLE_PICK_MAX`)까지만 — 옛 형식을 억지로 읽어 서버가 거절할 값을 만들지 않는다.
+ * 최대 4개(`STYLE_PICK_MAX`)까지만 — 옛 형식을 억지로 읽어 서버가 거절할 값을 만들지 않는다.
  */
 function readStyleTags(value: unknown): WeddingStyle[] | undefined {
   if (!Array.isArray(value)) return undefined;

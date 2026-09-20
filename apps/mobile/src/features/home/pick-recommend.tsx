@@ -38,6 +38,10 @@ type SharedRecommendationProps = {
   onPressMore: () => void;
 };
 
+type HomeRecommendationProps = Omit<SharedRecommendationProps, 'onPressCompare'> & {
+  onPressCompare: (vendorIds: readonly string[]) => void;
+};
+
 /**
  * 홈 전용 추천.
  * 홈 정본은 아코디언이 아니라 첫 미결정 업종의 업체 카드 최대 3장과 비교 CTA다.
@@ -49,7 +53,7 @@ export function HomeRecommendations({
   onPressPick,
   onPressCompare,
   onPressMore,
-}: SharedRecommendationProps) {
+}: HomeRecommendationProps) {
   const theme = useTheme();
   const group = groups[0] ?? null;
 
@@ -111,7 +115,7 @@ export function HomeRecommendations({
                 variant="primary"
                 size="xlarge"
                 label={`${Math.min(3, group.vendors.length)}곳 비교하기`}
-                onPress={() => onPressCompare(group.category)}
+                onPress={() => onPressCompare(group.vendors.slice(0, 3).map((vendor) => vendor.id))}
               />
             </View>
           ) : null}

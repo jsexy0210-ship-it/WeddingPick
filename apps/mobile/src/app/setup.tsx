@@ -29,7 +29,10 @@ import {
 } from '@weddingpick/ui';
 
 import { DelayedRecommendingView } from '@/features/loading/delayed-loader';
-import { takeFullScreenLoading } from '@/features/loading/first-run';
+import {
+  markNextHomeLoadingCoveredBySetup,
+  takeFullScreenLoading,
+} from '@/features/loading/first-run';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { DatePickerSheet } from '@/features/onboarding/date-picker-sheet';
 import {
@@ -341,6 +344,7 @@ export default function SetupScreen() {
        * 다시 띄우지 않도록 실행당 1회 예산도 여기서 소모한다.
        */
       void takeFullScreenLoading();
+      markNextHomeLoadingCoveredBySetup();
       const remainingLoadingMs = 3000 - (Date.now() - loadingStartedAt);
       if (remainingLoadingMs > 0) {
         await new Promise<void>((resolve) => setTimeout(resolve, remainingLoadingMs));
@@ -569,7 +573,7 @@ export default function SetupScreen() {
           </View>
         ) : null}
 
-        {/* 스타일 3/3 — 설명 한 줄이 붙은 4버튼, 최대 2개. 사진 타일은 쓰지 않는다. */}
+        {/* 스타일 3/3 — 설명 한 줄이 붙은 4버튼. 네 가지를 모두 고를 수 있다. 사진 타일은 쓰지 않는다. */}
         {step === 'style' ? (
           <View style={styles.styleOptions}>
             {WEDDING_STYLES.map((style) => (

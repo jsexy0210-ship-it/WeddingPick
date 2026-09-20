@@ -34,7 +34,10 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import { DelayedLoader, DelayedRecommendingView } from '@/features/loading/delayed-loader';
-import { takeFullScreenLoading } from '@/features/loading/first-run';
+import {
+  takeFullScreenLoading,
+  takeHomeLoadingCoveredBySetup,
+} from '@/features/loading/first-run';
 import { listWeddingContent, type WeddingContentItem } from '@/features/home/content';
 import { HomeBudget, PendingPreparation } from '@/features/home/home-summary';
 import strings from '../../../../../spec/strings.ko.json';
@@ -103,6 +106,7 @@ export default function HomeScreen() {
    * 첫 렌더가 예산을 쓰고 두 번째 렌더가 못 받아 로더가 도중에 바뀐다.
    */
   const [fullScreen] = useState(takeFullScreenLoading);
+  const [setupCoveredLoading] = useState(takeHomeLoadingCoveredBySetup);
   const candidates = useMyCandidates();
   const reloadCandidates = candidates.reload;
   const [pickDoneOpen, setPickDoneOpen] = useState(false);
@@ -185,7 +189,7 @@ export default function HomeScreen() {
       <DelayedRecommendingView nickname={data.me?.displayName ?? undefined} />
     ) : (
       <ThemedView style={styles.loading}>
-        <DelayedLoader size={40} />
+        {setupCoveredLoading ? null : <DelayedLoader size={40} />}
       </ThemedView>
     );
   }
@@ -242,7 +246,12 @@ export default function HomeScreen() {
             isPicked={(vendorId) => candidates.candidateFor(vendorId) !== null}
             onPressVendor={(vendorId) => router.push(`/search/${vendorId}`)}
             onPressPick={(vendor) => void onPressPick(vendor)}
-            onPressCompare={(category) => router.push(`/pick/${category}`)}
+            onPressCompare={(vendorIds) =>
+              router.push({
+                pathname: '/search/compare',
+                params: { ids: vendorIds.join(',') },
+              })
+            }
             onPressMore={() => router.push('/recommendations')}
           />}
 
