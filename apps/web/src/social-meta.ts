@@ -55,7 +55,7 @@ function escapeAttribute(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-/** Render in the static HTML head so crawlers never need JavaScript. */
+/** Emit in the static HTML head so crawlers never need JavaScript. */
 export function socialMeta(path = '/', title = SHARE_TITLE, description = SHARE_DESCRIPTION): string {
   const t = escapeAttribute(title);
   const d = escapeAttribute(description);
