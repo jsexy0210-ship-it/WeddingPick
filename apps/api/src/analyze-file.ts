@@ -109,7 +109,7 @@ async function main(): Promise<void> {
 
   const analyzer = createGeminiAnalyzer({
     apiKey: process.env.GEMINI_API_KEY ?? '',
-    model: process.env.GEMINI_MODEL ?? 'gemini-2.5-flash-lite',
+    model: process.env.GEMINI_MODEL ?? 'gemini-3.5-flash-lite',
   });
   // 읽지 못하면 예외가 난다. 여기서 감싸지 않는다 — 왜 못 읽었는지가 그대로 보여야 한다.
   const { extraction, usage } = await analyzer.analyze([{ mimeType, bytes }]);

@@ -95,6 +95,9 @@ describe('모델 이름은 환경변수다', () => {
 
     expect(fallback).toBeTruthy();
     expect(example).toContain(`GEMINI_MODEL=${fallback}`);
+
+    const deploy = read('.github/workflows/deploy-kakao-api.yml');
+    expect(deploy).toContain(`bash scripts/set-kakao-gemini-model.sh "$ENV_FILE" "${fallback}"`);
   });
 
   it('모델 이름을 부르는 자리에 박아두지 않는다', () => {

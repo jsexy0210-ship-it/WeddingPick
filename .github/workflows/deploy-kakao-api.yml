@@ -136,6 +136,8 @@ jobs:
           trap 'exit 130' INT
           trap 'exit 143' TERM
 
+          bash scripts/set-kakao-gemini-model.sh "$ENV_FILE" "gemini-3.5-flash-lite"
+
           deploy_revision_is_current || { echo 'A newer API-relevant main commit exists; deployment stopped.' >&2; exit 1; }
           OLD_ID="$(sudo -n docker inspect -f '{{.Id}}' "$PROD_CONTAINER")"
           OLD_IMAGE="$(sudo -n docker inspect -f '{{.Image}}' "$OLD_ID")"
