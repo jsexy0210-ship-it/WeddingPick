@@ -1,7 +1,7 @@
 /**
  * 인프라 요금을 하루 한 번 받아 적는다.
  *
- * 2026-09-10 사용자 결정 — 「A. 하루 한 번 수집」. 지금까지는 Render · Neon ·
+ * 2026-09-10 사용자 결정 — 「A. 하루 한 번 수집」. 지금까지는 Neon ·
  * Object Storage 요금을 각 콘솔에 들어가야 알 수 있었고, 세 곳을 따로 열어보는 동안
  * 「이번 달에 얼마 나가고 있나」에 아무도 답하지 못했다.
  *
@@ -72,22 +72,6 @@ async function getJson(target: string, headers: Record<string, string>): Promise
   }
 }
 
-/**
- * Render — 요금.
- *
- * **공개 API에 요금 경로가 없다.** `/v1/billing/costs`로 불렀더니 404가 왔다
- * (2026-09-10 확인 모드). Render API 문서가 내놓는 것은 서비스 · 배포 · 감사 기록이고
- * 요금이나 사용량 경로는 없다.
- *
- * 그래서 부르지 않는다. 없는 주소를 매일 두드리면 로그가 「받는 중인데 실패한다」로
- * 읽히고, 열쇠가 만료돼서 못 받는 진짜 실패와 구분이 안 된다. 경로가 생기면 여기서
- * 부른다 — 키(`RENDER_API_KEY`)는 배포 상태를 보는 데 이미 쓰고 있어 새로 발급할 것이 없다.
- */
-async function render(): Promise<CostRow[]> {
-  skipped.push('Render — 공개 API에 요금 조회 경로가 없다 (대시보드 → Billing에서 본다)');
-
-  return [];
-}
 
 /**
  * Neon — 사용량.
@@ -355,7 +339,7 @@ function str(value: unknown): string | undefined {
 async function main(): Promise<void> {
   console.log(`인프라 요금 — ${WRITE ? '받아서 적는다' : '받아만 본다'}\n`);
 
-  const rows = [...(await render()), ...(await neon()), ...(await ncp()), ...(await github())];
+  const rows = [...(await neon()), ...(await ncp()), ...(await github())];
 
   console.log(`\n받은 줄 ${rows.length}개`);
   for (const row of rows) {
