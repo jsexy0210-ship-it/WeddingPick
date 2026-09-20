@@ -76,7 +76,7 @@ function makeHarness({ includeLogin = true } = {}) {
   const scripts = path.join(base, 'scripts');
   const bin = path.join(base, 'bin');
   const state = path.join(base, 'state');
-  const releaseSha = 'release-a';
+  const releaseSha = 'a'.repeat(40);
   const releaseApp = path.join(root, 'static-releases', releaseSha, 'app');
   const releaseAdmin = path.join(root, 'static-releases', releaseSha, 'admin', 'admin');
   const servedApp = path.join(root, 'var', 'www', 'weddingpick', 'releases', releaseSha, 'app');
@@ -190,6 +190,7 @@ fi
 
 case "$url" in
   */health) body='{"ok":true,"database":"ok"}' ;;
+  */admin/login) body='<html>웨딩픽 관리자</html>' ;;
   */login) body='<html>login</html>' ;;
   */v1/auth/providers) body='{"providers":[]}' ;;
   *) body='ok' ;;
