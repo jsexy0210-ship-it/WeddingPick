@@ -125,7 +125,7 @@ server {
         proxy_read_timeout 60s;
     }
 
-    # 임시 확인용. 최종 운영은 별도 admin origin으로 다시 분리한다.
+    # 관리자 운영 경로. 443의 /admin으로 고정하며 별도 포트로 분리하지 않는다.
     location = /admin {
         return 302 /admin/home;
     }
@@ -182,4 +182,4 @@ curl --fail --silent --show-error --connect-timeout 5 --max-time 10   https://21
 rm -f "$tmp" || true
 tmp=''
 trap - EXIT
-echo "Kakao preview routes enabled on 443 from release $release_sha"
+echo "Kakao admin 443 route and website preview routes enabled from release $release_sha"
