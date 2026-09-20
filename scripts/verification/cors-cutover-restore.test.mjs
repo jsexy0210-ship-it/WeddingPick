@@ -82,13 +82,13 @@ if [ "\${1:-}" = "-" ]; then
   awk '
     BEGIN { done=0 }
     /^CORS_ORIGINS=/ {
-      print "CORS_ORIGINS=https://210.109.82.212,https://210.109.82.212:8443,https://210.109.82.212:9443"
+      print "CORS_ORIGINS=https://210.109.82.212,https://210.109.82.212:9443"
       done=1
       next
     }
     { print }
     END {
-      if (!done) print "CORS_ORIGINS=https://210.109.82.212,https://210.109.82.212:8443,https://210.109.82.212:9443"
+      if (!done) print "CORS_ORIGINS=https://210.109.82.212,https://210.109.82.212:9443"
     }
   ' "$env_file" > "$tmp"
   mv "$tmp" "$env_file"
