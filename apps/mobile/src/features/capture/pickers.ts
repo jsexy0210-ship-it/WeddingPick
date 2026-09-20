@@ -38,7 +38,7 @@ export async function photoPermissionState(): Promise<PhotoPermissionState> {
   return current.canAskAgain ? 'ask' : 'blocked';
 }
 
-/** 사진 앨범에서 사진을 여러 장 고른다. 취소하면 빈 배열. */
+/** 사진 앨범에서 요청한 수만큼 고른다. 1이면 시스템 다중 선택도 끈다. */
 export async function pickFromLibrary(selectionLimit = 0): Promise<CapturedPage[]> {
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -48,7 +48,7 @@ export async function pickFromLibrary(selectionLimit = 0): Promise<CapturedPage[
 
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
-    allowsMultipleSelection: true,
+    allowsMultipleSelection: selectionLimit !== 1,
     ...(selectionLimit > 0 ? { selectionLimit, orderedSelection: selectionLimit > 1 } : {}),
     quality: 1,
   });

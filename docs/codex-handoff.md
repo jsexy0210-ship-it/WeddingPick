@@ -1,5 +1,10 @@
 # Codex 전달문
 
+> 2026-09-20 최신 정본: `docs/design/source/2026-09-20/`의 ZIP 2개를 원본으로,
+> `docs/design/handoff/`·`docs/design/figma-export/`만 구현에 사용한다. 검색 Root는 Back
+> 삭제를 유지하고, 최신 PR에서 삭제·통합한 독립 페이지는 되살리지 않는다. 아래의 이전
+> 디자인 충돌 문구보다 이 결정이 우선한다.
+
 Codex에 일을 넘길 때 **아래 블록을 그대로 붙여넣는다.** 맨 위 「이번 일」만 채운다.
 
 `docs/session-prompt.md`와 내용은 같고, Claude 쪽 도구·트레일러·세션 얘기를 뺐다.

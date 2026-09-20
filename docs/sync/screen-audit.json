@@ -1,5 +1,29 @@
 {
   "schemaVersion": 1,
+  "canonicalDesign20260920": {
+    "baselineCommit": "11f287d151a312e8f0ed5f923a7a9369c47ff5c6",
+    "source": "docs/design/canonical-manifest.json",
+    "actualUniqueScreenIds": 208,
+    "mapped": 208,
+    "routeRefsFromPriorAudit": 93,
+    "routeRefsAfterSourceScan": 123,
+    "componentRefsAfterSourceScan": 34,
+    "stateRefsAfterSourceScan": 1,
+    "systemRefsAfterSourceScan": 1,
+    "excludedOrNonRoute": 19,
+    "unmappedImplementationRefs": 30,
+    "visualComplete": 0,
+    "exceptions": [
+      "검색 Root Back 삭제 유지",
+      "삭제·통합된 독립 페이지를 되살리지 않고 현재 라우트에 적용"
+    ],
+    "observedLive": [
+      "홈 Root는 검색 헤더 버튼 없이 준비 현황 2×2를 표시했다.",
+      "검색 Root는 Back 없이 즉시 결과를 표시했다.",
+      "검색 제목·결과 헤더·카드 배치는 전달 정본과 달랐다."
+    ],
+    "note": "이번 숫자는 누락 추적 대장이다. 동일 상태 390×844 원본·실제 캡처 대조가 없어 시각 완료는 0으로 둔다."
+  },
   "recordedDate": "2026-09-10",
   "timezone": "Asia/Seoul",
   "scope": "repository-cleanup",
@@ -118,6 +142,7 @@
     "routes": ["/capture", "/capture/payment/register", "/community?tab=review"],
     "screenIds": ["WP-RPT-002", "WP-RPT-007"],
     "scope": "독립 제보 홈 제거, Pick 인증 제보내역 통합·앨범 3장, 라운지 후기 작성 배경 유지, 브라우저 스토리지 업로드 CORS",
+    "supersededBy": "canonicalDesign20260920이 앨범 선택을 사진 한 장으로 되돌렸다. 독립 제보 홈 제거·제보내역 통합·라운지 배경 결정은 유지한다.",
     "fixed": [
       "/capture는 더 이상 독립 UI를 그리지 않고 Pick 인증 동의로 연결한다.",
       "Pick 인증 화면에 최근 내 제보내역을 보여주고, 앨범 선택은 한 건당 최대 3장으로 제한한다.",

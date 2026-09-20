@@ -6,6 +6,11 @@
   "baselineCommit": "e34193ee1644c664f107d529002ae53ef775389a",
   "items": [
     {
+      "id": "canonical-design-20260920",
+      "status": "source-locked-and-screen-inventory-tracked-visual-audit-pending",
+      "evidence": "../design/canonical-manifest.json, design-screen-map.json, master-status.json#canonicalDesign20260920"
+    },
+    {
       "id": "web-api-release-20260913",
       "status": "local-review-complete-ci-and-deployment-pending",
       "evidence": "master-status.json#webApiRelease20260913"

@@ -35,7 +35,6 @@ describe('Root 1Depth 제목 헤더', () => {
 
   it.each([
     ['index.tsx', 'header'],
-    ['search/index.tsx', 'headerTitleRow'],
     ['pick/index.tsx', 'titleRow'],
     ['wedding/index.tsx', 'header'],
     ['my/index.tsx', 'header'],
@@ -48,7 +47,6 @@ describe('Root 1Depth 제목 헤더', () => {
 
   it.each([
     ['index.tsx', '웨딩픽', 'styles.brand'],
-    ['search/index.tsx', '{TITLE}', 'styles.bold'],
     ['pick/index.tsx', '{TERMS.pick}', 'styles.bold'],
     ['wedding/index.tsx', '{TERMS.ourWedding}', 'styles.bold'],
     ['my/index.tsx', '{S.title}', 'styles.bold'],
@@ -62,5 +60,17 @@ describe('Root 1Depth 제목 헤더', () => {
     expect(opening).toBeGreaterThanOrEqual(0);
     expect(tag).toContain('type="f26"');
     expect(tag).toContain(weightStyle);
+  });
+
+  it('검색 Root는 Back만 빼고 전달 정본의 20px 제목·결과 수·20px 여백을 유지한다', () => {
+    const text = source('search/index.tsx');
+    const header = styleBlock(text, 'header');
+    const titleAt = text.indexOf('{TITLE}');
+    const opening = text.lastIndexOf('<ThemedText', titleAt);
+    const tag = text.slice(opening, titleAt);
+
+    expect(header).toContain('paddingHorizontal: Layout.pageX');
+    expect(tag).toContain('type="f20"');
+    expect(text).toContain('{formatCount(total)}곳');
   });
 });

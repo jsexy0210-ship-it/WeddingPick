@@ -72,7 +72,7 @@ describeWithDb('결제인증', () => {
    * 내용까지 넣는다. 서버가 읽으려면 스토리지에 실제로 무언가 있어야 하고, 없으면
    * 「읽기 실패」가 아니라 다운로드 오류로 떨어져 시험이 다른 것을 재게 된다.
    */
-  async function anUpload(headers: Record<string, string>): Promise<string> {
+  async function anUpload(headers: Record<string, string>, pageCount = 1): Promise<string> {
     await consentToPaymentProofs(test, headers);
     const weddingId = await createWedding(test, headers);
 
@@ -83,7 +83,7 @@ describeWithDb('결제인증', () => {
       payload: {
         weddingId,
         kind: 'payment_proof',
-        pages: [{ mimeType: 'image/jpeg', sizeBytes: 1000 }],
+        pages: Array.from({ length: pageCount }, () => ({ mimeType: 'image/jpeg', sizeBytes: 1000 })),
       },
     });
 
@@ -122,6 +122,23 @@ describeWithDb('결제인증', () => {
     expect(response.statusCode).toBe(201);
     expect(response.json<{ status: string }>().status).toBe('accepted');
     expect(response.json<{ matchedVendorId: string }>().matchedVendorId).toBe(vendorId);
+  });
+
+  it('원본 묶음에 사진이 여러 장이면 접수하지 않는다', async () => {
+    const { headers } = await signInAs(test);
+    const rawDocumentId = await anUpload(headers, 2);
+
+    const response = await test.app.inject({
+      method: 'POST',
+      url: '/v1/payment-proofs',
+      headers,
+      payload: { rawDocumentId },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json<{ error: { message: string } }>().error.message).toBe(
+      '결제 인증 사진은 한 장만 올려주세요.'
+    );
   });
 
   it('금액을 보낼 자리가 없다', async () => {

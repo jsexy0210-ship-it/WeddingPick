@@ -22,12 +22,12 @@ beforeEach(() => {
   jest.mocked(ImagePicker.launchImageLibraryAsync).mockResolvedValue({ canceled: false, assets } as never);
 });
 
-it('Pick 인증 앨범 선택은 시스템과 반환값 모두 최대 3장으로 제한한다', async () => {
-  const pages = await pickFromLibrary(3);
+it('한 장 선택 요청은 시스템과 반환값 모두 한 장으로 제한한다', async () => {
+  const pages = await pickFromLibrary(1);
 
   expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledWith(
-    expect.objectContaining({ allowsMultipleSelection: true, selectionLimit: 3, orderedSelection: true })
+    expect.objectContaining({ allowsMultipleSelection: false, selectionLimit: 1, orderedSelection: false })
   );
-  expect(pages).toHaveLength(3);
-  expect(pages.map((page) => page.uri)).toEqual(assets.slice(0, 3).map((asset) => asset.uri));
+  expect(pages).toHaveLength(1);
+  expect(pages[0]?.uri).toBe(assets[0]?.uri);
 });
