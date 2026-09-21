@@ -16,7 +16,7 @@ import {
   LetterSpacing,
   Radius,
   SeedIcon,
-  SkeletonView,
+  Skeleton,
   Spacing,
   ThemedText,
   ThemedView,
@@ -132,7 +132,31 @@ export function RecommendationsContent({
   }
 
   if (error) return <ErrorView message={error} onRetry={load} />;
-  if (state === null) return <SkeletonView />;
+  if (state === null) {
+    return (
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <ThemedText type="f26" style={[styles.bold, styles.title]}>{S['recommend.title']}</ThemedText>
+        </View>
+        <View style={styles.initialSkeleton}>
+          {Array.from({ length: 3 }, (_, index) => (
+            <View key={index} style={styles.initialGroup}>
+              <View style={styles.initialHead}>
+                <Skeleton width="34%" height={18} />
+                <Skeleton width="22%" height={13} />
+              </View>
+              {index === 0 ? (
+                <View style={styles.initialCards}>
+                  <Skeleton width="47%" height={190} radius={Radius.medium} />
+                  <Skeleton width="47%" height={190} radius={Radius.medium} />
+                </View>
+              ) : null}
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+    );
+  }
 
   return (
     <>
@@ -240,6 +264,19 @@ const styles = StyleSheet.create({
   bold: { fontWeight: 700 },
   title: { letterSpacing: LetterSpacing.n065 },
   sub: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionHeadGap },
+  initialSkeleton: { paddingBottom: Layout.sectionGap },
+  initialGroup: {
+    paddingHorizontal: Layout.gutter,
+    paddingVertical: Layout.sectionHeadGap,
+    gap: Spacing.three,
+  },
+  initialHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+  },
+  initialCards: { flexDirection: 'row', gap: Layout.inlineGap },
   doneSection: { paddingHorizontal: Layout.gutter, paddingTop: Spacing.two },
   doneCard: {
     borderRadius: Radius.medium,
