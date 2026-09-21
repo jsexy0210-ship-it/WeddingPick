@@ -110,6 +110,7 @@ const NO_CONTRACT = new Set([
   'GET /v1/admin/briefing',
   /* 박람회 관리(0410) — 관리자 전용이라 사용자 계약이 없다. 위 admin 넷과 같은 자리다. */
   'GET /v1/admin/expos',
+  'POST /v1/admin/expos/collect',
   'GET /v1/admin/expos/deletion-preview',
   /*
    * 관리자 화면 전수 조사(2026-09-16)에서 더한 일곱. 위 admin 항목과 같은 자리다 —

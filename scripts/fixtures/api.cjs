@@ -657,6 +657,7 @@ const routes = {
         status: 'upcoming',
         isDeadlineSoon: true,
         sourceNote: '주최사 공지 기준',
+        thumbnailUrl: 'https://example.com/expo-poster.jpg',
         lastVerifiedAt: '2026-09-10T00:00:00.000Z',
       },
     ],
@@ -916,6 +917,21 @@ const routes = {
   },
   /* WP-ADM 박람회 관리(admin/expos.tsx) — 검수 대기 한 건 · 정상 한 건을 함께 둔다. */
   'GET /v1/admin/expos': {
+    collection: {
+      enabled: true,
+      ready: true,
+      lastRun: {
+        status: 'success',
+        startedAt: '2026-09-21T00:10:00.000Z',
+        finishedAt: '2026-09-21T00:10:20.000Z',
+        discovered: 2,
+        created: 1,
+        updated: 1,
+        duplicates: 0,
+        reviewRequired: 1,
+        errorMessage: null,
+      },
+    },
     expos: [
       {
         id: 'f1111111-1111-4111-8111-111111111111',
@@ -941,6 +957,10 @@ const routes = {
         adminReviewRequired: true,
         reviewReason: ['SNS 한 곳에서만 발견', '주최사를 확인할 수 없음'],
         sourceNote: '인스타그램 게시물 1건',
+        thumbnailUrl: null,
+        thumbnailCandidateUrl: 'https://example.com/expo-review-poster.jpg',
+        thumbnailSourceUrl: 'https://example.com/expo-review',
+        thumbnailRights: null,
         lastVerifiedAt: '2026-09-14',
       },
       {
@@ -967,9 +987,22 @@ const routes = {
         adminReviewRequired: false,
         reviewReason: [],
         sourceNote: '주최사 공식 홈페이지',
+        thumbnailUrl: 'https://example.com/expo-poster.jpg',
+        thumbnailCandidateUrl: null,
+        thumbnailSourceUrl: 'https://example.com',
+        thumbnailRights: 'OFFICIAL_PUBLIC',
         lastVerifiedAt: '2026-09-14',
       },
     ],
+  },
+  'POST /v1/admin/expos/collect': {
+    runId: 'f4444444-4444-4444-8444-444444444444',
+    skipped: false,
+    discovered: 2,
+    created: 1,
+    updated: 1,
+    duplicates: 0,
+    reviewRequired: 1,
   },
   'GET /v1/admin/expos/deletion-preview': {
     expos: [

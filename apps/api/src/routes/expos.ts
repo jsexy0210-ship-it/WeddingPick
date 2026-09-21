@@ -22,6 +22,8 @@ type ExpoRow = {
   region: string;
   registration_deadline: Date | null;
   source_note: string;
+  thumbnail_url: string | null;
+  thumbnail_rights: string | null;
   last_verified_at: Date;
 };
 
@@ -67,7 +69,11 @@ export function registerExpoRoutes(app: FastifyInstance, context: AppContext): v
   app.get('/v1/expos', auth, async (request) => {
     const query = listQuerySchema.parse(request.query);
 
-    const conditions: string[] = [];
+    const conditions: string[] = [
+      'admin_review_required = false',
+      'manual_status IS NULL',
+      'ends_at >= CURRENT_DATE',
+    ];
     const params: unknown[] = [];
     let idx = 1;
 
@@ -91,7 +97,7 @@ export function registerExpoRoutes(app: FastifyInstance, context: AppContext): v
 
     const { rows } = await context.pool.query<ExpoRow>(
       `SELECT id, title, organizer, starts_at, ends_at, venue, region,
-              registration_deadline, source_note, last_verified_at
+              registration_deadline, source_note, thumbnail_url, thumbnail_rights, last_verified_at
        FROM structured.expos
        ${where}
        ORDER BY ${orderBy}
@@ -116,6 +122,7 @@ export function registerExpoRoutes(app: FastifyInstance, context: AppContext): v
           status,
           isDeadlineSoon: isDeadlineSoon(r.starts_at, r.registration_deadline),
           sourceNote: r.source_note,
+          thumbnailUrl: r.thumbnail_rights ? r.thumbnail_url : null,
           lastVerifiedAt: r.last_verified_at.toISOString().slice(0, 10),
         };
       }),
@@ -135,9 +142,12 @@ export function registerExpoRoutes(app: FastifyInstance, context: AppContext): v
     const { rows } = await context.pool.query<ExpoDetailRow>(
       `SELECT id, title, organizer, starts_at, ends_at, venue, address, region,
               registration_deadline, benefits, description, source_note, last_verified_at,
-              reservation_url, official_website_url
+              reservation_url, official_website_url, thumbnail_url, thumbnail_rights
        FROM structured.expos
-       WHERE id = $1`,
+       WHERE id = $1
+         AND admin_review_required = false
+         AND manual_status IS NULL
+         AND ends_at >= CURRENT_DATE`,
       [expoId]
     );
 
@@ -174,6 +184,7 @@ export function registerExpoRoutes(app: FastifyInstance, context: AppContext): v
       description: expo.description,
       notifyEnabled,
       sourceNote: expo.source_note,
+      thumbnailUrl: expo.thumbnail_rights ? expo.thumbnail_url : null,
       lastVerifiedAt: expo.last_verified_at.toISOString().slice(0, 10),
       // 공식 신청 링크가 있으면 그쪽, 없으면 공식 홈페이지 — 둘 다 앱을 떠나지 않는
       // In-App Browser로 연다(대표 정정, expo-agent-spec.md).
