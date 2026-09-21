@@ -75,25 +75,37 @@ describe('최신 홈·추천 연결', () => {
     expect(text(view)).toContain('3곳 비교하기');
   });
 
-  it('추천 전체는 기본 카드에서 이유를 숨기고 카드를 누르면 이유 확장 상태로 교체한다', () => {
+  it('추천 전체 카드 클릭은 이유 확장 대신 업체 상세로 보낸다', () => {
+    const onDetail = jest.fn();
     const view = mount(<PickRecommend groups={[groupWithVendor]} open="studio" onToggle={jest.fn()}
-      remaining={1} remainingCategories={[]} isFavorite={() => false} onPressVendor={jest.fn()}
+      remaining={1} remainingCategories={[]} isFavorite={() => false} onPressVendor={onDetail}
       onPressFavorite={jest.fn()} onPressCompare={jest.fn()} onPressMore={jest.fn()}
       onPressSearchMore={jest.fn()} />);
 
     expect(text(view)).not.toContain('추천 1위');
     expect(text(view)).not.toContain('선호하는 분위기가 같아요');
 
-    const card = view.root.findAllByProps({ accessibilityLabel: '테스트 업체 추천 이유 보기' })
+    const card = view.root.findAllByProps({ accessibilityLabel: '테스트 업체 상세' })
       .find((node) => typeof node.props.onPress === 'function');
     expect(card).toBeDefined();
     act(() => { card!.props.onPress(); });
 
-    expect(text(view)).toMatch(/추천\s*1\s*위/);
-    expect(text(view)).toContain('선호하는 분위기가 같아요');
-    expect(text(view)).toMatch(/실 제보\s*0\s*건/);
-    expect(text(view)).toContain('비교에 담기');
-    expect(view.root.findAllByProps({ accessibilityLabel: '스튜디오 더 찾아보기' })).toHaveLength(0);
+    expect(onDetail).toHaveBeenCalledWith(vendor.id);
+  });
+
+  it('추천 전체는 업종별 최대 다섯 곳까지만 보여준다', () => {
+    const vendors = [1, 2, 3, 4, 5, 6].map((n) => ({
+      ...vendor,
+      id: `vendor-${n}`,
+      name: `추천 업체 ${n}`,
+    }));
+    const view = mount(<PickRecommend groups={[{ ...group, vendors }]} open="studio" onToggle={jest.fn()}
+      remaining={1} remainingCategories={[]} isFavorite={() => false} onPressVendor={jest.fn()}
+      onPressFavorite={jest.fn()} onPressCompare={jest.fn()} onPressMore={jest.fn()}
+      onPressSearchMore={jest.fn()} />);
+
+    expect(text(view)).toContain('추천 업체 5');
+    expect(text(view)).not.toContain('추천 업체 6');
   });
 
   it('업체가 없는 업종도 더 찾아보기를 열 수 있다', () => {
@@ -132,14 +144,14 @@ describe('최신 홈·추천 연결', () => {
     expect(text(view)).toMatch(/0\s*건/);
   });
 
-  it('Pick 버튼은 상위 상세 이동 이벤트를 차단한다', () => {
-    const onPick = jest.fn(), onDetail = jest.fn(), stopPropagation = jest.fn();
-    const view = mount(<VendorCard vendor={vendor} favorited={false} onPress={onDetail} onPressPick={onPick} />);
-    const button = view.root.findAllByProps({ accessibilityLabel: '테스트 업체 Pick' })
+  it('관심업체 하트는 상위 상세 이동 이벤트를 차단한다', () => {
+    const onFavorite = jest.fn(), onDetail = jest.fn(), stopPropagation = jest.fn();
+    const view = mount(<VendorCard vendor={vendor} favorited={false} onPress={onDetail} onPressFavorite={onFavorite} />);
+    const button = view.root.findAllByProps({ accessibilityLabel: '테스트 업체 관심업체 추가' })
       .find((node) => typeof node.props.onPress === 'function');
     act(() => { button!.props.onPress({ stopPropagation }); });
     expect(stopPropagation).toHaveBeenCalledTimes(1);
-    expect(onPick).toHaveBeenCalledTimes(1);
+    expect(onFavorite).toHaveBeenCalledTimes(1);
     expect(onDetail).not.toHaveBeenCalled();
   });
 
