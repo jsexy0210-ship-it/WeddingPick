@@ -1,5 +1,3 @@
-import { MAX_CANDIDATES } from '@weddingpick/domain';
-
 import { createTestApp, createWedding, resetDatabase, signInAs, type TestApp } from './helpers';
 
 let test: TestApp;
@@ -181,21 +179,16 @@ describeWithDb('후보 저장', () => {
     expect(halls.categoryLabel).toMatch(/[가-힣]/);
   });
 
-  it('상한을 넘기면 이유와 함께 막는다', async () => {
+  it('30곳을 넘어도 계속 Pick할 수 있다', async () => {
     const { headers } = await signInAs(test);
     const weddingId = await createWedding(test, headers);
 
-    for (let index = 0; index < MAX_CANDIDATES; index += 1) {
+    for (let index = 0; index < 31; index += 1) {
       const response = await add(headers, weddingId, await createVendor(`업체${index}`));
-
       expect(response.statusCode).toBe(201);
     }
 
-    const over = await add(headers, weddingId, await createVendor('한 곳 더'));
-
-    expect(over.statusCode).toBe(400);
-    // 왜 안 되는지와 무엇을 하면 되는지를 말한다. 트리거 예외는 사람이 읽을 말이 아니다.
-    expect(over.json<{ error: { message: string } }>().error.message).toContain('빼주세요');
+    expect((await list(headers, weddingId)).json<{ total: number }>().total).toBe(31);
   });
 
   it('로그인해야 담을 수 있다', async () => {
