@@ -25,6 +25,7 @@ const LINE = 2;
  */
 export default function TimelineScreen() {
   const depthBack = useDepthBack();
+  const theme = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [page, setPage] = useState<WeddingTaskListResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +56,7 @@ export default function TimelineScreen() {
               <View key={index} style={styles.item}>
                 <View style={styles.spine}>
                   <Skeleton width={DOT} height={DOT} radius={Radius.pill} />
-                  {index < 3 ? <View style={styles.loadingLine} /> : null}
+                  {index < 3 ? <View style={[styles.loadingLine, { backgroundColor: theme.border }]} /> : null}
                 </View>
                 <View style={styles.itemBody}>
                   <Skeleton width="28%" height={14} />
@@ -136,6 +137,6 @@ const styles = StyleSheet.create({
   spine: { width: Layout.iconTab, alignItems: 'center' },
   dot: { width: DOT, height: DOT, borderRadius: Radius.pill, marginTop: Spacing.one + Spacing.half },
   line: { width: LINE, flex: 1, marginTop: Spacing.one },
-  loadingLine: { width: LINE, flex: 1, marginTop: Spacing.one, backgroundColor: '#E5E7EB' },
+  loadingLine: { width: LINE, flex: 1, marginTop: Spacing.one },
   itemBody: { flex: 1, minWidth: 0, gap: 3, paddingBottom: Spacing.four - Spacing.half },
 });
