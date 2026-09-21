@@ -1,0 +1,162 @@
+name: Deploy LifeLeft Bridge
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/deploy-lifeleft-bridge.yml
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lifeleft-kakao-bridge
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy LifeLeft on existing Kakao VM
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 30
+    outputs:
+      changed: ${{ steps.target.outputs.changed }}
+      sha: ${{ steps.target.outputs.sha }}
+    steps:
+      - name: Resolve LifeLeft main
+        id: target
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha="$(git ls-remote https://github.com/jsexy0210-ship-it/LifeLeft.git refs/heads/main | cut -f1)"
+          [[ "$sha" =~ ^[0-9a-f]{40}$ ]]
+          live="$(cat /home/ubuntu/LifeLeft/static-live-domain 2>/dev/null || true)"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          if [ "$live" = "$sha" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "LifeLeft is already live at $sha"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "LifeLeft deployment target: $sha"
+          fi
+
+      - name: Checkout LifeLeft
+        if: steps.target.outputs.changed == 'true'
+        uses: actions/checkout@v5
+        with:
+          repository: jsexy0210-ship-it/LifeLeft
+          ref: ${{ steps.target.outputs.sha }}
+          path: .lifeleft-source
+          persist-credentials: false
+
+      - name: Node
+        if: steps.target.outputs.changed == 'true'
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Build LifeLeft
+        if: steps.target.outputs.changed == 'true'
+        working-directory: .lifeleft-source
+        run: |
+          set -euo pipefail
+          npm install --no-audit --no-fund
+          npm run typecheck
+          npm run build
+          test -f out/index.html
+          test -f out/commute/index.html
+          test -f out/salary/index.html
+          test -f out/weekends/index.html
+          test -f out/work-time/index.html
+          test -f out/subscriptions/index.html
+          test -f out/survival/index.html
+          test -f out/robots.txt
+          test -f out/sitemap.xml
+
+      - name: Stage immutable release
+        if: steps.target.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          bash ./.lifeleft-source/scripts/stage-lifeleft-static.sh \
+            ./.lifeleft-source/out \
+            "${{ steps.target.outputs.sha }}"
+
+      - name: Enable LifeLeft domain and TLS
+        if: steps.target.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          bash ./.lifeleft-source/scripts/install-lifeleft-domain.sh \
+            "${{ steps.target.outputs.sha }}" \
+            lifeleft.duckdns.org \
+            210.109.82.212
+
+  verify:
+    name: Verify LifeLeft public HTTPS
+    if: needs.deploy.outputs.changed == 'true'
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Public smoke
+        run: |
+          set -euo pipefail
+          ok=false
+          for _ in $(seq 1 24); do
+            if curl --fail --silent --show-error --connect-timeout 5 --max-time 15 \
+              https://lifeleft.duckdns.org/ > /tmp/lifeleft-home.html; then
+              ok=true
+              break
+            fi
+            sleep 10
+          done
+          [ "$ok" = true ]
+          grep -qi '<html' /tmp/lifeleft-home.html
+          grep -q 'LIFELEFT' /tmp/lifeleft-home.html
+
+          for path in commute salary weekends work-time subscriptions survival; do
+            curl --fail --silent --show-error --connect-timeout 5 --max-time 15 \
+              "https://lifeleft.duckdns.org/$path/" >/dev/null
+          done
+
+          curl --fail --silent --show-error --connect-timeout 5 --max-time 15 \
+            https://lifeleft.duckdns.org/robots.txt | grep -Fq 'https://lifeleft.duckdns.org/sitemap.xml'
+          curl --fail --silent --show-error --connect-timeout 5 --max-time 15 \
+            https://lifeleft.duckdns.org/sitemap.xml | grep -Fq 'https://lifeleft.duckdns.org/'
+
+  rollback:
+    name: Roll back LifeLeft on failed public verify
+    if: ${{ always() && needs.deploy.result == 'success' && needs.deploy.outputs.changed == 'true' && needs.verify.result != 'success' }}
+    needs: [deploy, verify]
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 10
+    steps:
+      - name: Checkout LifeLeft rollback script
+        uses: actions/checkout@v5
+        with:
+          repository: jsexy0210-ship-it/LifeLeft
+          ref: ${{ needs.deploy.outputs.sha }}
+          path: .lifeleft-source
+          persist-credentials: false
+
+      - name: Restore prior LifeLeft state
+        run: bash ./.lifeleft-source/scripts/rollback-lifeleft-domain.sh
+
+  finalize:
+    name: Finalize LifeLeft verified release
+    if: ${{ needs.deploy.result == 'success' && needs.deploy.outputs.changed == 'true' && needs.verify.result == 'success' }}
+    needs: [deploy, verify]
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 5
+    steps:
+      - name: Checkout LifeLeft finalize script
+        uses: actions/checkout@v5
+        with:
+          repository: jsexy0210-ship-it/LifeLeft
+          ref: ${{ needs.deploy.outputs.sha }}
+          path: .lifeleft-source
+          persist-credentials: false
+
+      - name: Finalize LifeLeft release
+        run: bash ./.lifeleft-source/scripts/finalize-lifeleft-domain.sh
