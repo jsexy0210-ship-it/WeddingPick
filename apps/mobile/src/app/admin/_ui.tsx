@@ -188,6 +188,13 @@ export type AdminTabDef = {
    * 탭에서 대신 보여준다 — `_layout.tsx`의 `readOnly`와 같은 넷이 대상이다.
    * (2026-09-16에 약관·방침이 빠졌다 — 편집·공개가 열렸다. 0422) */
   readOnly?: boolean;
+  /**
+   * 운영 메뉴에서만 숨긴다. 화면 파일·라우트·기존 딥링크는 유지한다.
+   *
+   * 아직 실제 운영 상태가 없거나(항상 0/빈값), 이름과 달리 운영 동작을 하지 않는
+   * 화면을 메뉴에서 감출 때 쓴다. 기능을 삭제하는 플래그가 아니다.
+   */
+  hidden?: boolean;
 };
 
 export type AdminTabShellProps = {
@@ -219,7 +226,7 @@ export function AdminTabShell({ tabs, active, onChange, children }: AdminTabShel
     <View style={styles.tabShellRoot}>
       <View style={styles.tabShellBar}>
         <View style={styles.tabShellTabs}>
-          {tabs.map((t) => {
+          {tabs.filter((t) => !t.hidden).map((t) => {
             const selected = t.key === active;
             return (
               <Pressable
