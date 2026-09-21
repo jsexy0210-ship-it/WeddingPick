@@ -5,6 +5,7 @@ import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { getCategoryRecommendations } from '@/api/client';
+import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { recommendationsAreComplete } from '@/features/home/canon-state';
 import strings from '../../../../../../spec/strings.ko.json';
 import {
@@ -70,6 +71,7 @@ export function RecommendationsContent({
   const loadedOnce = useRef(false);
   const [state, setState] = useState<State | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const candidates = useMyCandidates();
   const reloadCandidates = candidates.reload;
   const [pickDoneOpen, setPickDoneOpen] = useState(false);
@@ -78,26 +80,35 @@ export function RecommendationsContent({
   /* 홈과 같은 single-open 아코디언 규칙을 쓴다 — 첫 업종이 기본으로 펼쳐진다. */
   const { open, toggle } = useOpenCategory(state?.groups ?? NO_GROUPS, requestedCategory);
 
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
     const request = ++version.current;
     setError(null);
-    void getCategoryRecommendations()
-      .then((response) => {
-        if (request !== version.current) return;
-        loadedOnce.current = true;
-        setState(response);
-      })
-      .catch(() => {
-        if (request !== version.current) return;
-        if (loadedOnce.current) setToast(S['recommend.error']);
-        else setError(S['recommend.error']);
-      });
+    try {
+      const response = await getCategoryRecommendations();
+      if (request !== version.current) return;
+      loadedOnce.current = true;
+      setState(response);
+    } catch {
+      if (request !== version.current) return;
+      if (loadedOnce.current) setToast(S['recommend.error']);
+      else setError(S['recommend.error']);
+    }
   }, []);
 
   useFocusEffect(useCallback(() => {
-    load();
-    void reloadCandidates().catch(() => undefined);
-    return () => { version.current += 1; };
+    let active = true;
+    const hadData = loadedOnce.current;
+    if (hadData) setRefreshing(true);
+
+    void Promise.allSettled([load(), reloadCandidates()])
+      .finally(() => {
+        if (active && hadData) setRefreshing(false);
+      });
+
+    return () => {
+      active = false;
+      version.current += 1;
+    };
   }, [load, reloadCandidates]));
 
   async function onPressPick(vendor: VendorSummary) {
@@ -130,6 +141,7 @@ export function RecommendationsContent({
           <ThemedText type="f26" style={[styles.bold, styles.title]}>
             {S['recommend.title']}
           </ThemedText>
+          <DelayedLoader active={refreshing} size={20} />
         </View>
         {state.groups.length === 0 ? null : (
           <ThemedText type="f13" numeric themeColor="textAssistive" style={styles.sub}>
@@ -166,6 +178,7 @@ export function RecommendationsContent({
             onPressSearchMore={(category) => router.push(`/search?category=${category}`)}
             onPressMore={() => undefined}
             /* 화면 제목이 이미 「웨딩픽 추천」이다 — 섹션 제목을 한 번 더 두지 않는다. */
+            interactionDisabled={refreshing}
             heading={false}
           />
         )}
@@ -219,7 +232,10 @@ const styles = StyleSheet.create({
   header: {
     height: Layout.navBar,
     paddingHorizontal: Layout.gutter,
-    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
   },
   bold: { fontWeight: 700 },
   title: { letterSpacing: LetterSpacing.n065 },
