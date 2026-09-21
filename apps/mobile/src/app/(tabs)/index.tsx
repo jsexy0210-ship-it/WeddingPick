@@ -300,7 +300,7 @@ export default function HomeScreen() {
               candidates: data.candidates,
               preparedCategories: data.me?.preparedCategories ?? [],
             })}
-            onOpen={(category) => router.push(`/search?category=${category}`)}
+            onOpen={(category) => router.push(`/pick?section=recommendations&category=${category}`)}
             onMore={() => router.push('/progress')}
             onComplete={() => router.push('/wedding')}
           />
@@ -321,7 +321,7 @@ export default function HomeScreen() {
               onPressCompare={(vendorIds) =>
                 router.push({ pathname: '/search/compare', params: { ids: vendorIds.join(',') } })
               }
-              onPressMore={() => router.push('/recommendations')}
+              onPressMore={() => router.push('/pick?section=recommendations')}
             />
           )}
 
@@ -336,10 +336,10 @@ export default function HomeScreen() {
 
           <View style={styles.block}>
             <View style={styles.sectionHead}>
-              <ThemedText type="f20" style={styles.bold}>웨딩피드</ThemedText>
+              <ThemedText type="f20" style={styles.bold}>웨딩 준비 팁</ThemedText>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="웨딩피드 자세히"
+                accessibilityLabel="웨딩 준비 팁 자세히"
                 onPress={() => router.push('/community?tab=feed' as never)}
                 style={({ pressed }) => [styles.feedMore, pressed && styles.pressed]}>
                 <ThemedText type="f13" themeColor="textAssistive">{S.more}</ThemedText>
