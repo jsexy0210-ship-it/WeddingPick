@@ -102,9 +102,9 @@ describe('WP-HOME-001 figma-export 구조', () => {
       view = create(
         <HomeRecommendations
           groups={groups}
-          isPicked={() => false}
+          isFavorite={() => false}
           onPressVendor={jest.fn()}
-          onPressPick={jest.fn()}
+          onPressFavorite={jest.fn()}
           onPressCompare={jest.fn()}
           onPressMore={jest.fn()}
         />
