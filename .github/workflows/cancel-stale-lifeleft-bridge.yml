@@ -1,0 +1,24 @@
+name: Cancel stale LifeLeft bridge
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/cancel-stale-lifeleft-bridge.yml
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cancel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel stale bridge run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api --method POST \
+            repos/${GITHUB_REPOSITORY}/actions/runs/35589954030/cancel \
+            || true
