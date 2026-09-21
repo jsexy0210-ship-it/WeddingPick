@@ -124,6 +124,8 @@ export type WeddingFeedInput = {
   summary: string;
   body: string;
   imageKey: string | null;
+  /** 상세 본문 안에 보여줄 이미지. 카드 썸네일과 별도다. */
+  bodyImageKey: string | null;
   status: WeddingFeedStatus;
   sortOrder: number;
 };

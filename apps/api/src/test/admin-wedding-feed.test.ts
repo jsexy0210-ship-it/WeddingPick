@@ -42,6 +42,10 @@ beforeEach(() => {
   delete process.env.GEMINI_API_KEY;
 });
 
+afterEach(() => {
+  jest.restoreAllMocks();
+});
+
 afterAll(() => {
   if (originalGeminiApiKey === undefined) delete process.env.GEMINI_API_KEY;
   else process.env.GEMINI_API_KEY = originalGeminiApiKey;
@@ -59,6 +63,7 @@ describe('웨딩피드 관리자 라우트', () => {
             summary: '요약',
             body: '본문',
             image_key: null,
+            body_image_key: null,
             status: 'draft',
             source: 'manual',
             model: null,
@@ -79,6 +84,7 @@ describe('웨딩피드 관리자 라우트', () => {
       posts: unknown[];
       runs: unknown[];
       remainingTopics: number;
+      nextSortOrder: number;
       automation: { manualReady: boolean; scheduledEnabled: boolean };
     }>();
 
@@ -87,21 +93,64 @@ describe('웨딩피드 관리자 라우트', () => {
     expect(body.posts[0]).toMatchObject({ title: '스드메 예산 짜는 법', status: 'draft' });
     expect(Array.isArray(body.runs)).toBe(true);
     expect(typeof body.remainingTopics).toBe('number');
+    expect(body.nextSortOrder).toBe(1);
     expect(body.automation).toEqual({ manualReady: false, scheduledEnabled: false });
   });
 
   it('등록은 표에 INSERT한다', async () => {
-    pool.query.mockResolvedValueOnce({ rows: [{ id: '00000000-0000-4000-8000-0000000000bb' }] });
+    pool.query.mockResolvedValueOnce({
+      rows: [{ id: '00000000-0000-4000-8000-0000000000bb', sort_order: 3 }],
+    });
 
     const response = await app().inject({
       method: 'POST',
       url: '/v1/admin/wedding-feed',
-      payload: { categoryLabel: '예산', title: '제목', summary: '', body: '', status: 'draft', sortOrder: 0 },
+      payload: {
+        categoryLabel: '예산',
+        title: '제목',
+        summary: '',
+        body: '',
+        imageKey: 'wedding-feed/thumbnail/a.jpg',
+        bodyImageKey: 'wedding-feed/body/b.jpg',
+        status: 'draft',
+        sortOrder: 99,
+      },
     });
 
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toMatchObject({ id: '00000000-0000-4000-8000-0000000000bb' });
+    expect(response.json()).toMatchObject({
+      id: '00000000-0000-4000-8000-0000000000bb',
+      sortOrder: 3,
+    });
     expect(pool.query.mock.calls[0]?.[0]).toContain('INSERT INTO structured.wedding_feed_posts');
+    expect(pool.query.mock.calls[0]?.[0]).toContain('COALESCE(MAX(sort_order), 0) + 1');
+    expect(pool.query.mock.calls[0]?.[1]).not.toContain(99);
+  });
+
+  it('Gemini 초안을 저장하면 generated 출처와 실제 모델을 함께 남긴다', async () => {
+    pool.query.mockResolvedValueOnce({
+      rows: [{ id: '00000000-0000-4000-8000-0000000000bc', sort_order: 4 }],
+    });
+
+    const response = await app({
+      config: { geminiModel: '시험용-모델' },
+    } as Partial<AppContext>).inject({
+      method: 'POST',
+      url: '/v1/admin/wedding-feed',
+      payload: {
+        categoryLabel: '예산',
+        title: '자동 제목',
+        summary: '자동 요약',
+        body: '자동 본문',
+        generated: true,
+        status: 'draft',
+        sortOrder: 4,
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(String(pool.query.mock.calls[0]?.[0])).toContain("THEN 'manual' ELSE 'generated'");
+    expect(pool.query.mock.calls[0]?.[1]).toContain('시험용-모델');
   });
 
   it('제목이 비면 DB를 건드리기 전에 거부한다', async () => {
@@ -128,6 +177,44 @@ describe('웨딩피드 관리자 라우트', () => {
     expect(pool.query.mock.calls[0]?.[0]).toContain('UPDATE structured.wedding_feed_posts');
   });
 
+  it('구버전 PUT이 bodyImageKey를 생략하면 기존 본문 이미지를 보존한다', async () => {
+    pool.query.mockResolvedValueOnce({ rowCount: 1 });
+
+    const response = await app().inject({
+      method: 'PUT',
+      url: '/v1/admin/wedding-feed/00000000-0000-4000-8000-0000000000aa',
+      payload: { categoryLabel: '예산', title: '제목', summary: '', body: '', status: 'draft', sortOrder: 1 },
+    });
+
+    expect(response.statusCode).toBe(204);
+    expect(String(pool.query.mock.calls[0]?.[0])).toContain(
+      'body_image_key = CASE WHEN $10 THEN $7 ELSE body_image_key END'
+    );
+    expect(pool.query.mock.calls[0]?.[1]?.[9]).toBe(false);
+  });
+
+  it('PUT이 bodyImageKey null을 명시하면 본문 이미지를 지울 수 있다', async () => {
+    pool.query.mockResolvedValueOnce({ rowCount: 1 });
+
+    const response = await app().inject({
+      method: 'PUT',
+      url: '/v1/admin/wedding-feed/00000000-0000-4000-8000-0000000000aa',
+      payload: {
+        categoryLabel: '예산',
+        title: '제목',
+        summary: '',
+        body: '',
+        bodyImageKey: null,
+        status: 'draft',
+        sortOrder: 1,
+      },
+    });
+
+    expect(response.statusCode).toBe(204);
+    expect(pool.query.mock.calls[0]?.[1]?.[6]).toBeNull();
+    expect(pool.query.mock.calls[0]?.[1]?.[9]).toBe(true);
+  });
+
   it('삭제는 표에서 지운다', async () => {
     pool.query.mockResolvedValueOnce({ rowCount: 1 });
 
@@ -149,6 +236,71 @@ describe('웨딩피드 관리자 라우트', () => {
     });
 
     expect(response.statusCode).toBe(404);
+  });
+
+  it('새 글 자동 작성은 선택한 카테고리 초안만 돌려주고 DB 글은 만들지 않는다', async () => {
+    process.env.GEMINI_API_KEY = 'test-key';
+    pool.query.mockResolvedValueOnce({ rowCount: 1, rows: [{ '?column?': 1 }] });
+
+    const write = jest.fn().mockResolvedValue({
+      draft: { title: '자동 제목', summary: '자동 요약', body: '자동 본문' },
+      usage: { inputTokens: 10, outputTokens: 20 },
+    });
+    jest.spyOn(weddingFeedWriter, 'createGeminiFeedWriter').mockReturnValue({ write });
+
+    const response = await app({
+      config: { geminiModel: '시험용-모델' },
+    } as Partial<AppContext>).inject({
+      method: 'POST',
+      url: '/v1/admin/wedding-feed/draft',
+      payload: { categoryLabel: '예산' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ title: '자동 제목', summary: '자동 요약', body: '자동 본문' });
+    expect(write).toHaveBeenCalledWith(expect.objectContaining({ categoryLabel: '예산' }));
+    expect(String(pool.query.mock.calls[0]?.[0])).toContain('wedding_feed_categories');
+    expect(pool.query).toHaveBeenCalledTimes(1);
+  });
+
+  it('카테고리 없이 자동 작성하면 Gemini를 부르지 않는다', async () => {
+    process.env.GEMINI_API_KEY = 'test-key';
+    const writer = jest.spyOn(weddingFeedWriter, 'createGeminiFeedWriter');
+
+    const response = await app({
+      config: { geminiModel: '시험용-모델' },
+    } as Partial<AppContext>).inject({
+      method: 'POST',
+      url: '/v1/admin/wedding-feed/draft',
+      payload: { categoryLabel: '' },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(writer).not.toHaveBeenCalled();
+    expect(pool.query).not.toHaveBeenCalled();
+  });
+
+  it('웨딩피드 이미지 업로드 자리는 썸네일과 본문을 별도 키로 만든다', async () => {
+    const createUploadTarget = jest.fn().mockResolvedValue({
+      storageKey: 'wedding-feed/thumbnail/test.png',
+      uploadUrl: 'https://upload.example/test',
+    });
+
+    const response = await app({
+      storage: { createUploadTarget } as unknown as AppContext['storage'],
+    } as Partial<AppContext>).inject({
+      method: 'POST',
+      url: '/v1/admin/wedding-feed/image/upload-target',
+      payload: { mimeType: 'image/png', kind: 'thumbnail' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(createUploadTarget).toHaveBeenCalledWith(
+      expect.objectContaining({
+        storageKey: expect.stringMatching(/^wedding-feed\/thumbnail\/.+\.png$/),
+        mimeType: 'image/png',
+      })
+    );
   });
 
   /*

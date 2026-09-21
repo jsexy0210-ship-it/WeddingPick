@@ -35,6 +35,8 @@ export type WeddingContentItem = {
 export type WeddingContentDetail = WeddingContentItem & {
   summary: string;
   body: string;
+  /** 상세 본문에만 들어가는 이미지. 카드 썸네일과 별도다. */
+  bodyImageUri: string | null;
   publishedAt: string | null;
 };
 
@@ -91,6 +93,7 @@ export async function getWeddingFeedDetail(id: string): Promise<WeddingContentDe
     summary: post.summary,
     body: post.body,
     imageUri: post.imageUrl,
+    bodyImageUri: post.bodyImageUrl,
     publishedAt: post.publishedAt,
   };
 }

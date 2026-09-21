@@ -19,8 +19,9 @@
  *
  * 사용자 홈에 바로 나가는 콘텐츠라 관리자 사이드바의 독립 메뉴에서 연다.
  */
-import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import {
   WEDDING_FEED_ALL_TAB,
@@ -57,6 +58,8 @@ type Post = {
   body: string;
   imageKey: string | null;
   imageUrl: string | null;
+  bodyImageKey: string | null;
+  bodyImageUrl: string | null;
   status: WeddingFeedStatus;
   source: 'manual' | 'generated';
   model: string | null;
@@ -83,6 +86,7 @@ type FeedData = {
   posts: Post[];
   runs: Run[];
   remainingTopics: number;
+  nextSortOrder: number;
   automation: { manualReady: boolean; scheduledEnabled: boolean };
 };
 
@@ -136,6 +140,11 @@ type FormState = {
   title: string;
   summary: string;
   body: string;
+  imageKey: string | null;
+  imageUrl: string | null;
+  bodyImageKey: string | null;
+  bodyImageUrl: string | null;
+  generated: boolean;
   status: WeddingFeedStatus;
   sortOrder: string;
 };
@@ -145,8 +154,13 @@ const BLANK_FORM: FormState = {
   title: '',
   summary: '',
   body: '',
+  imageKey: null,
+  imageUrl: null,
+  bodyImageKey: null,
+  bodyImageUrl: null,
+  generated: false,
   status: 'draft',
-  sortOrder: '0',
+  sortOrder: '1',
 };
 
 function toForm(post: Post): FormState {
@@ -155,6 +169,11 @@ function toForm(post: Post): FormState {
     title: post.title,
     summary: post.summary,
     body: post.body,
+    imageKey: post.imageKey,
+    imageUrl: post.imageUrl,
+    bodyImageKey: post.bodyImageKey,
+    bodyImageUrl: post.bodyImageUrl,
+    generated: post.source === 'generated',
     status: post.status,
     sortOrder: String(post.sortOrder),
   };
@@ -226,8 +245,13 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
    */
   const [actionMsg, setActionMsg] = useState<string | null>(null);
 
-  const [generating, setGenerating] = useState(false);
-  const [generateMsg, setGenerateMsg] = useState<string | null>(null);
+  /** 새 글 팝업 안에서만 쓰는 Gemini 초안과 이미지 업로드 상태. */
+  const [draftGenerating, setDraftGenerating] = useState(false);
+  const [draftError, setDraftError] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState<'thumbnail' | 'body' | null>(null);
+  const [previewing, setPreviewing] = useState(false);
+  /** 늦게 끝난 Gemini/업로드가 새로 연 다른 폼을 덮지 못하게 편집 세션을 구분한다. */
+  const formRevision = useRef(0);
 
   // ── 탭과 카테고리 ──
   const [editingGroup, setEditingGroup] = useState<Group | 'new' | null>(null);
@@ -257,15 +281,27 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
     id === null ? '없음' : (groups.find((g) => g.id === id)?.name ?? '없음');
 
   function openNew() {
-    setForm(BLANK_FORM);
+    formRevision.current += 1;
+    setForm({ ...BLANK_FORM, sortOrder: String(data?.nextSortOrder ?? 1) });
     setEditing('new');
+    setPreviewing(false);
     setSaveError(null);
+    setDraftError(null);
   }
 
   function openEdit(post: Post) {
+    formRevision.current += 1;
     setForm(toForm(post));
     setEditing(post);
+    setPreviewing(false);
     setSaveError(null);
+    setDraftError(null);
+  }
+
+  function closePostEditor() {
+    formRevision.current += 1;
+    setEditing(null);
+    setPreviewing(false);
   }
 
   async function save() {
@@ -278,6 +314,9 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
         title: form.title,
         summary: form.summary,
         body: form.body,
+        imageKey: form.imageKey,
+        bodyImageKey: form.bodyImageKey,
+        generated: editing === 'new' ? form.generated : false,
         status: form.status,
         sortOrder: Number.isNaN(sortOrder) ? 0 : sortOrder,
       };
@@ -290,7 +329,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
           body: JSON.stringify(payload),
         });
       }
-      setEditing(null);
+      closePostEditor();
       reload();
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : '저장 실패');
@@ -314,21 +353,98 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
     }
   }
 
-  async function generateNow() {
-    setGenerating(true);
-    setGenerateMsg(null);
-    try {
-      const res = (await apiFetch('/v1/admin/wedding-feed/generate', { method: 'POST' })) as {
-        created: number;
-        skipped: string | null;
-      };
-      setGenerateMsg(res.skipped ?? `새 초안 ${res.created}건을 썼어요.`);
-      reload();
-    } catch (e) {
-      setGenerateMsg(e instanceof Error ? e.message : '자동 작성 실패');
-    } finally {
-      setGenerating(false);
+  async function generateDraft() {
+    setDraftError(null);
+
+    if (!activeCategories.some((c) => c.name === form.categoryLabel)) {
+      setDraftError('카테고리를 먼저 선택해주세요.');
+      return;
     }
+    if (!data?.automation.manualReady) {
+      setDraftError('Gemini 연결을 확인해주세요. 지금은 자동 작성을 사용할 수 없어요.');
+      return;
+    }
+
+    const revision = formRevision.current;
+    const requestedCategory = form.categoryLabel;
+    setDraftGenerating(true);
+    try {
+      const draft = (await apiFetch('/v1/admin/wedding-feed/draft', {
+        method: 'POST',
+        body: JSON.stringify({ categoryLabel: requestedCategory }),
+      })) as { title: string; summary: string; body: string };
+
+      if (formRevision.current !== revision) return;
+      setForm((current) =>
+        current.categoryLabel === requestedCategory
+          ? {
+              ...current,
+              title: draft.title,
+              summary: draft.summary,
+              body: draft.body,
+              generated: true,
+            }
+          : current
+      );
+    } catch (e) {
+      if (formRevision.current === revision) {
+        setDraftError(e instanceof Error ? e.message : '자동 작성에 실패했어요.');
+      }
+    } finally {
+      setDraftGenerating(false);
+    }
+  }
+
+  async function uploadFeedImage(kind: 'thumbnail' | 'body') {
+    setDraftError(null);
+    const revision = formRevision.current;
+
+    const picked = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: false,
+      quality: 1,
+    });
+    if (picked.canceled || !picked.assets[0]) return;
+
+    const asset = picked.assets[0];
+    const mimeType = asset.mimeType ?? 'image/png';
+
+    setUploadingImage(kind);
+    try {
+      const blob = await fetch(asset.uri).then((response) => response.blob());
+      const target = (await apiFetch('/v1/admin/wedding-feed/image/upload-target', {
+        method: 'POST',
+        body: JSON.stringify({ mimeType, kind }),
+      })) as { storageKey: string; uploadUrl: string };
+
+      const put = await fetch(target.uploadUrl, {
+        method: 'PUT',
+        headers: { 'content-type': mimeType },
+        body: blob,
+      });
+      if (!put.ok) throw new Error(`이미지를 올리지 못했어요 (${put.status})`);
+      if (formRevision.current !== revision) return;
+
+      setForm((current) =>
+        kind === 'thumbnail'
+          ? { ...current, imageKey: target.storageKey, imageUrl: asset.uri }
+          : { ...current, bodyImageKey: target.storageKey, bodyImageUrl: asset.uri }
+      );
+    } catch (e) {
+      if (formRevision.current === revision) {
+        setDraftError(e instanceof Error ? e.message : '이미지를 올리지 못했어요.');
+      }
+    } finally {
+      setUploadingImage(null);
+    }
+  }
+
+  function clearFeedImage(kind: 'thumbnail' | 'body') {
+    setForm((current) =>
+      kind === 'thumbnail'
+        ? { ...current, imageKey: null, imageUrl: null }
+        : { ...current, bodyImageKey: null, bodyImageUrl: null }
+    );
   }
 
   function openGroup(group: Group | 'new') {
@@ -556,13 +672,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
     <Page
       embedded={embedded}
       title="웨딩피드 관리"
-      sub="홈 아래쪽에 깔리는 읽을거리 — 직접 쓰거나 자동 작성이 채운다"
-      action={{
-        label: generating ? '쓰는 중…' : '지금 자동 작성',
-        onPress: () => void generateNow(),
-        kind: 'brand',
-        disabled: generating,
-      }}
+      sub="홈 아래쪽에 깔리는 읽을거리 — 새 글에서 카테고리를 고르면 Gemini가 초안을 채운다"
     >
       <DelayedLoader active={loading} size={40} />
       {!loading && error ? <LoadError message={error} onRetry={reload} /> : null}
@@ -570,14 +680,11 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
       {!loading && !error && data ? (
         <>
           <AdminFormModal
-            visible={generateMsg !== null || actionMsg !== null}
-            title={actionMsg ? '처리 결과' : '자동 작성 결과'}
-            onClose={() => {
-              setActionMsg(null);
-              setGenerateMsg(null);
-            }}
+            visible={actionMsg !== null}
+            title="처리 결과"
+            onClose={() => setActionMsg(null)}
           >
-            <Text style={styles.resultText}>{actionMsg ?? generateMsg}</Text>
+            <Text style={styles.resultText}>{actionMsg}</Text>
           </AdminFormModal>
 
           <CardGrid>
@@ -587,7 +694,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
 
             <Card
               title="자동 작성 기록"
-              sub={`${data.automation.manualReady ? '지금 작성 가능' : '서버 설정 필요'} · ${
+              sub={`${data.automation.manualReady ? '새 글 자동 작성 가능' : '서버 설정 필요'} · ${
                 data.automation.scheduledEnabled ? '예약 작성 켜짐' : '예약 작성 꺼짐'
               } · 남은 주제 ${data.remainingTopics}개`}
               full
@@ -842,9 +949,9 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
           </AdminFormModal>
 
           <AdminFormModal
-            visible={editing !== null}
+            visible={editing !== null && !previewing}
             title={editing === 'new' ? '새 글 작성' : '글 수정'}
-            onClose={() => setEditing(null)}
+            onClose={closePostEditor}
           >
             {editing ? (
               <View style={styles.form}>
@@ -864,9 +971,11 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                     {activeCategories.map((category) => (
                       <Pressable
                         key={category.id}
-                        onPress={() =>
-                          setForm((f) => ({ ...f, categoryLabel: category.name }))
-                        }
+                        disabled={draftGenerating}
+                        onPress={() => {
+                          setForm((f) => ({ ...f, categoryLabel: category.name }));
+                          setDraftError(null);
+                        }}
                         style={[
                           styles.statusChip,
                           form.categoryLabel === category.name && styles.statusChipActive,
@@ -897,6 +1006,25 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                     」은 목록에 없어요. 위에서 하나 골라 주세요.
                   </Text>
                 ) : null}
+
+                {editing === 'new' ? (
+                  <View style={styles.inlineActions}>
+                    <Pressable
+                      style={[styles.btnPrimary, draftGenerating && styles.btnDisabled]}
+                      onPress={() => void generateDraft()}
+                      disabled={draftGenerating}
+                    >
+                      {draftGenerating ? (
+                        <ActivityIndicator color={C.onTint} />
+                      ) : (
+                        <Text style={styles.btnPrimaryLabel}>자동 작성</Text>
+                      )}
+                    </Pressable>
+                    <Text style={styles.hint}>선택한 카테고리로 제목 · 한 줄 요약 · 본문을 Gemini가 채워요.</Text>
+                  </View>
+                ) : null}
+                {draftError ? <Text style={styles.error}>{draftError}</Text> : null}
+
                 <Text style={styles.fieldLabel}>제목</Text>
                 <TextInput
                   style={styles.input}
@@ -911,6 +1039,35 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                   onChangeText={(v) => setForm((f) => ({ ...f, summary: v }))}
                   maxLength={WEDDING_FEED_LIMITS.summary}
                 />
+                <Text style={styles.fieldLabel}>대표 썸네일</Text>
+                <View style={styles.imageField}>
+                  {form.imageUrl ? (
+                    <Image source={{ uri: form.imageUrl }} style={styles.thumbnailPreview} resizeMode="cover" />
+                  ) : (
+                    <View style={[styles.thumbnailPreview, styles.imageEmpty]}>
+                      <Text style={styles.imageEmptyText}>등록된 썸네일 없음</Text>
+                    </View>
+                  )}
+                  <View style={styles.inlineActions}>
+                    <Pressable
+                      style={styles.btnGhost}
+                      onPress={() => void uploadFeedImage('thumbnail')}
+                      disabled={uploadingImage !== null}
+                    >
+                      {uploadingImage === 'thumbnail' ? (
+                        <ActivityIndicator />
+                      ) : (
+                        <Text style={styles.btnGhostLabel}>{form.imageKey ? '썸네일 교체' : '썸네일 올리기'}</Text>
+                      )}
+                    </Pressable>
+                    {form.imageKey ? (
+                      <Pressable style={styles.btnGhost} onPress={() => clearFeedImage('thumbnail')} disabled={uploadingImage !== null}>
+                        <Text style={styles.btnGhostLabel}>삭제</Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
+                </View>
+
                 <Text style={styles.fieldLabel}>본문</Text>
                 <TextInput
                   style={[styles.input, styles.multiline]}
@@ -921,13 +1078,49 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                   maxLength={WEDDING_FEED_LIMITS.body}
                   textAlignVertical="top"
                 />
+
+                <Text style={styles.fieldLabel}>본문 이미지</Text>
+                <View style={styles.imageField}>
+                  {form.bodyImageUrl ? (
+                    <Image source={{ uri: form.bodyImageUrl }} style={styles.bodyImagePreview} resizeMode="cover" />
+                  ) : (
+                    <View style={[styles.bodyImagePreview, styles.imageEmpty]}>
+                      <Text style={styles.imageEmptyText}>등록된 본문 이미지 없음</Text>
+                    </View>
+                  )}
+                  <View style={styles.inlineActions}>
+                    <Pressable
+                      style={styles.btnGhost}
+                      onPress={() => void uploadFeedImage('body')}
+                      disabled={uploadingImage !== null}
+                    >
+                      {uploadingImage === 'body' ? (
+                        <ActivityIndicator />
+                      ) : (
+                        <Text style={styles.btnGhostLabel}>{form.bodyImageKey ? '본문 이미지 교체' : '본문 이미지 올리기'}</Text>
+                      )}
+                    </Pressable>
+                    {form.bodyImageKey ? (
+                      <Pressable style={styles.btnGhost} onPress={() => clearFeedImage('body')} disabled={uploadingImage !== null}>
+                        <Text style={styles.btnGhostLabel}>삭제</Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
+                </View>
+
                 <Text style={styles.fieldLabel}>노출 순서</Text>
                 <TextInput
                   style={styles.input}
                   value={form.sortOrder}
                   onChangeText={(v) => setForm((f) => ({ ...f, sortOrder: v }))}
                   keyboardType="numeric"
+                  editable={editing !== 'new'}
                 />
+                {editing === 'new' ? (
+                  <Text style={styles.hint}>
+                    현재 마지막 번호 다음 값이에요. 저장할 때 서버가 최신 번호를 다시 확인해 확정해요.
+                  </Text>
+                ) : null}
                 <Text style={styles.fieldLabel}>상태</Text>
                 <View style={styles.statusRow}>
                   {WEDDING_FEED_STATUSES.map((status) => (
@@ -946,7 +1139,14 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                 {saveError ? <Text style={styles.error}>{saveError}</Text> : null}
 
                 <View style={styles.formActions}>
-                  <Pressable style={styles.btnGhost} onPress={() => setEditing(null)} disabled={saving}>
+                  <Pressable
+                    style={styles.btnGhost}
+                    onPress={() => setPreviewing(true)}
+                    disabled={saving}
+                  >
+                    <Text style={styles.btnGhostLabel}>미리보기</Text>
+                  </Pressable>
+                  <Pressable style={styles.btnGhost} onPress={closePostEditor} disabled={saving}>
                     <Text style={styles.btnGhostLabel}>취소</Text>
                   </Pressable>
                   <Pressable
@@ -959,6 +1159,42 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                 </View>
               </View>
             ) : null}
+          </AdminFormModal>
+
+          <AdminFormModal
+            visible={editing !== null && previewing}
+            title="콘텐츠 미리보기"
+            onClose={() => setPreviewing(false)}
+          >
+            {editing ? (
+              <View style={styles.previewPhone}>
+                {form.imageUrl ? (
+                  <Image source={{ uri: form.imageUrl }} style={styles.previewHero} resizeMode="cover" />
+                ) : (
+                  <View style={[styles.previewHero, styles.imageEmpty]}>
+                    <Text style={styles.imageEmptyText}>대표 썸네일</Text>
+                  </View>
+                )}
+                <View style={styles.previewContent}>
+                  <View style={styles.previewBadge}>
+                    <Text style={styles.previewBadgeText}>
+                      {form.categoryLabel || '카테고리'}
+                    </Text>
+                  </View>
+                  <Text style={styles.previewTitle}>{form.title || '제목이 여기에 표시돼요.'}</Text>
+                  {form.summary ? <Text style={styles.previewSummary}>{form.summary}</Text> : null}
+                  {form.bodyImageUrl ? (
+                    <Image source={{ uri: form.bodyImageUrl }} style={styles.previewBodyImage} resizeMode="cover" />
+                  ) : null}
+                  <Text style={styles.previewBody}>{form.body || '본문이 여기에 표시돼요.'}</Text>
+                </View>
+              </View>
+            ) : null}
+            <View style={styles.formActions}>
+              <Pressable style={styles.btnGhost} onPress={() => setPreviewing(false)}>
+                <Text style={styles.btnGhostLabel}>편집으로 돌아가기</Text>
+              </Pressable>
+            </View>
           </AdminFormModal>
 
           {deletingGroup ? (
@@ -1053,6 +1289,36 @@ const styles = StyleSheet.create({
   emptyRuns: { fontSize: FontSize.micro, color: C.textAssistive },
   resultText: { fontSize: FontSize.t7, lineHeight: LineHeight.t7Loose, color: C.text },
   form: { gap: Spacing.two },
+  inlineActions: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: Spacing.two },
+  imageField: { gap: Spacing.two },
+  thumbnailPreview: { width: '100%', height: 180, borderRadius: Radius.control, overflow: 'hidden' },
+  bodyImagePreview: { width: '100%', height: 220, borderRadius: Radius.control, overflow: 'hidden' },
+  imageEmpty: { alignItems: 'center', justifyContent: 'center', backgroundColor: C.backgroundSelected },
+  imageEmptyText: { fontSize: FontSize.tab, color: C.textAssistive },
+  previewPhone: {
+    width: '100%',
+    maxWidth: 390,
+    alignSelf: 'center',
+    borderWidth: 1,
+    borderColor: C.fieldBorder,
+    borderRadius: Radius.card,
+    overflow: 'hidden',
+    backgroundColor: C.background,
+  },
+  previewHero: { width: '100%', height: 210 },
+  previewContent: { padding: Spacing.four, gap: Spacing.three },
+  previewBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.one,
+    borderRadius: Radius.control,
+    backgroundColor: C.backgroundSelected,
+  },
+  previewBadgeText: { fontSize: FontSize.micro, fontWeight: '700', color: C.tint },
+  previewTitle: { fontSize: FontSize.t3, lineHeight: LineHeight.t3, fontWeight: '700', color: C.text },
+  previewSummary: { fontSize: FontSize.t7, lineHeight: LineHeight.t7Loose, color: C.textSecondary },
+  previewBodyImage: { width: '100%', height: 190, borderRadius: Radius.control },
+  previewBody: { fontSize: FontSize.t7, lineHeight: LineHeight.t7Loose, color: C.text },
   fieldLabel: { fontSize: FontSize.tab, fontWeight: '700', color: C.textAssistive, marginTop: Spacing.two },
   input: {
     height: 40,

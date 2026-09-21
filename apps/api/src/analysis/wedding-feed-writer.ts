@@ -26,12 +26,21 @@ import { callGemini } from './gemini-call';
 export const feedDraftSchema = z.object({
   title: z
     .string()
+    .trim()
+    .min(1)
+    .max(WEDDING_FEED_LIMITS.title)
     .describe(`글 제목. ${WEDDING_FEED_LIMITS.title}자 이내. 명사로 끝낸다.`),
   summary: z
     .string()
+    .trim()
+    .min(1)
+    .max(WEDDING_FEED_LIMITS.summary)
     .describe(`카드에 한 줄로 들어갈 요약. ${WEDDING_FEED_LIMITS.summary}자 이내.`),
   body: z
     .string()
+    .trim()
+    .min(1)
+    .max(WEDDING_FEED_LIMITS.body)
     .describe(`본문. ${WEDDING_FEED_LIMITS.body}자 이내. 문단 사이는 빈 줄로 나눈다.`),
 });
 
