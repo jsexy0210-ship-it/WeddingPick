@@ -92,7 +92,7 @@ export const categoryRecommendationSchema = z.object({
   state: z.enum(CATEGORY_PICK_STATES),
   /** 담아둔 후보 수. 상태를 다시 계산하려는 화면이 없도록 함께 내려준다. */
   pickCount: z.int().nonnegative(),
-  /** 최대 3곳. 자료가 모자라면 그만큼만 — 억지로 채우지 않는다. */
+  /** 최대 5곳. 자료가 모자라면 그만큼만 — 억지로 채우지 않는다. */
   vendors: z.array(vendorSummarySchema).max(RECOMMEND_VENDORS_PER_CATEGORY),
 });
 
