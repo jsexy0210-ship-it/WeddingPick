@@ -22,23 +22,25 @@ const group = (category: VendorCategory): CategoryRecommendation => ({
 
 function Probe({
   groups,
+  preferred = null,
   onReady,
 }: {
   groups: readonly CategoryRecommendation[];
+  preferred?: VendorCategory | null;
   onReady: (api: { open: VendorCategory | null; toggle: (c: VendorCategory) => void }) => void;
 }) {
-  const api = useOpenCategory(groups);
+  const api = useOpenCategory(groups, preferred);
   onReady(api);
 
   return <Text>{api.open ?? 'none'}</Text>;
 }
 
-function setup(groups: readonly CategoryRecommendation[]) {
+function setup(groups: readonly CategoryRecommendation[], preferred: VendorCategory | null = null) {
   let api!: { open: VendorCategory | null; toggle: (c: VendorCategory) => void };
   let view!: ReactTestRenderer;
 
   act(() => {
-    view = create(<Probe groups={groups} onReady={(next) => (api = next)} />);
+    view = create(<Probe groups={groups} preferred={preferred} onReady={(next) => (api = next)} />);
   });
 
   return {
@@ -48,7 +50,7 @@ function setup(groups: readonly CategoryRecommendation[]) {
     toggle: (category: VendorCategory) => act(() => api.toggle(category)),
     setGroups: (next: readonly CategoryRecommendation[]) =>
       act(() => {
-        view.update(<Probe groups={next} onReady={(value) => (api = value)} />);
+        view.update(<Probe groups={next} preferred={preferred} onReady={(value) => (api = value)} />);
       }),
   };
 }
@@ -56,6 +58,18 @@ function setup(groups: readonly CategoryRecommendation[]) {
 describe('useOpenCategory', () => {
   it('첫 진입에는 첫 업종이 펼쳐진다 (§5)', () => {
     const view = setup([group('hall'), group('studio'), group('makeup')]);
+
+    expect(view.open).toBe('hall');
+  });
+
+  it('요청 업종이 있으면 목록 순서보다 요청 업종을 먼저 펼친다', () => {
+    const view = setup([group('hall'), group('studio'), group('makeup')], 'studio');
+
+    expect(view.open).toBe('studio');
+  });
+
+  it('목록에 없는 요청 업종은 첫 업종으로 안전하게 되돌린다', () => {
+    const view = setup([group('hall'), group('studio')], 'makeup');
 
     expect(view.open).toBe('hall');
   });
