@@ -47,13 +47,15 @@ import {
  */
 export default function PickDoneScreen() {
   const theme = useTheme();
-  const { category, vendorName } = useLocalSearchParams<{
+  const { category, vendorId, vendorName } = useLocalSearchParams<{
     category: string;
+    vendorId: string;
     vendorName: string;
   }>();
 
   const categoryLabel = VENDOR_CATEGORY_LABEL[category as VendorCategory] ?? category ?? '';
   const vendor = vendorName ?? '';
+  const decidedVendorId = vendorId ?? '';
 
   /** 지출 추가 화면이 웨딩 id를 경로에 쓴다. 없으면(아직 못 읽었으면) 누를 때 한 번 더 읽는다. */
   const [weddingId, setWeddingId] = useState<string | null>(null);
@@ -71,6 +73,14 @@ export default function PickDoneScreen() {
       alive = false;
     };
   }, []);
+
+  function goConsult() {
+    if (!decidedVendorId) {
+      router.replace('/pick');
+      return;
+    }
+    router.replace(`/search/${decidedVendorId}/consult`);
+  }
 
   async function goAddExpense() {
     const target = weddingId ?? (await getCurrentUser().then((me) => me.weddingId ?? null).catch(() => null));
@@ -234,19 +244,29 @@ export default function PickDoneScreen() {
             ))}
           </Animated.View>
 
-          {/* ── 5. 다음 준비 — 지출 넣기(WP-OUR-014). 화면의 유일한 coral CTA. ── */}
+          {/* ── 5. 최종 Pick 이후 후속 행동 — 상담 예약을 먼저 열고 지출 기록도 유지한다. ── */}
           <Animated.View style={[styles.next, rise(2)]}>
             <View style={[styles.nextBox, { backgroundColor: theme.tintSurface, borderColor: theme.tintBorder }]}>
               <View style={styles.nextText}>
-                <ThemedText type="t7" themeColor="tint" style={styles.bold}>다음 준비 · 지출</ThemedText>
-                <ThemedText type="t5">지출을 넣어두시겠어요? 금액을 기억하는 지금이 가장 정확해요</ThemedText>
+                <ThemedText type="t7" themeColor="tint" style={styles.bold}>다음 단계 · 상담 예약</ThemedText>
+                <ThemedText type="t5">최종 Pick이 끝났어요. 상담 날짜와 시간을 이어서 정할 수 있어요</ThemedText>
               </View>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="지출 넣기"
-                onPress={() => void goAddExpense()}
+                accessibilityLabel="상담 예약하기"
+                onPress={goConsult}
                 style={({ pressed }) => [styles.cta, { backgroundColor: theme.tint, opacity: pressed ? 0.8 : 1 }]}>
-                <ThemedText type="t5" themeColor="onTint">지출 넣기</ThemedText>
+                <ThemedText type="t5" themeColor="onTint">상담 예약하기</ThemedText>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="지출도 기록하기"
+                onPress={() => void goAddExpense()}
+                style={({ pressed }) => [
+                  styles.cta,
+                  { backgroundColor: theme.background, opacity: pressed ? 0.8 : 1 },
+                ]}>
+                <ThemedText type="t5">지출도 기록하기</ThemedText>
               </Pressable>
             </View>
           </Animated.View>
