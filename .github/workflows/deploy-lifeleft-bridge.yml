@@ -1,3 +1,4 @@
+# bridge-revision: 2026-09-21-domain-live
 name: Deploy LifeLeft Bridge
 
 on:
