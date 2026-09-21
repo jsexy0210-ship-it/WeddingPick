@@ -2,11 +2,9 @@ import type { CategoryRecommendation, VendorSummary } from '@weddingpick/api-con
 import {
   NOT_ENOUGH_DATA,
   RECOMMEND_VENDORS_PER_CATEGORY,
-  VENDOR_CATEGORY_LABEL,
   formatCount,
   nextStepsCountLine,
   nextStepsSummary,
-  priceLine,
   type VendorCategory,
 } from '@weddingpick/domain';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -24,7 +22,6 @@ import {
 } from '@weddingpick/ui';
 
 import strings from '../../../../../spec/strings.ko.json';
-import { CategoryImage } from './category-image';
 import { VendorCard } from './vendor-card';
 
 const S = strings.home;
