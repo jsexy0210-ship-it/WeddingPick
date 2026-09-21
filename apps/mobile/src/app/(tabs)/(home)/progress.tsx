@@ -385,5 +385,14 @@ const styles = StyleSheet.create({
   badgeWithMeta: { marginTop: Spacing.half },
   chevronWithMeta: { paddingTop: 3 },
   divider: { height: 1 },
+  loadingGroup: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four, gap: Spacing.two },
+  loadingRow: {
+    minHeight: Layout.rowMinHeight,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+  },
+  loadingCopy: { flex: 1, gap: Spacing.one },
   pressed: { opacity: 0.8 },
 });
