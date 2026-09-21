@@ -143,26 +143,39 @@ describe('정본 알림 설정', () => {
     expect(tree.root.findAllByType(Switch)).toHaveLength(3);
   });
 
-  it('분리 저장된 서비스 알림 중 하나라도 켜져 있으면 켜짐으로 표시한다', async () => {
+  it('서비스 알림은 실제 마스터 게이트인 전체 푸시 값을 표시한다', async () => {
     jest.mocked(getSettings).mockResolvedValueOnce({
       ...settings,
-      priceChangeEnabled: false,
+      pushEnabled: false,
+      priceChangeEnabled: true,
     } as never);
     jest.mocked(updateSettings).mockResolvedValue({
       ...settings,
-      pushEnabled: false,
-      priceChangeEnabled: false,
+      pushEnabled: true,
+      priceChangeEnabled: true,
     } as never);
 
     await mount(<NotificationSettingsScreen />);
     const service = tree.root.findAllByType(Switch)[0]!;
-    expect(service.props.value).toBe(true);
-    await act(async () => service.props.onValueChange(false));
+    expect(service.props.value).toBe(false);
+    await act(async () => service.props.onValueChange(true));
     expect(updateSettings).toHaveBeenCalledWith({
-      pushEnabled: false,
-      priceChangeEnabled: false,
+      pushEnabled: true,
+      priceChangeEnabled: true,
     });
   });
+});
+
+it('프로필은 알림 설정 조회가 실패해도 계정 기능을 계속 보여준다', async () => {
+  jest.mocked(getSettings).mockRejectedValueOnce(new Error('offline'));
+
+  await mount(<ProfileScreen />);
+
+  expect(tree.root.findAllByType('ErrorView' as never)).toHaveLength(0);
+  const rows = tree.root.findAllByType('Row' as never);
+  expect(rows.some((node) => node.props.name === '로그아웃')).toBe(true);
+  expect(rows.some((node) => node.props.name === '회원 탈퇴')).toBe(true);
+  expect(tree.root.findAllByType('ActionButton' as never).some((node) => node.props.label === '다시 불러오기')).toBe(true);
 });
 
 it('프로필의 배우자 노출 이름만 displayName 편집을 연다', async () => {
