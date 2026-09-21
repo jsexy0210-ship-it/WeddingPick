@@ -94,6 +94,11 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(pick).toContain('VENDOR_CATEGORIES.includes(rawCategory as VendorCategory)');
     expect(pick).toContain('<CompareBasket');
 
+    const home = mobile('app/(tabs)/index.tsx');
+    expect(home).toContain('item.pickCount > 0');
+    expect(home).toContain(`/pick/\${item.category}`);
+    expect(home).toContain(`/pick?section=recommendations&category=\${item.category}`);
+
     const recommendations = mobile('app/(tabs)/(home)/recommendations.tsx');
     expect(recommendations).toContain("pathname: '/pick'");
     expect(recommendations).toContain("section: 'recommendations'");
