@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { Image, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BackBar } from '@/components/back-bar';
@@ -17,6 +17,7 @@ import {
   ErrorView,
   Layout,
   MaxContentWidth,
+  Radius,
   Spacing,
   ThemedText,
   ThemedView,
@@ -131,6 +132,9 @@ export default function WeddingFeedDetailScreen() {
                 {post.summary}
               </ThemedText>
             ) : null}
+            {post.bodyImageUri ? (
+              <Image source={{ uri: post.bodyImageUri }} style={styles.bodyImage} resizeMode="cover" />
+            ) : null}
             <ThemedText type="body" themeColor={post.body ? undefined : 'textSecondary'}>
               {post.body || S['detail.emptyBody']}
             </ThemedText>
@@ -162,4 +166,5 @@ const styles = StyleSheet.create({
   hero: { width: '100%', height: Layout.heroFeed, overflow: 'hidden' },
   header: { gap: Spacing.one },
   badgeRow: { flexDirection: 'row' },
+  bodyImage: { width: '100%', height: 220, borderRadius: Radius.control },
 });
