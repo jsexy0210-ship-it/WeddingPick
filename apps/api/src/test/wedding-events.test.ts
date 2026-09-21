@@ -100,6 +100,50 @@ describeWithDb('일정', () => {
     expect(allowed.statusCode).toBe(201);
   });
 
+  it('기존 수기 일정에 업체를 붙일 때도 최종 Pick을 다시 확인한다', async () => {
+    const { headers, weddingId } = await mine();
+    const { rows } = await test.pool.query<{ id: string }>(
+      `INSERT INTO structured.vendors (name, category, region, source)
+       VALUES ('수정 테스트홀', 'hall', '서울', 'public_data')
+       RETURNING id`
+    );
+    const vendorId = rows[0]!.id;
+
+    const created = await test.app.inject({
+      method: 'POST',
+      url: `/v1/weddings/${weddingId}/events`,
+      headers,
+      payload: { title: '개인 일정', startsAt: at(12) },
+    });
+    const eventId = created.json<{ eventId: string }>().eventId;
+
+    const blocked = await test.app.inject({
+      method: 'PATCH',
+      url: `/v1/weddings/${weddingId}/events/${eventId}`,
+      headers,
+      payload: { vendorId },
+    });
+    expect(blocked.statusCode).toBe(403);
+
+    await test.pool.query(
+      'INSERT INTO structured.vendor_candidates (wedding_id, vendor_id) VALUES ($1, $2)',
+      [weddingId, vendorId]
+    );
+    await test.pool.query(
+      `INSERT INTO structured.category_decisions (wedding_id, category, vendor_id)
+       VALUES ($1, 'hall', $2)`,
+      [weddingId, vendorId]
+    );
+
+    const allowed = await test.app.inject({
+      method: 'PATCH',
+      url: `/v1/weddings/${weddingId}/events/${eventId}`,
+      headers,
+      payload: { vendorId },
+    });
+    expect(allowed.statusCode).toBe(200);
+  });
+
   it('지난 일정은 완료로, 다가올 일정은 예정으로 계산한다', async () => {
     // 저장하지 않는다 — starts_at과 지금을 비교해 매번 계산한다.
     const { headers, weddingId } = await mine();
