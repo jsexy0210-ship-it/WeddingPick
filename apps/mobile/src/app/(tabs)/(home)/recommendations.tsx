@@ -1,5 +1,5 @@
-import type { CategoryRecommendation, VendorCandidate, VendorSummary } from '@weddingpick/api-contract';
-import { nextStepsCountLine, VENDOR_CATEGORY_LABEL, type VendorCategory } from '@weddingpick/domain';
+import type { CategoryRecommendation, VendorSummary } from '@weddingpick/api-contract';
+import { VENDOR_CATEGORY_LABEL, type VendorCategory } from '@weddingpick/domain';
 import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -13,7 +13,6 @@ import {
   EmptyView,
   ErrorView,
   Layout,
-  LetterSpacing,
   Radius,
   SeedIcon,
   Skeleton,
@@ -25,8 +24,7 @@ import {
 } from '@weddingpick/ui';
 import { PickRecommend } from '@/features/home/pick-recommend';
 import { useOpenCategory } from '@/features/home/use-open-category';
-import { PickDoneSheet, UnpickSheet } from '@/features/pick/pick-sheets';
-import { useMyCandidates } from '@/features/pick/use-my-candidates';
+import { useFavoriteVendors } from '@/features/pick/use-favorite-vendors';
 
 const S = strings.home;
 
@@ -72,10 +70,8 @@ export function RecommendationsContent({
   const [state, setState] = useState<State | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const candidates = useMyCandidates();
-  const reloadCandidates = candidates.reload;
-  const [pickDoneOpen, setPickDoneOpen] = useState(false);
-  const [unpickTarget, setUnpickTarget] = useState<VendorCandidate | null>(null);
+  const favorites = useFavoriteVendors();
+  const reloadFavorites = favorites.reload;
   const [toast, setToast] = useState<string | null>(null);
   /* 홈과 같은 single-open 아코디언 규칙을 쓴다 — 첫 업종이 기본으로 펼쳐진다. */
   const { open, toggle } = useOpenCategory(state?.groups ?? NO_GROUPS, requestedCategory);
@@ -100,7 +96,7 @@ export function RecommendationsContent({
     const hadData = loadedOnce.current;
     if (hadData) setRefreshing(true);
 
-    void Promise.allSettled([load(), reloadCandidates()])
+    void Promise.allSettled([load(), reloadFavorites()])
       .finally(() => {
         if (active && hadData) setRefreshing(false);
       });
@@ -109,35 +105,18 @@ export function RecommendationsContent({
       active = false;
       version.current += 1;
     };
-  }, [load, reloadCandidates]));
+  }, [load, reloadFavorites]));
 
-  async function onPressPick(vendor: VendorSummary) {
-    const existing = candidates.candidateFor(vendor.id);
-    if (existing) {
-      setUnpickTarget(existing);
-      return;
-    }
-    const result = await candidates.pick(vendor.id);
-    if (result === 'picked') { setPickDoneOpen(true); load(); }
-    else if (result === 'login') router.push('/login');
-    else setToast(S['pick.failed']);
-  }
-
-  async function confirmUnpick() {
-    if (!unpickTarget) return;
-    const ok = await candidates.unpick(unpickTarget);
-    setUnpickTarget(null);
-    if (!ok) setToast(S['unpick.failed']);
-    else load();
+  async function onPressFavorite(vendor: VendorSummary) {
+    const result = await favorites.toggle(vendor.id);
+    if (result === 'login') router.push('/login');
+    else if (result === 'error') setToast('관심업체를 변경하지 못했어요. 잠시 후 다시 시도해주세요.');
   }
 
   if (error) return <ErrorView message={error} onRetry={load} />;
   if (state === null) {
     return (
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <ThemedText type="f26" style={[styles.bold, styles.title]}>{S['recommend.title']}</ThemedText>
-        </View>
         <View style={styles.initialSkeleton}>
           {Array.from({ length: 3 }, (_, index) => (
             <View key={index} style={styles.initialGroup}>
@@ -165,18 +144,9 @@ export function RecommendationsContent({
   return (
     <>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <ThemedText type="f26" style={[styles.bold, styles.title]}>
-            {S['recommend.title']}
-          </ThemedText>
+        <View style={styles.refreshRow}>
           <DelayedLoader active={refreshing} size={20} />
         </View>
-        {state.groups.length === 0 || requestedCategoryMissing ? null : (
-          <ThemedText type="f13" numeric themeColor="textAssistive" style={styles.sub}>
-            {nextStepsCountLine(state.remaining)}
-          </ThemedText>
-        )}
-
         {requestedCategoryMissing && requestedCategory && requestedCategoryLabel ? (
           <EmptyView
             scope="section"
@@ -206,9 +176,9 @@ export function RecommendationsContent({
              */
             remaining={state.remaining}
             remainingCategories={[]}
-            isPicked={(vendorId) => candidates.candidateFor(vendorId) !== null}
+            isFavorite={(vendorId) => favorites.favoriteFor(vendorId) !== null}
             onPressVendor={(vendorId) => router.push(`/search/${vendorId}`)}
-            onPressPick={(vendor) => void onPressPick(vendor)}
+            onPressFavorite={(vendor) => void onPressFavorite(vendor)}
             onPressCompare={(category) => router.push(`/pick/${category}`)}
             /* 홈의 「더보기」와 이름을 구분한다(§13) — 이쪽은 검색으로 간다. */
             onPressSearchMore={(category) => router.push(`/search?category=${category}`)}
@@ -220,14 +190,6 @@ export function RecommendationsContent({
         )}
       </ScrollView>
 
-      <PickDoneSheet visible={pickDoneOpen} onDismiss={() => setPickDoneOpen(false)} />
-      <UnpickSheet
-        candidate={unpickTarget}
-        partnerName={candidates.partnerName}
-        busy={candidates.busyVendorId !== null}
-        onConfirm={() => void confirmUnpick()}
-        onDismiss={() => setUnpickTarget(null)}
-      />
       <Toast message={toast} onHidden={() => setToast(null)} />
     </>
   );
@@ -265,17 +227,7 @@ function RecommendationsDone({ onOpenNote }: { onOpenNote: () => void }) {
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: { paddingBottom: Spacing.five },
-  header: {
-    height: Layout.navBar,
-    paddingHorizontal: Layout.gutter,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.two,
-  },
-  bold: { fontWeight: 700 },
-  title: { letterSpacing: LetterSpacing.n065 },
-  sub: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionHeadGap },
+  refreshRow: { minHeight: Spacing.two, alignItems: 'flex-end', paddingHorizontal: Layout.gutter },
   initialSkeleton: { paddingBottom: Layout.sectionGap },
   initialGroup: {
     paddingHorizontal: Layout.gutter,
