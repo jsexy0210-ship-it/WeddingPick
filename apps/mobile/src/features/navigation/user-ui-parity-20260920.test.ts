@@ -90,15 +90,47 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(pick).toContain("requestedSection === 'recommendations' || requestedSection === 'compare'");
     expect(pick).toContain("section === 'recommendations'");
     expect(pick).toContain("section === 'compare'");
-    expect(pick).toContain('<RecommendationsContent />');
+    expect(pick).toContain('<RecommendationsContent requestedCategory={requestedCategory} />');
+    expect(pick).toContain('VENDOR_CATEGORIES.includes(rawCategory as VendorCategory)');
     expect(pick).toContain('<CompareBasket');
 
     const recommendations = mobile('app/(tabs)/(home)/recommendations.tsx');
     expect(recommendations).toContain("pathname: '/pick'");
     expect(recommendations).toContain("section: 'recommendations'");
+    expect(recommendations).toContain('requestedCategory');
+    expect(recommendations).toContain('category: requestedCategory');
     expect(recommendations).not.toContain('useDepthBack');
     expect(mobile('app/(tabs)/pick/[category].tsx')).toContain("pathname: '/search/compare'");
     expect(mobile('app/(tabs)/pick/[category].tsx')).not.toContain('<PickSectionTabs');
+  });
+  it('최종 Pick 저장 뒤에만 상담 예약을 열고 직접 URL에서도 다시 검증한다', () => {
+    const detail = mobile('app/(tabs)/search/[vendorId]/index.tsx');
+    expect(detail).toContain("decided ? '상담 예약하기' : picked ? '최종 Pick하기'");
+    expect(detail).toContain("group.decidedVendorId === vendor.id");
+    expect(detail).toContain("pathname: '/pick/confirm'");
+
+    const review = mobile('app/(tabs)/search/[vendorId]/review/[reviewId].tsx');
+    expect(review).not.toContain("router.push(\`/search/\${vendorId}/consult\`)");
+    expect(review).toContain("router.push(\`/search/\${vendorId}\`)");
+
+    const done = mobile('app/(tabs)/pick/done.tsx');
+    expect(done).toContain('상담 예약하기');
+    expect(done).toContain('vendorId: string');
+
+    const consult = mobile('app/(tabs)/search/[vendorId]/consult.tsx');
+    expect(consult).toContain('listCandidates(me.weddingId)');
+    expect(consult).toContain('group.decidedVendorId === vendorId');
+    expect(consult).toContain('최종 Pick 확인이 필요해요');
+    expect(consult).toContain('일정 등록하기');
+  });
+
+  it('빈 상태는 페이지 전체와 섹션 범위를 구분한다', () => {
+    const status = root('packages/ui/src/status-view.tsx');
+    expect(status).toContain("scope?: 'page' | 'section'");
+    expect(status).toContain("scope === 'section'");
+    expect(mobile('app/(tabs)/(home)/recommendations.tsx')).toContain('<EmptyView scope="section"');
+    expect(mobile('app/(tabs)/search/[vendorId]/images.tsx')).toContain('<EmptyView scope="section"');
+    expect(mobile('app/(tabs)/pick/history.tsx')).toContain('<EmptyView scope="section"');
   });
   it('최초 예산은 만원 입력을 원으로 환산한다', () => {
     const s = mobile('app/(tabs)/wedding/index.tsx');
