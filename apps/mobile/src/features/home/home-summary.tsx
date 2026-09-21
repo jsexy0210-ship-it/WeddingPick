@@ -24,7 +24,7 @@ export function PendingPreparation({
   statuses, onOpen, onMore, onComplete,
 }: {
   statuses: readonly CategoryStatus[];
-  onOpen: (category: VendorCategory) => void;
+  onOpen: (item: CategoryStatus) => void;
   onMore: () => void;
   onComplete: () => void;
 }) {
@@ -50,7 +50,7 @@ export function PendingPreparation({
                 key={item.category}
                 accessibilityRole="button"
                 accessibilityLabel={item.label}
-                onPress={() => onOpen(item.category)}
+                onPress={() => onOpen(item)}
                 style={({ pressed }) => [
                   styles.card,
                   {
