@@ -1,6 +1,7 @@
 import {
   analysisSchema,
   candidateListResponseSchema,
+  favoriteVendorListResponseSchema,
   decisionListResponseSchema,
   expenseDetailSchema,
   expenseSummaryResponseSchema,
@@ -59,6 +60,7 @@ import {
   verificationRequestSchema,
   weddingDetailSchema,
   type CandidateListResponse,
+  type FavoriteVendorListResponse,
   type ConditionStats,
   type DecideCategoryRequest,
   type MyRewardsResponse,
@@ -1069,6 +1071,22 @@ export async function listCandidates(
   });
 }
 
+export async function listFavoriteVendors(): Promise<FavoriteVendorListResponse> {
+  return request('/v1/me/favorite-vendors', favoriteVendorListResponseSchema);
+}
+
+export async function addFavoriteVendor(vendorId: string): Promise<{ favoriteId: string }> {
+  return request('/v1/me/favorite-vendors', z.object({ favoriteId: z.string() }), {
+    method: 'POST',
+    body: JSON.stringify({ vendorId }),
+  });
+}
+
+export async function removeFavoriteVendor(vendorId: string): Promise<void> {
+  await request(`/v1/me/favorite-vendors/${vendorId}`, z.null(), { method: 'DELETE' });
+}
+
+/** 나의 Pick에 담기. 관심업체(하트)와는 별도 상태다. */
 export async function addCandidate(
   weddingId: string,
   vendorId: string,
