@@ -39,6 +39,7 @@ type Row = {
   summary: string;
   body: string;
   image_key: string | null;
+  body_image_key: string | null;
   status: WeddingFeedStatus;
   source: 'manual' | 'generated';
   model: string | null;
@@ -49,7 +50,7 @@ type Row = {
   updated_at: Date;
 };
 
-const COLUMNS = `id, category_label, title, summary, body, image_key, status, source,
+const COLUMNS = `id, category_label, title, summary, body, image_key, body_image_key, status, source,
                  model, topic, sort_order, published_at, created_at, updated_at`;
 
 async function toPost(row: Row, storage: FeedStorage | null) {
@@ -62,6 +63,9 @@ async function toPost(row: Row, storage: FeedStorage | null) {
     imageKey: row.image_key,
     imageUrl:
       row.image_key && storage ? await storage.getPublicUrl(row.image_key, 3600) : null,
+    bodyImageKey: row.body_image_key,
+    bodyImageUrl:
+      row.body_image_key && storage ? await storage.getPublicUrl(row.body_image_key, 3600) : null,
     status: row.status,
     source: row.source,
     model: row.model,
@@ -140,6 +144,7 @@ export async function listForAdmin(pool: Pool, storage: FeedStorage | null) {
       trigger: row.trigger,
     })),
     remainingTopics: WEDDING_FEED_TOPICS.filter((topic) => !usedTopics.has(topic.key)).length,
+    nextSortOrder: rows.reduce((max, row) => Math.max(max, row.sort_order), 0) + 1,
   };
 }
 
@@ -203,6 +208,7 @@ export async function getPublished(pool: Pool, storage: FeedStorage | null, id: 
     summary: post.summary,
     body: post.body,
     imageUrl: post.imageUrl,
+    bodyImageUrl: post.bodyImageUrl,
     publishedAt: post.publishedAt,
   };
 }
@@ -211,28 +217,33 @@ export async function create(
   pool: Pool,
   input: FeedInput,
   createdBy: string | null
-): Promise<{ id: string }> {
-  const { rows } = await pool.query<{ id: string }>(
+): Promise<{ id: string; sortOrder: number }> {
+  /*
+   * 새 글 순서는 클라이언트가 열어 둔 값이 아니라 저장 순간의 서버 DB를 기준으로
+   * 다시 계산한다. 팝업을 오래 열어 둔 사이 다른 글이 생겨도 낡은 번호를 저장하지 않는다.
+   */
+  const { rows } = await pool.query<{ id: string; sort_order: number }>(
     `INSERT INTO structured.wedding_feed_posts
-       (category_label, category_id, title, summary, body, image_key, status, sort_order,
-        published_at, created_by)
-     VALUES ($1, (SELECT id FROM structured.wedding_feed_categories WHERE name = $1),
-             $2, $3, $4, $5, $6, $7,
-             CASE WHEN $6 = 'published' THEN now() ELSE NULL END, $8)
-     RETURNING id`,
+       (category_label, category_id, title, summary, body, image_key, body_image_key, status,
+        sort_order, published_at, created_by)
+     SELECT $1, (SELECT id FROM structured.wedding_feed_categories WHERE name = $1),
+            $2, $3, $4, $5, $6, $7,
+            (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM structured.wedding_feed_posts),
+            CASE WHEN $7 = 'published' THEN now() ELSE NULL END, $8
+     RETURNING id, sort_order`,
     [
       input.categoryLabel,
       input.title,
       input.summary,
       input.body,
       input.imageKey,
+      input.bodyImageKey,
       input.status,
-      input.sortOrder,
       createdBy,
     ]
   );
 
-  return { id: rows[0]!.id };
+  return { id: rows[0]!.id, sortOrder: rows[0]!.sort_order };
 }
 
 /**
@@ -247,10 +258,10 @@ export async function update(pool: Pool, id: string, input: FeedInput): Promise<
     `UPDATE structured.wedding_feed_posts
      SET category_label = $2,
          category_id = (SELECT id FROM structured.wedding_feed_categories WHERE name = $2),
-         title = $3, summary = $4, body = $5, image_key = $6,
-         status = $7, sort_order = $8,
+         title = $3, summary = $4, body = $5, image_key = $6, body_image_key = $7,
+         status = $8, sort_order = $9,
          published_at = CASE
-           WHEN $7 <> 'published' THEN NULL
+           WHEN $8 <> 'published' THEN NULL
            WHEN published_at IS NOT NULL THEN published_at
            ELSE now()
          END,
@@ -263,6 +274,7 @@ export async function update(pool: Pool, id: string, input: FeedInput): Promise<
       input.summary,
       input.body,
       input.imageKey,
+      input.bodyImageKey,
       input.status,
       input.sortOrder,
     ]
@@ -362,6 +374,7 @@ export async function runGeneration(input: {
         summary: draft.summary,
         body: draft.body,
         imageKey: null,
+        bodyImageKey: null,
         status: 'draft',
         sortOrder: 0,
       });
