@@ -94,7 +94,7 @@ export default function NotificationSettingsScreen() {
               right={
                 <Switch
                   disabled={saving}
-                  value={settings.pushEnabled || settings.priceChangeEnabled}
+                  value={settings.pushEnabled}
                   onValueChange={(next) => void toggle('service', next)}
                   accessibilityLabel={S.service}
                   {...switchProps}
