@@ -110,7 +110,7 @@ export function compareRecommendCategories(
 export const HOME_RECOMMEND_CATEGORIES = 3;
 
 /** 업종 하나에 보여주는 추천 업체 수(사양 §6 · §12). */
-export const RECOMMEND_VENDORS_PER_CATEGORY = 3;
+export const RECOMMEND_VENDORS_PER_CATEGORY = 5;
 
 /** 「다음 준비」 요약에 이름을 늘어놓는 최대 개수. 넘으면 「외 N개」로 접는다. */
 export const NEXT_STEPS_NAMED = 4;
