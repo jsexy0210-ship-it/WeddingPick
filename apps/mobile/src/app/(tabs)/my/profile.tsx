@@ -102,9 +102,16 @@ export default function ProfileScreen() {
   }, [loadSettings]);
 
   useEffect(() => {
-    // Effect 본문에서 동기 setState를 연쇄시키지 않는다. 실제 조회는 다음 이벤트 루프에 시작한다.
-    const timer = setTimeout(load, 0);
-    return () => clearTimeout(timer);
+    let active = true;
+
+    // Effect 본문과 같은 tick에서 상태를 바꾸지 않되 테스트·화면에는 불필요한 timer를 남기지 않는다.
+    void Promise.resolve().then(() => {
+      if (active) load();
+    });
+
+    return () => {
+      active = false;
+    };
   }, [load]);
 
   const nameCheck = checkDisplayName(nameDraft);
