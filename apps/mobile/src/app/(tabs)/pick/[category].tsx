@@ -293,7 +293,7 @@ export default function CategoryPickScreen() {
                 <CandidateCardSkeleton />
               </>
             ) : candidates.length === 0 ? (
-              <EmptyView
+              <EmptyView scope="section"
                 title="아직 Pick한 곳이 없어요"
                 description="마음에 드는 곳을 담아두면 여기서 비교할 수 있어요"
                 actionLabel={`${categoryLabel} ${TERMS.search}`}

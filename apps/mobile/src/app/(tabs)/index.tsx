@@ -95,6 +95,9 @@ const EMPTY: HomeData = {
 export default function HomeScreen() {
   const theme = useTheme();
   const loadVersion = useRef(0);
+  const bootLoadedOnce = useRef(false);
+  const recommendationLoadedOnce = useRef(false);
+  const contentLoadedOnce = useRef(false);
   const [data, setData] = useState<HomeData>(EMPTY);
   const [bootError, setBootError] = useState(false);
   const [recommendationStatus, setRecommendationStatus] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -129,16 +132,21 @@ export default function HomeScreen() {
     const version = ++loadVersion.current;
     const current = () => version === loadVersion.current;
     setBootError(false);
-    setRecommendationStatus('loading');
-    setContentStatus('loading');
+    if (!recommendationLoadedOnce.current) setRecommendationStatus('loading');
+    if (!contentLoadedOnce.current) setContentStatus('loading');
 
     void listWeddingContent(HOME_FEED_PREVIEW_COUNT)
       .then((content) => {
         if (!current()) return;
         setData((previous) => ({ ...previous, content }));
+        contentLoadedOnce.current = true;
         setContentStatus('ready');
       })
-      .catch(() => { if (current()) setContentStatus('error'); });
+      .catch(() => {
+        if (!current()) return;
+        if (contentLoadedOnce.current) setToast(strings.journey.loadFailed);
+        else setContentStatus('error');
+      });
 
     /*
      * 회원 · 알림 · 담아둔 후보 · 개인화 추천을 한 번에 받는다(GET /v1/app/bootstrap).
@@ -156,8 +164,13 @@ export default function HomeScreen() {
           partnerInvitePending: boot.partnerInvitePending,
           unread: boot.notifications?.unread ?? 0,
         }));
+        bootLoadedOnce.current = true;
       })
-      .catch(() => { if (current()) setBootError(true); })
+      .catch(() => {
+        if (!current()) return;
+        if (bootLoadedOnce.current) setToast(strings.journey.loadFailed);
+        else setBootError(true);
+      })
       .finally(() => { if (current()) setSettled(true); });
 
     void getCategoryRecommendations(HOME_RECOMMEND_CATEGORIES)
@@ -169,9 +182,14 @@ export default function HomeScreen() {
           remaining: response.remaining,
           remainingCategories: response.remainingCategories,
         }));
+        recommendationLoadedOnce.current = true;
         setRecommendationStatus('ready');
       })
-      .catch(() => { if (current()) setRecommendationStatus('error'); });
+      .catch(() => {
+        if (!current()) return;
+        if (recommendationLoadedOnce.current) setToast(S['recommend.error']);
+        else setRecommendationStatus('error');
+      });
   }, []);
 
   useFocusEffect(useCallback(() => {
@@ -300,7 +318,13 @@ export default function HomeScreen() {
               candidates: data.candidates,
               preparedCategories: data.me?.preparedCategories ?? [],
             })}
-            onOpen={(category) => router.push(`/search?category=${category}`)}
+            onOpen={(item) =>
+              router.push(
+                item.pickCount > 0
+                  ? `/pick/${item.category}`
+                  : `/pick?section=recommendations&category=${item.category}`
+              )
+            }
             onMore={() => router.push('/progress')}
             onComplete={() => router.push('/wedding')}
           />
@@ -321,7 +345,7 @@ export default function HomeScreen() {
               onPressCompare={(vendorIds) =>
                 router.push({ pathname: '/search/compare', params: { ids: vendorIds.join(',') } })
               }
-              onPressMore={() => router.push('/recommendations')}
+              onPressMore={() => router.push('/pick?section=recommendations')}
             />
           )}
 
@@ -336,10 +360,10 @@ export default function HomeScreen() {
 
           <View style={styles.block}>
             <View style={styles.sectionHead}>
-              <ThemedText type="f20" style={styles.bold}>웨딩피드</ThemedText>
+              <ThemedText type="f20" style={styles.bold}>웨딩 준비 팁</ThemedText>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="웨딩피드 자세히"
+                accessibilityLabel="웨딩 준비 팁 자세히"
                 onPress={() => router.push('/community?tab=feed' as never)}
                 style={({ pressed }) => [styles.feedMore, pressed && styles.pressed]}>
                 <ThemedText type="f13" themeColor="textAssistive">{S.more}</ThemedText>

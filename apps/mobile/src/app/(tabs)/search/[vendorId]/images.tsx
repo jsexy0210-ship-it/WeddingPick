@@ -29,7 +29,7 @@ import {
   ThemedText,
   ThemedView,
   useTheme,
-  SkeletonView,
+  Skeleton,
 } from '@weddingpick/ui';
 
 /**
@@ -70,7 +70,30 @@ export default function VendorImagesScreen() {
   }
 
   if (!photos) {
-    return <SkeletonView />;
+    return (
+      <ThemedView style={styles.container}>
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.header}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="돌아가기"
+              onPress={depthBack}
+              style={styles.backBtn}>
+              <ThemedText type="t6">돌아가기</ThemedText>
+            </Pressable>
+            <ThemedText type="t5">사진</ThemedText>
+            <View style={styles.backBtn} />
+          </View>
+          <View style={styles.grid}>
+            {Array.from({ length: 6 }, (_, index) => (
+              <View key={index} style={styles.thumbWrap}>
+                <Skeleton radius={Radius.medium} style={styles.thumbSkeleton} />
+              </View>
+            ))}
+          </View>
+        </SafeAreaView>
+      </ThemedView>
+    );
   }
 
   return (
@@ -89,7 +112,7 @@ export default function VendorImagesScreen() {
         </View>
 
         {photos.length === 0 ? (
-          <EmptyView title="아직 등록된 사진이 없어요" />
+          <EmptyView scope="section" title="아직 등록된 사진이 없어요" />
         ) : (
           <ScrollView contentContainerStyle={styles.grid} showsVerticalScrollIndicator={false}>
             {photos.map((photo, index) => (
@@ -382,6 +405,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     overflow: 'hidden',
   },
+  thumbSkeleton: { width: '100%', height: '100%' },
   thumbImage: {
     width: '100%',
     height: '100%',

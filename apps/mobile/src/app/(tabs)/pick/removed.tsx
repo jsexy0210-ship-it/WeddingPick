@@ -93,7 +93,7 @@ export default function PickRemovedScreen() {
     return (
       <Screen>
         <NavBar title={S.title} />
-        <EmptyView
+        <EmptyView scope="section"
           title={S['empty.title']}
           description={S['empty.description']}
         />

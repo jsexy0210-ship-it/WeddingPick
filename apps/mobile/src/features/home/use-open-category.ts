@@ -22,25 +22,34 @@ import { useCallback, useState } from 'react';
  * 사용자가 펼친 것을 다시 누르면 접힌다(`null`). 그 접힘도 그 목록에 대해서만 유효하다 —
  * 다음 업종이 승격되면 다시 펼쳐진다.
  */
-export function useOpenCategory(groups: readonly CategoryRecommendation[]): {
+export function useOpenCategory(
+  groups: readonly CategoryRecommendation[],
+  preferredCategory: VendorCategory | null = null
+): {
   open: VendorCategory | null;
   toggle: (category: VendorCategory) => void;
 } {
   /** 어느 목록에 대해 무엇을 골랐는가. 아직 안 골랐으면 null. */
   const [chosen, setChosen] = useState<{ key: string; category: VendorCategory | null } | null>(null);
 
-  const key = groups.map((group) => group.category).join(',');
-  const open = chosen !== null && chosen.key === key ? chosen.category : (groups[0]?.category ?? null);
+  const requested = preferredCategory !== null;
+  const preferred = requested && groups.some((group) => group.category === preferredCategory)
+    ? preferredCategory
+    : null;
+  const key = `${preferredCategory ?? ''}|${groups.map((group) => group.category).join(',')}`;
+  // 명시적으로 들어온 업종이 응답에서 빠졌다면 다른 업종을 대신 열지 않는다.
+  const fallback = requested ? preferred : groups[0]?.category ?? null;
+  const open = chosen !== null && chosen.key === key ? chosen.category : fallback;
 
   const toggle = useCallback(
     (category: VendorCategory) => {
       setChosen((current) => {
-        const openNow = current !== null && current.key === key ? current.category : (groups[0]?.category ?? null);
+        const openNow = current !== null && current.key === key ? current.category : fallback;
 
         return { key, category: openNow === category ? null : category };
       });
     },
-    [groups, key]
+    [fallback, key]
   );
 
   return { open, toggle };

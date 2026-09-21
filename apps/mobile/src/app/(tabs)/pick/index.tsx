@@ -22,6 +22,7 @@
 import type { CandidateListResponse, CurrentUser, VendorCandidate } from '@weddingpick/api-contract';
 import {
   TERMS,
+  VENDOR_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
   type VendorCategory,
 } from '@weddingpick/domain';
@@ -109,8 +110,16 @@ type UndoCandidate = {
 };
 
 export default function PickScreen() {
-  const { section: sectionParam } = useLocalSearchParams<{ section?: string | string[] }>();
+  const { section: sectionParam, category: categoryParam } = useLocalSearchParams<{
+    section?: string | string[];
+    category?: string | string[];
+  }>();
   const requestedSection = Array.isArray(sectionParam) ? sectionParam[0] : sectionParam;
+  const rawCategory = Array.isArray(categoryParam) ? categoryParam[0] : categoryParam;
+  const requestedCategory =
+    rawCategory && VENDOR_CATEGORIES.includes(rawCategory as VendorCategory)
+      ? (rawCategory as VendorCategory)
+      : null;
   const section: PickSection =
     requestedSection === 'recommendations' || requestedSection === 'compare' ? requestedSection : 'pick';
   const theme = useTheme();
@@ -283,7 +292,7 @@ export default function PickScreen() {
         <View style={[styles.wrapper, { maxWidth: MaxContentWidth }]}>
           <PickSectionTabs active={section} />
           {section === 'recommendations' ? (
-            <RecommendationsContent />
+            <RecommendationsContent requestedCategory={requestedCategory} />
           ) : error ? (
             <ScrollView contentContainerStyle={styles.scroll}>
               <View style={styles.errorBox}>

@@ -191,7 +191,7 @@ export default function WeddingInfoListScreen() {
             <WeddingInfoListSkeleton />
           ) : items.length === 0 ? (
             /* 빈 상태 */
-            <EmptyView
+            <EmptyView scope="section"
               title="아직 웨딩 정보가 없어요"
               description="좋은 정보를 준비하고 있어요"
             />

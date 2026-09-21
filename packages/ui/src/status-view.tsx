@@ -25,13 +25,18 @@ import { useTheme } from './use-theme';
  */
 type StatusFrameProps = {
   children: React.ReactNode;
+  scope?: 'page' | 'section';
 };
 
 /**
  * 17-sheets-states stFrameCenter — 가운데 정렬 · 제목 18/24 700 · 본문 16/24 #4D5159 · 간격 8 ·
  * 행동 버튼 하나(48). 삽화는 없다.
  */
-function StatusFrame({ children }: StatusFrameProps) {
+function StatusFrame({ children, scope = 'page' }: StatusFrameProps) {
+  if (scope === 'section') {
+    return <ThemedView style={styles.sectionContent}>{children}</ThemedView>;
+  }
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -194,6 +199,8 @@ export function RecommendingView(props: RecommendingViewProps) {
 export type EmptyViewProps = {
   /** 없다는 것을 말하는 한 줄. 예: "아직 Pick한 곳이 없어요". */
   title: string;
+  /** 페이지 본문 전체인지, 정상 화면 안의 한 섹션인지. 헤더·필터를 유지해야 하면 section. */
+  scope?: 'page' | 'section';
   /** 다음에 뭘 하면 되는지. */
   description?: string;
   /** 채우러 가는 CTA. 빈 상태에는 다음 행동 버튼을 하나만 둔다. */
@@ -201,9 +208,9 @@ export type EmptyViewProps = {
   onAction?: () => void;
 };
 
-export function EmptyView({ title, description, actionLabel, onAction }: EmptyViewProps) {
+export function EmptyView({ title, scope = 'page', description, actionLabel, onAction }: EmptyViewProps) {
   return (
-    <StatusFrame>
+    <StatusFrame scope={scope}>
       <StatusTitle>{title}</StatusTitle>
       {description ? <StatusBody>{description}</StatusBody> : null}
       {actionLabel && onAction ? (
@@ -389,6 +396,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: Layout.gutter,
+    gap: Spacing.two,
+  },
+  sectionContent: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Layout.gutter,
+    paddingVertical: Layout.sectionGap,
     gap: Spacing.two,
   },
   /** 버튼은 글보다 조금 떨어져(8 + 4) 서고, 글 폭에 맞춰 늘어나지 않는다. */

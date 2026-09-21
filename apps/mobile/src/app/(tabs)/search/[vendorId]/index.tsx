@@ -64,7 +64,7 @@ import {
   ProgressBar,
   Radius,
   RatingStars,
-  SkeletonView,
+  Skeleton,
   Spacing,
   ThemedText,
   ThemedView,
@@ -248,12 +248,67 @@ export default function VendorDetailScreen() {
   }
 
   if (!vendor) {
-    return <SkeletonView hero />;
+    return (
+      <ThemedView style={styles.container}>
+        <SafeAreaView style={styles.safeArea}>
+          <DepthHeader title="업체 상세" onBack={depthBack} />
+          <ScrollView
+            style={styles.scroll}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.loadingScroll}>
+            <Skeleton height={Layout.heroVendor} radius={0} />
+            <View style={styles.loadingPrice}>
+              <Skeleton width="42%" height={22} />
+              <Skeleton width="68%" height={14} />
+            </View>
+            <View style={styles.loadingTabs}>
+              {VENDOR_TABS.map((item) => (
+                <Skeleton key={item.key} width="20%" height={18} />
+              ))}
+            </View>
+            <View style={styles.loadingBody}>
+              <Skeleton width="48%" height={20} />
+              <Skeleton width="100%" height={72} radius={Radius.medium} />
+              <Skeleton width="100%" height={72} radius={Radius.medium} />
+            </View>
+          </ScrollView>
+          <View style={[styles.footer, { borderTopColor: theme.border, backgroundColor: theme.background }]}>
+            <View style={styles.actionRow}>
+              <Skeleton width={PICK_CTA_HEIGHT} height={PICK_CTA_HEIGHT} radius={Radius.cardLarge} />
+              <View style={styles.loadingPrimary}>
+                <Skeleton height={PICK_CTA_HEIGHT} radius={Radius.cardLarge} />
+              </View>
+            </View>
+          </View>
+        </SafeAreaView>
+      </ThemedView>
+    );
   }
 
-  const myCandidate = candidates.candidateFor(vendor.id);
+  const currentVendor = vendor;
+  const myCandidate = candidates.candidateFor(currentVendor.id);
   const picked = myCandidate !== null;
-  const pickBusy = candidates.busyVendorId === vendor.id;
+  const pickBusy = candidates.busyVendorId === currentVendor.id;
+  const decided =
+    candidates.page?.groups.some((group) => group.decidedVendorId === currentVendor.id) ?? false;
+  const primaryLabel = decided ? '상담 예약하기' : picked ? '최종 Pick하기' : '먼저 Pick해주세요';
+
+  function openPrimaryAction() {
+    if (decided) {
+      router.push(`/search/${currentVendor.id}/consult`);
+      return;
+    }
+    if (!myCandidate) return;
+    router.push({
+      pathname: '/pick/confirm',
+      params: {
+        category: currentVendor.category,
+        vendorId: currentVendor.id,
+        vendorName: currentVendor.name,
+        shared: myCandidate.addedByPartner ? '1' : '0',
+      },
+    });
+  }
 
   /**
    * Pick(SPEC §13.1). 비회원 상세는 폐기됐으므로 이 화면 안에 로그인 시트를 겹쳐 띄우지 않는다.
@@ -951,12 +1006,24 @@ export default function VendorDetailScreen() {
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="상담 잡기"
-              style={({ pressed }) => [styles.pickBtn, { backgroundColor: theme.tint }, pressed ? styles.pressed : null]}
-              onPress={() => router.push(`/search/${vendor.id}/consult`)}>
-              <ProductSymbol name="calendar" size={Layout.iconField} color={theme.onTint} />
-              <ThemedText type="f14" themeColor="onTint" style={styles.bold}>
-                상담 일정 잡기
+              accessibilityLabel={primaryLabel}
+              accessibilityState={{ disabled: !picked }}
+              disabled={!picked}
+              style={({ pressed }) => [
+                styles.pickBtn,
+                { backgroundColor: picked ? theme.tint : theme.backgroundElement },
+                pressed && picked ? styles.pressed : null,
+              ]}
+              onPress={openPrimaryAction}>
+              <ProductSymbol
+                name={decided ? 'calendar' : 'check'}
+                size={Layout.iconField}
+                color={picked ? theme.onTint : theme.textDisabled}
+              />
+              <ThemedText
+                type="f14"
+                style={[styles.bold, { color: picked ? theme.onTint : theme.textDisabled }]}>
+                {primaryLabel}
               </ThemedText>
             </Pressable>
           </View>
@@ -1047,6 +1114,27 @@ const styles = StyleSheet.create({
   busy: {
     opacity: 0.6,
   },
+
+  loadingScroll: { paddingBottom: Spacing.four },
+  loadingPrice: {
+    paddingHorizontal: Layout.pageX,
+    paddingVertical: Layout.cardPadding,
+    gap: Spacing.two,
+  },
+  loadingTabs: {
+    minHeight: Layout.touchTarget,
+    paddingHorizontal: Layout.pageX,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+  },
+  loadingBody: {
+    paddingHorizontal: Layout.gutter,
+    paddingTop: Layout.gutter,
+    gap: Layout.sectionHeadGap,
+  },
+  loadingPrimary: { flex: 1 },
 
   // ── 대표 이미지 — handoff 260 · 아래 어두운 막 ──
   hero: {

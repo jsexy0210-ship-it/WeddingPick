@@ -31,6 +31,7 @@ import {
   weddingTaskListResponseSchema,
 } from './wedding-plan';
 import {
+  createConsultationEventRequestSchema,
   createWeddingEventRequestSchema,
   updateWeddingEventRequestSchema,
   weddingEventListResponseSchema,
@@ -543,6 +544,17 @@ export const ENDPOINTS = {
     method: 'POST',
     path: '/v1/weddings/{weddingId}/events',
     body: createWeddingEventRequestSchema,
+    response: z.object({ eventId: idSchema }),
+  },
+
+  /**
+   * 최종 Pick 이후 상담 시트가 남기는 일정.
+   * 일반 `/events`와 분리해 기존 업체 연결 일정 계약을 좁히지 않는다.
+   */
+  addConsultationEvent: {
+    method: 'POST',
+    path: '/v1/weddings/{weddingId}/consultation-events',
+    body: createConsultationEventRequestSchema,
     response: z.object({ eventId: idSchema }),
   },
 

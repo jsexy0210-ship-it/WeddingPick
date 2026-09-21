@@ -42,6 +42,17 @@ export const createWeddingEventRequestSchema = z.object({
   notifyEnabled: z.boolean().default(true),
 });
 
+/**
+ * 상담 시트가 저장하는 웨딩 일정.
+ * 일반 일정과 달리 최종 Pick한 업체를 반드시 지정해야 하고, 서버가 그 결정을 같은
+ * 트랜잭션에서 다시 확인한다.
+ */
+export const createConsultationEventRequestSchema = createWeddingEventRequestSchema.extend({
+  vendorId: idSchema,
+  /** 같은 상담 저장 재전송을 한 건으로 묶는 키. */
+  idempotencyKey: z.string().trim().min(1).max(120),
+});
+
 export const updateWeddingEventRequestSchema = z.object({
   title: z.string().trim().min(1).max(60).optional(),
   startsAt: timestampSchema.optional(),
@@ -57,4 +68,5 @@ export type WeddingEventStatus = z.infer<typeof weddingEventStatusSchema>;
 export type WeddingEvent = z.infer<typeof weddingEventSchema>;
 export type WeddingEventListResponse = z.infer<typeof weddingEventListResponseSchema>;
 export type CreateWeddingEventRequest = z.infer<typeof createWeddingEventRequestSchema>;
+export type CreateConsultationEventRequest = z.infer<typeof createConsultationEventRequestSchema>;
 export type UpdateWeddingEventRequest = z.infer<typeof updateWeddingEventRequestSchema>;

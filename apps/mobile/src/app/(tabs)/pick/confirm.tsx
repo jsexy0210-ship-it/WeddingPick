@@ -100,7 +100,7 @@ export default function PickConfirmScreen() {
       await decideCategory(me.weddingId, { category, vendorId });
       router.replace({
         pathname: '/(tabs)/pick/done',
-        params: { category, vendorName },
+        params: { category, vendorId, vendorName },
       });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '정하지 못했어요. 다시 시도해주세요.');

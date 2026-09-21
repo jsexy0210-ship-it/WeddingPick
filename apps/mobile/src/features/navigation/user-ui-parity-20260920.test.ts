@@ -90,15 +90,84 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(pick).toContain("requestedSection === 'recommendations' || requestedSection === 'compare'");
     expect(pick).toContain("section === 'recommendations'");
     expect(pick).toContain("section === 'compare'");
-    expect(pick).toContain('<RecommendationsContent />');
+    expect(pick).toContain('<RecommendationsContent requestedCategory={requestedCategory} />');
+    expect(pick).toContain('VENDOR_CATEGORIES.includes(rawCategory as VendorCategory)');
     expect(pick).toContain('<CompareBasket');
+
+    const home = mobile('app/(tabs)/index.tsx');
+    expect(home).toContain('item.pickCount > 0');
+    expect(home).toContain(`/pick/\${item.category}`);
+    expect(home).toContain(`/pick?section=recommendations&category=\${item.category}`);
 
     const recommendations = mobile('app/(tabs)/(home)/recommendations.tsx');
     expect(recommendations).toContain("pathname: '/pick'");
     expect(recommendations).toContain("section: 'recommendations'");
+    expect(recommendations).toContain('requestedCategory');
+    expect(recommendations).toContain('category: requestedCategory');
     expect(recommendations).not.toContain('useDepthBack');
     expect(mobile('app/(tabs)/pick/[category].tsx')).toContain("pathname: '/search/compare'");
     expect(mobile('app/(tabs)/pick/[category].tsx')).not.toContain('<PickSectionTabs');
+  });
+  it('홈 재진입과 핵심 검색 화면의 로딩은 기존 shell을 보존한다', () => {
+    const home = mobile('app/(tabs)/index.tsx');
+    expect(home).toContain('recommendationLoadedOnce.current');
+    expect(home).toContain('contentLoadedOnce.current');
+    expect(home).toContain('bootLoadedOnce.current');
+    expect(home).toContain("if (!recommendationLoadedOnce.current) setRecommendationStatus('loading')");
+    expect(home).toContain("if (!contentLoadedOnce.current) setContentStatus('loading')");
+
+    const search = mobile('app/(tabs)/search/index.tsx');
+    expect(search).toContain('<ListSkeleton variant="search" rows={3} />');
+
+    const detail = mobile('app/(tabs)/search/[vendorId]/index.tsx');
+    expect(detail).toContain('<DepthHeader title="업체 상세" onBack={depthBack} />');
+    expect(detail).toContain('<Skeleton height={Layout.heroVendor} radius={0} />');
+    expect(detail).not.toContain('<SkeletonView hero />');
+  });
+
+  it('추천 재조회는 기존 내용을 유지하되 최신 상태 전까지 변경 행동을 잠근다', () => {
+    const recommendations = mobile('app/(tabs)/(home)/recommendations.tsx');
+    expect(recommendations).toContain('const [refreshing, setRefreshing] = useState(false)');
+    expect(recommendations).toContain('Promise.allSettled([load(), reloadCandidates()])');
+    expect(recommendations).toContain('interactionDisabled={refreshing}');
+    expect(recommendations).toContain('<DelayedLoader active={refreshing} size={20} />');
+
+    const recommendUi = mobile('features/home/pick-recommend.tsx');
+    expect(recommendUi).toContain("pointerEvents={interactionDisabled ? 'none' : 'auto'}");
+  });
+
+  it('최종 Pick 저장 뒤에만 상담 예약을 열고 직접 URL에서도 다시 검증한다', () => {
+    const detail = mobile('app/(tabs)/search/[vendorId]/index.tsx');
+    expect(detail).toContain("decided ? '상담 예약하기' : picked ? '최종 Pick하기'");
+    expect(detail).toContain("group.decidedVendorId === currentVendor.id");
+    expect(detail).toContain("pathname: '/pick/confirm'");
+
+    const review = mobile('app/(tabs)/search/[vendorId]/review/[reviewId].tsx');
+    expect(review).not.toContain("router.push(\`/search/\${vendorId}/consult\`)");
+    expect(review).toContain("router.push(\`/search/\${vendorId}\`)");
+
+    const done = mobile('app/(tabs)/pick/done.tsx');
+    expect(done).toContain('상담 예약하기');
+    expect(done).toContain('vendorId: string');
+
+    const consult = mobile('app/(tabs)/search/[vendorId]/consult.tsx');
+    expect(consult).toContain("listCandidates(me.weddingId, { force: true })");
+    expect(consult).toContain('addConsultationEvent(me.weddingId');
+    expect(consult).toContain('idempotencyKey: `consult:${vendor.id}:${startsAt.toISOString()}`');
+    expect(consult).not.toContain('addWeddingEvent(me.weddingId');
+    expect(consult).toContain('submitLock.current = true');
+    expect(consult).toContain('group.decidedVendorId === vendorId');
+    expect(consult).toContain('최종 Pick 확인이 필요해요');
+    expect(consult).toContain('일정 등록하기');
+  });
+
+  it('빈 상태는 페이지 전체와 섹션 범위를 구분한다', () => {
+    const status = root('packages/ui/src/status-view.tsx');
+    expect(status).toContain("scope?: 'page' | 'section'");
+    expect(status).toContain("scope === 'section'");
+    expect(mobile('app/(tabs)/(home)/recommendations.tsx')).toContain('<EmptyView scope="section"');
+    expect(mobile('app/(tabs)/search/[vendorId]/images.tsx')).toContain('<EmptyView scope="section"');
+    expect(mobile('app/(tabs)/pick/history.tsx')).toContain('<EmptyView scope="section"');
   });
   it('최초 예산은 만원 입력을 원으로 환산한다', () => {
     const s = mobile('app/(tabs)/wedding/index.tsx');

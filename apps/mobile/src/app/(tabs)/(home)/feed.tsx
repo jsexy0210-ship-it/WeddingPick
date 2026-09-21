@@ -20,7 +20,8 @@ import {
   Spacing,
   ThemedText,
   ThemedView,
-  SkeletonView,
+  Skeleton,
+  Radius,
 } from '@weddingpick/ui';
 import strings from '../../../../../../spec/strings.ko.json';
 
@@ -93,7 +94,30 @@ export default function FeedScreen() {
   }, [items, tabs, tab]);
 
   if (error) return <ErrorView message={error} onBack={depthBack} onRetry={load} />;
-  if (!items) return <SkeletonView />;
+  if (!items) {
+    return (
+      <ThemedView style={styles.container}>
+        <SafeAreaView style={styles.safeArea}>
+          <BackBar />
+          <ScrollView contentContainerStyle={styles.content}>
+            <ThemedView style={styles.header}>
+              <ThemedText type="t4">{S.title}</ThemedText>
+              <ThemedText type="t7" themeColor="textSecondary">{S.sub}</ThemedText>
+            </ThemedView>
+            <View style={styles.loadingCards}>
+              {Array.from({ length: 3 }, (_, index) => (
+                <View key={index} style={styles.loadingCard}>
+                  <Skeleton width="100%" height={138} radius={Radius.medium} />
+                  <Skeleton width="74%" height={18} />
+                  <Skeleton width="52%" height={14} />
+                </View>
+              ))}
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </ThemedView>
+    );
+  }
 
   return (
     <ThemedView style={styles.container}>
@@ -129,10 +153,10 @@ export default function FeedScreen() {
           )}
 
           {items.length === 0 ? (
-            <EmptyView title={S['empty.all']} />
+            <EmptyView scope="section" title={S['empty.all']} />
           ) : shown.length === 0 ? (
             /* 글은 있는데 이 탭에만 없다. 「준비 중」과 다른 말이어야 한다. */
-            <EmptyView title={S['empty.tab']} />
+            <EmptyView scope="section" title={S['empty.tab']} />
           ) : (
             <WeddingContent
               items={shown}
@@ -157,4 +181,6 @@ const styles = StyleSheet.create({
   },
   header: { gap: Spacing.two },
   tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  loadingCards: { gap: Spacing.three },
+  loadingCard: { gap: Spacing.two },
 });

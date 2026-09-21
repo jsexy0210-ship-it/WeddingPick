@@ -39,9 +39,10 @@ describe('결정 완료 뒤로가기', () => {
     expect(layoutSource).toContain('<Stack.Screen name="done" options={{ gestureEnabled: false }} />');
   });
 
-  it('완료 후 지출 입력 진입을 유지한다', () => {
+  it('완료 후 상담 예약을 우선하고 지출 입력 진입도 유지한다', () => {
     expect(source).toContain("pathname: `/wedding/${target}/expenses/add`");
-    expect(source).toContain('지출을 넣어두시겠어요?');
+    expect(source).toContain('상담 예약하기');
+    expect(source).toContain('지출도 기록하기');
   });
 });
 
