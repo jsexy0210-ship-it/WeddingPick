@@ -1,10 +1,11 @@
 {
   "schemaVersion": 1,
   "canonicalDate": "2026-09-20",
-  "authority": "사용자 전달 ZIP 2개",
+  "authority": "사용자 전달 ZIP 2개 및 최신 사용자 확정 지시",
   "exceptions": [
     "검색 Root의 Back 버튼은 삭제 상태 유지",
-    "최신 PR에서 삭제·통합한 독립 페이지는 되살리지 않고 현재 라우트에 정본을 적용"
+    "최신 PR에서 삭제·통합한 독립 페이지는 되살리지 않고 현재 라우트에 정본을 적용",
+    "현재 MD는 2026-09-21 사용자 문서 정리 지시를 반영하며 실행 핸드오프의 확정 요청이 해당 부분에 우선"
   ],
   "archives": [
     {
@@ -34,28 +35,20 @@
           "normalizedSha256": "C93A9E9A0C016F7224B61BF892A518CCE1D5930ED4C61A7AA98505992C38D588"
         },
         {
-          "path": "CHANGELOG.md",
-          "normalizedSha256": "EE3A9D6524757AC98282698F3D527F96E72F9C2D415B774A4533C0C2758EC50C"
-        },
-        {
           "path": "IMAGES.md",
-          "normalizedSha256": "C8231C0216BE5CDD9826A3DC5CBF03CD79AF7F512306442E21E2490277155D26"
-        },
-        {
-          "path": "IMAGE_PROMPTS.md",
-          "normalizedSha256": "354303FAD0BDD35F11522A9846E000E292AD20642612DC85070ACD00A4A9C666"
+          "normalizedSha256": "80C296F2976620414C2AB137E2616880604A2DFD387836F0D738789C47D0EBA9"
         },
         {
           "path": "PROJECT_RULES.md",
-          "normalizedSha256": "C6537516EFD3424ACDD580B9AB8FB946A1EF477925300E987766F77983CC2628"
+          "normalizedSha256": "C3DCC0E620DBA16C9FFB2CB97EA5738CFC41508CB474A22838D41E349C8AC55F"
         },
         {
           "path": "README.md",
-          "normalizedSha256": "6C1DBEF7A6414E57405DAFC683D68B38708869E1D96AD5A10E8D4BF05ED92AEB"
+          "normalizedSha256": "C59B9C26E53F61F95E43BCCE77B1A17E0AFBE84BFC2054A6447BE0BF305CCDE4"
         },
         {
           "path": "SPEC.md",
-          "normalizedSha256": "601CCE320EE4AF63E22FE7F6641496BEAF7DED64705D8D6E50DAF0B85A51E48A"
+          "normalizedSha256": "06044680F0706CD755B887D97F26E4BEBF56FE39B9E64B7C9E8ECA3B497092DA"
         },
         {
           "path": "assets/android-icon-foreground.png",
@@ -421,7 +414,7 @@
         },
         {
           "path": "README.md",
-          "normalizedSha256": "FA7A84B5075381903747799E82FB3B98B0C90DFE85EC1F12B3EABEF142DEF8A8"
+          "normalizedSha256": "1A3AFDE8F0594387632447B531314E0B6CC8661C4D7AB27550F34AB910C62208"
         },
         {
           "path": "image-slot.js",
@@ -439,5 +432,51 @@
     "apps/mobile/src/app/(tabs)/wedding/[id]/consultations.tsx",
     "apps/mobile/src/app/(tabs)/wedding/[id]/events/index.tsx",
     "apps/mobile/src/app/(tabs)/wedding/[id]/expenses/index.tsx"
-  ]
+  ],
+  "documentationMaintenance": {
+    "date": "2026-09-21",
+    "instruction": "업로드한 md 오래되거나 불필요한건 싹다 제거해 최신 기준만 남긴다.",
+    "baselineCommit": "665b43b08335294f957b1edfe9bcaf69a91dd700",
+    "sourceArchivesUnchanged": true,
+    "visualSourcesUnchanged": true,
+    "updatedDocuments": [
+      {
+        "path": "docs/design/handoff/IMAGES.md",
+        "sourceNormalizedSha256": "C8231C0216BE5CDD9826A3DC5CBF03CD79AF7F512306442E21E2490277155D26",
+        "reason": "도구별 생성 프롬프트의 유효 규격 통합, 미확인 보유 상태 삭제"
+      },
+      {
+        "path": "docs/design/handoff/PROJECT_RULES.md",
+        "sourceNormalizedSha256": "C6537516EFD3424ACDD580B9AB8FB946A1EF477925300E987766F77983CC2628",
+        "reason": "오래된 홈 비교안·이미지 대기 상태 제거, 현재 문구 예외·상위 지침 연결"
+      },
+      {
+        "path": "docs/design/handoff/README.md",
+        "sourceNormalizedSha256": "6C1DBEF7A6414E57405DAFC683D68B38708869E1D96AD5A10E8D4BF05ED92AEB",
+        "reason": "현재 진입점·파일 목록·208개 ID·로그인·서체·화면군별 검수 기준으로 갱신"
+      },
+      {
+        "path": "docs/design/handoff/SPEC.md",
+        "sourceNormalizedSha256": "601CCE320EE4AF63E22FE7F6641496BEAF7DED64705D8D6E50DAF0B85A51E48A",
+        "reason": "보류 이메일·이전 온보딩·폐기 자동 필터·중복 카피 제거, 현재 확정 UX 연결"
+      },
+      {
+        "path": "docs/design/figma-export/README.md",
+        "sourceNormalizedSha256": "FA7A84B5075381903747799E82FB3B98B0C90DFE85EC1F12B3EABEF142DEF8A8",
+        "reason": "통합 추천 route·최종 Pick 후 예약·웨딩 준비 팁으로 안내 갱신"
+      }
+    ],
+    "removedDocuments": [
+      {
+        "path": "docs/design/handoff/CHANGELOG.md",
+        "sourceNormalizedSha256": "EE3A9D6524757AC98282698F3D527F96E72F9C2D415B774A4533C0C2758EC50C",
+        "reason": "버전별 과거 상세 이력 제거. 유효 기능은 SPEC·실행 핸드오프에 유지"
+      },
+      {
+        "path": "docs/design/handoff/IMAGE_PROMPTS.md",
+        "sourceNormalizedSha256": "354303FAD0BDD35F11522A9846E000E292AD20642612DC85070ACD00A4A9C666",
+        "reason": "IMAGES.md에 제작 기준 통합. 오래된 모델별 파라미터 제거"
+      }
+    ]
+  }
 }

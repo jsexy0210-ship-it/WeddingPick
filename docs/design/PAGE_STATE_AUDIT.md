@@ -1,8 +1,10 @@
 # 전체 페이지·상태 전수 점검 대장
 
-작성: 2026-09-21 (UTC)
+작성·문서 정리: 2026-09-21
 
-기준: `main 19e649cb800980f9156e0832b7f0376664aacce8`
+제품 목록 기준: `main 19e649cb800980f9156e0832b7f0376664aacce8`
+
+문서 정리 기준: `main 665b43b08335294f957b1edfe9bcaf69a91dd700` (제품 코드·화면 ID 변화 없음)
 
 상위 실행 지침: [UX_UI_REFRESH_HANDOFF.md](UX_UI_REFRESH_HANDOFF.md)
 
