@@ -59,9 +59,9 @@ const NAV: NavEntry[] = [
   { key: 'queue', label: '확인 필요', href: '/admin/queue' },
   { key: 'vendors', label: '업체·행사', href: '/admin/vendors' },
   { key: 'rebuttal', label: '후기·신고', href: '/admin/rebuttal' },
-  { key: 'ads', label: '광고·마케팅', href: '/admin/ads' },
+  { key: 'ads', label: '광고·보상', href: '/admin/ads' },
   { key: 'automation', label: '자동화', href: '/admin/automation' },
-  { key: 'stats', label: '통계·수익', href: '/admin/stats' },
+  { key: 'stats', label: '통계·분석', href: '/admin/stats' },
   { key: 'users', label: '계정·권한', href: '/admin/users' },
   { key: 'faq', label: '사이트·기록', href: '/admin/faq' },
 ];
