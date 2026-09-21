@@ -154,7 +154,7 @@ export default function ExpoListScreen() {
             <ExpoListSkeleton />
           ) : sorted.length === 0 ? (
             /* 빈 상태 */
-            <EmptyView
+            <EmptyView scope="section"
               title="등록된 박람회가 없어요"
               description="새로운 박람회가 생기면 알려드릴게요"
             />
