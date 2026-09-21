@@ -10,27 +10,6 @@ import type { VendorCategory } from './vendor';
  */
 
 /**
- * 한 웨딩에 담을 수 있는 수.
- *
- * 저장 공간 때문이 아니라 **비교가 안 되기 때문이다.** 서른 곳을 담아두면 그건
- * 후보가 아니라 검색 결과 사본이고, 고르는 일을 도와주지 못한다.
- */
-export const MAX_CANDIDATES = 30;
-
-export type CandidateCheck = { ok: true } | { ok: false; reason: string };
-
-export function canAddCandidate(input: { currentCount: number }): CandidateCheck {
-  if (input.currentCount >= MAX_CANDIDATES) {
-    return {
-      ok: false,
-      reason: `후보는 ${MAX_CANDIDATES}곳까지 담을 수 있어요. 마음이 떠난 곳을 빼주세요.`,
-    };
-  }
-
-  return { ok: true };
-}
-
-/**
  * 업종별로 몇 곳이 담겼는지.
  *
  * 화면이 "웨딩홀 3곳, 스튜디오 2곳"처럼 보여줄 수 있어야 한다. 서른 곳을 한 줄로
