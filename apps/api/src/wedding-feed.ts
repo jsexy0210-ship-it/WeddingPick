@@ -91,7 +91,16 @@ export function parseFeedInput(body: unknown) {
     throw new ApiError('invalid_request', '보낸 값을 읽지 못했어요.');
   }
 
-  const problems = checkWeddingFeedInput({ ...parsed.data, imageKey: parsed.data.imageKey });
+  const problems = checkWeddingFeedInput({
+    categoryLabel: parsed.data.categoryLabel,
+    title: parsed.data.title,
+    summary: parsed.data.summary,
+    body: parsed.data.body,
+    imageKey: parsed.data.imageKey,
+    bodyImageKey: parsed.data.bodyImageKey,
+    status: parsed.data.status,
+    sortOrder: parsed.data.sortOrder,
+  });
 
   if (problems.length > 0) {
     const first = problems[0]!;
@@ -216,7 +225,8 @@ export async function getPublished(pool: Pool, storage: FeedStorage | null, id: 
 export async function create(
   pool: Pool,
   input: FeedInput,
-  createdBy: string | null
+  createdBy: string | null,
+  generatedModel: string | null = null
 ): Promise<{ id: string; sortOrder: number }> {
   /*
    * 새 글 순서는 클라이언트가 열어 둔 값이 아니라 저장 순간의 서버 DB를 기준으로
@@ -225,9 +235,11 @@ export async function create(
   const { rows } = await pool.query<{ id: string; sort_order: number }>(
     `INSERT INTO structured.wedding_feed_posts
        (category_label, category_id, title, summary, body, image_key, body_image_key, status,
-        sort_order, published_at, created_by)
+        source, model, sort_order, published_at, created_by)
      SELECT $1, (SELECT id FROM structured.wedding_feed_categories WHERE name = $1),
             $2, $3, $4, $5, $6, $7,
+            CASE WHEN $9 IS NULL THEN 'manual' ELSE 'generated' END,
+            $9,
             (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM structured.wedding_feed_posts),
             CASE WHEN $7 = 'published' THEN now() ELSE NULL END, $8
      RETURNING id, sort_order`,
@@ -240,6 +252,7 @@ export async function create(
       input.bodyImageKey,
       input.status,
       createdBy,
+      generatedModel,
     ]
   );
 
