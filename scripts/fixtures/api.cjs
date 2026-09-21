@@ -552,13 +552,30 @@ const routes = {
       },
     ],
     total: 2,
-    limit: 5,
     progress: { decided: 0, total: 13, label: '0/13 완료' },
     nextCategory: 'makeup',
   },
   'GET /v1/weddings/:weddingId/candidates/removed': {
     groups: [],
   },
+  'GET /v1/me/favorite-vendors': {
+    items: [
+      {
+        id: 'f1111111-1111-4111-8111-111111111111',
+        vendorId: '11111111-1111-4111-8111-111111111111',
+        vendorName: '강남 A 웨딩홀',
+        category: 'hall',
+        region: '서울',
+        imageUrl: null,
+        createdAt: '2026-09-21T00:00:00.000Z',
+      },
+    ],
+    total: 1,
+  },
+  'POST /v1/me/favorite-vendors': {
+    favoriteId: 'f1111111-1111-4111-8111-111111111111',
+  },
+  'DELETE /v1/me/favorite-vendors/:vendorId': null,
   /*
    * Pick DLG-F 캡처가 실제 삭제 → 되돌리기 흐름을 타도록 mutation도 성공시킨다.
    * 캡처 스크립트는 프로덕션 API를 절대 호출하지 않으므로 이 fixture가 없으면
