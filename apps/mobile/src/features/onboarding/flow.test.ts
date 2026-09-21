@@ -35,6 +35,7 @@ describe('히어로 문구', () => {
       region: '선택한 지역으로 좁혀드려요',
       style: '마음에 드는 스타일을 골라주세요',
     });
+    expect(STEP_DESCRIPTION.date).not.toContain('추천드려요');
 
     expect(STYLE_DESCRIPTION).toEqual({
       URBAN: '모던하고 세련된 도심 분위기',
