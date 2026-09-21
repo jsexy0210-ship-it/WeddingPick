@@ -29,7 +29,7 @@ import {
   ThemedText,
   ThemedView,
   useTheme,
-  SkeletonView,
+  Skeleton,
 } from '@weddingpick/ui';
 
 /**
@@ -70,7 +70,30 @@ export default function VendorImagesScreen() {
   }
 
   if (!photos) {
-    return <SkeletonView />;
+    return (
+      <ThemedView style={styles.container}>
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.header}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="돌아가기"
+              onPress={depthBack}
+              style={styles.backBtn}>
+              <ThemedText type="t6">돌아가기</ThemedText>
+            </Pressable>
+            <ThemedText type="t5">사진</ThemedText>
+            <View style={styles.backBtn} />
+          </View>
+          <View style={styles.grid}>
+            {Array.from({ length: 6 }, (_, index) => (
+              <View key={index} style={styles.thumbWrap}>
+                <Skeleton width="100%" height="100%" radius={Radius.medium} />
+              </View>
+            ))}
+          </View>
+        </SafeAreaView>
+      </ThemedView>
+    );
   }
 
   return (
