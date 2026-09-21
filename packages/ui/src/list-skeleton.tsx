@@ -1,14 +1,16 @@
 import { StyleSheet, View } from 'react-native';
 
-import { Layout, Radius, Spacing } from './theme';
+import { Border, Layout, Radius, Spacing } from './theme';
 import { Skeleton } from './skeleton';
 import { useTheme } from './use-theme';
 
 export type ListSkeletonProps = {
   /** 그릴 행 수. 목록은 3줄까지만 뼈대를 그린다 — 4줄 이상은 실제 내용보다 뼈대가 기억된다. */
   rows?: 1 | 2 | 3;
-  /** 히어로가 있는 화면(업체 상세)은 168 블록 + 제목 20 + 메타 15를 먼저 그린다. */
+  /** @deprecated 상세 화면은 자체 shell skeleton을 쓴다. */
   hero?: boolean;
+  /** 실제 목록 카드 구조. search는 104×116 썸네일 가로 카드다. */
+  variant?: 'default' | 'search';
 };
 
 /** 30-loading 30d — 썸네일 52(thumbList) · 바 16/13 · 히어로 168 · 제목 20 · 메타 15. */
@@ -19,13 +21,43 @@ const HERO = 168;
  * WP-ST-007 — 목록 뼈대. 썸네일 52 + 바 두 줄(16 · 13) 패턴, 1400ms 숨쉬기.
  * 목록에는 스피너를 쓰지 않는다.
  */
-export function ListSkeleton({ rows = 3, hero = false }: ListSkeletonProps) {
+export function ListSkeleton({ rows = 3, hero = false, variant = 'default' }: ListSkeletonProps) {
   const theme = useTheme();
   const widths = [
     ['72%', '46%'],
     ['58%', '38%'],
     ['66%', '42%'],
   ] as const;
+
+  if (variant === 'search') {
+    return (
+      <View style={styles.container} accessibilityLabel="검색 결과를 불러오는 중">
+        {Array.from({ length: rows }, (_, i) => {
+          const [w1, w2] = widths[i % 3]!;
+          return (
+            <View key={i} style={[styles.searchCard, { borderColor: theme.border }]}>
+              <View style={styles.searchImageCol}>
+                <Skeleton
+                  width={Layout.thumbSearchWidth}
+                  height={Layout.thumbSearchHeight}
+                  radius={Radius.thumb}
+                />
+              </View>
+              <View style={styles.searchInfo}>
+                <Skeleton width="28%" height={10} />
+                <Skeleton width={w1} height={16} />
+                <Skeleton width={w2} height={13} style={{ backgroundColor: theme.backgroundSelected }} />
+                <View style={styles.searchFooter}>
+                  <Skeleton width="42%" height={15} />
+                  <Skeleton width="25%" height={13} style={{ backgroundColor: theme.backgroundSelected }} />
+                </View>
+              </View>
+            </View>
+          );
+        })}
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -62,4 +94,24 @@ const styles = StyleSheet.create({
   divider: { height: 1, marginVertical: Spacing.one },
   row: { flexDirection: 'row', alignItems: 'center', gap: Layout.inlineGap, paddingVertical: ROW_PADDING_Y },
   lines: { flex: 1, gap: Spacing.two },
+  searchCard: {
+    flexDirection: 'row',
+    borderWidth: Border.hairline,
+    borderRadius: Radius.cardLarge,
+    overflow: 'hidden',
+  },
+  searchImageCol: { padding: Spacing.two, flexShrink: 0 },
+  searchInfo: {
+    flex: 1,
+    minWidth: 0,
+    padding: Layout.fieldPaddingX,
+    gap: Spacing.two,
+  },
+  searchFooter: {
+    marginTop: 'auto',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+  },
 });
