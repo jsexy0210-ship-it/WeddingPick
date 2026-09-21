@@ -47,6 +47,8 @@ test('runtime inputs and database writes use the production deployment boundary'
   assert.match(apiWorkflow, /spec\/\(glossary\|font-subsets\|strings\\\.ko\)/);
   assert.match(dbWorkflow, /group: weddingpick-kakao-vm-write/);
   assert.match(dbWorkflow, /cancel-in-progress: false/);
+  assert.match(dbWorkflow, /paths:\s*\n\s*- packages\/db\/migrations\/0426_expo_collection_thumbnail\\.sql/);
+  assert.doesNotMatch(dbWorkflow, /packages\/db\/migrations\/\*\*/);
 });
 
 test('admin smoke separates candidate identity from public route checks', () => {
