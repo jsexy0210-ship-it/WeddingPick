@@ -5,6 +5,7 @@ import { createGeminiAnalyzer } from './analysis/gemini-analyzer';
 import { runForever } from './analysis/worker';
 import { createGeminiFeedWriter } from './analysis/wedding-feed-writer';
 import type { Config } from './config';
+import { createGeminiExpoDiscoverer, runExpoCollection } from './expo-collector';
 import { createExpoPush } from './push/expo';
 import { sendPriceChangeNudges, sendTaskNudges } from './notify/nudges';
 import { alertOperators } from './retention/alert';
@@ -19,6 +20,8 @@ const RETENTION_SWEEP_MS = 10 * 60 * 1000;
 
 /** 종료 박람회 정리는 하루 1회면 충분하다(`docs/expo-agent-spec.md` 21절 권장 주기). */
 const EXPO_SWEEP_MS = 24 * 60 * 60 * 1000;
+/** 신규 박람회 탐색·검증도 정본 권장대로 하루 1회. */
+const EXPO_COLLECTION_MS = 24 * 60 * 60 * 1000;
 
 /*
  * 사용자 알림은 자주 볼 필요가 없다. 일정 알림은 하루 단위이고, 가격 변동은
@@ -234,6 +237,42 @@ export function startWorkerLoops({ pool, storage, config, signal }: WorkerDeps):
    */
   const geminiApiKey = process.env.GEMINI_API_KEY ?? '';
 
+  const expoCollectionEnabled = process.env.EXPO_COLLECTION_ENABLED !== 'false';
+  const collectExpos = async () => {
+    if (config.expoAutoDeleteEnabled) {
+      await sweepEndedExpos(pool);
+    }
+    const result = await runExpoCollection({
+      pool,
+      discover: createGeminiExpoDiscoverer({ apiKey: geminiApiKey, model: config.geminiModel }),
+      model: config.geminiModel,
+      trigger: 'scheduled',
+    });
+    if (!result.skipped) {
+      console.log(
+        `박람회 자동 수집: 발견 ${result.discovered} · 신규 ${result.created} · 업데이트 ${result.updated} · 중복/제외 ${result.duplicates}`
+      );
+    }
+  };
+
+  console.log(
+    expoCollectionEnabled && geminiApiKey
+      ? '박람회 자동 수집 켜짐 (하루 1회, worker 시작 시에도 최근 성공 여부 확인)'
+      : expoCollectionEnabled
+        ? '박람회 자동 수집 대기 — GEMINI_API_KEY가 없어 실행하지 않는다.'
+        : '박람회 자동 수집 꺼짐 — EXPO_COLLECTION_ENABLED=false'
+  );
+
+  if (expoCollectionEnabled && geminiApiKey) {
+    void collectExpos().catch((error) => console.error('박람회 자동 수집 실패:', error));
+  }
+  const expoCollection =
+    expoCollectionEnabled && geminiApiKey
+      ? setInterval(() => {
+          void collectExpos().catch((error) => console.error('박람회 자동 수집 실패:', error));
+        }, EXPO_COLLECTION_MS)
+      : null;
+
   const feedAutowrite = process.env.WEDDING_FEED_AUTOWRITE === 'true';
 
   console.log(
@@ -270,6 +309,7 @@ export function startWorkerLoops({ pool, storage, config, signal }: WorkerDeps):
     clearInterval(nudges);
     if (feedGeneration) clearInterval(feedGeneration);
     if (expoSweep) clearInterval(expoSweep);
+    if (expoCollection) clearInterval(expoCollection);
   });
 
   console.log('분석 워커 시작');
