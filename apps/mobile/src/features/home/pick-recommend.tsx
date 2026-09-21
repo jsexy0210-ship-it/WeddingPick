@@ -127,6 +127,7 @@ export function HomeRecommendations({
 
 export type PickRecommendProps = SharedRecommendationProps & {
   open: VendorCategory | null;
+  interactionDisabled?: boolean;
   onToggle: (category: VendorCategory) => void;
   remaining: number;
   remainingCategories: readonly VendorCategory[];
@@ -149,6 +150,7 @@ export function PickRecommend({
   onPressCompare,
   onPressSearchMore,
   onPressMore,
+  interactionDisabled = false,
   heading = true,
 }: PickRecommendProps) {
   const theme = useTheme();
@@ -182,6 +184,7 @@ export function PickRecommend({
           onPressSearchMore={
             onPressSearchMore === undefined ? undefined : () => onPressSearchMore(group.category)
           }
+          interactionDisabled={interactionDisabled}
         />
       ))}
 
@@ -217,6 +220,7 @@ function CategoryRow({
   onPressPick,
   onPressCompare,
   onPressSearchMore,
+  interactionDisabled,
 }: {
   group: CategoryRecommendation;
   expanded: boolean;
@@ -225,6 +229,7 @@ function CategoryRow({
   onPressPick: (vendor: VendorSummary) => void;
   onPressCompare: () => void;
   onPressSearchMore?: () => void;
+  interactionDisabled: boolean;
 }) {
   const theme = useTheme();
   const [reasonVendorId, setReasonVendorId] = useState<string | null>(null);
@@ -261,7 +266,9 @@ function CategoryRow({
       </Pressable>
 
       {!expanded ? null : (
-        <View style={styles.expanded}>
+        <View
+          pointerEvents={interactionDisabled ? 'none' : 'auto'}
+          style={[styles.expanded, interactionDisabled ? styles.interactionDisabled : null]}>
           {reasonVendor !== null ? (
             <RecommendationReasonCard
               vendor={reasonVendor}
@@ -468,6 +475,7 @@ const styles = StyleSheet.create({
   chevronDown: { transform: [{ rotate: '90deg' }] },
   chevronUp: { transform: [{ rotate: '-90deg' }] },
   expanded: { paddingBottom: Layout.sectionHeadGap },
+  interactionDisabled: { opacity: 0.55 },
 
   scroll: { flexGrow: 0, flexShrink: 0 },
   cards: {
