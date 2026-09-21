@@ -58,7 +58,7 @@ import { Badge } from '@/features/wedding/screen-kit';
  */
 
 const TITLE = '리얼 후기';
-const CONSULT_CTA = '이 업체 상담 예약하기';
+const CONSULT_CTA = '업체 상세에서 최종 Pick 확인하기';
 const STARS = [1, 2, 3, 4, 5] as const;
 
 export default function ReviewDetailScreen() {
@@ -297,9 +297,9 @@ export default function ReviewDetailScreen() {
               {/* `mt-6 h-12 rounded-2xl bg-primary text-sm font-bold` + CalendarDays 16. */}
               <Pressable
                 accessibilityRole="button"
-                onPress={() => router.push(`/search/${vendorId}/consult`)}
+                onPress={() => router.push(`/search/${vendorId}`)}
                 style={({ pressed }) => [styles.cta, { backgroundColor: theme.tint }, pressed && styles.pressed]}>
-                <ProductSymbol name="calendar" size={Layout.iconField} color={theme.onTint} />
+                <ProductSymbol name="chevronRight" size={Layout.iconField} color={theme.onTint} />
                 <ThemedText type="f14" themeColor="onTint" style={styles.bold}>
                   {CONSULT_CTA}
                 </ThemedText>
