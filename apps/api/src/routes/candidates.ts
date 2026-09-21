@@ -5,12 +5,10 @@ import {
 } from '@weddingpick/api-contract';
 import {
   EXPENSE_BUCKET_LABEL,
-  MAX_CANDIDATES,
   PREPARATION_STATE_LABEL,
   PREPARATION_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
   bucketFor,
-  canAddCandidate,
   comparableWithin,
   displayableImageUrlCondition,
   groupByCategory,
@@ -135,7 +133,6 @@ export function registerCandidateRoutes(app: FastifyInstance, context: AppContex
           decidedVendorId: decidedBy.get(category) ?? null,
         })),
         total: rows.length,
-        limit: MAX_CANDIDATES,
         progress: preparationProgress(progress),
         nextCategory: nextCategory(progress),
       };
@@ -158,21 +155,6 @@ export function registerCandidateRoutes(app: FastifyInstance, context: AppContex
 
       if (vendor.rows.length === 0) {
         throw notFound('업체');
-      }
-
-      const counted = await context.pool.query<{ count: string }>(
-        'SELECT count(*) FROM structured.vendor_candidates WHERE wedding_id = $1',
-        [request.params.weddingId]
-      );
-
-      /*
-       * 상한을 여기서도 본다. 트리거가 막긴 하지만, 그 예외는 사람이 읽을 말이
-       * 아니다 — 왜 안 되는지와 무엇을 하면 되는지를 알려주려면 여기서 걸러야 한다.
-       */
-      const check = canAddCandidate({ currentCount: Number(counted.rows[0]!.count) });
-
-      if (!check.ok) {
-        throw new ApiError('invalid_request', check.reason);
       }
 
       try {
