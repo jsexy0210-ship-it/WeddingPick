@@ -249,7 +249,7 @@ describe('웨딩피드 관리자 라우트', () => {
     });
 
     const response = await app({
-      storage: { createUploadTarget } as Partial<AppContext>['storage'],
+      storage: { createUploadTarget } as unknown as AppContext['storage'],
     } as Partial<AppContext>).inject({
       method: 'POST',
       url: '/v1/admin/wedding-feed/image/upload-target',
