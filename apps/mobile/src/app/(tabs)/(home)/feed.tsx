@@ -129,10 +129,10 @@ export default function FeedScreen() {
           )}
 
           {items.length === 0 ? (
-            <EmptyView title={S['empty.all']} />
+            <EmptyView scope="section" title={S['empty.all']} />
           ) : shown.length === 0 ? (
             /* 글은 있는데 이 탭에만 없다. 「준비 중」과 다른 말이어야 한다. */
-            <EmptyView title={S['empty.tab']} />
+            <EmptyView scope="section" title={S['empty.tab']} />
           ) : (
             <WeddingContent
               items={shown}
