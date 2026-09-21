@@ -51,8 +51,6 @@ export const candidateListResponseSchema = z.object({
     })
   ),
   total: z.int().nonnegative(),
-  /** 몇 곳까지 담을 수 있는지. 화면이 남은 자리를 말할 수 있어야 한다. */
-  limit: z.int().positive(),
   /**
    * 업종 몇 개를 정했는지. `1/9 완료` 꼴.
    *
