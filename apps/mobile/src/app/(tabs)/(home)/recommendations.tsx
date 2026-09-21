@@ -1,6 +1,6 @@
 import type { CategoryRecommendation, VendorCandidate, VendorSummary } from '@weddingpick/api-contract';
 import { nextStepsCountLine, type VendorCategory } from '@weddingpick/domain';
-import { Redirect, router, useFocusEffect } from 'expo-router';
+import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
@@ -45,12 +45,29 @@ type State = {
 
 /** 예전 저장 링크도 Pick 1Depth의 추천 보기로 모은다. */
 export default function RecommendationsRoute() {
-  return <Redirect href={{ pathname: '/pick', params: { section: 'recommendations' } }} />;
+  const { category } = useLocalSearchParams<{ category?: string | string[] }>();
+  const requestedCategory = Array.isArray(category) ? category[0] : category;
+
+  return (
+    <Redirect
+      href={{
+        pathname: '/pick',
+        params: requestedCategory
+          ? { section: 'recommendations', category: requestedCategory }
+          : { section: 'recommendations' },
+      }}
+    />
+  );
 }
 
 /** Pick 루트 안에서 탭·하단 네비게이션을 공유하는 추천 본문. */
-export function RecommendationsContent() {
+export function RecommendationsContent({
+  requestedCategory = null,
+}: {
+  requestedCategory?: VendorCategory | null;
+}) {
   const version = useRef(0);
+  const loadedOnce = useRef(false);
   const [state, setState] = useState<State | null>(null);
   const [error, setError] = useState<string | null>(null);
   const candidates = useMyCandidates();
@@ -59,18 +76,21 @@ export function RecommendationsContent() {
   const [unpickTarget, setUnpickTarget] = useState<VendorCandidate | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   /* 홈과 같은 single-open 아코디언 규칙을 쓴다 — 첫 업종이 기본으로 펼쳐진다. */
-  const { open, toggle } = useOpenCategory(state?.groups ?? NO_GROUPS);
+  const { open, toggle } = useOpenCategory(state?.groups ?? NO_GROUPS, requestedCategory);
 
   const load = useCallback(() => {
     const request = ++version.current;
     setError(null);
-    setState(null);
     void getCategoryRecommendations()
       .then((response) => {
-        if (request === version.current) setState(response);
+        if (request !== version.current) return;
+        loadedOnce.current = true;
+        setState(response);
       })
       .catch(() => {
-        if (request === version.current) setError(S['recommend.error']);
+        if (request !== version.current) return;
+        if (loadedOnce.current) setToast(S['recommend.error']);
+        else setError(S['recommend.error']);
       });
   }, []);
 
