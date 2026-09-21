@@ -1088,13 +1088,15 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
     },
   }));
 
-  app.post<{ Body: unknown }>('/v1/admin/wedding-feed', auth, async (request) =>
-    weddingFeed.create(
+  app.post<{ Body: unknown }>('/v1/admin/wedding-feed', auth, async (request) => {
+    const input = weddingFeed.parseFeedInput(request.body);
+    return weddingFeed.create(
       context.pool,
-      weddingFeed.parseFeedInput(request.body),
-      currentUserId(request)
-    )
-  );
+      input,
+      currentUserId(request),
+      input.generated ? context.config.geminiModel : null
+    );
+  });
 
   /*
    * 새 글 작성 팝업용 자동 초안.
