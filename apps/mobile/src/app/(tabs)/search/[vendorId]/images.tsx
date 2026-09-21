@@ -89,7 +89,7 @@ export default function VendorImagesScreen() {
         </View>
 
         {photos.length === 0 ? (
-          <EmptyView title="아직 등록된 사진이 없어요" />
+          <EmptyView scope="section" title="아직 등록된 사진이 없어요" />
         ) : (
           <ScrollView contentContainerStyle={styles.grid} showsVerticalScrollIndicator={false}>
             {photos.map((photo, index) => (
