@@ -657,6 +657,7 @@ const routes = {
         status: 'upcoming',
         isDeadlineSoon: true,
         sourceNote: '주최사 공지 기준',
+        thumbnailUrl: 'https://example.com/expo-poster.jpg',
         lastVerifiedAt: '2026-09-10T00:00:00.000Z',
       },
     ],
