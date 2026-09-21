@@ -12,6 +12,13 @@ docs/design/source/         감사·무결성 확인용 ZIP 원본. 구현에서
 파일명·크기·SHA-256과 활성 경로 99개 파일의 정규화 해시는
 [`canonical-manifest.json`](canonical-manifest.json)이 고정한다.
 
+## 전체 페이지 현행화 · Claude 작업 시작점 (2026-09-21)
+
+- [UX_UI_REFRESH_HANDOFF.md](UX_UI_REFRESH_HANDOFF.md): 최신 사용자 확정 요청, 코드·실화면 근거, 개선 제안, 작업 순서와 검수 기준. **최종 Pick 완료 → 상담 예약** 순서를 포함한다.
+- [PAGE_STATE_AUDIT.md](PAGE_STATE_AUDIT.md): 정본 208개 ID와 앱 화면 파일 143개 전체의 출발 목록. 홈뿐 아니라 앱·관리자·웹 화면군을 추적한다.
+
+실구현은 Claude가 이어가고 Codex는 분석·문서 역할을 맡는다. 위 두 문서는 전달 원본을 수정하지 않고 최신 요청과 실행 지침을 덧붙인다. 제안과 확정 요청을 구분하며, 목록 작성은 구현·시각 검수·운영 배포 완료를 뜻하지 않는다.
+
 ## 적용 순서
 
 1. 화면의 모양과 배치는 `figma-export/`를 따른다.
