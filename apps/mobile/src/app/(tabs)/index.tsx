@@ -4,7 +4,6 @@ import type {
   CategoryRecommendation,
   CurrentUser,
   MyMonthlyDrawResponse,
-  VendorCandidate,
   VendorSummary,
 } from '@weddingpick/api-contract';
 import {
@@ -48,8 +47,7 @@ import { HomeBudget, PendingPreparation } from '@/features/home/home-summary';
 import { HomeRecommendations } from '@/features/home/pick-recommend';
 import { categoryStatuses } from '@/features/home/state';
 import { WeddingContent } from '@/features/home/wedding-content';
-import { PickDoneSheet, UnpickSheet } from '@/features/pick/pick-sheets';
-import { useMyCandidates } from '@/features/pick/use-my-candidates';
+import { useFavoriteVendors } from '@/features/pick/use-favorite-vendors';
 import { isWebShellScreen } from '@/features/webshell/config';
 import { WebShellView } from '@/features/webshell/WebShellView';
 import strings from '../../../../../spec/strings.ko.json';
@@ -119,10 +117,8 @@ export default function HomeScreen() {
   const [benefit, setBenefit] = useState<MyMonthlyDrawResponse | null>(null);
   const [benefitOpen, setBenefitOpen] = useState(false);
   const benefitChecked = useRef(false);
-  const candidates = useMyCandidates();
-  const reloadCandidates = candidates.reload;
-  const [pickDoneOpen, setPickDoneOpen] = useState(false);
-  const [unpickTarget, setUnpickTarget] = useState<VendorCandidate | null>(null);
+  const favorites = useFavoriteVendors();
+  const reloadFavorites = favorites.reload;
   const [toast, setToast] = useState<string | null>(null);
 
   const load = useCallback(() => {
@@ -194,9 +190,9 @@ export default function HomeScreen() {
 
   useFocusEffect(useCallback(() => {
     load();
-    void reloadCandidates().catch(() => undefined);
+    void reloadFavorites().catch(() => undefined);
     return () => { loadVersion.current += 1; };
-  }, [load, reloadCandidates]));
+  }, [load, reloadFavorites]));
 
   useEffect(() => {
     if (!settled || data.me?.setupComplete !== true || benefitChecked.current) return;
@@ -239,24 +235,10 @@ export default function HomeScreen() {
     router.push('/my/rewards');
   }, []);
 
-  async function onPressPick(vendor: VendorSummary) {
-    const existing = candidates.candidateFor(vendor.id);
-    if (existing) {
-      setUnpickTarget(existing);
-      return;
-    }
-    const result = await candidates.pick(vendor.id);
-    if (result === 'picked') { setPickDoneOpen(true); load(); }
-    else if (result === 'login') router.push('/login');
-    else setToast(S['pick.failed']);
-  }
-
-  async function confirmUnpick() {
-    if (!unpickTarget) return;
-    const ok = await candidates.unpick(unpickTarget);
-    setUnpickTarget(null);
-    if (!ok) setToast(S['unpick.failed']);
-    else load();
+  async function onPressFavorite(vendor: VendorSummary) {
+    const result = await favorites.toggle(vendor.id);
+    if (result === 'login') router.push('/login');
+    else if (result === 'error') setToast('관심업체를 변경하지 못했어요. 잠시 후 다시 시도해주세요.');
   }
 
   // 하이브리드 웹뷰 쉘 POC. `EXPO_PUBLIC_WEBSHELL_SCREENS`에 "home"이 없으면
@@ -339,9 +321,9 @@ export default function HomeScreen() {
           ) : (
             <HomeRecommendations
               groups={data.groups}
-              isPicked={(vendorId) => candidates.candidateFor(vendorId) !== null}
+              isFavorite={(vendorId) => favorites.favoriteFor(vendorId) !== null}
               onPressVendor={(vendorId) => router.push(`/search/${vendorId}`)}
-              onPressPick={(vendor) => void onPressPick(vendor)}
+              onPressFavorite={(vendor) => void onPressFavorite(vendor)}
               onPressCompare={(vendorIds) =>
                 router.push({ pathname: '/search/compare', params: { ids: vendorIds.join(',') } })
               }
@@ -395,14 +377,6 @@ export default function HomeScreen() {
           onOpenBenefit={openBenefit}
         />
       ) : null}
-      <PickDoneSheet visible={pickDoneOpen} onDismiss={() => setPickDoneOpen(false)} />
-      <UnpickSheet
-        candidate={unpickTarget}
-        partnerName={candidates.partnerName}
-        busy={candidates.busyVendorId !== null}
-        onConfirm={() => void confirmUnpick()}
-        onDismiss={() => setUnpickTarget(null)}
-      />
       <Toast message={toast} onHidden={() => setToast(null)} />
     </ThemedView>
   );
