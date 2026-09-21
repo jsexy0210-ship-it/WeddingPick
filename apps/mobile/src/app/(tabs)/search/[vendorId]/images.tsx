@@ -87,7 +87,7 @@ export default function VendorImagesScreen() {
           <View style={styles.grid}>
             {Array.from({ length: 6 }, (_, index) => (
               <View key={index} style={styles.thumbWrap}>
-                <Skeleton width="100%" height="100%" radius={Radius.medium} />
+                <Skeleton radius={Radius.medium} style={styles.thumbSkeleton} />
               </View>
             ))}
           </View>
@@ -405,6 +405,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     overflow: 'hidden',
   },
+  thumbSkeleton: { width: '100%', height: '100%' },
   thumbImage: {
     width: '100%',
     height: '100%',
