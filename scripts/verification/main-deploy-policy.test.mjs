@@ -51,6 +51,7 @@ test('runtime inputs and database writes use the production deployment boundary'
   assert.match(dbWorkflow, /- packages\/db\/migrations\/0426_expo_collection_thumbnail\.sql/);
   assert.match(dbWorkflow, /- packages\/db\/migrations\/0427_consultation_event_idempotency\.sql/);
   assert.match(dbWorkflow, /- packages\/db\/migrations\/0428_wedding_feed_body_image\.sql/);
+  assert.match(dbWorkflow, /- packages\/db\/migrations\/0429_pick_favorites_unlimited\.sql/);
   assert.doesNotMatch(dbWorkflow, /packages\/db\/migrations\/\*\*/);
   assert.match(apiWorkflow, /group: weddingpick-kakao-vm-write-v2/);
   assert.match(apiWorkflow, /flock -n 9/);
