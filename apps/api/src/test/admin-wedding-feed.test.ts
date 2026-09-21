@@ -127,6 +127,32 @@ describe('웨딩피드 관리자 라우트', () => {
     expect(pool.query.mock.calls[0]?.[1]).not.toContain(99);
   });
 
+  it('Gemini 초안을 저장하면 generated 출처와 실제 모델을 함께 남긴다', async () => {
+    pool.query.mockResolvedValueOnce({
+      rows: [{ id: '00000000-0000-4000-8000-0000000000bc', sort_order: 4 }],
+    });
+
+    const response = await app({
+      config: { geminiModel: '시험용-모델' },
+    } as Partial<AppContext>).inject({
+      method: 'POST',
+      url: '/v1/admin/wedding-feed',
+      payload: {
+        categoryLabel: '예산',
+        title: '자동 제목',
+        summary: '자동 요약',
+        body: '자동 본문',
+        generated: true,
+        status: 'draft',
+        sortOrder: 4,
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(String(pool.query.mock.calls[0]?.[0])).toContain("THEN 'manual' ELSE 'generated'");
+    expect(pool.query.mock.calls[0]?.[1]).toContain('시험용-모델');
+  });
+
   it('제목이 비면 DB를 건드리기 전에 거부한다', async () => {
     const response = await app().inject({
       method: 'POST',
