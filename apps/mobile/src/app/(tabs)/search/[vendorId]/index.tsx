@@ -285,25 +285,26 @@ export default function VendorDetailScreen() {
     );
   }
 
-  const myCandidate = candidates.candidateFor(vendor.id);
+  const currentVendor = vendor;
+  const myCandidate = candidates.candidateFor(currentVendor.id);
   const picked = myCandidate !== null;
-  const pickBusy = candidates.busyVendorId === vendor.id;
+  const pickBusy = candidates.busyVendorId === currentVendor.id;
   const decided =
-    candidates.page?.groups.some((group) => group.decidedVendorId === vendor.id) ?? false;
+    candidates.page?.groups.some((group) => group.decidedVendorId === currentVendor.id) ?? false;
   const primaryLabel = decided ? '상담 예약하기' : picked ? '최종 Pick하기' : '먼저 Pick해주세요';
 
   function openPrimaryAction() {
     if (decided) {
-      router.push(`/search/${vendor.id}/consult`);
+      router.push(`/search/${currentVendor.id}/consult`);
       return;
     }
     if (!myCandidate) return;
     router.push({
       pathname: '/pick/confirm',
       params: {
-        category: vendor.category,
-        vendorId: vendor.id,
-        vendorName: vendor.name,
+        category: currentVendor.category,
+        vendorId: currentVendor.id,
+        vendorName: currentVendor.name,
         shared: myCandidate.addedByPartner ? '1' : '0',
       },
     });
