@@ -64,7 +64,7 @@ import {
   ProgressBar,
   Radius,
   RatingStars,
-  SkeletonView,
+  Skeleton,
   Spacing,
   ThemedText,
   ThemedView,
@@ -248,7 +248,41 @@ export default function VendorDetailScreen() {
   }
 
   if (!vendor) {
-    return <SkeletonView hero />;
+    return (
+      <ThemedView style={styles.container}>
+        <SafeAreaView style={styles.safeArea}>
+          <DepthHeader title="업체 상세" onBack={depthBack} />
+          <ScrollView
+            style={styles.scroll}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.loadingScroll}>
+            <Skeleton height={Layout.heroVendor} radius={0} />
+            <View style={styles.loadingPrice}>
+              <Skeleton width="42%" height={22} />
+              <Skeleton width="68%" height={14} />
+            </View>
+            <View style={styles.loadingTabs}>
+              {VENDOR_TABS.map((item) => (
+                <Skeleton key={item.key} width="20%" height={18} />
+              ))}
+            </View>
+            <View style={styles.loadingBody}>
+              <Skeleton width="48%" height={20} />
+              <Skeleton width="100%" height={72} radius={Radius.medium} />
+              <Skeleton width="100%" height={72} radius={Radius.medium} />
+            </View>
+          </ScrollView>
+          <View style={[styles.footer, { borderTopColor: theme.border, backgroundColor: theme.background }]}>
+            <View style={styles.actionRow}>
+              <Skeleton width={PICK_CTA_HEIGHT} height={PICK_CTA_HEIGHT} radius={Radius.cardLarge} />
+              <View style={styles.loadingPrimary}>
+                <Skeleton height={PICK_CTA_HEIGHT} radius={Radius.cardLarge} />
+              </View>
+            </View>
+          </View>
+        </SafeAreaView>
+      </ThemedView>
+    );
   }
 
   const myCandidate = candidates.candidateFor(vendor.id);
@@ -1079,6 +1113,27 @@ const styles = StyleSheet.create({
   busy: {
     opacity: 0.6,
   },
+
+  loadingScroll: { paddingBottom: Spacing.four },
+  loadingPrice: {
+    paddingHorizontal: Layout.pageX,
+    paddingVertical: Layout.cardPadding,
+    gap: Spacing.two,
+  },
+  loadingTabs: {
+    minHeight: Layout.touchTarget,
+    paddingHorizontal: Layout.pageX,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+  },
+  loadingBody: {
+    paddingHorizontal: Layout.gutter,
+    paddingTop: Layout.gutter,
+    gap: Layout.sectionHeadGap,
+  },
+  loadingPrimary: { flex: 1 },
 
   // ── 대표 이미지 — handoff 260 · 아래 어두운 막 ──
   hero: {
