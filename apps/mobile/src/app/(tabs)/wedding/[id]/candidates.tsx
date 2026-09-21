@@ -23,7 +23,7 @@ import {
  * 내 웨딩의 후보 업체 목록. 디자인 핸드오프 — wedding/[id] 탭에서 진입.
  *
  * 담기·빼기·결정은 Pick 탭의 전용 화면에서 한다. 여기는 한눈에 보는 자리다.
- * 남은 자리를 보여준다 — 스키마 주석이 화면이 말할 수 있어야 한다고 명시한다.
+ * Pick 개수에는 상한을 두지 않는다.
  */
 export default function WeddingCandidatesScreen() {
   const depthBack = useDepthBack();
@@ -47,22 +47,15 @@ export default function WeddingCandidatesScreen() {
     return <SkeletonView />;
   }
 
-  const remaining = page.limit - page.total;
-
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <BackBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.header}>
-            <ThemedText type="t2">담아둔 곳</ThemedText>
+            <ThemedText type="t2">나의 Pick</ThemedText>
             <ThemedText type="t6" themeColor="textSecondary">
               {page.progress.label}
-            </ThemedText>
-            <ThemedText type="t7" themeColor={remaining > 0 ? 'textAssistive' : 'negative'}>
-              {remaining > 0
-                ? `${remaining}곳 더 담을 수 있어요`
-                : '최대로 담았어요. 더는 담을 수 없어요.'}
             </ThemedText>
           </ThemedView>
 
