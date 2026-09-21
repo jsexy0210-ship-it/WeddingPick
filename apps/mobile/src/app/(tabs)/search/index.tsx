@@ -2,7 +2,6 @@ import {
   VENDOR_SORTS,
   type VendorSort,
   type SponsoredCard,
-  type VendorCandidate,
   type VendorSummary,
 } from '@weddingpick/api-contract';
 import {
@@ -31,9 +30,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ApiError, listVendorRegions, searchVendors } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
-import { savePendingAction } from '@/features/auth/pending-action';
-import { PickDoneSheet, UnpickSheet } from '@/features/pick/pick-sheets';
-import { useMyCandidates } from '@/features/pick/use-my-candidates';
+import { useFavoriteVendors } from '@/features/pick/use-favorite-vendors';
 import {
   addRecentSearch,
   loadRecentSearches,
@@ -225,13 +222,8 @@ export default function SearchScreen() {
   const [acVendors, setAcVendors] = useState<VendorSummary[]>([]);
   const [acTotal, setAcTotal] = useState<number | null>(null);
 
-  /*
-   * Pick — 카드의 버튼이 진짜 후보에 담는다(SPEC §13.1).
-   * 비회원 검색은 폐기됐으므로 이 화면 안에서 별도 로그인 시트를 다시 열지 않는다.
-   */
-  const candidates = useMyCandidates();
-  const [pickDoneOpen, setPickDoneOpen] = useState(false);
-  const [unpickTarget, setUnpickTarget] = useState<VendorCandidate | null>(null);
+  /* 하트는 개인 관심업체다. 나의 Pick과 별도 상태이며 개수 제한이 없다. */
+  const favorites = useFavoriteVendors();
 
   useEffect(() => {
     loadRecentSearches().then(setRecentSearches);
@@ -480,30 +472,10 @@ export default function SearchScreen() {
   }
 
 
-  /**
-   * 카드의 Pick 버튼(SPEC §13.1). Pick 전이면 후보에 담고 완료 시트, Pick 후면 해제 시트.
-   * 세션이 사라졌다면 검색 안에서 로그인 UI를 겹쳐 띄우지 않고 로그인으로 복귀한다.
-   */
-  async function onPressPick(item: VendorSummary) {
-    const existing = candidates.candidateFor(item.id);
-    if (existing) {
-      setUnpickTarget(existing);
-      return;
-    }
-    const result = await candidates.pick(item.id);
-    if (result === 'picked') setPickDoneOpen(true);
-    else if (result === 'login') {
-      await savePendingAction({ kind: 'pick', vendorId: item.id, vendorName: item.name });
-      router.replace('/login');
-    }
-    else setToast('Pick하지 못했어요. 잠시 후 다시 시도해주세요.');
-  }
-
-  async function confirmUnpick() {
-    if (!unpickTarget) return;
-    const ok = await candidates.unpick(unpickTarget);
-    setUnpickTarget(null);
-    if (!ok) setToast('후보를 빼지 못했어요. 잠시 후 다시 시도해주세요.');
+  async function onPressFavorite(item: VendorSummary) {
+    const result = await favorites.toggle(item.id);
+    if (result === 'login') router.replace('/login');
+    else if (result === 'error') setToast('관심업체를 변경하지 못했어요. 잠시 후 다시 시도해주세요.');
   }
 
   /** 필터 칩에 적는 수. 시트가 거는 조건만 센다 — 정렬은 따로 고르는 자리다. */
@@ -671,8 +643,8 @@ export default function SearchScreen() {
    * 2026-09-08). 해시태그 · 별점 · 저장수는 서버에 없어(`VendorSummary`) 넣지 않는다.
    */
   function renderVendorCard(item: VendorSummary) {
-    const chosen = candidates.candidateFor(item.id) !== null;
-    const busy = candidates.busyVendorId === item.id;
+    const chosen = favorites.favoriteFor(item.id) !== null;
+    const busy = favorites.busyVendorId === item.id;
     /* 금액 한 줄 — 0층 «업체 안내 150만원~» · 1층 «수집 중» · 3건+ 구간. 검색·상세·비교가 같은 규칙. */
     const line = priceLine(item.paidPrice, item.guidePrice);
 
@@ -690,7 +662,7 @@ export default function SearchScreen() {
         imageUrl={item.imageUrl}
         price={{ text: line.text, dim: line.dim }}
         tail={tail}
-        pick={{ chosen, busy, onPress: () => void onPressPick(item) }}
+        favorite={{ chosen, busy, onPress: () => void onPressFavorite(item) }}
         onPress={() => router.push(`/search/${item.id}`)}
       />
     );
@@ -1003,14 +975,6 @@ export default function SearchScreen() {
           onApply={() => setFilterOpen(false)}
           onDismiss={() => setFilterOpen(false)}
         />
-        <PickDoneSheet visible={pickDoneOpen} onDismiss={() => setPickDoneOpen(false)} />
-        <UnpickSheet
-          candidate={unpickTarget}
-          partnerName={candidates.partnerName}
-          busy={candidates.busyVendorId !== null}
-          onConfirm={() => void confirmUnpick()}
-          onDismiss={() => setUnpickTarget(null)}
-        />
       </SafeAreaView>
     </ThemedView>
   );
@@ -1031,13 +995,13 @@ function FilterIcon({ color }: { color: string }) {
 
 
 /**
- * Pick pill 안의 하트.
+ * 관심업체 하트.
  *
- * **Pick Mark(하트 + 체크)가 아니다.** 시안 16a의 `btnStyle`은 체크 없는 하트
- * 하나이고, Pick하면 코랄로 채운다. 경로는 확정본의 하트를 그대로 쓴다
+ * 나의 Pick과 별도다. 하트는 관심업체 저장/해제만 담당하고 업체 결정 상태를 바꾸지 않는다.
+ * 경로는 확정본의 하트를 그대로 쓴다
  * (`MARK_HEART_PATH`) — 좌표를 새로 만들지 않는다.
  */
-function PickHeartIcon({ color, filled }: { color: string; filled: boolean }) {
+function FavoriteHeartIcon({ color, filled }: { color: string; filled: boolean }) {
   /* 피그마 `Search.tsx` 카드 Pick 원 안의 하트 `w-3.5 h-3.5` = 14 — size.iconSmall과 같은 값. */
   return (
     <Svg width={Layout.iconSmall} height={Layout.iconSmall} viewBox="0 0 24 24" fill="none">
@@ -1057,7 +1021,7 @@ function PickHeartIcon({ color, filled }: { color: string; filled: boolean }) {
  * 결과 카드 한 장 — 피그마 `Search.tsx` 업체 목록의 카드(2026-09-14 정본 · 최상위
  * 규칙 1). 테두리 1 · radius 16(`rounded-2xl`) · 왼쪽 열 120(썸네일 104×116 ·
  * radius 18 · 안쪽 8) · 오른쪽 정보 안쪽 14(`p-3.5`). 위 줄은 업종 라벨 + 이름(14/700)과
- * 오른쪽 Pick 원 28, 다음 줄은 핀 12 + 지역, 아래 줄은 금액(왼쪽)과 꼬리(오른쪽).
+ * 오른쪽 관심업체 원 28, 다음 줄은 핀 12 + 지역, 아래 줄은 금액(왼쪽)과 꼬리(오른쪽).
  *
  * **피그마의 해시태그 · 별점 · 저장 수는 그리지 않는다** — 서버가 주지 않는다
  * (`vendorSummarySchema`에 그 칸이 없다). 만들어 넣지 않는다. 그 자리는 우리 값으로
@@ -1074,7 +1038,7 @@ function ResultCard({
   badge,
   price,
   tail,
-  pick,
+  favorite,
   onPress,
 }: {
   name: string;
@@ -1084,7 +1048,7 @@ function ResultCard({
   badge?: string;
   price?: { text: string; dim: boolean };
   tail?: string;
-  pick?: { chosen: boolean; busy: boolean; onPress: () => void };
+  favorite?: { chosen: boolean; busy: boolean; onPress: () => void };
   onPress: () => void;
 }) {
   const theme = useTheme();
@@ -1123,22 +1087,22 @@ function ResultCard({
                 {name}
               </ThemedText>
             </View>
-            {pick ? (
+            {favorite ? (
               /* Pick 원 — 켜지면 키 컬러 채움 + 흰 하트, 꺼지면 회색 면 + 보조색 하트(피그마 `bg-primary` / `bg-secondary`). */
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={pick.chosen ? `${name} Pick했어요` : `${name} Pick하기`}
-                accessibilityState={{ disabled: pick.busy }}
-                disabled={pick.busy}
+                accessibilityLabel={favorite.chosen ? `${name} 관심업체 해제` : `${name} 관심업체 추가`}
+                accessibilityState={{ disabled: favorite.busy }}
+                disabled={favorite.busy}
                 hitSlop={Spacing.two}
-                onPress={pick.onPress}
+                onPress={favorite.onPress}
                 style={({ pressed }) => [
                   styles.pickCircle,
-                  { backgroundColor: pick.chosen ? theme.tint : theme.backgroundElement },
+                  { backgroundColor: favorite.chosen ? theme.tint : theme.backgroundElement },
                   pressed ? styles.pressed : null,
-                  pick.busy ? styles.busy : null,
+                  favorite.busy ? styles.busy : null,
                 ]}>
-                <PickHeartIcon color={pick.chosen ? theme.onTint : theme.textAssistive} filled={pick.chosen} />
+                <FavoriteHeartIcon color={favorite.chosen ? theme.onTint : theme.textAssistive} filled={favorite.chosen} />
               </Pressable>
             ) : null}
           </View>
