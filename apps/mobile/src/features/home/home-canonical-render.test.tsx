@@ -42,14 +42,14 @@ describe('WP-HOME-001 figma-export 구조', () => {
   const views: ReactTestRenderer[] = [];
   afterEach(() => act(() => views.splice(0).forEach((view) => view.unmount())));
 
-  it('홈은 코랄 Hero 다음 남은 준비·가로 추천·예산·웨딩피드 순서다', () => {
+  it('홈은 코랄 Hero 다음 남은 준비·가로 추천·예산·웨딩 준비 팁 순서다', () => {
     const source = readFileSync(join(__dirname, '..', '..', 'app', '(tabs)', 'index.tsx'), 'utf8');
     const order = [
       source.indexOf('<Hero'),
       source.indexOf('<PendingPreparation'),
       source.indexOf('<HomeRecommendations'),
       source.indexOf('<HomeBudget'),
-      source.indexOf('웨딩피드</ThemedText>'),
+      source.indexOf('웨딩 준비 팁</ThemedText>'),
     ];
 
     expect(order.every((index) => index >= 0)).toBe(true);
