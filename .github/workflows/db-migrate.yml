@@ -16,6 +16,7 @@ on:
       - packages/db/migrations/0426_expo_collection_thumbnail.sql
       - packages/db/migrations/0427_consultation_event_idempotency.sql
       - packages/db/migrations/0428_wedding_feed_body_image.sql
+      - packages/db/migrations/0429_pick_favorites_unlimited.sql
 
 permissions:
   contents: read
