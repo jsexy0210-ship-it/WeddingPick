@@ -2,6 +2,7 @@ import {
   createConsultationEventRequestSchema,
   createWeddingEventRequestSchema,
   updateWeddingEventRequestSchema,
+  type CreateConsultationEventRequest,
   type WeddingEventSource,
 } from '@weddingpick/api-contract';
 import type { FastifyInstance } from 'fastify';
@@ -24,37 +25,80 @@ type EventRow = {
   source: WeddingEventSource;
 };
 
-async function withDecidedVendorLock<T>(
+type IdempotentEventRow = {
+  id: string;
+  vendor_id: string | null;
+  starts_at: Date;
+};
+
+function matchesConsultationRequest(row: IdempotentEventRow, body: CreateConsultationEventRequest): boolean {
+  return row.vendor_id === body.vendorId && row.starts_at.getTime() === new Date(body.startsAt).getTime();
+}
+
+async function createConsultationEvent(
   context: AppContext,
   weddingId: string,
-  vendorId: string,
-  work: (client: PoolClient) => Promise<T>
-): Promise<T> {
+  userId: string,
+  body: CreateConsultationEventRequest
+): Promise<string> {
   const client = await context.pool.connect();
 
   try {
     await client.query('BEGIN');
 
-    /*
-     * 상담 전용 쓰기만 최종 Pick 이후에 허용한다.
-     * 결정 행을 잠근 같은 트랜잭션에서 확인하고 INSERT하기 때문에, 배우자가 동시에
-     * 결정을 바꾸거나 취소해도 검증과 저장 사이 상태가 갈라지지 않는다.
-     */
+    const existing = await client.query<IdempotentEventRow>(
+      `SELECT id, vendor_id, starts_at
+       FROM structured.wedding_events
+       WHERE wedding_id = $1 AND idempotency_key = $2`,
+      [weddingId, body.idempotencyKey]
+    );
+    if (existing.rows[0]) {
+      if (!matchesConsultationRequest(existing.rows[0], body)) {
+        throw new ApiError('conflict', '같은 요청 키로 다른 상담 일정을 등록할 수 없습니다.');
+      }
+      await client.query('COMMIT');
+      return existing.rows[0].id;
+    }
+
     const locked = await client.query(
       `SELECT 1
        FROM structured.category_decisions
        WHERE wedding_id = $1 AND vendor_id = $2
        FOR UPDATE`,
-      [weddingId, vendorId]
+      [weddingId, body.vendorId]
     );
-
     if (locked.rows.length === 0) {
       throw new ApiError('forbidden', '최종 Pick을 완료한 업체만 상담 일정을 등록할 수 있습니다.');
     }
 
-    const result = await work(client);
+    const inserted = await client.query<{ id: string }>(
+      `INSERT INTO structured.wedding_events
+         (wedding_id, title, starts_at, location, vendor_id, vendor_label, memo, notify_enabled,
+          added_by, idempotency_key)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       ON CONFLICT (wedding_id, idempotency_key) WHERE idempotency_key IS NOT NULL
+       DO NOTHING
+       RETURNING id`,
+      [weddingId, body.title, body.startsAt, body.location ?? null, body.vendorId,
+       body.vendorLabel ?? null, body.memo ?? null, body.notifyEnabled, userId, body.idempotencyKey]
+    );
+    if (inserted.rows[0]) {
+      await client.query('COMMIT');
+      return inserted.rows[0].id;
+    }
+
+    const raced = await client.query<IdempotentEventRow>(
+      `SELECT id, vendor_id, starts_at
+       FROM structured.wedding_events
+       WHERE wedding_id = $1 AND idempotency_key = $2`,
+      [weddingId, body.idempotencyKey]
+    );
+    const row = raced.rows[0];
+    if (!row || !matchesConsultationRequest(row, body)) {
+      throw new ApiError('conflict', '같은 요청 키로 다른 상담 일정을 등록할 수 없습니다.');
+    }
     await client.query('COMMIT');
-    return result;
+    return row.id;
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
@@ -148,31 +192,14 @@ export function registerWeddingEventRoutes(app: FastifyInstance, context: AppCon
 
       await assertWeddingAccess(context.pool, request.params.weddingId, userId);
 
-      const inserted = await withDecidedVendorLock(
+      const eventId = await createConsultationEvent(
         context,
         request.params.weddingId,
-        body.vendorId,
-        (client) =>
-          client.query<{ id: string }>(
-            `INSERT INTO structured.wedding_events
-               (wedding_id, title, starts_at, location, vendor_id, vendor_label, memo, notify_enabled, added_by)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-             RETURNING id`,
-            [
-              request.params.weddingId,
-              body.title,
-              body.startsAt,
-              body.location ?? null,
-              body.vendorId,
-              body.vendorLabel ?? null,
-              body.memo ?? null,
-              body.notifyEnabled,
-              userId,
-            ]
-          )
+        userId,
+        body
       );
 
-      return reply.status(201).send({ eventId: inserted.rows[0]!.id });
+      return reply.status(201).send({ eventId });
     }
   );
 

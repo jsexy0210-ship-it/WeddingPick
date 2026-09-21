@@ -6,6 +6,12 @@ name: DB Migrate
 
 on:
   workflow_dispatch:
+  # 이번 박람회 스키마는 API/관리자 배포 전에 production DB에 반드시 필요하다.
+  # 범용 migrations/** 자동 적용이 아니라 0426 한 파일에만 묶어 위험 범위를 제한한다.
+  push:
+    branches: [main]
+    paths:
+      - packages/db/migrations/0426_expo_collection_thumbnail.sql
 
 permissions:
   contents: read

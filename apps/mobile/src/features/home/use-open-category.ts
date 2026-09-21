@@ -32,11 +32,13 @@ export function useOpenCategory(
   /** 어느 목록에 대해 무엇을 골랐는가. 아직 안 골랐으면 null. */
   const [chosen, setChosen] = useState<{ key: string; category: VendorCategory | null } | null>(null);
 
-  const preferred = preferredCategory !== null && groups.some((group) => group.category === preferredCategory)
+  const requested = preferredCategory !== null;
+  const preferred = requested && groups.some((group) => group.category === preferredCategory)
     ? preferredCategory
     : null;
-  const key = `${preferred ?? ''}|${groups.map((group) => group.category).join(',')}`;
-  const fallback = preferred ?? groups[0]?.category ?? null;
+  const key = `${preferredCategory ?? ''}|${groups.map((group) => group.category).join(',')}`;
+  // 명시적으로 들어온 업종이 응답에서 빠졌다면 다른 업종을 대신 열지 않는다.
+  const fallback = requested ? preferred : groups[0]?.category ?? null;
   const open = chosen !== null && chosen.key === key ? chosen.category : fallback;
 
   const toggle = useCallback(

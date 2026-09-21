@@ -91,6 +91,11 @@ export type GeminiUsage = {
   cachedInputTokens: number;
 };
 
+export type GeminiBuiltinTools = {
+  googleSearch?: boolean;
+  urlContext?: boolean;
+};
+
 /**
  * 음성 토큰만 골라 센다.
  *
@@ -114,8 +119,13 @@ async function once(input: {
   systemPrompt: string;
   parts: GeminiPart[];
   schema: z.ZodType;
+  tools?: GeminiBuiltinTools;
   signal: AbortSignal;
 }): Promise<unknown> {
+  const tools: unknown[] = [];
+  if (input.tools?.googleSearch) tools.push({ googleSearch: {} });
+  if (input.tools?.urlContext) tools.push({ urlContext: {} });
+
   const response = await fetch(`${ENDPOINT}/${encodeURIComponent(input.model)}:generateContent`, {
     method: 'POST',
     signal: input.signal,
@@ -127,6 +137,7 @@ async function once(input: {
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: input.systemPrompt }] },
       contents: [{ role: 'user', parts: input.parts }],
+      ...(tools.length > 0 ? { tools } : {}),
       generationConfig: {
         responseMimeType: 'application/json',
         responseSchema: toGeminiSchema(input.schema),
@@ -163,6 +174,7 @@ export async function callGemini<T extends z.ZodType>(input: {
   systemPrompt: string;
   parts: GeminiPart[];
   schema: T;
+  tools?: GeminiBuiltinTools;
 }): Promise<{ value: z.infer<T>; usage: GeminiUsage }> {
   let lastError: unknown;
 

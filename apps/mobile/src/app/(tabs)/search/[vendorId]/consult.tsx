@@ -161,6 +161,7 @@ export default function ConsultRoute() {
         location: vendor.region,
         vendorId: vendor.id,
         vendorLabel: vendor.name,
+        idempotencyKey: `consult:${vendor.id}:${startsAt.toISOString()}`,
         memo: note.trim() || undefined,
         notifyEnabled: true,
       });

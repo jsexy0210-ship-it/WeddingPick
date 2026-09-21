@@ -49,6 +49,8 @@ export const createWeddingEventRequestSchema = z.object({
  */
 export const createConsultationEventRequestSchema = createWeddingEventRequestSchema.extend({
   vendorId: idSchema,
+  /** 같은 상담 저장 재전송을 한 건으로 묶는 키. */
+  idempotencyKey: z.string().trim().min(1).max(120),
 });
 
 export const updateWeddingEventRequestSchema = z.object({

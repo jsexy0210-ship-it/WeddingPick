@@ -13,6 +13,8 @@ export const expoItemSchema = z.object({
   status: expoStatusSchema,
   isDeadlineSoon: z.boolean(),
   sourceNote: z.string(),
+  /** 권리 상태가 확인된 대표 이미지만 사용자 계약에 들어온다. */
+  thumbnailUrl: z.string().nullable(),
   lastVerifiedAt: z.string().min(1),
 });
 

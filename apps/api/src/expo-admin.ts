@@ -41,6 +41,10 @@ type ExpoRow = {
   review_reason: unknown;
   manual_status: 'CANCELLED' | 'POSTPONED' | null;
   source_note: string;
+  thumbnail_url: string | null;
+  thumbnail_candidate_url: string | null;
+  thumbnail_source_url: string | null;
+  thumbnail_rights: 'ORGANIZER_PROVIDED' | 'LICENSED' | 'OFFICIAL_PUBLIC' | 'WEDDINGPICK_CREATED' | null;
   last_verified_at: Date;
 };
 
@@ -71,6 +75,10 @@ export type ExpoAdmin = {
   adminReviewRequired: boolean;
   reviewReason: string[];
   sourceNote: string;
+  thumbnailUrl: string | null;
+  thumbnailCandidateUrl: string | null;
+  thumbnailSourceUrl: string | null;
+  thumbnailRights: 'ORGANIZER_PROVIDED' | 'LICENSED' | 'OFFICIAL_PUBLIC' | 'WEDDINGPICK_CREATED' | null;
   lastVerifiedAt: string;
 };
 
@@ -79,7 +87,7 @@ const COLUMNS = `
   region, city, district, registration_deadline, reservation_url, official_website_url,
   benefits, description, event_categories, confidence, confidence_score, discovery_urls,
   verification_urls, admin_review_required, review_reason, manual_status, source_note,
-  last_verified_at
+  thumbnail_url, thumbnail_candidate_url, thumbnail_source_url, thumbnail_rights, last_verified_at
 `;
 
 function toDateStr(d: Date): string {
@@ -127,6 +135,10 @@ function toAdmin(row: ExpoRow): ExpoAdmin {
     adminReviewRequired: row.admin_review_required,
     reviewReason: toArray(row.review_reason),
     sourceNote: row.source_note,
+    thumbnailUrl: row.thumbnail_url,
+    thumbnailCandidateUrl: row.thumbnail_candidate_url,
+    thumbnailSourceUrl: row.thumbnail_source_url,
+    thumbnailRights: row.thumbnail_rights,
     lastVerifiedAt: toDateStr(row.last_verified_at),
   };
 }
@@ -175,6 +187,10 @@ export type ExpoInput = {
   confidence?: string | null;
   confidenceScore?: number | null;
   sourceNote?: string;
+  thumbnailUrl?: string | null;
+  thumbnailCandidateUrl?: string | null;
+  thumbnailSourceUrl?: string | null;
+  thumbnailRights?: 'ORGANIZER_PROVIDED' | 'LICENSED' | 'OFFICIAL_PUBLIC' | 'WEDDINGPICK_CREATED' | null;
   adminReviewRequired?: boolean;
   reviewReason?: string[];
 };
@@ -185,10 +201,11 @@ export async function createExpo(pool: Pool, input: ExpoInput): Promise<ExpoAdmi
     `INSERT INTO structured.expos
        (title, organizer, host, starts_at, ends_at, venue, address, region, city, district,
         registration_deadline, reservation_url, official_website_url, benefits, description,
-        event_categories, confidence, confidence_score, source_note, admin_review_required,
+        event_categories, confidence, confidence_score, source_note, thumbnail_url,
+        thumbnail_candidate_url, thumbnail_source_url, thumbnail_rights, admin_review_required,
         review_reason)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::jsonb, $15,
-             $16::jsonb, $17, $18, $19, $20, $21::jsonb)
+             $16::jsonb, $17, $18, $19, $20, $21, $22, $23, $24, $25::jsonb)
      RETURNING ${COLUMNS}`,
     [
       input.title,
@@ -210,6 +227,10 @@ export async function createExpo(pool: Pool, input: ExpoInput): Promise<ExpoAdmi
       input.confidence ?? null,
       input.confidenceScore ?? null,
       input.sourceNote ?? '관리자 등록',
+      input.thumbnailUrl ?? null,
+      input.thumbnailCandidateUrl ?? null,
+      input.thumbnailSourceUrl ?? null,
+      input.thumbnailRights ?? null,
       input.adminReviewRequired ?? false,
       JSON.stringify(input.reviewReason ?? []),
     ]
@@ -239,6 +260,10 @@ const PATCH_COLUMNS: Record<keyof ExpoPatch, string> = {
   confidence: 'confidence',
   confidenceScore: 'confidence_score',
   sourceNote: 'source_note',
+  thumbnailUrl: 'thumbnail_url',
+  thumbnailCandidateUrl: 'thumbnail_candidate_url',
+  thumbnailSourceUrl: 'thumbnail_source_url',
+  thumbnailRights: 'thumbnail_rights',
   adminReviewRequired: 'admin_review_required',
   reviewReason: 'review_reason',
 };

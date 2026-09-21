@@ -105,11 +105,17 @@ describeWithDb('일정', () => {
     );
     const vendorId = rows[0]!.id;
 
+    const request = {
+      title: '상담',
+      startsAt: at(24),
+      vendorId,
+      idempotencyKey: `consult:${vendorId}:retry-1`,
+    };
     const blocked = await test.app.inject({
       method: 'POST',
       url: `/v1/weddings/${weddingId}/consultation-events`,
       headers,
-      payload: { title: '상담', startsAt: at(24), vendorId },
+      payload: request,
     });
 
     expect(blocked.statusCode).toBe(403);
@@ -128,10 +134,26 @@ describeWithDb('일정', () => {
       method: 'POST',
       url: `/v1/weddings/${weddingId}/consultation-events`,
       headers,
-      payload: { title: '상담', startsAt: at(24), vendorId },
+      payload: request,
     });
-
     expect(allowed.statusCode).toBe(201);
+    const eventId = allowed.json<{ eventId: string }>().eventId;
+
+    await test.pool.query('DELETE FROM structured.category_decisions WHERE wedding_id = $1', [weddingId]);
+    const retried = await test.app.inject({
+      method: 'POST',
+      url: `/v1/weddings/${weddingId}/consultation-events`,
+      headers,
+      payload: request,
+    });
+    expect(retried.statusCode).toBe(201);
+    expect(retried.json<{ eventId: string }>().eventId).toBe(eventId);
+
+    const stored = await test.pool.query<{ count: string }>(
+      'SELECT count(*) FROM structured.wedding_events WHERE wedding_id = $1 AND idempotency_key = $2',
+      [weddingId, request.idempotencyKey]
+    );
+    expect(Number(stored.rows[0]!.count)).toBe(1);
   });
 
   it('지난 일정은 완료로, 다가올 일정은 예정으로 계산한다', async () => {

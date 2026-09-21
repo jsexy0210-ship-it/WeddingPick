@@ -68,10 +68,10 @@ describe('useOpenCategory', () => {
     expect(view.open).toBe('studio');
   });
 
-  it('목록에 없는 요청 업종은 첫 업종으로 안전하게 되돌린다', () => {
+  it('목록에 없는 요청 업종은 다른 업종을 대신 열지 않는다', () => {
     const view = setup([group('hall'), group('studio')], 'makeup');
 
-    expect(view.open).toBe('hall');
+    expect(view.open).toBeNull();
   });
 
   it('다른 업종을 누르면 그것만 펼쳐진다 — 한 번에 하나다 (§5)', () => {

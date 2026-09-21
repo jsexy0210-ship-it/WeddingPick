@@ -153,6 +153,7 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     const consult = mobile('app/(tabs)/search/[vendorId]/consult.tsx');
     expect(consult).toContain("listCandidates(me.weddingId, { force: true })");
     expect(consult).toContain('addConsultationEvent(me.weddingId');
+    expect(consult).toContain('idempotencyKey: `consult:${vendor.id}:${startsAt.toISOString()}`');
     expect(consult).not.toContain('addWeddingEvent(me.weddingId');
     expect(consult).toContain('submitLock.current = true');
     expect(consult).toContain('group.decidedVendorId === vendorId');

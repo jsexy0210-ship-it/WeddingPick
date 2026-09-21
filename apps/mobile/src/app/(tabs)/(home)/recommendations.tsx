@@ -1,5 +1,5 @@
 import type { CategoryRecommendation, VendorCandidate, VendorSummary } from '@weddingpick/api-contract';
-import { nextStepsCountLine, type VendorCategory } from '@weddingpick/domain';
+import { nextStepsCountLine, VENDOR_CATEGORY_LABEL, type VendorCategory } from '@weddingpick/domain';
 import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -158,6 +158,10 @@ export function RecommendationsContent({
     );
   }
 
+  const requestedCategoryMissing =
+    requestedCategory !== null && !state.groups.some((group) => group.category === requestedCategory);
+  const requestedCategoryLabel = requestedCategory ? VENDOR_CATEGORY_LABEL[requestedCategory] : null;
+
   return (
     <>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -167,13 +171,21 @@ export function RecommendationsContent({
           </ThemedText>
           <DelayedLoader active={refreshing} size={20} />
         </View>
-        {state.groups.length === 0 ? null : (
+        {state.groups.length === 0 || requestedCategoryMissing ? null : (
           <ThemedText type="f13" numeric themeColor="textAssistive" style={styles.sub}>
             {nextStepsCountLine(state.remaining)}
           </ThemedText>
         )}
 
-        {state.groups.length === 0 ? (
+        {requestedCategoryMissing && requestedCategory && requestedCategoryLabel ? (
+          <EmptyView
+            scope="section"
+            title={`${requestedCategoryLabel} 추천은 지금 보여드릴 항목이 없어요`}
+            description={`이미 결정했거나 현재 추천할 업체가 없어요. ${requestedCategoryLabel} Pick에서 후보와 결정 상태를 확인해주세요.`}
+            actionLabel={`${requestedCategoryLabel} Pick 보기`}
+            onAction={() => router.push(`/pick/${requestedCategory}`)}
+          />
+        ) : state.groups.length === 0 ? (
           recommendationsAreComplete(state) ? (
             <RecommendationsDone onOpenNote={() => router.push('/wedding')} />
           ) : (
