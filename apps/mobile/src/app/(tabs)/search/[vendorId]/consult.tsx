@@ -79,9 +79,13 @@ export default function ConsultRoute() {
 
   useEffect(() => {
     let active = true;
-    setDecisionState('loading');
 
     void (async () => {
+      // 의존값 변경 직후의 loading 전환도 effect 본문과 같은 tick에서 강제하지 않는다.
+      await Promise.resolve();
+      if (!active) return;
+      setDecisionState('loading');
+
       if (!vendorId) {
         if (active) setDecisionState('blocked');
         return;
