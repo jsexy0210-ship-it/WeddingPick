@@ -18,6 +18,7 @@ const ok: WeddingFeedInput = {
   summary: '한 줄 요약',
   body: '본문',
   imageKey: null,
+  bodyImageKey: null,
   status: 'draft',
   sortOrder: 0,
 };
