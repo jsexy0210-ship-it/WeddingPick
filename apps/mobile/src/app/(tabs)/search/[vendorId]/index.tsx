@@ -2,7 +2,6 @@ import type {
   ConditionStats,
   CurrentUser,
   Review,
-  VendorCandidate,
   VendorDetail,
   VendorPhoto,
 } from '@weddingpick/api-contract';
@@ -45,7 +44,8 @@ import { useDepthBack } from '@/features/navigation/depth-back';
 import { InfoDot, InfoSheet, type InfoTopic } from '@/features/common/info-sheet';
 import { savePendingAction } from '@/features/auth/pending-action';
 import { readCurrentUserSnapshot } from '@/features/loading/current-user-snapshot';
-import { PickDoneSheet, UnpickSheet } from '@/features/pick/pick-sheets';
+import { PickDoneSheet } from '@/features/pick/pick-sheets';
+import { useFavoriteVendors } from '@/features/pick/use-favorite-vendors';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
 import { vendorBenefit } from '@/features/search/vendor-benefit';
 import { VendorLocationSection } from '@/features/search/vendor-location';
@@ -168,9 +168,8 @@ export default function VendorDetailScreen() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  /** Pick 완료 시트(WP-SHT-002) · 해제 시트(WP-SHT-003). */
+  /** 나의 Pick 추가 완료 시트. */
   const [pickDoneOpen, setPickDoneOpen] = useState(false);
-  const [unpickTarget, setUnpickTarget] = useState<VendorCandidate | null>(null);
   /**
    * «나». 고른 스타일과 업체 태그의 일치를 그리려고 읽는다(SPEC §13.6).
    * 비회원 상세는 폐기됐으므로 세션이 사라지면 로그인 경계가 화면 접근을 막는다.
@@ -183,8 +182,9 @@ export default function VendorDetailScreen() {
   /** 업체 상세 탭. 첫 진입은 항상 «소개» — 검색·TOP3에서 넘어온 추천 이유가 그 탭에 있다. */
   const [tab, setTab] = useState<VendorTab>('intro');
 
-  /* 내 후보 — 검색 카드 · 비교 dock과 같은 목록. Pick 전·후를 여기서 읽는다. */
+  /* 나의 Pick과 관심업체는 독립 상태다. */
   const candidates = useMyCandidates();
+  const favorites = useFavoriteVendors();
 
   /**
    * 검색·TOP3에서 넘어올 때만 존재. 쉼표로 구분된 이유 문장.
@@ -288,51 +288,39 @@ export default function VendorDetailScreen() {
   const currentVendor = vendor;
   const myCandidate = candidates.candidateFor(currentVendor.id);
   const picked = myCandidate !== null;
+  const favorited = favorites.favoriteFor(currentVendor.id) !== null;
   const pickBusy = candidates.busyVendorId === currentVendor.id;
+  const favoriteBusy = favorites.busyVendorId === currentVendor.id;
   const decided =
     candidates.page?.groups.some((group) => group.decidedVendorId === currentVendor.id) ?? false;
-  const primaryLabel = decided ? '상담 예약하기' : picked ? '최종 Pick하기' : '먼저 Pick해주세요';
+  const primaryLabel = decided ? '상담 예약하기' : picked ? '나의 Pick 보기' : '최종 Pick';
 
-  function openPrimaryAction() {
+  async function openPrimaryAction() {
     if (decided) {
       router.push(`/search/${currentVendor.id}/consult`);
       return;
     }
-    if (!myCandidate) return;
-    router.push({
-      pathname: '/pick/confirm',
-      params: {
-        category: currentVendor.category,
-        vendorId: currentVendor.id,
-        vendorName: currentVendor.name,
-        shared: myCandidate.addedByPartner ? '1' : '0',
-      },
-    });
-  }
-
-  /**
-   * Pick(SPEC §13.1). 비회원 상세는 폐기됐으므로 이 화면 안에 로그인 시트를 겹쳐 띄우지 않는다.
-   * 세션이 사라졌다면 로그인 화면으로 복귀한다.
-   */
-  async function pick() {
-    if (myCandidate) {
-      setUnpickTarget(myCandidate);
+    if (picked) {
+      router.push('/pick');
       return;
     }
-    const result = await candidates.pick(vendor!.id);
+
+    const result = await candidates.pick(currentVendor.id);
     if (result === 'picked') setPickDoneOpen(true);
     else if (result === 'login') {
-      await savePendingAction({ kind: 'pick', vendorId: vendor!.id, vendorName: vendor!.name });
+      await savePendingAction({ kind: 'pick', vendorId: currentVendor.id, vendorName: currentVendor.name });
       router.replace('/login');
+    } else {
+      setToast('Pick하지 못했어요. 잠시 후 다시 시도해주세요.');
     }
-    else setToast('Pick하지 못했어요. 잠시 후 다시 시도해주세요.');
   }
 
-  async function confirmUnpick() {
-    if (!unpickTarget) return;
-    const ok = await candidates.unpick(unpickTarget);
-    setUnpickTarget(null);
-    if (!ok) setToast('후보를 빼지 못했어요. 잠시 후 다시 시도해주세요.');
+  async function toggleFavorite() {
+    const result = await favorites.toggle(currentVendor.id);
+    if (result === 'login') router.replace('/login');
+    else if (result === 'error') {
+      setToast('관심업체를 변경하지 못했어요. 잠시 후 다시 시도해주세요.');
+    }
   }
 
   const paidPrice = vendor.prices.paidPrice;
@@ -982,22 +970,22 @@ export default function VendorDetailScreen() {
             */}
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={picked ? `${vendor.name} Pick했어요` : `${vendor.name} Pick하기`}
-              accessibilityState={{ disabled: pickBusy, selected: picked }}
-              disabled={pickBusy}
+              accessibilityLabel={favorited ? `${vendor.name} 관심업체 해제` : `${vendor.name} 관심업체 추가`}
+              accessibilityState={{ disabled: favoriteBusy, selected: favorited }}
+              disabled={favoriteBusy}
               style={({ pressed }) => [
                 styles.compareBtn,
-                picked
+                favorited
                   ? { backgroundColor: theme.text, borderColor: theme.text }
                   : { borderColor: theme.border, backgroundColor: pressed ? theme.backgroundElement : theme.background },
-                pickBusy ? styles.busy : null,
+                favoriteBusy ? styles.busy : null,
               ]}
-              onPress={() => void pick()}>
+              onPress={() => void toggleFavorite()}>
               <Svg width={Layout.iconRow} height={Layout.iconRow} viewBox="0 0 24 24" fill="none">
                 <Path
                   d={MARK_HEART_PATH}
-                  fill={picked ? theme.onTint : 'none'}
-                  stroke={picked ? theme.onTint : theme.text}
+                  fill={favorited ? theme.onTint : 'none'}
+                  stroke={favorited ? theme.onTint : theme.text}
                   strokeWidth={2}
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -1007,22 +995,23 @@ export default function VendorDetailScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={primaryLabel}
-              accessibilityState={{ disabled: !picked }}
-              disabled={!picked}
+              accessibilityState={{ disabled: pickBusy }}
+              disabled={pickBusy}
               style={({ pressed }) => [
                 styles.pickBtn,
-                { backgroundColor: picked ? theme.tint : theme.backgroundElement },
-                pressed && picked ? styles.pressed : null,
+                { backgroundColor: theme.tint },
+                pressed ? styles.pressed : null,
+                pickBusy ? styles.busy : null,
               ]}
               onPress={openPrimaryAction}>
               <ProductSymbol
                 name={decided ? 'calendar' : 'check'}
                 size={Layout.iconField}
-                color={picked ? theme.onTint : theme.textDisabled}
+                color={theme.onTint}
               />
               <ThemedText
                 type="f14"
-                style={[styles.bold, { color: picked ? theme.onTint : theme.textDisabled }]}>
+                style={[styles.bold, { color: theme.onTint }]}>
                 {primaryLabel}
               </ThemedText>
             </Pressable>
@@ -1035,13 +1024,6 @@ export default function VendorDetailScreen() {
       {/* 금액 옆 ⓘ가 여는 설명 시트 — WP-SHT-014 · WP-SHT-015. */}
       <InfoSheet topic={infoTopic} onClose={() => setInfoTopic(null)} />
       <PickDoneSheet visible={pickDoneOpen} onDismiss={() => setPickDoneOpen(false)} />
-      <UnpickSheet
-        candidate={unpickTarget}
-        partnerName={candidates.partnerName}
-        busy={candidates.busyVendorId !== null}
-        onConfirm={() => void confirmUnpick()}
-        onDismiss={() => setUnpickTarget(null)}
-      />
     </ThemedView>
   );
 }
