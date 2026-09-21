@@ -1,8 +1,10 @@
 # 전체 페이지 UX/UI 현행화 — Claude 실행 핸드오프
 
-작성: 2026-09-21 (UTC)
+작성·문서 정리: 2026-09-21
 
-분석 기준: `main 19e649cb800980f9156e0832b7f0376664aacce8`
+제품 분석 기준: `main 19e649cb800980f9156e0832b7f0376664aacce8`
+
+문서 정리 기준: `main 665b43b08335294f957b1edfe9bcaf69a91dd700` (제품 분석 이후 문서만 추가됨)
 
 역할: Codex = 분석·개선안·문서 / Claude = 실구현 / 마스터 = 통합·독립 검수
 
@@ -27,7 +29,7 @@
 - 홈만 수정한 뒤 종료하지 않는다. 정본의 **208개 고유 화면 ID** 전체를 추적한다. 이 숫자는 라우트 수가 아니며 시트·공통 상태·폐기 화면을 포함한다.
 - 실제 모바일 앱 소스의 화면 파일은 **143개**다. 그룹 폴더와 `index`를 URL 규칙으로 정규화하고 `_layout`, `+*`를 제외한 수다. 관리자 36개, 리다이렉트·별칭도 포함한다.
 - `apps/web`는 앱웹과 별도 제품이다. WEB 화면군도 연결·정책·문구의 대조 대상에 넣되, 기존 보존 지시를 무시한 전면 재디자인은 하지 않는다.
-- 원본 ZIP과 해시 고정된 `handoff/`, `figma-export/` **99개 파일을 덮어쓰지 않는다.** 이 문서는 최신 사용자 요청과 수정 제안을 덧붙이는 실행 문서이지, 전달 원본의 대체 시안이 아니다.
+- 전달 ZIP과 시각 원본은 보존한다. 활성 MD는 최신 사용자 요청에 따라 과거·중복 내용을 정리하고, 변경·삭제 근거와 원본/현행 해시는 manifest에 기록한다. 이 실행 문서의 제안은 대체 시안이 아니다.
 - 본문에서 **확정 요청 / 확인된 현상 / 코드 근거 / 개선 제안 / 미확인**을 구별한다. 제안은 승인된 디자인으로 오독하지 않는다.
 - 전수 대상과 출발점은 [PAGE_STATE_AUDIT.md](PAGE_STATE_AUDIT.md)를 사용한다. 파일 검색 결과는 시각 검수 완료가 아니다.
 
@@ -35,8 +37,8 @@
 
 1. 루트 `AGENTS.md`, `AI_START_HERE.md`, `CLAUDE.md`의 최신 지시.
 2. [README.md](README.md), [canonical-manifest.json](canonical-manifest.json).
-3. 해당 화면의 `figma-export/*.dc.html` 및 `handoff/SPEC.md`, `tokens.json`, `screens.json`, `CHANGELOG.md`.
-4. 본 문서 → 전수 대장 → `docs/sync/design-screen-map.json`.
+3. 본 문서의 확정 요청·보류 구분 → 해당 화면의 `figma-export/*.dc.html` 및 `handoff/SPEC.md`, `tokens.json`, `screens.json`.
+4. 전수 대장 → `docs/sync/design-screen-map.json`.
 5. 최신 main과 열린 PR을 다시 확인한 뒤 소유 파일 배정.
 
 ## 2. 확정 요청과 보류 사항
@@ -270,7 +272,7 @@ AND 해당 업체/채널이 상담 연결을 지원
 
 ### 정본과 코드에서 확인한 출발점
 
-- `handoff/CHANGELOG.md` v3.28에는 HOME-0/PICK-0/NOTE-0/LNG-0/REC-0와 **섹션마다 따로·행동 하나·안내 한 줄** 규칙이 이미 있다. 새 상태 체계를 정할 때 이 화면의 프레임부터 연결한다. 이 프레임명은 기존 208개 ID 외에 새 화면 ID를 추가하라는 뜻이 아니다.
+- 기존 빈 상태 HOME-0/PICK-0/NOTE-0/LNG-0/REC-0와 **섹션마다 따로·행동 하나·짧은 안내** 규칙은 `handoff/SPEC.md` §13.4에 모았다. 전수 대장에 실제 기준 프레임을 연결한다. 이 보조 명칭을 새 route나 208개 밖의 새 ID로 만들지 않는다.
 - `packages/ui/src/status-view.tsx`의 EmptyView는 전체 중앙 정렬, MY의 `features/settings/my-kit.tsx` EmptyBox는 회색 박스 속 본문, Pick Root의 Empty는 아이콘·제목·설명·개별 pill CTA, 홈 예산은 인라인 문구·ActionButton이다.
 - 각 형태가 모두 잘못된 것은 아니다. **같은 종류의 빈 목록인데 맥락 없이 형태가 달라지는 것**, 단일 항목 누락이 화면 전체를 대체하는 것, 상태 판정 없이 공통 문구를 붙이는 것을 고친다.
 - 토큰은 기존 정본을 재사용한다. 화면마다 새 높이·여백·아이콘 크기·CTA 색상을 만들지 않는다. 기존 시안에서 의도적으로 다른 형태는 해당 프레임과 이유를 예외 대장에 남긴다.
@@ -381,8 +383,7 @@ AND 해당 업체/채널이 상담 연결을 지원
 
 - main과 열린 PR을 다시 조회한다. 이 문서 기준 SHA를 현재 운영 SHA로 가정하지 않는다.
 - 분석 당시 #473은 `features/onboarding/flow.ts` 및 테스트, #475는 MY profile/wedding-settings/notification-settings, `features/settings/my-kit.tsx` 및 app-journey 테스트를 수정 중이었다. 최신 상태 확인 후 파일 소유권을 조정한다.
-- Codex가 요청 전환 전에 시작한 로컬 구현 초안은 **미커밋·미검증·미배포**다. 이번 전달 브랜치는 문서만 포함한다. 해당 초안을 정본/완료 구현으로 가져오지 않는다.
-- 초안은 타입검사에서 상세 skeleton의 잘못된 스타일 참조가 확인된 미완성 상태여서 로컬 stash에 보존하고 작업 트리에서 분리했다. 제품 코드 커밋/PR에는 포함하지 않는다. Claude는 최신 main을 기준으로 구현한다.
+- 검증되지 않은 개인 로컬 초안을 완료 구현으로 재사용하지 않는다. Claude는 최신 main과 병합된 문서를 기준으로 구현한다.
 - 사용자 데이터·운영 DB·로그인 토큰·외부 메시지를 검수 편의로 변경하지 않는다.
 
 ### 권장 작업 묶음
