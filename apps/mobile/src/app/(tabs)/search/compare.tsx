@@ -34,7 +34,7 @@ import {
   ThemedView,
   Toast,
   useTheme,
-  SkeletonView,
+  Skeleton,
   VendorImage,
 } from '@weddingpick/ui';
 
@@ -117,7 +117,33 @@ export default function CompareScreen() {
   }
 
   if (!result) {
-    return <SkeletonView />;
+    return (
+      <ThemedView style={styles.container}>
+        <SafeAreaView style={styles.safeArea}>
+          <PickSectionTabs active="compare" />
+          <DepthHeader title="업체 비교" />
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+            <View style={styles.hero}>
+              <Skeleton width="72%" height={58} />
+              <View style={styles.chips}>
+                <Skeleton width={96} height={CAND_CHIP_HEIGHT} radius={Radius.pill} />
+                <Skeleton width={96} height={CAND_CHIP_HEIGHT} radius={Radius.pill} />
+              </View>
+            </View>
+            <View style={styles.loadingTable}>
+              <Skeleton width="100%" height={COL_THUMB_H} radius={Radius.medium} />
+              {Array.from({ length: 5 }, (_, index) => (
+                <Skeleton key={index} width="100%" height={ROW_HEIGHT} radius={Radius.small} />
+              ))}
+            </View>
+          </ScrollView>
+          <ThemedView style={[styles.dock, { borderTopColor: theme.border }]}>
+            <Skeleton width="48%" height={Layout.ctaPick} radius={Radius.cardLarge} />
+            <Skeleton width="48%" height={Layout.ctaPick} radius={Radius.cardLarge} />
+          </ThemedView>
+        </SafeAreaView>
+      </ThemedView>
+    );
   }
 
   /**
