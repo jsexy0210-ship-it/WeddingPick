@@ -15,6 +15,7 @@ import type { AppContext } from '../context';
 import * as dashboardAdmin from '../dashboard-admin';
 import * as decisionsAdmin from '../decisions-admin';
 import * as expoAdmin from '../expo-admin';
+import * as expoCollector from '../expo-collector';
 import { listExposEndingToday } from '../retention/expo-sweep';
 import * as faqAdmin from '../faq-admin';
 import * as weddingFeed from '../wedding-feed';
@@ -2467,11 +2468,40 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
       .nullable(),
     confidenceScore: z.coerce.number().int().min(0).max(100).optional().nullable(),
     sourceNote: z.string().trim().optional(),
+    thumbnailUrl: z.string().url().optional().nullable(),
+    thumbnailCandidateUrl: z.string().url().optional().nullable(),
+    thumbnailSourceUrl: z.string().url().optional().nullable(),
+    thumbnailRights: z
+      .enum(['ORGANIZER_PROVIDED', 'LICENSED', 'OFFICIAL_PUBLIC', 'WEDDINGPICK_CREATED'])
+      .optional()
+      .nullable(),
     adminReviewRequired: z.boolean().optional(),
     reviewReason: z.array(z.string()).optional(),
   });
 
-  app.get('/v1/admin/expos', auth, async () => ({ expos: await expoAdmin.listExpos(context.pool) }));
+  app.get('/v1/admin/expos', auth, async () => ({
+    expos: await expoAdmin.listExpos(context.pool),
+    collection: {
+      enabled: process.env.EXPO_COLLECTION_ENABLED !== 'false',
+      ready: Boolean(process.env.GEMINI_API_KEY),
+      lastRun: await expoCollector.getLatestExpoCollectionRun(context.pool),
+    },
+  }));
+
+  app.post('/v1/admin/expos/collect', auth, async () => {
+    const apiKey = process.env.GEMINI_API_KEY ?? '';
+    if (!apiKey) {
+      throw new ApiError('internal', '박람회 자동 수집 서버 설정이 필요합니다. Gemini 연결을 확인해주세요.');
+    }
+
+    const model = context.config.geminiModel;
+    return expoCollector.runExpoCollection({
+      pool: context.pool,
+      discover: expoCollector.createGeminiExpoDiscoverer({ apiKey, model }),
+      model,
+      trigger: 'manual',
+    });
+  });
 
   app.get('/v1/admin/expos/review-queue', auth, async () => ({
     expos: await expoAdmin.reviewQueue(context.pool),
