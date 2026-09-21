@@ -110,28 +110,27 @@ export function registerWeddingEventRoutes(app: FastifyInstance, context: AppCon
 
       await assertWeddingAccess(context.pool, request.params.weddingId, userId);
 
-      const insert = (client: Pick<PoolClient, 'query'>) =>
-        client.query<{ id: string }>(
-          `INSERT INTO structured.wedding_events
-             (wedding_id, title, starts_at, location, vendor_id, vendor_label, memo, notify_enabled, added_by)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-           RETURNING id`,
-          [
-            request.params.weddingId,
-            body.title,
-            body.startsAt,
-            body.location ?? null,
-            body.vendorId ?? null,
-            body.vendorLabel ?? null,
-            body.memo ?? null,
-            body.notifyEnabled,
-            userId,
-          ]
-        );
+      const insertSql = `INSERT INTO structured.wedding_events
+        (wedding_id, title, starts_at, location, vendor_id, vendor_label, memo, notify_enabled, added_by)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        RETURNING id`;
+      const insertValues = [
+        request.params.weddingId,
+        body.title,
+        body.startsAt,
+        body.location ?? null,
+        body.vendorId ?? null,
+        body.vendorLabel ?? null,
+        body.memo ?? null,
+        body.notifyEnabled,
+        userId,
+      ];
 
       const inserted = body.vendorId
-        ? await withDecidedVendorLock(context, request.params.weddingId, body.vendorId, insert)
-        : await insert(context.pool);
+        ? await withDecidedVendorLock(context, request.params.weddingId, body.vendorId, (client) =>
+            client.query<{ id: string }>(insertSql, insertValues)
+          )
+        : await context.pool.query<{ id: string }>(insertSql, insertValues);
 
       return reply.status(201).send({ eventId: inserted.rows[0]!.id });
     }
@@ -147,40 +146,39 @@ export function registerWeddingEventRoutes(app: FastifyInstance, context: AppCon
       await assertWeddingAccess(context.pool, request.params.weddingId, userId);
 
       // 보낸 칸만 고친다 — wedding_tasks 패턴과 같은 이유.
-      const update = (client: Pick<PoolClient, 'query'>) =>
-        client.query(
-          `UPDATE structured.wedding_events SET
-             title = CASE WHEN $3 THEN $4::text ELSE title END,
-             starts_at = CASE WHEN $5 THEN $6::timestamptz ELSE starts_at END,
-             location = CASE WHEN $7 THEN $8::text ELSE location END,
-             vendor_id = CASE WHEN $9 THEN $10::uuid ELSE vendor_id END,
-             vendor_label = CASE WHEN $11 THEN $12::text ELSE vendor_label END,
-             memo = CASE WHEN $13 THEN $14::text ELSE memo END,
-             notify_enabled = CASE WHEN $15 THEN $16::boolean ELSE notify_enabled END
-           WHERE id = $1 AND wedding_id = $2`,
-          [
-            request.params.eventId,
-            request.params.weddingId,
-            body.title !== undefined,
-            body.title ?? null,
-            body.startsAt !== undefined,
-            body.startsAt ?? null,
-            body.location !== undefined,
-            body.location ?? null,
-            body.vendorId !== undefined,
-            body.vendorId ?? null,
-            body.vendorLabel !== undefined,
-            body.vendorLabel ?? null,
-            body.memo !== undefined,
-            body.memo ?? null,
-            body.notifyEnabled !== undefined,
-            body.notifyEnabled ?? null,
-          ]
-        );
+      const updateSql = `UPDATE structured.wedding_events SET
+        title = CASE WHEN $3 THEN $4::text ELSE title END,
+        starts_at = CASE WHEN $5 THEN $6::timestamptz ELSE starts_at END,
+        location = CASE WHEN $7 THEN $8::text ELSE location END,
+        vendor_id = CASE WHEN $9 THEN $10::uuid ELSE vendor_id END,
+        vendor_label = CASE WHEN $11 THEN $12::text ELSE vendor_label END,
+        memo = CASE WHEN $13 THEN $14::text ELSE memo END,
+        notify_enabled = CASE WHEN $15 THEN $16::boolean ELSE notify_enabled END
+        WHERE id = $1 AND wedding_id = $2`;
+      const updateValues = [
+        request.params.eventId,
+        request.params.weddingId,
+        body.title !== undefined,
+        body.title ?? null,
+        body.startsAt !== undefined,
+        body.startsAt ?? null,
+        body.location !== undefined,
+        body.location ?? null,
+        body.vendorId !== undefined,
+        body.vendorId ?? null,
+        body.vendorLabel !== undefined,
+        body.vendorLabel ?? null,
+        body.memo !== undefined,
+        body.memo ?? null,
+        body.notifyEnabled !== undefined,
+        body.notifyEnabled ?? null,
+      ];
 
       const updated = body.vendorId
-        ? await withDecidedVendorLock(context, request.params.weddingId, body.vendorId, update)
-        : await update(context.pool);
+        ? await withDecidedVendorLock(context, request.params.weddingId, body.vendorId, (client) =>
+            client.query(updateSql, updateValues)
+          )
+        : await context.pool.query(updateSql, updateValues);
 
       if (updated.rowCount === 0) {
         throw notFound('일정');
