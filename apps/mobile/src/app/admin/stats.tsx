@@ -165,7 +165,7 @@ function StatsPanel() {
 const TABS: AdminTabDef[] = [
   { key: 'price-stats', label: '가격 통계', readOnly: true },
   { key: 'stats', label: '이상치 탐지' },
-  { key: 'revenue', label: '수익 현황', readOnly: true },
+  { key: 'revenue', label: '수익 현황', readOnly: true, hidden: true },
   { key: 'ai-usage', label: '분석 비용' },
 ];
 
