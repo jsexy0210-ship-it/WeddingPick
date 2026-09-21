@@ -1,11 +1,12 @@
-import type { CurrentUser } from '@weddingpick/api-contract';
+import type { CurrentUser, Settings } from '@weddingpick/api-contract';
 import { DISPLAY_NAME_HINT, MAX_DISPLAY_NAME_LENGTH, checkDisplayName } from '@weddingpick/domain';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { StyleSheet, Switch, TextInput, View } from 'react-native';
 
 import {
   ActionButton,
+  Border,
   ErrorView,
   FontSize,
   Layout,
@@ -16,7 +17,7 @@ import {
   Toast,
   useTheme,
 } from '@weddingpick/ui';
-import { getCurrentUser, setDisplayName } from '@/api/client';
+import { getCurrentUser, getSettings, setDisplayName, updateSettings } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
 import { useSession } from '@/features/auth/use-session';
 import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
@@ -28,9 +29,16 @@ const S = {
   title: '프로필',
   basic: '기본',
   name: '이름',
+  partnerName: '배우자에게 보이는 이름',
   nameEmpty: '정하기',
+  nameUnavailable: '연결 계정에서 확인',
   notifications: '알림',
-  notification: '알림 설정',
+  service: '서비스 알림',
+  serviceMeta: '일정 · Pick 변화 · 인증 결과',
+  marketing: '마케팅 알림',
+  marketingMeta: '혜택 · 이벤트',
+  night: '야간 수신',
+  nightMeta: '밤 9시 이후',
   account: '계정',
   social: '소셜 로그인',
   connected: '연결됨',
@@ -47,34 +55,39 @@ const S = {
   save: '저장',
   saving: '저장하는 중…',
   saveFail: '이름을 바꾸지 못했어요',
+  settingsFail: '알림 설정을 바꾸지 못했어요',
 } as const;
 
 /**
  * 프로필 · WP-MY-002 · 시안 4-5. MY 상단 프로필 카드를 누르면 들어온다.
  *
  * **MY의 설정 섹션을 흡수했다**(시안 「설정 섹션을 흡수해 이름 · 알림 · 계정을 한 화면에서
- * 다룹니다. 로그아웃과 탈퇴가 맨 아래입니다」). 알림은 스위치가 여럿이라 한 행으로 두고
- * 알림 설정 화면으로 보낸다 — 시안의 스위치 셋 중 둘(마케팅 · 야간)이 그 화면에 있다. 화면
- * 설정은 시안에 없지만 스킨 화면의 유일한 진입이라 같은 묶음에 둔다.
+ * 다룹니다. 로그아웃과 탈퇴가 맨 아래입니다」).
+ * 알림 설정은 시안대로 세 토글을 이 화면에서 바로 바꾼다. 서비스 알림은 서버의 전체 푸시와
+ * 가격 변동 푸시를 함께 켜고 끈다 — 정본은 둘을 한 줄로 합쳤다.
  *
- * 이름만 바꾼다. 사진 바꾸기 · 제공자별 연결 계정 · 배우자에게 보이는 이름은 계약이 없어
- * 두지 않는다 — 이름은 배우자에게도 그대로 보인다.
+ * API의 displayName은 배우자와 후기에 보일 이름이다. 법적·연결 계정 이름은 읽기 계약이 없으므로
+ * 같은 값으로 가장하지 않고 연결 계정에서 확인하도록 표시한다. 사진 바꾸기도 저장 계약이 없어 두지 않는다.
  */
 export default function ProfileScreen() {
   const theme = useTheme();
   const { signOut } = useSession();
   const [me, setMe] = useState<CurrentUser | null>(null);
+  const [settings, setSettings] = useState<Settings | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [nameOpen, setNameOpen] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
   const [saving, setSaving] = useState(false);
+  const savingSettings = useRef(false);
+  const [settingsSaving, setSettingsSaving] = useState(false);
 
   const load = useCallback(() => {
-    void getCurrentUser()
-      .then((response) => {
+    void Promise.all([getCurrentUser(), getSettings()])
+      .then(([response, nextSettings]) => {
         setLoadError(null);
         setMe(response);
+        setSettings(nextSettings);
       })
       .catch((caught: Error) => setLoadError(caught.message ?? '프로필을 불러오지 못했어요'));
   }, []);
@@ -115,8 +128,38 @@ export default function ProfileScreen() {
     ]);
   }
 
+  async function toggleSetting(
+    key: 'service' | 'marketingEnabled' | 'nightPushEnabled',
+    value: boolean
+  ) {
+    if (!settings || savingSettings.current) return;
+    savingSettings.current = true;
+    setSettingsSaving(true);
+    const previous = settings;
+    const patch = key === 'service'
+      ? { pushEnabled: value, priceChangeEnabled: value }
+      : { [key]: value };
+    setSettings({ ...settings, ...patch });
+    await updateSettings(patch)
+      .then(setSettings)
+      .catch(() => {
+        setSettings(previous);
+        setToast(S.settingsFail);
+      })
+      .finally(() => {
+        savingSettings.current = false;
+        setSettingsSaving(false);
+      });
+  }
+
   if (loadError) return <ErrorView message={loadError} onRetry={load} />;
-  if (!me) return <DelayedLoadingView />;
+  if (!me || !settings) return <DelayedLoadingView />;
+
+  const switchProps = {
+    trackColor: { true: theme.tint, false: theme.track },
+    thumbColor: theme.onTint,
+    ios_backgroundColor: theme.track,
+  };
 
   return (
     <SubScreen title={S.title}>
@@ -126,41 +169,90 @@ export default function ProfileScreen() {
       </View>
 
       <Section title={S.basic}>
-        <Rows>
-          <Row
-            name={S.name}
-            tail={me.displayName ?? S.nameEmpty}
-            tailDim={!me.displayName}
-            chevron
-            onPress={() => {
-              setNameDraft(me.displayName ?? '');
-              setNameOpen(true);
-            }}
-          />
-        </Rows>
+        <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.track }]}>
+          <Rows>
+            <Row
+              name={S.name}
+              tail={S.nameUnavailable}
+              tailDim
+              inset
+            />
+            <Row
+              name={S.partnerName}
+              tail={me.displayName ?? S.nameEmpty}
+              tailDim={!me.displayName}
+              chevron
+              onPress={() => {
+                setNameDraft(me.displayName ?? '');
+                setNameOpen(true);
+              }}
+              inset
+            />
+          </Rows>
+        </View>
         <ThemedText type="t7" themeColor="textAssistive" style={styles.nameNote}>
           {S.note}
         </ThemedText>
       </Section>
 
-      {/*
-       * 07-lounge-my 4-5는 프로필 안에 알림 섹션을 둔다.
-       * 서버 계약은 세 토글을 이 화면에 직접 노출하는 형태가 아직 아니므로
-       * 별도 알림 설정 화면 진입만 남긴다. 대신 시안에 없는 «화면 설정» 행은 제거한다.
-       */}
       <Section title={S.notifications}>
-        <Rows>
-          <Row name={S.notification} chevron onPress={() => router.push('/my/notification-settings' as never)} />
-        </Rows>
+        <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.track }]}>
+          <Rows>
+            <Row
+              name={S.service}
+              meta={S.serviceMeta}
+              right={
+                <Switch
+                  disabled={settingsSaving}
+                  value={settings.pushEnabled || settings.priceChangeEnabled}
+                  onValueChange={(next) => void toggleSetting('service', next)}
+                  accessibilityLabel={S.service}
+                  {...switchProps}
+                />
+              }
+              inset
+            />
+            <Row
+              name={S.marketing}
+              meta={S.marketingMeta}
+              right={
+                <Switch
+                  disabled={settingsSaving}
+                  value={settings.marketingEnabled}
+                  onValueChange={(next) => void toggleSetting('marketingEnabled', next)}
+                  accessibilityLabel={S.marketing}
+                  {...switchProps}
+                />
+              }
+              inset
+            />
+            <Row
+              name={S.night}
+              meta={S.nightMeta}
+              right={
+                <Switch
+                  disabled={settingsSaving}
+                  value={settings.nightPushEnabled}
+                  onValueChange={(next) => void toggleSetting('nightPushEnabled', next)}
+                  accessibilityLabel={S.night}
+                  {...switchProps}
+                />
+              }
+              inset
+            />
+          </Rows>
+        </View>
       </Section>
 
       {/* 시안 「계정」 — 로그인 연결 · 로그아웃 · 회원 탈퇴만 둔다. Pick 인증은 MY 별도 메뉴다. */}
       <Section title={S.account}>
-        <Rows>
-          <Row name={S.social} tail={S.connected} tailBadge="ok" />
-          <Row name={S.logout} chevron onPress={confirmSignOut} />
-          <Row name={S.withdraw} off chevron onPress={() => router.push('/my/withdrawal' as never)} />
-        </Rows>
+        <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.track }]}>
+          <Rows>
+            <Row name={S.social} tail={S.connected} tailBadge="ok" inset />
+            <Row name={S.logout} chevron onPress={confirmSignOut} inset />
+            <Row name={S.withdraw} off chevron onPress={() => router.push('/my/withdrawal' as never)} inset />
+          </Rows>
+        </View>
       </Section>
 
       <BottomSheet dismissible={false} visible={nameOpen} onRequestClose={() => setNameOpen(false)}>
@@ -206,6 +298,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: Layout.cardPadding,
     paddingBottom: Layout.sectionGap,
+  },
+  card: {
+    borderWidth: Border.hairline,
+    borderRadius: Radius.medium,
+    overflow: 'hidden',
   },
   nameNote: { marginTop: Spacing.two },
   sheet: { padding: Layout.gutter, paddingBottom: Layout.sectionGap, gap: Spacing.three },
