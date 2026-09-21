@@ -1,4 +1,5 @@
 import {
+  createConsultationEventRequestSchema,
   createWeddingEventRequestSchema,
   updateWeddingEventRequestSchema,
   type WeddingEventSource,
@@ -35,9 +36,9 @@ async function withDecidedVendorLock<T>(
     await client.query('BEGIN');
 
     /*
-     * vendor_id가 붙은 일정은 최종 Pick 이후의 후속 일정이다.
-     * 결정 행을 잠근 같은 트랜잭션에서만 쓰기 때문에, 배우자가 동시에 결정을
-     * 되돌리더라도 검증과 INSERT/UPDATE 사이에 상태가 갈라지지 않는다.
+     * 상담 전용 쓰기만 최종 Pick 이후에 허용한다.
+     * 결정 행을 잠근 같은 트랜잭션에서 확인하고 INSERT하기 때문에, 배우자가 동시에
+     * 결정을 바꾸거나 취소해도 검증과 저장 사이 상태가 갈라지지 않는다.
      */
     const locked = await client.query(
       `SELECT 1
@@ -126,11 +127,50 @@ export function registerWeddingEventRoutes(app: FastifyInstance, context: AppCon
         userId,
       ];
 
-      const inserted = body.vendorId
-        ? await withDecidedVendorLock(context, request.params.weddingId, body.vendorId, (client) =>
-            client.query<{ id: string }>(insertSql, insertValues)
+      const inserted = await context.pool.query<{ id: string }>(insertSql, insertValues);
+
+      return reply.status(201).send({ eventId: inserted.rows[0]!.id });
+    }
+  );
+
+  /**
+   * 상담 시트 전용 일정 등록.
+   *
+   * 일반 일정의 vendorId는 단순 관련 업체라 최종 Pick 전에도 쓸 수 있다. 상담 시트만
+   * 이 별도 경로를 사용하고, 여기서만 최종 Pick 여부를 서버 쓰기와 원자적으로 묶는다.
+   */
+  app.post<{ Params: { weddingId: string } }>(
+    '/v1/weddings/:weddingId/consultation-events',
+    auth,
+    async (request, reply) => {
+      const userId = currentUserId(request);
+      const body = createConsultationEventRequestSchema.parse(request.body);
+
+      await assertWeddingAccess(context.pool, request.params.weddingId, userId);
+
+      const inserted = await withDecidedVendorLock(
+        context,
+        request.params.weddingId,
+        body.vendorId,
+        (client) =>
+          client.query<{ id: string }>(
+            `INSERT INTO structured.wedding_events
+               (wedding_id, title, starts_at, location, vendor_id, vendor_label, memo, notify_enabled, added_by)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+             RETURNING id`,
+            [
+              request.params.weddingId,
+              body.title,
+              body.startsAt,
+              body.location ?? null,
+              body.vendorId,
+              body.vendorLabel ?? null,
+              body.memo ?? null,
+              body.notifyEnabled,
+              userId,
+            ]
           )
-        : await context.pool.query<{ id: string }>(insertSql, insertValues);
+      );
 
       return reply.status(201).send({ eventId: inserted.rows[0]!.id });
     }
@@ -174,11 +214,7 @@ export function registerWeddingEventRoutes(app: FastifyInstance, context: AppCon
         body.notifyEnabled ?? null,
       ];
 
-      const updated = body.vendorId
-        ? await withDecidedVendorLock(context, request.params.weddingId, body.vendorId, (client) =>
-            client.query(updateSql, updateValues)
-          )
-        : await context.pool.query(updateSql, updateValues);
+      const updated = await context.pool.query(updateSql, updateValues);
 
       if (updated.rowCount === 0) {
         throw notFound('일정');

@@ -97,6 +97,7 @@ import {
   type VisitNoteListResponse,
   type WeddingNoteListResponse,
   type WeddingTaskListResponse,
+  type CreateConsultationEventRequest,
   type CreateWeddingEventRequest,
   type UpdateWeddingEventRequest,
   type WeddingEventListResponse,
@@ -1015,6 +1016,17 @@ export async function addWeddingEvent(
   body: CreateWeddingEventRequest
 ): Promise<{ eventId: string }> {
   return request(`/v1/weddings/${weddingId}/events`, z.object({ eventId: z.string() }), {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+/** 최종 Pick 뒤 상담 시트 전용. 서버가 결정 행을 잠근 상태에서 다시 검증한다. */
+export async function addConsultationEvent(
+  weddingId: string,
+  body: CreateConsultationEventRequest
+): Promise<{ eventId: string }> {
+  return request(`/v1/weddings/${weddingId}/consultation-events`, z.object({ eventId: z.string() }), {
     method: 'POST',
     body: JSON.stringify(body),
   });

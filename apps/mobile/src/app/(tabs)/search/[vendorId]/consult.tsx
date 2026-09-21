@@ -4,7 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
-import { ApiError, addWeddingEvent, getCurrentUser, getVendor, listCandidates } from '@/api/client';
+import { ApiError, addConsultationEvent, getCurrentUser, getVendor, listCandidates } from '@/api/client';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
@@ -155,7 +155,7 @@ export default function ConsultRoute() {
         minute
       );
 
-      await addWeddingEvent(me.weddingId, {
+      await addConsultationEvent(me.weddingId, {
         title: `${vendor.name} 상담`,
         startsAt: startsAt.toISOString(),
         location: vendor.region,
