@@ -358,6 +358,7 @@ const routes = {
     summary: '항목별로 먼저 상한을 정해두면 흔들리지 않아요.',
     body: '스드메는 세 가지를 한 번에 정하는 자리라 한쪽이 늘면 다른 쪽이 줄어요.\n\n먼저 항목별 상한을 적어두면 상담에서 흔들리지 않아요. 스튜디오는 원본 제공 조건, 드레스는 피팅 횟수와 추가 비용, 메이크업은 리허설 포함 여부를 함께 확인하세요.\n\n계약 전에 총액이 아니라 항목별 금액으로 받아 적으면 나중에 무엇이 늘었는지 바로 보여요.',
     imageUrl: null,
+    bodyImageUrl: null,
     publishedAt: '2026-09-15T02:00:00.000Z',
   },
   /** 라운지 후기 — 07-lounge-my의 Pick 인증 + 3축 populated 상태를 캡처한다. */
@@ -844,6 +845,8 @@ const routes = {
         body: '스드메 예산을 짤 때는…',
         imageKey: null,
         imageUrl: null,
+        bodyImageKey: null,
+        bodyImageUrl: null,
         status: 'draft',
         source: 'generated',
         model: 'gemini-3.5-flash-lite',
@@ -861,6 +864,8 @@ const routes = {
         body: '웨딩홀 투어에서는…',
         imageKey: null,
         imageUrl: null,
+        bodyImageKey: null,
+        bodyImageUrl: null,
         status: 'published',
         source: 'manual',
         model: null,
@@ -885,6 +890,7 @@ const routes = {
       },
     ],
     remainingTopics: 16,
+    nextSortOrder: 2,
     automation: {
       manualReady: true,
       scheduledEnabled: false,
