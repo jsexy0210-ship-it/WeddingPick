@@ -226,6 +226,7 @@ function RecommendationsDone({ onOpenNote }: { onOpenNote: () => void }) {
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
+  bold: { fontWeight: 700 },
   content: { paddingBottom: Spacing.five },
   refreshRow: { minHeight: Spacing.two, alignItems: 'flex-end', paddingHorizontal: Layout.gutter },
   initialSkeleton: { paddingBottom: Layout.sectionGap },
