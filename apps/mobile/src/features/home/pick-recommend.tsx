@@ -179,8 +179,9 @@ export function PickRecommend({
           group={group}
           expanded={group.category === open}
           onToggle={() => onToggle(group.category)}
-          isPicked={isPicked}
-          onPressPick={onPressPick}
+          isFavorite={isFavorite}
+          onPressVendor={onPressVendor}
+          onPressFavorite={onPressFavorite}
           onPressCompare={() => onPressCompare(group.category)}
           onPressSearchMore={
             onPressSearchMore === undefined ? undefined : () => onPressSearchMore(group.category)
