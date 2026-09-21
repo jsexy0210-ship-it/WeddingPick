@@ -25,6 +25,10 @@ export const weddingFeedPostSchema = z.object({
   imageKey: z.string().nullable(),
   /** 화면이 바로 쓸 수 있는 주소. 키가 없으면 null. */
   imageUrl: z.string().nullable(),
+  /** 상세 본문 안에 넣는 이미지. 카드 썸네일과 별도다. */
+  bodyImageKey: z.string().nullable(),
+  /** 상세 화면이 바로 쓸 수 있는 본문 이미지 주소. */
+  bodyImageUrl: z.string().nullable(),
   status: z.enum(WEDDING_FEED_STATUSES),
   source: z.enum(WEDDING_FEED_SOURCES),
   model: z.string().nullable(),
@@ -44,6 +48,7 @@ export const weddingFeedInputSchema = z.object({
   summary: trimmed(WEDDING_FEED_LIMITS.summary).default(''),
   body: z.string().max(WEDDING_FEED_LIMITS.body).default(''),
   imageKey: z.string().nullable().default(null),
+  bodyImageKey: z.string().nullable().default(null),
   status: z.enum(WEDDING_FEED_STATUSES).default('draft'),
   sortOrder: z.number().int().default(0),
 });
@@ -68,6 +73,8 @@ export const adminWeddingFeedResponseSchema = z.object({
   runs: z.array(weddingFeedRunSchema),
   /** 자동 작성이 쓸 수 있는 주제가 몇 개 남았나. 0이면 더 쓸 것이 없다. */
   remainingTopics: z.number().int(),
+  /** 새 글 팝업에 미리 채울 다음 노출 순서. 저장 시 서버가 다시 계산한다. */
+  nextSortOrder: z.number().int().positive(),
   automation: z.object({
     /** 관리자가 지금 한 번 쓰기를 실행할 서버 설정이 준비됐는가. 비밀값은 내리지 않는다. */
     manualReady: z.boolean(),
@@ -131,6 +138,7 @@ export const weddingFeedDetailSchema = weddingFeedPostSchema.pick({
   summary: true,
   body: true,
   imageUrl: true,
+  bodyImageUrl: true,
   publishedAt: true,
 });
 
@@ -140,6 +148,17 @@ export const weddingFeedGenerateResponseSchema = z.object({
   created: z.number().int(),
   /** 왜 아무것도 안 나왔는지. 만들어졌으면 null. */
   skipped: z.string().nullable(),
+});
+
+/** 새 글 팝업에서 카테고리를 고른 뒤 Gemini에 초안만 요청한다. DB에는 아직 쓰지 않는다. */
+export const weddingFeedDraftRequestSchema = z.object({
+  categoryLabel: trimmed(WEDDING_FEED_LIMITS.categoryLabel).min(1),
+});
+
+export const weddingFeedDraftResponseSchema = z.object({
+  title: z.string().max(WEDDING_FEED_LIMITS.title),
+  summary: z.string().max(WEDDING_FEED_LIMITS.summary),
+  body: z.string().max(WEDDING_FEED_LIMITS.body),
 });
 
 /**
