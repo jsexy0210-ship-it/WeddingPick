@@ -127,7 +127,7 @@ export default function PickScreen() {
   const [page, setPage] = useState<CandidateListResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
-  /** 비교함에 담은 업체(vendorId). 최대 PICK_COMPARE_MAX. */
+  /** 나의 Pick에서 비교할 업체(vendorId). 비교 자체만 최대 PICK_COMPARE_MAX. */
   const [compare, setCompare] = useState<ReadonlySet<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -530,7 +530,7 @@ function CandidateCard({
                 {candidate.vendorName}
               </ThemedText>
             </View>
-            {/* × — 후보에서 뺀다. 피그마 `text-muted-foreground/40 p-1`. 실제 빼기는 UnpickSheet가 묻는다. */}
+            {/* × — 후보에서 뺀다. 피그마 `text-muted-foreground/40 p-1`. 실제 빼기는 확인 다이얼로그가 묻는다. */}
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`${candidate.vendorName} 빼기`}
@@ -616,7 +616,7 @@ function CandidateCard({
   );
 }
 
-/** Pick 루트의 비교함. 담긴 업체를 한곳에서 빼거나 2~3곳 비교로 이어간다. */
+/** 개인 관심업체 목록. 하트 상태이며 나의 Pick과 별개다. */
 function FavoritesList({
   items,
   busyVendorId,
@@ -688,7 +688,9 @@ function FavoritesList({
               pressed ? styles.pressed : null,
               busyVendorId === item.vendorId ? styles.busy : null,
             ]}>
-            <ProductSymbol name="heartFill" size={Layout.iconField} color={theme.onTint} />
+            <Svg width={Layout.iconField} height={Layout.iconField} viewBox="0 0 24 24" fill="none">
+              <Path d={MARK_HEART_PATH} fill={theme.onTint} stroke={theme.onTint} strokeWidth={2} />
+            </Svg>
           </Pressable>
         </View>
       ))}
