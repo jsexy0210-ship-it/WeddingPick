@@ -39,7 +39,6 @@ import { currentUserId, optionalUser, optionalUserId, requireUser } from '../aut
 import type { AppContext } from '../context';
 import { assertFeatureEnabled } from '../kill-switches';
 import { summaryRating } from '../review-view';
-import { loadVendorSummaries } from './vendors';
 import { vendorSourceNote } from '../vendor-view';
 
 type CandidateRow = {
@@ -364,9 +363,7 @@ export async function categoryRecommendations(
     open.slice(0, limit).map(async (row) => {
       const vendors = await vendorsFor(context, {
         userId: input.userId,
-        weddingId: wedding?.id ?? null,
         category: row.category,
-        pickCount: row.pickCount,
       });
 
       return {
@@ -405,35 +402,14 @@ export async function categoryRecommendations(
  */
 async function vendorsFor(
   context: AppContext,
-  input: { userId: string; weddingId: string | null; category: VendorCategory; pickCount: number }
+  input: { userId: string; category: VendorCategory }
 ) {
-  if (input.pickCount > 0 && input.weddingId !== null) {
-    const { rows } = await context.pool.query<{ vendor_id: string }>(
-      `SELECT c.vendor_id
-       FROM structured.vendor_candidates c
-       JOIN structured.vendors v ON v.id = c.vendor_id
-       WHERE c.wedding_id = $1 AND v.category = $2::vendor_category
-       ORDER BY c.added_at DESC
-       LIMIT $3`,
-      [input.weddingId, input.category, RECOMMEND_VENDORS_PER_CATEGORY]
-    );
-
-    const picked = await loadVendorSummaries(
-      context.pool,
-      rows.map((row) => row.vendor_id)
-    );
-
-    /* 담은 곳을 못 읽었으면(업체가 사라졌다든가) 빈 칸을 두지 않고 추천으로 메운다. */
-    if (picked.length > 0) return picked;
-  }
-
   const { items } = await recommendVendors(context, {
     userId: input.userId,
     category: input.category,
     limit: RECOMMEND_VENDORS_PER_CATEGORY,
   });
 
-  /* 이유 문장과 실 제보 수는 카드가 안 쓴다 — 목록 요약(vendorSummary)만 남긴다. */
   return items.map(({ reasonKeys: _keys, confirmedCount: _count, ...vendor }) => vendor);
 }
 
