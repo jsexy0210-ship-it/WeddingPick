@@ -485,6 +485,12 @@ const styles = StyleSheet.create({
   summaryText: { flex: 1 },
   bottomPad: { height: Spacing.four },
 
+  loadingTable: {
+    paddingHorizontal: Layout.gutter,
+    gap: Spacing.two,
+    paddingBottom: Layout.sectionGap,
+  },
+
   /* dock 92 · border-top 1 · padding 12 24 · gap 8 · 버튼 56 */
   dock: {
     height: Layout.dock,
