@@ -1,4 +1,4 @@
-# bridge-revision: 2026-09-21-domain-live
+# bridge-revision: 2026-09-21-domain-live-v3
 name: Deploy LifeLeft Bridge
 
 on:
@@ -18,22 +18,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  probe:
-    name: Check LifeLeft release
-    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
-    timeout-minutes: 5
+  resolve:
+    name: Resolve LifeLeft release
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
     outputs:
       changed: ${{ steps.target.outputs.changed }}
       sha: ${{ steps.target.outputs.sha }}
     steps:
-      - name: Resolve LifeLeft main
+      - name: Compare LifeLeft main with public release
         id: target
         shell: bash
         run: |
           set -euo pipefail
           sha="$(git ls-remote https://github.com/jsexy0210-ship-it/LifeLeft.git refs/heads/main | cut -f1)"
           [[ "$sha" =~ ^[0-9a-f]{40}$ ]]
-          live="$(cat /home/ubuntu/LifeLeft/static-live-domain 2>/dev/null || true)"
+
+          live="$(
+            curl --fail --silent --show-error --connect-timeout 3 --max-time 8               https://lifeleft.duckdns.org/release.txt 2>/dev/null               | tr -d '\r\n'               || true
+          )"
+
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
           if [ "$live" = "$sha" ]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -41,12 +45,13 @@ jobs:
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
             echo "LifeLeft deployment target: $sha"
+            echo "Current public release: ${live:-none}"
           fi
 
   build:
     name: Build LifeLeft production static
-    if: needs.probe.outputs.changed == 'true'
-    needs: [probe]
+    if: needs.resolve.outputs.changed == 'true'
+    needs: [resolve]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -54,7 +59,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: jsexy0210-ship-it/LifeLeft
-          ref: ${{ needs.probe.outputs.sha }}
+          ref: ${{ needs.resolve.outputs.sha }}
           persist-credentials: false
 
       - name: Node
@@ -77,6 +82,7 @@ jobs:
           test -f out/survival/index.html
           test -f out/robots.txt
           test -f out/sitemap.xml
+          printf '%s\n' "${{ needs.resolve.outputs.sha }}" > out/release.txt
 
       - name: Upload LifeLeft static
         uses: actions/upload-artifact@v6
@@ -88,18 +94,18 @@ jobs:
 
   deploy:
     name: Stage and enable LifeLeft domain
-    if: needs.probe.outputs.changed == 'true'
-    needs: [probe, build]
+    if: needs.resolve.outputs.changed == 'true'
+    needs: [resolve, build]
     runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
     timeout-minutes: 15
     outputs:
-      sha: ${{ needs.probe.outputs.sha }}
+      sha: ${{ needs.resolve.outputs.sha }}
     steps:
       - name: Checkout LifeLeft scripts
         uses: actions/checkout@v5
         with:
           repository: jsexy0210-ship-it/LifeLeft
-          ref: ${{ needs.probe.outputs.sha }}
+          ref: ${{ needs.resolve.outputs.sha }}
           path: .lifeleft-source
           persist-credentials: false
 
@@ -112,32 +118,29 @@ jobs:
       - name: Stage immutable release
         run: |
           set -euo pipefail
-          bash ./.lifeleft-source/scripts/stage-lifeleft-static.sh \
-            ./.lifeleft-static \
-            "${{ needs.probe.outputs.sha }}"
+          test -f .lifeleft-static/release.txt
+          test "$(tr -d '\r\n' < .lifeleft-static/release.txt)" = "${{ needs.resolve.outputs.sha }}"
+          bash ./.lifeleft-source/scripts/stage-lifeleft-static.sh             ./.lifeleft-static             "${{ needs.resolve.outputs.sha }}"
 
       - name: Enable LifeLeft domain and TLS
         run: |
           set -euo pipefail
-          bash ./.lifeleft-source/scripts/install-lifeleft-domain.sh \
-            "${{ needs.probe.outputs.sha }}" \
-            lifeleft.duckdns.org \
-            210.109.82.212
+          bash ./.lifeleft-source/scripts/install-lifeleft-domain.sh             "${{ needs.resolve.outputs.sha }}"             lifeleft.duckdns.org             210.109.82.212
 
   verify:
     name: Verify LifeLeft public HTTPS
-    if: needs.probe.outputs.changed == 'true'
-    needs: [probe, deploy]
+    if: needs.resolve.outputs.changed == 'true'
+    needs: [resolve, deploy]
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
       - name: Public smoke
         run: |
           set -euo pipefail
+          expected="${{ needs.resolve.outputs.sha }}"
           ok=false
           for _ in $(seq 1 24); do
-            if curl --fail --silent --show-error --connect-timeout 5 --max-time 15 \
-              https://lifeleft.duckdns.org/ > /tmp/lifeleft-home.html; then
+            if curl --fail --silent --show-error --connect-timeout 5 --max-time 15               https://lifeleft.duckdns.org/ > /tmp/lifeleft-home.html; then
               ok=true
               break
             fi
@@ -148,19 +151,19 @@ jobs:
           grep -q 'LIFELEFT' /tmp/lifeleft-home.html
 
           for path in commute salary weekends work-time subscriptions survival; do
-            curl --fail --silent --show-error --connect-timeout 5 --max-time 15 \
-              "https://lifeleft.duckdns.org/$path/" >/dev/null
+            curl --fail --silent --show-error --connect-timeout 5 --max-time 15               "https://lifeleft.duckdns.org/$path/" >/dev/null
           done
 
-          curl --fail --silent --show-error --connect-timeout 5 --max-time 15 \
-            https://lifeleft.duckdns.org/robots.txt | grep -Fq 'https://lifeleft.duckdns.org/sitemap.xml'
-          curl --fail --silent --show-error --connect-timeout 5 --max-time 15 \
-            https://lifeleft.duckdns.org/sitemap.xml | grep -Fq 'https://lifeleft.duckdns.org/'
+          actual="$(curl --fail --silent --show-error https://lifeleft.duckdns.org/release.txt | tr -d '\r\n')"
+          test "$actual" = "$expected"
+
+          curl --fail --silent --show-error --connect-timeout 5 --max-time 15             https://lifeleft.duckdns.org/robots.txt | grep -Fq 'https://lifeleft.duckdns.org/sitemap.xml'
+          curl --fail --silent --show-error --connect-timeout 5 --max-time 15             https://lifeleft.duckdns.org/sitemap.xml | grep -Fq 'https://lifeleft.duckdns.org/'
 
   rollback:
     name: Roll back LifeLeft on failed public verify
-    if: ${{ always() && needs.probe.outputs.changed == 'true' && needs.deploy.result == 'success' && needs.verify.result != 'success' }}
-    needs: [probe, deploy, verify]
+    if: ${{ always() && needs.resolve.outputs.changed == 'true' && needs.deploy.result == 'success' && needs.verify.result != 'success' }}
+    needs: [resolve, deploy, verify]
     runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
     timeout-minutes: 10
     steps:
@@ -168,7 +171,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: jsexy0210-ship-it/LifeLeft
-          ref: ${{ needs.probe.outputs.sha }}
+          ref: ${{ needs.resolve.outputs.sha }}
           path: .lifeleft-source
           persist-credentials: false
 
@@ -177,8 +180,8 @@ jobs:
 
   finalize:
     name: Finalize LifeLeft verified release
-    if: ${{ needs.probe.outputs.changed == 'true' && needs.deploy.result == 'success' && needs.verify.result == 'success' }}
-    needs: [probe, deploy, verify]
+    if: ${{ needs.resolve.outputs.changed == 'true' && needs.deploy.result == 'success' && needs.verify.result == 'success' }}
+    needs: [resolve, deploy, verify]
     runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
     timeout-minutes: 5
     steps:
@@ -186,7 +189,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: jsexy0210-ship-it/LifeLeft
-          ref: ${{ needs.probe.outputs.sha }}
+          ref: ${{ needs.resolve.outputs.sha }}
           path: .lifeleft-source
           persist-credentials: false
 
