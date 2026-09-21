@@ -1,5 +1,10 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+declare const require: (id: string) => unknown;
+declare const __dirname: string;
+
+const { readFileSync } = require('fs') as {
+  readFileSync: (path: string, encoding: 'utf8') => string;
+};
+const { join } = require('path') as { join: (...parts: string[]) => string };
 
 const source = readFileSync(join(__dirname, 'wedding-feed.tsx'), 'utf8');
 
