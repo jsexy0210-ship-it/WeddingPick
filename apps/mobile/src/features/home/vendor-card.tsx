@@ -23,9 +23,9 @@ import { CategoryImage } from './category-image';
  */
 export type VendorCardProps = {
   vendor: VendorSummary;
-  picked: boolean;
+  favorited: boolean;
   onPress: () => void;
-  onPressPick: () => void;
+  onPressFavorite: () => void;
   accessibilityLabel?: string;
   showTags?: boolean;
   showReason?: boolean;
@@ -36,9 +36,9 @@ const MAX_TAGS = 2;
 
 export function VendorCard({
   vendor,
-  picked,
+  favorited,
   onPress,
-  onPressPick,
+  onPressFavorite,
   accessibilityLabel,
   showTags = true,
   showReason = true,
@@ -66,9 +66,9 @@ export function VendorCard({
         <CategoryImage uri={vendor.imageUrl} label={vendor.name} category={vendor.category} />
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={picked ? `${vendor.name} Pick 해제` : `${vendor.name} Pick`}
-          accessibilityState={{ selected: picked }}
-          onPress={(event) => { event.stopPropagation(); onPressPick(); }}
+          accessibilityLabel={favorited ? `${vendor.name} 관심업체 해제` : `${vendor.name} 관심업체 추가`}
+          accessibilityState={{ selected: favorited }}
+          onPress={(event) => { event.stopPropagation(); onPressFavorite(); }}
           hitSlop={Spacing.two}
           style={({ pressed }) => [
             styles.heart,
@@ -78,16 +78,16 @@ export function VendorCard({
           <View
             style={[
               styles.heartFill,
-              picked
+              favorited
                 ? { backgroundColor: theme.tint }
                 : { backgroundColor: theme.background, opacity: 0.88 },
             ]}
           />
           <View>
             <SeedIcon
-              name={picked ? 'heartFill' : 'heartRegular'}
+              name={favorited ? 'heartFill' : 'heartRegular'}
               size={Layout.iconField}
-              color={picked ? theme.onTint : theme.text}
+              color={favorited ? theme.onTint : theme.text}
             />
           </View>
         </Pressable>
