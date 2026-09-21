@@ -64,20 +64,16 @@ import {
   PICK_COMPARE_BANNER_HINT,
   PICK_COMPARE_MAX,
   PICK_COMPARE_REMOVE_LABEL,
-  PICK_SUBTITLE,
-  PICK_VERIFY_LABEL,
   compareBasketLabel,
-  pickCountLabel,
 } from '@/features/pick/canonical-rules';
 import { PickSectionTabs, type PickSection } from '@/features/pick/pick-section-tabs';
+import { useFavoriteVendors } from '@/features/pick/use-favorite-vendors';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import { isWebShellScreen } from '@/features/webshell/config';
 import { WebShellView } from '@/features/webshell/WebShellView';
 import { RecommendationsContent } from '../(home)/recommendations';
 
 /* 문구 — spec/strings.ko.json `pick`. 피그마 `Pick.tsx`에서 왔다. */
-const SUBTITLE = PICK_SUBTITLE;
-const PRICE_REPORT = PICK_VERIFY_LABEL;
 const COMPARE_HINT = PICK_COMPARE_BANNER_HINT;
 const COMPARE_ALL = '비교하기';
 const CHIP_ALL = '전체';
@@ -121,7 +117,11 @@ export default function PickScreen() {
       ? (rawCategory as VendorCategory)
       : null;
   const section: PickSection =
-    requestedSection === 'recommendations' || requestedSection === 'compare' ? requestedSection : 'pick';
+    requestedSection === 'recommendations'
+      ? 'recommendations'
+      : requestedSection === 'favorites' || requestedSection === 'compare'
+        ? 'favorites'
+        : 'pick';
   const theme = useTheme();
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [page, setPage] = useState<CandidateListResponse | null>(null);
@@ -132,6 +132,8 @@ export default function PickScreen() {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [undoCandidate, setUndoCandidate] = useState<UndoCandidate | null>(null);
+  const favorites = useFavoriteVendors();
+  const reloadFavorites = favorites.reload;
 
   const load = useCallback(() => {
     // 하이브리드 웹뷰 쉘 POC로 이 화면을 대체할 때는 이 밑 자료를 안 쓴다 —
@@ -149,6 +151,9 @@ export default function PickScreen() {
 
   /* 결정 시트에서 돌아오면 목록이 바뀌어 있다 — 화면에 올 때마다 다시 읽는다. */
   useFocusEffect(load);
+  useFocusEffect(useCallback(() => {
+    void reloadFavorites().catch(() => undefined);
+  }, [reloadFavorites]));
 
   // 하이브리드 웹뷰 쉘 POC. `EXPO_PUBLIC_WEBSHELL_SCREENS`에 "pick"이 없으면
   // (기본값) 이 분기는 타지 않고 기존 네이티브 화면 그대로다.
@@ -290,6 +295,7 @@ export default function PickScreen() {
     <ThemedView style={styles.root}>
       <SafeAreaView style={styles.safeArea}>
         <View style={[styles.wrapper, { maxWidth: MaxContentWidth }]}>
+          <RootHeader />
           <PickSectionTabs active={section} />
           {section === 'recommendations' ? (
             <RecommendationsContent requestedCategory={requestedCategory} />
@@ -307,20 +313,23 @@ export default function PickScreen() {
             <View style={styles.loadingCenter}>
               <DelayedLoader size={40} />
             </View>
-          ) : section === 'compare' ? (
-            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-              <CompareBasket
-                rows={rows.filter((row) => compare.has(row.candidate.vendorId))}
-                onRemove={(vendorId) => toggleCompare(vendorId)}
-                onCompare={startCompare}
-                onOpenPick={() => router.replace('/pick')}
-              />
-              <View style={styles.bottomSpacer} />
-            </ScrollView>
+          ) : section === 'favorites' ? (
+            favorites.page === null ? (
+              <View style={styles.loadingCenter}>
+                <DelayedLoader size={40} />
+              </View>
+            ) : (
+              <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+                <FavoritesList
+                  items={favorites.page.items}
+                  busyVendorId={favorites.busyVendorId}
+                  onToggle={(vendorId) => void favorites.toggle(vendorId)}
+                />
+                <View style={styles.bottomSpacer} />
+              </ScrollView>
+            )
           ) : (
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-              <Header me={me} partner={partner} total={page?.total ?? 0} />
-
               {/* 비교 배너 — 피그마 `compareIds.length >= 2`: 잉크 면 · radius 16 · 안쪽 16/14. */}
               {compare.size >= MIN_COMPARE ? (
                 <View style={[styles.compareBanner, { backgroundColor: theme.tintSurface, borderColor: theme.tintBorder }]}>
@@ -412,108 +421,14 @@ export default function PickScreen() {
    Header — 피그마 `px-5 pb-5 pt-6`: 제목 24/700 + «N곳» 배지 · 부제 14 ·
    배우자 상자(radius 16 · 회색 면 · 안쪽 16/12 · 아바타 32 둘 · «Pick 인증»)
 ──────────────────────────────────────────── */
-function Header({ me, partner, total }: { me: CurrentUser; partner: string | null; total: number }) {
-  const theme = useTheme();
-
+function RootHeader() {
   return (
-    <View style={styles.head}>
-      <View style={styles.titleRow}>
-        {/* 규격서: «Pick» 24/700 lh 32 ls -0.6 · 배지 12/700 흰 글자 lh 16 pad 4 12 · 부제 14/400 #868B94 lh 20. */}
-        <ThemedText type="f26" style={[styles.bold, styles.title]}>
-          {TERMS.pick}
-        </ThemedText>
-        <ThemedText type="f14" themeColor="textAssistive" style={styles.bold}>
-          {pickCountLabel(total)}
-        </ThemedText>
-      </View>
-      <View style={styles.headBody}>
-        <ThemedText type="f14" themeColor="textAssistive">
-          {SUBTITLE}
-        </ThemedText>
-
-        {/*
-          함께-보기 상자는 배우자가 연결됐을 때만 선다 — 피그마의 «준혁님과 함께 보고 있어요»는
-          배우자가 있는 시안값이다. «Pick 인증»는 업체 무관 전역 진입이라 Pick 인증 동의 화면으로
-          바로 보낸다(폐기된 별도 제보 화면을 거치지 않는다).
-        */}
-        {partner ? (
-          <View style={[styles.partnerBox, { backgroundColor: theme.backgroundElement }]}>
-            <View style={styles.partnerLeft}>
-              <View style={styles.avatars}>
-                <Avatar initial={me.displayName?.[0] ?? null} background={theme.text} ring={theme.backgroundElement} />
-                <Avatar
-                  initial={partner[0] ?? null}
-                  background={theme.textAssistive}
-                  ring={theme.backgroundElement}
-                  overlap
-                />
-              </View>
-              {/* 규격서: «12/600 #1A1C20 · lh 16». */}
-              <ThemedText type="f12" numberOfLines={1} style={[styles.semibold, styles.partnerText]}>
-                {partnerWith(partner, '함께 보고 있어요')}
-              </ThemedText>
-            </View>
-            <Pressable
-              onPress={() => router.push('/capture/payment/consent?from=pick')}
-              accessibilityRole="button"
-              accessibilityLabel={PICK_VERIFY_LABEL}
-              style={(state) => {
-                const { hovered, focused } = readWebInteractionState(state);
-                return [
-                  styles.priceReportLink,
-                  hovered ? { opacity: 0.8 } : null,
-                  focused
-                    ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: 2 }
-                    : null,
-                ];
-              }}>
-              <ProductSymbol name="link" size={Layout.iconSmall} color={theme.tint} />
-              {/* 규격서: «Pick 인증» 12/700 키 컬러 lh 16 · 고리 14. */}
-              <ThemedText type="f12" themeColor="tint" style={styles.bold}>
-                {PRICE_REPORT}
-              </ThemedText>
-            </Pressable>
-          </View>
-        ) : null}
-      </View>
+    <View style={styles.titleRow}>
+      <ThemedText type="f26" style={[styles.bold, styles.title]}>
+        Pick
+      </ThemedText>
     </View>
   );
-}
-
-/** 이름 첫 글자 원 32 — 피그마 `h-8 w-8 rounded-full ring-2 ring-secondary`, 둘째는 -8 겹침. */
-function Avatar({
-  initial,
-  background,
-  ring,
-  overlap = false,
-}: {
-  initial: string | null;
-  background: string;
-  ring: string;
-  overlap?: boolean;
-}) {
-  const theme = useTheme();
-  return (
-    <View style={[styles.avatar, { backgroundColor: background, borderColor: ring }, overlap ? styles.avatarOverlap : null]}>
-      {initial ? (
-        /* 규격서: 아바타 글자 «11/700 #FFFFFF · lh 17». */
-        <ThemedText type="f11" style={[styles.bold, { color: theme.onInk }]}>
-          {initial}
-        </ThemedText>
-      ) : (
-        /* 이름을 아직 안 정했으면 빈 원 대신 사람 기호. */
-        <ProductSymbol name="person" size={Layout.iconField} color={theme.onInk} />
-      )}
-    </View>
-  );
-}
-
-/**
- * «준호님과 함께 보고 있어요» · «배우자와 함께 보고 있어요». 이름을 모르면 «배우자님»이라
- * 부르지 않는다.
- */
-function partnerWith(partner: string, tail: string): string {
-  return partner === TERMS.spouse ? `${partner}와 ${tail}` : `${partner}님과 ${tail}`;
 }
 
 /* ────────────────────────────────────────────
@@ -702,96 +617,81 @@ function CandidateCard({
 }
 
 /** Pick 루트의 비교함. 담긴 업체를 한곳에서 빼거나 2~3곳 비교로 이어간다. */
-function CompareBasket({
-  rows,
-  onRemove,
-  onCompare,
-  onOpenPick,
+function FavoritesList({
+  items,
+  busyVendorId,
+  onToggle,
 }: {
-  rows: readonly Row[];
-  onRemove: (vendorId: string) => void;
-  onCompare: () => void;
-  onOpenPick: () => void;
+  items: readonly FavoriteVendor[];
+  busyVendorId: string | null;
+  onToggle: (vendorId: string) => void;
 }) {
   const theme = useTheme();
-  const canCompare = rows.length >= MIN_COMPARE;
+
+  if (items.length === 0) {
+    return (
+      <View style={styles.empty}>
+        <View style={[styles.emptyMark, { backgroundColor: theme.backgroundElement }]}>
+          <Svg width={Layout.iconEmpty} height={Layout.iconEmpty} viewBox="0 0 24 24" fill="none">
+            <Path d={MARK_HEART_PATH} stroke={theme.textAssistive} strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" />
+          </Svg>
+        </View>
+        <View style={styles.emptyText}>
+          <ThemedText type="t6" style={styles.bold}>아직 관심업체가 없어요</ThemedText>
+          <ThemedText type="t7" themeColor="textAssistive" style={styles.emptyBody}>
+            업체의 하트를 누르면 여기에 모아볼 수 있어요
+          </ThemedText>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="업체 찾아보기"
+          onPress={() => router.push('/search')}
+          style={({ pressed }) => [styles.emptyCta, { backgroundColor: theme.text }, pressed ? styles.pressed : null]}>
+          <ThemedText type="t7" style={[styles.bold, { color: theme.onInk }]}>업체 찾아보기</ThemedText>
+        </Pressable>
+      </View>
+    );
+  }
 
   return (
-    <View>
-      <View style={styles.rootTitleRow}>
-        <ThemedText type="f26" style={[styles.bold, styles.rootTitle]}>
-          비교함
-        </ThemedText>
-      </View>
-      <View style={styles.compareBasketBody}>
-        {rows.length === 0 ? (
-          <View style={styles.compareEmpty}>
-            <ThemedText type="f16" style={styles.bold}>비교할 업체를 담아주세요</ThemedText>
-            <ThemedText type="f13" themeColor="textAssistive" style={styles.compareEmptyBody}>
-              나의 Pick에서 2~3곳을 담으면 금액과 조건을 나란히 볼 수 있어요
-            </ThemedText>
-            <Pressable
-              accessibilityRole="button"
-              onPress={onOpenPick}
-              style={({ pressed }) => [
-                styles.comparePrimary,
-                { backgroundColor: theme.text },
-                pressed ? styles.pressed : null,
-              ]}>
-              <ThemedText type="f14" style={[styles.bold, { color: theme.onInk }]}>나의 Pick 보기</ThemedText>
-            </Pressable>
-          </View>
-        ) : (
-          <>
-            <ThemedText type="f13" themeColor="textAssistive">
-              {compareBasketLabel(rows.length)} · 최대 {PICK_COMPARE_MAX}곳
-            </ThemedText>
-            <View style={styles.compareBasketList}>
-              {rows.map(({ candidate }) => (
-                <View
-                  key={candidate.vendorId}
-                  style={[styles.compareBasketRow, { borderColor: theme.border, backgroundColor: theme.background }]}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`${candidate.vendorName} 상세 보기`}
-                    onPress={() => router.push(`/search/${candidate.vendorId}`)}
-                    style={styles.compareBasketInfo}>
-                    <ThemedText type="f11" themeColor="textAssistive" style={styles.bold}>
-                      {VENDOR_CATEGORY_LABEL[candidate.category]}
-                    </ThemedText>
-                    <ThemedText type="f16" numberOfLines={1} style={styles.bold}>{candidate.vendorName}</ThemedText>
-                    <ThemedText type="f12" numberOfLines={1} themeColor="textAssistive">{candidate.region}</ThemedText>
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`${candidate.vendorName} 비교에서 빼기`}
-                    hitSlop={Spacing.two}
-                    onPress={() => onRemove(candidate.vendorId)}
-                    style={styles.compareBasketRemove}>
-                    <ProductSymbol name="close" size={Layout.iconField} color={theme.textAssistive} />
-                  </Pressable>
-                </View>
-              ))}
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ disabled: !canCompare }}
-              disabled={!canCompare}
-              onPress={onCompare}
-              style={({ pressed }) => [
-                styles.comparePrimary,
-                { backgroundColor: canCompare ? theme.tint : theme.backgroundElement },
-                pressed && canCompare ? styles.pressed : null,
-              ]}>
-              <ThemedText
-                type="f14"
-                style={[styles.bold, { color: canCompare ? theme.onTint : theme.textDisabled }]}>
-                {canCompare ? `${rows.length}곳 비교하기` : '한 곳 더 담아주세요'}
+    <View style={styles.favoriteList}>
+      {items.map((item) => (
+        <View key={item.id} style={[styles.favoriteRow, { borderColor: theme.border }]}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${item.vendorName} 자세히 보기`}
+            onPress={() => router.push(`/search/${item.vendorId}`)}
+            style={styles.favoriteInfo}>
+            <VendorImage
+              source={item.imageUrl ? { uri: item.imageUrl } : undefined}
+              category={vendorImageCategory(item.category)}
+              width={Layout.thumbList}
+              height={Layout.thumbList}
+              radius={Radius.small}
+            />
+            <View style={styles.favoriteText}>
+              <ThemedText type="f10" themeColor="textAssistive" style={styles.bold}>
+                {VENDOR_CATEGORY_LABEL[item.category]}
               </ThemedText>
-            </Pressable>
-          </>
-        )}
-      </View>
+              <ThemedText type="f16" numberOfLines={1} style={styles.bold}>{item.vendorName}</ThemedText>
+              <ThemedText type="f12" themeColor="textAssistive" numberOfLines={1}>{item.region}</ThemedText>
+            </View>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${item.vendorName} 관심업체 해제`}
+            disabled={busyVendorId === item.vendorId}
+            onPress={() => onToggle(item.vendorId)}
+            style={({ pressed }) => [
+              styles.favoriteHeart,
+              { backgroundColor: theme.tint },
+              pressed ? styles.pressed : null,
+              busyVendorId === item.vendorId ? styles.busy : null,
+            ]}>
+            <ProductSymbol name="heartFill" size={Layout.iconField} color={theme.onTint} />
+          </Pressable>
+        </View>
+      ))}
     </View>
   );
 }
@@ -1006,6 +906,26 @@ const styles = StyleSheet.create({
     minHeight: Layout.ctaPick,
     borderRadius: Radius.control,
     paddingHorizontal: Spacing.four,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  favoriteList: { paddingHorizontal: Layout.gutter, paddingTop: Spacing.three, gap: Spacing.two },
+  favoriteRow: {
+    minHeight: 84,
+    borderWidth: Border.hairline,
+    borderRadius: Radius.medium,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.two,
+    gap: Spacing.two,
+  },
+  favoriteInfo: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
+  favoriteText: { flex: 1, minWidth: 0, gap: Spacing.half },
+  favoriteHeart: {
+    width: Layout.touchTarget,
+    height: Layout.touchTarget,
+    borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
