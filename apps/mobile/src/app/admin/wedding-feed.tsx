@@ -144,6 +144,7 @@ type FormState = {
   imageUrl: string | null;
   bodyImageKey: string | null;
   bodyImageUrl: string | null;
+  generated: boolean;
   status: WeddingFeedStatus;
   sortOrder: string;
 };
@@ -157,6 +158,7 @@ const BLANK_FORM: FormState = {
   imageUrl: null,
   bodyImageKey: null,
   bodyImageUrl: null,
+  generated: false,
   status: 'draft',
   sortOrder: '1',
 };
@@ -171,6 +173,7 @@ function toForm(post: Post): FormState {
     imageUrl: post.imageUrl,
     bodyImageKey: post.bodyImageKey,
     bodyImageUrl: post.bodyImageUrl,
+    generated: post.source === 'generated',
     status: post.status,
     sortOrder: String(post.sortOrder),
   };
@@ -303,6 +306,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
         body: form.body,
         imageKey: form.imageKey,
         bodyImageKey: form.bodyImageKey,
+        generated: editing === 'new' ? form.generated : false,
         status: form.status,
         sortOrder: Number.isNaN(sortOrder) ? 0 : sortOrder,
       };
@@ -363,6 +367,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
         title: draft.title,
         summary: draft.summary,
         body: draft.body,
+        generated: true,
       }));
     } catch (e) {
       setDraftError(e instanceof Error ? e.message : '자동 작성에 실패했어요.');
