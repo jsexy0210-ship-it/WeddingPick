@@ -1041,8 +1041,20 @@ export async function removeWeddingEvent(weddingId: string, eventId: string): Pr
  *
  * 사람이 아니라 웨딩에 매달려 있다 — 배우자가 담은 곳이 함께 온다.
  */
-export async function listCandidates(weddingId: string): Promise<CandidateListResponse> {
-  return request(`/v1/weddings/${weddingId}/candidates`, candidateListResponseSchema);
+export async function listCandidates(
+  weddingId: string,
+  options: { force?: boolean } = {}
+): Promise<CandidateListResponse> {
+  const path = `/v1/weddings/${weddingId}/candidates`;
+  if (!options.force) return request(path, candidateListResponseSchema);
+
+  // 최종 결정처럼 제출 직전에 반드시 최신값이어야 하는 곳은 화면 캐시를 우회한다.
+  return request(path, candidateListResponseSchema, {}, {
+    force: true,
+    onValue: () => undefined,
+    onError: () => undefined,
+    onRefreshing: () => undefined,
+  });
 }
 
 export async function addCandidate(
