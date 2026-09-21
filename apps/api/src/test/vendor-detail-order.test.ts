@@ -31,7 +31,8 @@ const ANCHORS: Record<string, string> = {
   name: '<DepthHeader title={vendor.name} />',
   key_conditions: 'VENDOR_CATEGORY_LABEL[vendor.category]',
   verified_data: 'type="t4">{TERMS.verifiedData}',
-  pick: 'styles.actionRow',
+  // 로딩 skeleton에도 actionRow가 있으므로 실제 고정 CTA의 접근성 라벨을 기준으로 잰다.
+  pick: 'accessibilityLabel={primaryLabel}',
   experience: 'type="t4">{TERMS.experience}',
   reviews: 'type="t4">{TERMS.review}',
   official_source: 'type="t4">공식정보',
