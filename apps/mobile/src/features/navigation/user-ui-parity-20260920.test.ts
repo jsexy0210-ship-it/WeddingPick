@@ -77,22 +77,22 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(s).toContain("budgetBand(filters.budget)?.label ?? '가격'");
     expect(s).not.toContain('sortSlot:');
   });
-  it('Pick 3보기는 같은 Root 안에서 전환하고 compare로 이어진다', () => {
+  it('Pick Root는 추천·관심업체·나의 Pick을 같은 헤더 아래 전환한다', () => {
     const s = mobile('features/pick/pick-section-tabs.tsx');
     expect(s).toContain("label: '나의 Pick'");
     expect(s).toContain("label: '웨딩픽 추천'");
-    expect(s).toContain("label: '비교함'");
+    expect(s).toContain("label: '관심업체'");
     expect(s).toContain("pathname: '/pick'");
-    expect(s).not.toContain("router.replace('/recommendations'");
-    expect(s).not.toContain("router.replace('/pick/wedding_info_company'");
+    expect(s).not.toContain("label: '비교함'");
 
     const pick = mobile('app/(tabs)/pick/index.tsx');
-    expect(pick).toContain("requestedSection === 'recommendations' || requestedSection === 'compare'");
+    expect(pick).toContain("<RootHeader />");
     expect(pick).toContain("section === 'recommendations'");
-    expect(pick).toContain("section === 'compare'");
+    expect(pick).toContain("section === 'favorites'");
     expect(pick).toContain('<RecommendationsContent requestedCategory={requestedCategory} />');
+    expect(pick).toContain('<FavoritesList');
     expect(pick).toContain('VENDOR_CATEGORIES.includes(rawCategory as VendorCategory)');
-    expect(pick).toContain('<CompareBasket');
+    expect(pick).not.toContain('<CompareBasket');
 
     const home = mobile('app/(tabs)/index.tsx');
     expect(home).toContain('item.pickCount > 0');
@@ -105,6 +105,7 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(recommendations).toContain('requestedCategory');
     expect(recommendations).toContain('category: requestedCategory');
     expect(recommendations).not.toContain('useDepthBack');
+    expect(recommendations).not.toContain("S['recommend.title']");
     expect(mobile('app/(tabs)/pick/[category].tsx')).toContain("pathname: '/search/compare'");
     expect(mobile('app/(tabs)/pick/[category].tsx')).not.toContain('<PickSectionTabs');
   });
@@ -128,7 +129,7 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
   it('추천 재조회는 기존 내용을 유지하되 최신 상태 전까지 변경 행동을 잠근다', () => {
     const recommendations = mobile('app/(tabs)/(home)/recommendations.tsx');
     expect(recommendations).toContain('const [refreshing, setRefreshing] = useState(false)');
-    expect(recommendations).toContain('Promise.allSettled([load(), reloadCandidates()])');
+    expect(recommendations).toContain('Promise.allSettled([load(), reloadFavorites()])');
     expect(recommendations).toContain('interactionDisabled={refreshing}');
     expect(recommendations).toContain('<DelayedLoader active={refreshing} size={20} />');
 
@@ -138,9 +139,11 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
 
   it('최종 Pick 저장 뒤에만 상담 예약을 열고 직접 URL에서도 다시 검증한다', () => {
     const detail = mobile('app/(tabs)/search/[vendorId]/index.tsx');
-    expect(detail).toContain("decided ? '상담 예약하기' : picked ? '최종 Pick하기'");
+    expect(detail).toContain("decided ? '상담 예약하기' : picked ? '나의 Pick 보기' : '최종 Pick'");
     expect(detail).toContain("group.decidedVendorId === currentVendor.id");
-    expect(detail).toContain("pathname: '/pick/confirm'");
+    expect(detail).toContain("const result = await candidates.pick(currentVendor.id)");
+    expect(detail).toContain("const result = await favorites.toggle(currentVendor.id)");
+    expect(detail).not.toContain("pathname: '/pick/confirm'");
 
     const review = mobile('app/(tabs)/search/[vendorId]/review/[reviewId].tsx');
     expect(review).not.toContain("router.push(\`/search/\${vendorId}/consult\`)");
