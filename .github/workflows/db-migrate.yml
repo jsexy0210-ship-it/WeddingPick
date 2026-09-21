@@ -6,12 +6,16 @@ name: DB Migrate
 
 on:
   workflow_dispatch:
-  # 이번 박람회 스키마는 API/관리자 배포 전에 production DB에 반드시 필요하다.
-  # 범용 migrations/** 자동 적용이 아니라 0426 한 파일에만 묶어 위험 범위를 제한한다.
+  # 운영 코드가 참조하는 최근 스키마는 API/관리자 배포 전에 production DB에 반드시 필요하다.
+  # 범용 migrations/** 전체 자동 적용 대신, 검증된 현재 migration 파일과 이 workflow 자체에만 묶는다.
+  # workflow 자체 변경도 트리거에 넣어 새 migration을 추가하는 커밋에서 한 번은 반드시 실행되게 한다.
   push:
     branches: [main]
     paths:
+      - .github/workflows/db-migrate.yml
       - packages/db/migrations/0426_expo_collection_thumbnail.sql
+      - packages/db/migrations/0427_consultation_event_idempotency.sql
+      - packages/db/migrations/0428_wedding_feed_body_image.sql
 
 permissions:
   contents: read
