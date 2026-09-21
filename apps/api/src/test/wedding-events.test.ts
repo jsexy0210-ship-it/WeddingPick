@@ -62,6 +62,44 @@ describeWithDb('일정', () => {
     expect(body.events[0]!.source).toBe('manual');
   });
 
+  it('업체 연결 일정은 최종 Pick한 업체에만 만들 수 있다', async () => {
+    const { headers, weddingId } = await mine();
+    const { rows } = await test.pool.query<{ id: string }>(
+      `INSERT INTO structured.vendors (name, category, region, source)
+       VALUES ('상담 테스트홀', 'hall', '서울', 'public_data')
+       RETURNING id`
+    );
+    const vendorId = rows[0]!.id;
+
+    const blocked = await test.app.inject({
+      method: 'POST',
+      url: `/v1/weddings/${weddingId}/events`,
+      headers,
+      payload: { title: '상담', startsAt: at(24), vendorId },
+    });
+
+    expect(blocked.statusCode).toBe(403);
+
+    await test.pool.query(
+      'INSERT INTO structured.vendor_candidates (wedding_id, vendor_id) VALUES ($1, $2)',
+      [weddingId, vendorId]
+    );
+    await test.pool.query(
+      `INSERT INTO structured.category_decisions (wedding_id, category, vendor_id)
+       VALUES ($1, 'hall', $2)`,
+      [weddingId, vendorId]
+    );
+
+    const allowed = await test.app.inject({
+      method: 'POST',
+      url: `/v1/weddings/${weddingId}/events`,
+      headers,
+      payload: { title: '상담', startsAt: at(24), vendorId },
+    });
+
+    expect(allowed.statusCode).toBe(201);
+  });
+
   it('지난 일정은 완료로, 다가올 일정은 예정으로 계산한다', async () => {
     // 저장하지 않는다 — starts_at과 지금을 비교해 매번 계산한다.
     const { headers, weddingId } = await mine();
