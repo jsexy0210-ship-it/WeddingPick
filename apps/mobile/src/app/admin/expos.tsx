@@ -15,7 +15,7 @@
  */
 import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Colors, FontSize } from '@weddingpick/ui';
 import { formatCount } from '@weddingpick/domain';
@@ -62,7 +62,29 @@ type ExpoAdmin = {
   adminReviewRequired: boolean;
   reviewReason: string[];
   sourceNote: string;
+  thumbnailUrl: string | null;
+  thumbnailCandidateUrl: string | null;
+  thumbnailSourceUrl: string | null;
+  thumbnailRights: 'ORGANIZER_PROVIDED' | 'LICENSED' | 'OFFICIAL_PUBLIC' | 'WEDDINGPICK_CREATED' | null;
   lastVerifiedAt: string;
+};
+
+type CollectionRun = {
+  status: 'running' | 'success' | 'failed' | 'skipped';
+  startedAt: string;
+  finishedAt: string | null;
+  discovered: number;
+  created: number;
+  updated: number;
+  duplicates: number;
+  reviewRequired: number;
+  errorMessage: string | null;
+};
+
+type CollectionState = {
+  enabled: boolean;
+  ready: boolean;
+  lastRun: CollectionRun | null;
 };
 
 type ExpoDue = { id: string; title: string; startsAt: string; endsAt: string; venue: string };
@@ -105,6 +127,7 @@ const LIST_COLS: Col[] = [
   { key: 'status', label: '상태', width: 90 },
   { key: 'confidence', label: '신뢰도', width: 100 },
   { key: 'source', label: '출처', width: 160 },
+  { key: 'thumbnail', label: '썸네일', width: 90 },
   { key: 'edit', label: '수정', width: 70 },
   { key: 'remove', label: '삭제', width: 70 },
 ];
@@ -139,6 +162,9 @@ type FormState = {
   benefits: string;
   description: string;
   sourceNote: string;
+  thumbnailUrl: string;
+  thumbnailSourceUrl: string;
+  thumbnailRights: '' | 'ORGANIZER_PROVIDED' | 'LICENSED' | 'OFFICIAL_PUBLIC' | 'WEDDINGPICK_CREATED';
   confidence: string;
   confidenceScore: string;
   adminReviewRequired: boolean;
@@ -159,6 +185,9 @@ const EMPTY_FORM: FormState = {
   benefits: '',
   description: '',
   sourceNote: '관리자 등록',
+  thumbnailUrl: '',
+  thumbnailSourceUrl: '',
+  thumbnailRights: '',
   confidence: '',
   confidenceScore: '',
   adminReviewRequired: false,
@@ -180,6 +209,9 @@ function toForm(e: ExpoAdmin): FormState {
     benefits: e.benefits.join(', '),
     description: e.description,
     sourceNote: e.sourceNote,
+    thumbnailUrl: e.thumbnailUrl ?? '',
+    thumbnailSourceUrl: e.thumbnailSourceUrl ?? '',
+    thumbnailRights: e.thumbnailRights ?? '',
     confidence: e.confidence ?? '',
     confidenceScore: e.confidenceScore != null ? String(e.confidenceScore) : '',
     adminReviewRequired: e.adminReviewRequired,
@@ -205,6 +237,9 @@ function toBody(f: FormState) {
       .filter(Boolean),
     description: f.description.trim(),
     sourceNote: f.sourceNote.trim() || '관리자 등록',
+    thumbnailUrl: f.thumbnailUrl.trim() || null,
+    thumbnailSourceUrl: f.thumbnailSourceUrl.trim() || null,
+    thumbnailRights: f.thumbnailRights || null,
     confidence: f.confidence || null,
     confidenceScore: f.confidenceScore.trim() ? Number(f.confidenceScore.trim()) : null,
     adminReviewRequired: f.adminReviewRequired,
@@ -214,6 +249,8 @@ function toBody(f: FormState) {
 export function ExposPanel() {
   const [expos, setExpos] = useState<ExpoAdmin[] | null>(null);
   const [preview, setPreview] = useState<ExpoDue[] | null>(null);
+  const [collection, setCollection] = useState<CollectionState | null>(null);
+  const [collecting, setCollecting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rev, setRev] = useState(0);
@@ -230,12 +267,13 @@ export function ExposPanel() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     Promise.all([
-      apiFetch('/v1/admin/expos') as Promise<{ expos: ExpoAdmin[] }>,
+      apiFetch('/v1/admin/expos') as Promise<{ expos: ExpoAdmin[]; collection: CollectionState }>,
       apiFetch('/v1/admin/expos/deletion-preview') as Promise<{ expos: ExpoDue[] }>,
     ])
       .then(([list, due]) => {
         if (cancelled) return;
         setExpos(list.expos);
+        setCollection(list.collection);
         setPreview(due.expos);
         setError(null);
         setLoading(false);
@@ -289,6 +327,19 @@ export function ExposPanel() {
     }
   }
 
+  async function collectNow() {
+    setCollecting(true);
+    setActionError(null);
+    try {
+      await apiFetch('/v1/admin/expos/collect', { method: 'POST' });
+      reload();
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : '수집 실패');
+    } finally {
+      setCollecting(false);
+    }
+  }
+
   async function approve(id: string) {
     setActionError(null);
     try {
@@ -313,6 +364,7 @@ export function ExposPanel() {
 
   const reviewList = (expos ?? []).filter((e) => e.adminReviewRequired);
   const ongoingCount = (expos ?? []).filter((e) => e.status === 'ONGOING').length;
+  const thumbnailMissingCount = (expos ?? []).filter((e) => !e.thumbnailUrl).length;
 
   const listRows: TableRow[] = (expos ?? []).map((e) => ({
     key: e.id,
@@ -326,6 +378,11 @@ export function ExposPanel() {
         ? { v: CONFIDENCE_LABEL[e.confidence] ?? e.confidence, badge: CONFIDENCE_KIND[e.confidence] ?? 'none' }
         : { v: '확인 필요', badge: 'warn' as Kind },
       { v: e.sourceNote || '—', kind: 'dim' },
+      e.thumbnailUrl
+        ? { v: '등록됨', badge: 'ok' as Kind }
+        : e.thumbnailCandidateUrl
+          ? { v: '후보', badge: 'warn' as Kind }
+          : { v: '없음', kind: 'dim' },
       { v: '수정', kind: 'brand', onPress: () => openEdit(e) },
       { v: '삭제', kind: 'bad', onPress: () => setDeleting(e) },
     ],
@@ -394,6 +451,11 @@ export function ExposPanel() {
               { label: '전체 박람회', value: `${formatCount(expos.length)}건` },
               { label: '진행 중', value: `${formatCount(ongoingCount)}건`, kind: 'ok' },
               {
+                label: '대표 이미지 없음',
+                value: `${formatCount(thumbnailMissingCount)}건`,
+                kind: thumbnailMissingCount > 0 ? 'warn' : 'ok',
+              },
+              {
                 label: '내일 종료 정리',
                 value: `${formatCount((preview ?? []).length)}건`,
                 note: '종료일 다음 날 자동 삭제',
@@ -403,6 +465,46 @@ export function ExposPanel() {
           />
 
           <CardGrid>
+            <Card
+              title="자동 수집"
+              sub={
+                collection?.enabled
+                  ? collection.ready
+                    ? '하루 1회 신규·변경 박람회를 확인해요'
+                    : 'Gemini 연결이 없어 수집이 멈춰 있어요'
+                  : '자동 수집이 꺼져 있어요'
+              }
+              full
+            >
+              <View style={styles.collectionRow}>
+                <View style={styles.collectionText}>
+                  <Text style={styles.collectionMain}>
+                    {collection?.lastRun
+                      ? `마지막 실행 ${new Date(collection.lastRun.startedAt).toLocaleString('ko-KR')}`
+                      : '아직 실행 기록이 없어요'}
+                  </Text>
+                  {collection?.lastRun ? (
+                    <Text style={styles.collectionSub}>
+                      {collection.lastRun.status === 'success'
+                        ? `발견 ${formatCount(collection.lastRun.discovered)} · 신규 ${formatCount(collection.lastRun.created)} · 업데이트 ${formatCount(collection.lastRun.updated)} · 검수 대기 ${formatCount(collection.lastRun.reviewRequired)}`
+                        : collection.lastRun.status === 'failed'
+                          ? collection.lastRun.errorMessage ?? '수집 실패'
+                          : collection.lastRun.status === 'running'
+                            ? '수집 중'
+                            : '최근 성공 실행과 가까워 건너뜀'}
+                    </Text>
+                  ) : null}
+                </View>
+                <Pressable
+                  style={[styles.collectBtn, (collecting || !collection?.ready) && styles.btnDisabled]}
+                  disabled={collecting || !collection?.ready}
+                  onPress={() => void collectNow()}
+                >
+                  <Text style={styles.collectBtnText}>{collecting ? '수집 중' : '지금 수집'}</Text>
+                </Pressable>
+              </View>
+            </Card>
+
             <Card title="검수 대기" sub="지금 확인이 필요한 박람회" full>
               <DataTable cols={QUEUE_COLS} rows={queueRows} empty="확인할 것이 없어요" />
             </Card>
@@ -483,6 +585,48 @@ export function ExposPanel() {
                 multiline
               />
               <Field label="출처" value={form?.sourceNote ?? ''} onChangeText={(v) => setForm((f) => f && { ...f, sourceNote: v })} />
+
+              <Text style={styles.fieldLabel}>대표 이미지</Text>
+              {editingId && expos?.find((e) => e.id === editingId)?.thumbnailCandidateUrl ? (
+                <View style={styles.thumbnailCandidate}>
+                  <Image
+                    source={{ uri: expos.find((e) => e.id === editingId)?.thumbnailCandidateUrl ?? '' }}
+                    style={styles.thumbnailPreview}
+                    resizeMode="cover"
+                  />
+                  <Text style={styles.thumbnailHint}>자동 수집 후보 · 권리 확인 전에는 공개되지 않아요.</Text>
+                </View>
+              ) : null}
+              {form?.thumbnailUrl ? (
+                <Image source={{ uri: form.thumbnailUrl }} style={styles.thumbnailPreview} resizeMode="cover" />
+              ) : null}
+              <Field
+                label="공개 대표 이미지 URL"
+                value={form?.thumbnailUrl ?? ''}
+                onChangeText={(v) => setForm((f) => f && { ...f, thumbnailUrl: v })}
+              />
+              <Field
+                label="이미지 출처 URL"
+                value={form?.thumbnailSourceUrl ?? ''}
+                onChangeText={(v) => setForm((f) => f && { ...f, thumbnailSourceUrl: v })}
+              />
+              <View style={styles.confidenceRow}>
+                {([
+                  ['ORGANIZER_PROVIDED', '주최사 제공'],
+                  ['LICENSED', '사용 허가'],
+                  ['OFFICIAL_PUBLIC', '공식 제공용'],
+                  ['WEDDINGPICK_CREATED', '웨딩픽 제작'],
+                ] as const).map(([key, label]) => (
+                  <Pressable
+                    key={key}
+                    style={[styles.confidenceBtn, form?.thumbnailRights === key && styles.confidenceBtnActive]}
+                    onPress={() => setForm((state) => state && { ...state, thumbnailRights: state.thumbnailRights === key ? '' : key })}
+                  >
+                    <Text style={[styles.confidenceBtnText, form?.thumbnailRights === key && styles.confidenceBtnTextActive]}>{label}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              <Text style={styles.thumbnailHint}>권리 유형을 선택하지 않으면 대표 이미지 URL이 있어도 사용자 화면에 노출되지 않아요.</Text>
 
               <Text style={styles.fieldLabel}>신뢰도</Text>
               <View style={styles.confidenceRow}>
@@ -599,5 +743,14 @@ const styles = StyleSheet.create({
   ghostBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.textStrong },
   primaryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: Colors.light.tint },
   primaryBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
+  collectionRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  collectionText: { flex: 1, gap: 4 },
+  collectionMain: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.textStrong },
+  collectionSub: { fontSize: FontSize.micro, color: Colors.light.textAssistive },
+  collectBtn: { paddingHorizontal: 16, paddingVertical: 9, borderRadius: 6, backgroundColor: Colors.light.tint },
+  collectBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
+  thumbnailCandidate: { gap: 6, marginBottom: 8 },
+  thumbnailPreview: { width: '100%', height: 180, borderRadius: 8, backgroundColor: Colors.light.backgroundSelected },
+  thumbnailHint: { fontSize: FontSize.micro, color: Colors.light.textAssistive, marginTop: 6 },
   btnDisabled: { opacity: 0.5 },
 });
