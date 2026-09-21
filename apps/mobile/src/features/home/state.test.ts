@@ -72,7 +72,6 @@ function candidates(
   return {
     groups,
     total: groups.reduce((sum, row) => sum + row.candidates.length, 0),
-    limit: 20,
     progress: { decided, total: groups.length, label: `${decided}/${groups.length} 완료` },
     nextCategory,
   } as unknown as CandidateListResponse;
