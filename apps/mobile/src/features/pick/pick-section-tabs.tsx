@@ -3,11 +3,11 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Elevation, Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 
-export type PickSection = 'pick' | 'recommendations' | 'compare';
+export type PickSection = 'pick' | 'recommendations' | 'favorites';
 const ITEMS: readonly { value: PickSection; label: string }[] = [
   { value: 'pick', label: '나의 Pick' },
   { value: 'recommendations', label: '웨딩픽 추천' },
-  { value: 'compare', label: '비교함' },
+  { value: 'favorites', label: '관심업체' },
 ];
 
 export function PickSectionTabs({ active }: { active: PickSection }) {
