@@ -49,6 +49,8 @@ export const weddingFeedInputSchema = z.object({
   body: z.string().max(WEDDING_FEED_LIMITS.body).default(''),
   imageKey: z.string().nullable().default(null),
   bodyImageKey: z.string().nullable().default(null),
+  /** 새 글 팝업에서 Gemini 초안을 사용했는지. 서버가 source/model로 바꿔 저장한다. */
+  generated: z.boolean().default(false),
   status: z.enum(WEDDING_FEED_STATUSES).default('draft'),
   sortOrder: z.number().int().default(0),
 });
