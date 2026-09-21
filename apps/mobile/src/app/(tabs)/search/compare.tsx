@@ -120,7 +120,7 @@ export default function CompareScreen() {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
-          <PickSectionTabs active="compare" />
+          <PickSectionTabs active="pick" />
           <DepthHeader title="업체 비교" />
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
             <View style={styles.hero}>
@@ -230,7 +230,7 @@ export default function CompareScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <PickSectionTabs active="compare" />
+        <PickSectionTabs active="pick" />
         <DepthHeader title={`${categoryLabel} ${vendors.length}곳 비교`} />
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
