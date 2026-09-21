@@ -157,6 +157,7 @@ describe('공개 웨딩피드', () => {
         summary: '요약',
         body: '본문',
         imageUrl: null,
+        bodyImageUrl: null,
         publishedAt: '2026-09-14T00:00:00.000Z',
       });
     });
