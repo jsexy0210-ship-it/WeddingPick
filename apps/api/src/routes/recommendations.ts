@@ -388,17 +388,11 @@ export async function categoryRecommendations(
 }
 
 /**
- * 펼쳤을 때 무엇이 보이는가. 대표 사양 §7의 「펼침 내용」 칸 그대로다.
+ * 업종별 웨딩픽 추천.
  *
- *   담아둔 곳이 있다   **그 사람이 Pick한 곳**(SHORTLISTED · COMPARING)
- *   담아둔 곳이 없다   추천 업체(NOT_STARTED)
- *
- * **자기가 담은 곳을 자기 업종에서 못 보면 안 된다.** 웨딩홀 셋을 Pick해둔 사람이 웨딩홀을
- * 펼쳤을 때 모르는 세 곳이 나오면, 그 사람은 자기 Pick이 어디로 갔는지부터 찾는다 —
- * 사양 §8의 「추천 → 보기 → Pick → 비교 → 결정」이 거기서 끊긴다.
- *
- * 담은 곳이 셋을 넘으면 최근에 담은 셋이다. 카드 줄은 셋까지고(§6), 넘치는 것은
- * 「한눈에 비교」가 여는 업종 화면이 다 보여준다.
+ * 추천 목록은 나의 Pick이나 관심업체를 대신 보여주는 자리가 아니다. 자연 추천 결과를
+ * 업종당 최대 RECOMMEND_VENDORS_PER_CATEGORY(현재 5곳)까지 내려준다. 하트는 별도
+ * favorite_vendors에 저장되고, 최종 Pick은 업체 상세에서 vendor_candidates에 저장된다.
  */
 async function vendorsFor(
   context: AppContext,
