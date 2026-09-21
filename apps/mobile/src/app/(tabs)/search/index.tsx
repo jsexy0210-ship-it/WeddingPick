@@ -882,9 +882,9 @@ export default function SearchScreen() {
 
         {/* 결과 목록 */}
         {vendors === null ? (
-          /* 목록에는 스피너를 쓰지 않는다 — 뼈대 3줄(WP-ST-007). 카드 이미지 자리(168)부터. */
+          /* 목록에는 스피너를 쓰지 않는다. 실제 104×116 가로 카드 구조를 그대로 비운다. */
           <View style={styles.resultList}>
-            <ListSkeleton hero rows={3} />
+            <ListSkeleton variant="search" rows={3} />
           </View>
         ) : (
           <FlatList
