@@ -177,6 +177,44 @@ describe('웨딩피드 관리자 라우트', () => {
     expect(pool.query.mock.calls[0]?.[0]).toContain('UPDATE structured.wedding_feed_posts');
   });
 
+  it('구버전 PUT이 bodyImageKey를 생략하면 기존 본문 이미지를 보존한다', async () => {
+    pool.query.mockResolvedValueOnce({ rowCount: 1 });
+
+    const response = await app().inject({
+      method: 'PUT',
+      url: '/v1/admin/wedding-feed/00000000-0000-4000-8000-0000000000aa',
+      payload: { categoryLabel: '예산', title: '제목', summary: '', body: '', status: 'draft', sortOrder: 1 },
+    });
+
+    expect(response.statusCode).toBe(204);
+    expect(String(pool.query.mock.calls[0]?.[0])).toContain(
+      'body_image_key = CASE WHEN $10 THEN $7 ELSE body_image_key END'
+    );
+    expect(pool.query.mock.calls[0]?.[1]?.[9]).toBe(false);
+  });
+
+  it('PUT이 bodyImageKey null을 명시하면 본문 이미지를 지울 수 있다', async () => {
+    pool.query.mockResolvedValueOnce({ rowCount: 1 });
+
+    const response = await app().inject({
+      method: 'PUT',
+      url: '/v1/admin/wedding-feed/00000000-0000-4000-8000-0000000000aa',
+      payload: {
+        categoryLabel: '예산',
+        title: '제목',
+        summary: '',
+        body: '',
+        bodyImageKey: null,
+        status: 'draft',
+        sortOrder: 1,
+      },
+    });
+
+    expect(response.statusCode).toBe(204);
+    expect(pool.query.mock.calls[0]?.[1]?.[6]).toBeNull();
+    expect(pool.query.mock.calls[0]?.[1]?.[9]).toBe(true);
+  });
+
   it('삭제는 표에서 지운다', async () => {
     pool.query.mockResolvedValueOnce({ rowCount: 1 });
 

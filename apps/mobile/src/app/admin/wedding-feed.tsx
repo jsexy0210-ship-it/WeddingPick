@@ -20,7 +20,7 @@
  * 사용자 홈에 바로 나가는 콘텐츠라 관리자 사이드바의 독립 메뉴에서 연다.
  */
 import * as ImagePicker from 'expo-image-picker';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import {
@@ -250,6 +250,8 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
   const [draftError, setDraftError] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState<'thumbnail' | 'body' | null>(null);
   const [previewing, setPreviewing] = useState(false);
+  /** 늦게 끝난 Gemini/업로드가 새로 연 다른 폼을 덮지 못하게 편집 세션을 구분한다. */
+  const formRevision = useRef(0);
 
   // ── 탭과 카테고리 ──
   const [editingGroup, setEditingGroup] = useState<Group | 'new' | null>(null);
@@ -279,6 +281,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
     id === null ? '없음' : (groups.find((g) => g.id === id)?.name ?? '없음');
 
   function openNew() {
+    formRevision.current += 1;
     setForm({ ...BLANK_FORM, sortOrder: String(data?.nextSortOrder ?? 1) });
     setEditing('new');
     setPreviewing(false);
@@ -287,11 +290,18 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
   }
 
   function openEdit(post: Post) {
+    formRevision.current += 1;
     setForm(toForm(post));
     setEditing(post);
     setPreviewing(false);
     setSaveError(null);
     setDraftError(null);
+  }
+
+  function closePostEditor() {
+    formRevision.current += 1;
+    setEditing(null);
+    setPreviewing(false);
   }
 
   async function save() {
@@ -319,7 +329,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
           body: JSON.stringify(payload),
         });
       }
-      setEditing(null);
+      closePostEditor();
       reload();
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : '저장 실패');
@@ -355,22 +365,31 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
       return;
     }
 
+    const revision = formRevision.current;
+    const requestedCategory = form.categoryLabel;
     setDraftGenerating(true);
     try {
       const draft = (await apiFetch('/v1/admin/wedding-feed/draft', {
         method: 'POST',
-        body: JSON.stringify({ categoryLabel: form.categoryLabel }),
+        body: JSON.stringify({ categoryLabel: requestedCategory }),
       })) as { title: string; summary: string; body: string };
 
-      setForm((current) => ({
-        ...current,
-        title: draft.title,
-        summary: draft.summary,
-        body: draft.body,
-        generated: true,
-      }));
+      if (formRevision.current !== revision) return;
+      setForm((current) =>
+        current.categoryLabel === requestedCategory
+          ? {
+              ...current,
+              title: draft.title,
+              summary: draft.summary,
+              body: draft.body,
+              generated: true,
+            }
+          : current
+      );
     } catch (e) {
-      setDraftError(e instanceof Error ? e.message : '자동 작성에 실패했어요.');
+      if (formRevision.current === revision) {
+        setDraftError(e instanceof Error ? e.message : '자동 작성에 실패했어요.');
+      }
     } finally {
       setDraftGenerating(false);
     }
@@ -378,6 +397,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
 
   async function uploadFeedImage(kind: 'thumbnail' | 'body') {
     setDraftError(null);
+    const revision = formRevision.current;
 
     const picked = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
@@ -403,6 +423,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
         body: blob,
       });
       if (!put.ok) throw new Error(`이미지를 올리지 못했어요 (${put.status})`);
+      if (formRevision.current !== revision) return;
 
       setForm((current) =>
         kind === 'thumbnail'
@@ -410,7 +431,9 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
           : { ...current, bodyImageKey: target.storageKey, bodyImageUrl: asset.uri }
       );
     } catch (e) {
-      setDraftError(e instanceof Error ? e.message : '이미지를 올리지 못했어요.');
+      if (formRevision.current === revision) {
+        setDraftError(e instanceof Error ? e.message : '이미지를 올리지 못했어요.');
+      }
     } finally {
       setUploadingImage(null);
     }
@@ -928,10 +951,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
           <AdminFormModal
             visible={editing !== null && !previewing}
             title={editing === 'new' ? '새 글 작성' : '글 수정'}
-            onClose={() => {
-              setEditing(null);
-              setPreviewing(false);
-            }}
+            onClose={closePostEditor}
           >
             {editing ? (
               <View style={styles.form}>
@@ -951,6 +971,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                     {activeCategories.map((category) => (
                       <Pressable
                         key={category.id}
+                        disabled={draftGenerating}
                         onPress={() => {
                           setForm((f) => ({ ...f, categoryLabel: category.name }));
                           setDraftError(null);
@@ -1125,7 +1146,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                   >
                     <Text style={styles.btnGhostLabel}>미리보기</Text>
                   </Pressable>
-                  <Pressable style={styles.btnGhost} onPress={() => setEditing(null)} disabled={saving}>
+                  <Pressable style={styles.btnGhost} onPress={closePostEditor} disabled={saving}>
                     <Text style={styles.btnGhostLabel}>취소</Text>
                   </Pressable>
                   <Pressable

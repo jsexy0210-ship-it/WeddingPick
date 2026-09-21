@@ -1169,10 +1169,17 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
     '/v1/admin/wedding-feed/:id',
     auth,
     async (request, reply) => {
+      const raw = request.body;
+      const bodyImageKeyProvided =
+        typeof raw === 'object' &&
+        raw !== null &&
+        Object.prototype.hasOwnProperty.call(raw, 'bodyImageKey');
+
       await weddingFeed.update(
         context.pool,
         request.params.id,
-        weddingFeed.parseFeedInput(request.body)
+        weddingFeed.parseFeedInput(raw),
+        { bodyImageKeyProvided }
       );
 
       return reply.status(204).send();

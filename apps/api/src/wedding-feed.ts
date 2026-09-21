@@ -266,12 +266,18 @@ export async function create(
  * 고칠 때는 그대로 둔다 — 글자를 하나 고쳤다고 「방금 올라온 글」이 되면 홈의 순서가
  * 흔들린다. 공개 → 초안·내림이면 지운다(표의 CHECK가 그것을 요구한다).
  */
-export async function update(pool: Pool, id: string, input: FeedInput): Promise<void> {
+export async function update(
+  pool: Pool,
+  id: string,
+  input: FeedInput,
+  options: { bodyImageKeyProvided?: boolean } = {}
+): Promise<void> {
   const { rowCount } = await pool.query(
     `UPDATE structured.wedding_feed_posts
      SET category_label = $2,
          category_id = (SELECT id FROM structured.wedding_feed_categories WHERE name = $2),
-         title = $3, summary = $4, body = $5, image_key = $6, body_image_key = $7,
+         title = $3, summary = $4, body = $5, image_key = $6,
+         body_image_key = CASE WHEN $10 THEN $7 ELSE body_image_key END,
          status = $8, sort_order = $9,
          published_at = CASE
            WHEN $8 <> 'published' THEN NULL
@@ -290,6 +296,7 @@ export async function update(pool: Pool, id: string, input: FeedInput): Promise<
       input.bodyImageKey,
       input.status,
       input.sortOrder,
+      options.bodyImageKeyProvided ?? true,
     ]
   );
 
