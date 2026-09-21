@@ -141,7 +141,7 @@ export function RecommendationsContent({
           recommendationsAreComplete(state) ? (
             <RecommendationsDone onOpenNote={() => router.push('/wedding')} />
           ) : (
-            <EmptyView
+            <EmptyView scope="section"
               title={S['recommend.empty']}
               actionLabel={S['recommend.more']}
               onAction={() => router.push('/search')}
