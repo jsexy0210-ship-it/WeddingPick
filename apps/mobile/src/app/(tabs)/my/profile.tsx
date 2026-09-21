@@ -75,6 +75,7 @@ export default function ProfileScreen() {
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [nameOpen, setNameOpen] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
@@ -82,15 +83,23 @@ export default function ProfileScreen() {
   const savingSettings = useRef(false);
   const [settingsSaving, setSettingsSaving] = useState(false);
 
-  const load = useCallback(() => {
-    void Promise.all([getCurrentUser(), getSettings()])
-      .then(([response, nextSettings]) => {
-        setLoadError(null);
-        setMe(response);
-        setSettings(nextSettings);
-      })
-      .catch((caught: Error) => setLoadError(caught.message ?? '프로필을 불러오지 못했어요'));
+  const loadSettings = useCallback(() => {
+    setSettingsError(null);
+    void getSettings()
+      .then(setSettings)
+      .catch((caught: Error) => {
+        setSettings(null);
+        setSettingsError(caught.message ?? '알림 설정을 불러오지 못했어요');
+      });
   }, []);
+
+  const load = useCallback(() => {
+    setLoadError(null);
+    void getCurrentUser()
+      .then(setMe)
+      .catch((caught: Error) => setLoadError(caught.message ?? '프로필을 불러오지 못했어요'));
+    loadSettings();
+  }, [loadSettings]);
 
   useEffect(load, [load]);
 
@@ -152,8 +161,8 @@ export default function ProfileScreen() {
       });
   }
 
-  if (loadError) return <ErrorView message={loadError} onRetry={load} />;
-  if (!me || !settings) return <DelayedLoadingView />;
+  if (loadError && !me) return <ErrorView message={loadError} onRetry={load} />;
+  if (!me) return <DelayedLoadingView />;
 
   const switchProps = {
     trackColor: { true: theme.tint, false: theme.track },
@@ -196,52 +205,63 @@ export default function ProfileScreen() {
       </Section>
 
       <Section title={S.notifications}>
-        <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.track }]}>
-          <Rows>
-            <Row
-              name={S.service}
-              meta={S.serviceMeta}
-              right={
-                <Switch
-                  disabled={settingsSaving}
-                  value={settings.pushEnabled || settings.priceChangeEnabled}
-                  onValueChange={(next) => void toggleSetting('service', next)}
-                  accessibilityLabel={S.service}
-                  {...switchProps}
-                />
-              }
-              inset
-            />
-            <Row
-              name={S.marketing}
-              meta={S.marketingMeta}
-              right={
-                <Switch
-                  disabled={settingsSaving}
-                  value={settings.marketingEnabled}
-                  onValueChange={(next) => void toggleSetting('marketingEnabled', next)}
-                  accessibilityLabel={S.marketing}
-                  {...switchProps}
-                />
-              }
-              inset
-            />
-            <Row
-              name={S.night}
-              meta={S.nightMeta}
-              right={
-                <Switch
-                  disabled={settingsSaving}
-                  value={settings.nightPushEnabled}
-                  onValueChange={(next) => void toggleSetting('nightPushEnabled', next)}
-                  accessibilityLabel={S.night}
-                  {...switchProps}
-                />
-              }
-              inset
-            />
-          </Rows>
-        </View>
+        {settings ? (
+          <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.track }]}>
+            <Rows>
+              <Row
+                name={S.service}
+                meta={S.serviceMeta}
+                right={
+                  <Switch
+                    disabled={settingsSaving}
+                    value={settings.pushEnabled}
+                    onValueChange={(next) => void toggleSetting('service', next)}
+                    accessibilityLabel={S.service}
+                    {...switchProps}
+                  />
+                }
+                inset
+              />
+              <Row
+                name={S.marketing}
+                meta={S.marketingMeta}
+                right={
+                  <Switch
+                    disabled={settingsSaving}
+                    value={settings.marketingEnabled}
+                    onValueChange={(next) => void toggleSetting('marketingEnabled', next)}
+                    accessibilityLabel={S.marketing}
+                    {...switchProps}
+                  />
+                }
+                inset
+              />
+              <Row
+                name={S.night}
+                meta={S.nightMeta}
+                right={
+                  <Switch
+                    disabled={settingsSaving}
+                    value={settings.nightPushEnabled}
+                    onValueChange={(next) => void toggleSetting('nightPushEnabled', next)}
+                    accessibilityLabel={S.night}
+                    {...switchProps}
+                  />
+                }
+                inset
+              />
+            </Rows>
+          </View>
+        ) : (
+          <View style={[styles.settingsFallback, { backgroundColor: theme.backgroundElement }]}>
+            <ThemedText type="t7" themeColor="textAssistive">
+              {settingsError ?? '알림 설정을 불러오는 중이에요'}
+            </ThemedText>
+            {settingsError ? (
+              <ActionButton label="다시 불러오기" onPress={loadSettings} />
+            ) : null}
+          </View>
+        )}
       </Section>
 
       {/* 시안 「계정」 — 로그인 연결 · 로그아웃 · 회원 탈퇴만 둔다. Pick 인증은 MY 별도 메뉴다. */}
@@ -303,6 +323,11 @@ const styles = StyleSheet.create({
     borderWidth: Border.hairline,
     borderRadius: Radius.medium,
     overflow: 'hidden',
+  },
+  settingsFallback: {
+    borderRadius: Radius.medium,
+    padding: Layout.cardPadding,
+    gap: Spacing.two,
   },
   nameNote: { marginTop: Spacing.two },
   sheet: { padding: Layout.gutter, paddingBottom: Layout.sectionGap, gap: Spacing.three },
