@@ -23,6 +23,14 @@ describe('관리자 메뉴 노출 정책', () => {
     expect(hiddenKeys()).toEqual(['email-matching', 'marketing', 'revenue']);
   });
 
+  it('상위 메뉴 이름도 실제 노출 기능과 맞춘다', () => {
+    const layout = readAdmin('_layout.tsx');
+    expect(layout).toContain("label: '광고·보상'");
+    expect(layout).toContain("label: '통계·분석'");
+    expect(layout).not.toContain("label: '광고·마케팅'");
+    expect(layout).not.toContain("label: '통계·수익'");
+  });
+
   it('숨겨도 기존 화면과 직접 접근 경로는 유지한다', () => {
     const legacyRoutes = [
       ['email-matching.tsx', '/admin/vendors?tab=email-matching'],
