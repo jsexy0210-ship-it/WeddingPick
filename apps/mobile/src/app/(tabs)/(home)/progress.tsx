@@ -14,7 +14,7 @@ import {
   MaxContentWidth,
   ProductSymbol,
   Radius,
-  SkeletonView,
+  Skeleton,
   Spacing,
   ThemedText,
   ThemedView,
@@ -111,7 +111,35 @@ export default function ProgressScreen() {
   }, [load]);
 
   if (error !== null) return <ErrorView message={error} onRetry={retry} />;
-  if (data === null) return <SkeletonView />;
+  if (data === null) {
+    return (
+      <ThemedView style={styles.container}>
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
+          <NavBar title="준비 현황" onBack={depthBack} />
+          <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+            <ThemedView style={styles.hero}>
+              <Skeleton width="62%" height={64} />
+              <Skeleton width="44%" height={18} />
+            </ThemedView>
+            {Array.from({ length: 3 }, (_, groupIndex) => (
+              <ThemedView key={groupIndex} style={styles.loadingGroup}>
+                <Skeleton width="26%" height={14} />
+                {Array.from({ length: groupIndex === 0 ? 2 : 3 }, (_, rowIndex) => (
+                  <View key={rowIndex} style={styles.loadingRow}>
+                    <View style={styles.loadingCopy}>
+                      <Skeleton width="42%" height={18} />
+                      <Skeleton width="58%" height={13} />
+                    </View>
+                    <Skeleton width={54} height={24} radius={Radius.small} />
+                  </View>
+                ))}
+              </ThemedView>
+            ))}
+          </ScrollView>
+        </SafeAreaView>
+      </ThemedView>
+    );
+  }
 
   const done = data.statuses.filter((row) => row.state === 'decided');
   const going = data.statuses.filter((row) => row.state !== 'decided' && row.pickCount > 0);
