@@ -139,7 +139,7 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
   it('최종 Pick 저장 뒤에만 상담 예약을 열고 직접 URL에서도 다시 검증한다', () => {
     const detail = mobile('app/(tabs)/search/[vendorId]/index.tsx');
     expect(detail).toContain("decided ? '상담 예약하기' : picked ? '최종 Pick하기'");
-    expect(detail).toContain("group.decidedVendorId === vendor.id");
+    expect(detail).toContain("group.decidedVendorId === currentVendor.id");
     expect(detail).toContain("pathname: '/pick/confirm'");
 
     const review = mobile('app/(tabs)/search/[vendorId]/review/[reviewId].tsx');
