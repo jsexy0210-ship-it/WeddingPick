@@ -14,13 +14,28 @@ jobs:
   cancel:
     runs-on: ubuntu-latest
     steps:
-      - name: Force-cancel stale bridge run
+      - name: Clear stale LifeLeft and workflow-only CI runs
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh api --method POST \
-            repos/${GITHUB_REPOSITORY}/actions/runs/35589954030/force-cancel \
-            || gh api --method POST \
-              repos/${GITHUB_REPOSITORY}/actions/runs/35589954030/cancel \
-            || true
+
+          force_cancel() {
+            local id="$1"
+            gh api --method POST               "repos/${GITHUB_REPOSITORY}/actions/runs/$id/force-cancel"               >/dev/null 2>&1 || true
+          }
+
+          force_cancel 35589954030
+
+          gh api             "repos/${GITHUB_REPOSITORY}/actions/runs?per_page=30"             --jq '.workflow_runs[]
+              | select(.name == "CI / Deploy")
+              | select(.status == "queued" or .status == "in_progress" or .status == "pending" or .status == "waiting")
+              | [.id, .head_sha, .display_title] | @tsv' |
+          while IFS=$'\t' read -r id sha title; do
+            case "$title" in
+              "chore: build LifeLeft off the production VM"|"ops: cancel stale LifeLeft bridge run"|"ops: force-cancel stale LifeLeft bridge"|"ops: clear LifeLeft deployment runner queue")
+                echo "Cancelling workflow-only CI / Deploy run $id ($title)"
+                force_cancel "$id"
+                ;;
+            esac
+          done
