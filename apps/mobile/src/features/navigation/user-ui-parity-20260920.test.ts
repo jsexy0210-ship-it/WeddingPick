@@ -125,6 +125,17 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(detail).not.toContain('<SkeletonView hero />');
   });
 
+  it('추천 재조회는 기존 내용을 유지하되 최신 상태 전까지 변경 행동을 잠근다', () => {
+    const recommendations = mobile('app/(tabs)/(home)/recommendations.tsx');
+    expect(recommendations).toContain('const [refreshing, setRefreshing] = useState(false)');
+    expect(recommendations).toContain('Promise.allSettled([load(), reloadCandidates()])');
+    expect(recommendations).toContain('interactionDisabled={refreshing}');
+    expect(recommendations).toContain('<DelayedLoader active={refreshing} size={20} />');
+
+    const recommendUi = mobile('features/home/pick-recommend.tsx');
+    expect(recommendUi).toContain("pointerEvents={interactionDisabled ? 'none' : 'auto'}");
+  });
+
   it('최종 Pick 저장 뒤에만 상담 예약을 열고 직접 URL에서도 다시 검증한다', () => {
     const detail = mobile('app/(tabs)/search/[vendorId]/index.tsx');
     expect(detail).toContain("decided ? '상담 예약하기' : picked ? '최종 Pick하기'");
@@ -140,7 +151,8 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(done).toContain('vendorId: string');
 
     const consult = mobile('app/(tabs)/search/[vendorId]/consult.tsx');
-    expect(consult).toContain('listCandidates(me.weddingId)');
+    expect(consult).toContain("listCandidates(me.weddingId, { force: true })");
+    expect(consult).toContain('submitLock.current = true');
     expect(consult).toContain('group.decidedVendorId === vendorId');
     expect(consult).toContain('최종 Pick 확인이 필요해요');
     expect(consult).toContain('일정 등록하기');
