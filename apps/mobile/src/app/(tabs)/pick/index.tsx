@@ -19,7 +19,7 @@
  *   «상담취소» 자리는 «결정 취소»이고 한 번 더 묻는다(위험한 조작).
  * - 검색 Root 제목은 2026-09-20 전달 정본의 «업체 탐색»을 쓴다.
  */
-import type { CandidateListResponse, CurrentUser, VendorCandidate } from '@weddingpick/api-contract';
+import type { CandidateListResponse, CurrentUser, FavoriteVendor, VendorCandidate } from '@weddingpick/api-contract';
 import {
   TERMS,
   VENDOR_CATEGORIES,
