@@ -1,8 +1,14 @@
+import { randomUUID } from 'node:crypto';
+
 import { isFeature } from '../ai-cost-admin';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
-import type { MarketingChannel, MarketingFormat } from '@weddingpick/api-contract';
+import {
+  weddingFeedDraftRequestSchema,
+  type MarketingChannel,
+  type MarketingFormat,
+} from '@weddingpick/api-contract';
 import { disclosureStage, type DisclosureStage, VENDOR_CATEGORIES } from '@weddingpick/domain';
 import * as marketingContent from '../marketing/content';
 import * as marketingStore from '../marketing/store';
@@ -148,6 +154,13 @@ function mapCopyrightBasis(
 
 /** 경로 파라미터가 uuid인지. 아니면 질의가 22P02로 터져 500이 된다. */
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** 웨딩피드 썸네일·본문 이미지에 허용하는 형식. 저장소 키는 서버가 직접 만든다. */
+const WEDDING_FEED_IMAGE_TYPES: Record<string, string> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/webp': 'webp',
+};
 
 export function registerAdminRoutes(app: FastifyInstance, context: AppContext): void {
   const auth = { preHandler: requireOperatorUser(context) };
@@ -1081,6 +1094,69 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
       weddingFeed.parseFeedInput(request.body),
       currentUserId(request)
     )
+  );
+
+  /*
+   * 새 글 작성 팝업용 자동 초안.
+   *
+   * 기존 /generate는 «주제를 골라 DB에 초안을 쌓는» 운영 작업이다. 이 라우트는
+   * 관리자가 고른 카테고리 한 편을 Gemini가 써서 화면에만 돌려준다. 저장은 하지 않는다.
+   */
+  app.post<{ Body: unknown }>('/v1/admin/wedding-feed/draft', auth, async (request) => {
+    const { categoryLabel } = weddingFeedDraftRequestSchema.parse(request.body);
+    const activeCategory = await context.pool.query(
+      `SELECT 1
+         FROM structured.wedding_feed_categories
+        WHERE name = $1 AND active = true
+        LIMIT 1`,
+      [categoryLabel]
+    );
+
+    if (activeCategory.rowCount === 0) {
+      throw new ApiError('invalid_request', '사용 중인 카테고리를 먼저 선택해주세요.');
+    }
+
+    const model = context.config.geminiModel;
+    const apiKey = process.env.GEMINI_API_KEY ?? '';
+
+    if (!apiKey) {
+      throw new ApiError(
+        'internal',
+        '자동 작성 서버 설정이 필요합니다. 운영 환경의 Gemini 연결을 확인해주세요.'
+      );
+    }
+
+    const { draft } = await createGeminiFeedWriter({ apiKey, model }).write({
+      key: `admin-${categoryLabel}`,
+      categoryLabel,
+      brief: `${categoryLabel} 카테고리에서 결혼 준비자가 바로 확인하면 좋은 실용적인 내용`,
+    });
+
+    return draft;
+  });
+
+  /** 썸네일과 본문 이미지를 저장소에 직접 올릴 서명 URL을 만든다. */
+  app.post<{ Body: { mimeType?: string; kind?: string } }>(
+    '/v1/admin/wedding-feed/image/upload-target',
+    auth,
+    async (request) => {
+      const mimeType = request.body?.mimeType ?? '';
+      const kind = request.body?.kind;
+      const extension = WEDDING_FEED_IMAGE_TYPES[mimeType];
+
+      if (!extension) {
+        throw new ApiError('invalid_request', 'PNG · JPG · WebP 이미지만 올릴 수 있어요.');
+      }
+      if (kind !== 'thumbnail' && kind !== 'body') {
+        throw new ApiError('invalid_request', '이미지 종류를 확인해주세요.');
+      }
+
+      return context.storage.createUploadTarget({
+        storageKey: `wedding-feed/${kind}/${randomUUID()}.${extension}`,
+        mimeType,
+        expiresInSeconds: 600,
+      });
+    }
   );
 
   app.put<{ Params: { id: string }; Body: unknown }>(
