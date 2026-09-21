@@ -64,6 +64,10 @@ const ALLOWED = new Map<string, string>([
     '그림 올릴 자리를 스토리지(`context.storage`)에 만든다. DB를 보지 않는 것이 맞다.',
   ],
   [
+    'POST /v1/admin/wedding-feed/image/upload-target',
+    '웨딩피드 썸네일·본문 이미지의 서명 업로드 자리를 스토리지(`context.storage`)에 만든다. 글과 이미지 키는 뒤의 저장 요청에서 DB에 기록하므로 여기서는 DB를 보지 않는 것이 맞다.',
+  ],
+  [
     'POST /v1/admin/data/price-stats/:vendorId/recalc',
     '**껍데기가 아니라 실패를 돌려준다**(2026-09-16). 재 보니 다시 계산할 것 자체가 없었다 — 바로 위 `GET`이 읽을 때마다 새로 구하고, `stats.price_stats`는 표만 있고 쓰는 코드가 없다. DB를 안 보는 것이 맞다.',
   ],
