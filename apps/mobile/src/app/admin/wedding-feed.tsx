@@ -666,7 +666,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
 
             <Card
               title="자동 작성 기록"
-              sub={`${data.automation.manualReady ? '지금 작성 가능' : '서버 설정 필요'} · ${
+              sub={`${data.automation.manualReady ? '새 글 자동 작성 가능' : '서버 설정 필요'} · ${
                 data.automation.scheduledEnabled ? '예약 작성 켜짐' : '예약 작성 꺼짐'
               } · 남은 주제 ${data.remainingTopics}개`}
               full
