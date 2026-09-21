@@ -1,6 +1,7 @@
 import type { CategoryRecommendation, VendorSummary } from '@weddingpick/api-contract';
 import {
   NOT_ENOUGH_DATA,
+  RECOMMEND_VENDORS_PER_CATEGORY,
   VENDOR_CATEGORY_LABEL,
   formatCount,
   nextStepsCountLine,
@@ -8,7 +9,6 @@ import {
   priceLine,
   type VendorCategory,
 } from '@weddingpick/domain';
-import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import {
@@ -31,9 +31,9 @@ const S = strings.home;
 
 type SharedRecommendationProps = {
   groups: readonly CategoryRecommendation[];
-  isPicked: (vendorId: string) => boolean;
+  isFavorite: (vendorId: string) => boolean;
   onPressVendor: (vendorId: string) => void;
-  onPressPick: (vendor: VendorSummary) => void;
+  onPressFavorite: (vendor: VendorSummary) => void;
   onPressCompare: (category: VendorCategory) => void;
   onPressMore: () => void;
 };
@@ -48,9 +48,9 @@ type HomeRecommendationProps = Omit<SharedRecommendationProps, 'onPressCompare'>
  */
 export function HomeRecommendations({
   groups,
-  isPicked,
+  isFavorite,
   onPressVendor,
-  onPressPick,
+  onPressFavorite,
   onPressCompare,
   onPressMore,
 }: HomeRecommendationProps) {
@@ -99,9 +99,9 @@ export function HomeRecommendations({
                 <VendorCard
                   key={vendor.id}
                   vendor={vendor}
-                  picked={isPicked(vendor.id)}
+                  favorited={isFavorite(vendor.id)}
                   onPress={() => onPressVendor(vendor.id)}
-                  onPressPick={() => onPressPick(vendor)}
+                  onPressFavorite={() => onPressFavorite(vendor)}
                   showTags={false}
                 />
               ))}
@@ -145,8 +145,9 @@ export function PickRecommend({
   onToggle,
   remaining,
   remainingCategories,
-  isPicked,
-  onPressPick,
+  isFavorite,
+  onPressVendor,
+  onPressFavorite,
   onPressCompare,
   onPressSearchMore,
   onPressMore,
@@ -216,8 +217,9 @@ function CategoryRow({
   group,
   expanded,
   onToggle,
-  isPicked,
-  onPressPick,
+  isFavorite,
+  onPressVendor,
+  onPressFavorite,
   onPressCompare,
   onPressSearchMore,
   interactionDisabled,
@@ -225,24 +227,14 @@ function CategoryRow({
   group: CategoryRecommendation;
   expanded: boolean;
   onToggle: () => void;
-  isPicked: (vendorId: string) => boolean;
-  onPressPick: (vendor: VendorSummary) => void;
+  isFavorite: (vendorId: string) => boolean;
+  onPressVendor: (vendorId: string) => void;
+  onPressFavorite: (vendor: VendorSummary) => void;
   onPressCompare: () => void;
   onPressSearchMore?: () => void;
   interactionDisabled: boolean;
 }) {
   const theme = useTheme();
-  const [reasonVendorId, setReasonVendorId] = useState<string | null>(null);
-
-  const handleToggle = () => {
-    setReasonVendorId(null);
-    onToggle();
-  };
-
-  const reasonIndex = reasonVendorId === null
-    ? -1
-    : group.vendors.findIndex((vendor) => vendor.id === reasonVendorId);
-  const reasonVendor = expanded && reasonIndex >= 0 ? group.vendors[reasonIndex]! : null;
   const scarce = group.vendors.length > 0
     && group.vendors.every((vendor) => vendor.comparableQuoteCount < 3);
 
@@ -252,7 +244,7 @@ function CategoryRow({
         accessibilityRole="button"
         accessibilityState={{ expanded }}
         accessibilityLabel={`${group.categoryLabel} ${expanded ? '접기' : '펼치기'}`}
-        onPress={handleToggle}
+        onPress={onToggle}
         style={({ pressed }) => [styles.rowHead, styles.gutter, pressed && styles.pressed]}>
         <ThemedText type="f18" style={styles.bold}>{group.categoryLabel}</ThemedText>
         <View style={styles.foldMeta}>
@@ -269,15 +261,7 @@ function CategoryRow({
         <View
           pointerEvents={interactionDisabled ? 'none' : 'auto'}
           style={[styles.expanded, interactionDisabled ? styles.interactionDisabled : null]}>
-          {reasonVendor !== null ? (
-            <RecommendationReasonCard
-              vendor={reasonVendor}
-              rank={reasonIndex + 1}
-              picked={isPicked(reasonVendor.id)}
-              onPressCompare={onPressCompare}
-              onPressPick={() => onPressPick(reasonVendor)}
-            />
-          ) : group.vendors.length === 0 ? (
+          {group.vendors.length === 0 ? (
             <View style={styles.gutter}>
               <ThemedView type="backgroundElement" style={[styles.empty, { borderColor: theme.border }]}>
                 <ThemedText type="f13" themeColor="textAssistive">{NOT_ENOUGH_DATA}</ThemedText>
@@ -289,29 +273,29 @@ function CategoryRow({
               showsHorizontalScrollIndicator={false}
               style={styles.scroll}
               contentContainerStyle={styles.cards}>
-              {group.vendors.slice(0, 3).map((vendor) => (
+              {group.vendors.slice(0, RECOMMEND_VENDORS_PER_CATEGORY).map((vendor) => (
                 <VendorCard
                   key={vendor.id}
                   vendor={vendor}
-                  picked={isPicked(vendor.id)}
-                  accessibilityLabel={`${vendor.name} 추천 이유 보기`}
+                  favorited={isFavorite(vendor.id)}
+                  accessibilityLabel={`${vendor.name} 상세`}
                   showReason={false}
                   variant="recommendations"
-                  onPress={() => setReasonVendorId(vendor.id)}
-                  onPressPick={() => onPressPick(vendor)}
+                  onPress={() => onPressVendor(vendor.id)}
+                  onPressFavorite={() => onPressFavorite(vendor)}
                 />
               ))}
               <View style={styles.tail} />
             </ScrollView>
           )}
 
-          {reasonVendor === null && scarce ? (
+          {scarce ? (
             <ThemedText type="f12" themeColor="textAssistive" style={styles.scarceNote}>
               제보가 3건 넘으면 금액대를 보여드려요
             </ThemedText>
           ) : null}
 
-          {reasonVendor === null && onPressSearchMore ? (
+          {onPressSearchMore ? (
             <View style={[styles.actions, styles.gutter]}>
               <Pressable
                 accessibilityRole="button"
@@ -328,103 +312,6 @@ function CategoryRow({
           ) : null}
         </View>
       )}
-    </View>
-  );
-}
-
-function RecommendationReasonCard({
-  vendor,
-  rank,
-  picked,
-  onPressCompare,
-  onPressPick,
-}: {
-  vendor: VendorSummary;
-  rank: number;
-  picked: boolean;
-  onPressCompare: () => void;
-  onPressPick: () => void;
-}) {
-  const theme = useTheme();
-  const price = priceLine(vendor.paidPrice, null);
-
-  return (
-    <View style={[
-      styles.reasonCard,
-      { backgroundColor: theme.background, borderColor: theme.tint },
-    ]}>
-      <View style={styles.reasonImage}>
-        <CategoryImage uri={vendor.imageUrl} label={vendor.name} category={vendor.category} />
-        <View style={[styles.reasonRank, { backgroundColor: theme.tint }]}>
-          <ThemedText type="f12" themeColor="onTint" style={styles.bold}>추천 {rank}위</ThemedText>
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={picked ? `${vendor.name} Pick 해제` : `${vendor.name} Pick`}
-          accessibilityState={{ selected: picked }}
-          onPress={onPressPick}
-          style={({ pressed }) => [
-            styles.reasonHeart,
-            { backgroundColor: theme.tint },
-            pressed && styles.pressed,
-          ]}>
-          <SeedIcon name={picked ? 'heartFill' : 'heartRegular'} size={Layout.iconRow} color={theme.onTint} />
-        </Pressable>
-      </View>
-
-      <View style={styles.reasonBody}>
-        <ThemedText type="f10" themeColor="textAssistive">
-          {VENDOR_CATEGORY_LABEL[vendor.category]}
-        </ThemedText>
-        <ThemedText type="f20" style={styles.bold} numberOfLines={1}>{vendor.name}</ThemedText>
-        <View style={styles.reasonPlace}>
-          <SeedIcon name="locationRegular" size={Layout.iconMicro} color={theme.textAssistive} />
-          <ThemedText type="f12" themeColor="textAssistive" numberOfLines={1}>{vendor.region}</ThemedText>
-        </View>
-
-        <View style={styles.reasonPriceRow}>
-          <ThemedText type="f20" numeric style={styles.bold}>{price.text}</ThemedText>
-          <ThemedText type="f12" numeric themeColor="textAssistive">
-            실 제보 {formatCount(vendor.comparableQuoteCount)}건
-          </ThemedText>
-        </View>
-
-        <View style={styles.reasonList}>
-          {vendor.reasons?.map((reason) => (
-            <View key={reason} style={styles.reasonRow}>
-              <SeedIcon name="checkFlowerFill" size={Layout.iconField} color={theme.tint} />
-              <ThemedText type="f13" style={styles.reasonText}>{reason}</ThemedText>
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.reasonActions}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${vendor.name} 비교에 담기`}
-            onPress={onPressCompare}
-            style={({ pressed }) => [
-              styles.reasonButton,
-              { backgroundColor: theme.backgroundElement },
-              pressed && styles.pressed,
-            ]}>
-            <ThemedText type="f14" style={styles.bold}>비교에 담기</ThemedText>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={picked ? `${vendor.name} Pick 해제` : `${vendor.name} Pick`}
-            onPress={onPressPick}
-            style={({ pressed }) => [
-              styles.reasonButton,
-              { backgroundColor: theme.tint },
-              pressed && styles.pressed,
-            ]}>
-            <ThemedText type="f14" themeColor="onTint" style={styles.bold}>
-              {picked ? 'Pick했어요' : 'Pick하기'}
-            </ThemedText>
-          </Pressable>
-        </View>
-      </View>
     </View>
   );
 }
