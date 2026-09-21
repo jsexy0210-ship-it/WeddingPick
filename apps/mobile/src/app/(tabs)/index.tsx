@@ -300,7 +300,13 @@ export default function HomeScreen() {
               candidates: data.candidates,
               preparedCategories: data.me?.preparedCategories ?? [],
             })}
-            onOpen={(category) => router.push(`/pick?section=recommendations&category=${category}`)}
+            onOpen={(item) =>
+              router.push(
+                item.pickCount > 0
+                  ? `/pick/${item.category}`
+                  : `/pick?section=recommendations&category=${item.category}`
+              )
+            }
             onMore={() => router.push('/progress')}
             onComplete={() => router.push('/wedding')}
           />
