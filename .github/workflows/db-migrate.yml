@@ -25,7 +25,8 @@ jobs:
     environment: production
     runs-on: ubuntu-latest
     concurrency:
-      group: weddingpick-kakao-vm-write
+      # DB는 Neon에만 쓰고 VM 파일을 건드리지 않는다. 승인 대기 중인 API 배포가 DB 적용을 막지 않게 분리한다.
+      group: weddingpick-db-migrate
       cancel-in-progress: false
 
     steps:

@@ -45,10 +45,15 @@ test('static changes cut over only the exact fully validated candidate', () => {
 
 test('runtime inputs and database writes use the production deployment boundary', () => {
   assert.match(apiWorkflow, /spec\/\(glossary\|font-subsets\|strings\\\.ko\)/);
-  assert.match(dbWorkflow, /group: weddingpick-kakao-vm-write/);
+  assert.match(dbWorkflow, /group: weddingpick-db-migrate/);
   assert.match(dbWorkflow, /cancel-in-progress: false/);
-  assert.match(dbWorkflow, /paths:\s*\n\s*- packages\/db\/migrations\/0426_expo_collection_thumbnail\.sql/);
+  assert.match(dbWorkflow, /- \.github\/workflows\/db-migrate\.yml/);
+  assert.match(dbWorkflow, /- packages\/db\/migrations\/0426_expo_collection_thumbnail\.sql/);
+  assert.match(dbWorkflow, /- packages\/db\/migrations\/0427_consultation_event_idempotency\.sql/);
+  assert.match(dbWorkflow, /- packages\/db\/migrations\/0428_wedding_feed_body_image\.sql/);
   assert.doesNotMatch(dbWorkflow, /packages\/db\/migrations\/\*\*/);
+  assert.match(apiWorkflow, /group: weddingpick-kakao-vm-write-v2/);
+  assert.match(apiWorkflow, /flock -n 9/);
 });
 
 test('admin smoke separates candidate identity from public route checks', () => {

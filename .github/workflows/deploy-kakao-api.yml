@@ -20,9 +20,10 @@ jobs:
     environment: ${{ inputs.environment_name }}
     runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
     timeout-minutes: 40
-    # 이전 독립 실행의 승인 대기와 분리한다. VM 파일 잠금은 구버전과도 공유한다.
+    # 구버전 승인 대기가 새 배포를 영구 차단하지 않도록 세대를 분리한다.
+    # 실제 VM 동시 쓰기는 아래 flock(.kakao-deploy.lock)이 마지막 방어선이다.
     concurrency:
-      group: weddingpick-kakao-vm-write
+      group: weddingpick-kakao-vm-write-v2
       cancel-in-progress: false
     steps:
       - name: Checkout
