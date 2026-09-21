@@ -57,8 +57,8 @@ describe('최신 홈·추천 연결', () => {
 
   it('홈 추천은 아코디언 대신 첫 업종 카드와 비교 CTA를 바로 보여준다', () => {
     const onCompare = jest.fn();
-    const view = mount(<HomeRecommendations groups={[groupWithVendor]} isPicked={() => false}
-      onPressVendor={jest.fn()} onPressPick={jest.fn()} onPressCompare={onCompare} onPressMore={jest.fn()} />);
+    const view = mount(<HomeRecommendations groups={[groupWithVendor]} isFavorite={() => false}
+      onPressVendor={jest.fn()} onPressFavorite={jest.fn()} onPressCompare={onCompare} onPressMore={jest.fn()} />);
     expect(text(view)).toContain('웨딩픽 추천');
     expect(text(view)).toContain('테스트 업체');
     expect(text(view)).toContain('선호하는 분위기가 같아요');
@@ -67,8 +67,8 @@ describe('최신 홈·추천 연결', () => {
 
   it('홈 추천은 업체가 넷이어도 정본대로 세 곳까지만 보여준다', () => {
     const vendors = [1, 2, 3, 4].map((n) => ({ ...vendor, id: `vendor-${n}`, name: `테스트 업체 ${n}` }));
-    const view = mount(<HomeRecommendations groups={[{ ...group, vendors }]} isPicked={() => false}
-      onPressVendor={jest.fn()} onPressPick={jest.fn()} onPressCompare={jest.fn()} onPressMore={jest.fn()} />);
+    const view = mount(<HomeRecommendations groups={[{ ...group, vendors }]} isFavorite={() => false}
+      onPressVendor={jest.fn()} onPressFavorite={jest.fn()} onPressCompare={jest.fn()} onPressMore={jest.fn()} />);
     expect(text(view)).toContain('테스트 업체 1');
     expect(text(view)).toContain('테스트 업체 3');
     expect(text(view)).not.toContain('테스트 업체 4');
@@ -77,8 +77,8 @@ describe('최신 홈·추천 연결', () => {
 
   it('추천 전체는 기본 카드에서 이유를 숨기고 카드를 누르면 이유 확장 상태로 교체한다', () => {
     const view = mount(<PickRecommend groups={[groupWithVendor]} open="studio" onToggle={jest.fn()}
-      remaining={1} remainingCategories={[]} isPicked={() => false} onPressVendor={jest.fn()}
-      onPressPick={jest.fn()} onPressCompare={jest.fn()} onPressMore={jest.fn()}
+      remaining={1} remainingCategories={[]} isFavorite={() => false} onPressVendor={jest.fn()}
+      onPressFavorite={jest.fn()} onPressCompare={jest.fn()} onPressMore={jest.fn()}
       onPressSearchMore={jest.fn()} />);
 
     expect(text(view)).not.toContain('추천 1위');
@@ -99,8 +99,8 @@ describe('최신 홈·추천 연결', () => {
   it('업체가 없는 업종도 더 찾아보기를 열 수 있다', () => {
     const onMore = jest.fn();
     const view = mount(<PickRecommend groups={[group]} open="studio" onToggle={jest.fn()}
-      remaining={1} remainingCategories={[]} isPicked={() => false} onPressVendor={jest.fn()}
-      onPressPick={jest.fn()} onPressCompare={jest.fn()} onPressMore={jest.fn()} onPressSearchMore={onMore} />);
+      remaining={1} remainingCategories={[]} isFavorite={() => false} onPressVendor={jest.fn()}
+      onPressFavorite={jest.fn()} onPressCompare={jest.fn()} onPressMore={jest.fn()} onPressSearchMore={onMore} />);
     const button = view.root.findAllByProps({ accessibilityLabel: '스튜디오 더 찾아보기' })
       .find((node) => typeof node.props.onPress === 'function');
     expect(button).toBeDefined();
@@ -110,21 +110,21 @@ describe('최신 홈·추천 연결', () => {
 
   it('접힌 업종의 검색 버튼을 중복 노출하지 않는다', () => {
     const view = mount(<PickRecommend groups={[group]} open={null} onToggle={jest.fn()}
-      remaining={1} remainingCategories={[]} isPicked={() => false} onPressVendor={jest.fn()}
-      onPressPick={jest.fn()} onPressCompare={jest.fn()} onPressMore={jest.fn()} onPressSearchMore={jest.fn()} />);
+      remaining={1} remainingCategories={[]} isFavorite={() => false} onPressVendor={jest.fn()}
+      onPressFavorite={jest.fn()} onPressCompare={jest.fn()} onPressMore={jest.fn()} onPressSearchMore={jest.fn()} />);
     expect(view.root.findAllByProps({ accessibilityLabel: '스튜디오 더 찾아보기' })).toHaveLength(0);
   });
 
   it('추천이 비어도 남은 준비가 있으면 완료라고 하지 않는다', () => {
     const view = mount(<PickRecommend groups={[]} open={null} onToggle={jest.fn()}
-      remaining={2} remainingCategories={[]} isPicked={() => false} onPressVendor={jest.fn()}
-      onPressPick={jest.fn()} onPressCompare={jest.fn()} onPressMore={jest.fn()} />);
+      remaining={2} remainingCategories={[]} isFavorite={() => false} onPressVendor={jest.fn()}
+      onPressFavorite={jest.fn()} onPressCompare={jest.fn()} onPressMore={jest.fn()} />);
     expect(text(view)).toContain('정보 수집 중');
     expect(text(view)).not.toContain('정할 준비를 다 끝냈어요');
   });
 
   it('제보 부족은 수집 중으로 표시하고 별점을 제보 건수로 혼용하지 않는다', () => {
-    const view = mount(<VendorCard vendor={vendor} picked={false} onPress={jest.fn()} onPressPick={jest.fn()} />);
+    const view = mount(<VendorCard vendor={vendor} favorited={false} onPress={jest.fn()} onPressFavorite={jest.fn()} />);
     expect(text(view)).toContain('수집 중');
     expect(text(view)).toContain('선호하는 분위기가 같아요');
     expect(text(view)).not.toContain('업체 안내 150만원');
@@ -134,7 +134,7 @@ describe('최신 홈·추천 연결', () => {
 
   it('Pick 버튼은 상위 상세 이동 이벤트를 차단한다', () => {
     const onPick = jest.fn(), onDetail = jest.fn(), stopPropagation = jest.fn();
-    const view = mount(<VendorCard vendor={vendor} picked={false} onPress={onDetail} onPressPick={onPick} />);
+    const view = mount(<VendorCard vendor={vendor} favorited={false} onPress={onDetail} onPressPick={onPick} />);
     const button = view.root.findAllByProps({ accessibilityLabel: '테스트 업체 Pick' })
       .find((node) => typeof node.props.onPress === 'function');
     act(() => { button!.props.onPress({ stopPropagation }); });
