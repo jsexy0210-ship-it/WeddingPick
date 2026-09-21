@@ -12,7 +12,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: weddingpick-kakao-vm-write
+  group: weddingpick-kakao-vm-write-v2
   cancel-in-progress: false
 
 jobs:

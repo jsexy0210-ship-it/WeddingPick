@@ -7,7 +7,7 @@ const workflow = readFileSync('.github/workflows/deploy-kakao-api.yml', 'utf8');
 test('API deploy shares the Kakao VM write concurrency group', () => {
   assert.match(
     workflow,
-    /concurrency:\s*\n\s*group: weddingpick-kakao-vm-write\s*\n\s*cancel-in-progress: false/
+    /concurrency:\s*\n\s*group: weddingpick-kakao-vm-write-v2\s*\n\s*cancel-in-progress: false/
   );
   assert.doesNotMatch(workflow, /weddingpick-kakao-api-cutover/);
 });

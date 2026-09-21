@@ -14,7 +14,7 @@ test('retention cleanup is manual only and apply requires production approval', 
   assert.match(workflow, /on:\n  workflow_dispatch:/);
   assert.doesNotMatch(workflow, /\n\s+push:/);
   assert.doesNotMatch(workflow, /\n\s+pull_request:/);
-  assert.match(workflow, /group: weddingpick-kakao-vm-write/);
+  assert.match(workflow, /group: weddingpick-kakao-vm-write-v2/);
   assert.match(workflow, /cancel-in-progress: false/);
   assert.match(workflow, /dry-run:[\s\S]*if: \$\{\{ !inputs\.apply \}\}/);
   assert.match(workflow, /apply:[\s\S]*if: \$\{\{ inputs\.apply \}\}[\s\S]*environment: production/);

@@ -12,6 +12,6 @@ const workflows = [
 for (const file of workflows) {
   test(`${file} uses shared Kakao VM write concurrency`, () => {
     const source = readFileSync(path.join(root, file), 'utf8');
-    assert.match(source, /concurrency:\s*\n\s*group: weddingpick-kakao-vm-write\s*\n\s*cancel-in-progress: false/);
+    assert.match(source, /concurrency:\s*\n\s*group: weddingpick-kakao-vm-write-v2\s*\n\s*cancel-in-progress: false/);
   });
 }
