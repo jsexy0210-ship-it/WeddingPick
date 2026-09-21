@@ -116,7 +116,7 @@ export default function Top3Screen() {
               ) : null}
             </>
           ) : (
-            <EmptyView title="이 업종은 아직 추천할 만큼 자료가 모이지 않았어요." />
+            <EmptyView scope="section" title="이 업종은 아직 추천할 만큼 자료가 모이지 않았어요." />
           )}
 
         </ScrollView>
