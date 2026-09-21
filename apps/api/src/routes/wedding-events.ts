@@ -4,11 +4,12 @@ import {
   type WeddingEventSource,
 } from '@weddingpick/api-contract';
 import type { FastifyInstance } from 'fastify';
+import type { PoolClient } from 'pg';
 
 import { assertWeddingAccess } from '../access';
 import { currentUserId, requireUser } from '../auth/plugin';
 import type { AppContext } from '../context';
-import { notFound } from '../errors';
+import { ApiError, notFound } from '../errors';
 
 type EventRow = {
   id: string;
@@ -21,6 +22,45 @@ type EventRow = {
   notify_enabled: boolean;
   source: WeddingEventSource;
 };
+
+async function withDecidedVendorLock<T>(
+  context: AppContext,
+  weddingId: string,
+  vendorId: string,
+  work: (client: PoolClient) => Promise<T>
+): Promise<T> {
+  const client = await context.pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    /*
+     * vendor_id가 붙은 일정은 최종 Pick 이후의 후속 일정이다.
+     * 결정 행을 잠근 같은 트랜잭션에서만 쓰기 때문에, 배우자가 동시에 결정을
+     * 되돌리더라도 검증과 INSERT/UPDATE 사이에 상태가 갈라지지 않는다.
+     */
+    const locked = await client.query(
+      `SELECT 1
+       FROM structured.category_decisions
+       WHERE wedding_id = $1 AND vendor_id = $2
+       FOR UPDATE`,
+      [weddingId, vendorId]
+    );
+
+    if (locked.rows.length === 0) {
+      throw new ApiError('forbidden', '최종 Pick을 완료한 업체만 상담 일정을 등록할 수 있습니다.');
+    }
+
+    const result = await work(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
 
 function toResponse(row: EventRow) {
   return {
@@ -70,25 +110,30 @@ export function registerWeddingEventRoutes(app: FastifyInstance, context: AppCon
 
       await assertWeddingAccess(context.pool, request.params.weddingId, userId);
 
-      const { rows } = await context.pool.query<{ id: string }>(
-        `INSERT INTO structured.wedding_events
-           (wedding_id, title, starts_at, location, vendor_id, vendor_label, memo, notify_enabled, added_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-         RETURNING id`,
-        [
-          request.params.weddingId,
-          body.title,
-          body.startsAt,
-          body.location ?? null,
-          body.vendorId ?? null,
-          body.vendorLabel ?? null,
-          body.memo ?? null,
-          body.notifyEnabled,
-          userId,
-        ]
-      );
+      const insert = (client: Pick<PoolClient, 'query'>) =>
+        client.query<{ id: string }>(
+          `INSERT INTO structured.wedding_events
+             (wedding_id, title, starts_at, location, vendor_id, vendor_label, memo, notify_enabled, added_by)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+           RETURNING id`,
+          [
+            request.params.weddingId,
+            body.title,
+            body.startsAt,
+            body.location ?? null,
+            body.vendorId ?? null,
+            body.vendorLabel ?? null,
+            body.memo ?? null,
+            body.notifyEnabled,
+            userId,
+          ]
+        );
 
-      return reply.status(201).send({ eventId: rows[0]!.id });
+      const inserted = body.vendorId
+        ? await withDecidedVendorLock(context, request.params.weddingId, body.vendorId, insert)
+        : await insert(context.pool);
+
+      return reply.status(201).send({ eventId: inserted.rows[0]!.id });
     }
   );
 
@@ -102,37 +147,42 @@ export function registerWeddingEventRoutes(app: FastifyInstance, context: AppCon
       await assertWeddingAccess(context.pool, request.params.weddingId, userId);
 
       // 보낸 칸만 고친다 — wedding_tasks 패턴과 같은 이유.
-      const { rowCount } = await context.pool.query(
-        `UPDATE structured.wedding_events SET
-           title = CASE WHEN $3 THEN $4::text ELSE title END,
-           starts_at = CASE WHEN $5 THEN $6::timestamptz ELSE starts_at END,
-           location = CASE WHEN $7 THEN $8::text ELSE location END,
-           vendor_id = CASE WHEN $9 THEN $10::uuid ELSE vendor_id END,
-           vendor_label = CASE WHEN $11 THEN $12::text ELSE vendor_label END,
-           memo = CASE WHEN $13 THEN $14::text ELSE memo END,
-           notify_enabled = CASE WHEN $15 THEN $16::boolean ELSE notify_enabled END
-         WHERE id = $1 AND wedding_id = $2`,
-        [
-          request.params.eventId,
-          request.params.weddingId,
-          body.title !== undefined,
-          body.title ?? null,
-          body.startsAt !== undefined,
-          body.startsAt ?? null,
-          body.location !== undefined,
-          body.location ?? null,
-          body.vendorId !== undefined,
-          body.vendorId ?? null,
-          body.vendorLabel !== undefined,
-          body.vendorLabel ?? null,
-          body.memo !== undefined,
-          body.memo ?? null,
-          body.notifyEnabled !== undefined,
-          body.notifyEnabled ?? null,
-        ]
-      );
+      const update = (client: Pick<PoolClient, 'query'>) =>
+        client.query(
+          `UPDATE structured.wedding_events SET
+             title = CASE WHEN $3 THEN $4::text ELSE title END,
+             starts_at = CASE WHEN $5 THEN $6::timestamptz ELSE starts_at END,
+             location = CASE WHEN $7 THEN $8::text ELSE location END,
+             vendor_id = CASE WHEN $9 THEN $10::uuid ELSE vendor_id END,
+             vendor_label = CASE WHEN $11 THEN $12::text ELSE vendor_label END,
+             memo = CASE WHEN $13 THEN $14::text ELSE memo END,
+             notify_enabled = CASE WHEN $15 THEN $16::boolean ELSE notify_enabled END
+           WHERE id = $1 AND wedding_id = $2`,
+          [
+            request.params.eventId,
+            request.params.weddingId,
+            body.title !== undefined,
+            body.title ?? null,
+            body.startsAt !== undefined,
+            body.startsAt ?? null,
+            body.location !== undefined,
+            body.location ?? null,
+            body.vendorId !== undefined,
+            body.vendorId ?? null,
+            body.vendorLabel !== undefined,
+            body.vendorLabel ?? null,
+            body.memo !== undefined,
+            body.memo ?? null,
+            body.notifyEnabled !== undefined,
+            body.notifyEnabled ?? null,
+          ]
+        );
 
-      if (rowCount === 0) {
+      const updated = body.vendorId
+        ? await withDecidedVendorLock(context, request.params.weddingId, body.vendorId, update)
+        : await update(context.pool);
+
+      if (updated.rowCount === 0) {
         throw notFound('일정');
       }
 
