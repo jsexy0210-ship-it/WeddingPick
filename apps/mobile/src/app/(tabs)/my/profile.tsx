@@ -101,7 +101,11 @@ export default function ProfileScreen() {
     loadSettings();
   }, [loadSettings]);
 
-  useEffect(load, [load]);
+  useEffect(() => {
+    // Effect 본문에서 동기 setState를 연쇄시키지 않는다. 실제 조회는 다음 이벤트 루프에 시작한다.
+    const timer = setTimeout(load, 0);
+    return () => clearTimeout(timer);
+  }, [load]);
 
   const nameCheck = checkDisplayName(nameDraft);
   /* 비우는 것도 허용한다. 한 번 적었다고 영영 못 지우게 할 이유가 없다. */
