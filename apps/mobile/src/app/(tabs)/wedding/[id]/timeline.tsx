@@ -7,7 +7,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { listWeddingTasks } from '@/api/client';
 import { formatMonthDayDot } from '@/features/common/format-date';
 import { useDepthBack } from '@/features/navigation/depth-back';
-import { ErrorView, Layout, Radius, SkeletonView, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { ErrorView, Layout, Radius, Skeleton, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import { Hero, NavBar, Screen } from '@/features/wedding/screen-kit';
 
 /** 핸드오프 08c #18b: 점 10 · 선 2 · 점↔글 14 · 행 아래 22. */
@@ -41,7 +41,34 @@ export default function TimelineScreen() {
   useEffect(load, [load]);
 
   if (error) return <ErrorView message={error} onBack={depthBack} onRetry={load} />;
-  if (!page) return <SkeletonView />;
+  if (!page) {
+    return (
+      <Screen>
+        <NavBar title="준비 타임라인" />
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={styles.loadingHero}>
+            <Skeleton width="78%" height={30} />
+            <Skeleton width="54%" height={16} />
+          </View>
+          <View style={styles.timeline}>
+            {Array.from({ length: 4 }, (_, index) => (
+              <View key={index} style={styles.item}>
+                <View style={styles.spine}>
+                  <Skeleton width={DOT} height={DOT} radius={Radius.pill} />
+                  {index < 3 ? <View style={styles.loadingLine} /> : null}
+                </View>
+                <View style={styles.itemBody}>
+                  <Skeleton width="28%" height={14} />
+                  <Skeleton width="72%" height={18} />
+                  <Skeleton width="52%" height={15} />
+                </View>
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+      </Screen>
+    );
+  }
 
   const sorted = [...page.tasks].sort((a, b) => {
     if (!a.dueDate && !b.dueDate) return 0;
@@ -103,10 +130,12 @@ function TimelineItem({ task, isLast }: { task: WeddingTask; isLast: boolean }) 
 
 const styles = StyleSheet.create({
   content: { paddingBottom: Spacing.two },
+  loadingHero: { paddingHorizontal: Layout.gutter, paddingVertical: Layout.sectionGap, gap: Spacing.two },
   timeline: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionGap },
   item: { flexDirection: 'row', gap: Layout.sectionHeadGap },
   spine: { width: Layout.iconTab, alignItems: 'center' },
   dot: { width: DOT, height: DOT, borderRadius: Radius.pill, marginTop: Spacing.one + Spacing.half },
   line: { width: LINE, flex: 1, marginTop: Spacing.one },
+  loadingLine: { width: LINE, flex: 1, marginTop: Spacing.one, backgroundColor: '#E5E7EB' },
   itemBody: { flex: 1, minWidth: 0, gap: 3, paddingBottom: Spacing.four - Spacing.half },
 });
