@@ -183,7 +183,7 @@ const TABS: AdminTabDef[] = [
   { key: 'ads', label: '집행' },
   { key: 'gate', label: '전환 승인' },
   { key: 'campaigns', label: '캠페인 · 보상' },
-  { key: 'marketing', label: '마케팅 발송' },
+  { key: 'marketing', label: '마케팅 발송', hidden: true },
 ];
 
 /**
