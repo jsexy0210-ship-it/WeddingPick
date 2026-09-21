@@ -254,6 +254,26 @@ export default function VendorDetailScreen() {
   const myCandidate = candidates.candidateFor(vendor.id);
   const picked = myCandidate !== null;
   const pickBusy = candidates.busyVendorId === vendor.id;
+  const decided =
+    candidates.page?.groups.some((group) => group.decidedVendorId === vendor.id) ?? false;
+  const primaryLabel = decided ? '상담 예약하기' : picked ? '최종 Pick하기' : '먼저 Pick해주세요';
+
+  function openPrimaryAction() {
+    if (decided) {
+      router.push(`/search/${vendor.id}/consult`);
+      return;
+    }
+    if (!myCandidate) return;
+    router.push({
+      pathname: '/pick/confirm',
+      params: {
+        category: vendor.category,
+        vendorId: vendor.id,
+        vendorName: vendor.name,
+        shared: myCandidate.addedByPartner ? '1' : '0',
+      },
+    });
+  }
 
   /**
    * Pick(SPEC §13.1). 비회원 상세는 폐기됐으므로 이 화면 안에 로그인 시트를 겹쳐 띄우지 않는다.
@@ -951,12 +971,24 @@ export default function VendorDetailScreen() {
             </Pressable>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="상담 잡기"
-              style={({ pressed }) => [styles.pickBtn, { backgroundColor: theme.tint }, pressed ? styles.pressed : null]}
-              onPress={() => router.push(`/search/${vendor.id}/consult`)}>
-              <ProductSymbol name="calendar" size={Layout.iconField} color={theme.onTint} />
-              <ThemedText type="f14" themeColor="onTint" style={styles.bold}>
-                상담 일정 잡기
+              accessibilityLabel={primaryLabel}
+              accessibilityState={{ disabled: !picked }}
+              disabled={!picked}
+              style={({ pressed }) => [
+                styles.pickBtn,
+                { backgroundColor: picked ? theme.tint : theme.backgroundElement },
+                pressed && picked ? styles.pressed : null,
+              ]}
+              onPress={openPrimaryAction}>
+              <ProductSymbol
+                name={decided ? 'calendar' : 'check'}
+                size={Layout.iconField}
+                color={picked ? theme.onTint : theme.textDisabled}
+              />
+              <ThemedText
+                type="f14"
+                style={[styles.bold, { color: picked ? theme.onTint : theme.textDisabled }]}>
+                {primaryLabel}
               </ThemedText>
             </Pressable>
           </View>
