@@ -14,11 +14,13 @@ jobs:
   cancel:
     runs-on: ubuntu-latest
     steps:
-      - name: Cancel stale bridge run
+      - name: Force-cancel stale bridge run
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           gh api --method POST \
-            repos/${GITHUB_REPOSITORY}/actions/runs/35589954030/cancel \
+            repos/${GITHUB_REPOSITORY}/actions/runs/35589954030/force-cancel \
+            || gh api --method POST \
+              repos/${GITHUB_REPOSITORY}/actions/runs/35589954030/cancel \
             || true
