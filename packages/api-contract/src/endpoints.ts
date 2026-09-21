@@ -39,6 +39,10 @@ import {
 import { amountSchema, idSchema } from './common';
 import { faqListResponseSchema } from './faq';
 import {
+  createFavoriteVendorRequestSchema,
+  favoriteVendorListResponseSchema,
+} from './favorites';
+import {
   authProvidersResponseSchema,
   createSessionRequestSchema,
   createSessionResponseSchema,
@@ -582,6 +586,26 @@ export const ENDPOINTS = {
     method: 'GET',
     path: '/v1/weddings/{weddingId}/candidates',
     response: candidateListResponseSchema,
+  },
+
+  /** 하트로 저장하는 개인 관심업체. Pick 후보와 독립이며 개수 제한이 없다. */
+  listFavoriteVendors: {
+    method: 'GET',
+    path: '/v1/me/favorite-vendors',
+    response: favoriteVendorListResponseSchema,
+  },
+
+  addFavoriteVendor: {
+    method: 'POST',
+    path: '/v1/me/favorite-vendors',
+    body: createFavoriteVendorRequestSchema,
+    response: z.object({ favoriteId: idSchema }),
+  },
+
+  removeFavoriteVendor: {
+    method: 'DELETE',
+    path: '/v1/me/favorite-vendors/{vendorId}',
+    response: z.null(),
   },
 
   addCandidate: {
