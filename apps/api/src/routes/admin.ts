@@ -1103,7 +1103,11 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
    * 관리자가 고른 카테고리 한 편을 Gemini가 써서 화면에만 돌려준다. 저장은 하지 않는다.
    */
   app.post<{ Body: unknown }>('/v1/admin/wedding-feed/draft', auth, async (request) => {
-    const { categoryLabel } = weddingFeedDraftRequestSchema.parse(request.body);
+    const parsed = weddingFeedDraftRequestSchema.safeParse(request.body);
+    if (!parsed.success) {
+      throw new ApiError('invalid_request', '카테고리를 먼저 선택해주세요.');
+    }
+    const { categoryLabel } = parsed.data;
     const activeCategory = await context.pool.query(
       `SELECT 1
          FROM structured.wedding_feed_categories
