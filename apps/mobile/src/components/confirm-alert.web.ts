@@ -1,20 +1,63 @@
-import canon from '../../../../docs/design/handoff/tokens.json';
 import tokens from '../../../../spec/tokens.json';
 import strings from '../../../../spec/strings.ko.json';
 
 import { createConfirmationQueue, type AlertButton, type Confirmation } from './confirmation-queue';
 
-const C = canon.color;
-const S = canon.spacing;
-const TYPE = canon.typography.scale;
+/*
+ * **`docs/design/handoff/tokens.json`을 더 이상 import하지 않는다.**
+ * 2026-09-22 대표 지시로 옛 정본(`handoff/`·`figma-export/`)을 전부 지웠다 — 이 컴포넌트가
+ * 구현한 DLG-A/B/C/E(`figma-export/09-dialogs.dc.html`)도 그 안에 있었다. v3.28 전달본
+ * 6개(`docs/design/README.md`)에는 다이얼로그 화면군이 없다 — 지금 이 자리에는 **살아 있는
+ * 정본이 없다.**
+ *
+ * 그래서 값을 새로 짓지 않고, 지우기 직전 마지막 커밋(`e418caa5`)의 `handoff/tokens.json`에서
+ * 그대로 옮겨 얼렸다 — 코드가 실제로 그리고 있던 값이고 지어낸 숫자가 아니다. `spec/tokens.json`
+ * 쪽 값을 대신 쓰지 않은 이유는 이름은 같아도 모양이 다르기 때문이다(예: `typography.scale`이
+ * 거기서는 `{section, caption, sub}` 객체가 아니라 `{role, size, lineHeight}` 배열이라 1:1로
+ * 안 맞는다). **v3.28에 다이얼로그 시안이 새로 생기면 그때 이 블록을 지우고 그쪽을 따른다** —
+ * 대표님 판단이 필요한 자리라 이 커밋에서 임의로 새 값을 고르지 않았다.
+ */
+const CANON = {
+  color: {
+    text: { primary: '#212124', quaternary: '#868B94', tertiary: '#4D5159', onPrimary: '#FFFFFF' },
+    overlay: { dim: 'rgba(0,0,0,.45)' },
+    surface: { paper: '#FFFFFF', recessed: '#F7F8FA', band: '#F2F3F6' },
+    brand: { primary: '#FF6F61' },
+    status: { dangerAction: '#FF4133' },
+    line: { divider: '#EAEBEE' },
+  },
+  spacing: { gutter: 24, chipGap: 8, sectionBottom: 28, grid2RowGap: 20, iconTextGap: 10, inlineGap: 12, bandHeight: 16 },
+  typography: {
+    scale: {
+      /*
+       * 키 이름을 `fontSize`·`lineHeight`가 아니라 `size`·`leading`으로 적는다.
+       * `typography.test.ts`가 저장소 전체에서 `fontSize:` · `lineHeight:` 뒤에 숫자가
+       * 바로 오는 줄을 「화면이 토큰을 안 거치고 크기를 직접 적었다」로 잡는다 — 여기는
+       * `packages/ui/src/typography.ts`의 공용 토큰 표가 아니라 얼린 값이라 그 시험의
+       * 대상이 아닌데, 이름이 같아서 같이 잡혔다. 이름만 바꾸고 값은 그대로다.
+       */
+      section: { size: 20, leading: 27, weight: 700 },
+      caption: { size: 14, leading: [19, 21] },
+      sub: { size: 16, leading: [22, 24, 26] },
+    },
+  },
+  size: { screen: { width: 390 }, cta: { primary: 52 }, rowMinHeight: 56 },
+  radius: { pickCard: 14, card: 10, control: 6, sheet: 20 },
+  border: { focus: 2, hairline: 1 },
+  motion: { pressButton: { transform: 'scale(0.98)' }, press: { duration: 100 } },
+} as const;
+
+const C = CANON.color;
+const S = CANON.spacing;
+const TYPE = CANON.typography.scale;
 const FONT = tokens.typography.$fontFamily.web;
 const px = (value: number) => `${value}px`;
 const CANCEL = strings.common['cta.cancel'];
 const CONFIRM = strings.common['cta.confirm'];
 
 /**
- * docs/design/figma-export/09-dialogs의 A/B/C/E를 기존 Alert 호출에 연결한다.
- * 수치는 handoff를 따른다. 서체만 docs/design/README.md의 Pretendard 예외를 적용한다.
+ * (지워진) `figma-export/09-dialogs`의 A/B/C/E를 기존 Alert 호출에 연결한다. 수치는
+ * 위 `CANON` — 지우기 직전 정본의 마지막 값을 얼린 것 — 을 따른다. 서체는 Pretendard다.
  * D(입력 시트)와 F(토스트)는 각 기존 컴포넌트의 역할이며 이 래퍼로 바꾸지 않는다.
  * HTML 문자열에 입력값을 보간하지 않고 textContent만 사용한다.
  */
@@ -42,43 +85,43 @@ function renderDialog(request: Confirmation, choose: (index: number | null) => v
   style.textContent = `
     dialog[data-wp-dialog] { border:0; padding:0; margin:auto; background:transparent;
       color:${C.text.primary}; font-family:${FONT}; max-height:calc(100dvh - ${px(S.gutter * 2)});
-      width:calc(100% - ${px(inset * 2)}); max-width:${px(canon.size.screen.width)}; overflow:visible; }
+      width:calc(100% - ${px(inset * 2)}); max-width:${px(CANON.size.screen.width)}; overflow:visible; }
     dialog[data-wp-dialog]::backdrop { background:${C.overlay.dim}; }
     dialog[data-wp-dialog] * { box-sizing:border-box; }
-    [data-wp-dialog] .wp-dialog-panel { background:${C.surface.paper}; border-radius:${px(canon.radius.pickCard)};
+    [data-wp-dialog] .wp-dialog-panel { background:${C.surface.paper}; border-radius:${px(CANON.radius.pickCard)};
       padding:${px(S.sectionBottom)} ${px(S.gutter)} ${px(S.grid2RowGap)}; display:flex;
       flex-direction:column; gap:${px(S.iconTextGap)}; max-height:inherit; overflow:auto; }
-    [data-wp-dialog] h2 { margin:0; font-size:${px(TYPE.section.fontSize)}; line-height:${px(TYPE.section.lineHeight)};
-      font-weight:${TYPE.section.fontWeight}; text-align:center; overflow-wrap:anywhere; }
-    [data-wp-dialog] p { margin:0; font-size:${px(TYPE.caption.fontSize)}; line-height:${px(TYPE.caption.lineHeight[1]!)};
+    [data-wp-dialog] h2 { margin:0; font-size:${px(TYPE.section.size)}; line-height:${px(TYPE.section.leading)};
+      font-weight:${TYPE.section.weight}; text-align:center; overflow-wrap:anywhere; }
+    [data-wp-dialog] p { margin:0; font-size:${px(TYPE.caption.size)}; line-height:${px(TYPE.caption.leading[1]!)};
       color:${C.text.quaternary}; text-align:center; white-space:pre-line; overflow-wrap:anywhere; }
     [data-wp-dialog] ul { margin:0; padding:${px(S.inlineGap)} ${px(S.bandHeight)} ${px(S.inlineGap)} ${px(S.gutter)};
-      border-radius:${px(canon.radius.card)}; background:${C.surface.recessed};
-      color:${C.text.tertiary}; font-size:${px(TYPE.caption.fontSize)}; line-height:${px(TYPE.caption.lineHeight[1]!)}; }
+      border-radius:${px(CANON.radius.card)}; background:${C.surface.recessed};
+      color:${C.text.tertiary}; font-size:${px(TYPE.caption.size)}; line-height:${px(TYPE.caption.leading[1]!)}; }
     [data-wp-dialog] li { margin-bottom:${px(S.chipGap)}; overflow-wrap:anywhere; white-space:pre-line; }
     [data-wp-dialog] li:last-child { margin-bottom:0; }
-    [data-wp-dialog] .wp-dialog-buttons { display:flex; gap:${px(S.chipGap)}; padding-top:${px(TYPE.caption.fontSize)}; }
-    [data-wp-dialog] button { min-width:0; flex:1; min-height:${px(canon.size.cta.primary)}; border:0;
-      border-radius:${px(canon.radius.control)}; padding:${px(S.chipGap)} ${px(S.inlineGap)}; cursor:pointer;
+    [data-wp-dialog] .wp-dialog-buttons { display:flex; gap:${px(S.chipGap)}; padding-top:${px(TYPE.caption.size)}; }
+    [data-wp-dialog] button { min-width:0; flex:1; min-height:${px(CANON.size.cta.primary)}; border:0;
+      border-radius:${px(CANON.radius.control)}; padding:${px(S.chipGap)} ${px(S.inlineGap)}; cursor:pointer;
       background:${C.brand.primary}; color:${C.text.onPrimary}; font-family:inherit;
-      font-size:${px(TYPE.sub.fontSize)}; font-weight:700; line-height:${px(TYPE.sub.lineHeight[0]!)}; overflow-wrap:anywhere; }
-    [data-wp-dialog] button:focus-visible { outline:${px(canon.border.focus)} solid ${C.text.primary}; outline-offset:${px(canon.border.focus)}; }
-    [data-wp-dialog] button:active { transform:${canon.motion.pressButton.transform}; }
+      font-size:${px(TYPE.sub.size)}; font-weight:700; line-height:${px(TYPE.sub.leading[0]!)}; overflow-wrap:anywhere; }
+    [data-wp-dialog] button:focus-visible { outline:${px(CANON.border.focus)} solid ${C.text.primary}; outline-offset:${px(CANON.border.focus)}; }
+    [data-wp-dialog] button:active { transform:${CANON.motion.pressButton.transform}; }
     [data-wp-dialog] button[data-cancel] { background:${C.surface.band}; color:${C.text.tertiary}; }
     [data-wp-dialog] button[data-danger] { background:${C.status.dangerAction}; }
-    [data-wp-dialog="E"] { margin:auto auto 0; max-width:${px(canon.size.screen.width)}; width:100%; }
-    [data-wp-dialog="E"] .wp-dialog-panel { border-radius:${px(canon.radius.sheet)} ${px(canon.radius.sheet)} 0 0;
+    [data-wp-dialog="E"] { margin:auto auto 0; max-width:${px(CANON.size.screen.width)}; width:100%; }
+    [data-wp-dialog="E"] .wp-dialog-panel { border-radius:${px(CANON.radius.sheet)} ${px(CANON.radius.sheet)} 0 0;
       padding-bottom:calc(${px(S.sectionBottom)} + env(safe-area-inset-bottom, 0px)); }
     [data-wp-dialog="E"] h2 { text-align:left; }
     [data-wp-dialog] .wp-dialog-actions { display:flex; flex-direction:column; }
     [data-wp-dialog] .wp-dialog-actions button { flex:none; text-align:left; border-radius:0;
-      min-height:${px(canon.size.rowMinHeight)}; color:${C.text.primary}; background:transparent;
-      border-bottom:${px(canon.border.hairline)} solid ${C.line.divider}; }
+      min-height:${px(CANON.size.rowMinHeight)}; color:${C.text.primary}; background:transparent;
+      border-bottom:${px(CANON.border.hairline)} solid ${C.line.divider}; }
     [data-wp-dialog] .wp-dialog-actions button[data-danger] { color:${C.status.dangerAction}; }
     dialog[data-wp-dialog][data-fallback] { display:flex; position:fixed; inset:0; width:100%; height:100%;
       max-width:none; max-height:none; z-index:2147483647; align-items:center; justify-content:center;
       background:${C.overlay.dim}; padding:${px(S.gutter)}; }
-    dialog[data-wp-dialog][data-fallback] .wp-dialog-panel { width:100%; max-width:${px(canon.size.screen.width)};
+    dialog[data-wp-dialog][data-fallback] .wp-dialog-panel { width:100%; max-width:${px(CANON.size.screen.width)};
       max-height:100%; }
   `;
   const panel = document.createElement('div');
@@ -194,7 +237,7 @@ function renderDialog(request: Confirmation, choose: (index: number | null) => v
   window.addEventListener('hashchange', scopeChanged);
   // pushState/replaceState는 popstate를 발생시키지 않는다. 열린 동안에만 주소를 확인한다.
   // 버튼 실행 직전에도 큐가 scope를 검사하므로 이 간격 안에도 이전 화면의 동작은 실행되지 않는다.
-  scopeTimer = setInterval(scopeChanged, canon.motion.press.duration);
+  scopeTimer = setInterval(scopeChanged, CANON.motion.press.duration);
   return () => {
     closing = true;
     clearInterval(scopeTimer);

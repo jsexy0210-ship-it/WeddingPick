@@ -4,32 +4,21 @@ import { join } from 'node:path';
 const ROOT = join(__dirname, '..', '..', '..', '..');
 
 /**
- * 핸드오프 토큰이 코드 토큰에 다 들어 있는지 지킨다.
+ * `docs/design/handoff/tokens.json`과 `spec/tokens.json`을 대조하던 시험 둘을
+ * **2026-09-22에 뺐다.** 대표 지시로 옛 정본(`handoff/`·`figma-export/`)을 전부
+ * 지웠고 — 「모든 작업은 v3.28 기준이다」 — 이 시험의 일 자체가 「handoff가 정한
+ * 값이 spec에 빠짐없이 있는가」였다. 비교할 handoff가 없어졌다.
  *
- * 값의 원본은 `docs/design/handoff/tokens.json`이고, 코드가 읽는 원본은 `spec/tokens.json`이다
- * (CLAUDE.md: 값은 spec/tokens.json에서만 가져온다). 두 파일의 모양은 다르지만 — spec은 값마다 `use`를
- * 붙인다 — **핸드오프가 정한 색과 수는 전부 spec에 있어야 한다.** 핸드오프가 바뀌고 spec이 그대로면
- * 화면은 옛 값을 그린다. 그 어긋남을 여기서 잡는다.
+ * **스냅샷을 얼려 대신 쓰지 않았다.** `apps/mobile/src/components/confirm-alert.web.ts`처럼
+ * 코드가 실제로 그 값을 써야 돌아가는 자리라면 얼린 값을 남기는 것이 맞지만, 이 시험은
+ * 그 반대다 — **얼린 handoff를 다시 근거로 세우는 것**이 되어, 「기존 파일은 다 파기한다」는
+ * 지시를 시험 안에서 뒤집는 꼴이 된다. 새 정본(v3.28)이 같은 수치·색 표를 내놓으면
+ * 그때 그 표와 spec을 대조하는 시험을 다시 만든다.
  *
- * 그리고 `packages/ui/src/theme.ts`의 팔레트는 spec에 있는 색만 쓴다 — 코드가 새 색을 만들지 않는다.
- *
- * 이 시험이 서버 패키지에 있는 이유는 typography.test.ts와 같다 — 파일을 읽으려면 node가 필요하다.
+ * 아래 둘은 handoff와 무관하게 `spec/tokens.json`·코드만 보므로 그대로 남긴다.
  */
 type Json = string | number | boolean | null | Json[] | { [key: string]: Json };
 
-function leaves(value: Json, path = '', out: [string, Json][] = []): [string, Json][] {
-  if (value !== null && typeof value === 'object') {
-    for (const [key, child] of Object.entries(value)) leaves(child, path ? `${path}.${key}` : key, out);
-  } else {
-    out.push([path, value]);
-  }
-
-  return out;
-}
-
-const handoff = JSON.parse(
-  readFileSync(join(ROOT, 'docs/design/handoff/tokens.json'), 'utf8')
-) as Json;
 const specText = readFileSync(join(ROOT, 'spec/tokens.json'), 'utf8');
 const seedLight = (
   JSON.parse(readFileSync(join(ROOT, 'spec/seed-tokens.json'), 'utf8')) as {
@@ -38,64 +27,7 @@ const seedLight = (
 ).light;
 const spec = JSON.parse(specText) as Json;
 
-const HEX = /^#[0-9a-f]{6}$/i;
-
-/*
- * 2026-09-14 대표 지시로 **색의 정본이 핸드오프에서 SEED · 피그마로 옮겨갔다**
- * (「색 관련된 거 싹 다 피그마 기준」). 핸드오프 tokens.json은 SEED를 손으로 베낀
- * 옛 세대라 회색 램프가 SEED 현행과 어긋난다 — 본문 먹색이 `#212124`(핸드오프)와
- * `#1a1c20`(SEED)로 갈라져 있었다.
- *
- * 그래서 아래 색들은 **핸드오프가 아니라 SEED를 따른다.** 값이 맞는지는
- * `seed-parity.test.ts`가 `spec/seed-tokens.json`과 견주어 지킨다 — 검사를 끄는 것이
- * 아니라 **더 엄한 검사로 옮기는 것**이다. 여기 남은 색(브랜드 · 소셜 · 의미색)은
- * 계속 핸드오프를 본다.
- *
- * 수치 · 문구는 그대로 핸드오프가 정본이다. 피그마가 정하는 것은 보이는 색이다.
- */
-const SUPERSEDED_BY_SEED = new Set(
-  [
-    '#212124',
-    '#393a40',
-    '#4d5159',
-    '#adb1ba',
-    '#eaebee',
-    '#f7f8fa',
-    '#f2f3f6',
-    '#eef1f4',
-  ].map((hex) => hex.toLowerCase()),
-);
-
-describe('디자인 토큰 — 핸드오프 ↔ spec/tokens.json', () => {
-  it('핸드오프의 색은 전부 spec에 있다', () => {
-    const specLower = specText.toLowerCase();
-    const missing = leaves(handoff)
-      .filter(([, v]) => typeof v === 'string' && (HEX.test(v) || v.startsWith('rgba')))
-      .filter(([, v]) => !SUPERSEDED_BY_SEED.has((v as string).toLowerCase()))
-      .filter(([, v]) => !specLower.includes((v as string).toLowerCase()))
-      .map(([k, v]) => `${k} = ${String(v)}`);
-
-    expect(missing).toEqual([]);
-  });
-
-  it('핸드오프의 수치는 전부 spec에 있다', () => {
-    /*
-     * spec은 lineHeight 변형을 «19|21»처럼 문자열로 적는다 — 그 안의 수도 값으로 친다.
-     */
-    const specNumbers = new Set<number>();
-
-    for (const [, v] of leaves(spec)) {
-      if (typeof v === 'number') specNumbers.add(v);
-      if (typeof v === 'string') for (const n of v.match(/\d+(\.\d+)?/g) ?? []) specNumbers.add(Number(n));
-    }
-
-    const missing = leaves(handoff)
-      .filter(([, v]) => typeof v === 'number' && !specNumbers.has(v))
-      .map(([k, v]) => `${k} = ${String(v)}`);
-
-    expect(missing).toEqual([]);
-  });
-
+describe('디자인 토큰 — spec/tokens.json 자체 정합성', () => {
   it('theme.ts 팔레트는 spec에 있는 색만 쓴다', () => {
     const theme = readFileSync(join(ROOT, 'packages/ui/src/theme.ts'), 'utf8');
     const specLower = specText.toLowerCase();

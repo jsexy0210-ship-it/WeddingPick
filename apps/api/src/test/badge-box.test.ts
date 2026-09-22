@@ -12,9 +12,17 @@ const ROOT = join(__dirname, '..', '..', '..', '..');
  * 상자 밖으로 비어져 나와 테두리에 닿는다 — 「배지가 잘린다」로 보이던 자리가
  * 전부 이 한 줄이었다(`height: 22` · 패딩 4 · 줄 19 → 안쪽 14).
  *
- * 핸드오프의 배지 22곳(`docs/design/handoff/html`)은 어느 것도 height를
- * 적지 않는다. `padding:4px 9px; line-height:19px`뿐이고 그려지는 높이는 27이다.
- * 웹(`apps/web/src/site-styles.ts` `.badge`)도 같다. 그래서 앱도 최소 높이로만 든다.
+ * 이 규칙의 근거였던 핸드오프 배지 22곳(`docs/design/handoff/html`)은 2026-09-22에
+ * 지워졌다 — 옛 정본이 전부 파기됐다(v3.28 전환). **그 대조 시험(「핸드오프 배지가
+ * 여전히 패딩으로만 높이를 만든다」)을 빼면서 v3.28 시안을 대신 봤는데, 거기서는 더
+ * 이상 규칙이 한결같지 않았다** — Pick의 `winBadge`, 웨딩노트의 `spendBadge`, 홈의
+ * `heroVenueBadge` 셋은 `height:`를 다시 쓴다(`docs/design/html/`). 나머지
+ * (`badgeVerify` · `vBadge` · `doneBadge` · `badgeGray` 등)는 여전히 패딩만 쓴다.
+ * **어느 쪽이 맞는지는 판단하지 않고 대표님께 넘긴다** — 조용히 시험을 지우면 이
+ * 어긋남 자체가 사라진다.
+ *
+ * 웹(`apps/web/src/site-styles.ts` `.badge`)은 패딩만 쓴다. 그래서 아래 코드 쪽 검사는
+ * (시안 대조를 뺀 채) 그대로 최소 높이 규칙을 지킨다.
  *
  * typography.test.ts와 같은 방식으로 저장소를 훑는다 — 눈으로 지키는 규칙은
  * 지켜지지 않는다.
@@ -122,30 +130,5 @@ describe('배지 상자', () => {
 
     expect(source).not.toMatch(/(^|[^a-zA-Z])height:/m);
     expect(paddingY * 2 + lineHeight).toBeGreaterThan(0);
-  });
-
-  it('핸드오프 배지가 여전히 패딩으로만 높이를 만든다', () => {
-    /*
-     * 기준은 최신 핸드오프다. 시안이 배지에 height를 적기 시작하면 위 규칙이 틀린
-     * 것이 되므로, 시안 쪽이 바뀌는 순간을 여기서 잡는다.
-     */
-    const html = execFileSync('git', ['ls-files', 'docs/design/handoff/html/*.dc.html'], {
-      cwd: ROOT,
-      encoding: 'utf8',
-    })
-      .split('\n')
-      .map((line) => line.trim())
-      .filter(Boolean);
-
-    const declarations = html
-      .flatMap((path) => readFileSync(join(ROOT, path), 'utf8').split('\n'))
-      .filter((line) => /const badge\s*=/.test(line));
-
-    expect(declarations.length).toBeGreaterThan(0);
-
-    for (const line of declarations) {
-      expect(line).toContain('padding:4px 9px');
-      expect(line).not.toMatch(/[^-]height:\d/);
-    }
   });
 });
