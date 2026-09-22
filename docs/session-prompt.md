@@ -16,7 +16,11 @@
 - 최신 main SHA·Open PR·관련 Issue·Actions를 확인한다.
 - AGENTS.md와 CLAUDE.md의 현재 규칙을 읽는다.
 - 디자인은 v3.28이 기준이고 docs/design/ 하나만 본다(2026-09-22 대표 지시).
-  docs/design/README.md → CHANGELOG.md → html/의 해당 대메뉴 시안 순서로 읽는다.
+  docs/design/README.md → CHANGELOG.md → docs/design/screen-inventory.md →
+  html/의 해당 대메뉴 시안 순서로 읽는다. screen-inventory.md는 6개 .dc.html에서
+  기계로 뽑은 화면 목록·Figma↔정본 대조표다 — `.dc.html`이 이 환경에서 렌더되지
+  않아(`_ds/`·support.js가 전달 ZIP에 없음) 소스를 직접 읽는 대신 이 문서를 먼저 본다.
+  `[open]` 표시는 정책 결정 대기다 — 임의로 답을 고르지 않고 판단 필요로 남긴다.
   옛 handoff/ · figma-export/ · UX_UI_REFRESH_HANDOFF.md · PAGE_STATE_AUDIT.md는
   2026-09-22에 파기했다 — git 이력에서 꺼내 근거로 쓰지 않는다.
 - 최신 사용자 확정 지시와 제안·보류 항목을 구분한다.

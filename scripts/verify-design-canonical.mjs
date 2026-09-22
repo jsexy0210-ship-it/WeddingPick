@@ -63,7 +63,13 @@ function filesUnder(directory) {
  */
 const designDir = join(root, 'docs/design');
 const actualFiles = filesUnder(designDir).filter((path) => path !== 'canonical-manifest.json');
-const expectedFiles = manifest.files.map((item) => item.path).sort();
+/*
+ * `manifest.files`는 전달 그대로다. `manifest.derivedFiles.files`는 저장소가 그 위에
+ * 만들어 붙인 분석 문서(예: screen-inventory.md) — 재생성 스크립트가 있고, 돌리면
+ * 해시가 바뀌는 것이 정상이다. 둘을 합쳐야 docs/design의 «전체» 파일 집합과 같다.
+ */
+const derivedFiles = manifest.derivedFiles?.files ?? [];
+const expectedFiles = [...manifest.files, ...derivedFiles].map((item) => item.path).sort();
 
 if (JSON.stringify(actualFiles) !== JSON.stringify(expectedFiles)) {
   const added = actualFiles.filter((path) => !expectedFiles.includes(path));
@@ -72,11 +78,11 @@ if (JSON.stringify(actualFiles) !== JSON.stringify(expectedFiles)) {
   if (missing.length > 0) fail(`docs/design에서 정본 파일이 사라짐: ${missing.join(' · ')}`);
 }
 
-for (const item of manifest.files) {
+for (const item of [...manifest.files, ...derivedFiles]) {
   const path = join(designDir, item.path);
   if (!existsSync(path)) continue;
   if (sha256(normalizedBytes(path)) !== item.normalizedSha256) {
-    fail(`docs/design/${item.path} 내용 불일치 — 전달본과 다르다`);
+    fail(`docs/design/${item.path} 내용 불일치 — ${derivedFiles.includes(item) ? 'node scripts/build-screen-inventory.mjs로 다시 만든다' : '전달본과 다르다'}`);
   }
 }
 
@@ -122,5 +128,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  `디자인 정본 확인: ${manifest.canonicalVersion} · docs/design 파일 ${manifest.files.length}개`,
+  `디자인 정본 확인: ${manifest.canonicalVersion} · 전달 ${manifest.files.length}개 · 파생 ${derivedFiles.length}개`,
 );

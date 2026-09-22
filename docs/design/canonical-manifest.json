@@ -69,6 +69,17 @@
       "sizeBytes": 18917
     }
   ],
+  "derivedFiles": {
+    "note": "전달본 9개 밖에서 저장소가 만들어 붙인 분석 문서다. 원본 ZIP의 일부가 아니라 test:design-canonical이 별도로 셈한다 — 재생성하면 해시가 바뀌는 것이 정상이다(scripts/build-screen-inventory.mjs 참고).",
+    "files": [
+      {
+        "path": "screen-inventory.md",
+        "generatedBy": "6개 .dc.html의 {{tag}}/{{tagId}}/{{tagDesc}} 화면 태그와 diff()/vdiff() 대조표 호출을 기계로 파싱했다 — 2026-09-22.",
+        "normalizedSha256": "CEC567F4C004C649AE2A8CCA0EF51DD05664521432FEB5E6CF58CB948E58CABA",
+        "sizeBytes": 22022
+      }
+    ]
+  },
   "deletedPagesThatStayDeleted": [
     "apps/mobile/src/app/(tabs)/my/policies.tsx",
     "apps/mobile/src/app/(tabs)/wedding/[id]/consultations.tsx",
