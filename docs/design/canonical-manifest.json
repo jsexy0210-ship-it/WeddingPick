@@ -1,430 +1,72 @@
 {
-  "schemaVersion": 1,
-  "canonicalDate": "2026-09-20",
-  "authority": "사용자 전달 ZIP 2개 및 최신 사용자 확정 지시",
-  "exceptions": [
-    "검색 Root의 Back 버튼은 삭제 상태 유지",
-    "최신 PR에서 삭제·통합한 독립 페이지는 되살리지 않고 현재 라우트에 정본을 적용",
-    "현재 MD는 2026-09-21 사용자 문서 정리 지시를 반영하며 실행 핸드오프의 확정 요청이 해당 부분에 우선"
-  ],
-  "archives": [
+  "schemaVersion": 3,
+  "canonicalVersion": "v3.28",
+  "canonicalDate": "2026-09-22",
+  "authority": "모든 작업은 v3.28 기준이다. 모든 세션은 docs/design/ 하나만 보고 작업한다(2026-09-22 대표 지시). 이 폴더 밖을 화면·값·문구의 근거로 쓰지 않는다.",
+  "delivery": {
+    "name": "handoff-v3.28",
+    "receivedOn": "2026-09-22",
+    "zipSha256": "B3E8AA10C5C50A92969C6AED7353A480A39905EB025118DAA34BDF6B30B178E1",
+    "zipSizeBytes": 106685,
+    "fileCount": 9,
+    "note": "전달 ZIP 자체는 저장소에 두지 않는다(2026-09-22 대표 지시 「이것만 올려」). 위 해시가 그 증빙이고, 아래 files가 푼 결과다."
+  },
+  "supersedes": {
+    "removedOn": "2026-09-22",
+    "reason": "대표 지시 — 「여기에 올리고 기존 파일은 다 파기한다」.",
+    "paths": [
+      "docs/design/handoff/",
+      "docs/design/figma-export/",
+      "docs/design/UX_UI_REFRESH_HANDOFF.md",
+      "docs/design/PAGE_STATE_AUDIT.md"
+    ],
+    "note": "2026-09-20 전달 ZIP 2개(docs/design/source/2026-09-20/)는 2026-09-21에 대표님이 먼저 지우셨다(b9e5ec2b · d4158310). 지운 것들은 git 이력에 남는다 — 되살려 근거로 쓰지 않는다."
+  },
+  "files": [
     {
-      "name": "웨딩픽_프로젝트.zip",
-      "path": "docs/design/source/2026-09-20/웨딩픽_프로젝트.zip",
-      "sizeBytes": 2186244,
-      "sha256": "89AF59C4CF286E338F39000D46836D1C2939DA7C1F106E9D9AB759648DD6671C",
-      "fileCount": 86,
-      "activeDirectory": "docs/design/handoff"
+      "path": "CHANGELOG.md",
+      "normalizedSha256": "6171080E7BA54E3C2153EC4FD8551D908A61895C3EDF1C6C430FE4CD2B8AD7B2",
+      "sizeBytes": 1699
     },
     {
-      "name": "웨딩픽_프로젝11트.zip",
-      "path": "docs/design/source/2026-09-20/웨딩픽_프로젝11트.zip",
-      "sizeBytes": 131655,
-      "sha256": "F80CE61248A7AAABEBC460296AF72F66E1BA2281E165CB0EB9CFF6FC7CF8C1E1",
-      "fileCount": 13,
-      "activeDirectory": "docs/design/figma-export"
-    }
-  ],
-  "activeSources": [
-    {
-      "directory": "docs/design/handoff",
-      "archive": "웨딩픽_프로젝트.zip",
-      "files": [
-        {
-          "path": "ADMIN.md",
-          "normalizedSha256": "C93A9E9A0C016F7224B61BF892A518CCE1D5930ED4C61A7AA98505992C38D588"
-        },
-        {
-          "path": "IMAGES.md",
-          "normalizedSha256": "80C296F2976620414C2AB137E2616880604A2DFD387836F0D738789C47D0EBA9"
-        },
-        {
-          "path": "PROJECT_RULES.md",
-          "normalizedSha256": "C3DCC0E620DBA16C9FFB2CB97EA5738CFC41508CB474A22838D41E349C8AC55F"
-        },
-        {
-          "path": "README.md",
-          "normalizedSha256": "C59B9C26E53F61F95E43BCCE77B1A17E0AFBE84BFC2054A6447BE0BF305CCDE4"
-        },
-        {
-          "path": "SPEC.md",
-          "normalizedSha256": "06044680F0706CD755B887D97F26E4BEBF56FE39B9E64B7C9E8ECA3B497092DA"
-        },
-        {
-          "path": "assets/android-icon-foreground.png",
-          "normalizedSha256": "7E32042F9DAC5AEAA600686EB98BF55B5400D119C47CF5317DA6C9FA47D6C2D6"
-        },
-        {
-          "path": "assets/apple-touch-icon.png",
-          "normalizedSha256": "07221E8FEECEF29CA3106FAD37E87E0F2AF5AA89E90DE530208C9E3DDB17A38A"
-        },
-        {
-          "path": "assets/favicon-16.png",
-          "normalizedSha256": "443AF77D2AD49DB258E45A286B37FDF583FE7F99567A384EC7CA765B7245DCB3"
-        },
-        {
-          "path": "assets/favicon-32.png",
-          "normalizedSha256": "05BDF69E0BC926730651B13A3C02E20236907A0CE68A5E552A9BF8D859FDD977"
-        },
-        {
-          "path": "assets/favicon-48.png",
-          "normalizedSha256": "FA0AF58E454F124E4324E58C0365CF07C0A0772958A917E72B61328CD446EDE6"
-        },
-        {
-          "path": "assets/favicon-mono-32.png",
-          "normalizedSha256": "9F1C751275457E2C261219D764DA384E5F961D7A570478E0F48DDC5F065EA54F"
-        },
-        {
-          "path": "assets/icon-192.png",
-          "normalizedSha256": "AE749F008225B5B86E82D2B1F1F3B9F3C8F473DBF4B77E2F4305708743565863"
-        },
-        {
-          "path": "assets/maskable-512.png",
-          "normalizedSha256": "F8DE5F959B9961C7D2499B9984C4946B05E564B0209C5F3360185A029909AB40"
-        },
-        {
-          "path": "assets/samples/arch.jpg",
-          "normalizedSha256": "AAAD643229D38DAF6E3F04BBC4B0C659D98E118030A97511D1FA2BD5D2AA1C32"
-        },
-        {
-          "path": "assets/samples/bride.jpg",
-          "normalizedSha256": "57806F52DA7B57983FCD8632A346DAD0C0C7AC76F5232F03F74C4E2794C2A108"
-        },
-        {
-          "path": "assets/samples/dress.jpg",
-          "normalizedSha256": "237675D61119CE5847B83F983DF49E882B45838F3BA41CEA840078A871CE61D0"
-        },
-        {
-          "path": "assets/samples/hall.jpg",
-          "normalizedSha256": "BA5D41CA16FA621F4BE21333CB1ACF9E58C1A092DBCC867A85270E1E918A3C5C"
-        },
-        {
-          "path": "assets/samples/studio-couple.jpg",
-          "normalizedSha256": "C4222AE3C823C0463286AFDDEF5B27CE961D46F294F245AABBA4A2A12F6353E0"
-        },
-        {
-          "path": "assets/site.webmanifest",
-          "normalizedSha256": "4FF0DA93DB43D76DC4D72160977F6079646FC3BDCA252AC7B5CD6AE808A960C2"
-        },
-        {
-          "path": "html/00-ia.dc.html",
-          "normalizedSha256": "2C71076E348E3815D39D884C16F4FEC4908AE69BF677A492CA62A57BD059B57D"
-        },
-        {
-          "path": "html/01-onboarding.dc.html",
-          "normalizedSha256": "00D94A2F7D56509827DC122EF22482E374AC353D860D10203000DA48AE6C599E"
-        },
-        {
-          "path": "html/01a-login.dc.html",
-          "normalizedSha256": "C26F677152EBB8F27010A4405C9FF89F58B7B8D56A0E21B94E3BDF031DBFE231"
-        },
-        {
-          "path": "html/02-design-system.dc.html",
-          "normalizedSha256": "F676B0EA3A3A8D8213557132BB1CB05E3A9871449CA38A710CAF3F743ED896B1"
-        },
-        {
-          "path": "html/03-home.dc.html",
-          "normalizedSha256": "B1D76204D407A001E30DA84EA63D5224294383C0F73C53D1D3ADFB46C13052A3"
-        },
-        {
-          "path": "html/03b-home-options.dc.html",
-          "normalizedSha256": "0C26BFC54B7D330E250578268D2FF43E0D44FFC3FC8AF4E920C2AF86F84BEC39"
-        },
-        {
-          "path": "html/05-root.dc.html",
-          "normalizedSha256": "CDDE22A07EFEAD275CDB0CE3D22CE6E712F8DE98DC2BAA76915B21D171F310F3"
-        },
-        {
-          "path": "html/06-search.dc.html",
-          "normalizedSha256": "8AC654FE3E73627AEFC580C5919A05E8193379FCB0B93FD82789179B4102ADA7"
-        },
-        {
-          "path": "html/07-pick.dc.html",
-          "normalizedSha256": "5E3DC0536452DA065D19FA1A7900525B4D9FC0822CC6D0CEA7B369D3B70ED37D"
-        },
-        {
-          "path": "html/08-our-wedding-my.dc.html",
-          "normalizedSha256": "84D8FA4D8EEF85A0F099726EC2FAEFC9E9EC2328F63E30F43AFC0338F61E3FE8"
-        },
-        {
-          "path": "html/08b-our-wedding-sub.dc.html",
-          "normalizedSha256": "2B0EEA4AAB3DED4A21E8135390FD8DE9890C97001E321F887320F62B56D79996"
-        },
-        {
-          "path": "html/09-core-loop.dc.html",
-          "normalizedSha256": "DF8723D077E09D64ABCE907A4880EBAA4191282B5F0BF5A878D4CDDC2F9036F2"
-        },
-        {
-          "path": "html/09b-vendor-sub.dc.html",
-          "normalizedSha256": "F28AF328F7375FAD2D62E50A0F799631EE0C04BCCE4CE496790832E9CD0893C0"
-        },
-        {
-          "path": "html/11-report-review.dc.html",
-          "normalizedSha256": "4E70716413DC0C3AC8A3C2849810A3B0F38B16F1DAC44A8E6293E517E8D960F0"
-        },
-        {
-          "path": "html/12-closing.dc.html",
-          "normalizedSha256": "70E1EA1A95A6AC72678FCA21190EF1CAA3E261580245268CD7006E8A96162E43"
-        },
-        {
-          "path": "html/12b-remaining.dc.html",
-          "normalizedSha256": "01ED63B6BAFDD16D4545BEB52B11EF66CAF4E16D7A7516C0E7EEAF9743BB805D"
-        },
-        {
-          "path": "html/13-my-sub.dc.html",
-          "normalizedSha256": "763DB0FD32E6382C2EF149F42ED94B3C56628B22DFA5D7F3FCFB2417E21C146F"
-        },
-        {
-          "path": "html/13-my.dc.html",
-          "normalizedSha256": "538F6BF13987F6DBA700FDD5D0C560F25E4411B98BF2B21DFA6629054966242A"
-        },
-        {
-          "path": "html/13b-withdrawal.dc.html",
-          "normalizedSha256": "ED718156ED7C9AB4E80D15E61488D40F2BA269D499B249A1D4A9C99191568BAE"
-        },
-        {
-          "path": "html/14-couple.dc.html",
-          "normalizedSha256": "003A2417AFF9D747E63960B0748918B384591CD1F86803BDF061C38BAA425AB4"
-        },
-        {
-          "path": "html/15-events.dc.html",
-          "normalizedSha256": "624A68D46874E18CDDDD5BBC1CEB0C0B3967ED3ACC2D15590DE1D3EE2AE7893E"
-        },
-        {
-          "path": "html/16-faq.dc.html",
-          "normalizedSha256": "638D4E499EB76A52AE85D1C1D0CDD8CCC3C2FCE0D0712E88EE7031D1D87F8FA0"
-        },
-        {
-          "path": "html/16b-legal.dc.html",
-          "normalizedSha256": "2C55B02349C517A406B9A8083CAB9323062CA537418216163C37D5A7933DB36C"
-        },
-        {
-          "path": "html/17-sheets-states.dc.html",
-          "normalizedSha256": "F0FB7F00B4CBDAD8218BF052958EEABEF0754D4FB6797B9591412FDE1DAFA6D8"
-        },
-        {
-          "path": "html/18-biz.dc.html",
-          "normalizedSha256": "19B3C409C4ADC25C063BDAD5C6C2936DAA87D5646E60BC8D75D5692265D3B3BE"
-        },
-        {
-          "path": "html/19-landing.dc.html",
-          "normalizedSha256": "654864708BDD7EEA904FDCDE5DE4B810B383BB1D14905151BCA4CAE4A7611656"
-        },
-        {
-          "path": "html/19b-landing-sub.dc.html",
-          "normalizedSha256": "C7C30DE08396B5E18AC52E1D8D9A7E09F66EBF4526FA1C25774E4FEE9D8C9F3A"
-        },
-        {
-          "path": "html/19c-web.dc.html",
-          "normalizedSha256": "BE03B5BAD875020AE5EB64549DA74AE3D0B68DFF5B18FA3DFAF09DEB245E7B51"
-        },
-        {
-          "path": "html/20-admin.dc.html",
-          "normalizedSha256": "BDE582B7C984164F4AA2985C7827B8A4F1FA05073B0E6340ECAA5F93C56997D1"
-        },
-        {
-          "path": "html/20-onboarding-v2.dc.html",
-          "normalizedSha256": "76956411DA5AE59C684A5642EA5E65BFF604E537B372E21B831501B4BB73DD2A"
-        },
-        {
-          "path": "html/21-admin.dc.html",
-          "normalizedSha256": "D42F1B24132717B78B19E576CAB5036A9B210967E973A8AC918B7649DED2BD84"
-        },
-        {
-          "path": "html/21-store.dc.html",
-          "normalizedSha256": "D9F179450A9B1331EE9C0E955A07D9AF814B206941CEBFCE4C5C405B1D0AF6FA"
-        },
-        {
-          "path": "html/22-admin-ops.dc.html",
-          "normalizedSha256": "6D199C5B0BBEDD7B50BE5FD191C4DA4745643FE1C005BEBD08C56CE550DE34E3"
-        },
-        {
-          "path": "html/22-flow.dc.html",
-          "normalizedSha256": "57F8B8E11E3A7CA311CDFF1EB1723981E624F97BE7D41B0FDFD70CBE01C00C47"
-        },
-        {
-          "path": "html/doc-page.js",
-          "normalizedSha256": "F52AE9C02FCA7AB44C37F3FF363194FDF81CAA20AE63E2FE1F518ED21133185E"
-        },
-        {
-          "path": "html/image-slot.js",
-          "normalizedSha256": "FFF26D081C8D9D60870F86C7539A5D179B9CDAB15E67F2B205508A068E7C7FF6"
-        },
-        {
-          "path": "html/support.js",
-          "normalizedSha256": "8FE7DF74405F3C55F49B7249C74EA1397E65D07DEA2B1BD3B4A489BEC2E28CBE"
-        },
-        {
-          "path": "png/00-ia.png",
-          "normalizedSha256": "71161DB60EC717F91E7ACA6C9DD614211DF9614952D692EC10AB60EFB6CB6D9F"
-        },
-        {
-          "path": "png/01-onboarding.png",
-          "normalizedSha256": "46589100F347EAE2C0EA6744779F604AE9BE1B7731C0AE736B5D29AF4A646FB5"
-        },
-        {
-          "path": "png/01a-login.png",
-          "normalizedSha256": "6F0C4CE31A70AE4A41D315E9B033FE8BC13D8F55F2BADCE3568EA7FE00BFFF74"
-        },
-        {
-          "path": "png/02-design-system.png",
-          "normalizedSha256": "4FBE559BB56C9C01D72E07CD93BD918B402CB81198CF901DF6448C2746824D16"
-        },
-        {
-          "path": "png/03-home.png",
-          "normalizedSha256": "AB1AB47E92B7DD9EC6E6598C284F4B0F97508B2AF2BEEF68EF3F3021DBF49AB3"
-        },
-        {
-          "path": "png/06-search.png",
-          "normalizedSha256": "94F2E46CE5B6A80B08EDA3B4460778587AC0834111E67861401A233B8FF14D06"
-        },
-        {
-          "path": "png/07-pick.png",
-          "normalizedSha256": "527E04FCE83487FCC366E8FF78B2AB5139B78A040B0CAFE930D85420857232E2"
-        },
-        {
-          "path": "png/08-our-wedding.png",
-          "normalizedSha256": "DDF497BFBDF6C6E871F407FAC4E7679D69CBC201215F8A216C9CB70F89868AA4"
-        },
-        {
-          "path": "png/08c-our-my.png",
-          "normalizedSha256": "2D612FCC230A1AA9EE24E60E750C6250E19A9D0431B79BD9D03A8E0BADA14BF3"
-        },
-        {
-          "path": "png/09-core-loop.png",
-          "normalizedSha256": "10060524983E137449B4898F1244B76EF92D99BF75AF26F7718F812CF356E960"
-        },
-        {
-          "path": "png/09b-vendor-sub.png",
-          "normalizedSha256": "FC5666E171D70E3355B75EBA4A9EB686D0CB8E8A9DA53DDEBB73117C8A4E6857"
-        },
-        {
-          "path": "png/11-report-review.png",
-          "normalizedSha256": "0E519FF2475897F4D179CBCC8ED1B5F4FD995CE166C30F3673599E13922CBAE9"
-        },
-        {
-          "path": "png/12-closing.png",
-          "normalizedSha256": "2541FF13814ACE86F1450E3119BBAFF3A746C2E79607F4CD05E1CAE6B8687CBE"
-        },
-        {
-          "path": "png/12b-remaining.png",
-          "normalizedSha256": "E6F12C6299FFBF353273D0A7193AFEA1006B484F0021F3D3473FD5CEF2E1A1B4"
-        },
-        {
-          "path": "png/13-my.png",
-          "normalizedSha256": "009AD1F044CCF4F7E25E12937687BBAEA184014E9EF3F45B16382B6C83141074"
-        },
-        {
-          "path": "png/13b-withdrawal.png",
-          "normalizedSha256": "B302DEE8D364F97F5DDEE4016774B13F38AB589B1F6B5DF463942F1E849C5AC9"
-        },
-        {
-          "path": "png/14-couple.png",
-          "normalizedSha256": "7E5F6F463C0833374817AF1D2837798E7E87FC03A9BE5CF0B3C5320267EC2570"
-        },
-        {
-          "path": "png/15-events.png",
-          "normalizedSha256": "DE8FF277DC2C9FB84ED25B93B63C47FA47E70EFD0835A34EC193DE592BF7D0DF"
-        },
-        {
-          "path": "png/16-faq.png",
-          "normalizedSha256": "2D76D42B52A1D67052BD87CBC782FFA19C8681BC803FDC064895A7C517E1D7B4"
-        },
-        {
-          "path": "png/16-legal.png",
-          "normalizedSha256": "8E2813B0B3159C91ADBCE889B69FF20B7A0A5B1B90F3CB0B03BC2DCE8697546A"
-        },
-        {
-          "path": "png/17-sheets-states.png",
-          "normalizedSha256": "D5BD007BFB3246ABAB1B2D2D6AAE593AA5030AC755B922BC30896D3A7840FA0C"
-        },
-        {
-          "path": "png/18-biz.png",
-          "normalizedSha256": "E4B8932B216D158D9E032DB98BFE8CA1C3BEB45DC3819D55319F219BABEDEBA4"
-        },
-        {
-          "path": "png/19-landing.png",
-          "normalizedSha256": "98565FC64A343A4AA5C0CB0231EB4E547355BA5816226FEAF56BADE4F7252222"
-        },
-        {
-          "path": "png/19b-landing-sub.png",
-          "normalizedSha256": "540C3172A8F99F3F3AC9FE630879D7FA471DCA3BB9F02F647D1FAF5B2B01E4D5"
-        },
-        {
-          "path": "png/20-admin.png",
-          "normalizedSha256": "110E1DDEF471839232F7F3A1667214DF85439ACA8949A09395C8EC2FC66A27EE"
-        },
-        {
-          "path": "png/21-device.png",
-          "normalizedSha256": "8FE8DC1F8265A0E5DBEC1E7E631CEFDBF06AE716D3C394093C87DEF02585E35A"
-        },
-        {
-          "path": "screens.json",
-          "normalizedSha256": "C65AAA12D98EC8FFEF5CA341943A2AA72189F615AD516CBD7B8C6264F9852F98"
-        },
-        {
-          "path": "tokens.json",
-          "normalizedSha256": "B662F4F4AF564E6C7719306DC633B387F8678F6FA384B1DABD9347B21FD47026"
-        }
-      ]
+      "path": "README.md",
+      "normalizedSha256": "9A8926973ADF190EDD3E2B0E6BEFBD175CFD343F931D847A3D7B895EE3BC1345",
+      "sizeBytes": 6043
     },
     {
-      "directory": "docs/design/figma-export",
-      "archive": "웨딩픽_프로젝11트.zip",
-      "files": [
-        {
-          "path": "01-home.dc.html",
-          "normalizedSha256": "DEB25FEC277760845C30244DD7B0CB48ECC1D2AD34E45652A6948D465818C653"
-        },
-        {
-          "path": "02-search.dc.html",
-          "normalizedSha256": "38DAB6D3AD9C422049CD450D84BDC447EDFC66E6C7B9039A6C1891A1B50119EB"
-        },
-        {
-          "path": "03-pick.dc.html",
-          "normalizedSha256": "F49BCF9C634F1B8B57EE4127E9957214EEE145B9C23A0F60FCFD8FE1DBC5C384"
-        },
-        {
-          "path": "04-wedding-note.dc.html",
-          "normalizedSha256": "BD50287FA96276445249E1058E27F6E55A3DCE7DC93EAFE7829696CD7AFCE868"
-        },
-        {
-          "path": "05-vendor-detail.dc.html",
-          "normalizedSha256": "AF0062723CEA87DFD2D5C72165098C1AFB6778095AE16FD444DCCD794193DC0A"
-        },
-        {
-          "path": "06-onboarding-login.dc.html",
-          "normalizedSha256": "101317E7F61F4B07B5E260A02B9C3B6A52EA4E267E1433863F92CC721D360600"
-        },
-        {
-          "path": "07-lounge-my.dc.html",
-          "normalizedSha256": "1D70B35A576EBC84ADC7C957B93A8F7531C6028BD3DA6E7239AF5AC5981EEDF7"
-        },
-        {
-          "path": "08-recommend.dc.html",
-          "normalizedSha256": "2B6FAB73271620D8303922BA07325ED59ED05A5B6D4F76ED9DDE355077530F47"
-        },
-        {
-          "path": "08-recommendations.dc.html",
-          "normalizedSha256": "2B6FAB73271620D8303922BA07325ED59ED05A5B6D4F76ED9DDE355077530F47"
-        },
-        {
-          "path": "09-dialogs.dc.html",
-          "normalizedSha256": "88FD5EA7B9FD60CBCF92A5E77F1746CA164294507D72A34745FF310EFD20F1F0"
-        },
-        {
-          "path": "README.md",
-          "normalizedSha256": "1A3AFDE8F0594387632447B531314E0B6CC8661C4D7AB27550F34AB910C62208"
-        },
-        {
-          "path": "image-slot.js",
-          "normalizedSha256": "FFF26D081C8D9D60870F86C7539A5D179B9CDAB15E67F2B205508A068E7C7FF6"
-        },
-        {
-          "path": "support.js",
-          "normalizedSha256": "8FE7DF74405F3C55F49B7249C74EA1397E65D07DEA2B1BD3B4A489BEC2E28CBE"
-        }
-      ]
+      "path": "handoff-QA-체크리스트.md",
+      "normalizedSha256": "C31C432FFF982EA66C9D95DA5B3E9231C17AC3868ABA10DD7A8A58F7C298E0B9",
+      "sizeBytes": 18704
+    },
+    {
+      "path": "html/대메뉴_MY.dc.html",
+      "normalizedSha256": "41AAD357EB46EF50C3B3D2AD09C0355ADD6200B6645623678E16334920351F45",
+      "sizeBytes": 94724
+    },
+    {
+      "path": "html/대메뉴_Pick.dc.html",
+      "normalizedSha256": "13F111E5BD161A644480E3D48D82B211A4A56E2F0BBDD19BE2CB0F972B48ADBC",
+      "sizeBytes": 56749
+    },
+    {
+      "path": "html/대메뉴_검색.dc.html",
+      "normalizedSha256": "0218F6B91F41C125FD3D937FEB8FF448F9FC341341C2659C166C434814A9B8C5",
+      "sizeBytes": 81482
+    },
+    {
+      "path": "html/대메뉴_웨딩노트.dc.html",
+      "normalizedSha256": "600855638410279FC1F88FDC52D247D17350DE5CCD7E5E329707581FAB1BD216",
+      "sizeBytes": 60712
+    },
+    {
+      "path": "html/대메뉴_홈(로그인, 온보딩).dc.html",
+      "normalizedSha256": "FCC1809B20607A0066EEF51B1638C091142C3324BB9892FD1ECD61E0E77C62BD",
+      "sizeBytes": 103552
+    },
+    {
+      "path": "html/웨딩픽 약관 방침.dc.html",
+      "normalizedSha256": "74270B0E53B53FCD7DE1DD2CE72FB2BC170F07523BF07ECE806294911D4C4DA2",
+      "sizeBytes": 18917
     }
   ],
   "deletedPagesThatStayDeleted": [
@@ -432,51 +74,5 @@
     "apps/mobile/src/app/(tabs)/wedding/[id]/consultations.tsx",
     "apps/mobile/src/app/(tabs)/wedding/[id]/events/index.tsx",
     "apps/mobile/src/app/(tabs)/wedding/[id]/expenses/index.tsx"
-  ],
-  "documentationMaintenance": {
-    "date": "2026-09-21",
-    "instruction": "업로드한 md 오래되거나 불필요한건 싹다 제거해 최신 기준만 남긴다.",
-    "baselineCommit": "665b43b08335294f957b1edfe9bcaf69a91dd700",
-    "sourceArchivesUnchanged": true,
-    "visualSourcesUnchanged": true,
-    "updatedDocuments": [
-      {
-        "path": "docs/design/handoff/IMAGES.md",
-        "sourceNormalizedSha256": "C8231C0216BE5CDD9826A3DC5CBF03CD79AF7F512306442E21E2490277155D26",
-        "reason": "도구별 생성 프롬프트의 유효 규격 통합, 미확인 보유 상태 삭제"
-      },
-      {
-        "path": "docs/design/handoff/PROJECT_RULES.md",
-        "sourceNormalizedSha256": "C6537516EFD3424ACDD580B9AB8FB946A1EF477925300E987766F77983CC2628",
-        "reason": "오래된 홈 비교안·이미지 대기 상태 제거, 현재 문구 예외·상위 지침 연결"
-      },
-      {
-        "path": "docs/design/handoff/README.md",
-        "sourceNormalizedSha256": "6C1DBEF7A6414E57405DAFC683D68B38708869E1D96AD5A10E8D4BF05ED92AEB",
-        "reason": "현재 진입점·파일 목록·208개 ID·로그인·서체·화면군별 검수 기준으로 갱신"
-      },
-      {
-        "path": "docs/design/handoff/SPEC.md",
-        "sourceNormalizedSha256": "601CCE320EE4AF63E22FE7F6641496BEAF7DED64705D8D6E50DAF0B85A51E48A",
-        "reason": "보류 이메일·이전 온보딩·폐기 자동 필터·중복 카피 제거, 현재 확정 UX 연결"
-      },
-      {
-        "path": "docs/design/figma-export/README.md",
-        "sourceNormalizedSha256": "FA7A84B5075381903747799E82FB3B98B0C90DFE85EC1F12B3EABEF142DEF8A8",
-        "reason": "통합 추천 route·최종 Pick 후 예약·웨딩 준비 팁으로 안내 갱신"
-      }
-    ],
-    "removedDocuments": [
-      {
-        "path": "docs/design/handoff/CHANGELOG.md",
-        "sourceNormalizedSha256": "EE3A9D6524757AC98282698F3D527F96E72F9C2D415B774A4533C0C2758EC50C",
-        "reason": "버전별 과거 상세 이력 제거. 유효 기능은 SPEC·실행 핸드오프에 유지"
-      },
-      {
-        "path": "docs/design/handoff/IMAGE_PROMPTS.md",
-        "sourceNormalizedSha256": "354303FAD0BDD35F11522A9846E000E292AD20642612DC85070ACD00A4A9C666",
-        "reason": "IMAGES.md에 제작 기준 통합. 오래된 모델별 파라미터 제거"
-      }
-    ]
-  }
+  ]
 }

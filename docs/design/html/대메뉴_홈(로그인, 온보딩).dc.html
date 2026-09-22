@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/material-3-design-system-a1c0d92d-0f96-42f9-ae1d-8302f1ccfe17/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-static.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-scale.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-semantic.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/typography.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/dimension.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/motion.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/base.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/core/core.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/buttons/buttons.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/forms/forms.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/feedback/feedback.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/overlay/overlay.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/display/display.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/styles.css">
+<script src="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/_ds_bundle.js"></script>
+<script src="./image-slot.js"></script>
+<style>
+body{margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+.nsb::-webkit-scrollbar{display:none}
+image-slot{background:#eaebee}
+image-slot::part(empty){display:none !important}
+</style>
+</helmet>
+
+<section style="{{ root }}">
+
+<div style="{{ intro }}">
+  <span style="{{ eyebrow }}">WeddingPick · Figma → 정본</span>
+  <span style="{{ h0 }}">로그인 → 온보딩 → 홈</span>
+  <span style="{{ lead }}">카카오 로그인과 5단계 초기 설정을 거쳐 홈에 닿는 흐름입니다. 한 세션에 모았습니다.</span>
+</div>
+
+<div style="{{ row }}">
+
+  <div style="width:100%;flex:0 0 100%;padding:16px 0 0;font-size:22px;line-height:30px;font-weight:700;color:#212124">1 · 로그인 · 온보딩</div>
+  <div style="{{ col }}">
+    <div style="{{ tag }}"><span style="{{ tagId }}">1</span>로그인 · WP-AUTH-001</div>
+    <span style="{{ tagDesc }}">영문 eyebrow와 「✦ 나에게 맞는 순서부터」 카드를 뺐습니다. 브랜드 블록에 flex:1을 주어 버튼이 하단에 붙습니다. 만 14세 동의는 카카오 버튼 위 체크입니다.</span>
+    <div style="{{ phone }}">
+      <div style="{{ bar }}"><span>9:41</span></div>
+      <div style="{{ loginBrand }}">
+        <span style="{{ markBox }}">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ff6f61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z"></path><path d="M9.4 11.9l1.7 1.7 3.4-3.4"></path></svg>
+        </span>
+        <span style="{{ loginTitle }}">웨딩 준비,<br>진짜 견적부터<br>확인해 보세요</span>
+        <div style="{{ benefitWrap }}">
+          <sc-for list="{{ benefits }}" as="b" hint-placeholder-count="3">
+            <div style="{{ benefitRow }}"><span style="{{ benefitDot }}"></span><span style="{{ benefitText }}">{{ b }}</span></div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="{{ loginAuth }}">
+        <div style="{{ ageCta }}"><span style="{{ ageCheck }}"></span><span style="{{ ageLabel }}">만 14세 이상이에요</span></div>
+        <div style="{{ kakaoBtn }}"><span style="{{ kakaoMark }}">k</span>카카오로 시작하기</div>
+        <span style="{{ legal }}">시작하면 이용약관과 개인정보 처리방침에 동의하게 돼요</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="{{ col }}">
+    <div style="{{ tag }}"><span style="{{ tagId }}">2</span>초기 설정 · 1/5 예식일 · WP-AUTH-002</div>
+    <span style="{{ tagDesc }}">5단계로 늘리고 「JUST FOR YOU」 영문 라벨과 「나중에」 건너뛰기를 없앴습니다. 예식일은 휠 피커로 받습니다.</span>
+    <div style="{{ phone }}">
+      <div style="{{ bar }}"><span>9:41</span></div>
+      <div style="{{ stepNav }}"><div style="{{ progTrack }}"><span style="{{ prog20 }}"></span></div><span style="{{ stepLabel }}">1/5</span></div>
+      <div class="nsb" style="{{ scroll }}">
+        <div style="{{ qBlock }}">
+          <span style="{{ qTitle }}">예식일은<br>언제인가요?</span>
+          <span style="{{ qSub }}">남은 기간에 맞춰 웨딩픽이 추천드려요</span>
+        </div>
+        <div style="{{ sec }}">
+          <div style="{{ dateField }}">2027.05.16(토)</div>
+          <div style="{{ ddayRow }}"><span style="{{ ddayLabel }}">오늘부터</span><span style="{{ ddayVal }}">250일</span></div>
+          <span style="{{ chipUndecided }}">아직 정하지 않았어요</span>
+        </div>
+      </div>
+      <div style="{{ dockSingle }}"><span style="{{ ctaFull }}">다음</span></div>
+    </div>
+  </div>
+
+  <div style="{{ col }}">
+    <div style="{{ tag }}"><span style="{{ tagId }}">3</span>초기 설정 · 2/5 지역 · WP-AUTH-003</div>
+    <span style="{{ tagDesc }}">예식일과 같은 방식입니다. 필드를 누르면 2열 휠 바텀시트가 올라옵니다. 시/도 하나 · 시/군/구 하나만 고릅니다.</span>
+    <div style="{{ phone }}">
+      <div style="{{ bar }}"><span>9:41</span></div>
+      <div style="{{ stepNav }}"><div style="{{ progTrack }}"><span style="{{ prog40 }}"></span></div><span style="{{ stepLabel }}">2/5</span></div>
+      <div class="nsb" style="{{ scroll }}">
+<div style="{{ qBlock }}">
+          <span style="{{ qTitle }}">어디에서<br>식을 올리시나요?</span>
+          <span style="{{ qSub }}">선택한 지역으로 좁혀드려요</span>
+        </div>
+        <div style="{{ sec }}">
+          <div style="{{ dateField }}">서울 강남구</div>
+        </div>
+        <div style="{{ wheelSheet }}">
+          <div style="{{ sheetGrab }}"></div>
+          <div style="{{ sheetHead }}"><span style="{{ sheetTitle }}">지역 선택</span><span style="{{ sheetClose }}"><span style="{{ icoX }}"></span></span></div>
+          <div style="{{ wheelWrap }}">
+            <div style="{{ wheelBand }}"></div>
+            <sc-for list="{{ wheels }}" as="w" hint-placeholder-count="2">
+              <div class="nsb" style="{{ w.colStyle }}">
+                <sc-for list="{{ w.items }}" as="i" hint-placeholder-count="7"><span style="{{ i.style }}">{{ i.label }}</span></sc-for>
+              </div>
+            </sc-for>
+            <div style="{{ wheelFadeTop }}"></div>
+            <div style="{{ wheelFadeBottom }}"></div>
+          </div>
+          <div style="{{ sheetDock }}"><span style="{{ ctaFull }}">확인</span></div>
+        </div>
+      </div>
+      <div style="{{ dockPair }}"><span style="{{ ctaGhost }}">이전</span><span style="{{ ctaWide }}">다음</span></div>
+    </div>
+  </div>
+
+  <div style="{{ col }}">
+    <div style="{{ tag }}"><span style="{{ tagId }}">4</span>초기 설정 · 3/5 진행 상황 · WP-AUTH-004</div>
+    <span style="{{ tagDesc }}">이미 정한 곳을 고릅니다. 고른 카테고리는 추천에서 빠지고 준비 현황에 «결정 완료»로 들어갑니다. 세부 업종은 부제로 적습니다.</span>
+    <div style="{{ phone }}">
+      <div style="{{ bar }}"><span>9:41</span></div>
+      <div style="{{ stepNav }}"><div style="{{ progTrack }}"><span style="{{ prog60 }}"></span></div><span style="{{ stepLabel }}">3/5</span></div>
+      <div class="nsb" style="{{ scroll }}">
+<div style="{{ qBlock }}">
+          <span style="{{ qTitle }}">준비는<br>어디까지 했나요?</span>
+          <span style="{{ qSub }}">이미 정한 건 추천에서 빼드려요</span>
+        </div>
+        <div style="{{ prepSec }}">
+          <sc-for list="{{ prepGroups }}" as="c" hint-placeholder-count="4">
+            <div style="{{ c.cell }}">
+              <div style="{{ prepCol }}"><span style="{{ c.nameStyle }}">{{ c.name }}</span><span style="{{ c.descStyle }}">{{ c.desc }}</span></div>
+              <span style="{{ c.mark }}"></span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="height:16px"></div>
+      </div>
+      <div style="{{ dockPair }}"><span style="{{ ctaGhost }}">이전</span><span style="{{ ctaWide }}">다음</span></div>
+    </div>
+  </div>
+
+  <div style="{{ col }}">
+    <div style="{{ tag }}"><span style="{{ tagId }}">5</span>초기 설정 · 4/5 예산 · WP-AUTH-005</div>
+    <span style="{{ tagDesc }}">구간을 고르지 않고 금액을 직접 적습니다. 만원 단위로 끊어 입력하고, 자주 쓰는 금액은 칩으로 한 번에 넣습니다.</span>
+    <div style="{{ phone }}">
+      <div style="{{ bar }}"><span>9:41</span></div>
+      <div style="{{ stepNav }}"><div style="{{ progTrack }}"><span style="{{ prog80 }}"></span></div><span style="{{ stepLabel }}">4/5</span></div>
+      <div class="nsb" style="{{ scroll }}">
+<div style="{{ qBlock }}">
+          <span style="{{ qTitle }}">앞으로 쓸 예산은<br>얼마인가요?</span>
+          <span style="{{ qSub }}">예산에 맞춰 웨딩픽이 골라드려요</span>
+        </div>
+        <div style="{{ sec }}">
+          <div style="{{ amtField }}"><span style="{{ amtVal }}">5,000</span><span style="{{ amtUnit }}">만원</span></div>
+          <div style="{{ amtChips }}">
+            <sc-for list="{{ amtQuick }}" as="q" hint-placeholder-count="4"><span style="{{ q.style }}">{{ q.label }}</span></sc-for>
+          </div>
+          <span style="{{ amtNote }}">이미 정한 곳에 쓴 돈은 빼고 적어주세요</span>
+        </div>
+      </div>
+      <div style="{{ dockPair }}"><span style="{{ ctaGhost }}">이전</span><span style="{{ ctaWide }}">다음</span></div>
+    </div>
+  </div>
+
+  <div style="{{ col }}">
+    <div style="{{ tag }}"><span style="{{ tagId }}">6</span>초기 설정 · 5/5 스타일 · WP-AUTH-006</div>
+    <span style="{{ tagDesc }}">스타일 4종 고정입니다. 이미지를 쓰지 않고 버튼으로 고릅니다. 각 버튼에 어떤 느낌인지 한 줄을 붙여 말로 판단하게 합니다. 개수 제한 없이 원하는 만큼 고를 수 있습니다.</span>
+    <div style="{{ phone }}">
+      <div style="{{ bar }}"><span>9:41</span></div>
+      <div style="{{ stepNav }}"><div style="{{ progTrack }}"><span style="{{ prog100 }}"></span></div><span style="{{ stepLabel }}">5/5</span></div>
+      <div class="nsb" style="{{ scroll }}">
+<div style="{{ qBlock }}">
+          <span style="{{ qTitle }}">어떤 스타일을<br>좋아하세요?</span>
+          <span style="{{ qSub }}">마음에 드는 스타일을 골라주세요</span>
+        </div>
+        <div style="{{ styleBtnWrap }}">
+          <sc-for list="{{ styleBtns }}" as="s" hint-placeholder-count="4">
+            <div style="{{ s.card }}">
+              <div style="{{ styleCol }}">
+                <span style="{{ s.nameStyle }}">{{ s.label }}</span>
+                <span style="{{ styleDesc }}">{{ s.desc }}</span>
+              </div>
+              <span style="{{ s.mark }}"></span>
+            </div>
+          </sc-for>
+        </div>
+        
+      </div>
+        <div style="{{ dockPair }}"><span style="{{ ctaGhost }}">이전</span><span style="{{ ctaWide }}">다음</span></div>
+    </div>
+  </div>
+
+  <div style="{{ colDone }}">
+    <div style="{{ tag }}"><span style="{{ tagId }}">7</span>초기 설정 · 완료 · WP-AUTH-007</div>
+    <span style="{{ tagDesc }}">홈에 들어가기 전 한 번 더 봅니다. 여기서 바꾸면 해당 단계로 돌아갑니다. 진행바는 100%이고 Back은 두지 않습니다.</span>
+    <div style="{{ phone }}">
+      <div style="{{ bar }}"><span>9:41</span></div>
+      <div style="{{ stepNav }}"><div style="{{ progTrack }}"><span style="{{ prog100 }}"></span></div><span style="{{ stepLabel }}">완료</span></div>
+      <div class="nsb" style="{{ scroll }}">
+        <div style="{{ qBlock }}">
+          <span style="{{ qTitle }}">이대로<br>시작할까요?</span>
+          <span style="{{ qSub }}">MY에서 언제든 바꿀 수 있어요</span>
+        </div>
+        <div style="{{ sec }}">
+          <div style="{{ sumCard }}">
+            <sc-for list="{{ summary }}" as="s" hint-placeholder-count="5">
+              <div style="{{ s.rowStyle }}">
+                <span style="{{ sumK }}">{{ s.k }}</span>
+                <span style="{{ sumV }}">{{ s.v }}</span>
+                <span style="{{ sumEdit }}">바꾸기</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      <div style="{{ dockSingle2 }}"><span style="{{ ctaFullP }}">웨딩픽 시작하기</span></div>
+    </div>
+  </div>
+
+<div style="{{ colWideAfter }}">
+    <div style="{{ tag }}"><span style="{{ tagId }}">8</span>온보딩 · 정본과 다른 점</div>
+    <span style="{{ tagDesc }}">정책 판단이 필요한 항목은 주황색입니다.</span>
+    <div style="{{ diffCard }}">
+      <div style="{{ diffHead }}"><span style="{{ dh1 }}">항목</span><span style="{{ dh2 }}">Figma 원본</span><span style="{{ dh3 }}">정본 적용</span><span style="{{ dh4 }}">근거</span></div>
+      <sc-for list="{{ diffs }}" as="d" hint-placeholder-count="14">
+        <div style="{{ diffRow }}"><span style="{{ dc1 }}">{{ d.k }}</span><span style="{{ dc2 }}">{{ d.a }}</span><span style="{{ d.bStyle }}">{{ d.b }}</span><span style="{{ dc3 }}">{{ d.why }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+
+</div>
+
+  <div style="width:100%;flex:0 0 100%;padding:16px 0 0;font-size:22px;line-height:30px;font-weight:700;color:#212124">2 · 홈</div>
+  <div style="{{ hcol }}">
+    <div style="{{ htag }}"><span style="{{ htagId }}">9</span>Home · 중복 정리 · WP-HOME-001</div>
+    <span style="{{ htagDesc }}">전체 화면 체계에 맞춰 개편했습니다. 별점을 실 제보 건수로 바꾸고 추천 카드에 이유를 붙였습니다. «웨딩픽이 골라뒀어요» 카드는 Pick과 연계됩니다 — «자세히»와 각 카드를 누르면 Pick의 해당 업종으로 이동합니다. 상태는 미정 · 상담예약 완료 · Pick 인증 완료 · 계약 완료 4단계이고, 계약 완료면 카드가 코랄로 채워지고 히어로에도 배지로 나옵니다.</span>
+    <div style="{{ hphone }}">
+      <div style="{{ hbar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+
+      <div style="{{ header }}">
+        <span style="{{ wordmark }}">웨딩픽</span>
+        <span style="{{ headIcons }}">
+          <span style="{{ iconBtn }}"><span style="{{ icoBell }}"></span></span>
+        </span>
+      </div>
+
+      <div class="nsb" style="{{ hscroll }}">
+
+        <div style="{{ heroWrap }}">
+          <div style="{{ hero }}">
+            <span style="{{ heroBlob1 }}"></span>
+            <span style="{{ heroBlob2 }}"></span>
+            <div style="{{ heroInner }}">
+              <div style="{{ heroTop }}">
+                <span style="{{ heroKicker }}">두근두근</span>
+                <span style="{{ heroMore }}"><span style="{{ icoMore }}"></span></span>
+              </div>
+              <span style="{{ dday }}">D-127</span>
+              <span style="{{ heroDate }}">2027년 1월 15일 (금) · 서울 그랜드 워커힐<span style="{{ heroVenueBadge }}">계약 완료</span></span>
+              <div style="{{ coupleRow }}">
+                <span style="{{ avWrap }}"><span style="{{ av1 }}">지</span><span style="{{ av2 }}">준</span></span>
+                <span style="{{ coupleText }}">지윤 · 준혁 · 함께 준비 중</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="{{ secNoPad }}">
+          <div style="{{ secHeadPad }}">
+            <div style="{{ secHeadCol }}">
+              <span style="{{ hsecTitle }}">웨딩픽이 골라뒀어요</span>
+              <span style="{{ secSub }}">지금은 스튜디오 차례예요</span>
+            </div>
+            <a href="대메뉴_Pick.dc.html" style="{{ moreRow }}">자세히<span style="{{ icoMoreChev }}"></span></a>
+          </div>
+          <div style="{{ prepGridPad }}">
+            <sc-for list="{{ prep }}" as="p" hint-placeholder-count="4">
+              <a href="{{ p.href }}" style="{{ p.card }}">
+                <div style="{{ prepTop }}">
+                  <span style="{{ p.iconStyle }}" class="{{ p.iconClass }}">{{ p.iconText }}</span>
+                  <span style="{{ p.markStyle }}"></span>
+                </div>
+                <span style="{{ prepLabel }}">{{ p.label }}</span>
+                <span style="{{ p.detailStyle }}">{{ p.detail }}</span>
+              </a>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="{{ hsec }}">
+          <div style="{{ secHead }}">
+            <div style="{{ secHeadCol }}">
+              <span style="{{ hsecTitle }}">웨딩일정</span>
+              <span style="{{ secSub }}">가까운 일정부터 안내드려요</span>
+            </div>
+            <span style="{{ moreRow }}">자세히<span style="{{ icoMoreChev }}"></span></span>
+          </div>
+          <div style="{{ schedWrap }}">
+            <sc-for list="{{ schedule }}" as="s" hint-placeholder-count="3">
+              <div style="{{ s.row }}">
+                <div style="{{ schedDate }}">
+                  <span style="{{ schedMonth }}">{{ s.month }}</span>
+                  <span style="{{ s.dayStyle }}">{{ s.day }}</span>
+                </div>
+                <div style="{{ schedCol }}">
+                  <span style="{{ schedTitle }}">{{ s.title }}</span>
+                  <span style="{{ schedMeta }}">{{ s.meta }}</span>
+                </div>
+                <span style="{{ s.ddayStyle }}">{{ s.dday }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="{{ hsec }}">
+          <div style="{{ secHead }}">
+            <div style="{{ secHeadCol }}">
+              <span style="{{ hsecTitle }}">예산현황</span>
+              <span style="{{ secSub }}">예산의 57%를 썼어요</span>
+            </div>
+            <span style="{{ moreRow }}">자세히<span style="{{ icoMoreChev }}"></span></span>
+          </div>
+          <div style="{{ spendCard }}">
+            <div style="{{ spendDonutRow }}">
+              <div style="{{ spendDonutWrap }}">
+                <svg width="72" height="72" viewBox="0 0 72 72">
+                  <circle cx="36" cy="36" r="28" fill="none" stroke="#eaebee" stroke-width="10"></circle>
+                  <circle cx="36" cy="36" r="28" fill="none" stroke="#ff6f61" stroke-width="10" stroke-dasharray="100.3 75.7" stroke-linecap="round" transform="rotate(-90 36 36)"></circle>
+                </svg>
+                <span style="{{ spendDonutPct }}">57%</span>
+              </div>
+              <div style="{{ spendDonutCol }}">
+                <span style="{{ spendBig }}">1,000만원</span>
+                <span style="{{ spendOf }}">예산 1,750만원</span>
+              </div>
+            </div>
+            <span style="{{ spendNote }}">웨딩홀이 예산의 43%로 가장 큰 비중이에요</span>
+          </div>
+        </div>
+
+        <div style="{{ secLast }}">
+          <div style="{{ secHead }}">
+            <div style="{{ secHeadCol }}">
+              <span style="{{ hsecTitle }}">웨딩 준비 팁</span>
+              <span style="{{ secSub }}">지금 단계에서 읽어두면 좋아요</span>
+            </div>
+            <span style="{{ moreRow }}">자세히<span style="{{ icoMoreChev }}"></span></span>
+          </div>
+          <div style="{{ feedWrap }}">
+            <sc-for list="{{ feed }}" as="f" hint-placeholder-count="2">
+              <div style="{{ feedCard }}">
+                <span style="{{ f.thumbStyle }}"></span>
+                <div style="{{ feedBody }}">
+                  <span style="{{ feedCat }}">{{ f.category }}</span>
+                  <span style="{{ feedTitle }}">{{ f.title }}</span>
+                  <span style="{{ feedMeta }}">{{ f.meta }}</span>
+                </div>
+                <span style="{{ feedChev }}"></span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+      </div>
+
+      <div style="{{ tabBar }}">
+        <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
+          <div style="{{ t.wrapStyle }}">
+            <sc-if value="{{ t.isPick }}" hint-placeholder-val="{{ false }}">
+              <span style="{{ t.fabStyle }}"><span style="{{ t.iconStyle }}"></span></span>
+            </sc-if>
+            <sc-if value="{{ t.isPlain }}" hint-placeholder-val="{{ true }}">
+              <span style="{{ t.iconStyle }}"></span>
+            </sc-if>
+            <span style="{{ t.labelStyle }}">{{ t.label }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <div style="{{ hcol }}">
+    <div style="{{ tagRow }}"><span style="{{ tagIdWide }}">9-1</span><span style="{{ tagText }}">홈 · 아무것도 없을 때 · WP-HOME-002</span></div>
+    <span style="{{ tagDesc }}">온보딩만 마치고 아직 아무것도 정하지 않은 경우입니다. 히어로에 예식장 정보가 없고, 4칸 모두 미정입니다. 예산·일정 섹션 대신 시작 안내를 하나만 둡니다.</span>
+    <div style="{{ hphone }}">
+      <div style="{{ hbar }}"><span>9:41</span></div>
+      <div style="{{ header }}"><span style="{{ wordmark }}">웨딩픽</span><span style="{{ headIcons }}"><span style="{{ iconBtn }}"><span style="{{ icoBell }}"></span></span></span></div>
+      <div class="nsb" style="{{ hscroll }}">
+        <div style="{{ heroWrap }}">
+          <div style="{{ hero }}">
+            <span style="{{ heroBlob1 }}"></span><span style="{{ heroBlob2 }}"></span>
+            <div style="{{ heroInner }}">
+              <div style="{{ heroTop }}"><span style="{{ heroKicker }}">두근두근</span></div>
+              <span style="{{ dday }}">D-127</span>
+              <span style="{{ heroDate }}">예식일만 정했어요 · 장소는 아직이에요</span>
+            </div>
+          </div>
+        </div>
+        <div style="{{ secNoPad }}">
+          <div style="{{ secHeadPad }}"><div style="{{ secHeadCol }}"><span style="{{ hsecTitle }}">웨딩픽이 골라뒀어요</span><span style="{{ secSub }}">아직 정한 게 없어요</span></div><a href="대메뉴_Pick.dc.html" style="{{ moreRow }}">자세히<span style="{{ icoMoreChev }}"></span></a></div>
+          <div style="{{ prepGridPad }}">
+            <sc-for list="{{ prepEmpty }}" as="p" hint-placeholder-count="4">
+              <a href="{{ p.href }}" style="{{ p.card }}">
+                <div style="{{ prepTop }}"><span style="{{ p.iconStyle }}" class="{{ p.iconClass }}">{{ p.iconText }}</span><span style="{{ p.markStyle }}"></span></div>
+                <span style="{{ prepLabel }}">{{ p.label }}</span>
+                <span style="{{ p.detailStyle }}">{{ p.detail }}</span>
+              </a>
+            </sc-for>
+          </div>
+        </div>
+        <div style="{{ hsec }}">
+          <div style="{{ secHead }}"><div style="{{ secHeadCol }}"><span style="{{ hsecTitle }}">웨딩일정</span><span style="{{ secSub }}">기본 순서로 안내드려요 · 언제든 바꿀 수 있어요</span></div></div>
+          <div style="{{ schedWrap }}">
+            <sc-for list="{{ defaultSchedule }}" as="s" hint-placeholder-count="5">
+              <div style="{{ s.row2 }}">
+                <div style="{{ schedDate }}"><span style="{{ s.numStyle }}">{{ s.num }}</span></div>
+                <div style="{{ schedCol }}"><span style="{{ schedTitle }}">{{ s.label }}</span><span style="{{ schedMeta }}">날짜는 아직이에요</span></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="{{ hsec }}">
+          <div style="{{ secHead }}"><div style="{{ secHeadCol }}"><span style="{{ hsecTitle }}">예산현황</span><span style="{{ secSub }}">온보딩에서 등록한 예산이에요</span></div></div>
+          <div style="{{ spendCard }}">
+            <div style="{{ spendDonutRow }}">
+              <div style="{{ spendDonutWrap }}"><svg width="72" height="72" viewBox="0 0 72 72"><circle cx="36" cy="36" r="28" fill="none" stroke="#eaebee" stroke-width="10"></circle></svg><span style="{{ spendDonutPct }}">0%</span></div>
+              <div style="{{ spendDonutCol }}"><span style="{{ spendBig }}">0원</span><span style="{{ spendOf }}">예산 1,750만원</span></div>
+            </div>
+            <span style="{{ spendNote }}">아직 예산 정보가 없어요</span>
+          </div>
+        </div>
+
+        <div style="{{ secLast }}">
+          <div style="{{ secHead }}"><div style="{{ secHeadCol }}"><span style="{{ hsecTitle }}">웨딩 준비 팁</span><span style="{{ secSub }}">지금 단계에서 읽어두면 좋아요</span></div></div>
+          <div style="{{ feedWrap }}">
+            <sc-for list="{{ feed }}" as="f" hint-placeholder-count="2">
+              <div style="{{ feedCard }}">
+                <span style="{{ f.thumbStyle }}"></span>
+                <div style="{{ feedBody }}"><span style="{{ feedCat }}">{{ f.category }}</span><span style="{{ feedTitle }}">{{ f.title }}</span><span style="{{ feedMeta }}">{{ f.meta }}</span></div>
+                <span style="{{ feedChev }}"></span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      <div style="{{ tabBar }}"><sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5"><div style="{{ t.wrapStyle }}"><sc-if value="{{ t.isPick }}" hint-placeholder-val="{{ false }}"><span style="{{ t.fabStyle }}"><span style="{{ t.iconStyle }}"></span></span></sc-if><sc-if value="{{ t.isPlain }}" hint-placeholder-val="{{ true }}"><span style="{{ t.iconStyle }}"></span></sc-if><span style="{{ t.labelStyle }}">{{ t.label }}</span></div></sc-for></div>
+    </div>
+  </div>
+
+  <div style="{{ hcol }}">
+    <div style="{{ tagRow }}"><span style="{{ tagIdWide }}">9-2</span><span style="{{ tagText }}">홈 · 일부 정보가 있을 때 · WP-HOME-003</span></div>
+    <span style="{{ tagDesc }}">한두 업종만 진행 중인 경우입니다. 히어로엔 예식장 정보가 아직 없고, 4칸 중 하나만 상담예약 완료 · 나머지는 미정입니다.</span>
+    <div style="{{ hphone }}">
+      <div style="{{ hbar }}"><span>9:41</span></div>
+      <div style="{{ header }}"><span style="{{ wordmark }}">웨딩픽</span><span style="{{ headIcons }}"><span style="{{ iconBtn }}"><span style="{{ icoBell }}"></span></span></span></div>
+      <div class="nsb" style="{{ hscroll }}">
+        <div style="{{ heroWrap }}">
+          <div style="{{ hero }}">
+            <span style="{{ heroBlob1 }}"></span><span style="{{ heroBlob2 }}"></span>
+            <div style="{{ heroInner }}">
+              <div style="{{ heroTop }}"><span style="{{ heroKicker }}">두근두근</span></div>
+              <span style="{{ dday }}">D-127</span>
+              <span style="{{ heroDate }}">2027년 1월 15일 (금) · 장소는 아직이에요</span>
+            </div>
+          </div>
+        </div>
+        <div style="{{ secNoPad }}">
+          <div style="{{ secHeadPad }}"><div style="{{ secHeadCol }}"><span style="{{ hsecTitle }}">웨딩픽이 골라뒀어요</span><span style="{{ secSub }}">지금은 웨딩홀 차례예요</span></div><a href="대메뉴_Pick.dc.html" style="{{ moreRow }}">자세히<span style="{{ icoMoreChev }}"></span></a></div>
+          <div style="{{ prepGridPad }}">
+            <sc-for list="{{ prepPartial }}" as="p" hint-placeholder-count="4">
+              <a href="{{ p.href }}" style="{{ p.card }}">
+                <div style="{{ prepTop }}"><span style="{{ p.iconStyle }}" class="{{ p.iconClass }}">{{ p.iconText }}</span><span style="{{ p.markStyle }}"></span></div>
+                <span style="{{ prepLabel }}">{{ p.label }}</span>
+                <span style="{{ p.detailStyle }}">{{ p.detail }}</span>
+              </a>
+            </sc-for>
+          </div>
+        </div>
+        <div style="{{ hsec }}">
+          <div style="{{ secHead }}"><div style="{{ secHeadCol }}"><span style="{{ hsecTitle }}">웨딩일정</span><span style="{{ secSub }}">기본 순서로 안내드려요 · 언제든 바꿀 수 있어요</span></div></div>
+          <div style="{{ schedWrap }}">
+            <sc-for list="{{ defaultSchedule }}" as="s" hint-placeholder-count="5">
+              <div style="{{ s.row2 }}">
+                <div style="{{ schedDate }}"><span style="{{ s.numStyle }}">{{ s.num }}</span></div>
+                <div style="{{ schedCol }}"><span style="{{ schedTitle }}">{{ s.label }}</span><span style="{{ schedMeta }}">날짜는 아직이에요</span></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="{{ hsec }}">
+          <div style="{{ secHead }}"><div style="{{ secHeadCol }}"><span style="{{ hsecTitle }}">예산현황</span><span style="{{ secSub }}">온보딩에서 등록한 예산이에요</span></div></div>
+          <div style="{{ spendCard }}">
+            <div style="{{ spendDonutRow }}">
+              <div style="{{ spendDonutWrap }}"><svg width="72" height="72" viewBox="0 0 72 72"><circle cx="36" cy="36" r="28" fill="none" stroke="#eaebee" stroke-width="10"></circle><circle cx="36" cy="36" r="28" fill="none" stroke="#ff6f61" stroke-width="10" stroke-dasharray="12.6 163.4" stroke-linecap="round" transform="rotate(-90 36 36)"></circle></svg><span style="{{ spendDonutPct }}">7%</span></div>
+              <div style="{{ spendDonutCol }}"><span style="{{ spendBig }}">120만원</span><span style="{{ spendOf }}">예산 1,750만원</span></div>
+            </div>
+            <span style="{{ spendNote }}">웨딩홀 상담 예약금만 냈어요</span>
+          </div>
+        </div>
+
+        <div style="{{ secLast }}">
+          <div style="{{ secHead }}"><div style="{{ secHeadCol }}"><span style="{{ hsecTitle }}">웨딩 준비 팁</span><span style="{{ secSub }}">지금 단계에서 읽어두면 좋아요</span></div></div>
+          <div style="{{ feedWrap }}">
+            <sc-for list="{{ feed }}" as="f" hint-placeholder-count="2">
+              <div style="{{ feedCard }}">
+                <span style="{{ f.thumbStyle }}"></span>
+                <div style="{{ feedBody }}"><span style="{{ feedCat }}">{{ f.category }}</span><span style="{{ feedTitle }}">{{ f.title }}</span><span style="{{ feedMeta }}">{{ f.meta }}</span></div>
+                <span style="{{ feedChev }}"></span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      <div style="{{ tabBar }}"><sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5"><div style="{{ t.wrapStyle }}"><sc-if value="{{ t.isPick }}" hint-placeholder-val="{{ false }}"><span style="{{ t.fabStyle }}"><span style="{{ t.iconStyle }}"></span></span></sc-if><sc-if value="{{ t.isPlain }}" hint-placeholder-val="{{ true }}"><span style="{{ t.iconStyle }}"></span></sc-if><span style="{{ t.labelStyle }}">{{ t.label }}</span></div></sc-for></div>
+    </div>
+  </div>
+
+  <div style="{{ hcol }}">
+    <div style="{{ htag }}"><span style="{{ htagId }}">10</span>타이포 · 반지름</div>
+    <div style="{{ specCard }}">
+      <sc-for list="{{ typeSpec }}" as="t2" hint-placeholder-count="7">
+        <div style="{{ kvRow }}">
+          <span style="{{ kvKey }}">{{ t2.k }}</span>
+          <span style="{{ kvVal }}">{{ t2.v }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="{{ hcolWide }}">
+    <div style="{{ htag }}"><span style="{{ htagId }}">11</span>홈 · 정본과 다른 점</div>
+    <span style="{{ htagDesc }}">Figma 기준을 따르기로 했으므로 아래 항목은 정본 문서(CLAUDE.md · tokens.json · screens.json)를 고쳐야 합니다.</span>
+    <div style="{{ hdiffCard }}">
+      <div style="{{ hdiffHead }}">
+        <span style="{{ hdh1 }}">항목</span>
+        <span style="{{ hdh2 }}">정본</span>
+        <span style="{{ hdh3 }}">Figma</span>
+        <span style="{{ hdh4 }}">판단</span>
+      </div>
+      <sc-for list="{{ hdiffs }}" as="d" hint-placeholder-count="12">
+        <div style="{{ hdiffRow }}">
+          <span style="{{ hdc1 }}">{{ d.k }}</span>
+          <span style="{{ hdc2 }}">{{ d.a }}</span>
+          <span style="{{ hdc3 }}">{{ d.b }}</span>
+          <span style="{{ d.verdictStyle }}">{{ d.verdict }}</span>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="{{ tag2 }}"><span style="{{ htagId }}">12</span>Figma에만 있는 화면</div>
+    <div style="{{ newCard }}">
+      <sc-for list="{{ newScreens }}" as="n" hint-placeholder-count="8">
+        <div style="{{ newRow }}">
+          <span style="{{ newRoute }}">{{ n.route }}</span>
+          <span style="{{ newName }}">{{ n.name }}</span>
+          <span style="{{ newNote }}">{{ n.note }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="width:100%;flex:0 0 100%;padding:16px 0 0;font-size:22px;line-height:30px;font-weight:700;color:#212124">3 · 빠진 화면 보완</div>
+
+  <div style="{{ hcol }}">
+    <div style="{{ htag }}"><span style="{{ htagId }}">13</span>스플래시 · 시작 · WP-APP-001</div>
+    <span style="{{ htagDesc }}">앱을 열면 뜹니다. 스킨과 무관하게 Coral 고정이고, 마크는 White입니다. 로그인 여부를 확인하는 동안만 보이고 버튼은 없습니다.</span>
+    <div style="{{ hphone }}">
+      <div style="{{ splashStage }}">
+        <span style="{{ splashMark }}"></span>
+        <span style="{{ splashName }}">웨딩픽</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="{{ hcol }}">
+    <div style="{{ htag }}"><span style="{{ htagId }}">14</span>만 14세 이용 불가 · WP-AUTH-009</div>
+    <span style="{{ htagDesc }}">카카오 출생연도가 만 14세 미달일 때만 뜹니다. 계정은 만들지 않고, CTA는 coral을 쓰지 않습니다.</span>
+    <div style="{{ hphone }}">
+      <div style="{{ hbar }}"><span>9:41</span></div>
+      <div style="{{ agesStage }}">
+        <span style="{{ agesTitle }}">만 14세가 되면<br>웨딩픽을 이용할 수 있어요</span>
+        <span style="{{ agesNote }}">계정은 만들지 않았어요. 출생 연도는 삭제했어요.</span>
+      </div>
+      <div style="{{ dockSingleH }}"><span style="{{ ctaGhostH }}">돌아가기</span></div>
+    </div>
+  </div>
+
+  <div style="{{ hcolWide }}">
+    <div style="{{ htag }}"><span style="{{ htagId }}">15</span>홈 상태 3종 · WP-HOME-001</div>
+    <span style="{{ htagDesc }}">진행 상황 축입니다. 0개 · 1~8개 · 9개 이상이 화면 골격을 바꿉니다. 정보량(실 제보 3건 기준)은 각 카드 안에서 따로 갈립니다.</span>
+    <div style="{{ stateRow }}">
+      <div style="{{ stateCard }}">
+        <span style="{{ stateLabel }}">0개 · 온보딩 직후</span>
+        <span style="{{ stateBig }}">아직 결정한 게 없어요</span>
+        <span style="{{ stateSub }}">웨딩픽 추천만 뜨고 준비현황·지출 섹션은 접혀요.</span>
+      </div>
+      <div style="{{ stateCard }}">
+        <span style="{{ stateLabel }}">1~8개 · 준비 중</span>
+        <span style="{{ stateBig }}">진행바 38%</span>
+        <span style="{{ stateSub }}">결정한 것과 남은 것이 같이 보여요. 다음 준비 섹션이 가장 위에 있어요.</span>
+      </div>
+      <div style="{{ stateCard }}">
+        <span style="{{ stateLabel }}">9개 이상 · 마무리</span>
+        <span style="{{ stateBig }}">진행바 92%</span>
+        <span style="{{ stateSub }}">추천 섹션이 사라지고 웨딩노트 진행 요약이 가장 위로 와요.</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="{{ hcol }}">
+    <div style="{{ htag }}"><span style="{{ htagId }}">16</span>혜택 안내 시트 · WP-SHT-017</div>
+    <span style="{{ htagDesc }}">온보딩 완료 후 홈 최초 진입 1회, 400ms 뒤 뜹니다. 네 혜택 중 금액이 가장 큰 웨딩지원금 5만원만 내세웁니다.</span>
+    <div style="{{ hphone }}">
+      <div style="{{ hbar }}"><span>9:41</span></div>
+      <div style="{{ dimWrapH }}">
+        <span style="{{ dimH }}"></span>
+        <span style="{{ grabH }}"></span>
+        <div style="{{ benSheet }}">
+          <div style="{{ formHead }}"><span style="{{ benBig }}">웨딩지원금<br>5만원</span><span style="{{ formClose }}"><span style="{{ icoXsm }}"></span></span></div>
+          <span style="{{ benSub }}">응모하면 매달 1커플에게 지급해요</span>
+          <div style="{{ benConds }}">
+            <sc-for list="{{ benItems }}" as="b" hint-placeholder-count="3">
+              <div style="{{ benRow }}"><span style="{{ benDot }}"></span><span style="{{ benText }}">{{ b }}</span></div>
+            </sc-for>
+          </div>
+          <div style="{{ benDock }}"><span style="{{ btnGhostH }}">나중에</span><span style="{{ btnFullH }}">혜택 보기</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+  </section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:2000,&quot;height&quot;:1200}}">
+class Component extends DCLogic {
+  renderVals() {
+    const hP = '#ff6f61';
+    const hINK = '#212124';
+    const hSUB = '#4d5159';
+    const hMUTED = '#868b94';
+    const hDIM = '#adb1ba';
+    const hSEC = '#f2f3f6';
+    const hREC = '#f7f8fa';
+    const hBORDER = '#eaebee';
+    const SANS = "-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic',sans-serif";
+    const DISPLAY = SANS;
+    const MONO = SANS;
+
+    const prepFull = (name, state, kind) => ({ name, state,
+      card: prepCard(kind), mark: prepMark(kind),
+      label: 'flex:1;min-width:0;font-size:14px;font-weight:700;color:' + hINK + ';display:flex;flex-direction:column;gap:2px',
+      detail: prepDetail(kind), chev: hICO('chevron-right', 16, hDIM) });
+    const top3 = (rank, name, reason, price) => ({ rank, name, reason, price });
+    const chip2 = (label, on) => ({ label,
+      style: 'flex:0 0 auto;height:32px;padding:0 14px;border-radius:999px;display:inline-flex;align-items:center;font-size:13px;font-weight:700;white-space:nowrap;'
+        + (on ? 'background:' + hINK + ';color:#fff;' : 'background:' + hSEC + ';color:' + hSUB + ';') });
+    const prepCard = kind => ({
+      contracted: 'width:100%;box-sizing:border-box;padding:14px;border-radius:10px;background:#fff5f2;border:1.5px solid ' + hP + ';display:flex;flex-direction:column;gap:2px;min-width:0;overflow:hidden',
+      done: 'width:100%;box-sizing:border-box;padding:14px;border-radius:10px;background:' + hREC + ';border:1px solid ' + hBORDER + ';display:flex;flex-direction:column;gap:2px;min-width:0;overflow:hidden',
+      picking: 'width:100%;box-sizing:border-box;padding:14px;border-radius:10px;background:#fff5f2;border:1px solid #ffd9d4;display:flex;flex-direction:column;gap:2px;min-width:0;overflow:hidden',
+      todo: 'width:100%;box-sizing:border-box;padding:14px;border-radius:10px;background:' + hREC + ';border:1px solid ' + hBORDER + ';display:flex;flex-direction:column;gap:2px;min-width:0;overflow:hidden'
+    })[kind];
+
+    const prepMark = kind => ({
+      contracted: hICO('check-fill', 16, hP),
+      done: hICO('check-fill', 16, hINK),
+      picking: hICO('clock', 16, hP),
+      todo: 'width:16px;height:16px;flex:0 0 16px;border-radius:999px;border:1.5px solid #dcdee3;box-sizing:border-box'
+    })[kind];
+
+    const prepDetail = kind => 'font-size:12px;line-height:17px;font-weight:500;margin-top:2px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:'
+      + (kind === 'contracted' ? hP : kind === 'done' ? hINK : kind === 'picking' ? hP : hMUTED);
+
+    const M3ICO = (name, px, color) => ({ isM3: true, name, style: 'font-size:' + px + 'px;color:' + color + ';flex:0 0 ' + px + 'px;width:' + px + 'px;height:' + px + 'px;display:inline-flex;align-items:center;justify-content:center' });
+    const hICO = (name, px, color) => 'width:' + px + 'px;height:' + px + 'px;flex:0 0 ' + px + 'px;'
+      + 'background-color:' + color + ';'
+      + '-webkit-mask:url("assets/seed-icons/' + name + '.svg") center/contain no-repeat;'
+      + 'mask:url("assets/seed-icons/' + name + '.svg") center/contain no-repeat;'
+      + 'display:inline-block';
+
+    const IMGDIR = 'uploads/%EC%8A%A4%ED%83%80%EC%9D%BC%20%EC%9D%B4%EB%AF%B8%EC%A7%80/';
+    const IMGS = {
+      studio: IMGDIR + 'urban.png',
+      makeup: IMGDIR + 'natural.png',
+      dress: IMGDIR + 'romantic.png',
+      feed1: IMGDIR + 'glamorous.png',
+      feed2: IMGDIR + 'natural.png'
+    };
+
+    const rec = (o) => ({
+      name: o.name, category: o.category, location: o.location, price: o.price,
+      reports: o.reports, reason: o.reason, badge: o.badge || '',
+      imgStyle: 'position:absolute;inset:0;background:' + hSEC + ' url("' + o.img + '") center/cover no-repeat',
+      heartStyle: 'position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:999px;display:flex;align-items:center;justify-content:center;'
+        + (o.picked ? 'background:' + hINK + ';' : 'background:rgba(255,255,255,.82);'),
+      heartIcon: hICO(o.picked ? 'heart-fill' : 'heart', 16, o.picked ? '#fff' : hINK)
+    });
+
+    const tab = (o) => {
+      const on = !!o.active;
+      const glyph = on && o.fillName ? o.fillName : o.name;
+      return {
+        label: o.label, isPick: false, isPlain: true,
+        iconStyle: hICO(glyph, 24, on ? hINK : hMUTED),
+        wrapStyle: 'flex:1;display:flex;flex-direction:column;align-items:center;gap:4px',
+        fabStyle: '',
+        labelStyle: 'font-size:12px;line-height:16px;font-weight:700;color:' + (on ? hINK : hMUTED)
+      };
+    };
+
+    const th = (name, hex, tagText) => ({
+      name, hex, tag: tagText || '',
+      rowStyle: 'display:flex;align-items:center;gap:14px;min-height:56px;padding:12px 0;box-shadow:inset 0 -1px 0 ' + hBORDER,
+      swatchStyle: 'width:36px;height:36px;flex:0 0 36px;border-radius:10px;background:' + hex,
+      tagStyle: 'padding:3px 9px;border-radius:4px;background:#fff0f1;color:' + hP + ';font-size:13px;line-height:18px;font-weight:700;white-space:nowrap'
+    });
+
+    const hdiff = (k, a, b, verdict, kind) => ({
+      k, a, b, verdict,
+      verdictStyle: 'width:120px;flex:0 0 120px;font-size:13px;line-height:20px;font-weight:700;white-space:nowrap;color:'
+        + (kind === 'bad' ? '#dc2626' : kind === 'warn' ? '#b45309' : hMUTED)
+    });
+
+
+    const P = '#ff6f61';
+    const INK = '#212124';
+    const SUB = '#4d5159';
+    const MUTED = '#868b94';
+    const DIM = '#adb1ba';
+    const SEC = '#f2f3f6';
+    const REC = '#f7f8fa';
+    const BORDER = '#eaebee';
+    const AMBER = '#805217';
+    const DS = 'assets/seed-icons/';
+    const ICO = (n, sz, c) => 'display:inline-block;width:' + sz + 'px;height:' + sz + 'px;flex:0 0 ' + sz + 'px;background-color:' + c
+      + ';-webkit-mask:url(' + DS + n + '.svg) center/contain no-repeat;mask:url(' + DS + n + '.svg) center/contain no-repeat';
+    const CHECK = (sz, bg) => 'width:' + sz + 'px;height:' + sz + 'px;flex:0 0 ' + sz + 'px;border-radius:999px;background:' + bg
+      + ';-webkit-mask:none;position:relative;display:inline-flex;align-items:center;justify-content:center;'
+      + 'background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'3.4\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpath d=\'m5 12.5 4.5 4.5L19 7.5\'/%3E%3C/svg%3E");background-size:' + Math.round(sz * 0.62) + 'px;background-position:center;background-repeat:no-repeat';
+
+    const IMG = {
+      urban: 'uploads/스타일 이미지/urban.png',
+      natural: 'uploads/스타일 이미지/natural.png',
+      romantic: 'uploads/스타일 이미지/romantic.png',
+      glam: 'uploads/스타일 이미지/glamorous.png'
+    };
+
+    const cell = (label, on) => ({ label, on,
+      cell: 'height:48px;border-radius:10px;padding:0 14px;display:flex;align-items:center;justify-content:space-between;gap:6px;box-sizing:border-box;'
+        + (on ? 'background:#fff5f2;box-shadow:inset 0 0 0 1.5px ' + P + ';' : 'background:' + REC + ';'),
+      name: 'font-size:15px;font-weight:700;color:' + (on ? P : SUB) + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis' });
+
+    const grp = (title, items, allOn) => ({ title,
+      all: items.length > 1 ? (allOn ? '전체 해제' : '전체 선택') : '',
+      allStyle: 'font-size:13px;font-weight:700;white-space:nowrap;color:' + (allOn ? P : MUTED),
+      grid: 'display:grid;grid-template-columns:repeat(' + (items.length === 1 ? 1 : 2) + ',minmax(0,1fr));gap:8px',
+      items });
+
+    const wheelItem = (label, dist) => ({ label,
+      style: 'flex:0 0 48px;height:48px;display:flex;align-items:center;justify-content:center;white-space:nowrap;'
+        + (dist === 0 ? 'font-size:20px;font-weight:700;color:' + INK + ';'
+          : dist === 1 ? 'font-size:18px;color:' + MUTED + ';'
+            : dist === 2 ? 'font-size:17px;color:#c4c8ce;' : 'font-size:16px;color:#e2e5e9;') });
+    const wheelCol = (items, sel) => ({
+      colStyle: 'flex:1;min-width:0;height:240px;overflow-y:auto;scrollbar-width:none;display:flex;flex-direction:column;padding:96px 0;box-sizing:border-box;position:relative;z-index:2',
+      items: items.map((label, i) => wheelItem(label, Math.abs(i - sel)))
+    });
+    const styleBtn = (label, desc, on) => ({ label, desc,
+      card: 'min-height:72px;padding:16px 18px;border-radius:10px;display:flex;align-items:center;gap:12px;box-sizing:border-box;'
+        + (on ? 'background:#fff5f2;box-shadow:inset 0 0 0 1.5px ' + P + ';' : 'background:' + REC + ';'),
+      nameStyle: 'font-size:17px;font-weight:700;color:' + (on ? P : INK),
+      mark: on ? CHECK(24, P) : 'width:24px;height:24px;flex:0 0 24px;border-radius:999px;box-shadow:inset 0 0 0 1.5px #dcdee3' });
+    const sty = (id, src, label, on) => ({ id, src, label, on,
+      overlay: 'position:absolute;inset:0;border-radius:10px;background:linear-gradient(to top,rgba(0,0,0,.45),rgba(0,0,0,0) 55%);'
+        + (on ? 'box-shadow:inset 0 0 0 2px ' + P + ',inset 0 0 0 100vmax rgba(255,111,97,.16);' : '') });
+
+    const ocr = (k, v, sure, hint) => ({ k, v, hint: hint || '', tag: sure ? '읽었어요' : '확인 필요',
+      card: 'border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:5px;'
+        + (sure ? 'background:' + REC + ';' : 'background:#fff;box-shadow:inset 0 0 0 1.5px ' + P + ';'),
+      tagStyle: 'padding:3px 8px;border-radius:4px;font-size:12px;font-weight:700;white-space:nowrap;'
+        + (sure ? 'background:' + BORDER + ';color:' + MUTED + ';' : 'background:' + P + ';color:#fff;') });
+    const diff = (k, a, b, why, warn) => ({ k, a, b, why,
+      bStyle: 'width:270px;flex:0 0 270px;font-size:13px;line-height:20px;font-weight:700;color:' + (warn ? AMBER : INK) });
+
+    const prepCell = (name, on) => ({ name,
+      cell: 'height:48px;border-radius:10px;padding:0 14px;display:flex;align-items:center;justify-content:space-between;gap:6px;cursor:pointer;box-sizing:border-box;'
+        + (on ? 'background:#fff5f2;box-shadow:inset 0 0 0 1.5px ' + P + ';' : 'background:' + REC + ';'),
+      nameStyle: 'font-size:16px;line-height:22px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:' + (on ? P : SUB),
+      mark: on ? CHECK(20, P) : 'width:20px;height:20px;flex:0 0 20px;border-radius:999px;box-shadow:inset 0 0 0 1.5px ' + BORDER });
+    const PREP_CATS = [
+      { name: '웨딩홀', desc: '예식장 · 식대 · 대관' },
+      { name: '스드메', desc: '스튜디오 · 드레스 · 메이크업' },
+      { name: '본식', desc: '본식스냅 · 부케 · 청첩장' },
+      { name: '예물 · 신혼', desc: '예물 · 혼수 · 허니문' }
+    ];
+    const PREP = (done) => PREP_CATS.map(c => {
+      const on = done.indexOf(c.name) >= 0;
+      return { name: c.name, desc: c.desc,
+        cell: 'border-radius:10px;padding:16px;display:flex;align-items:center;gap:12px;cursor:pointer;box-sizing:border-box;'
+          + (on ? 'background:#fff5f2;box-shadow:inset 0 0 0 1.5px ' + P + ';' : 'background:' + REC + ';'),
+        nameStyle: 'font-size:17px;line-height:23px;font-weight:700;white-space:nowrap;color:' + (on ? P : INK),
+        descStyle: 'font-size:13px;line-height:19px;color:' + MUTED + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis',
+        mark: on ? CHECK(22, P) : 'width:22px;height:22px;flex:0 0 22px;border-radius:999px;box-shadow:inset 0 0 0 1.5px ' + BORDER };
+    });
+    return {
+      sumCard: 'border-radius:10px;background:' + REC + ';overflow:hidden',
+      sumK: 'width:72px;flex:0 0 72px;font-size:14px;line-height:20px;color:' + MUTED,
+      sumV: 'flex:1;min-width:0;font-size:16px;line-height:22px;font-weight:700;color:' + INK + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      sumEdit: 'font-size:14px;line-height:20px;font-weight:700;color:' + P + ';white-space:nowrap;cursor:pointer',
+      sumNote: 'font-size:13px;line-height:19px;color:' + MUTED,
+      dockSingle2: 'flex:0 0 92px;padding:12px 24px;display:flex;box-shadow:inset 0 1px 0 ' + BORDER,
+      ctaFullP: 'flex:1;height:56px;border-radius:6px;background:' + P + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700',
+      summary: [
+        ['예식일', '2027.05.16(토)'], ['지역', '서울 강남구'], ['준비 현황', '웨딩홀'],
+        ['예산', '5,000만원'], ['스타일', '도시적인 · 로맨틱한']
+      ].map((r, i, arr) => ({ k: r[0], v: r[1],
+        rowStyle: 'display:flex;align-items:center;gap:12px;min-height:56px;padding:0 16px;' + (i < arr.length - 1 ? 'box-shadow:inset 0 -1px 0 ' + BORDER : '') })),
+      prepSec: 'flex:0 0 auto;padding:0 24px 20px;display:flex;flex-direction:column;gap:10px',
+      prepCol: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:2px',
+      prepNote: 'padding-top:4px;font-size:13px;line-height:19px;color:' + MUTED + ';text-wrap:pretty',
+      amtField: 'height:64px;border-radius:6px;padding:0 18px;display:flex;align-items:baseline;justify-content:flex-end;gap:6px;box-shadow:inset 0 0 0 1.5px ' + P,
+      amtVal: 'font-size:32px;line-height:64px;font-weight:700;color:' + INK + ';font-variant-numeric:tabular-nums',
+      amtUnit: 'font-size:17px;font-weight:700;color:' + SUB,
+      amtChips: 'display:flex;flex-wrap:wrap;gap:8px',
+      amtNote: 'font-size:13px;line-height:19px;color:' + MUTED,
+      answered4: [{ k: '예식일', v: '2027.05.16(토)' }, { k: '지역', v: '서울 강남구' }, { k: '진행 상황', v: '웨딩홀' }, { k: '예산', v: '5,000만원' }],
+      answered3: [{ k: '예식일', v: '2027.05.16(토)' }, { k: '지역', v: '서울 강남구' }, { k: '진행 상황', v: '웨딩홀' }],
+      amtQuick: ['+100만', '+500만', '+1,000만', '지우기'].map(l => ({ label: l,
+        style: 'height:38px;padding:0 14px;border-radius:999px;background:' + SEC + ';color:' + SUB + ';display:inline-flex;align-items:center;font-size:14px;font-weight:700;cursor:pointer' })),
+      prepGroups: PREP(['웨딩홀']),
+      hroot: 'display:flex;flex-direction:column;gap:40px;align-items:flex-start;padding:64px;width:max-content',
+      hintro: 'display:none;flex-direction:column;gap:10px;max-width:1000px',
+      heyebrow: 'font-size:14px;line-height:19px;font-weight:700;color:' + hP,
+      h40: 'font-size:40px;line-height:52px;font-weight:700;color:' + hINK + ';font-family:' + DISPLAY,
+      introBody: 'font-size:18px;line-height:26px;color:#44403c;text-wrap:pretty',
+      boardRow: 'display:flex;gap:36px;align-items:flex-start',
+      hcol: 'display:flex;flex-direction:column;gap:10px;width:430px',
+      hcolWide: 'width:100%;flex:0 0 100%;display:flex;flex-direction:column;gap:10px;width:880px',
+      htag: 'height:26px;display:flex;align-items:center;gap:8px;font-size:18px;line-height:24px;font-weight:700;color:' + hINK + ';white-space:nowrap;overflow:hidden',
+      tag2: 'height:26px;display:flex;align-items:center;gap:8px;font-size:18px;line-height:24px;font-weight:700;color:' + hINK + ';white-space:nowrap;overflow:hidden;margin-top:22px',
+      htagId: 'width:26px;height:26px;flex:0 0 26px;border-radius:6px;background:' + hINK + ';color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700',
+      htagDesc: 'font-size:14px;line-height:21px;color:#57534e;text-wrap:pretty;padding-bottom:6px',
+
+      hphone: 'width:430px;height:932px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(28,25,23,.14)',
+      hbar: 'height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:' + hINK,
+      barIcons: 'display:flex;gap:5px;align-items:center',
+      header: 'flex:0 0 66px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;background:#fff',
+      wordmark: 'font-family:' + DISPLAY + ';font-size:26px;line-height:34px;font-weight:700;letter-spacing:-.02em;color:' + hINK,
+      headIcons: 'display:flex;align-items:center;gap:4px',
+      iconBtn: 'width:40px;height:40px;border-radius:999px;display:flex;align-items:center;justify-content:center;cursor:pointer',
+      hscroll: 'flex:1 1 auto;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;scrollbar-width:none;padding-bottom:16px',
+
+      heroWrap: 'flex-shrink:0;padding:0 20px 24px',
+      hero: 'position:relative;overflow:hidden;border-radius:14px;padding:18px;background:' + hP + ';color:#fff',
+      heroBlob1: 'position:absolute;right:-40px;top:-40px;width:150px;height:150px;border-radius:999px;background:rgba(255,255,255,.08)',
+      heroBlob2: 'display:none',
+      heroInner: 'position:relative;display:flex;flex-direction:column',
+      heroTop: 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px',
+      heroKicker: 'font-family:' + MONO + ';font-size:9px;line-height:13px;letter-spacing:.2em;color:rgba(255,255,255,.55)',
+      heroMore: 'width:24px;height:24px;border-radius:999px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;cursor:pointer',
+      dday: 'font-family:' + DISPLAY + ';font-size:46px;line-height:46px;font-weight:700;letter-spacing:-.03em;color:#fff',
+      heroDate: 'margin-top:4px;font-size:12px;line-height:17px;color:rgba(255,255,255,.70);display:flex;align-items:center;gap:6px',
+      heroVenueBadge: 'height:18px;padding:0 6px;border-radius:4px;background:rgba(255,255,255,.16);color:rgba(255,255,255,.85);display:inline-flex;align-items:center;font-size:10px;font-weight:600;white-space:nowrap',
+      coupleRow: 'margin-top:12px;display:flex;align-items:center;gap:6px',
+      avWrap: 'display:flex',
+      av1: 'width:16px;height:16px;border-radius:999px;border:1px solid rgba(255,255,255,.5);background:#f7d2c4;color:#513b37;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;box-sizing:border-box',
+      av2: 'width:16px;height:16px;border-radius:999px;border:1px solid rgba(255,255,255,.5);background:#c9daec;color:#31475d;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;box-sizing:border-box;margin-left:-4px',
+      coupleText: 'font-size:10px;line-height:14px;color:rgba(255,255,255,.55)',
+
+      hsec: 'flex-shrink:0;padding:0 20px 24px;display:flex;flex-direction:column;gap:12px',
+      secLast: 'flex-shrink:0;padding:0 20px;display:flex;flex-direction:column;gap:12px',
+      secNoPad: 'flex-shrink:0;padding:0 0 24px;display:flex;flex-direction:column;gap:12px',
+      secHead: 'display:flex;align-items:center;justify-content:space-between;gap:12px',
+      secHeadPad: 'display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 20px',
+      secHeadCol: 'display:flex;flex-direction:column;gap:2px;min-width:0',
+      hsecTitle: 'font-size:14px;line-height:20px;font-weight:700;color:' + hINK,
+      secTitleOnly: 'font-size:14px;line-height:20px;font-weight:700;color:' + hINK,
+      secSub: 'font-size:12px;line-height:17px;color:' + hMUTED,
+      secMeta: 'font-size:12px;line-height:17px;font-weight:700;color:' + hMUTED,
+      moreBtn: 'font-size:12px;line-height:17px;font-weight:700;color:' + hINK + ';cursor:pointer',
+      pillBtn: 'height:32px;padding:0 14px;border-radius:999px;background:' + hP + ';color:#fff;font-size:12px;font-weight:700;display:inline-flex;align-items:center;white-space:nowrap;box-shadow:0 2px 6px rgba(231,137,141,.20);cursor:pointer',
+
+      prepGrid: 'display:grid;grid-template-columns:1fr 1fr;gap:8px',
+      prepGridPad: 'display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:0 20px 14px',
+
+      schedWrap: 'display:flex;flex-direction:column;border-radius:12px;border:1px solid ' + hBORDER + ';overflow:hidden',
+      schedDate: 'width:44px;flex:0 0 44px;display:flex;flex-direction:column;align-items:center;gap:1px',
+      schedMonth: 'font-size:11px;line-height:15px;color:' + hMUTED + ';font-variant-numeric:tabular-nums',
+      schedCol: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:2px',
+      schedTitle: 'font-size:15px;line-height:21px;font-weight:700;color:' + hINK + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis',
+      schedMeta: 'font-size:12px;line-height:17px;color:' + hMUTED + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis',
+      schedule: [
+        { month: '9월', day: '12', title: '드레스 피팅', meta: '오후 2시 · 그레이스 드레스', dday: 'D-2', near: true },
+        { month: '9월', day: '20', title: '스튜디오 촬영', meta: '오전 10시 · 블루밍 스튜디오', dday: 'D-10' },
+        { month: '10월', day: '04', title: '본식 리허설', meta: '오후 4시 · 더채플 청담', dday: 'D-24', last: true }
+      ].map(s => ({ month: s.month, day: s.day, title: s.title, meta: s.meta, dday: s.dday,
+        row: 'display:flex;align-items:center;gap:12px;min-height:64px;padding:0 14px' + (s.last ? '' : ';box-shadow:inset 0 -1px 0 ' + hBORDER),
+        dayStyle: 'font-size:19px;line-height:25px;font-weight:700;font-variant-numeric:tabular-nums;color:' + (s.near ? hP : hINK),
+        ddayStyle: 'font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;color:' + (s.near ? hP : hMUTED) })),
+      prepTop: 'display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px',
+      prepEmoji: 'font-size:20px;line-height:24px',
+      prepLabel: 'font-size:14px;line-height:20px;font-weight:700;color:' + hINK,
+
+      recScroll: 'display:flex;gap:12px;padding:0 0 4px 20px;overflow-x:auto;scrollbar-width:none',
+      recCard: 'flex:0 0 208px;width:208px;border-radius:16px;overflow:hidden;background:#fff;border:1px solid ' + hBORDER + ';box-shadow:0 1px 2px rgba(28,25,23,.05);cursor:pointer',
+      recImgWrap: 'position:relative;width:100%;height:144px;background:' + hSEC,
+      recImg: 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block',
+      feedThumb: 'width:80px;height:80px;flex:0 0 80px;border-radius:10px;object-fit:cover;background:' + hSEC,
+      feedChev: hICO('chevron-right', 16, hDIM) + ';align-self:center',
+      recBadge: 'position:absolute;top:10px;left:10px;padding:2px 8px;border-radius:999px;background:' + hINK + ';color:#fff;font-size:10px;line-height:14px;font-weight:700',
+      recBody: 'padding:12px;display:flex;flex-direction:column;gap:2px',
+      recCat: 'font-size:10px;line-height:14px;font-weight:700;letter-spacing:.06em;color:' + hMUTED,
+      recName: 'font-size:14px;line-height:20px;font-weight:700;color:' + hINK + ';display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      recLoc: 'display:flex;align-items:center;gap:4px;margin-top:2px',
+      recLocText: 'font-size:12px;line-height:17px;color:' + hMUTED,
+      recFoot: 'display:flex;align-items:center;justify-content:space-between;margin-top:8px',
+      recPrice: 'font-family:' + MONO + ';font-size:12px;line-height:17px;font-weight:500;color:' + hINK,
+      recPicks: 'display:flex;align-items:center;gap:4px',
+      recPicksText: 'font-size:12px;line-height:17px;font-weight:500;color:' + hMUTED + ';font-variant-numeric:tabular-nums',
+      recTail: 'flex:0 0 16px',
+
+      catGrid: 'display:grid;grid-template-columns:repeat(3,1fr);gap:8px',
+      catCell: 'background:' + hSEC + ';border-radius:16px;padding:16px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer',
+      catEmoji: 'font-size:24px;line-height:28px',
+      catName: 'font-size:12px;line-height:17px;font-weight:700;color:' + hINK + ';white-space:nowrap',
+
+      feedWrap: 'display:flex;flex-direction:column;gap:12px',
+      feedCard: 'display:flex;gap:12px;padding:12px;border-radius:16px;border:1px solid ' + hBORDER + ';background:#fff;cursor:pointer',
+      feedBody: 'flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center',
+      feedCat: 'font-size:10px;line-height:14px;font-weight:700;letter-spacing:.04em;color:' + hMUTED,
+      feedTitle: 'margin-top:4px;font-size:14px;line-height:20px;font-weight:700;color:' + hINK + ';display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:keep-all',
+      feedMeta: 'margin-top:4px;font-size:11px;line-height:16px;color:' + hMUTED,
+
+      tabBar: 'flex:0 0 76px;display:flex;padding-top:8px;background:#fff;box-shadow:inset 0 1px 0 ' + hBORDER,
+
+      specCard: 'width:430px;background:#fff;border:1px solid ' + hBORDER + ';border-radius:12px;padding:8px 20px 12px;display:flex;flex-direction:column;box-sizing:border-box',
+      specCol: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:2px',
+      specName: 'font-size:15px;line-height:21px;font-weight:700;color:' + hINK,
+      specHex: 'font-family:' + MONO + ';font-size:13px;line-height:18px;color:' + hMUTED,
+      kvRow: 'display:flex;align-items:flex-start;justify-content:space-between;gap:16px;min-height:48px;padding:11px 0;box-shadow:inset 0 -1px 0 ' + hBORDER,
+      kvKey: 'font-size:14px;line-height:20px;color:#57534e;white-space:nowrap',
+      kvVal: 'flex:1;text-align:right;font-family:' + MONO + ';font-size:13px;line-height:20px;color:' + hINK + ';word-break:break-all',
+
+      splashStage: 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:' + hP,
+      splashMark: 'width:64px;height:64px;background-color:#fff;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'1.9\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpath d=\'M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z\'/%3E%3Cpath d=\'M9.4 11.9l1.7 1.7 3.4-3.4\'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'1.9\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpath d=\'M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z\'/%3E%3Cpath d=\'M9.4 11.9l1.7 1.7 3.4-3.4\'/%3E%3C/svg%3E") center/contain no-repeat',
+      splashName: 'font-size:20px;font-weight:700;color:#fff',
+
+      agesStage: 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:0 32px;text-align:center',
+      agesTitle: 'font-size:24px;line-height:33px;font-weight:700;color:' + hINK,
+      agesNote: 'font-size:14px;line-height:21px;color:' + hMUTED,
+      dockSingleH: 'flex:0 0 92px;padding:12px 24px;display:flex;box-shadow:inset 0 1px 0 ' + hBORDER,
+      ctaGhostH: 'flex:1;height:56px;border-radius:6px;background:' + hSEC + ';color:' + hSUB + ';display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700',
+
+      stateRow: 'display:flex;gap:14px',
+      stateCard: 'flex:1;min-width:0;border-radius:10px;background:' + hREC + ';padding:18px;display:flex;flex-direction:column;gap:8px',
+      stateLabel: 'font-size:12px;font-weight:700;color:' + hP,
+      stateBig: 'font-size:17px;font-weight:700;color:' + hINK,
+      stateSub: 'font-size:13px;line-height:19px;color:' + hMUTED,
+
+      navBarH: 'flex:0 0 56px;display:flex;align-items:center;gap:8px;padding:0 16px;box-shadow:inset 0 -1px 0 ' + hBORDER,
+      icoBackH: hICO('chevron-left', 24, hINK),
+      navTitleH: 'flex:1;min-width:0;text-align:center;font-size:16px;font-weight:700;color:' + hINK,
+      navPadH: 'width:40px;flex:0 0 40px',
+      scrollH: 'flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;padding-top:12px;scrollbar-width:none',
+      prepGroupSec: 'display:flex;flex-direction:column;gap:8px;padding:0 0 14px',
+      prepGroupT: 'font-size:14px;font-weight:700;color:' + hMUTED + ';padding:0 20px',
+      prepGroupsFull: [
+        { title: '시작 준비', items: [prepFull('결정사', '결정 완료', 'done'), prepFull('웨딩홀', '결정 완료', 'done')] },
+        { title: '스드메', items: [prepFull('스튜디오', '후보 3곳 담김', 'picking'), prepFull('드레스', '결정 완료', 'done'), prepFull('메이크업', '결정 완료', 'done'), prepFull('헤어변형', '아직 안 봤어요', 'todo')] },
+        { title: '본식 준비', items: [prepFull('본식스냅', '아직 안 봤어요', 'todo'), prepFull('부케', '아직 안 봤어요', 'todo'), prepFull('청첩장', '아직 안 봤어요', 'todo')] },
+        { title: '예물 · 신혼', items: [prepFull('예물', '아직 안 봤어요', 'todo'), prepFull('혼수', '아직 안 봤어요', 'todo'), prepFull('허니문', '아직 안 봤어요', 'todo')] }
+      ],
+
+      top3Cats: 'flex:0 0 auto;display:flex;gap:8px;padding:12px 20px;overflow-x:auto;scrollbar-width:none;box-shadow:inset 0 -1px 0 ' + hBORDER,
+      top3CatChips: [chip2('웨딩홀', true), chip2('스튜디오', false), chip2('드레스', false), chip2('메이크업', false), chip2('본식스냅', false)],
+      top3Row: 'display:flex;align-items:center;gap:14px;min-height:76px;padding:0 20px;box-shadow:inset 0 -1px 0 ' + hBORDER,
+      top3Rank: 'width:24px;flex:0 0 24px;font-size:20px;font-weight:700;color:' + hP + ';font-variant-numeric:tabular-nums',
+      top3Col: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:3px',
+      top3Name: 'font-size:16px;font-weight:700;color:' + hINK,
+      top3Reason: 'font-size:12px;color:' + hP,
+      top3Price: 'font-size:14px;font-weight:700;color:' + hINK + ';font-variant-numeric:tabular-nums;white-space:nowrap',
+      top3List: [
+        top3(1, '청담 E 웨딩홀', '고른 스타일이랑 맞아요', '3,200~4,100만원'),
+        top3(2, '더채플 청담', '실 제보 18건', '2,800~3,600만원'),
+        top3(3, '루이비스스퀘어', '수집 중', '수집 중')
+      ],
+
+      dimWrapH: 'flex:1;position:relative;overflow:hidden;display:flex;align-items:flex-end',
+      dimH: 'position:absolute;inset:0;background:rgba(0,0,0,.45)',
+      benSheet: 'position:relative;width:100%;background:#fff;border-radius:20px 20px 0 0;padding:12px 24px 28px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px',
+      grabH: 'width:40px;height:4px;border-radius:999px;background:' + hBORDER + ';align-self:center;margin-bottom:8px',
+      formHead: 'display:flex;align-items:flex-start;justify-content:space-between;gap:12px',
+      formClose: 'width:36px;height:36px;flex:0 0 36px;border-radius:999px;background:' + hSEC + ';display:flex;align-items:center;justify-content:center',
+      icoXsm: hICO('close-fill', 16, hINK),
+      benBig: 'font-size:24px;line-height:33px;font-weight:700;color:' + hINK,
+      benSub: 'font-size:14px;color:' + hMUTED,
+      benConds: 'display:flex;flex-direction:column;gap:8px',
+      benRow: 'display:flex;align-items:center;gap:10px',
+      benDot: 'width:5px;height:5px;flex:0 0 5px;border-radius:999px;background:' + hP,
+      benText: 'font-size:14px;color:' + hINK,
+      benItems: ['이번 달 안에 미션 4개 완주', '웨딩노트에 배우자 연결', '응모는 한 번만 가능'],
+      benDock: 'display:flex;gap:10px;margin-top:6px',
+      btnGhostH: 'flex:1;height:52px;border-radius:6px;background:' + hSEC + ';color:' + hSUB + ';display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700',
+      btnFullH: 'flex:1.4;height:52px;border-radius:6px;background:' + hP + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700',
+
+      hdiffCard: 'width:880px;background:#fff;border:1px solid ' + hBORDER + ';border-radius:12px;padding:8px 20px 12px;display:flex;flex-direction:column;box-sizing:border-box',
+      hdiffHead: 'display:flex;align-items:center;gap:16px;min-height:44px;box-shadow:inset 0 -1px 0 #d6d3d1',
+      hdh1: 'width:130px;flex:0 0 130px;font-size:12px;line-height:17px;font-weight:700;color:' + hMUTED,
+      hdh2: 'flex:1;font-size:12px;line-height:17px;font-weight:700;color:' + hMUTED,
+      hdh3: 'flex:1;font-size:12px;line-height:17px;font-weight:700;color:' + hMUTED,
+      hdh4: 'width:120px;flex:0 0 120px;font-size:12px;line-height:17px;font-weight:700;color:' + hMUTED,
+      hdiffRow: 'display:flex;align-items:flex-start;gap:16px;min-height:52px;padding:13px 0;box-shadow:inset 0 -1px 0 ' + hBORDER,
+      hdc1: 'width:130px;flex:0 0 130px;font-size:14px;line-height:20px;font-weight:700;color:' + hINK,
+      hdc2: 'flex:1;font-size:13px;line-height:20px;color:' + hMUTED + ';text-wrap:pretty',
+      hdc3: 'flex:1;font-size:13px;line-height:20px;color:' + hINK + ';text-wrap:pretty',
+
+      newCard: 'width:880px;background:#fff;border:1px solid ' + hBORDER + ';border-radius:12px;padding:8px 20px 12px;display:flex;flex-direction:column;box-sizing:border-box',
+      newRow: 'display:flex;align-items:flex-start;gap:16px;min-height:52px;padding:13px 0;box-shadow:inset 0 -1px 0 ' + hBORDER,
+      newRoute: 'width:230px;flex:0 0 230px;font-family:' + MONO + ';font-size:13px;line-height:20px;color:' + hP,
+      newName: 'width:150px;flex:0 0 150px;font-size:14px;line-height:20px;font-weight:700;color:' + hINK,
+      newNote: 'flex:1;font-size:13px;line-height:20px;color:' + hMUTED + ';text-wrap:pretty',
+
+      moreRow: 'display:inline-flex;align-items:center;gap:2px;font-size:13px;font-weight:700;color:' + hMUTED + ';white-space:nowrap',
+      recCtaWrap: 'padding:14px 20px 0',
+      icoMoreChev: hICO('chevron-right', 14, hMUTED),
+      recFootCol: 'display:flex;flex-direction:column;gap:2px',
+      recReports: 'font-size:12px;color:' + hMUTED + ';font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis',
+      recReason: 'font-size:12px;line-height:18px;color:' + hP + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis',
+
+      todoCard: 'border-radius:14px;background:#fff5f2;border:1px solid #ffd9d4;padding:18px;display:flex;flex-direction:column;gap:8px',
+      todoTitle: 'font-size:18px;line-height:25px;font-weight:700;color:' + hINK,
+      todoSub: 'font-size:14px;line-height:21px;color:' + hMUTED,
+      todoBtn: 'margin-top:4px;height:44px;border-radius:8px;background:' + hP + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700',
+      nextWrap: 'display:flex;flex-direction:column;border-radius:12px;border:1px solid ' + hBORDER + ';overflow:hidden',
+      nextRow: 'display:flex;align-items:center;gap:10px;min-height:52px;padding:0 16px;box-shadow:inset 0 -1px 0 ' + hBORDER,
+      nextLabel: 'flex:1;min-width:0;font-size:15px;color:' + hINK + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      nextMeta: 'font-size:13px;color:' + hMUTED + ';font-variant-numeric:tabular-nums;white-space:nowrap',
+
+      spendCard: 'border-radius:12px;background:#fff;border:1px solid ' + hBORDER + ';padding:18px;display:flex;flex-direction:column;gap:10px',
+      spendTop: 'display:flex;align-items:baseline;justify-content:space-between;gap:12px',
+      spendDonutRow: 'display:flex;align-items:center;gap:14px',
+      spendDonutWrap: 'position:relative;width:72px;height:72px;flex:0 0 72px;display:flex;align-items:center;justify-content:center',
+      spendDonutPct: 'position:absolute;font-size:14px;font-weight:700;color:' + hINK + ';font-variant-numeric:tabular-nums',
+      spendDonutCol: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:3px',
+      spendBig: 'font-size:26px;font-weight:700;color:' + hINK + ';font-variant-numeric:tabular-nums',
+      spendOf: 'font-size:13px;color:' + hMUTED + ';font-variant-numeric:tabular-nums;white-space:nowrap',
+      spendTrack: 'height:8px;border-radius:999px;background:' + hBORDER + ';overflow:hidden',
+      spendFill: 'display:block;width:57%;height:100%;border-radius:999px;background:' + hP,
+      spendNote: 'font-size:12px;color:' + hMUTED,
+      secMore: 'font-size:13px;font-weight:700;color:' + hP + ';white-space:nowrap',
+
+      startBox: 'padding:24px 20px;border-radius:12px;background:' + hREC + ';display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center',
+      startT: 'font-size:17px;font-weight:700;color:' + hINK,
+      startS: 'font-size:13px;line-height:19px;color:' + hMUTED,
+      startBtn: 'margin-top:6px;height:44px;padding:0 20px;border-radius:8px;background:' + hP + ';color:#fff;display:inline-flex;align-items:center;font-size:14px;font-weight:700;text-decoration:none;',
+      prepEmpty: ['웨딩홀', '스드메', '본식', '예물 · 신혼'].map((label, i) => { const m = M3ICO(['storefront', 'face_retouching_natural', 'dry_cleaning', 'diamond'][i], 20, hDIM); return { label, detail: '아직 정하지 않았어요',
+        card: prepCard('todo') + 'text-decoration:none;', iconStyle: m.style, iconClass: 'material-symbols-outlined', iconText: m.name, markStyle: prepMark('todo'), detailStyle: prepDetail('todo'),
+        href: '대메뉴_Pick.dc.html#cat-' + ['웨딩홀', '스드메', '본식', '예물신혼'][i] }; }),
+      defaultSchedule: ['상견례 날짜 정하기', '웨딩홀 계약금 입금', '스드메 예약', '청첩장 인쇄', '신혼여행 예약'].map((label, i, arr) => ({ label,
+        row2: 'display:flex;align-items:center;gap:12px;min-height:64px;padding:0 14px' + (i < arr.length - 1 ? ';box-shadow:inset 0 -1px 0 ' + hBORDER : ''),
+        numStyle: 'width:24px;height:24px;border-radius:999px;background:' + hSEC + ';color:' + hMUTED + ';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700',
+        num: i + 1 })),
+      prepPartial: [
+        { label: '웨딩홀', detail: '상담 예약을 마쳤어요', card: prepCard('picking') + 'text-decoration:none;', iconStyle: M3ICO('storefront', 20, hP).style, iconClass: 'material-symbols-outlined', iconText: 'storefront', markStyle: prepMark('picking'), detailStyle: prepDetail('picking'), href: '대메뉴_Pick.dc.html#cat-웨딩홀' },
+        { label: '스드메', detail: '아직 정하지 않았어요', card: prepCard('todo') + 'text-decoration:none;', iconStyle: M3ICO('face_retouching_natural', 20, hDIM).style, iconClass: 'material-symbols-outlined', iconText: 'face_retouching_natural', markStyle: prepMark('todo'), detailStyle: prepDetail('todo'), href: '대메뉴_Pick.dc.html#cat-스드메' },
+        { label: '본식', detail: '아직 정하지 않았어요', card: prepCard('todo') + 'text-decoration:none;', iconStyle: M3ICO('dry_cleaning', 20, hDIM).style, iconClass: 'material-symbols-outlined', iconText: 'dry_cleaning', markStyle: prepMark('todo'), detailStyle: prepDetail('todo'), href: '대메뉴_Pick.dc.html#cat-본식' },
+        { label: '예물 · 신혼', detail: '아직 정하지 않았어요', card: prepCard('todo') + 'text-decoration:none;', iconStyle: M3ICO('diamond', 20, hDIM).style, iconClass: 'material-symbols-outlined', iconText: 'diamond', markStyle: prepMark('todo'), detailStyle: prepDetail('todo'), href: '대메뉴_Pick.dc.html#cat-예물신혼' }
+      ],
+      prep: [
+        { label: '웨딩홀', detail: '계약 완료 · 서울 그랜드 워커힐', card: prepCard('contracted') + 'text-decoration:none;', iconStyle: M3ICO('storefront', 20, hP).style, iconClass: 'material-symbols-outlined', iconText: 'storefront', markStyle: prepMark('contracted'), detailStyle: prepDetail('contracted'), href: '대메뉴_Pick.dc.html#cat-웨딩홀' },
+        { label: '스드메', detail: '상담 예약을 마쳤어요', card: prepCard('picking') + 'text-decoration:none;', iconStyle: M3ICO('face_retouching_natural', 20, hP).style, iconClass: 'material-symbols-outlined', iconText: 'face_retouching_natural', markStyle: prepMark('picking'), detailStyle: prepDetail('picking'), href: '대메뉴_Pick.dc.html#cat-스드메' },
+        { label: '본식', detail: '아직 정하지 않았어요', card: prepCard('todo') + 'text-decoration:none;', iconStyle: M3ICO('dry_cleaning', 20, hDIM).style, iconClass: 'material-symbols-outlined', iconText: 'dry_cleaning', markStyle: prepMark('todo'), detailStyle: prepDetail('todo'), href: '대메뉴_Pick.dc.html#cat-본식' },
+        { label: '예물 · 신혼', detail: '아직 정하지 않았어요', card: prepCard('todo') + 'text-decoration:none;', iconStyle: M3ICO('diamond', 20, hDIM).style, iconClass: 'material-symbols-outlined', iconText: 'diamond', markStyle: prepMark('todo'), detailStyle: prepDetail('todo'), href: '대메뉴_Pick.dc.html#cat-예물신혼' }
+      ],
+
+      recs: [
+        rec({ name: '블루밍 스튜디오', category: '스튜디오', location: '강남구', price: '80~150만원', reports: '실 제보 12건', reason: '고른 스타일이랑 가장 비슷해요', badge: '', img: IMGS.studio, picked: true }),
+        rec({ name: '오드 메이크업', category: '메이크업', location: '청담동', price: '45~80만원', reports: '실 제보 9건', reason: '생각한 예산 안에 들어와요', badge: '', img: IMGS.makeup, picked: false }),
+        rec({ name: '그레이스 드레스', category: '드레스', location: '압구정동', price: '150~380만원', reports: '아직 정보가 적어요 · 3건', reason: '원하는 날에 가능해요', badge: '', img: IMGS.dress, picked: false })
+      ],
+      nextSteps: [
+        { label: '드레스 투어 잡기', meta: 'D-90' },
+        { label: '본식스냅 정하기', meta: 'D-60' }
+      ],
+
+
+      feed: [
+        { category: '예산', title: '예산을 넘기지 않는 스드메 조합 3가지', meta: '웨딩픽 에디터 · 5분',
+          thumbStyle: 'width:80px;height:80px;flex:0 0 80px;border-radius:10px;background:' + hSEC + ' url("' + IMGS.feed1 + '") center/cover no-repeat' },
+        { category: '체크리스트', title: '본식 4개월 전, 지금 정리할 7가지', meta: '준비 가이드 · 4분',
+          thumbStyle: 'width:80px;height:80px;flex:0 0 80px;border-radius:10px;background:' + hSEC + ' url("' + IMGS.feed2 + '") center/cover no-repeat' }
+      ],
+
+      tabs: [
+        tab({ label: '홈', name: 'home', fillName: 'home-fill', active: true }),
+        tab({ label: '검색', name: 'search' }),
+        tab({ label: 'Pick', name: 'heart', fillName: 'heart-fill', isPick: true }),
+        tab({ label: '웨딩노트', name: 'calendar' }),
+        tab({ label: 'MY', name: 'profile', fillName: 'profile-fill' })
+      ],
+
+      icoSearch: hICO('search', 20, hINK),
+      icoBell: hICO('notification', 20, hINK),
+      icoMore: hICO('more-horiz', 14, '#fff'),
+      icoLoc: hICO('location', 12, hMUTED),
+      icoChev: hICO('chevron-right', 16, hDIM),
+
+      typeSpec: [
+        { k: '아이콘', v: 'SEED vendored SVG · mask 방식' },
+        { k: '별 아이콘', v: 'IconReviewStarFill · 85종 미포함 · 직접 그림' },
+        { k: 'display', v: "Playfair Display · 700" },
+        { k: 'sans', v: 'Noto Sans KR · 400 · 500 · 700' },
+        { k: 'mono', v: 'DM Mono · 400 · 500' },
+        { k: 'D-day', v: '46px / lh 1 / ls −0.03em · display' },
+        { k: '워드마크', v: '26px / 700 / ls −0.02em · display' },
+        { k: '섹션 제목', v: '14px / 700 · sans' },
+        { k: '히어로 radius', v: '22px' },
+        { k: '카드 radius', v: '16px' },
+        { k: '프레임 폭', v: '430px · max-w-[430px]' },
+        { k: '탭바', v: '72px · fixed · border-top' }
+      ],
+
+      hdiffs: [
+        hdiff('Primary', '#FF6F61 코랄 (CLAUDE.md 확정)', '#E7898D 더스티 로즈', 'CLAUDE.md 수정', 'bad'),
+        hdiff('폰트', '시스템 서체 · 웹폰트 없음', 'Playfair Display + Noto Sans KR + DM Mono', 'tokens.json 수정', 'bad'),
+        hdiff('프레임 폭', '390px', '430px', 'tokens 수정', 'warn'),
+        hdiff('Root 탭', '홈 · 검색 · Pick · 웨딩일정 · MY', '홈 · 웨딩노트 · Pick · 라운지 · MY', '검색 탭 폐기', 'bad'),
+        hdiff('검색 진입', 'Root 탭 2번', '헤더 아이콘 → /explore', 'IA 수정', 'warn'),
+        hdiff('Pick 탭', '일반 탭 · FAB 금지 명시', '48px 원형 FAB · 그림자', '정책 충돌', 'bad'),
+        hdiff('업종 아이콘', '라인 SVG 24px', '이모지 🏛️ 📷 👗 💄', '정책 충돌 · 이모지 금지', 'bad'),
+        hdiff('평가 표기', '이용한 사람들의 경험 · 3축 · 별점 금지', '별점 4.9 · IconReviewStarFill (picks는 데이터에만 있고 미노출)', '정책 충돌', 'bad'),
+        hdiff('금액 표기', '152~184만원 · 실 제보 12건', '80–150만원 · en dash', '표기 통일 필요', 'warn'),
+        hdiff('카드 radius', '10px', '16px · 히어로 22px', 'tokens 수정', 'warn'),
+        hdiff('히어로', 'D-day + 제목 2줄 + 진행바', 'D-127 + 날짜 1줄 + 커플 아바타 + 테마 스위처', 'Figma 채택', ''),
+        hdiff('준비 현황', '2열 세로 스택 · 12업종', '2×2 카드 · 6업종 · SEED 아이콘', '카테고리 흡수 · 정리 완료', ''),
+        hdiff('카테고리 섹션', '없음', '3×2 그리드 6칸 · 전부 /explore', '중복 · 삭제', ''),
+        hdiff('비교하기 버튼', '비교는 Pick 탭에서', '추천 섹션 헤더에 pill 버튼', '중복 · 삭제', ''),
+        hdiff('남은 스케줄 · 추천', '한 섹션 «준비 현황»', '두 섹션 · 자세히 2개', '같은 업종을 두 번 묻는다', ''),
+        hdiff('검색 아이콘', '하단 탭으로만 진입', '홈 헤더에도 있음', '진입점 중복', ''),
+        hdiff('추천 카드 가로 스크롤', '준비 현황 자세히로 이동', '홈에 3장 가로 스크롤', '한눈에 안 보인다 · 상세와 중복', ''),
+        hdiff('다가오는 일정', '홈에 3건 · 웨딩노트 연결', '없음', '홈에 일정이 없었다', ''),
+        hdiff('웨딩 준비 팁 더보기', '라운지 탭', '/community?tab=feed', '중복 · 삭제', '')
+      ],
+
+      newScreens: [
+        { route: '/community', name: '라운지', note: '탭 아님. 홈 «웨딩 준비 팁» 자세히 · MY «둘러보기» 두 곳에서 진입' },
+        { route: '/community/feed/:id', name: '피드 상세', note: '웨딩 준비 팁 카드 → 상세' },
+        { route: '/vendor/:id/booking', name: '예약', note: 'VendorFlows.tsx. 정본은 상세만 있었음' },
+        { route: '/vendor/:id/consult', name: '상담', note: '같은 파일. 문의 → 상담으로 분리' },
+        { route: '/vendor/:id/reviews/:reviewId', name: '후기 상세', note: '정본 WP-REV-003과 대응' },
+        { route: '/contract-verify', name: '계약 인증', note: '정본 Pick 인증(WP-RPT)과 대응 · 이름 다름' },
+        { route: '/explore', name: '탐색', note: '/search와 별개 라우트. 헤더 검색 아이콘이 여기로' },
+        { route: '—', name: 'Proposal · Honeymoon · Studio', note: 'components에 있으나 라우트 미연결. 초안으로 보임' }
+      ],
+      root: 'display:flex;flex-direction:column;gap:32px;padding:64px;width:max-content',
+      intro: 'display:flex;flex-direction:column;gap:10px;max-width:960px',
+      eyebrow: 'font-size:14px;line-height:19px;font-weight:700;color:' + P,
+      h0: 'font-size:40px;line-height:52px;font-weight:700;color:' + INK,
+      lead: 'font-size:17px;line-height:26px;color:' + SUB + ';text-wrap:pretty',
+      row: 'display:flex;gap:36px;align-items:flex-start;flex-wrap:wrap',
+      col: 'display:flex;flex-direction:column;gap:10px;width:430px',
+      colDone: 'display:flex;flex-direction:column;gap:10px;width:430px',
+      colWide: 'display:flex;flex-direction:column;gap:10px;width:900px',
+      colWideAfter: 'display:flex;flex-direction:column;gap:10px;width:900px',
+      tag: 'height:26px;display:flex;align-items:center;gap:8px;font-size:18px;font-weight:700;color:' + INK + ';white-space:nowrap',
+      tagId: 'width:26px;height:26px;flex:0 0 26px;border-radius:6px;background:' + INK + ';color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700',
+      tagDesc: 'height:66px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;line-height:21px;color:' + SUB + ';text-wrap:pretty',
+
+      phone: 'width:430px;height:932px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)',
+      bar: 'flex:0 0 44px;display:flex;align-items:center;padding:0 26px;font-size:14px;font-weight:700;color:' + INK,
+      navBar: 'flex:0 0 56px;display:flex;align-items:center;gap:8px;padding:0 16px;box-shadow:inset 0 -1px 0 ' + BORDER,
+      navTitle: 'flex:1;min-width:0;text-align:center;font-size:16px;font-weight:700;color:' + INK,
+      navPad: 'width:40px;flex:0 0 40px',
+      icoBack: ICO('chevron-left', 24, INK),
+      scroll: 'flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;scrollbar-width:none',
+
+      loginBrand: 'flex:1;min-height:0;padding:72px 24px 0;display:flex;flex-direction:column;gap:20px',
+      markBox: 'width:64px;height:64px;border-radius:16px;background:#fff5f2;display:flex;align-items:center;justify-content:center',
+      icoMark: ICO('heart-fill', 34, P),
+      loginTitle: 'font-size:32px;line-height:44px;letter-spacing:-0.02em;font-weight:700;color:' + INK,
+      benefitWrap: 'display:flex;flex-direction:column;gap:10px;padding-top:4px',
+      benefitRow: 'display:flex;align-items:flex-start;gap:9px',
+      benefitDot: 'width:5px;height:5px;flex:0 0 5px;margin-top:9px;border-radius:999px;background:' + P,
+      benefitText: 'flex:1;font-size:15px;line-height:23px;color:' + SUB,
+      benefits: ['실제 견적 금액을 비교해요', '마음에 드는 곳을 함께 Pick해요', '일정과 지출도 한곳에서 관리해요'],
+
+      loginAuth: 'flex:0 0 auto;padding:0 24px 32px;display:flex;flex-direction:column;gap:10px',
+      ageCta: 'height:56px;border-radius:6px;background:#fff5f2;box-shadow:inset 0 0 0 1.5px ' + P + ';display:flex;align-items:center;justify-content:center;gap:10px',
+      ageRow: 'display:flex;align-items:center;gap:10px;min-height:44px',
+      ageCheck: CHECK(22, P).replace('border-radius:999px', 'border-radius:6px'),
+      ageLabel: 'font-size:16px;font-weight:700;color:' + P,
+      kakaoBtn: 'height:56px;border-radius:6px;background:#FEE500;color:#191600;display:flex;align-items:center;justify-content:center;gap:8px;font-size:17px;font-weight:700',
+      kakaoMark: 'width:20px;height:20px;border-radius:5px;background:#191600;color:#FEE500;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800',
+      legal: 'font-size:12px;line-height:18px;color:' + MUTED + ';text-align:center;padding-top:4px',
+
+      stepNav: 'flex:0 0 56px;display:flex;align-items:center;gap:12px;padding:0 24px',
+      progTrack: 'flex:1 1 auto;height:4px;border-radius:999px;background:' + SEC + ';overflow:hidden',
+      prog20: 'display:block;width:20%;height:100%;border-radius:999px;background:' + P,
+      prog40: 'display:block;width:40%;height:100%;border-radius:999px;background:' + P,
+      prog60: 'display:block;width:60%;height:100%;border-radius:999px;background:' + P,
+      prog80: 'display:block;width:80%;height:100%;border-radius:999px;background:' + P,
+      prog100: 'display:block;width:100%;height:100%;border-radius:999px;background:' + P,
+      stepLabel: 'flex:0 0 auto;font-size:13px;font-weight:700;color:' + MUTED + ';font-variant-numeric:tabular-nums;white-space:nowrap',
+
+      qBlock: 'flex:0 0 auto;padding:20px 24px 24px;display:flex;flex-direction:column;gap:10px',
+      qBlockSm: 'flex:0 0 auto;padding:12px 24px 20px;display:flex;flex-direction:column;gap:8px',
+      qTitle: 'font-size:28px;line-height:38px;letter-spacing:-0.02em;font-weight:700;color:' + INK,
+      qTitleSm: 'font-size:26px;line-height:35px;letter-spacing:-0.02em;font-weight:700;color:' + INK,
+      qSub: 'font-size:15px;line-height:23px;color:' + MUTED,
+
+      sec: 'flex:0 0 auto;padding:0 24px 20px;display:flex;flex-direction:column;gap:12px',
+      secTitle: 'font-size:15px;font-weight:700;color:' + INK,
+      rows: 'display:flex;flex-direction:column;gap:10px',
+
+      dateField: 'height:56px;border-radius:6px;padding:0 16px;display:flex;align-items:center;font-size:17px;font-weight:700;color:' + INK + ';box-shadow:inset 0 0 0 1.5px ' + P + ';font-variant-numeric:tabular-nums',
+      ddayRow: 'display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:0 2px',
+      ddayLabel: 'font-size:14px;color:' + MUTED,
+      ddayVal: 'font-size:16px;font-weight:700;color:' + P + ';font-variant-numeric:tabular-nums',
+      chipUndecided: 'align-self:flex-start;height:44px;padding:0 16px;border-radius:999px;background:' + SEC + ';color:' + SUB + ';display:inline-flex;align-items:center;font-size:15px;font-weight:700',
+
+      answeredWrap: 'flex:0 0 auto;padding:4px 24px 0;display:flex;flex-direction:column',
+      ansRow: 'display:flex;align-items:center;gap:10px;min-height:44px',
+      ansCheck: CHECK(20, P),
+      ansLabel: 'font-size:14px;color:' + MUTED + ';white-space:nowrap',
+      ansVal: 'flex:1;min-width:0;font-size:14px;font-weight:700;color:' + INK + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      ansEdit: 'font-size:13px;font-weight:700;color:' + MUTED + ';white-space:nowrap',
+      answered: [{ k: '예식일', v: '2027.05.16(토)' }],
+      answered2: [{ k: '예식일', v: '2027.05.16(토)' }, { k: '지역', v: '서울 강남구' }],
+      wheelSheet: 'position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;padding:12px 24px 28px;display:flex;flex-direction:column;gap:14px;box-shadow:0 -8px 32px rgba(0,27,55,.16);box-sizing:border-box',
+      sheetGrab: 'align-self:center;width:40px;height:4px;border-radius:999px;background:' + BORDER,
+      sheetHead: 'display:flex;align-items:center;justify-content:space-between;gap:12px',
+      sheetTitle: 'font-size:20px;font-weight:700;color:' + INK,
+      sheetClose: 'width:36px;height:36px;flex:0 0 36px;border-radius:999px;background:' + SEC + ';display:flex;align-items:center;justify-content:center',
+      icoX: ICO('close-fill', 16, INK),
+      wheelWrap: 'position:relative;display:flex;height:240px;overflow:hidden',
+      wheelBand: 'position:absolute;left:0;right:0;top:96px;height:48px;border-radius:10px;background:' + REC + ';z-index:1',
+      wheelFadeTop: 'position:absolute;left:0;right:0;top:0;height:96px;background:linear-gradient(#fff 30%,rgba(255,255,255,0));pointer-events:none;z-index:3',
+      wheelFadeBottom: 'position:absolute;left:0;right:0;bottom:0;height:96px;background:linear-gradient(rgba(255,255,255,0),#fff 70%);pointer-events:none;z-index:3',
+      sheetDock: 'display:flex;padding-top:4px',
+      wheels: [
+        wheelCol(['부산', '인천', '경기', '서울', '대구', '대전', '광주'], 3),
+        wheelCol(['서초구', '송파구', '강남구', '마포구', '성동구', '용산구', '중구'], 2)
+      ],
+      regionWrap: 'display:flex;flex-wrap:wrap;gap:8px',
+      regions: ['서울', '경기', '인천', '부산', '대구', '대전', '광주', '울산', '그 외'].map((n, i) => ({ label: n,
+        style: 'height:44px;padding:0 16px;border-radius:999px;display:inline-flex;align-items:center;font-size:15px;font-weight:700;white-space:nowrap;'
+          + (i === 0 ? 'background:' + P + ';color:#fff;' : 'background:' + SEC + ';color:' + SUB + ';') })),
+      distWrap: 'display:flex;flex-direction:column;padding-top:4px',
+      districts: ['강남구', '서초구', '송파구', '마포구', '성동구'].map((n, i) => ({ label: n, on: i === 0,
+        rowStyle: 'display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:56px;box-shadow:inset 0 -1px 0 ' + BORDER,
+        nameStyle: 'font-size:16px;' + (i === 0 ? 'font-weight:700;color:' + P + ';' : 'color:' + SUB + ';') })),
+      styleBtnWrap: 'flex:0 0 auto;padding:0 24px 16px;display:flex;flex-direction:column;gap:10px',
+      styleCol: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:3px',
+      styleDesc: 'font-size:13px;line-height:19px;color:' + MUTED,
+      styleBtns: [
+        styleBtn('도시적인', '모던하고 세련된 도심 분위기', true),
+        styleBtn('자연스러운', '편안하고 빛이 좋은 야외 느낌', true),
+        styleBtn('로맨틱한', '부드럽고 사랑스러운 분위기', false),
+        styleBtn('화려한', '풍성하고 존재감 있는 스타일', false)
+      ],
+
+      pgWrap: 'display:flex;flex-direction:column;gap:8px',
+      pgHead: 'display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:22px',
+      pgTitle: 'font-size:14px;font-weight:700;color:' + MUTED,
+      cellCheck: CHECK(20, P),
+
+      styleGrid: 'flex:0 0 auto;padding:0 24px 16px;display:grid;grid-template-columns:1fr 1fr;gap:11px',
+      styleCell: 'position:relative;width:100%;height:200px;border-radius:10px;overflow:hidden',
+      styleCheck: CHECK(26, P) + ';position:absolute;top:10px;right:10px',
+      styleLabel: 'position:absolute;left:12px;bottom:12px;font-size:16px;font-weight:700;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.55)',
+      styles: [
+        sty('ob-s1', IMG.urban, '도시적인', true),
+        sty('ob-s2', IMG.natural, '자연스러운', true),
+        sty('ob-s3', IMG.romantic, '로맨틱한', false),
+        sty('ob-s4', IMG.glam, '화려한', false)
+      ],
+      styleHead: 'flex:0 0 auto;padding:0 24px 10px;display:flex;align-items:center;justify-content:space-between',
+      selectAll: 'font-size:14px;font-weight:700;color:' + P + ';cursor:pointer',
+      osToastWrap: 'position:absolute;left:0;right:0;bottom:112px;display:flex;justify-content:center;pointer-events:none;z-index:20',
+      osToast: 'max-width:302px;padding:12px 20px;border-radius:999px;background:rgba(23,25,28,.86);color:#fff;font-size:14px;line-height:20px;text-align:center',
+      toast: 'padding:14px 18px;border-radius:10px;background:rgba(23,25,28,.92);color:#fff;font-size:15px;font-weight:700',
+
+      uploadGrid: 'display:grid;grid-template-columns:1fr 1fr;gap:11px',
+      upCell: 'height:140px;border-radius:10px;background:' + REC + ';display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px',
+      upT: 'font-size:15px;font-weight:700;color:' + INK,
+      upS: 'font-size:12px;color:' + MUTED,
+      uploadWays: [
+        { icon: ICO('camera', 28, SUB), t: '사진 찍기', s: '지금 촬영해요' },
+        { icon: ICO('photo', 28, SUB), t: '앨범에서 고르기', s: '저장한 사진' }
+      ],
+      tipRow: 'display:flex;align-items:flex-start;gap:9px',
+      tipCheck: CHECK(20, '#1aa174'),
+      tipText: 'flex:1;font-size:14px;line-height:22px;color:' + SUB,
+      tips: ['금액과 업체 이름이 같이 보이게 찍어주세요', '가릴 곳은 손으로 가리고 찍어도 괜찮아요', '여러 장이면 한 장씩 올려주세요'],
+
+      noteBox: 'border-radius:10px;background:' + REC + ';padding:18px;display:flex;flex-direction:column;gap:5px',
+      mergeBox: 'border-radius:10px;background:#fff5f2;padding:18px;display:flex;flex-direction:column;gap:5px',
+      noteT: 'font-size:15px;font-weight:700;color:' + INK,
+      noteS: 'font-size:13px;line-height:20px;color:' + MUTED,
+
+      ocrHead: 'display:flex;align-items:center;gap:8px',
+      ocrK: 'flex:1;font-size:13px;color:' + MUTED,
+      ocrV: 'font-size:18px;font-weight:700;color:' + INK + ';font-variant-numeric:tabular-nums',
+      ocrHint: 'font-size:12px;line-height:18px;color:' + P,
+      ocrFields: [
+        ocr('낸 금액', '1,520,000원', true),
+        ocr('낸 날짜', '2026년 8월 28일', true),
+        ocr('업체', '주식회사 모먼트', false, '자료에 적힌 상호가 등록된 업체명과 달라요'),
+        ocr('상품', '스튜디오 촬영 패키지', false, '어떤 구성인지 골라주시면 비교에 쓸 수 있어요')
+      ],
+
+      dockSingle: 'flex:0 0 92px;padding:12px 24px;display:flex;box-shadow:inset 0 1px 0 ' + BORDER,
+      dockPair: 'flex:0 0 92px;padding:12px 24px;display:flex;gap:10px;box-shadow:inset 0 1px 0 ' + BORDER,
+      ctaFull: 'flex:1;height:56px;border-radius:6px;background:' + P + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700',
+      ctaWide: 'flex:1.4;height:56px;border-radius:6px;background:' + P + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700',
+      ctaGhost: 'flex:1;height:56px;border-radius:6px;background:' + SEC + ';color:' + SUB + ';display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700',
+      ctaDim: 'flex:1;height:56px;border-radius:6px;background:' + SEC + ';color:' + DIM + ';display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700',
+
+      diffCard: 'width:900px;background:#fff;border:1px solid ' + BORDER + ';border-radius:10px;padding:8px 24px 16px;display:flex;flex-direction:column;box-sizing:border-box',
+      diffHead: 'display:flex;align-items:center;gap:16px;min-height:44px;box-shadow:inset 0 -1px 0 #dcdee3',
+      diffRow: 'display:flex;align-items:flex-start;gap:16px;min-height:52px;padding:12px 0;box-shadow:inset 0 -1px 0 ' + SEC,
+      dh1: 'width:130px;flex:0 0 130px;font-size:12px;font-weight:700;color:' + MUTED,
+      dh2: 'width:270px;flex:0 0 270px;font-size:12px;font-weight:700;color:' + MUTED,
+      dh3: 'width:270px;flex:0 0 270px;font-size:12px;font-weight:700;color:' + MUTED,
+      dh4: 'flex:1;font-size:12px;font-weight:700;color:' + MUTED,
+      dc1: 'width:130px;flex:0 0 130px;font-size:13px;line-height:20px;font-weight:700;color:' + INK,
+      dc2: 'width:270px;flex:0 0 270px;font-size:13px;line-height:20px;color:' + MUTED,
+      dc3: 'flex:1;font-size:12px;line-height:19px;color:' + MUTED,
+
+      diffs: [
+        diff('로그인 카피', 'WEDDING, LESS OVERWHELMING · 결정은 가볍게, 준비는 단단하게', '웨딩 준비, 진짜 견적부터 확인해 보세요', '영문 라벨을 쓰지 않는다'),
+        diff('로그인 카드', '✦ 나에게 맞는 순서부터 · 코랄 박스', '뺌 · 혜택 3줄로 대신', '첫 화면에 설명 카드를 두지 않는다'),
+        diff('카카오 버튼', '카카오로 3초 만에 시작하기', '카카오로 시작하기', '검증 못 하는 수치를 쓰지 않는다'),
+        diff('만 14세 확인', '없음', '카카오 버튼 위 체크', '개인정보보호법'),
+        diff('온보딩 단계', '3단계 · 01 / 03', '5단계 · 1/5', '예식일 · 지역 · 진행 상황 · 예산 · 스타일'),
+        diff('Back 처리', '무조건 이전 화면', '진입 컨텍스트 유지', '어디서 들어왔는지에 따라 돌아갈 곳이 다르다'),
+        diff('온보딩 Back', '이전 화면', '이전 단계 · 1단계에서는 로그인', '단계는 순서가 있다'),
+        diff('상세 Back', '이전 화면', '진입한 목록 · 탭과 스크롤 유지', '고르던 자리로 돌아와야 한다'),
+        diff('온보딩 라벨', 'JUST FOR YOU', '뺌', '영문 라벨을 쓰지 않는다'),
+        diff('건너뛰기', '나중에', '뺌 · 미정 선택지로 대신', '설정 없이 홈에 가면 추천이 비어 있다'),
+        diff('예식일 입력', '3지선다 (2027년 1월 15일 · 상반기 · 미정)', '휠 피커 + 아직 정하지 않았어요', '날짜를 고르게 해야 D-day가 나온다'),
+        diff('중요한 것 질문', '예산 안에서 · 취향 뚜렷 · 정보 충분', '뺌', '추측 질문 대신 실제 값으로 판단'),
+        diff('스타일', '없음', '4종 버튼 · 최대 2개', '이미지를 쓰지 않고 말로 판단한다'),
+        diff('제보 제목', '영수증 또는 계약서를 인증해주세요', '금액이 보이는 사진 한 장이면 돼요', '계약서를 요구하지 않는다'),
+        diff('제보 이름', '가격 제보 · VERIFY THE FACTS', 'Pick 인증', '용어사전'),
+        diff('업로드 UI', '검정 대형 카메라 버튼 + 보조 파일 링크', '카메라 · 앨범 2칸 동일 무게', '두 경로의 무게가 같다'),
+        diff('OCR 결과', '검토 필요 배지 하나 · 3항목 나열', '필드마다 읽었어요 / 확인 필요', '확인이 필요한 것만 세운다'),
+        diff('제보 CTA', '확인 후 반영하기', '이대로 인증하기', '사용자 행동으로 적는다')
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

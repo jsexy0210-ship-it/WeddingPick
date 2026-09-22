@@ -15,8 +15,10 @@
 착수:
 - 최신 main SHA·Open PR·관련 Issue·Actions를 확인한다.
 - AGENTS.md와 CLAUDE.md의 현재 규칙을 읽는다.
-- 디자인 작업은 docs/design/README.md → UX_UI_REFRESH_HANDOFF.md →
-  handoff의 해당 명세와 figma-export 시안 → PAGE_STATE_AUDIT.md 순서로 읽는다.
+- 디자인은 v3.28이 기준이고 docs/design/ 하나만 본다(2026-09-22 대표 지시).
+  docs/design/README.md → CHANGELOG.md → html/의 해당 대메뉴 시안 순서로 읽는다.
+  옛 handoff/ · figma-export/ · UX_UI_REFRESH_HANDOFF.md · PAGE_STATE_AUDIT.md는
+  2026-09-22에 파기했다 — git 이력에서 꺼내 근거로 쓰지 않는다.
 - 최신 사용자 확정 지시와 제안·보류 항목을 구분한다.
 - 기존 미커밋 변경과 겹치지 않는 다른 작업을 보존한다.
 
