@@ -22,16 +22,23 @@
     ],
     "note": "2026-09-20 전달 ZIP 2개(docs/design/source/2026-09-20/)는 2026-09-21에 대표님이 먼저 지우셨다(b9e5ec2b · d4158310). 지운 것들은 git 이력에 남는다 — 되살려 근거로 쓰지 않는다."
   },
+  "amendments": [
+    {
+      "amendedOn": "2026-09-23",
+      "reason": "대표님 확인 — 「정본 소스가 맞다, 별점 복원」. CHANGELOG.md·README.md가 적던 「후기 별점 UI 전면 삭제」를 6개 .dc.html의 screen-inventory.md 대조표(검색·Pick·MY 셋 모두 「정본 = 5점 별점 + 3축 3지선다」)와 맞춰 취소선 + 정정 설명으로 바로잡았다. CLAUDE.md 「후기 별점 UI를 되살린다」 참고.",
+      "paths": ["docs/design/CHANGELOG.md", "docs/design/README.md"]
+    }
+  ],
   "files": [
     {
       "path": "CHANGELOG.md",
-      "normalizedSha256": "6171080E7BA54E3C2153EC4FD8551D908A61895C3EDF1C6C430FE4CD2B8AD7B2",
-      "sizeBytes": 1699
+      "normalizedSha256": "3456D879B19DEB772907E9B864A9C234A073F77ED73842FD220B9B6C9FCDA096",
+      "sizeBytes": 2057
     },
     {
       "path": "README.md",
-      "normalizedSha256": "9A8926973ADF190EDD3E2B0E6BEFBD175CFD343F931D847A3D7B895EE3BC1345",
-      "sizeBytes": 6043
+      "normalizedSha256": "57D30EC254FD51D24F9E9694210A08E65BBFA4291EAF43FFB7338DDE8C0CFEEA",
+      "sizeBytes": 6396
     },
     {
       "path": "handoff-QA-체크리스트.md",
