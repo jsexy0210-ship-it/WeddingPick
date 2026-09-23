@@ -2581,28 +2581,26 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
     reviewReason: z.array(z.string()).optional(),
   });
 
+  /*
+   * **신규 발견 자동 수집은 껐다**(2026-09-23 대표 지시 — Gemini는 이미지·녹음
+   * 분석·관리자 피드 자동생성 말고는 쓰지 않는다). `createGeminiExpoDiscoverer`가
+   * Google Search 기반이라 그 셋 중 무엇도 아니었다 — 지웠다(`expo-collector.ts`).
+   * `enabled: false`로 고정해 화면이 「수집」 단추를 잠그게 둔다(`READ_ONLY` 짝).
+   */
   app.get('/v1/admin/expos', auth, async () => ({
     expos: await expoAdmin.listExpos(context.pool),
     collection: {
-      enabled: process.env.EXPO_COLLECTION_ENABLED !== 'false',
-      ready: Boolean(process.env.GEMINI_API_KEY),
+      enabled: false,
+      ready: false,
       lastRun: await expoCollector.getLatestExpoCollectionRun(context.pool),
     },
   }));
 
   app.post('/v1/admin/expos/collect', auth, async () => {
-    const apiKey = process.env.GEMINI_API_KEY ?? '';
-    if (!apiKey) {
-      throw new ApiError('internal', '박람회 자동 수집 서버 설정이 필요합니다. Gemini 연결을 확인해주세요.');
-    }
-
-    const model = context.config.geminiModel;
-    return expoCollector.runExpoCollection({
-      pool: context.pool,
-      discover: expoCollector.createGeminiExpoDiscoverer({ apiKey, model }),
-      model,
-      trigger: 'manual',
-    });
+    throw new ApiError(
+      'invalid_request',
+      '신규 박람회 자동 수집은 꺼져 있어요. Gemini 검색 기반 수집기를 지웠고(2026-09-23), 공공데이터 출처로 바뀌기 전까지 새 박람회는 관리자가 직접 등록해요.'
+    );
   });
 
   app.get('/v1/admin/expos/review-queue', auth, async () => ({
