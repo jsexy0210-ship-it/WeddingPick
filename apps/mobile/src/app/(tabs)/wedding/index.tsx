@@ -85,7 +85,9 @@ const SPEND_LINK = '지출내역';
 const CONSULT_EMPTY_TITLE = '녹음 파일을 올려주세요';
 const CONSULT_EMPTY_BODY = '휴대폰 녹음앱에서 저장한 파일이면 돼요';
 const CONSULT_SAVED = '저장됨';
-const CONSULT_PENDING = '확인 필요';
+/* 정본 WP-NOTE-004 consults[].state — confirmedAt 없는 상태의 실제 표시 문구는
+   "확인 필요"가 아니라 "정리 완료"다(정리는 끝났지만 아직 확인·저장 전이라는 뜻). */
+const CONSULT_UNCONFIRMED = '정리 완료';
 /* 헤더 우측 «추가» 텍스트 — v3.28 `대메뉴_웨딩노트.dc.html` headAdd «일정 추가 · 상담 추가 · 예산 추가». 우하단 FAB는 없다. */
 const ADD_LABEL: Record<Tab, string> = { calendar: '일정 추가', budget: '예산 추가', consult: '상담 추가' };
 /*
@@ -829,8 +831,8 @@ function BudgetPanel({
                   {manwon(bucket.amount)}
                 </ThemedText>
               </View>
-              <View style={[styles.bar, { backgroundColor: theme.backgroundElement }]}>
-                <View style={[styles.barFill, { width: `${pct}%`, backgroundColor: theme.text }]} />
+              <View style={[styles.bucketBar, { backgroundColor: theme.backgroundElement }]}>
+                <View style={[styles.bucketBarFill, { width: `${pct}%`, backgroundColor: theme.text }]} />
               </View>
               <View style={styles.bucketFoot}>
                 <ThemedText type="micro" themeColor="textAssistive" numeric style={styles.regular}>
@@ -900,7 +902,8 @@ function ConsultPanel({
   return (
     <View style={[styles.panel, { backgroundColor: theme.background, borderColor: theme.border }]}>
       <View style={styles.consultHead}>
-        <ThemedText type="t6" style={styles.bold}>
+        {/* 정본 WP-NOTE-004 cListTitle: 20/700(t4) — t6(16)로 잘못 쓰고 있었다. */}
+        <ThemedText type="t4" style={styles.bold}>
           {records.length > 0 ? `상담 ${records.length}건` : TABS[1].label}
         </ThemedText>
         <ThemedText type="micro" themeColor="textAssistive" style={styles.regular}>
@@ -937,7 +940,7 @@ function ConsultPanel({
                   type="micro"
                   themeColor={saved ? undefined : 'textAssistive'}
                   style={saved ? styles.bold : styles.regular}>
-                  {saved ? CONSULT_SAVED : CONSULT_PENDING}
+                  {saved ? CONSULT_SAVED : CONSULT_UNCONFIRMED}
                 </ThemedText>
               </Pressable>
             );
@@ -1045,11 +1048,17 @@ const styles = StyleSheet.create({
     marginBottom: -Border.hairline,
   },
 
-  /* 패널 `mx-5 mt-4 rounded-[26px] border p-5`. */
+  /*
+   * 예산현황·상담기록 탭의 카드 — 정본 WP-NOTE-004/006 `card`: margin:0 24px,
+   * padding:20px, border-radius:10px(Radius.medium), border:1px solid. 예전엔
+   * Radius.panel(26)을 썼는데 정본은 10이다 — 캘린더 탭(WP-NOTE-001)의 「할 일」은
+   * 이제 이 스타일을 안 쓴다(그쪽은 카드가 아니라 padding 섹션이라 `taskSection`으로
+   * 분리했다).
+   */
   panel: {
     marginHorizontal: Layout.pageX,
     marginTop: Spacing.three,
-    borderRadius: Radius.panel,
+    borderRadius: Radius.medium,
     borderWidth: Border.hairline,
     padding: Layout.cardPadding,
   },
@@ -1180,9 +1189,13 @@ const styles = StyleSheet.create({
     gap: Layout.listGap,
   },
   bucketHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one, marginBottom: Spacing.two },
-  /* 막대 `h-2 rounded-full`. */
+  /* 전체 사용액 막대 — 정본(WP-NOTE-006)은 이 자리를 도넛 차트로 그린다. 대표님 확인
+     전까지 기존 막대를 유지한다(DESIGN_UNRESOLVED, PR 본문 참고). */
   bar: { height: BAR_HEIGHT, borderRadius: Radius.pill, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: Radius.pill },
+  /* 항목별 막대 — 정본 `trackSm`: height:6px(전체 막대의 BAR_HEIGHT=8과 다른 값이다). */
+  bucketBar: { height: 6, borderRadius: Radius.pill, overflow: 'hidden' },
+  bucketBarFill: { height: '100%', borderRadius: Radius.pill },
   /* `mt-1.5 flex justify-between`. */
   bucketFoot: { marginTop: Layout.menuGroupGap, flexDirection: 'row', justifyContent: 'space-between' },
   /* v3.28 `spendGoRow` — 선 위 · 최소 높이 44 · 양끝 정렬 · 14/700. */
