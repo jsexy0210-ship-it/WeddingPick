@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Layout, ThemedText } from '@weddingpick/ui';
-import { BackButton } from '@/components/back-button';
+import { BackButton, TOUCH_SLOT_SIZE } from '@/components/back-button';
 
 export function DepthHeader({
   title,
@@ -78,5 +78,6 @@ const styles = StyleSheet.create({
    * 폭의 빈 칸을 두어 제목이 화면 가운데 앉는다. `back` 헤더는 그대로다.
    */
   titleCentered: { textAlign: 'center' },
-  pad: { width: Layout.iconButton },
+  /* 왼쪽 BackButton과 같은 폭이어야 제목이 실제로 가운데 앉는다 — back-button.tsx의 TOUCH_SLOT_SIZE(36) 그대로. */
+  pad: { width: TOUCH_SLOT_SIZE },
 });

@@ -58,9 +58,9 @@ export function SegmentedTabs({ items, value, onChange, accessibilityLabel }: Se
                 },
               ];
             }}>
-            {/* 규격서 community.txt: 칸 «127×40 · r22 · 12/700 · lh 16», 켠 칸 흰 면 + shadow. */}
+            {/* WP-LNG-001~003 seg(): 칸 «flex:1 · h40 · r8 · 14/700», 켠 칸 흰 면 + shadow. */}
             <ThemedText
-              type="f12"
+              type="f14"
               numberOfLines={1}
               themeColor={selected ? 'text' : 'textAssistive'}
               style={styles.label}>
@@ -74,20 +74,31 @@ export function SegmentedTabs({ items, value, onChange, accessibilityLabel }: Se
 }
 
 /*
- * 피그마 세 칸 탭(2026-09-14 정본 · `CommunityFeed` `grid-cols-3 rounded-2xl bg-secondary p-1`,
- * 칸 `h-10 rounded-xl text-xs font-bold`): 겉 radius 16 · 안쪽 4 · 칸 40 · radius 22 · 글자 700.
- * 켠 칸은 흰 면(그림자는 없다 — elevation.$rule).
+ * v3.29 정본 — `docs/design/html/대메뉴_MY.dc.html` `segWrap` · `seg()`(WP-LNG-001~003,
+ * «리얼후기 · 웨딩정보 · 박람회» 세 칸 탭): 겉 `margin:0 20px 12px;padding:4px;
+ * border-radius:10px;background:#f2f3f6;gap:2px`, 칸 `flex:1;height:40px;
+ * border-radius:8px;font-size:14px;font-weight:700`, 켠 칸은 흰 면 +
+ * `box-shadow:0 1px 3px rgba(0,27,55,.10)`.
+ *
+ * **예전에는 `CommunityFeed`(피그마 2026-09-14 벌·`radius.$note`가 「최신 화면의 기준이
+ * 아니다」로 못박은 legacy 별칭 `cardLarge`(16) · `hero`(22))를 썼다** — 겉 radius가
+ * 16이라 실제보다 크고, 칸 radius 22(=999에 가까운 완전 알약)라 정본의 각진 8보다 훨씬
+ * 둥글었다. 글자도 `f12`(12px)라 정본 14px보다 작았다. 오늘 웨딩노트에서 잡힌
+ * 「둥근 회색 필 세그먼트 vs 정본의 각진 세그먼트」와 같은 패턴이라 여기서 맞춘다.
+ * `Radius.medium`(10)과 `Radius.picker`(8)는 이름은 다른 자리에서 온 것이지만 값이
+ * 정본과 같아 새 토큰을 만들지 않고 그대로 쓴다.
  */
 const styles = StyleSheet.create({
   track: {
     flexDirection: 'row',
-    borderRadius: Radius.cardLarge,
+    borderRadius: Radius.medium,
     padding: Spacing.one,
+    gap: 2,
   },
   item: {
     flex: 1,
     height: Layout.controlMedium,
-    borderRadius: Radius.hero,
+    borderRadius: Radius.picker,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -88,11 +88,17 @@ const CONSULT_SAVED = '저장됨';
 const CONSULT_PENDING = '확인 필요';
 /* 헤더 우측 «추가» 텍스트 — v3.28 `대메뉴_웨딩노트.dc.html` headAdd «일정 추가 · 상담 추가 · 예산 추가». 우하단 FAB는 없다. */
 const ADD_LABEL: Record<Tab, string> = { calendar: '일정 추가', budget: '예산 추가', consult: '상담 추가' };
+/*
+ * 등록 버튼은 헤더 영역에 있는 것만 쓴다(2026-09-23 대표 지시 — 전체 UX 통일).
+ * 할 일 추가는 원래 본문 「할 일」 카드 안 별도 버튼이었는데, 캘린더 탭 헤더의
+ * 「일정 추가」 옆 둘째 액션으로 옮겼다 — 화면 안에 등록 진입점이 하나 더 있던 것을
+ * 헤더로 합친 것이다.
+ */
+const TASKS_ADD_HEADER = '할 일 추가';
 const DECIDED_LINK = '예약현황';
 const PAST_EVENTS_SHOW = '보기';
 const PAST_EVENTS_HIDE = '접기';
 const TASKS_TITLE = '할 일';
-const TASKS_ADD = '추가';
 
 /** 진행바 높이 — v3.28 웨딩노트 대조표 「예산 그래프」: 도넛이 아니라 가로 진행바 8(`track: height:8px`). */
 const BAR_HEIGHT = 8;
@@ -123,6 +129,7 @@ export default function WeddingScreen({
   const [budgetOpen, setBudgetOpen] = useState(false);
   const [budgetDraft, setBudgetDraft] = useState('');
   const [budgetSaving, setBudgetSaving] = useState(false);
+  const [taskSheetOpen, setTaskSheetOpen] = useState(false);
   const budgetPrompted = useRef(false);
 
   const isSignedIn = state.status === 'signedIn';
@@ -198,16 +205,30 @@ export default function WeddingScreen({
         {TERMS.ourWedding}
       </ThemedText>
       {!weddingOver && weddingId ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={ADD_LABEL[tab]}
-          onPress={onAddAction}
-          hitSlop={Spacing.two}
-          style={({ pressed }) => (pressed ? styles.pressed : null)}>
-          <ThemedText type="f15" themeColor="tint" style={styles.bold}>
-            {ADD_LABEL[tab]}
-          </ThemedText>
-        </Pressable>
+        <View style={styles.headerActions}>
+          {tab === 'calendar' ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={TASKS_ADD_HEADER}
+              onPress={() => setTaskSheetOpen(true)}
+              hitSlop={Spacing.two}
+              style={({ pressed }) => (pressed ? styles.pressed : null)}>
+              <ThemedText type="f15" themeColor="tint" style={styles.bold}>
+                {TASKS_ADD_HEADER}
+              </ThemedText>
+            </Pressable>
+          ) : null}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={ADD_LABEL[tab]}
+            onPress={onAddAction}
+            hitSlop={Spacing.two}
+            style={({ pressed }) => (pressed ? styles.pressed : null)}>
+            <ThemedText type="f15" themeColor="tint" style={styles.bold}>
+              {ADD_LABEL[tab]}
+            </ThemedText>
+          </Pressable>
+        </View>
       ) : null}
     </View>
   );
@@ -352,6 +373,8 @@ export default function WeddingScreen({
               onOpenDecided={() => (weddingId ? router.push(`/wedding/${weddingId}/decided` as never) : null)}
               onToggleTask={(task) => void toggleTask(task)}
               onAddTask={addTask}
+              taskSheetOpen={taskSheetOpen}
+              onCloseTaskSheet={() => setTaskSheetOpen(false)}
             />
           ) : tab === 'budget' ? (
             <BudgetPanel
@@ -444,6 +467,8 @@ function CalendarPanel({
   onOpenDecided,
   onToggleTask,
   onAddTask,
+  taskSheetOpen,
+  onCloseTaskSheet,
 }: {
   events: WeddingEvent[];
   weddingDate: string | null;
@@ -454,11 +479,13 @@ function CalendarPanel({
   onOpenDecided: () => void;
   onToggleTask: (task: WeddingTask) => void;
   onAddTask: (label: string) => Promise<void>;
+  /* 할 일 추가 진입점은 이제 헤더에만 있다(TASKS_ADD_HEADER) — 시트 열림 상태는 부모(WeddingScreen)가 갖는다. */
+  taskSheetOpen: boolean;
+  onCloseTaskSheet: () => void;
 }) {
   const theme = useTheme();
   const [now] = useState(() => new Date());
   const [showPast, setShowPast] = useState(false);
-  const [taskSheetOpen, setTaskSheetOpen] = useState(false);
   const [taskDraft, setTaskDraft] = useState('');
   const [taskSaving, setTaskSaving] = useState(false);
 
@@ -483,7 +510,7 @@ function CalendarPanel({
     try {
       await onAddTask(label);
       setTaskDraft('');
-      setTaskSheetOpen(false);
+      onCloseTaskSheet();
     } finally {
       setTaskSaving(false);
     }
@@ -544,21 +571,10 @@ function CalendarPanel({
       ))}
 
       <View style={[styles.panel, { backgroundColor: theme.background, borderColor: theme.border }]}>
-        <View style={styles.clHead}>
-          <ThemedText type="t6" style={styles.bold}>
-            {TASKS_TITLE}
-          </ThemedText>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={TASKS_ADD}
-            onPress={() => setTaskSheetOpen(true)}
-            hitSlop={Spacing.two}
-            style={({ pressed }) => (pressed ? styles.pressed : null)}>
-            <ThemedText type="f14" themeColor="tint" style={styles.bold}>
-              {TASKS_ADD}
-            </ThemedText>
-          </Pressable>
-        </View>
+        {/* 등록 버튼은 헤더 영역에 있는 것만 쓴다 — 「할 일 추가」는 화면 헤더로 옮겼다(2026-09-23). */}
+        <ThemedText type="t6" style={[styles.bold, styles.clHead]}>
+          {TASKS_TITLE}
+        </ThemedText>
         {(tasks ?? []).map((task) => {
           const done = task.state === 'done';
           return (
@@ -582,7 +598,7 @@ function CalendarPanel({
         })}
       </View>
 
-      <BottomSheet visible={taskSheetOpen} onRequestClose={() => setTaskSheetOpen(false)} testID="task-add-sheet">
+      <BottomSheet visible={taskSheetOpen} onRequestClose={onCloseTaskSheet} testID="task-add-sheet">
         <SheetPanel>
           <ThemedText type="t3">할 일을 더해볼까요?</ThemedText>
           <TextInput
@@ -974,6 +990,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: Layout.inlineGap,
   },
+  /* 등록 버튼은 헤더 영역에 있는 것만 쓴다 — 캘린더 탭은 「할 일 추가」·「일정 추가」 둘. */
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: Layout.inlineGap },
   scroll: { flex: 1 },
   /* 우하단 FAB가 없으므로 탭바 앞의 일반 문서 여백만 둔다. */
   scrollContent: { paddingBottom: Spacing.four },
@@ -1068,7 +1086,8 @@ const styles = StyleSheet.create({
   },
 
   // ── 할 일 ──
-  clHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: Layout.inlineGap },
+  /* 「할 일」 섹션 라벨 — 옆의 등록 버튼은 헤더로 옮겨서 이제 라벨 하나뿐이다. */
+  clHead: { marginBottom: Spacing.three },
   taskRow: {
     marginTop: Spacing.three,
     paddingBottom: Spacing.three,

@@ -20,7 +20,12 @@ import {
 } from '@weddingpick/ui';
 
 /**
- * 결정 완료 · WP-PICK-006. 시안 07-pick.dc.html #17d · 09-core-loop.dc.html #10e.
+ * 결정 완료 화면.
+ *
+ * v3.29 정본 `docs/design/html/대메뉴_Pick.dc.html`의 diffs 「최종 결정: 확인 시트 →
+ * 완료 화면 신설」이 이 화면의 근거다 — 그 파일에 별도 화면 카드로 실려 있지 않다.
+ * v3.29의 WP-PICK-006은 이 화면이 아니라 1-1 «비교» 화면이다 — 옛 07-pick·09-core-loop
+ * 시안(삭제됨)이 쓰던 번호를 더는 참조하지 않는다.
  *
  *   머리     padding 64 24 40 · 가운데 · gap 24 — 체크 원 72(coral · Pick Mark 36 white) + 링
  *   제목     26 «스튜디오 준비 완료» + 16/24 «강남 A 스튜디오로 결정했어요»
