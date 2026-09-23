@@ -23,8 +23,10 @@ import {
  * 나이로 갈리는 결과가 **둘**이고 가는 곳이 다르다(2026-09-10).
  *
  *   `under_age`       미달로 확인됐다 → WP-AUTH-009 이용 불가 안내
- *   `age_unverified`  판정할 근거가 없었다 → 로그인 화면이 «만 14세 이상이에요»를
- *                     한 번 받고 다시 시도한다(`needsAgeConfirm`)
+ *   `age_unverified`  판정할 근거가 없었다 → 로그인 화면이 `AgeConfirmSheet`로
+ *                     «만 14세 이상이에요»를 한 번 받고 다시 시도한다(`needsAgeConfirm`).
+ *                     v3.29에서 이 체크는 화면 본문(WP-AUTH-010)이 아니라 이 드문
+ *                     경우에만 쓰는 시트로 옮겼다 — 세션이 열리기 전에 끝나야 한다.
  *
  * 둘을 한 곳으로 보내면 안 된다. 카카오가 연령대를 주지 않은 사람에게
  * 「만 14세가 되면 다시 찾아주세요」라고 말하게 되는데, 그 사람은 미달이라고
@@ -50,6 +52,7 @@ export function useSignIn() {
     if (busy) return;
     setBusy(true);
     setError(null);
+    setNeedsAgeConfirm(false);
     setLastProvider(provider);
 
     try {
@@ -98,10 +101,25 @@ export function useSignIn() {
     setError(null);
   }
 
+  /** `AgeConfirmSheet`의 닫기 · 취소. 로그인 화면은 그대로 남고 다시 버튼을 누르면 된다. */
+  function dismissAgeConfirm() {
+    setNeedsAgeConfirm(false);
+  }
+
   /** 부팅이 넘긴 실패(카카오 리다이렉트 마무리 실패)를 시트로 띄운다. 문장 하나로 온다. */
   function reportError(message: string) {
     fail(new Error(message));
   }
 
-  return { signIn, busy, busyProvider: lastProvider, error, retry, dismissError, reportError, needsAgeConfirm };
+  return {
+    signIn,
+    busy,
+    busyProvider: lastProvider,
+    error,
+    retry,
+    dismissError,
+    reportError,
+    needsAgeConfirm,
+    dismissAgeConfirm,
+  };
 }

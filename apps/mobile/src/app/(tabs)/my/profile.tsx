@@ -37,8 +37,9 @@ const S = {
   marketingMeta: '혜택 · 이벤트',
   night: '야간 수신',
   nightMeta: '밤 9시 이후',
+  notiNote: '진행 중인 업종에서만 보내고 하루 최대 2건이에요.',
   account: '계정',
-  social: '소셜 로그인',
+  social: '카카오',
   connected: '연결됨',
   logout: '로그아웃',
   withdraw: '회원 탈퇴',
@@ -66,7 +67,17 @@ const S = {
  *
  * **이름 칸은 하나다**(v3.28 — 「이름 / 배우자에게 보이는 이름」 두 칸 → 「닉네임」 한 칸).
  * API의 displayName이 그 한 칸이고 배우자·후기·다른 사용자에게 모두 이 값으로 보인다.
- * 사진 바꾸기는 저장 계약이 없어 두지 않는다.
+ * 사진 바꾸기는 저장 계약이 없어 두지 않는다(v3.29 시안에도 있지만 업로드 계약이 아직 없다).
+ *
+ * **v3.29(대메뉴_MY.dc.html 2) 대조 — 미룬 것 셋.** 시안의 계정 섹션은 카카오 행에 마스킹
+ * 이메일 · 「가입일」 · 「로그인 유지」 토글까지 5행인데 `currentUserSchema`에 이메일 · 가입일이
+ * 없고 「로그인 유지」는 이 화면의 토글이 아니라 로그인 화면의 계정 기억 기능(WP-AUTH-008,
+ * `features/auth/remembered-account.ts`)이다 — 값을 지어내지 않고 지금 세 행(카카오 연결 ·
+ * 로그아웃 · 탈퇴)만 둔다. 알림 섹션도 시안은 「일정 알림 · Pick 변화 · 인증 결과 · 추천 갱신」
+ * 네 개별 토글인데 서버 계약(`settingsSchema`)은 `pushEnabled`(+`priceChangeEnabled`) ·
+ * `marketingEnabled` · `nightPushEnabled` 셋뿐이라 지금 묶음을 그대로 둔다. 헤더 우측 「저장」도
+ * 안 그렸다 — 지금은 각 값이 바뀌는 즉시 저장돼 따로 모아 누를 저장이 없다. 셋 다 서버 계약을
+ * 넓히는 결정이 필요해 대표님·MASTER 판단 전까지 보류한다.
  */
 export default function ProfileScreen() {
   const theme = useTheme();
@@ -267,6 +278,9 @@ export default function ProfileScreen() {
             ) : null}
           </View>
         )}
+        <ThemedText type="t7" themeColor="textAssistive" style={styles.nameNote}>
+          {S.notiNote}
+        </ThemedText>
       </Section>
 
       {/* 시안 「계정」 — 로그인 연결 · 로그아웃 · 회원 탈퇴만 둔다. Pick 인증은 MY 별도 메뉴다. */}

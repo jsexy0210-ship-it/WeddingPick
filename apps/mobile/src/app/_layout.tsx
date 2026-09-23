@@ -62,6 +62,8 @@ type Entry = SessionEntry;
 
 const ENTRY_ROUTE = {
   login: '/login',
+  /* v3.29 — 가입이 안 끝난 계정은 온보딩보다 약관 동의(WP-AUTH-010)가 먼저다. */
+  consent: '/login/consent',
   setup: '/setup',
 } as const;
 
@@ -241,15 +243,18 @@ function RootLayoutContent({ browserReady }: { browserReady: boolean }) {
 
             if (session) {
               const next = await entryAfterSignIn(session);
+              /* v3.29 — 가입 전(활성화 전) 계정은 약관 동의(`/login/consent`)나 온보딩(`/setup`) 둘 중 하나로 간다. */
+              const pending = next === '/setup' || next === '/login/consent';
 
-              void rememberSignedIn({ provider: 'kakao', email: null }, next === '/setup');
+              void rememberSignedIn({ provider: 'kakao', email: null }, pending);
 
-              // 웹 카카오 복귀는 RootLayout이 최종 라우팅을 맡는다. app/setup 두 값으로
+              // 웹 카카오 복귀는 RootLayout이 최종 라우팅을 맡는다. 몇 값으로
               // 뭉개기 전에 pending Pick의 실제 복귀 목적지를 한 번 보존한다.
-              postSignInRoute.current =
-                next !== '/setup' && next !== '/(tabs)' ? next : null;
+              postSignInRoute.current = !pending && next !== '/(tabs)' ? next : null;
 
-              return next === '/setup' ? 'setup' : 'app';
+              if (next === '/setup') return 'setup';
+              if (next === '/login/consent') return 'consent';
+              return 'app';
             }
           } catch (caught) {
             setPendingSignInError(caught instanceof Error ? caught.message : '로그인하지 못했어요.');

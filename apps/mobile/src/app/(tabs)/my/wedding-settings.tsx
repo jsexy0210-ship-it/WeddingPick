@@ -43,7 +43,7 @@ type PreparedCategory = Exclude<VendorCategory, 'etc'>;
 
 /** screens.json WP-MY-003 layout · `spec/strings.ko.json` `my.setting.*`. */
 const S = {
-  title: '내 웨딩 설정',
+  title: '내 웨딩설정',
   date: '예식일',
   region: '지역',
   budget: BUDGET_BRACKET_FIELD_LABEL,
@@ -55,7 +55,7 @@ const S = {
   preparedCount: (n: number) => `${formatCount(n)}개 정함`,
   saved: '설정을 바꿨어요',
   noteTitle: '바꾸면 추천이 다시 계산돼요',
-  noteBody: 'Pick한 곳과 지출 기록은 그대로 남아요.',
+  noteBody: '지금까지 고른 곳과 지출 기록은 그대로 남아요.',
   loadError: '지금 설정을 불러오지 못했어요',
   saveError: '바꾸지 못했어요',
 } as const;
@@ -64,8 +64,8 @@ const S = {
 type Editing = 'region' | 'budget' | 'prepared' | null;
 
 /**
- * 내 웨딩 설정 · WP-MY-003. screens.json layout «기본 3행 — 예식일·지역·총예산 /
- * 추천에 쓰는 정보 3행 / note 추천 재계산» · states «예식일 미정 / 확정 / 경과».
+ * 내 웨딩설정 · WP-MY-003 · `docs/design/html/대메뉴_MY.dc.html` 3. 한 카드에 다섯 행
+ * (예식일 · 지역 · 준비 현황 · 예산 · 스타일) — 시안 `weddingSet` 순서 그대로다.
  *
  * 이 화면이 생기기 전에는 MY의 «내 웨딩 설정»이 온보딩 5문항(`/setup`)을 통째로 다시 열었다 —
  * 예식일 하나 고치러 다섯 질문을 다시 지나야 했다. 여기서는 행을 눌러 그 항목만 고친다.
@@ -78,10 +78,15 @@ type Editing = 'region' | 'budget' | 'prepared' | null;
  * 온보딩 2/5 · 4/5 · 3/5와 같은 부품을 행 아래에 펼친다 — 같은 질문을 다른 모양으로 두 번
  * 만들지 않는다.
  *
- * **«추천에 쓰는 정보»가 시안의 3행이 아니라 2행이다.** WP-MY-003은 전용 시안 파일이 없고
- * (`docs/design/handoff/html`에 이 화면이 없다) screens.json layout과 00-ia의 항목만 있다.
- * 00-ia가 세는 세 번째는 «취향 다시 고르기»(WP-MY-004)인데, v3.24가 취향을 스타일 4종으로
- * 합치면서 그 화면이 곧 «스타일»(`/my/taste`)이 됐다. 같은 화면을 두 줄로 세우지 않는다.
+ * **스타일 행은 `/my/taste`(스타일 다시 고르기)로 연결된다** — 00-ia가 가리키던
+ * «취향 다시 고르기»(WP-MY-004)와 같은 화면이다(v3.24가 취향을 스타일 4종으로 합치면서
+ * 하나가 됐다). 같은 화면을 두 줄로 세우지 않는다.
+ *
+ * **예산 행 라벨은 시안 원문(«예산»)을 그대로 옮기지 않고 「준비 예산」을 유지했다** —
+ * `BUDGET_BRACKET_FIELD_LABEL`(`packages/domain/budget-bracket.ts`)이 v3.19부터 MY의 이
+ * 자리를 「준비 예산」으로 못 박았고(전체 예산이 아니라 앞으로 쓸 예산이라는 뜻), 같은 이름의
+ * 시험(`budget-bracket.test.ts`)이 그 값을 센다. 시안의 압축 표기와 기존 확정 용어가 부딪혀
+ * 임의로 바꾸지 않았다 — 대표님·MASTER 판단이 필요하다.
  */
 export default function WeddingSettingsScreen() {
   const theme = useTheme();

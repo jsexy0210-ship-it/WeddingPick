@@ -43,15 +43,24 @@ const ALLOWED = [
 ];
 
 /**
- * 약관 · 방침을 여는 화면 넷. 대표 지시가 이름으로 짚은 자리다.
+ * 약관 · 방침을 여는 화면들. 대표 지시가 이름으로 짚은 자리다.
  *
- * 이 넷은 `openExternal` «만» 부른다 — 무엇으로 열지는 그 함수 하나가 정한다.
+ * 이 화면들은 `openExternal` «만» 부른다 — 무엇으로 열지는 그 함수 하나가 정한다.
+ *
+ * `login/index.tsx`는 v3.29(2026-09-23 정본)에서 뺐다 — WP-AUTH-010 약관 동의
+ * 화면으로 일원화되면서 로그인 화면 자체는 더 이상 약관 링크를 보여주지 않는다.
+ * 그 약관 동의 화면(`login/consent.tsx`)이 여는 상세(WP-AUTH-011, `terms-detail-modal.tsx`)는
+ * `openExternal`로 브라우저를 여는 대신 **완전히 인앱 네이티브 풀팝업**이라 애초에
+ * 앱을 떠나지 않는다 — "브라우저를 안 나간다"보다 강한 "브라우저 자체를 안 연다"라
+ * `LEGAL_SCREENS`(=openExternal 사용처 목록)에 넣을 대상이 아니다. `LEAVE_CALLS`
+ * 검사(아래)는 여전히 저장소 전체를 훑으므로 이 둘 중 어느 화면이 직접
+ * `Linking.openURL`·`window.open`을 부르면 그대로 걸린다.
+ *
+ * **판단 필요**: CLAUDE.md 2026-09-15 대표 지시가 `login/index.tsx`를 이름으로
+ * 짚었던 근거 문서(그 네 화면)가 이 변경으로 하나 줄어든다 — 대표님 확인 필요.
  */
 const LEGAL_SCREENS = [
-  'apps/mobile/src/app/login/index.tsx',
   'apps/mobile/src/app/(tabs)/my/index.tsx',
-  'apps/mobile/src/app/(tabs)/my/settings.tsx',
-  'apps/mobile/src/app/(tabs)/my/support.tsx',
   'apps/mobile/src/app/(tabs)/my/privacy.tsx',
 ];
 

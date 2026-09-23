@@ -8,7 +8,7 @@ import { Colors } from './theme';
  * 한때 `pickMark`가 여기 사본으로 있었는데 획 두께가 1.8로 확정본(1.9)과 달라
  * 탭 바만 다른 마크를 쓰고 있었다.
  */
-export type ProductSymbolName = 'house' | 'magnifier' | 'twoPeople' | 'calendar' | 'person' | 'hall' | 'sdm' | 'snap' | 'planner' | 'warning' | 'bell' | 'gear' | 'more' | 'chevronRight' | 'chevronLeft' | 'chevronDown' | 'arrowLeft' | 'pin' | 'link' | 'chart' | 'checkCircle' | 'edit' | 'trash' | 'mic' | 'file' | 'lock' | 'info' | 'headset' | 'signout' | 'gift' | 'clock' | 'bookmark' | 'close' | 'check';
+export type ProductSymbolName = 'house' | 'magnifier' | 'twoPeople' | 'calendar' | 'person' | 'hall' | 'sdm' | 'snap' | 'planner' | 'warning' | 'bell' | 'gear' | 'more' | 'chevronRight' | 'chevronLeft' | 'chevronDown' | 'arrowLeft' | 'pin' | 'link' | 'chart' | 'checkCircle' | 'edit' | 'trash' | 'mic' | 'file' | 'lock' | 'info' | 'headset' | 'signout' | 'gift' | 'clock' | 'bookmark' | 'close' | 'check' | 'camera' | 'photo';
 
 /**
  * 획 두께. 헤더·탭 아이콘(24)은 1.8, chevron(18)은 2, 닫기(14)는 2.4 — 05-root ·
@@ -69,6 +69,9 @@ export function ProductSymbol({ name, size = 24, color = Colors.light.text }: { 
       {/* 완료 체크(11 · 획 3.6) — 혜택 안내 시트 조건 행. 시안 path 그대로. */}
       {name === 'check' && <Path {...common} d="m5 12.5 4.5 4.5L19 7.5" />}
       {name === 'warning' && <><Path {...common} d="M12 3.8 21 19.5H3z" /><Path {...common} d="M12 10v4.2M12 16.8v.1" /></>}
+      {/* 약관 동의(WP-AUTH-010) 앱 접근 권한 4칸의 카메라 · 사진. */}
+      {name === 'camera' && <><Path {...common} d="M4 8.4h3.2l1.4-2h6.8l1.4 2H20a1.6 1.6 0 0 1 1.6 1.6v8.4A1.6 1.6 0 0 1 20 20H4a1.6 1.6 0 0 1-1.6-1.6v-8.4A1.6 1.6 0 0 1 4 8.4z" /><Circle {...common} cx="12" cy="13.4" r="3.4" /></>}
+      {name === 'photo' && <><Rect {...common} x="3" y="4.5" width="18" height="15" rx="2" /><Circle {...common} cx="8.4" cy="9.4" r="1.7" /><Path {...common} d="m4.5 17 5-5 3.2 3.2 2.6-2.6 4.2 4.2" /></>}
     </Svg>
   );
 }

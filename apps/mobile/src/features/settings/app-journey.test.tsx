@@ -4,9 +4,6 @@ import { Switch } from 'react-native';
 import { router } from 'expo-router';
 import { listNotifications, readNotification, readAllNotifications, getCurrentUser, getSettings, setDisplayName, updateSettings, searchVendors, listVendorRegions } from '@/api/client';
 import NotificationsScreen from '@/app/(tabs)/my/notifications';
-import NotificationSettingsScreen from '@/app/(tabs)/my/notification-settings';
-import AccountScreen from '@/app/(tabs)/my/account';
-import SettingsScreen from '@/app/(tabs)/my/settings';
 import ProfileScreen from '@/app/(tabs)/my/profile';
 import AutocompleteScreen from '@/app/(tabs)/search/autocomplete';
 import PriceReportScreen from '@/app/(tabs)/search/[vendorId]/price-report';
@@ -102,11 +99,18 @@ describe('알림 이동과 읽음 복구', () => {
   });
 });
 
-describe.each([['알림 설정', NotificationSettingsScreen], ['계정', AccountScreen], ['설정', SettingsScreen]] as const)('%s 저장 경합', (_name, Component) => {
+/*
+ * v3.29 — 알림 설정은 별도 화면(옛 `my/notification-settings.tsx`, 시안 ID
+ * 「13-my-sub WP-MY-007」)이 아니라 프로필(WP-MY-002 «알림» 섹션)이 흡수했다.
+ * 그 화면은 어디서도 이동하지 않는 고아 라우트였다 — `대메뉴_MY.dc.html`의
+ * `mySections`에도 독립 알림 화면이 없다. 지우면서 그 화면이 지키던 저장 경합 ·
+ * 「서비스 알림 한 줄」 시험은 같은 로직을 쓰는 ProfileScreen으로 옮겨 그대로 둔다.
+ */
+describe('프로필 알림 저장 경합', () => {
   it('저장 응답 전 두 번째 토글을 차단하고 완료 후 다시 활성화한다', async () => {
     const pending = deferred();
     jest.mocked(updateSettings).mockReturnValue(pending.promise as never);
-    await mount(<Component />);
+    await mount(<ProfileScreen />);
     const switches = tree.root.findAllByType(Switch);
     await act(async () => { switches[0]!.props.onValueChange(false); switches[1]!.props.onValueChange(false); });
     expect(updateSettings).toHaveBeenCalledTimes(1);
@@ -117,7 +121,7 @@ describe.each([['알림 설정', NotificationSettingsScreen], ['계정', Account
 
   it('저장 실패 시 원래 값으로 되돌리고 다시 시도할 수 있다', async () => {
     jest.mocked(updateSettings).mockRejectedValue(new Error('offline'));
-    await mount(<Component />);
+    await mount(<ProfileScreen />);
     await act(async () => tree.root.findAllByType(Switch)[0]!.props.onValueChange(false));
     const toggle = tree.root.findAllByType(Switch)[0]!;
     expect(toggle.props.value).toBe(true);
@@ -133,7 +137,7 @@ describe('정본 알림 설정', () => {
       priceChangeEnabled: false,
     } as never);
 
-    await mount(<NotificationSettingsScreen />);
+    await mount(<ProfileScreen />);
     await act(async () => tree.root.findAllByType(Switch)[0]!.props.onValueChange(false));
 
     expect(updateSettings).toHaveBeenCalledWith({
@@ -155,7 +159,7 @@ describe('정본 알림 설정', () => {
       priceChangeEnabled: true,
     } as never);
 
-    await mount(<NotificationSettingsScreen />);
+    await mount(<ProfileScreen />);
     const service = tree.root.findAllByType(Switch)[0]!;
     expect(service.props.value).toBe(false);
     await act(async () => service.props.onValueChange(true));

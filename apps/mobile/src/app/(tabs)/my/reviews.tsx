@@ -5,9 +5,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { ErrorView } from '@weddingpick/ui';
 import { listMyReports } from '@/api/client';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
-import { EmptyBox, NoteBox, Row, Rows, Section, SubScreen } from '@/features/settings/my-kit';
+import { EmptyBox, Row, Rows, Section, SubScreen } from '@/features/settings/my-kit';
 
-/** 시안 12b-remaining #10 «내 후기 · WP-REV-004»의 renderVals. */
+/** 시안 `docs/design/html/대메뉴_MY.dc.html` 6 «내가 쓴 후기 · WP-MY-006»의 renderVals. */
 const S = {
   title: '내가 쓴 후기',
   written: '쓴 후기',
@@ -19,8 +19,6 @@ const S = {
   /** 아직 보이지 않는 후기 — 서버가 `inUse: false`로 알려준 것만 적는다. */
   hidden: '확인 중',
   emptyWritable: 'Pick 인증을 하면 그 업체에 후기를 쓸 수 있어요',
-  noteTitle: '후기는 언제든 고칠 수 있어요',
-  noteBody: '고치면 수정됨 표시가 함께 보여요.',
   loadError: '내 후기를 불러오지 못했어요',
 } as const;
 
@@ -39,9 +37,9 @@ function monthDay(iso: string): string {
 }
 
 /**
- * 내 후기 · WP-REV-004. 시안 12b-remaining #10.
+ * 내가 쓴 후기 · WP-MY-006 · `docs/design/html/대메뉴_MY.dc.html` 6.
  *
- *   Hero → «쓴 후기»(업체명 · 작성 시기) → «쓸 수 있는 곳»(Pick 인증 완료 + «쓰기» 배지) → note
+ *   «쓴 후기 N개»(업체명 · 작성 시기) → «쓸 수 있는 곳 N개»(Pick 인증 완료 + «쓰기» 배지)
  *
  * 두 목록 모두 `/v1/me/reports`(내 제보 내역) 한 번으로 만든다 — 후기만 따로 주는 엔드포인트가
  * 없고, 그 응답에 후기(`kind: 'review'`)와 Pick 인증(`kind: 'payment_proof'`)이 이미 다 있다.
@@ -51,6 +49,10 @@ function monthDay(iso: string): string {
  *     하나씩 붙는다 — 행을 글자만으로 둔다.
  *   - «도움돼요 14» · «반론 1» 배지: 도움돼요 수와 반론 수가 계약에 없다. 지어내지 않는다.
  *     대신 서버가 «지금 쓰이고 있는가»(`inUse`)는 알려주므로 그것만 «확인 중»으로 적는다.
+ *
+ * **v3.29 대조 — noteBox를 지웠다.** 옛 시안(12b-remaining #10)에는 맨 아래 «후기는 언제든
+ * 고칠 수 있어요» 안내 카드가 있었는데, 지금 정본(WP-MY-006)의 이 화면은 두 목록으로 끝난다
+ * — 정본에 없는 화면 안 요소라 뺐다.
  *
  * 행을 누르면 그 업체의 후기 목록으로 간다. 시안이 가리키는 후기 상세(WP-REV-003)는 아직 화면이
  * 없고, 고치기 화면(`edit-review`)은 별점 · 제목 · 본문을 params로 받는데 `/v1/me/reports`가 그 셋을
@@ -129,10 +131,6 @@ export default function MyReviewsScreen() {
         ) : (
           <EmptyBox>{S.emptyWritable}</EmptyBox>
         )}
-      </Section>
-
-      <Section>
-        <NoteBox title={S.noteTitle} body={S.noteBody} />
       </Section>
     </SubScreen>
   );

@@ -153,7 +153,8 @@ describe('/my/taste — 저장 완료·불러오기 실패', () => {
     jest.mocked(completeSetup).mockResolvedValue({} as never);
     await mount(<StyleScreen />);
     await act(async () => {
-      await tree.root.findByType('SubScreen' as never).props.right.props.onPress();
+      /* 시안(WP-MY-014)이 저장을 헤더 오른쪽에서 하단 dock의 primary 버튼으로 옮겼다. */
+      await tree.root.findByType('SubScreen' as never).props.dock.props.primary.onPress();
     });
 
     const [, , buttons] = jest.mocked(confirmAlert).mock.calls[0]!;

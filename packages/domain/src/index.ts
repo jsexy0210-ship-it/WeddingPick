@@ -1,4 +1,5 @@
 export * from './analysis-notice';
+export * from './consent-terms';
 export * from './consumer-standards';
 export * from './data-sources';
 export * from './document';
