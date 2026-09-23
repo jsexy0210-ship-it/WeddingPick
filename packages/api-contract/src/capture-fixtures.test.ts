@@ -12,12 +12,13 @@ import { z, type ZodType } from 'zod';
 
 import { appBootstrapResponseSchema } from './app';
 import { authProvidersResponseSchema } from './auth';
-import { candidateListResponseSchema } from './candidates';
+import { candidateListResponseSchema, decisionListResponseSchema } from './candidates';
 import { expoListResponseSchema } from './expos';
 import { faqListResponseSchema } from './faq';
 import { consultationListResponseSchema } from './consultations';
 import { inquiryListResponseSchema } from './inquiries';
 import { myReportListResponseSchema } from './my-reports';
+import { notificationListResponseSchema } from './notifications';
 import { categoryRecommendationsResponseSchema } from './recommendations';
 import { myMonthlyDrawResponseSchema, myRewardPayoutResponseSchema, myRewardsResponseSchema } from './rewards';
 import { loungeReviewListResponseSchema, reportReasonListResponseSchema, reviewCommentListResponseSchema, reviewListResponseSchema } from './reviews';
@@ -78,6 +79,8 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/weddings/:weddingId/consultations', consultationListResponseSchema],
   ['GET /v1/weddings/:weddingId/events', weddingEventListResponseSchema],
   ['GET /v1/weddings/:weddingId/expenses', expenseSummaryResponseSchema],
+  ['GET /v1/weddings/:weddingId/decisions', decisionListResponseSchema],
+  ['GET /v1/me/notifications', notificationListResponseSchema],
   ['GET /v1/vendors/regions', vendorRegionsResponseSchema],
   ['GET /v1/vendors', vendorSearchResponseSchema],
   ['GET /v1/vendors/compare', vendorComparisonResponseSchema],
