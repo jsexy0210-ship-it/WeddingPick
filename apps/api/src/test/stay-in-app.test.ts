@@ -50,8 +50,6 @@ const ALLOWED = [
 const LEGAL_SCREENS = [
   'apps/mobile/src/app/login/index.tsx',
   'apps/mobile/src/app/(tabs)/my/index.tsx',
-  'apps/mobile/src/app/(tabs)/my/settings.tsx',
-  'apps/mobile/src/app/(tabs)/my/support.tsx',
   'apps/mobile/src/app/(tabs)/my/privacy.tsx',
 ];
 

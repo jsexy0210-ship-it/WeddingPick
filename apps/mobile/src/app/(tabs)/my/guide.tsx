@@ -1,13 +1,17 @@
 import { ANALYSIS_FACTS, formatAttribution, listDataSources } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ActionButton, Layout, MaxContentWidth, Radius, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
+import { ActionButton, FilterChip, Layout, MaxContentWidth, Radius, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
 import { APP_VERSION } from '@/features/settings/version';
 import { BackBar } from '@/components/back-bar';
 import { useFaq } from '@/features/faq/use-faq';
 import strings from '../../../../../../spec/strings.ko.json';
+
+/** 카테고리 칩바의 «전체» — `community/index.tsx` `CATEGORIES`와 같은 이름을 쓴다. */
+const ALL_CATEGORY = '전체';
 
 const SHOOTING_TIPS = [
   '문서가 화면에 꽉 차게, 네 귀퉁이가 모두 보이게 찍어주세요.',
@@ -21,23 +25,41 @@ export default function GuideScreen() {
   const { mode } = useLocalSearchParams<{ mode?: string }>();
   /* 질문은 운영자가 관리자 화면에서 고치고 지운다(2026-09-16 대표 지시). */
   const faq = useFaq();
+  // 시안(WP-MY-013) 카테고리 칩바 — «전체» + 받아온 질문의 category를 처음 나온 순서로.
+  const [category, setCategory] = useState(ALL_CATEGORY);
 
   if (mode === 'faq') {
+    const categories = [ALL_CATEGORY, ...new Set(faq.items.map((item) => item.category))];
+    const visible =
+      category === ALL_CATEGORY ? faq.items : faq.items.filter((item) => item.category === category);
+
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           <BackBar title={strings.my['item.faq']} />
-          <ScrollView contentContainerStyle={styles.content}>
-            <ThemedView style={styles.section}>
-              <ThemedText type="subtitle">자주 찾는 질문</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                질문을 눌러 답을 확인할 수 있어요.
-              </ThemedText>
-            </ThemedView>
 
-            {faq.loading ? null : faq.items.length > 0 ? (
+          {faq.items.length > 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.chipScroll}
+              contentContainerStyle={styles.chipBar}>
+              {categories.map((label) => (
+                <FilterChip
+                  key={label}
+                  role="radio"
+                  label={label}
+                  selected={category === label}
+                  onPress={() => setCategory(label)}
+                />
+              ))}
+            </ScrollView>
+          ) : null}
+
+          <ScrollView contentContainerStyle={styles.content}>
+            {faq.loading ? null : visible.length > 0 ? (
               <ThemedView style={styles.section}>
-                {faq.items.map((item) => (
+                {visible.map((item) => (
                   <Pressable
                     key={item.key}
                     accessibilityRole="button"
@@ -177,6 +199,12 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     maxWidth: MaxContentWidth,
+  },
+  chipScroll: { flexGrow: 0 },
+  chipBar: {
+    gap: Layout.chipGap,
+    paddingHorizontal: Layout.gutter,
+    paddingBottom: Layout.sectionHeadGap,
   },
   content: {
     paddingHorizontal: Layout.gutter,

@@ -1,7 +1,6 @@
 import type { WithdrawalNotice } from '@weddingpick/api-contract';
 import {
   WITHDRAWAL_ANONYMOUS_BADGE,
-  WITHDRAWAL_CANCEL,
   WITHDRAWAL_CONSENT,
   WITHDRAWAL_DELETED_GROUP,
   WITHDRAWAL_DONE_BODY,
@@ -25,7 +24,6 @@ import { Layout, ProductSymbol, Spacing, ThemedText, Toast, useTheme } from '@we
 import { getWithdrawalNotice, withdraw } from '@/api/client';
 import { wipeDevice } from '@/api/session';
 import { ConfirmSheet } from '@/features/common/confirm-sheet';
-import { useDepthBack } from '@/features/navigation/depth-back';
 import {
   CheckDot,
   Dock,
@@ -61,7 +59,6 @@ const S = {
  */
 export default function WithdrawalScreen() {
   const theme = useTheme();
-  const depthBack = useDepthBack();
   const [notice, setNotice] = useState<WithdrawalNotice | null>(null);
   const [agreed, setAgreed] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -126,8 +123,8 @@ export default function WithdrawalScreen() {
     <SubScreen
       title={S.title}
       dock={
+        /* 시안(WP-MY-012)은 dockSingle이다 — 취소는 헤더 뒤로가기가 맡고 하단은 실행 버튼 하나뿐. */
         <Dock
-          secondary={{ label: WITHDRAWAL_CANCEL, onPress: depthBack }}
           primary={{
             label: WITHDRAWAL_SUBMIT,
             danger: true,

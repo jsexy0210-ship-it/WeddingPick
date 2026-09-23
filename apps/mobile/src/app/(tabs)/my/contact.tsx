@@ -5,20 +5,23 @@ import {
   INQUIRY_STATUS_LABEL,
   canSubmitInquiry,
   type InquiryCategory,
+  type InquiryStatus,
 } from '@weddingpick/domain';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, TextInput } from 'react-native';
+import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { createInquiry, listMyInquiries } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { formatDateDot } from '@/features/common/format-date';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { OptionRow } from '@/features/onboarding/option-row';
+import { Row, Rows } from '@/features/settings/my-kit';
 import { BackBar } from '@/components/back-bar';
 import {
   ActionButton,
-  FilterChip,
+  type BadgeKind,
   FontSize,
   Layout,
   MaxContentWidth,
@@ -32,6 +35,14 @@ import {
 function isCategory(value: string | undefined): value is InquiryCategory {
   return (INQUIRY_CATEGORIES as readonly string[]).includes(value ?? '');
 }
+
+/** 지난 문의 배지 색 — 시안 `p.badge`는 색을 정하지 않는다. 진행/완료/종료를 일반 규칙으로 매핑한다. */
+const INQUIRY_BADGE_KIND: Record<InquiryStatus, BadgeKind> = {
+  received: 'wait',
+  in_review: 'wait',
+  answered: 'ok',
+  closed: 'none',
+};
 
 /**
  * 문의 창구.
@@ -54,7 +65,6 @@ export default function ContactScreen() {
     isCategory(params.category) ? params.category : 'other'
   );
   const [body, setBody] = useState('');
-  const [contact, setContact] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [acknowledgement, setAcknowledgement] = useState<string | null>(null);
@@ -94,12 +104,10 @@ export default function ContactScreen() {
         category,
         body: body.trim(),
         ...(subject && { subject }),
-        ...(contact.trim() && { contact: contact.trim() }),
       });
 
       setAcknowledgement(received.acknowledgement);
       setBody('');
-      setContact('');
     } catch (caught) {
       setError((caught as Error).message);
     } finally {
@@ -137,26 +145,31 @@ export default function ContactScreen() {
           {mine.length > 0 ? (
             <ThemedView style={styles.section}>
               <ThemedText type="smallBold">지난 문의 {mine.length}건</ThemedText>
-              {mine.map((inquiry) => (
-                <ThemedView key={inquiry.id} type="backgroundElement" style={styles.card}>
-                  <ThemedText type="smallBold">
-                    {INQUIRY_CATEGORY_RULES[inquiry.category].label} ·{' '}
-                    {INQUIRY_STATUS_LABEL[inquiry.status]}
-                  </ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {formatDateDot(inquiry.receivedAt)}
-                  </ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {inquiry.body}
-                  </ThemedText>
-                  {inquiry.resolution ? <ThemedText type="small">답변: {inquiry.resolution}</ThemedText> : null}
-                </ThemedView>
-              ))}
+              <Rows>
+                {mine.map((inquiry) => (
+                  <View key={inquiry.id}>
+                    <Row
+                      name={inquiry.body}
+                      meta={formatDateDot(inquiry.receivedAt)}
+                      tail={INQUIRY_STATUS_LABEL[inquiry.status]}
+                      tailBadge={INQUIRY_BADGE_KIND[inquiry.status]}
+                    />
+                    {/* 시안(WP-MY-008)엔 없는 줄이다 — 답을 보여줄 상세 화면이 아직 없어 여기서 보여준다. */}
+                    {inquiry.resolution ? (
+                      <ThemedText type="small" themeColor="textSecondary" style={styles.resolution}>
+                        답변: {inquiry.resolution}
+                      </ThemedText>
+                    ) : null}
+                  </View>
+                ))}
+              </Rows>
             </ThemedView>
           ) : null}
 
+          <View style={[styles.divider, { backgroundColor: theme.border }]} />
+
           <ThemedView style={styles.section}>
-            <ThemedText type="subtitle">어떤 점이 궁금하세요?</ThemedText>
+            <ThemedText type="subtitle">{'어떤 점이\n궁금하세요?'}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
               사람이 직접 읽고 답해요. 이름이나 주소 없이 보낼 수 있어요.
             </ThemedText>
@@ -171,10 +184,9 @@ export default function ContactScreen() {
           ) : null}
 
           <ThemedView style={styles.section}>
-            <ThemedText type="smallBold">어떤 이야기인가요</ThemedText>
-            <ThemedView style={styles.chips}>
+            <View style={styles.optionList}>
               {INQUIRY_CATEGORIES.map((item) => (
-                <FilterChip
+                <OptionRow
                   key={item}
                   role="radio"
                   label={INQUIRY_CATEGORY_RULES[item].label}
@@ -182,7 +194,7 @@ export default function ContactScreen() {
                   onPress={() => setCategory(item)}
                 />
               ))}
-            </ThemedView>
+            </View>
             <ThemedText type="small" themeColor="textSecondary">
               {rule.description}
             </ThemedText>
@@ -216,23 +228,6 @@ export default function ContactScreen() {
               placeholder="무엇이 잘못되었는지, 무엇을 원하시는지 적어주세요"
               placeholderTextColor={theme.textSecondary}
               accessibilityLabel="문의 내용"
-            />
-          </ThemedView>
-
-          <ThemedView style={styles.section}>
-            <ThemedText type="smallBold">답을 받을 곳 (선택)</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              비워두시면 이 앱으로 알려드려요. 다른 곳으로 받고 싶으시면 적어주세요.
-            </ThemedText>
-            <TextInput
-              style={[styles.input, { color: theme.text, borderColor: theme.border }]}
-              value={contact}
-              onChangeText={setContact}
-              autoCapitalize="none"
-              autoCorrect={false}
-              placeholder="이메일 또는 연락처"
-              placeholderTextColor={theme.textSecondary}
-              accessibilityLabel="답을 받을 곳"
             />
           </ThemedView>
 
@@ -295,9 +290,14 @@ const styles = StyleSheet.create({
   section: {
     gap: Spacing.two,
   },
-  chips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  /* 시안 divider — 지난 문의와 질문 블록 사이 한 줄. */
+  divider: {
+    height: 1,
+  },
+  resolution: {
+    paddingLeft: Layout.gutter - Spacing.two,
+  },
+  optionList: {
     gap: Spacing.two,
   },
   card: {

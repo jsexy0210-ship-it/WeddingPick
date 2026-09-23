@@ -5,7 +5,7 @@ import { Redirect } from 'expo-router';
  * **2026-09-23 관리자-프론트 연결 재검증에서 찾은 빈 자리를 잇는다.** 서버 쪽은
  * 이미 완성돼 있었다(`inquiry-admin.ts`의 `list`/`show`/`moveStatus`, 라우트는
  * `apps/api/src/routes/admin.ts` 「── 문의 ──」). 문의하기(`my/contact.tsx`) ·
- * 고객지원(`my/support.tsx`) · 정보 오류 제보(`search/[vendorId]/fix-report.tsx`)가
+ * 정보 오류 제보(`search/[vendorId]/fix-report.tsx`)가
  * 전부 같은 `structured.inquiries`로 모이는데, 그걸 읽어 답하는 화면이 하나도
  * 없었다 — 사람이 `npm run inquiries -- --answer`를 터미널에서 돌려야 했다.
  * 대표님이 「회원의 모든 활동과 모든 정보를 확인할 수 있어야 한다」고 확인한 자리다.

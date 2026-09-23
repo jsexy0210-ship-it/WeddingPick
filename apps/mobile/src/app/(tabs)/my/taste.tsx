@@ -12,22 +12,19 @@ import { StyleSheet, View } from 'react-native';
 
 import { ApiError, completeSetup, getCurrentUser } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
-import { STEP_TITLE_LINES } from '@/features/onboarding/flow';
+import { STEP_DESCRIPTION, STEP_TITLE_LINES, STYLE_DESCRIPTION } from '@/features/onboarding/flow';
 import { InlineToast, useInlineToast } from '@/features/onboarding/inline-toast';
 import { OptionRow } from '@/features/onboarding/option-row';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { useDepthBack } from '@/features/navigation/depth-back';
-import { Hero, NavAction, NoteBox, Section, SubScreen } from '@/features/settings/my-kit';
+import { Dock, Hero, NoteBox, Section, SubScreen } from '@/features/settings/my-kit';
 import { ErrorView, Layout } from '@weddingpick/ui';
 
-/** `spec/strings.ko.json` `my.item.taste` · `my.setting.note*` · 시안 13-my-sub WP-MY-004. */
+/** `spec/strings.ko.json` `my.item.taste` · 시안 13-my-sub WP-MY-014. */
 const S = {
   title: '스타일',
-  save: '저장',
+  save: '저장하기',
   saving: '저장 중…',
-  sub: (n: number) => `지금은 ${n}개를 골랐어요`,
-  noteTitle: '바꾸면 추천이 다시 계산돼요',
-  noteBody: 'Pick한 곳과 지출 기록은 그대로 남아요.',
   savedTitle: '스타일을 저장했어요',
   savedBody: '고른 스타일로 홈 추천이 새로 만들어져요.',
   ok: 'MY로 돌아가기',
@@ -42,8 +39,8 @@ type Loaded = {
 };
 
 /**
- * 스타일 다시 고르기 · WP-MY-004. 지금 고른 것을 먼저 보여주고 바꾸게 한다. 저장은 헤더 오른쪽
- * «저장»이다(시안 navRight). 규칙은 온보딩 3/3과 같다 — 최소 1개, 최대 2개.
+ * 스타일 다시 고르기 · WP-MY-014. 지금 고른 것을 먼저 보여주고 바꾸게 한다. 저장은 하단 고정
+ * «저장하기» 한 개다(시안 dockSingle). 규칙은 온보딩 3/3과 같다 — 최소 1개, 최대 2개.
  *
  * **보기는 온보딩 3/3과 같은 `OptionRow` 넷이다**(2026-09-15 대표 지시 「타일로 하지마
  * 버튼으로 통일한다」). 사진 2×2 타일을 쓰던 자리다 — 피그마 규격서에 타일이 없고,
@@ -101,15 +98,17 @@ export default function StyleScreen() {
   return (
     <SubScreen
       title={S.title}
-      right={
-        <NavAction
-          brand
-          label={saving ? S.saving : S.save}
-          disabled={saving || count < STYLE_PICK_MIN}
-          onPress={() => void handleSave()}
+      dock={
+        /* 시안(WP-MY-014)은 헤더 오른쪽이 아니라 하단 고정 «저장하기» 한 개다. */
+        <Dock
+          primary={{
+            label: saving ? S.saving : S.save,
+            disabled: saving || count < STYLE_PICK_MIN,
+            onPress: () => void handleSave(),
+          }}
         />
       }>
-      <Hero lines={STEP_TITLE_LINES.style} sub={S.sub(count)} />
+      <Hero lines={STEP_TITLE_LINES.style} sub={STEP_DESCRIPTION.style} />
 
       <View style={styles.options}>
         {WEDDING_STYLES.map((style) => (
@@ -117,6 +116,7 @@ export default function StyleScreen() {
             key={style}
             role="checkbox"
             label={WEDDING_STYLE_LABEL[style]}
+            description={STYLE_DESCRIPTION[style]}
             selected={loaded.chosen.includes(style)}
             onPress={() => {
               const { next, limited } = toggleStyle(loaded.chosen, style);
@@ -133,10 +133,6 @@ export default function StyleScreen() {
           <NoteBox title={error} />
         </Section>
       ) : null}
-
-      <Section>
-        <NoteBox title={S.noteTitle} body={S.noteBody} />
-      </Section>
 
       <InlineToast toast={limitToast.toast} onHidden={limitToast.hide} />
 
