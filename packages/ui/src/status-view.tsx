@@ -116,6 +116,10 @@ export type LoadingViewProps = {
  * **로더는 원형 하나뿐이다**(2026-09-15 대표 지시 — 「모든 화면 로딩 발생 시
  * 기본로더로 돌려라. **기존 정책 파기** 기본로더만 사용할것」). 2026-09-11의
  * 「기본은 써클, 순회는 `loader="cycle"`」에서 예외가 없어졌다.
+ *
+ * 정본 WP-LOAD-003과 재대조(2026-09-23) — 크기 40 · 700ms 임계값은 일치(PASS),
+ * 로더 모양(원형 vs 업종 아이콘 순회)만 `DESIGN_UNRESOLVED`(사유는
+ * `circle-loader.tsx`·`delayed-loader.tsx` 참고).
  */
 export function LoadingView({ title, label }: LoadingViewProps) {
   const text = title ?? label;
@@ -180,6 +184,17 @@ export function recommendingTitle(nickname?: string): string {
 /**
  * WP-ST-015 업종 순회 로딩의 본문 — 로더 40 · 제목 24 · 예상 시간 · 단계 목록.
  * 화면 전체를 채우지 않는다 — 카드·시트 안처럼 부모가 자리를 정할 때 쓴다.
+ *
+ * 정본 WP-LOAD-001(업종 순회 로딩) · WP-LOAD-005(처리 중 · 단계 표시) `centerWrap`과
+ * 재대조(2026-09-23) — 세로 gap 32 · 제목/부제 gap 8 · 제목 24/32 · 부제 t6는
+ * 전부 일치(PASS). 로더 모양만 `DESIGN_UNRESOLVED`(원형 vs 업종 아이콘 순회 —
+ * 사유는 `delayed-loader.tsx` 참고). `apps/mobile/.../capture/analysis/[id].tsx`가
+ * WP-LOAD-005를 그대로 쓰는 실사용처다 — 제목 「올려주신 자료를 읽고 있어요」 ·
+ * 「10초 안에 끝나요」 · 단계(글자 읽기 · 금액과 날짜 찾기 · 업체 맞춰보기)까지
+ * 정본과 문구 그대로 일치한다. 다만 그 화면엔 정본에 있는 하단 `취소` ghost
+ * 버튼(WP-LOAD-005 `Ldock`)이 없다 — 취소가 무엇을 하는지(뒤로가기 vs 폴링만
+ * 중단)가 정본에 안 적혀 있어 `DESIGN_UNRESOLVED`로 남기고 그 화면 파일은
+ * 건드리지 않았다(이 세션의 범위는 공용 컴포넌트다).
  */
 export function RecommendingBody({
   nickname,

@@ -14,6 +14,10 @@ export type Step = { label: string; state: StepState };
  *
  * 끝난 단계는 코랄 원 + 체크, 진행 중은 코랄 원 + 700, 남은 단계는 회색 원 +
  * 회색 글자. 점 18 · 라벨 16/22 · 행 30 · 간격 10(30-loading step).
+ *
+ * 정본 WP-LOAD-001(업종 순회 로딩) · WP-LOAD-005(처리 중 · 단계 표시)의 `step()`과
+ * 재대조(2026-09-23) — 점 18 · gap 10 · 행 min-height 30 · 라벨 16/22 그대로
+ * 일치한다(PASS). WP-LOAD-005의 완료 체크(11×11, stroke 3.6)도 같다.
  */
 export function StepList({ steps }: { steps: readonly Step[] }) {
   const theme = useTheme();

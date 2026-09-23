@@ -11,6 +11,10 @@ import { useTheme } from './use-theme';
  *
  * path는 핸드오프 v3.21 `30-loading.dc.html`의 `ICONS` 값 **그대로**다 — 다시
  * 그리지 않는다. 시안 키와 다른 이름 셋: `invite` → invitation · `home` → dowry.
+ *
+ * 정본 WP-LOAD-002(업종 아이콘 8종, `공통_다이얼로그 빈상태 로더.dc.html` `ICONS`)와
+ * 재대조(2026-09-23) — path 12개 전부 문자 그대로 일치한다(PASS). stroke 1.8 ·
+ * viewBox 24도 같다.
  */
 export type CategoryIconKind =
   | 'agency'
