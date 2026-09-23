@@ -38,6 +38,7 @@ export function MyWeddingPrep({
   return (
     <View style={styles.section}>
       <SummaryHeading title={S['section.myPrep']} sub={sub} onMore={onMore} />
+      <View style={styles.grid}>
       {rows.map((row) => (
         <View key={row[0]!.key} style={styles.row}>
           {row.map((card) => {
@@ -87,6 +88,7 @@ export function MyWeddingPrep({
           {row.length === 1 ? <View style={styles.spacer} /> : null}
         </View>
       ))}
+      </View>
     </View>
   );
 }
@@ -168,36 +170,45 @@ function SummaryHeading({ title, sub, onMore }: { title: string; sub: string | n
 }
 
 const styles = StyleSheet.create({
+  /*
+   * .dc.html `secNoPad`/`hsec` — 헤더→본문 gap은 12px 하나뿐이다(그 값을
+   * `heading.marginBottom`에 둔다). `section` 자체는 더 안 벌리므로 gap 없음.
+   */
   section: {
     paddingHorizontal: Layout.gutter,
     marginBottom: Layout.sectionGap,
-    gap: Layout.gap2col,
   },
   heading: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: Layout.inlineGap,
-    marginBottom: Layout.sectionHeadGap - Layout.gap2col,
+    marginBottom: Layout.inlineGap,
   },
   more: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   headingCol: { flex: 1, minWidth: 0, gap: Spacing.half },
-  row: { flexDirection: 'row', gap: Layout.gap2col },
+  /* .dc.html `prepGridPad` — grid gap:8px, 가로·세로 둘 다. */
+  grid: { gap: Spacing.two },
+  row: { flexDirection: 'row', gap: Spacing.two },
+  /*
+   * .dc.html `prepCard(kind)` — 세 상태 모두 `padding:14px;...gap:2px`다(스크립트로
+   * 뽑아 확인: scripts/canon/extract-style.mjs --key prepTop/prepLabel). 기존
+   * Layout.cardPadding(20)·cardPaddingCompactY(18)·Spacing.one(4)을 그대로 물려받았던
+   * 옛 카드 스타일을 재사용했었는데, 실제 prepCard 값과 달라 다시 맞췄다.
+   */
   card: {
     flex: 1,
     minWidth: 0,
-    paddingHorizontal: Layout.cardPadding,
-    paddingVertical: Layout.cardPaddingCompactY,
+    padding: 14,
     borderRadius: Radius.medium,
     borderWidth: Border.hairline,
-    gap: Spacing.one,
+    gap: Spacing.half,
   },
   cardTop: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    gap: Spacing.one,
-    marginBottom: Spacing.one,
+    marginBottom: Spacing.two,
   },
   todoMark: {
     width: Layout.iconField,

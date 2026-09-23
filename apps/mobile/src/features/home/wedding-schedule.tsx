@@ -92,13 +92,14 @@ export function UpcomingSchedule({
 }
 
 const styles = StyleSheet.create({
-  section: { paddingHorizontal: Layout.gutter, marginBottom: Layout.sectionGap, gap: Layout.gap2col },
+  /* .dc.html `hsec` — 헤더→본문 gap 12px 하나뿐(heading.marginBottom에 둔다). */
+  section: { paddingHorizontal: Layout.gutter, marginBottom: Layout.sectionGap },
   heading: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: Layout.inlineGap,
-    marginBottom: Layout.sectionHeadGap - Layout.gap2col,
+    marginBottom: Layout.inlineGap,
   },
   headingCol: { flex: 1, minWidth: 0, gap: Spacing.half },
   more: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
