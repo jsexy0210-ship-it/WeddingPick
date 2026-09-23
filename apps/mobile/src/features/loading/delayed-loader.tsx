@@ -38,6 +38,27 @@ import { useCurrentUserSnapshot } from './current-user-snapshot';
  * 제목과 「10초 안에 끝나요」가 그 자리다.
  *
  * 순회에서 뺄 업종을 고르던 `exclude`도 같이 없앴다. 돌 것이 없으면 뺄 것도 없다.
+ *
+ * ## v3.29 재대조(2026-09-23) — DESIGN_UNRESOLVED, 코드는 그대로 둔다
+ *
+ * 정본 `docs/design/html/공통_다이얼로그 빈상태 로더.dc.html`의 WP-LOAD-001(업종 순회
+ * 로딩) · WP-LOAD-002(업종 아이콘 8종) · WP-LOAD-003(기본 로더 · 업종 아이콘 순회)은
+ * 「원형 스피너를 쓰지 않아요 — 로더는 업종 아이콘이 도는 것 하나뿐입니다」라고 적는다 —
+ * 바로 위에서 없앴다고 적은 그 모양이다.
+ *
+ * 이 파일과 `circle-loader.tsx`의 원형 로더는 **2026-09-15 대표 지시(「기존 정책
+ * 파기」)로 이미 확정·배포된 결정**이고, v3.29(2026-09-23)의 이 문구를 문자 그대로
+ * 따라 되돌리지 않는다 — CLAUDE.md의 「⚠️ 후기 별점」 항목과 같은 성격의 충돌이다:
+ * 최신 정본 파일이, 같은 대표님이 이미 확인하고 배포까지 마친 더 이전 결정과 반대로
+ * 적혀 있다. 판단은 대표님 몫이라 `docs/design/canonical-manifest.json`의
+ * `openQuestions`에 이 항목을 추가하도록 남겨 둔다(이 세션은 `docs/design/`를
+ * 건드리지 않는 범위라 직접 추가하지 않았다).
+ *
+ * 나머지 세 화면은 로더 모양과 무관하게 이미 정본과 토큰 단위로 맞는다 —
+ * WP-LOAD-003의 700ms 임계값(`Motion.loaderThreshold` = 700) · WP-LOAD-004 목록
+ * 뼈대(`ListSkeleton`, 3줄 · 72/46·58/38·66/42%) · WP-LOAD-005 처리 중 단계 표시
+ * (`RecommendingBody` + `StepList`, 「올려주신 자료를 읽고 있어요」·「10초 안에
+ * 끝나요」)는 이 파일을 고치지 않아도 이미 일치한다.
  */
 
 type DelayedLoaderProps = {

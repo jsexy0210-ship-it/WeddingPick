@@ -40,6 +40,12 @@ import { useTheme } from './use-theme';
  * 정수 px로 반올림했다(`spec/tokens.json` `size.loaderCircle`의 `$note` 참고).
  *
  * 700ms 규칙은 여기 없다 — 화면이 `useDelayedVisible`로 감싼다.
+ *
+ * **v3.29 재대조(2026-09-23)** — 정본 WP-LOAD-003이 이 규칙을 다시 뒤집어 「원형
+ * 스피너를 쓰지 않는다」고 적지만, 위 2026-09-15 대표 지시가 이미 배포까지 끝낸
+ * 더 최근 결정이라 되돌리지 않았다 — 상세 사유는
+ * `apps/mobile/src/features/loading/delayed-loader.tsx`의 같은 날짜 주석 참고.
+ * `DESIGN_UNRESOLVED`.
  */
 export type CircleLoaderSize = 20 | 28 | 40;
 
