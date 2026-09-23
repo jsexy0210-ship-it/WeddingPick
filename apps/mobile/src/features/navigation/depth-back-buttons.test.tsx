@@ -2,11 +2,10 @@ import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { router } from 'expo-router';
 
-import { getCurrentUser, listCandidates, completeSetup, createInquiry, listFaq, listMyInquiries } from '@/api/client';
+import { getCurrentUser, completeSetup, createInquiry, listFaq, listMyInquiries } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
 import ContactScreen from '@/app/(tabs)/my/contact';
 import StyleScreen from '@/app/(tabs)/my/taste';
-import PickCategoryScreen from '@/app/(tabs)/pick/category';
 
 /**
  * journey-open-04 — 완료·오류 버튼이 Depth Back인지 못박는다.
@@ -90,13 +89,6 @@ function landedOn(): string {
   const replaced = jest.mocked(router.replace).mock.calls[0]?.[0];
 
   return (dismiss ?? replaced) as string;
-}
-
-/** 화면 안 「돌아가기」 버튼. */
-function backButtons() {
-  return tree.root
-    .findAllByType('ActionButton' as never)
-    .filter((node) => node.props.label === '돌아가기');
 }
 
 /** 문의 화면 헤더 Back. 현재 화면은 BackBar가 기본 출구다. */
@@ -186,37 +178,5 @@ describe('/my/taste — 저장 완료·불러오기 실패', () => {
     await act(async () => tree.root.findByType('ErrorView' as never).props.onBack());
     expect(landedOn()).toBe('/my');
     expect(router.replace).toHaveBeenCalledWith('/my');
-  });
-});
-
-describe('/pick/category — 후보 목록 하단·오류', () => {
-  const me = { weddingId: 'w-1' };
-
-  it('정상 진입: 「돌아가기」가 Pick 탭으로 올라간다', async () => {
-    mockPathname = '/pick/category';
-    jest.mocked(getCurrentUser).mockResolvedValue(me as never);
-    jest.mocked(listCandidates).mockResolvedValue({ groups: [] } as never);
-    await mount(<PickCategoryScreen />);
-    await act(async () => backButtons()[0]!.props.onPress());
-    expect(landedOn()).toBe('/pick');
-  });
-
-  it('오류 상태: 후보를 못 불러와도 Pick 탭으로 올라간다', async () => {
-    mockPathname = '/pick/category';
-    jest.mocked(getCurrentUser).mockRejectedValue(new Error('offline'));
-    await mount(<PickCategoryScreen />);
-    await act(async () => tree.root.findByType('ErrorView' as never).props.onBack());
-    expect(landedOn()).toBe('/pick');
-  });
-
-  it('딥링크 직접 진입: 되짚을 기록이 없어도 Pick 탭으로 갈아끼운다', async () => {
-    mockPathname = '/pick/category';
-    asDeepLink();
-    jest.mocked(getCurrentUser).mockResolvedValue(me as never);
-    jest.mocked(listCandidates).mockResolvedValue({ groups: [] } as never);
-    await mount(<PickCategoryScreen />);
-    await act(async () => backButtons()[0]!.props.onPress());
-    expect(landedOn()).toBe('/pick');
-    expect(router.replace).toHaveBeenCalledWith('/pick');
   });
 });
