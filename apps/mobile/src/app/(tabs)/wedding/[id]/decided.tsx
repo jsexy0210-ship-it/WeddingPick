@@ -12,7 +12,7 @@ import { Badge, Hero, ListRow, NavBar, RowValue, Screen, Section } from '@/featu
 
 /** `spec/strings.ko.json` `ourWedding.decided.*`. */
 const S = {
-  title: '결정한 업체',
+  title: '예약현황',
   events: '관련 일정',
   eventsEmpty: '관련 일정이 없어요',
   expenses: '관련 지출',
@@ -25,7 +25,7 @@ const S = {
 /**
  * 결정한 업체. WP-OUR-003. 업종별 결정 업체 + 결정정보 + 관련 일정 + 관련 지출 + 메모.
  *
- *   nav     «결정한 업체»
+ *   nav     «예약현황» · 좌측 X 닫기(v3.28 풀팝업)
  *   hero    «N곳을 정했어요»
  *   업종별 그룹  업체명 18/24 700 + «지역 · 결정일» + «결정» 배지 · 관련 일정 · 관련 지출 · 메모 남기기
  *
@@ -59,7 +59,7 @@ export default function DecidedVendorsScreen() {
 
   return (
     <Screen>
-      <NavBar title={S.title} />
+      <NavBar title={S.title} variant="close" />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Hero

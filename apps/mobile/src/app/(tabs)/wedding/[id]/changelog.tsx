@@ -27,7 +27,7 @@ function groupLabel(iso: string, now: number): string {
 /**
  * 변경 내역. WP-CPL-005 · 핸드오프 14-couple #5.
  *
- *   nav    «변경 내역»
+ *   nav    «변경내역» · 좌측 X 닫기(v3.28 풀팝업)
  *   그룹    오늘 · 이번 주 · 날짜 — 라벨 14/19 700
  *   행     무엇 18/24 · 상세 14/19 · 시간 14/19
  *
@@ -60,7 +60,7 @@ export default function ChangelogScreen() {
   if (!isServerConfigured) {
     return (
       <Screen>
-        <NavBar title="변경 내역" />
+        <NavBar title="변경내역" variant="close" />
         <Hero title="아직 내역을 불러올 수 없어요" sub="이 빌드는 서버에 붙어 있지 않아요." />
       </Screen>
     );
@@ -96,7 +96,7 @@ export default function ChangelogScreen() {
 
   return (
     <Screen>
-      <NavBar title="변경 내역" />
+      <NavBar title="변경내역" variant="close" />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {notifications.length === 0 ? (

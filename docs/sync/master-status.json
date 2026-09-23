@@ -1351,5 +1351,74 @@
         "처리": "보관(archive)"
       }
     ]
+  },
+  "v329SessionCleanup20260923": {
+    "cleanedAtKst": "2026-09-23 17:30",
+    "trigger": "대표 지시 「완료된 세션 다 정리 흡수해」. list_sessions(mine, limit 50)에서 50건을 받아 서브에이전트로 분류했다.",
+    "dispatchedV329Sessions": [
+      "session_01K8ibYg8KmzebELR2N1PMjH · v3.29 · 홈(로그인·온보딩) 1:1 대조",
+      "session_01Q1QYZg5euQywwJXSxHr4zN · v3.29 · 검색 1:1 대조",
+      "session_01RARHSnBEQW7RqJabrN3rAS · v3.29 · Pick 1:1 대조",
+      "session_01P32uyFzXTqnfQhH1LKfBCE · v3.29 · 웨딩노트 1:1 대조",
+      "session_013mUqHzjW7fdWajjmWHBo3R · v3.29 · MY 1:1 대조",
+      "session_01QgnFdW9vrPBHmiwemqXxfH · v3.29 · 공통 컴포넌트·디바이스 대응",
+      "session_016QuM25HsCKFWezPcEeCrq2 · v3.29 · 관리자 1:1 대조 + 약관 DB 확장",
+      "session_01LMkjxrWfQsLbc5k5R5Sq47 · v3.29 · 웹 랜딩 1:1 대조",
+      "session_01HJxgHdjGb2gWykXjaghh73 · v3.29 · 참고자료 독립 검수(IA·컴포넌트시트·사용자흐름·스토어이미지)"
+    ],
+    "amendmentDeliveryIssue": "SendMessage로 위 9개 세션에 직접 메시지를 보내려 했으나 전부 실패했다(ListAgents가 이 머신에서는 다른 클라우드 세션을 에이전트로 보지 못한다 — cross-session send_message 툴 자체가 이 환경 tool 목록에 없다). 대신 CLAUDE.md·docs/session-prompt.md에 「토큰·픽셀 단위 대조」 재지시를 커밋 b31714b1로 main에 직접 반영했다 — 각 세션은 PR 전 main 재병합 시 이 규칙을 읽는다(하위 세션 표준 의무).",
+    "archived": [
+      {
+        "session": "session_014TcvmotfYdhVyKtCSzwLi4",
+        "title": "v3.28 1:1 대조 · 웨딩노트 (재시작)",
+        "reason": "v3.28 대상 — 2026-09-23 v3.29 wholesale 교체로 정본 자체가 없어짐. PR #493 이미 병합, 살릴 미병합 산출물 없음."
+      },
+      {
+        "session": "session_01WWn1PbtbYZZyvPEFG4pUPF",
+        "title": "v3.28 · 약관관리도구 1:1 + 미사용 라우터 정리",
+        "reason": "v3.28 대상, PR #487 이미 병합. 동일 사유."
+      },
+      {
+        "session": "session_01AgHt5bi3dZf6cfwErmUsSZ",
+        "title": "v3.28 1:1 대조 · MY·라운지",
+        "reason": "v3.28 대상, PR #491 이미 병합. 동일 사유."
+      },
+      {
+        "session": "session_0161CeF9Bmh8xV8zAKSS6Hx8",
+        "title": "v3.28 1:1 대조 · Pick",
+        "reason": "v3.28 대상, PR #488 이미 병합. 동일 사유."
+      },
+      {
+        "session": "session_01LWVLUQCz32smhsJtyRwNLr",
+        "title": "v3.28 1:1 대조 · 검색·업체상세",
+        "reason": "v3.28 대상, PR #489 이미 병합. 동일 사유."
+      },
+      {
+        "session": "session_01DXMBJVAu8bfmar1RrLSyhr",
+        "title": "v3.28 1:1 대조 · 홈·로그인·온보딩",
+        "reason": "v3.28 대상, PR #490 이미 병합. 동일 사유."
+      },
+      {
+        "session": "session_01KS4SmuRPQbTzSt34P8pzoe",
+        "title": "후기 별점 UI 복원 — 검색·Pick·MY 세 화면군",
+        "reason": "PR #494(draft)가 이미 병합된 PR #497과 완전히 같은 범위(vendorCandidateSchema.rating·candidates.ts 서브쿼리·pick/index.tsx·community/index.tsx RatingStars)를 중복 구현. main에 이미 반영 확인 후 PR #494를 닫고 세션을 archive했다.",
+        "pr": 494,
+        "prAction": "closed-as-duplicate-of-497"
+      },
+      {
+        "session": "session_01GY3EJigv83NdR2tuy3h99n",
+        "title": "후기 별점 UI 복원 — 검색 업체상세·Pick 후보카드·MY 후기목록",
+        "reason": "같은 별점 복원 작업의 또 다른 시도. outcome_branch 없음(저장소 쓰기 권한 막혀 push 자체를 못 함) — 흡수할 산출물이 없다. PR #497이 이미 같은 범위를 병합했다."
+      }
+    ],
+    "mergedNotArchived": {
+      "session": "session_01EDyKSd8das32L1LE57L7i1",
+      "title": "웨딩노트 #493 병합 시 #492의 미반영 수정 3건 적용",
+      "pr": 496,
+      "result": "커밋 50470702(탭 이름 캘린더→웨딩일정 · 풀팝업 헤더 좌측 X+중앙 타이틀 3곳 · 예산현황→지출내역 spendGoRow 연결)를 main에 그대로 cherry-pick — 커밋 9cd9437e. v3.29에서도 규칙이 안 바뀌어 유효했다.",
+      "verification": "typecheck 8워크스페이스 clean · lint 0 error(기존 warning 5건) · 카피 린트 통과 · seed 토큰 일치 · mobile jest 66/66 suite·553/553 test 통과.",
+      "prAction": "closed-after-cherry-pick"
+    },
+    "notTouched": "32개 이미 ARCHIVED 세션은 조치 없음. 9개 신규 v3.29 디스패치 세션은 RUNNING이라 손대지 않았다."
   }
 }
