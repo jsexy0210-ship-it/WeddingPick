@@ -1,44 +1,55 @@
 {
   "schemaVersion": 3,
-  "canonicalVersion": "v3.28",
-  "canonicalDate": "2026-09-22",
-  "authority": "모든 작업은 v3.28 기준이다. 모든 세션은 docs/design/ 하나만 보고 작업한다(2026-09-22 대표 지시). 이 폴더 밖을 화면·값·문구의 근거로 쓰지 않는다.",
+  "canonicalVersion": "v3.29",
+  "canonicalDate": "2026-09-23",
+  "authority": "모든 작업은 v3.29 기준이다. 모든 세션은 docs/design/ 하나만 보고 작업한다(2026-09-23 대표 지시 「최신파일이다 깃 저장소 디자인 유일 경로에 올려주고... 최신파일로 다 덮어씌워」). 이 폴더 밖을 화면·값·문구의 근거로 쓰지 않는다.",
   "delivery": {
-    "name": "handoff-v3.28",
-    "receivedOn": "2026-09-22",
-    "zipSha256": "B3E8AA10C5C50A92969C6AED7353A480A39905EB025118DAA34BDF6B30B178E1",
-    "zipSizeBytes": 106685,
-    "fileCount": 9,
-    "note": "전달 ZIP 자체는 저장소에 두지 않는다(2026-09-22 대표 지시 「이것만 올려」). 위 해시가 그 증빙이고, 아래 files가 푼 결과다."
+    "name": "handoff-v3.29",
+    "receivedOn": "2026-09-23",
+    "zipSha256": "6AF324A257BBDAE7C1DD177D9D0D9E0411DD1A1959EA26BFEDBCB5C9CC025ED4",
+    "zipSizeBytes": 280206,
+    "fileCount": 20,
+    "note": "전달 ZIP 자체는 저장소에 두지 않는다(v3.28과 같은 규칙 — 2026-09-22 대표 지시 「이것만 올려」를 그대로 잇는다). 위 해시가 그 증빙이고, 아래 files가 푼 결과다. v3.28의 9개(README·CHANGELOG·QA체크리스트·html 6개)에서 20개로 늘었다 — PROJECT_RULES.md 신규, html이 6개에서 16개로 늘었다(관리자·관리자 운영·랜딩 v4·랜딩 하위페이지·디바이스 대응·컴포넌트 시트·전체 IA·사용자 흐름·스토어 이미지·공통 다이얼로그 빈상태 로더가 새로 생김)."
   },
   "supersedes": {
-    "removedOn": "2026-09-22",
-    "reason": "대표 지시 — 「여기에 올리고 기존 파일은 다 파기한다」.",
+    "removedOn": "2026-09-23",
+    "reason": "대표 지시 — 「최신파일이다... 최신파일로 다 덮어씌워」. CHANGELOG.md 자체도 「옛 핸드오프(v3.19~v3.28 · handoff · handoff-admin) · figma-export · 중복 로딩 파일 삭제」라고 적는다.",
     "paths": [
-      "docs/design/handoff/",
-      "docs/design/figma-export/",
-      "docs/design/UX_UI_REFRESH_HANDOFF.md",
-      "docs/design/PAGE_STATE_AUDIT.md"
+      "docs/design/html/웨딩픽 약관 방침.dc.html (v3.28판, v3.29판으로 교체)",
+      "docs/design/html/대메뉴_MY.dc.html (v3.28판)",
+      "docs/design/html/대메뉴_Pick.dc.html (v3.28판)",
+      "docs/design/html/대메뉴_검색.dc.html (v3.28판)",
+      "docs/design/html/대메뉴_웨딩노트.dc.html (v3.28판)",
+      "docs/design/html/대메뉴_홈(로그인, 온보딩).dc.html (v3.28판)",
+      "docs/design/README.md (v3.28판)",
+      "docs/design/CHANGELOG.md (v3.28판)",
+      "docs/design/screen-inventory.md (v3.28 6개 파일 기준 파생 문서 — v3.29 16개 파일로 재생성 필요, 아직 미생성)"
     ],
-    "note": "2026-09-20 전달 ZIP 2개(docs/design/source/2026-09-20/)는 2026-09-21에 대표님이 먼저 지우셨다(b9e5ec2b · d4158310). 지운 것들은 git 이력에 남는다 — 되살려 근거로 쓰지 않는다."
+    "note": "v3.28 자체는 2026-09-22에 v3.19~v3.27을 파기하며 들어온 것이었다(그 기록은 이 파일의 git 이력에 남아 있다). 지운 것은 git 이력에 남는다 — 되살려 근거로 쓰지 않는다."
   },
-  "amendments": [
+  "openQuestions": [
     {
-      "amendedOn": "2026-09-23",
-      "reason": "대표님 확인 — 「정본 소스가 맞다, 별점 복원」. CHANGELOG.md·README.md가 적던 「후기 별점 UI 전면 삭제」를 6개 .dc.html의 screen-inventory.md 대조표(검색·Pick·MY 셋 모두 「정본 = 5점 별점 + 3축 3지선다」)와 맞춰 취소선 + 정정 설명으로 바로잡았다. CLAUDE.md 「후기 별점 UI를 되살린다」 참고.",
-      "paths": ["docs/design/CHANGELOG.md", "docs/design/README.md"]
+      "raisedOn": "2026-09-23",
+      "topic": "후기 별점 UI",
+      "conflict": "v3.29 README.md 62행 — 「후기는 별점 없이 3축 3지선다(상담 · 결과물 · 금액 안내, 모두 긍정 톤) + 실 제보 건수」. 이건 같은 날(2026-09-23) 앞서 대표님이 직접 확인해 뒤집었던 「후기 별점 UI를 되살린다」(CLAUDE.md)와 정반대다 — 그 결정으로 PR #497이 검색 업체상세·Pick 후보카드·MY 후기목록에 별점을 이미 복원해 운영(KakaoCloud API, run #1171)까지 나간 상태다. v3.29를 그대로 정본으로 따르면 방금 배포한 별점을 다시 지워야 한다.",
+      "status": "대표님 확인 대기 — 별점을 다시 빼는지, 아니면 v3.29 README의 이 한 줄만 오탈자/구버전 잔존으로 보고 CLAUDE.md 쪽(별점 유지)을 우선할지 결정 필요. 결정 전에는 별점 코드를 건드리지 않는다."
     }
   ],
   "files": [
     {
       "path": "CHANGELOG.md",
-      "normalizedSha256": "3456D879B19DEB772907E9B864A9C234A073F77ED73842FD220B9B6C9FCDA096",
-      "sizeBytes": 2057
+      "normalizedSha256": "29808A13290315ADB9881DABA45C856D7FDDF6C323593E8D1B0197D143560FD9",
+      "sizeBytes": 1040
+    },
+    {
+      "path": "PROJECT_RULES.md",
+      "normalizedSha256": "358DCAF340663C0E92795EE510FB20BA6DEE2FBD71A4339659A6A83F2580969A",
+      "sizeBytes": 4438
     },
     {
       "path": "README.md",
-      "normalizedSha256": "57D30EC254FD51D24F9E9694210A08E65BBFA4291EAF43FFB7338DDE8C0CFEEA",
-      "sizeBytes": 6396
+      "normalizedSha256": "024A0A015207898E3910F367C0E9F0B18C8E1E066D38AD5D489404C2E6844DB8",
+      "sizeBytes": 5843
     },
     {
       "path": "handoff-QA-체크리스트.md",
@@ -46,46 +57,89 @@
       "sizeBytes": 18704
     },
     {
+      "path": "html/공통_다이얼로그 빈상태 로더.dc.html",
+      "normalizedSha256": "5AE87AB3925EBA1A258A07E94EC743D5A6CB1F5AF44DD368A590412D9D373535",
+      "sizeBytes": 81027
+    },
+    {
       "path": "html/대메뉴_MY.dc.html",
-      "normalizedSha256": "41AAD357EB46EF50C3B3D2AD09C0355ADD6200B6645623678E16334920351F45",
-      "sizeBytes": 94724
+      "normalizedSha256": "AAF366FF4815828E6BB6B09425C0B117FE89CB72BFF6FBFDBAB01930749D6B85",
+      "sizeBytes": 94792
     },
     {
       "path": "html/대메뉴_Pick.dc.html",
-      "normalizedSha256": "13F111E5BD161A644480E3D48D82B211A4A56E2F0BBDD19BE2CB0F972B48ADBC",
-      "sizeBytes": 56749
+      "normalizedSha256": "B76A7F570B1DF64502D2A5CB78DFCA07E82203BF2CD75CB6C7650FFD246FBD57",
+      "sizeBytes": 56839
     },
     {
       "path": "html/대메뉴_검색.dc.html",
-      "normalizedSha256": "0218F6B91F41C125FD3D937FEB8FF448F9FC341341C2659C166C434814A9B8C5",
-      "sizeBytes": 81482
+      "normalizedSha256": "28B79100936663167A71403E35448552341F7C0CB59992635B90397F1CD384AE",
+      "sizeBytes": 81539
     },
     {
       "path": "html/대메뉴_웨딩노트.dc.html",
-      "normalizedSha256": "600855638410279FC1F88FDC52D247D17350DE5CCD7E5E329707581FAB1BD216",
-      "sizeBytes": 60712
+      "normalizedSha256": "4066BBE3A8E1D992BA4602FC587FD024764EE5A62BB6EBFF01F7D8083CA09A2F",
+      "sizeBytes": 60843
     },
     {
       "path": "html/대메뉴_홈(로그인, 온보딩).dc.html",
-      "normalizedSha256": "FCC1809B20607A0066EEF51B1638C091142C3324BB9892FD1ECD61E0E77C62BD",
-      "sizeBytes": 103552
+      "normalizedSha256": "4D256B03354EC309422380D799BA6A114F6AE0A0CB4248CE73DC35246A5CFBF1",
+      "sizeBytes": 117998
+    },
+    {
+      "path": "html/웨딩픽 관리자 운영.dc.html",
+      "normalizedSha256": "6D199C5B0BBEDD7B50BE5FD191C4DA4745643FE1C005BEBD08C56CE550DE34E3",
+      "sizeBytes": 62345
+    },
+    {
+      "path": "html/웨딩픽 관리자.dc.html",
+      "normalizedSha256": "7C72EE91FD3EAD68AC6A1599523C78B798A215CB0A75B96824683031F53EDF4A",
+      "sizeBytes": 288572
+    },
+    {
+      "path": "html/웨딩픽 디바이스 대응.dc.html",
+      "normalizedSha256": "3C69257FE08922F995B254C871F596E7A54975D006DF999FB02DABD9B0FC0788",
+      "sizeBytes": 23137
+    },
+    {
+      "path": "html/웨딩픽 랜딩 v4.dc.html",
+      "normalizedSha256": "408189C0E52E145C8A357A3E61E43F3DC83BFFD846D8FD6A917EE413A46559E4",
+      "sizeBytes": 30077
+    },
+    {
+      "path": "html/웨딩픽 랜딩 하위페이지.dc.html",
+      "normalizedSha256": "53AE34D7A9E5B5BF18279BA8D7A28265F44108C0808934DDCF36919276017DE7",
+      "sizeBytes": 52403
+    },
+    {
+      "path": "html/웨딩픽 사용자 흐름.dc.html",
+      "normalizedSha256": "AFFF3868A435610CC3E3FC07248DF807203D76CA6017A5250C00362D22417908",
+      "sizeBytes": 20094
+    },
+    {
+      "path": "html/웨딩픽 스토어 이미지.dc.html",
+      "normalizedSha256": "A47C0845CE9BF9289CCA3C68510F48FEBDED6B36B9DD3EE0B26D166D18014AAC",
+      "sizeBytes": 29582
     },
     {
       "path": "html/웨딩픽 약관 방침.dc.html",
-      "normalizedSha256": "74270B0E53B53FCD7DE1DD2CE72FB2BC170F07523BF07ECE806294911D4C4DA2",
-      "sizeBytes": 18917
+      "normalizedSha256": "7CCDD83AEEA79A3715D352ABA65028B8E6DAB305F70432B90772F6219EA419A6",
+      "sizeBytes": 18828
+    },
+    {
+      "path": "html/웨딩픽 전체 IA.dc.html",
+      "normalizedSha256": "308E406892521FD9A369A098D1F5871EDF21BDA12A2C5F966E4A73A8A82126A5",
+      "sizeBytes": 50101
+    },
+    {
+      "path": "html/웨딩픽 컴포넌트 시트.dc.html",
+      "normalizedSha256": "907C2FF78245775D6C9196D1C5A94A59BF7159F9A79806E6D636925EC159E9CB",
+      "sizeBytes": 60658
     }
   ],
   "derivedFiles": {
-    "note": "전달본 9개 밖에서 저장소가 만들어 붙인 분석 문서다. 원본 ZIP의 일부가 아니라 test:design-canonical이 별도로 셈한다 — 재생성하면 해시가 바뀌는 것이 정상이다(scripts/build-screen-inventory.mjs 참고).",
-    "files": [
-      {
-        "path": "screen-inventory.md",
-        "generatedBy": "6개 .dc.html의 {{tag}}/{{tagId}}/{{tagDesc}} 화면 태그와 diff()/vdiff() 대조표 호출을 기계로 파싱했다 — 2026-09-22.",
-        "normalizedSha256": "3D811F6CE4177401968C0A91ED3E4DA4BA0DC2E87EBD0E8DF654CB5F16FDBEF5",
-        "sizeBytes": 24107
-      }
-    ]
+    "note": "전달본 20개 밖에서 저장소가 만들어 붙이는 분석 문서 자리다. v3.28의 screen-inventory.md는 6개 .dc.html 전제로 짠 스크립트(scripts/build-screen-inventory.mjs)가 만들었는데, v3.29는 html이 16개로 늘고 화면 카탈로그가 아닌 파일(전체 IA·컴포넌트 시트·사용자 흐름·디바이스 대응·스토어 이미지)이 섞여 있어 스크립트를 그대로 돌리면 안 맞을 수 있다 — 재작업 전까지 이 자리를 비워 둔다.",
+    "files": []
   },
   "deletedPagesThatStayDeleted": [
     "apps/mobile/src/app/(tabs)/my/policies.tsx",

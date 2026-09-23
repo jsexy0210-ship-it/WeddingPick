@@ -48,16 +48,27 @@ image-slot::part(empty){display:none !important}
 <div style="{{ row }}">
 
   <div style="width:100%;flex:0 0 100%;padding:16px 0 0;font-size:22px;line-height:30px;font-weight:700;color:#212124">1 · 로그인 · 온보딩</div>
+  <div style="{{ hcol }}">
+    <div style="{{ htag }}"><span style="{{ htagId }}">1</span>스플래시 · 시작 · WP-APP-001</div>
+    <span style="{{ htagDesc }}">앱을 열면 뜹니다. 스킨과 무관하게 Coral 고정이고, 마크는 White입니다. 로그인 여부를 확인하는 동안만 보이고 버튼은 없습니다.</span>
+    <div style="{{ hphone }}">
+      <div style="{{ splashStage }}">
+        <span style="{{ splashMark }}"></span>
+        <span style="{{ splashName }}">웨딩픽</span>
+      </div>
+    </div>
+  </div>
+
   <div style="{{ col }}">
-    <div style="{{ tag }}"><span style="{{ tagId }}">1</span>로그인 · WP-AUTH-001</div>
-    <span style="{{ tagDesc }}">영문 eyebrow와 「✦ 나에게 맞는 순서부터」 카드를 뺐습니다. 브랜드 블록에 flex:1을 주어 버튼이 하단에 붙습니다. 만 14세 동의는 카카오 버튼 위 체크입니다.</span>
+    <div style="{{ tag }}"><span style="{{ tagId }}">2</span>로그인 · WP-AUTH-001</div>
+    <span style="{{ tagDesc }}">영문 eyebrow와 「✦ 나에게 맞는 순서부터」 카드를 뺐습니다. 브랜드 블록에 flex:1을 주어 버튼이 하단에 붙습니다. 만 14세 확인과 약관 동의는 WP-AUTH-010에서 받습니다.</span>
     <div style="{{ phone }}">
       <div style="{{ bar }}"><span>9:41</span></div>
       <div style="{{ loginBrand }}">
         <span style="{{ markBox }}">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ff6f61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z"></path><path d="M9.4 11.9l1.7 1.7 3.4-3.4"></path></svg>
         </span>
-        <span style="{{ loginTitle }}">웨딩 준비,<br>진짜 견적부터<br>확인해 보세요</span>
+        <span style="{{ loginTitle }}">플래너 없이,<br>직접 고르는<br>웨딩 준비</span>
         <div style="{{ benefitWrap }}">
           <sc-for list="{{ benefits }}" as="b" hint-placeholder-count="3">
             <div style="{{ benefitRow }}"><span style="{{ benefitDot }}"></span><span style="{{ benefitText }}">{{ b }}</span></div>
@@ -65,15 +76,102 @@ image-slot::part(empty){display:none !important}
         </div>
       </div>
       <div style="{{ loginAuth }}">
-        <div style="{{ ageCta }}"><span style="{{ ageCheck }}"></span><span style="{{ ageLabel }}">만 14세 이상이에요</span></div>
         <div style="{{ kakaoBtn }}"><span style="{{ kakaoMark }}">k</span>카카오로 시작하기</div>
-        <span style="{{ legal }}">시작하면 이용약관과 개인정보 처리방침에 동의하게 돼요</span>
       </div>
     </div>
   </div>
 
+  <div style="{{ hcol }}">
+    <div style="{{ htag }}"><span style="{{ htagId }}">3</span>만 14세 이용 불가 · WP-AUTH-009</div>
+    <span style="{{ htagDesc }}">카카오 출생연도가 만 14세 미달일 때만 뜹니다. 계정은 만들지 않고, CTA는 coral을 쓰지 않습니다.</span>
+    <div style="{{ hphone }}">
+      <div style="{{ hbar }}"><span>9:41</span></div>
+      <div style="{{ agesStage }}">
+        <span style="{{ agesTitle }}">만 14세가 되면<br>웨딩픽을 이용할 수 있어요</span>
+        <span style="{{ agesNote }}">계정은 만들지 않았어요. 출생 연도는 삭제했어요.</span>
+      </div>
+      <div style="{{ dockSingleH }}"><span style="{{ ctaGhostH }}">돌아가기</span></div>
+    </div>
+  </div>
+
+  <div style="{{ hcol }}">
+    <div style="{{ htag }}"><span style="{{ htagId }}">4</span>약관 동의 · 권한 안내 · WP-AUTH-010</div>
+    <span style="{{ htagDesc }}">카카오 로그인 직후, 초기 설정 전에 한 번 뜹니다. 필수 5개를 모두 체크해야 버튼이 켜집니다. 필수 · 선택 · 앱 접근 권한 3구획으로 나눴고, 권한은 아이콘 4칸으로만 보여줍니다. OS 권한 창은 각 기능을 처음 쓸 때 하나씩 띄웁니다.</span>
+    <div style="{{ hphone }}">
+      <div style="{{ hbar }}"><span>9:41</span></div>
+      <div class="nsb" style="{{ permScroll }}">
+        <div style="{{ permHead }}">
+          <span style="{{ permTitle }}">웨딩픽 이용을 위해<br>동의가 필요해요</span>
+        </div>
+        <div style="{{ agAllRow }}">
+          <span style="{{ agChkOn }}"></span>
+          <span style="{{ agAllT }}">전체 동의</span>
+        </div>
+        <div style="{{ agSec }}">
+          <span style="{{ agSecT }}">필수</span>
+          <sc-for list="{{ agreeReq }}" as="a" hint-placeholder-count="5">
+            <div style="{{ a.row }}">
+              <span style="{{ a.chk }}"></span>
+              <span style="{{ agItemT }}">{{ a.label }}</span>
+              <sc-if value="{{ a.hasDoc }}" hint-placeholder-val="{{ true }}"><span style="{{ agChev }}"></span></sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <div style="{{ agSec }}">
+          <span style="{{ agSecT }}">선택</span>
+          <sc-for list="{{ agreeOpt }}" as="a" hint-placeholder-count="3">
+            <div style="{{ a.row }}">
+              <span style="{{ a.chk }}"></span>
+              <span style="{{ agItemT }}">{{ a.label }}</span>
+              <sc-if value="{{ a.hasDoc }}" hint-placeholder-val="{{ true }}"><span style="{{ agChev }}"></span></sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <div style="{{ agSec }}">
+          <span style="{{ agSecT }}">앱 접근 권한</span>
+          <div style="{{ permGrid }}">
+            <sc-for list="{{ perms }}" as="p" hint-placeholder-count="4">
+              <div style="{{ permCell }}">
+                <span style="{{ permIcoWrap }}"><span style="{{ p.ico }}"></span></span>
+                <span style="{{ permCellT }}">{{ p.name }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <span style="{{ permNoteT }}">기능을 처음 쓸 때 물어봐요. <b style="font-weight:700">설정 &gt; 웨딩픽</b>에서 바꿀 수 있어요.</span>
+        </div>
+      </div>
+      <div style="{{ dockSingleH }}"><span style="{{ permCta }}">동의하고 시작하기</span></div>
+    </div>
+  </div>
+
+  <div style="{{ hcol }}">
+    <div style="{{ htag }}"><span style="{{ htagIdWide }}">4-1</span>약관 상세 · WP-AUTH-011</div>
+    <span style="{{ htagDesc }}">약관 동의 · MY · 서비스 정보의 &gt;에서 여는 공통 풀팝업입니다. 누른 항목의 탭이 선택된 채로 열리고, 탭은 가로 스크롤합니다. 동의 화면에서 열었을 때만 하단에 «동의하기»가 붙습니다.</span>
+    <div style="{{ hphone }}">
+      <div style="{{ hbar }}"><span>9:41</span></div>
+      <div style="{{ tdNav }}"><span style="{{ formClose }}"><span style="{{ icoXsm }}"></span></span><span style="{{ tdNavT }}">약관 상세</span><span style="{{ tdNavPad }}"></span></div>
+      <div class="nsb" style="{{ tdTabs }}">
+        <sc-for list="{{ termTabs }}" as="t" hint-placeholder-count="6"><span style="{{ t.style }}" onClick="{{ t.onClick }}">{{ t.label }}</span></sc-for>
+      </div>
+      <div class="nsb" style="{{ tdScroll }}">
+        <div style="{{ tdHead }}">
+          <span style="{{ tdTitle }}">{{ tdDocTitle }}</span>
+          <span style="{{ tdMeta }}">{{ tdDocMeta }}</span>
+        </div>
+        <sc-for list="{{ termArts }}" as="a" hint-placeholder-count="4">
+          <div style="{{ tdArt }}">
+            <span style="{{ tdArtT }}">{{ a.t }}</span>
+            <span style="{{ tdArtB }}">{{ a.b }}</span>
+          </div>
+        </sc-for>
+        <div style="height:16px"></div>
+      </div>
+      <div style="{{ dockSingleH }}"><span style="{{ permCta }}">동의하기</span></div>
+    </div>
+  </div>
+
   <div style="{{ col }}">
-    <div style="{{ tag }}"><span style="{{ tagId }}">2</span>초기 설정 · 1/5 예식일 · WP-AUTH-002</div>
+    <div style="{{ tag }}"><span style="{{ tagId }}">5</span>초기 설정 · 1/5 예식일 · WP-AUTH-002</div>
     <span style="{{ tagDesc }}">5단계로 늘리고 「JUST FOR YOU」 영문 라벨과 「나중에」 건너뛰기를 없앴습니다. 예식일은 휠 피커로 받습니다.</span>
     <div style="{{ phone }}">
       <div style="{{ bar }}"><span>9:41</span></div>
@@ -81,7 +179,7 @@ image-slot::part(empty){display:none !important}
       <div class="nsb" style="{{ scroll }}">
         <div style="{{ qBlock }}">
           <span style="{{ qTitle }}">예식일은<br>언제인가요?</span>
-          <span style="{{ qSub }}">남은 기간에 맞춰 웨딩픽이 추천드려요</span>
+          <span style="{{ qSub }}">남은 기간에 맞춰 지금 정할 것부터 알려드려요</span>
         </div>
         <div style="{{ sec }}">
           <div style="{{ dateField }}">2027.05.16(토)</div>
@@ -94,7 +192,7 @@ image-slot::part(empty){display:none !important}
   </div>
 
   <div style="{{ col }}">
-    <div style="{{ tag }}"><span style="{{ tagId }}">3</span>초기 설정 · 2/5 지역 · WP-AUTH-003</div>
+    <div style="{{ tag }}"><span style="{{ tagId }}">6</span>초기 설정 · 2/5 지역 · WP-AUTH-003</div>
     <span style="{{ tagDesc }}">예식일과 같은 방식입니다. 필드를 누르면 2열 휠 바텀시트가 올라옵니다. 시/도 하나 · 시/군/구 하나만 고릅니다.</span>
     <div style="{{ phone }}">
       <div style="{{ bar }}"><span>9:41</span></div>
@@ -128,15 +226,15 @@ image-slot::part(empty){display:none !important}
   </div>
 
   <div style="{{ col }}">
-    <div style="{{ tag }}"><span style="{{ tagId }}">4</span>초기 설정 · 3/5 진행 상황 · WP-AUTH-004</div>
-    <span style="{{ tagDesc }}">이미 정한 곳을 고릅니다. 고른 카테고리는 추천에서 빠지고 준비 현황에 «결정 완료»로 들어갑니다. 세부 업종은 부제로 적습니다.</span>
+    <div style="{{ tag }}"><span style="{{ tagId }}">7</span>초기 설정 · 3/5 진행 상황 · WP-AUTH-004</div>
+    <span style="{{ tagDesc }}">이미 정한 곳을 고릅니다. 고른 카테고리는 내 웨딩 준비에 «결정 완료»로 들어갑니다. 세부 업종은 부제로 적습니다.</span>
     <div style="{{ phone }}">
       <div style="{{ bar }}"><span>9:41</span></div>
       <div style="{{ stepNav }}"><div style="{{ progTrack }}"><span style="{{ prog60 }}"></span></div><span style="{{ stepLabel }}">3/5</span></div>
       <div class="nsb" style="{{ scroll }}">
 <div style="{{ qBlock }}">
           <span style="{{ qTitle }}">준비는<br>어디까지 했나요?</span>
-          <span style="{{ qSub }}">이미 정한 건 추천에서 빼드려요</span>
+          <span style="{{ qSub }}">이미 정한 건 내 웨딩 준비에 바로 넣어드려요</span>
         </div>
         <div style="{{ prepSec }}">
           <sc-for list="{{ prepGroups }}" as="c" hint-placeholder-count="4">
@@ -153,7 +251,7 @@ image-slot::part(empty){display:none !important}
   </div>
 
   <div style="{{ col }}">
-    <div style="{{ tag }}"><span style="{{ tagId }}">5</span>초기 설정 · 4/5 예산 · WP-AUTH-005</div>
+    <div style="{{ tag }}"><span style="{{ tagId }}">8</span>초기 설정 · 4/5 예산 · WP-AUTH-005</div>
     <span style="{{ tagDesc }}">구간을 고르지 않고 금액을 직접 적습니다. 만원 단위로 끊어 입력하고, 자주 쓰는 금액은 칩으로 한 번에 넣습니다.</span>
     <div style="{{ phone }}">
       <div style="{{ bar }}"><span>9:41</span></div>
@@ -161,7 +259,7 @@ image-slot::part(empty){display:none !important}
       <div class="nsb" style="{{ scroll }}">
 <div style="{{ qBlock }}">
           <span style="{{ qTitle }}">앞으로 쓸 예산은<br>얼마인가요?</span>
-          <span style="{{ qSub }}">예산에 맞춰 웨딩픽이 골라드려요</span>
+          <span style="{{ qSub }}">예산에 맞는 업체부터 보여드려요</span>
         </div>
         <div style="{{ sec }}">
           <div style="{{ amtField }}"><span style="{{ amtVal }}">5,000</span><span style="{{ amtUnit }}">만원</span></div>
@@ -176,7 +274,7 @@ image-slot::part(empty){display:none !important}
   </div>
 
   <div style="{{ col }}">
-    <div style="{{ tag }}"><span style="{{ tagId }}">6</span>초기 설정 · 5/5 스타일 · WP-AUTH-006</div>
+    <div style="{{ tag }}"><span style="{{ tagId }}">9</span>초기 설정 · 5/5 스타일 · WP-AUTH-006</div>
     <span style="{{ tagDesc }}">스타일 4종 고정입니다. 이미지를 쓰지 않고 버튼으로 고릅니다. 각 버튼에 어떤 느낌인지 한 줄을 붙여 말로 판단하게 합니다. 개수 제한 없이 원하는 만큼 고를 수 있습니다.</span>
     <div style="{{ phone }}">
       <div style="{{ bar }}"><span>9:41</span></div>
@@ -204,7 +302,7 @@ image-slot::part(empty){display:none !important}
   </div>
 
   <div style="{{ colDone }}">
-    <div style="{{ tag }}"><span style="{{ tagId }}">7</span>초기 설정 · 완료 · WP-AUTH-007</div>
+    <div style="{{ tag }}"><span style="{{ tagId }}">10</span>초기 설정 · 완료 · WP-AUTH-007</div>
     <span style="{{ tagDesc }}">홈에 들어가기 전 한 번 더 봅니다. 여기서 바꾸면 해당 단계로 돌아갑니다. 진행바는 100%이고 Back은 두지 않습니다.</span>
     <div style="{{ phone }}">
       <div style="{{ bar }}"><span>9:41</span></div>
@@ -230,23 +328,14 @@ image-slot::part(empty){display:none !important}
     </div>
   </div>
 
-<div style="{{ colWideAfter }}">
-    <div style="{{ tag }}"><span style="{{ tagId }}">8</span>온보딩 · 정본과 다른 점</div>
-    <span style="{{ tagDesc }}">정책 판단이 필요한 항목은 주황색입니다.</span>
-    <div style="{{ diffCard }}">
-      <div style="{{ diffHead }}"><span style="{{ dh1 }}">항목</span><span style="{{ dh2 }}">Figma 원본</span><span style="{{ dh3 }}">정본 적용</span><span style="{{ dh4 }}">근거</span></div>
-      <sc-for list="{{ diffs }}" as="d" hint-placeholder-count="14">
-        <div style="{{ diffRow }}"><span style="{{ dc1 }}">{{ d.k }}</span><span style="{{ dc2 }}">{{ d.a }}</span><span style="{{ d.bStyle }}">{{ d.b }}</span><span style="{{ dc3 }}">{{ d.why }}</span></div>
-      </sc-for>
-    </div>
-  </div>
-
 </div>
 
+<div style="display:flex;gap:36px;align-items:flex-start;flex-wrap:wrap;max-width:1900px">
   <div style="width:100%;flex:0 0 100%;padding:16px 0 0;font-size:22px;line-height:30px;font-weight:700;color:#212124">2 · 홈</div>
+  <div style="display:flex;flex-direction:column;gap:24px">
   <div style="{{ hcol }}">
-    <div style="{{ htag }}"><span style="{{ htagId }}">9</span>Home · 중복 정리 · WP-HOME-001</div>
-    <span style="{{ htagDesc }}">전체 화면 체계에 맞춰 개편했습니다. 별점을 실 제보 건수로 바꾸고 추천 카드에 이유를 붙였습니다. «웨딩픽이 골라뒀어요» 카드는 Pick과 연계됩니다 — «자세히»와 각 카드를 누르면 Pick의 해당 업종으로 이동합니다. 상태는 미정 · 상담예약 완료 · Pick 인증 완료 · 계약 완료 4단계이고, 계약 완료면 카드가 코랄로 채워지고 히어로에도 배지로 나옵니다.</span>
+    <div style="{{ htag }}"><span style="{{ htagId }}">11</span>Home · 중복 정리 · WP-HOME-001</div>
+    <span style="{{ htagDesc }}">전체 화면 체계에 맞춰 개편했습니다. 별점을 실 제보 건수로 바꿨습니다. «내 웨딩 준비» 카드는 Pick과 연계됩니다 — «자세히»와 각 카드를 누르면 Pick의 해당 업종으로 이동합니다. 상태는 미정 · 상담예약 완료 · Pick 인증 완료 · 계약 완료 4단계이고, 계약 완료면 카드가 코랄로 채워지고 히어로에도 배지로 나옵니다.</span>
     <div style="{{ hphone }}">
       <div style="{{ hbar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
 
@@ -281,7 +370,7 @@ image-slot::part(empty){display:none !important}
         <div style="{{ secNoPad }}">
           <div style="{{ secHeadPad }}">
             <div style="{{ secHeadCol }}">
-              <span style="{{ hsecTitle }}">웨딩픽이 골라뒀어요</span>
+              <span style="{{ hsecTitle }}">내 웨딩 준비</span>
               <span style="{{ secSub }}">지금은 스튜디오 차례예요</span>
             </div>
             <a href="대메뉴_Pick.dc.html" style="{{ moreRow }}">자세히<span style="{{ icoMoreChev }}"></span></a>
@@ -393,7 +482,7 @@ image-slot::part(empty){display:none !important}
   </div>
 
   <div style="{{ hcol }}">
-    <div style="{{ tagRow }}"><span style="{{ tagIdWide }}">9-1</span><span style="{{ tagText }}">홈 · 아무것도 없을 때 · WP-HOME-002</span></div>
+    <div style="{{ tagRow }}"><span style="{{ tagIdWide }}">11-1</span><span style="{{ tagText }}">홈 · 아무것도 없을 때 · WP-HOME-002</span></div>
     <span style="{{ tagDesc }}">온보딩만 마치고 아직 아무것도 정하지 않은 경우입니다. 히어로에 예식장 정보가 없고, 4칸 모두 미정입니다. 예산·일정 섹션 대신 시작 안내를 하나만 둡니다.</span>
     <div style="{{ hphone }}">
       <div style="{{ hbar }}"><span>9:41</span></div>
@@ -410,7 +499,7 @@ image-slot::part(empty){display:none !important}
           </div>
         </div>
         <div style="{{ secNoPad }}">
-          <div style="{{ secHeadPad }}"><div style="{{ secHeadCol }}"><span style="{{ hsecTitle }}">웨딩픽이 골라뒀어요</span><span style="{{ secSub }}">아직 정한 게 없어요</span></div><a href="대메뉴_Pick.dc.html" style="{{ moreRow }}">자세히<span style="{{ icoMoreChev }}"></span></a></div>
+          <div style="{{ secHeadPad }}"><div style="{{ secHeadCol }}"><span style="{{ hsecTitle }}">내 웨딩 준비</span><span style="{{ secSub }}">아직 정한 게 없어요</span></div><a href="대메뉴_Pick.dc.html" style="{{ moreRow }}">자세히<span style="{{ icoMoreChev }}"></span></a></div>
           <div style="{{ prepGridPad }}">
             <sc-for list="{{ prepEmpty }}" as="p" hint-placeholder-count="4">
               <a href="{{ p.href }}" style="{{ p.card }}">
@@ -462,7 +551,7 @@ image-slot::part(empty){display:none !important}
   </div>
 
   <div style="{{ hcol }}">
-    <div style="{{ tagRow }}"><span style="{{ tagIdWide }}">9-2</span><span style="{{ tagText }}">홈 · 일부 정보가 있을 때 · WP-HOME-003</span></div>
+    <div style="{{ tagRow }}"><span style="{{ tagIdWide }}">11-2</span><span style="{{ tagText }}">홈 · 일부 정보가 있을 때 · WP-HOME-003</span></div>
     <span style="{{ tagDesc }}">한두 업종만 진행 중인 경우입니다. 히어로엔 예식장 정보가 아직 없고, 4칸 중 하나만 상담예약 완료 · 나머지는 미정입니다.</span>
     <div style="{{ hphone }}">
       <div style="{{ hbar }}"><span>9:41</span></div>
@@ -479,7 +568,7 @@ image-slot::part(empty){display:none !important}
           </div>
         </div>
         <div style="{{ secNoPad }}">
-          <div style="{{ secHeadPad }}"><div style="{{ secHeadCol }}"><span style="{{ hsecTitle }}">웨딩픽이 골라뒀어요</span><span style="{{ secSub }}">지금은 웨딩홀 차례예요</span></div><a href="대메뉴_Pick.dc.html" style="{{ moreRow }}">자세히<span style="{{ icoMoreChev }}"></span></a></div>
+          <div style="{{ secHeadPad }}"><div style="{{ secHeadCol }}"><span style="{{ hsecTitle }}">내 웨딩 준비</span><span style="{{ secSub }}">지금은 웨딩홀 차례예요</span></div><a href="대메뉴_Pick.dc.html" style="{{ moreRow }}">자세히<span style="{{ icoMoreChev }}"></span></a></div>
           <div style="{{ prepGridPad }}">
             <sc-for list="{{ prepPartial }}" as="p" hint-placeholder-count="4">
               <a href="{{ p.href }}" style="{{ p.card }}">
@@ -530,84 +619,16 @@ image-slot::part(empty){display:none !important}
     </div>
   </div>
 
-  <div style="{{ hcol }}">
-    <div style="{{ htag }}"><span style="{{ htagId }}">10</span>타이포 · 반지름</div>
-    <div style="{{ specCard }}">
-      <sc-for list="{{ typeSpec }}" as="t2" hint-placeholder-count="7">
-        <div style="{{ kvRow }}">
-          <span style="{{ kvKey }}">{{ t2.k }}</span>
-          <span style="{{ kvVal }}">{{ t2.v }}</span>
-        </div>
-      </sc-for>
-    </div>
   </div>
 
   <div style="{{ hcolWide }}">
-    <div style="{{ htag }}"><span style="{{ htagId }}">11</span>홈 · 정본과 다른 점</div>
-    <span style="{{ htagDesc }}">Figma 기준을 따르기로 했으므로 아래 항목은 정본 문서(CLAUDE.md · tokens.json · screens.json)를 고쳐야 합니다.</span>
-    <div style="{{ hdiffCard }}">
-      <div style="{{ hdiffHead }}">
-        <span style="{{ hdh1 }}">항목</span>
-        <span style="{{ hdh2 }}">정본</span>
-        <span style="{{ hdh3 }}">Figma</span>
-        <span style="{{ hdh4 }}">판단</span>
-      </div>
-      <sc-for list="{{ hdiffs }}" as="d" hint-placeholder-count="12">
-        <div style="{{ hdiffRow }}">
-          <span style="{{ hdc1 }}">{{ d.k }}</span>
-          <span style="{{ hdc2 }}">{{ d.a }}</span>
-          <span style="{{ hdc3 }}">{{ d.b }}</span>
-          <span style="{{ d.verdictStyle }}">{{ d.verdict }}</span>
-        </div>
-      </sc-for>
-    </div>
-
-    <div style="{{ tag2 }}"><span style="{{ htagId }}">12</span>Figma에만 있는 화면</div>
-    <div style="{{ newCard }}">
-      <sc-for list="{{ newScreens }}" as="n" hint-placeholder-count="8">
-        <div style="{{ newRow }}">
-          <span style="{{ newRoute }}">{{ n.route }}</span>
-          <span style="{{ newName }}">{{ n.name }}</span>
-          <span style="{{ newNote }}">{{ n.note }}</span>
-        </div>
-      </sc-for>
-    </div>
-  </div>
-
-  <div style="width:100%;flex:0 0 100%;padding:16px 0 0;font-size:22px;line-height:30px;font-weight:700;color:#212124">3 · 빠진 화면 보완</div>
-
-  <div style="{{ hcol }}">
-    <div style="{{ htag }}"><span style="{{ htagId }}">13</span>스플래시 · 시작 · WP-APP-001</div>
-    <span style="{{ htagDesc }}">앱을 열면 뜹니다. 스킨과 무관하게 Coral 고정이고, 마크는 White입니다. 로그인 여부를 확인하는 동안만 보이고 버튼은 없습니다.</span>
-    <div style="{{ hphone }}">
-      <div style="{{ splashStage }}">
-        <span style="{{ splashMark }}"></span>
-        <span style="{{ splashName }}">웨딩픽</span>
-      </div>
-    </div>
-  </div>
-
-  <div style="{{ hcol }}">
-    <div style="{{ htag }}"><span style="{{ htagId }}">14</span>만 14세 이용 불가 · WP-AUTH-009</div>
-    <span style="{{ htagDesc }}">카카오 출생연도가 만 14세 미달일 때만 뜹니다. 계정은 만들지 않고, CTA는 coral을 쓰지 않습니다.</span>
-    <div style="{{ hphone }}">
-      <div style="{{ hbar }}"><span>9:41</span></div>
-      <div style="{{ agesStage }}">
-        <span style="{{ agesTitle }}">만 14세가 되면<br>웨딩픽을 이용할 수 있어요</span>
-        <span style="{{ agesNote }}">계정은 만들지 않았어요. 출생 연도는 삭제했어요.</span>
-      </div>
-      <div style="{{ dockSingleH }}"><span style="{{ ctaGhostH }}">돌아가기</span></div>
-    </div>
-  </div>
-
-  <div style="{{ hcolWide }}">
-    <div style="{{ htag }}"><span style="{{ htagId }}">15</span>홈 상태 3종 · WP-HOME-001</div>
+    <div style="{{ htag }}"><span style="{{ htagId }}">12</span>홈 상태 3종 · WP-HOME-001</div>
     <span style="{{ htagDesc }}">진행 상황 축입니다. 0개 · 1~8개 · 9개 이상이 화면 골격을 바꿉니다. 정보량(실 제보 3건 기준)은 각 카드 안에서 따로 갈립니다.</span>
     <div style="{{ stateRow }}">
       <div style="{{ stateCard }}">
         <span style="{{ stateLabel }}">0개 · 온보딩 직후</span>
         <span style="{{ stateBig }}">아직 결정한 게 없어요</span>
-        <span style="{{ stateSub }}">웨딩픽 추천만 뜨고 준비현황·지출 섹션은 접혀요.</span>
+        <span style="{{ stateSub }}">내 웨딩 준비 4칸이 모두 미정이고 예산·일정은 기본값으로 떠요.</span>
       </div>
       <div style="{{ stateCard }}">
         <span style="{{ stateLabel }}">1~8개 · 준비 중</span>
@@ -617,13 +638,13 @@ image-slot::part(empty){display:none !important}
       <div style="{{ stateCard }}">
         <span style="{{ stateLabel }}">9개 이상 · 마무리</span>
         <span style="{{ stateBig }}">진행바 92%</span>
-        <span style="{{ stateSub }}">추천 섹션이 사라지고 웨딩노트 진행 요약이 가장 위로 와요.</span>
+        <span style="{{ stateSub }}">내 웨딩 준비가 대부분 채워지고 웨딩일정과 예산현황이 위로 와요.</span>
       </div>
     </div>
   </div>
 
   <div style="{{ hcol }}">
-    <div style="{{ htag }}"><span style="{{ htagId }}">16</span>혜택 안내 시트 · WP-SHT-017</div>
+    <div style="{{ htag }}"><span style="{{ htagId }}">13</span>혜택 안내 시트 · WP-SHT-017</div>
     <span style="{{ htagDesc }}">온보딩 완료 후 홈 최초 진입 1회, 400ms 뒤 뜹니다. 네 혜택 중 금액이 가장 큰 웨딩지원금 5만원만 내세웁니다.</span>
     <div style="{{ hphone }}">
       <div style="{{ hbar }}"><span>9:41</span></div>
@@ -644,6 +665,65 @@ image-slot::part(empty){display:none !important}
     </div>
   </div>
 
+  <div style="width:100%;flex:0 0 100%;padding:16px 0 0;font-size:22px;line-height:30px;font-weight:700;color:#212124">3 · 명세</div>
+
+<div style="{{ colWideAfter }}">
+    <div style="{{ tag }}"><span style="{{ tagId }}">14</span>온보딩 · 정본과 다른 점</div>
+    <span style="{{ tagDesc }}">정책 판단이 필요한 항목은 주황색입니다.</span>
+    <div style="{{ diffCard }}">
+      <div style="{{ diffHead }}"><span style="{{ dh1 }}">항목</span><span style="{{ dh2 }}">Figma 원본</span><span style="{{ dh3 }}">정본 적용</span><span style="{{ dh4 }}">근거</span></div>
+      <sc-for list="{{ diffs }}" as="d" hint-placeholder-count="14">
+        <div style="{{ diffRow }}"><span style="{{ dc1 }}">{{ d.k }}</span><span style="{{ dc2 }}">{{ d.a }}</span><span style="{{ d.bStyle }}">{{ d.b }}</span><span style="{{ dc3 }}">{{ d.why }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+
+
+  <div style="{{ hcol }}">
+    <div style="{{ htag }}"><span style="{{ htagId }}">15</span>타이포 · 반지름</div>
+    <div style="{{ specCard }}">
+      <sc-for list="{{ typeSpec }}" as="t2" hint-placeholder-count="7">
+        <div style="{{ kvRow }}">
+          <span style="{{ kvKey }}">{{ t2.k }}</span>
+          <span style="{{ kvVal }}">{{ t2.v }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="{{ hcolWide }}">
+    <div style="{{ htag }}"><span style="{{ htagId }}">16</span>홈 · 정본과 다른 점</div>
+    <span style="{{ htagDesc }}">Figma 기준을 따르기로 했으므로 아래 항목은 정본 문서(CLAUDE.md · tokens.json · screens.json)를 고쳐야 합니다.</span>
+    <div style="{{ hdiffCard }}">
+      <div style="{{ hdiffHead }}">
+        <span style="{{ hdh1 }}">항목</span>
+        <span style="{{ hdh2 }}">정본</span>
+        <span style="{{ hdh3 }}">Figma</span>
+        <span style="{{ hdh4 }}">판단</span>
+      </div>
+      <sc-for list="{{ hdiffs }}" as="d" hint-placeholder-count="12">
+        <div style="{{ hdiffRow }}">
+          <span style="{{ hdc1 }}">{{ d.k }}</span>
+          <span style="{{ hdc2 }}">{{ d.a }}</span>
+          <span style="{{ hdc3 }}">{{ d.b }}</span>
+          <span style="{{ d.verdictStyle }}">{{ d.verdict }}</span>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="{{ tag2 }}"><span style="{{ htagId }}">17</span>Figma에만 있는 화면</div>
+    <div style="{{ newCard }}">
+      <sc-for list="{{ newScreens }}" as="n" hint-placeholder-count="8">
+        <div style="{{ newRow }}">
+          <span style="{{ newRoute }}">{{ n.route }}</span>
+          <span style="{{ newName }}">{{ n.name }}</span>
+          <span style="{{ newNote }}">{{ n.note }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+</div>
 </div>
 
 
@@ -665,14 +745,6 @@ class Component extends DCLogic {
     const DISPLAY = SANS;
     const MONO = SANS;
 
-    const prepFull = (name, state, kind) => ({ name, state,
-      card: prepCard(kind), mark: prepMark(kind),
-      label: 'flex:1;min-width:0;font-size:14px;font-weight:700;color:' + hINK + ';display:flex;flex-direction:column;gap:2px',
-      detail: prepDetail(kind), chev: hICO('chevron-right', 16, hDIM) });
-    const top3 = (rank, name, reason, price) => ({ rank, name, reason, price });
-    const chip2 = (label, on) => ({ label,
-      style: 'flex:0 0 auto;height:32px;padding:0 14px;border-radius:999px;display:inline-flex;align-items:center;font-size:13px;font-weight:700;white-space:nowrap;'
-        + (on ? 'background:' + hINK + ';color:#fff;' : 'background:' + hSEC + ';color:' + hSUB + ';') });
     const prepCard = kind => ({
       contracted: 'width:100%;box-sizing:border-box;padding:14px;border-radius:10px;background:#fff5f2;border:1.5px solid ' + hP + ';display:flex;flex-direction:column;gap:2px;min-width:0;overflow:hidden',
       done: 'width:100%;box-sizing:border-box;padding:14px;border-radius:10px;background:' + hREC + ';border:1px solid ' + hBORDER + ';display:flex;flex-direction:column;gap:2px;min-width:0;overflow:hidden',
@@ -690,6 +762,63 @@ class Component extends DCLogic {
     const prepDetail = kind => 'font-size:12px;line-height:17px;font-weight:500;margin-top:2px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:'
       + (kind === 'contracted' ? hP : kind === 'done' ? hINK : kind === 'picking' ? hP : hMUTED);
 
+    const termIdx = (this.state && this.state.termTab) || 0;
+    const A = (t, b) => ({ t, b });
+    const TERM_DOCS = [
+      { tab: '이용약관', title: '서비스 이용약관', meta: 'v1.0 · 2026년 9월 1일 시행 · 필수', arts: [
+        A('제1조 목적', '이 약관은 웨딩픽(이하 «회사»)이 제공하는 웨딩 준비 서비스의 이용 조건과 절차, 회사와 회원의 권리 · 의무를 정합니다.'),
+        A('제2조 서비스 내용', '회사는 업체 검색, Pick(후보 저장 · 비교), 상담 예약 연결, 웨딩노트(일정 · 예산 · 상담기록), 실 제보 기반 금액 안내, 리얼후기를 제공합니다. 회사는 업체를 대신 골라주거나 계약을 대행하지 않습니다.'),
+        A('제3조 회원가입', '만 14세 이상이면 카카오 계정으로 가입할 수 있습니다. 필수 항목에 모두 동의해야 가입이 완료됩니다.'),
+        A('제4조 실 제보와 Pick 인증', '회원이 올린 Pick 인증 자료의 금액은 개인을 알아볼 수 없게 구간과 건수로 집계됩니다. 실 제보가 3건 미만이면 금액을 표시하지 않습니다.'),
+        A('제5조 상담 예약', '회원이 상담 예약을 신청하면 회사는 선택한 업체에 연락처와 희망 일시를 전달합니다. 상담 · 계약 내용과 대금 지급은 회원과 업체가 직접 정합니다.'),
+        A('제6조 리얼후기', 'Pick 인증을 마친 회원만 후기를 쓸 수 있습니다. 사실과 다르거나 타인의 권리를 침해하는 후기는 게시가 중단될 수 있고, 업체는 반론을 요청할 수 있습니다.'),
+        A('제7조 광고와 검색 순위', '광고 · 스폰서 영역은 일반 검색 결과와 구분해 표시합니다. 광고비는 검색 자연순위, 실 제보, 후기 순서에 영향을 주지 않습니다.'),
+        A('제8조 금지 행위', '허위 제보, 타인 계정 사용, 자동화 수단으로 정보를 수집하는 행위, 업체 · 회원을 비방하는 행위를 금지합니다.'),
+        A('제9조 회원 탈퇴', '회원은 MY > 계정에서 언제든 탈퇴할 수 있습니다. 탈퇴 후 개인정보는 개인정보처리방침에 따라 삭제되며, 익명 집계된 실 제보는 남을 수 있습니다.'),
+        A('제10조 책임의 한계', '회사는 업체와 회원 사이의 계약 이행에 관여하지 않습니다. 다만 회사의 고의 또는 중대한 과실로 생긴 손해는 배상합니다.')
+      ] },
+      { tab: '개인정보', title: '개인정보 수집 · 이용', meta: 'v1.0 · 2026년 9월 1일 시행 · 필수', arts: [
+        A('수집 항목', '카카오 닉네임 · 이메일 · 출생연도(만 14세 확인 후 삭제), 예식일 · 지역 · 예산 · 스타일, 서비스 이용 기록, 기기 정보.'),
+        A('이용 목적', '회원 식별, 조건에 맞는 업체 검색 결과 제공, 웨딩노트 저장, 배우자 연결, 고객 문의 응대, 부정 이용 방지.'),
+        A('보유 기간', '회원 탈퇴 시 바로 삭제합니다. 관계 법령이 보존을 요구하는 기록은 정해진 기간 동안만 분리 보관합니다.'),
+        A('동의 거부 권리', '필수 항목에 동의하지 않으면 가입할 수 없습니다. 선택 항목은 동의하지 않아도 서비스를 이용할 수 있습니다.')
+      ] },
+      { tab: 'Pick 인증', title: 'Pick 인증 자료 수집 · 이용', meta: 'v1.0 · 2026년 9월 1일 시행 · 필수', arts: [
+        A('수집 항목', '회원이 올린 계약서 · 영수증 · 결제 화면 사진, 업체명, 계약 금액, 계약일, 포함 항목.'),
+        A('이용 목적', '제보 금액 확인, 실 제보 구간 · 건수 집계, 예산현황 자동 입력, 리얼후기 작성 자격 확인.'),
+        A('처리 방식', '사진 속 이름 · 연락처 · 주소 등 개인 식별 정보는 가린 뒤 금액과 조건만 추출합니다. 원본 사진은 확인이 끝나면 30일 안에 삭제합니다.'),
+        A('공개 범위', '다른 회원에게는 개별 금액이 아니라 구간과 건수로만 보입니다. 제보자가 누구인지는 표시하지 않습니다.'),
+        A('보유 기간', '추출한 금액 정보는 탈퇴 전까지 보관하고, 탈퇴 후에는 개인과 연결되지 않는 집계값만 남습니다.')
+      ] },
+      { tab: '상담 녹음', title: '상담 녹음 수집 · 이용', meta: 'v1.0 · 2026년 9월 1일 시행 · 필수', arts: [
+        A('수집 항목', '회원이 녹음하거나 올린 상담 음성 파일, 상담 업체명, 상담 일시.'),
+        A('이용 목적', '상담 내용을 포함 항목 · 별도 비용 · 조건 · 확인 필요로 정리해 상담기록에 저장합니다.'),
+        A('녹음 전 안내', '녹음에는 업체 직원의 목소리도 담깁니다. 녹음을 시작하기 전에 업체에 녹음한다고 알려주세요.'),
+        A('보유 기간', '음성 원본은 정리가 끝나면 7일 안에 삭제합니다. 정리된 상담기록은 회원이 지우거나 탈퇴할 때까지 보관합니다.'),
+        A('공개 범위', '상담기록은 본인과 연결된 배우자만 볼 수 있습니다. 다른 회원이나 업체에 공개하지 않습니다.')
+      ] },
+      { tab: '제3자 제공', title: '상담 예약 시 연락처 제공', meta: 'v1.0 · 2026년 9월 1일 시행 · 선택', arts: [
+        A('제공받는 자', '회원이 상담 예약을 신청한 업체.'),
+        A('제공 항목', '닉네임, 연락처, 희망 상담 일시, 예식일, 예산 구간.'),
+        A('제공 목적', '상담 일정 확정과 연락.'),
+        A('보유 기간', '업체는 상담 종료 후 6개월 안에 파기해야 합니다.'),
+        A('동의 거부 권리', '동의하지 않아도 가입할 수 있습니다. 다만 상담 예약을 신청할 때 다시 동의를 요청합니다.')
+      ] },
+      { tab: '혜택 알림', title: '혜택 · 이벤트 알림 수신', meta: 'v1.0 · 2026년 9월 1일 시행 · 선택', arts: [
+        A('보내는 내용', '웨딩지원금, 박람회, 업체 할인 등 혜택과 이벤트 소식.'),
+        A('보내는 방법', '앱 푸시 알림. 하루 최대 2건입니다.'),
+        A('야간 알림', '밤 9시부터 아침 8시 사이에는 별도로 동의한 경우에만 보냅니다.'),
+        A('수신 확인', '동의한 날부터 2년마다 수신 동의 여부를 다시 확인합니다.'),
+        A('동의 철회', 'MY > 알림 설정에서 언제든 끌 수 있습니다.')
+      ] }
+    ];
+    const agChk = on => 'width:24px;height:24px;flex:0 0 24px;border-radius:999px;' + (on
+      ? 'background:#ff6f61;background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'3.2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpath d=\'m5 12.5 4.5 4.5L19 7.5\'/%3E%3C/svg%3E");background-size:14px;background-position:center;background-repeat:no-repeat'
+      : 'box-shadow:inset 0 0 0 1.5px #dcdee3');
+    const agItem = (tag, label, on, hasDoc) => ({ tag, label, hasDoc,
+      row: 'display:flex;align-items:center;gap:12px;min-height:44px;padding:0 4px',
+      chk: agChk(on),
+      tagStyle: 'font-weight:700;color:' + (tag === '필수' ? '#ff6f61' : '#868b94') });
     const M3ICO = (name, px, color) => ({ isM3: true, name, style: 'font-size:' + px + 'px;color:' + color + ';flex:0 0 ' + px + 'px;width:' + px + 'px;height:' + px + 'px;display:inline-flex;align-items:center;justify-content:center' });
     const hICO = (name, px, color) => 'width:' + px + 'px;height:' + px + 'px;flex:0 0 ' + px + 'px;'
       + 'background-color:' + color + ';'
@@ -859,6 +988,23 @@ class Component extends DCLogic {
       tag2: 'height:26px;display:flex;align-items:center;gap:8px;font-size:18px;line-height:24px;font-weight:700;color:' + hINK + ';white-space:nowrap;overflow:hidden;margin-top:22px',
       htagId: 'width:26px;height:26px;flex:0 0 26px;border-radius:6px;background:' + hINK + ';color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700',
       htagDesc: 'font-size:14px;line-height:21px;color:#57534e;text-wrap:pretty;padding-bottom:6px',
+      htagIdWide: 'height:26px;flex:0 0 auto;padding:0 8px;border-radius:6px;background:' + hMUTED + ';color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700',
+      tdNav: 'flex:0 0 56px;display:flex;align-items:center;gap:8px;padding:0 16px;box-shadow:inset 0 -1px 0 ' + hBORDER,
+      tdNavT: 'flex:1;min-width:0;text-align:center;font-size:16px;font-weight:700;color:' + hINK,
+      tdNavPad: 'width:36px;flex:0 0 36px',
+      tdTabs: 'flex:0 0 auto;display:flex;gap:20px;padding:0 20px;overflow-x:auto;scrollbar-width:none;box-shadow:inset 0 -1px 0 ' + hBORDER,
+      termTabs: TERM_DOCS.map((d, i) => ({ label: d.tab, onClick: () => this.setState({ termTab: i }),
+        style: 'flex:0 0 auto;height:44px;display:flex;align-items:center;font-size:15px;font-weight:700;white-space:nowrap;cursor:pointer;' + (i === termIdx ? 'color:' + hINK + ';box-shadow:inset 0 -2px 0 ' + hINK : 'color:' + hMUTED) })),
+      tdDocTitle: TERM_DOCS[termIdx].title,
+      tdDocMeta: TERM_DOCS[termIdx].meta,
+      tdScroll: 'flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:22px;padding:24px 24px 0;scrollbar-width:none',
+      tdHead: 'display:flex;flex-direction:column;gap:6px',
+      tdTitle: 'font-size:22px;line-height:30px;font-weight:700;color:' + hINK,
+      tdMeta: 'font-size:13px;color:' + hMUTED,
+      tdArt: 'display:flex;flex-direction:column;gap:6px',
+      tdArtT: 'font-size:15px;font-weight:700;color:' + hINK,
+      tdArtB: 'font-size:14px;line-height:22px;color:' + hSUB + ';text-wrap:pretty',
+      termArts: TERM_DOCS[termIdx].arts,
 
       hphone: 'width:430px;height:932px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(28,25,23,.14)',
       hbar: 'height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:' + hINK,
@@ -962,6 +1108,59 @@ class Component extends DCLogic {
 
       splashStage: 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:' + hP,
       splashMark: 'width:64px;height:64px;background-color:#fff;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'1.9\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpath d=\'M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z\'/%3E%3Cpath d=\'M9.4 11.9l1.7 1.7 3.4-3.4\'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'1.9\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpath d=\'M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z\'/%3E%3Cpath d=\'M9.4 11.9l1.7 1.7 3.4-3.4\'/%3E%3C/svg%3E") center/contain no-repeat',
+      agAllRow: 'display:flex;align-items:center;gap:12px;min-height:60px;padding:0 16px;border-radius:8px;background:' + hSEC,
+      agAllT: 'font-size:17px;font-weight:700;color:' + hINK,
+      agChkOn: agChk(false),
+      agList: 'display:flex;flex-direction:column',
+      agItemT: 'flex:1;min-width:0;font-size:15px;line-height:22px;color:' + hINK + ';text-wrap:pretty',
+      agChev: hICO('chevron-right', 16, hDIM),
+      agSec: 'display:flex;flex-direction:column;gap:2px',
+      agSecT: 'font-size:14px;font-weight:700;color:' + hSUB + ';padding:0 0 6px',
+      permGrid: 'display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:6px 0 12px',
+      permCell: 'display:flex;flex-direction:column;align-items:center;gap:6px',
+      permCellT: 'font-size:13px;font-weight:700;color:' + hINK,
+      agreeReq: [
+        agItem('필수', '만 14세 이상이에요', true, false),
+        agItem('필수', '서비스 이용약관', true, true),
+        agItem('필수', '개인정보 수집 · 이용', true, true),
+        agItem('필수', 'Pick 인증 자료 수집 · 이용', true, true),
+        agItem('필수', '상담 녹음 수집 · 이용', true, true)
+      ],
+      agreeOpt: [
+        agItem('선택', '상담 예약 시 업체에 연락처 제공', true, true),
+        agItem('선택', '혜택 · 이벤트 알림 받기', true, true),
+        agItem('선택', '밤 9시 ~ 아침 8시에도 알림 받기', false, false)
+      ],
+      agreeItems: [
+        agItem('필수', '만 14세 이상이에요', true, false),
+        agItem('필수', '서비스 이용약관', true, true),
+        agItem('필수', '개인정보 수집 · 이용', true, true),
+        agItem('필수', 'Pick 인증 자료 수집 · 이용', true, true),
+        agItem('필수', '상담 녹음 수집 · 이용', true, true),
+        agItem('선택', '상담 예약 시 업체에 연락처 제공', true, true),
+        agItem('선택', '혜택 · 이벤트 알림 받기', true, true),
+        agItem('선택', '밤 9시 ~ 아침 8시에도 알림 받기', false, false)
+      ],
+      permScroll: 'flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:28px;padding:40px 24px 24px;scrollbar-width:none',
+      permHead: 'display:flex;flex-direction:column;gap:8px',
+      permTitle: 'font-size:24px;line-height:33px;font-weight:700;color:' + hINK,
+      permSub: 'font-size:15px;line-height:22px;color:' + hSUB,
+      permSec: 'display:flex;flex-direction:column;gap:4px;padding-top:20px;box-shadow:inset 0 1px 0 ' + hBORDER,
+      permLabel: 'font-size:14px;font-weight:700;color:' + hSUB + ';padding-bottom:8px',
+      permRow: 'display:flex;align-items:center;gap:14px;min-height:64px',
+      permIcoWrap: 'width:44px;height:44px;flex:0 0 44px;border-radius:999px;background:' + hSEC + ';display:flex;align-items:center;justify-content:center',
+      permCol: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:2px',
+      permName: 'font-size:16px;font-weight:700;color:' + hINK,
+      permDesc: 'font-size:13px;line-height:19px;color:' + hMUTED + ';text-wrap:pretty',
+      permNote: 'display:flex;flex-direction:column;gap:6px;padding-top:16px;box-shadow:inset 0 1px 0 ' + hBORDER,
+      permNoteT: 'font-size:13px;line-height:19px;color:' + hMUTED,
+      permCta: 'flex:1;height:56px;border-radius:6px;background:' + hP + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700',
+      perms: [
+        { name: '알림', desc: '웨딩 일정 · Pick 인증 결과 · 상담 소식을 알려드려요', ico: hICO('notification', 22, hINK) },
+        { name: '카메라', desc: '계약서 · 영수증을 촬영해 Pick 인증할 때 사용해요', ico: hICO('camera', 22, hINK) },
+        { name: '사진', desc: '리얼후기 · Pick 인증에 사진을 첨부할 때 사용해요', ico: hICO('photo', 22, hINK) },
+        { name: '마이크', desc: '상담 내용을 녹음해 상담기록으로 남길 때 사용해요', ico: hICO('mic', 22, hINK) }
+      ],
       splashName: 'font-size:20px;font-weight:700;color:#fff',
 
       agesStage: 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:0 32px;text-align:center',
@@ -977,32 +1176,9 @@ class Component extends DCLogic {
       stateSub: 'font-size:13px;line-height:19px;color:' + hMUTED,
 
       navBarH: 'flex:0 0 56px;display:flex;align-items:center;gap:8px;padding:0 16px;box-shadow:inset 0 -1px 0 ' + hBORDER,
-      icoBackH: hICO('chevron-left', 24, hINK),
+      icoBackH: hICO('chevron-left', 24, hINK) + ';width:36px;flex:0 0 36px;-webkit-mask-size:24px;mask-size:24px',
       navTitleH: 'flex:1;min-width:0;text-align:center;font-size:16px;font-weight:700;color:' + hINK,
-      navPadH: 'width:40px;flex:0 0 40px',
-      scrollH: 'flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;padding-top:12px;scrollbar-width:none',
-      prepGroupSec: 'display:flex;flex-direction:column;gap:8px;padding:0 0 14px',
-      prepGroupT: 'font-size:14px;font-weight:700;color:' + hMUTED + ';padding:0 20px',
-      prepGroupsFull: [
-        { title: '시작 준비', items: [prepFull('결정사', '결정 완료', 'done'), prepFull('웨딩홀', '결정 완료', 'done')] },
-        { title: '스드메', items: [prepFull('스튜디오', '후보 3곳 담김', 'picking'), prepFull('드레스', '결정 완료', 'done'), prepFull('메이크업', '결정 완료', 'done'), prepFull('헤어변형', '아직 안 봤어요', 'todo')] },
-        { title: '본식 준비', items: [prepFull('본식스냅', '아직 안 봤어요', 'todo'), prepFull('부케', '아직 안 봤어요', 'todo'), prepFull('청첩장', '아직 안 봤어요', 'todo')] },
-        { title: '예물 · 신혼', items: [prepFull('예물', '아직 안 봤어요', 'todo'), prepFull('혼수', '아직 안 봤어요', 'todo'), prepFull('허니문', '아직 안 봤어요', 'todo')] }
-      ],
-
-      top3Cats: 'flex:0 0 auto;display:flex;gap:8px;padding:12px 20px;overflow-x:auto;scrollbar-width:none;box-shadow:inset 0 -1px 0 ' + hBORDER,
-      top3CatChips: [chip2('웨딩홀', true), chip2('스튜디오', false), chip2('드레스', false), chip2('메이크업', false), chip2('본식스냅', false)],
-      top3Row: 'display:flex;align-items:center;gap:14px;min-height:76px;padding:0 20px;box-shadow:inset 0 -1px 0 ' + hBORDER,
-      top3Rank: 'width:24px;flex:0 0 24px;font-size:20px;font-weight:700;color:' + hP + ';font-variant-numeric:tabular-nums',
-      top3Col: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:3px',
-      top3Name: 'font-size:16px;font-weight:700;color:' + hINK,
-      top3Reason: 'font-size:12px;color:' + hP,
-      top3Price: 'font-size:14px;font-weight:700;color:' + hINK + ';font-variant-numeric:tabular-nums;white-space:nowrap',
-      top3List: [
-        top3(1, '청담 E 웨딩홀', '고른 스타일이랑 맞아요', '3,200~4,100만원'),
-        top3(2, '더채플 청담', '실 제보 18건', '2,800~3,600만원'),
-        top3(3, '루이비스스퀘어', '수집 중', '수집 중')
-      ],
+      navPadH: 'width:36px;flex:0 0 36px',
 
       dimWrapH: 'flex:1;position:relative;overflow:hidden;display:flex;align-items:flex-end',
       dimH: 'position:absolute;inset:0;background:rgba(0,0,0,.45)',
@@ -1153,10 +1329,9 @@ class Component extends DCLogic {
         hdiff('히어로', 'D-day + 제목 2줄 + 진행바', 'D-127 + 날짜 1줄 + 커플 아바타 + 테마 스위처', 'Figma 채택', ''),
         hdiff('준비 현황', '2열 세로 스택 · 12업종', '2×2 카드 · 6업종 · SEED 아이콘', '카테고리 흡수 · 정리 완료', ''),
         hdiff('카테고리 섹션', '없음', '3×2 그리드 6칸 · 전부 /explore', '중복 · 삭제', ''),
-        hdiff('비교하기 버튼', '비교는 Pick 탭에서', '추천 섹션 헤더에 pill 버튼', '중복 · 삭제', ''),
-        hdiff('남은 스케줄 · 추천', '한 섹션 «준비 현황»', '두 섹션 · 자세히 2개', '같은 업종을 두 번 묻는다', ''),
+        hdiff('비교하기 버튼', '비교는 Pick 탭에서', '홈 섹션 헤더에 pill 버튼', '중복 · 삭제', ''),
+        hdiff('남은 스케줄', '한 섹션 «내 웨딩 준비»', '두 섹션 · 자세히 2개', '같은 업종을 두 번 묻는다', ''),
         hdiff('검색 아이콘', '하단 탭으로만 진입', '홈 헤더에도 있음', '진입점 중복', ''),
-        hdiff('추천 카드 가로 스크롤', '준비 현황 자세히로 이동', '홈에 3장 가로 스크롤', '한눈에 안 보인다 · 상세와 중복', ''),
         hdiff('다가오는 일정', '홈에 3건 · 웨딩노트 연결', '없음', '홈에 일정이 없었다', ''),
         hdiff('웨딩 준비 팁 더보기', '라운지 탭', '/community?tab=feed', '중복 · 삭제', '')
       ],
@@ -1189,8 +1364,8 @@ class Component extends DCLogic {
       bar: 'flex:0 0 44px;display:flex;align-items:center;padding:0 26px;font-size:14px;font-weight:700;color:' + INK,
       navBar: 'flex:0 0 56px;display:flex;align-items:center;gap:8px;padding:0 16px;box-shadow:inset 0 -1px 0 ' + BORDER,
       navTitle: 'flex:1;min-width:0;text-align:center;font-size:16px;font-weight:700;color:' + INK,
-      navPad: 'width:40px;flex:0 0 40px',
-      icoBack: ICO('chevron-left', 24, INK),
+      navPad: 'width:36px;flex:0 0 36px',
+      icoBack: ICO('chevron-left', 24, INK) + ';width:36px;flex:0 0 36px;-webkit-mask-size:24px;mask-size:24px',
       scroll: 'flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;scrollbar-width:none',
 
       loginBrand: 'flex:1;min-height:0;padding:72px 24px 0;display:flex;flex-direction:column;gap:20px',
@@ -1200,8 +1375,10 @@ class Component extends DCLogic {
       benefitWrap: 'display:flex;flex-direction:column;gap:10px;padding-top:4px',
       benefitRow: 'display:flex;align-items:flex-start;gap:9px',
       benefitDot: 'width:5px;height:5px;flex:0 0 5px;margin-top:9px;border-radius:999px;background:' + P,
-      benefitText: 'flex:1;font-size:15px;line-height:23px;color:' + SUB,
-      benefits: ['실제 견적 금액을 비교해요', '마음에 드는 곳을 함께 Pick해요', '일정과 지출도 한곳에서 관리해요'],
+      benefitCol: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:2px',
+      benefitT: 'font-size:16px;line-height:23px;font-weight:700;color:' + INK,
+      benefitText: 'flex:1;min-width:0;font-size:15px;line-height:23px;color:' + SUB + ';text-wrap:pretty',
+      benefits: ['업체별 가격과 조건을 한눈에 확인해요', '광고보다 내 기준으로 직접 골라요', '플래너를 거치지 않고 직접 연결돼요', '계약부터 결혼식까지 한곳에서 챙겨요'],
 
       loginAuth: 'flex:0 0 auto;padding:0 24px 32px;display:flex;flex-direction:column;gap:10px',
       ageCta: 'height:56px;border-radius:6px;background:#fff5f2;box-shadow:inset 0 0 0 1.5px ' + P + ';display:flex;align-items:center;justify-content:center;gap:10px',
@@ -1350,16 +1527,16 @@ class Component extends DCLogic {
         diff('로그인 카피', 'WEDDING, LESS OVERWHELMING · 결정은 가볍게, 준비는 단단하게', '웨딩 준비, 진짜 견적부터 확인해 보세요', '영문 라벨을 쓰지 않는다'),
         diff('로그인 카드', '✦ 나에게 맞는 순서부터 · 코랄 박스', '뺌 · 혜택 3줄로 대신', '첫 화면에 설명 카드를 두지 않는다'),
         diff('카카오 버튼', '카카오로 3초 만에 시작하기', '카카오로 시작하기', '검증 못 하는 수치를 쓰지 않는다'),
-        diff('만 14세 확인', '없음', '카카오 버튼 위 체크', '개인정보보호법'),
+        diff('만 14세 확인', '없음', '약관 동의 화면(WP-AUTH-010) 필수 항목', '개인정보보호법'),
         diff('온보딩 단계', '3단계 · 01 / 03', '5단계 · 1/5', '예식일 · 지역 · 진행 상황 · 예산 · 스타일'),
         diff('Back 처리', '무조건 이전 화면', '진입 컨텍스트 유지', '어디서 들어왔는지에 따라 돌아갈 곳이 다르다'),
         diff('온보딩 Back', '이전 화면', '이전 단계 · 1단계에서는 로그인', '단계는 순서가 있다'),
         diff('상세 Back', '이전 화면', '진입한 목록 · 탭과 스크롤 유지', '고르던 자리로 돌아와야 한다'),
         diff('온보딩 라벨', 'JUST FOR YOU', '뺌', '영문 라벨을 쓰지 않는다'),
-        diff('건너뛰기', '나중에', '뺌 · 미정 선택지로 대신', '설정 없이 홈에 가면 추천이 비어 있다'),
+        diff('건너뛰기', '나중에', '뺌 · 미정 선택지로 대신', '설정 없이 홈에 가면 내 웨딩 준비가 비어 있다'),
         diff('예식일 입력', '3지선다 (2027년 1월 15일 · 상반기 · 미정)', '휠 피커 + 아직 정하지 않았어요', '날짜를 고르게 해야 D-day가 나온다'),
         diff('중요한 것 질문', '예산 안에서 · 취향 뚜렷 · 정보 충분', '뺌', '추측 질문 대신 실제 값으로 판단'),
-        diff('스타일', '없음', '4종 버튼 · 최대 2개', '이미지를 쓰지 않고 말로 판단한다'),
+        diff('스타일', '없음', '4종 버튼 · 개수 제한 없음', '이미지를 쓰지 않고 말로 판단한다'),
         diff('제보 제목', '영수증 또는 계약서를 인증해주세요', '금액이 보이는 사진 한 장이면 돼요', '계약서를 요구하지 않는다'),
         diff('제보 이름', '가격 제보 · VERIFY THE FACTS', 'Pick 인증', '용어사전'),
         diff('업로드 UI', '검정 대형 카메라 버튼 + 보조 파일 링크', '카메라 · 앨범 2칸 동일 무게', '두 경로의 무게가 같다'),
