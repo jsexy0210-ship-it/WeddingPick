@@ -98,7 +98,7 @@ export default function ConsultationDetailRoute() {
               <View style={styles.head}>
                 <ThemedText type="t4">{record.vendorLabel ?? '업체 미확인'}</ThemedText>
                 <ThemedText type="t7" themeColor="textSecondary">
-                  {record.confirmedAt ? `${formatDateDot(record.confirmedAt)} · 저장됨` : '확인 필요'}
+                  {record.confirmedAt ? `${formatDateDot(record.confirmedAt)} · 저장됨` : '정리 완료'}
                 </ThemedText>
               </View>
 
@@ -118,11 +118,12 @@ export default function ConsultationDetailRoute() {
                   </View>
                 ) : null}
 
-                <Lines label="기본 포함" items={list(record.common, 'included')} />
-                <Lines label="추가 비용" items={list(record.after, 'additionalCosts')} />
+                {/* 이름표는 v3.28 `analysis` 블록 제목 — 포함 · 별도로 확인할 비용 · 확인 필요. */}
+                <Lines label="포함" items={list(record.common, 'included')} />
+                <Lines label="별도로 확인할 비용" items={list(record.after, 'additionalCosts')} />
                 <Lines label="혜택" items={list(record.after, 'benefits')} />
                 <Lines label="주의할 점" items={list(record.after, 'warnings')} />
-                <Lines label="다시 확인할 것" items={list(record.after, 'missingInformation')} />
+                <Lines label="확인 필요" items={list(record.after, 'missingInformation')} />
 
                 {typeof record.after.summary === 'string' ? (
                   <View style={styles.group}>
@@ -141,7 +142,7 @@ export default function ConsultationDetailRoute() {
               {!record.confirmedAt ? (
                 <ActionButton
                   variant="primary"
-                  label={saving ? '저장하는 중…' : '확인했어요. 저장할게요'}
+                  label={saving ? '저장하는 중…' : '저장'}
                   disabled={saving}
                   onPress={() => void save()}
                 />

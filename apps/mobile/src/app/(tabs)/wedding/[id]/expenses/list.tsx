@@ -22,7 +22,7 @@ const FILTERS: { key: Filter; label: string }[] = [
 /**
  * 지출 내역. WP-OUR-009. 지출 요약(WP-OUR-008) nav의 «내역»으로 들어온다.
  *
- *   nav     «지출 내역» · 오른쪽 «추가»(WP-OUR-014)
+ *   nav     «지출내역» · 좌측 X 닫기(v3.28 풀팝업) · 오른쪽 «추가»(WP-OUR-014)
  *   hero    «지출 N건을 적었어요» · «총 2,140만원»
  *   칩 3    전체 · 제보 연계 · 직접 입력
  *   행      항목 18/24 · «실 제보 연결 · 2027.05.16(토)» · 금액 16/22 700 — 잔금 예정은 회색
@@ -59,7 +59,7 @@ export default function ExpenseListScreen() {
 
   return (
     <Screen>
-      <NavBar title="지출 내역" right={{ label: '추가', brand: true, onPress: openAdd }} />
+      <NavBar title="지출내역" variant="close" right={{ label: '추가', brand: true, onPress: openAdd }} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Hero
