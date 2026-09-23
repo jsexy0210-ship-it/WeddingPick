@@ -36,7 +36,13 @@ import { ConfirmCard } from './_ui';
  * 말이 어긋난다 — 목록은 「조회만」이라 적고 화면은 저장되는 상태가 된다.
  */
 
-type DocType = 'terms' | 'privacy' | 'marketing';
+type DocType =
+  | 'terms'
+  | 'privacy'
+  | 'marketing'
+  | 'pick_verification'
+  | 'consultation_recording'
+  | 'contact_sharing';
 type TermsVersion = {
   version: string;
   publishedAt: string | null;
@@ -71,6 +77,9 @@ const DOC_LABEL: Record<DocType, string> = {
   terms: '이용약관',
   privacy: '개인정보처리방침',
   marketing: '마케팅 정보 수신 동의',
+  pick_verification: 'Pick 인증 자료 수집·이용 동의',
+  consultation_recording: '상담 녹음 수집·이용 동의',
+  contact_sharing: '상담 예약 시 업체 연락처 제공 동의',
 };
 
 /** 시안(WP-ADM-036)의 버전 상태 셋. 초안은 아직 공개 전, 공개 중은 지금 사용자가 보는 판이다. */

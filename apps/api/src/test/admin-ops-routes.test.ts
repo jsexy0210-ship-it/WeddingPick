@@ -490,8 +490,8 @@ describeWithDb('관리자 운영·시스템 라우트', () => {
 
       expect(docOf(body, 'terms')?.clauses).toHaveLength(21);
       expect(docOf(body, 'privacy')?.clauses).toHaveLength(13);
-      // 마케팅은 저장소에 본문이 한 번도 없었다. 없는 법적 문서를 지어내지 않는다.
-      expect(docOf(body, 'marketing')?.clauses).toHaveLength(0);
+      // 0430이 마케팅 초안에 조문 2개를 채웠다(방침 제7항 · 이용약관 제13조 재사용).
+      expect(docOf(body, 'marketing')?.clauses).toHaveLength(2);
       expect(docOf(body, 'terms')?.clauses[0]?.body).toContain('이 약관은 픽랩');
 
       /*
@@ -744,11 +744,17 @@ describeWithDb('관리자 운영·시스템 라우트', () => {
     });
 
     /*
-     * **마케팅 정보 수신 동의는 이 길로 시작한다.** 저장소에 본문이 한 번도 없어서
-     * 0422가 빈 초안만 두었다 — 없는 법적 문서를 지어내지 않았다.
+     * **빈 초안에 처음 조문을 넣는 경로를 검증한다.** 0430이 마케팅 초안을
+     * 조문 2개로 채워 뒀으므로, 그 조문을 지워 「빈 문서」 상태를 다시 만든 뒤
+     * 이 경로를 재현한다.
      */
     it('빈 문서에 조문을 더해 공개까지 간다', async () => {
       const operator = await operatorHeaders();
+      await test.pool.query(
+        `DELETE FROM structured.terms_clauses c
+         USING structured.terms_versions v
+         WHERE v.id = c.version_id AND v.doc = 'marketing' AND v.published_at IS NULL`
+      );
 
       const added = await post('/v1/admin/terms/marketing/clauses', operator.headers, {
         title: '제1조 목적',
@@ -831,6 +837,12 @@ describeWithDb('관리자 운영·시스템 라우트', () => {
     /* 조문이 없는 판을 공개하면 사용자에게 빈 약관이 나가고, 그 판은 얼어붙는다. */
     it('조문이 없는 초안은 공개할 수 없다', async () => {
       const operator = await operatorHeaders();
+      // 0430이 채운 마케팅 초안 조문을 지워 「빈 초안」 상태를 재현한다.
+      await test.pool.query(
+        `DELETE FROM structured.terms_clauses c
+         USING structured.terms_versions v
+         WHERE v.id = c.version_id AND v.doc = 'marketing' AND v.published_at IS NULL`
+      );
       await expect(
         publishTerms(test.pool, 'marketing', operator.userId, '빈 초안', '2026-10-01')
       ).rejects.toThrow(/조문/);
@@ -891,7 +903,7 @@ describeWithDb('관리자 운영·시스템 라우트', () => {
         ).toBe('2026-09-21');
       });
 
-      /* 마케팅은 조문이 없어 공개된 적이 없다. 초안을 내보내지 않는다. */
+      /* 마케팅은 0430이 초안에 조문을 채웠을 뿐 아직 공개된 적이 없다. 초안을 내보내지 않는다. */
       it('공개된 판이 없으면 비어 있다', async () => {
         const response = await test.app.inject({ method: 'GET', url: '/v1/legal/marketing' });
         expect(response.statusCode).toBe(200);
