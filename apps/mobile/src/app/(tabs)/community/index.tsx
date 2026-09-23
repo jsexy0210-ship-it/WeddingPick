@@ -18,6 +18,7 @@ import {
   LineHeight,
   MaxContentWidth,
   Radius,
+  RatingStars,
   SegmentedTabs,
   Spacing,
   ThemedText,
@@ -54,8 +55,12 @@ type LoungeReview = LoungeReviewListResponse['reviews'][number];
  * 라운지 — docs/design/html/대메뉴_MY.dc.html 8 · 9 · 10(리얼후기 · 웨딩정보 · 박람회).
  *
  * Root 탭이 아니다. 홈/MY에서 들어오는 하위 화면이고, 헤더 Back은 진입한 화면으로 돌아간다.
- * 후기에는 별점/평점 숫자를 노출하지 않는다. 서버의 과거 후기 계약에 정본 3축 값이
- * 아직 전부 없으므로 실제로 의미가 대응되는 축만 정본 답변 칩으로 바꿔 보여준다.
+ *
+ * **별점은 그린다. 숫자만 뺀다**(v3.28 2026-09-23 「후기 별점 UI를 되살린다」 ·
+ * screen-inventory.md WP-LNG-001 「숫자 4.9만 뺀다」). `review.overall`(1~5)을
+ * `<RatingStars showValue={false}>`로 그리고, 3축 답변 칩은 서버의 과거 후기 계약에
+ * 정본 3축 값이 아직 전부 없으므로 실제로 의미가 대응되는 축만 정본 답변 칩으로
+ * 바꿔 보여준다 — 이 둘은 서로 다른 값(overall vs. aspects)이라 함께 둔다.
  */
 export default function CommunityScreen() {
   const { state, refresh } = useSession();
@@ -378,6 +383,9 @@ function ReviewList({
                 </ThemedText>
               </View>
             </View>
+
+            {/* 정본(screen-inventory.md WP-LNG-001) — 별 5개 + 3축 답변 칩을 함께 둔다. */}
+            <RatingStars value={review.overall} showValue={false} />
 
             {answers.length > 0 ? (
               <View style={styles.reviewAnswers}>

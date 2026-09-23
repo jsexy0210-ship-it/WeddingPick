@@ -9,6 +9,13 @@ import { expenseBucketSchema } from './wedding-plan';
  *
  * 가격은 없다. 목록에 가격을 실으면 Level 3 잠금을 우회하는 길이 생기고, 무엇보다
  * 후보 목록은 "무엇을 견주는 중인가"를 보는 자리지 값을 보는 자리가 아니다.
+ *
+ * **별점은 다르다**(v3.28 2026-09-23 「후기 별점 UI를 되살린다」). 가격과 달리 별점은
+ * 검색 결과·업체상세에서 이미 공개된 값이라 여기 싣는다고 잠금을 우회하는 길이 생기지
+ * 않는다. 화면 대조표(`docs/design/screen-inventory.md` 「평가 지표」)가 정본으로
+ * 못 박았다 — 「5점 별점 + 실 제보 12건, 별점은 3축 답변과 함께 병행」. 값의 근거는
+ * `search`/`vendors`와 같은 관문(`structured.scored_reviews`, `summaryRating`)이다 —
+ * 목록마다 문턱이 다르면 같은 업체가 한 화면엔 뜨고 한 화면엔 안 뜨는 일이 생긴다.
  */
 export const vendorCandidateSchema = z.object({
   id: idSchema,
@@ -22,6 +29,8 @@ export const vendorCandidateSchema = z.object({
   addedAt: timestampSchema,
   /** 배우자가 담았는지. 상대가 마음에 들어 한 곳인지 알아야 이야기가 된다. */
   addedByPartner: z.boolean(),
+  /** 확인된 후기가 모자라거나 체크리스트 업종(결정사)이면 null — 그때 카드는 별점 줄을 안 그린다. */
+  rating: z.object({ average: z.number().min(0).max(5), count: z.int().positive() }).nullable(),
 });
 
 export const createCandidateRequestSchema = z.object({

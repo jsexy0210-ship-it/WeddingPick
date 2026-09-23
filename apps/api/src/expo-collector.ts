@@ -48,9 +48,9 @@ export const expoCandidateSchema = z.object({
   thumbnailSourceUrl: z.string().url().nullable(),
 });
 
-const discoverySchema = z.object({
-  candidates: z.array(expoCandidateSchema).max(40),
-});
+function discoverySchemaMax(max: number) {
+  return z.object({ candidates: z.array(expoCandidateSchema).max(max) });
+}
 
 export type ExpoCandidate = z.infer<typeof expoCandidateSchema>;
 export type ExpoCollectionTrigger = 'scheduled' | 'manual';
@@ -81,17 +81,30 @@ export type ExpoCollectionRun = {
   errorMessage: string | null;
 };
 
-const SYSTEM_PROMPT = `너는 WeddingPick의 대한민국 웨딩박람회 수집기다.
+const BASE_PROMPT = `너는 WeddingPick의 대한민국 웨딩박람회 수집기다.
 
 반드시 Google Search로 최신 공개 정보를 찾고, SNS 게시물 하나만 보고 사실을 확정하지 않는다.
 공식 홈페이지·주최사 공식 페이지·행사장 공식 일정·공식 신청 페이지를 우선 검증한다.
 이미 종료된 행사는 후보에 넣지 않는다. 날짜·장소·주최사·공식 URL이 충돌하면 adminReviewRequired를 true로 둔다.
 확인되지 않은 값은 지어내지 않는다. 홍보문구를 복사하지 말고 사실만 짧게 요약한다.
 이미지는 무단 복제하지 않는다. 공식 페이지에서 대표 이미지 URL을 확인할 수 있어도 thumbnailCandidateUrl로만 제안하고,
-실제 공개용 thumbnailUrl은 운영자가 권리 상태를 확인한 뒤 별도로 정한다.
+실제 공개용 thumbnailUrl은 운영자가 권리 상태를 확인한 뒤 별도로 정한다.`;
 
-검색은 서울·경기·인천·부산·대구·대전·광주·울산·세종·강원·충북·충남·전북·전남·경북·경남·제주를 대상으로
-각 지역 + 웨딩박람회 / 웨딩페어 / 결혼박람회 / 웨딩홀 박람회 / 스드메 박람회 패턴을 반복한다.`;
+/*
+ * 지역별 우선순위(2026-09-23 대표 지시 「서울 및 경기가 가장 중요하다. 비중을
+ * 가장 높이도록」). 한 프롬프트에 17개 도를 동일 가중치로 나열하면 서울·경기가
+ * 다른 15개와 똑같은 한 줄일 뿐이다 — Gemini 호출을 둘로 쪼개 서울·경기 전용
+ * 예산(PRIORITY_MAX)을 따로 확보한다. `ExpoDiscoverer`의 바깥 모양(후보 배열
+ * 하나)은 그대로라 `runExpoCollection`은 손대지 않는다.
+ */
+const PRIORITY_REGIONS = ['서울', '경기'];
+const REST_REGIONS = ['인천', '부산', '대구', '대전', '광주', '울산', '세종', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'];
+const PRIORITY_MAX = 24;
+const REST_MAX = 20;
+
+function regionPrompt(regions: string[]): string {
+  return `${BASE_PROMPT}\n\n검색은 ${regions.join('·')}을 대상으로 각 지역 + 웨딩박람회 / 웨딩페어 / 결혼박람회 / 웨딩홀 박람회 / 스드메 박람회 패턴을 반복한다.`;
+}
 
 function todayInSeoul(): string {
   return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -121,28 +134,45 @@ function addReason(reasons: string[], reason: string): void {
   if (!reasons.includes(reason)) reasons.push(reason);
 }
 
+async function discoverRegion(
+  options: { apiKey: string; model: string },
+  regions: string[],
+  max: number
+): Promise<ExpoCandidate[]> {
+  const today = todayInSeoul();
+  const { value } = await callGemini({
+    apiKey: options.apiKey,
+    model: options.model,
+    systemPrompt: regionPrompt(regions),
+    schema: discoverySchemaMax(max),
+    tools: { googleSearch: true, urlContext: true },
+    parts: [
+      {
+        text:
+          `기준일은 ${today}(Asia/Seoul)이다. 오늘 이후 진행 중이거나 예정된 대한민국 웨딩박람회를 최대 ${max}건 찾는다.\n` +
+          '각 후보는 반드시 구조화 스키마를 채우고, verificationUrls에는 사실 확인에 쓴 출처를 넣는다. ' +
+          '공식 출처를 확인하지 못하면 confidence를 SOCIAL_ONLY 또는 CONFLICT로 두고 검수 사유를 적는다.',
+      },
+    ],
+  });
+
+  return value.candidates;
+}
+
 export function createGeminiExpoDiscoverer(options: { apiKey: string; model: string }): ExpoDiscoverer {
   if (!options.apiKey) throw new Error('GEMINI_API_KEY가 없다. 박람회 자동 수집을 부를 수 없다.');
 
   return async () => {
-    const today = todayInSeoul();
-    const { value } = await callGemini({
-      apiKey: options.apiKey,
-      model: options.model,
-      systemPrompt: SYSTEM_PROMPT,
-      schema: discoverySchema,
-      tools: { googleSearch: true, urlContext: true },
-      parts: [
-        {
-          text:
-            `기준일은 ${today}(Asia/Seoul)이다. 오늘 이후 진행 중이거나 예정된 대한민국 웨딩박람회를 최대 40건 찾는다.\n` +
-            '각 후보는 반드시 구조화 스키마를 채우고, verificationUrls에는 사실 확인에 쓴 출처를 넣는다. ' +
-            '공식 출처를 확인하지 못하면 confidence를 SOCIAL_ONLY 또는 CONFLICT로 두고 검수 사유를 적는다.',
-        },
-      ],
-    });
+    /*
+     * 서울·경기를 먼저, 별도 예산(PRIORITY_MAX)으로 부른다. 순서대로(Promise.all이
+     * 아니라) 부르는 이유는 없다 — 두 호출은 서로 무관하니 병렬로 묶어 왕복 시간을 줄인다.
+     */
+    const [priority, rest] = await Promise.all([
+      discoverRegion(options, PRIORITY_REGIONS, PRIORITY_MAX),
+      discoverRegion(options, REST_REGIONS, REST_MAX),
+    ]);
 
-    return value.candidates;
+    return [...priority, ...rest];
   };
 }
 

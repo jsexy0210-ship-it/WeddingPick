@@ -13,7 +13,7 @@
  * 여기는 서비스 이용자의 개인정보, 저기는 관리자 권한이다. 이 파일 맨 아래
  * `UsersShell`이 그 탭 껍데기고, 여기 있던 본문은 `UsersPanel`로 이름만 바꿨다.
  */
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   Modal,
@@ -337,6 +337,20 @@ function UsersPanel() {
             {actionNote && <Text style={styles.actionNote}>{actionNote}</Text>}
             {actionError && <Text style={styles.actionError}>{actionError}</Text>}
 
+            {/*
+              여기 모달은 요약이다. 이 회원이 실제로 무엇을 했는지(웨딩 · Pick ·
+              후기 · 결제 제보 · 업체 소유 확인 · 문의 · 리워드)는 표가 스무 개를
+              넘어 모달에 다 못 담는다 — 새 라우트 페이지로 넘긴다.
+            */}
+            {selected && (
+              <Pressable
+                style={styles.detailLink}
+                onPress={() => router.push(`/admin/user-detail?id=${selected.id}` as never)}
+              >
+                <Text style={styles.detailLinkText}>이 회원의 모든 활동 보기 →</Text>
+              </Pressable>
+            )}
+
             <Pressable
               style={styles.closeBtn}
               onPress={() => { setSelected(null); setConfirmWithdraw(false); setWithdrawReason(''); }}
@@ -505,6 +519,8 @@ const styles = StyleSheet.create({
   },
   statusBtnText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
   actionError: { fontSize: FontSize.t7, color: Colors.light.negative, marginTop: 8 },
+  detailLink: { marginTop: 18, paddingVertical: 10, borderRadius: 6, alignItems: 'center' },
+  detailLinkText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.tint },
   closeBtn: { marginTop: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: Colors.light.backgroundSelected, alignItems: 'center' },
   closeBtnText: { fontSize: FontSize.t7, color: Colors.light.textStrong },
 });

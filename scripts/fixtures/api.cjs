@@ -576,6 +576,8 @@ const routes = {
             note: null,
             addedAt: '2026-08-01T00:00:00.000Z',
             addedByPartner: true,
+            /* 별점(v3.28 2026-09-23 복원) — 확인된 후기가 충분한 쪽. */
+            rating: { average: 4.7, count: 18 },
           },
           {
             id: 'c2222222-2222-4222-8222-222222222222',
@@ -587,6 +589,8 @@ const routes = {
             note: null,
             addedAt: '2026-08-02T00:00:00.000Z',
             addedByPartner: true,
+            /* 일부러 null을 섞는다 — 카드가 별점 줄을 안 그리는 꼴도 캡처로 봐야 한다. */
+            rating: null,
           },
         ],
         comparable: true,
@@ -1289,6 +1293,119 @@ const routes = {
         hintCount: 12,
       },
     ],
+  },
+  /*
+   * 문의(WP-ADM 「── 문의 ──」, 2026-09-23 관리자-프론트 연결 재검증에서 화면을
+   * 새로 이었다). 「확인 필요」 한 건 + 「답변 완료」 한 건을 함께 둔다 — 두 가지
+   * 상세 꼴(진행 중인 것에는 답변 입력창, 끝난 것에는 보낸 답변)이 다 찍혀야 한다.
+   */
+  'GET /v1/admin/inquiries': {
+    inquiries: [
+      {
+        id: 'ii111111-1111-4111-8111-111111111111',
+        category: 'planner_listing',
+        status: 'received',
+        receivedAt: '2026-09-22T04:10:00.000Z',
+        subjectKind: 'planner',
+        subjectId: 'pp111111-1111-4111-8111-111111111111',
+      },
+      {
+        id: 'ii222222-2222-4222-8222-222222222222',
+        category: 'data_correction',
+        status: 'answered',
+        receivedAt: '2026-09-20T01:00:00.000Z',
+        subjectKind: null,
+        subjectId: null,
+      },
+    ],
+  },
+  'GET /v1/admin/inquiries/:id': {
+    id: 'ii111111-1111-4111-8111-111111111111',
+    category: 'planner_listing',
+    status: 'received',
+    body: '저희 플래너를 검색에 올려주세요. 소속 업체 공식 홈페이지에 이름이 있어요.',
+    contact: 'planner@example.com',
+    receivedAt: '2026-09-22T04:10:00.000Z',
+    subjectKind: 'planner',
+    subjectId: 'pp111111-1111-4111-8111-111111111111',
+    resolution: null,
+    events: [],
+  },
+  /*
+   * 회원 상세(360뷰, 2026-09-23 관리자-프론트 연결 재검증). 웨딩·Pick·후기·결제
+   * 제보·업체 소유 확인·문의·리워드 각 칸에 한 건씩 채워 «표가 있다는 것»과
+   * «실제로 그려진다는 것»을 함께 찍는다 — 위 「광고 자리」 규칙과 같은 이유다.
+   */
+  'GET /v1/admin/users/:id': {
+    id: '99999999-9999-4999-8999-999999999999',
+    displayName: '김웨딩',
+    provider: 'kakao',
+    email: 'wedding@example.com',
+    nickname: '웨딩픽',
+    createdAt: '2026-06-01T00:00:00.000Z',
+    activatedAt: '2026-06-01T00:05:00.000Z',
+    lastLoginAt: '2026-09-22T09:00:00.000Z',
+    deletedAt: null,
+    isOperator: false,
+    withdrawal: null,
+    weddings: [
+      {
+        id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        role: 'owner',
+        weddingDate: '2027-04-17',
+        createdAt: '2026-06-01T00:10:00.000Z',
+      },
+    ],
+    candidateCount: 2,
+    candidates: [
+      {
+        id: 'c1111111-1111-4111-8111-111111111111',
+        vendorName: '강남 A 웨딩홀',
+        category: 'hall',
+        addedAt: '2026-08-01T00:00:00.000Z',
+        addedByThisMember: true,
+      },
+    ],
+    decisions: [{ category: 'hall', vendorName: '강남 A 웨딩홀', decidedAt: '2026-09-10T05:00:00.000Z' }],
+    reviews: [
+      {
+        id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+        vendorName: '강남 E 스튜디오',
+        overall: 5,
+        status: 'published',
+        createdAt: '2026-07-01T00:00:00.000Z',
+      },
+    ],
+    paymentProofs: [
+      {
+        id: 'e1e1e1e1-e1e1-4e1e-8e1e-e1e1e1e1e1e1',
+        merchantName: '청담 E 웨딩홀',
+        vendorName: '강남 A 웨딩홀',
+        paidAmount: 10000000,
+        paidAt: '2026-09-05T00:00:00.000Z',
+      },
+    ],
+    vendorClaims: [],
+    consultationCount: 2,
+    inquiries: [
+      {
+        id: 'ii111111-1111-4111-8111-111111111111',
+        category: 'data_correction',
+        status: 'answered',
+        receivedAt: '2026-09-20T01:00:00.000Z',
+      },
+    ],
+    referral: { code: 'ABC123', invitedCount: 2, qualifiedCount: 1 },
+    rewardGrants: [
+      {
+        id: 'g1111111-1111-4111-8111-111111111111',
+        kind: 'referral',
+        amountKrw: 300000,
+        status: 'paid',
+        createdAt: '2026-08-15T00:00:00.000Z',
+      },
+    ],
+    rewardPayouts: [],
   },
   'GET /v1/admin/policy-engine': {
     policies: [
