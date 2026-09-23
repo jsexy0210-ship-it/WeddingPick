@@ -38,7 +38,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ActionButton,
   Border,
-  Elevation,
   Layout,
   LetterSpacing,
   ProductSymbol,
@@ -317,8 +316,8 @@ export default function WeddingScreen({
         {header}
 
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* 세 칸 탭 — 피그마 `grid grid-cols-3 rounded-2xl bg-secondary p-1`, 칸 `h-11 rounded-xl`. 켠 칸은 흰 면(그림자는 없다 — elevation.$rule). */}
-          <View accessibilityRole="tablist" style={[styles.tabs, { backgroundColor: theme.backgroundElement }]}>
+          {/* 세 칸 탭 — v3.29 `대메뉴_웨딩노트.dc.html` tabNav/seg(WP-NOTE-001): 밑줄형, 배경 없음. */}
+          <View accessibilityRole="tablist" style={[styles.tabs, { borderBottomColor: theme.border }]}>
             {TABS.map((item) => {
               const selected = item.key === tab;
               return (
@@ -328,8 +327,8 @@ export default function WeddingScreen({
                   accessibilityState={{ selected }}
                   accessibilityLabel={item.label}
                   onPress={() => setTab(item.key)}
-                  style={[styles.tab, selected ? [{ backgroundColor: theme.background }, Elevation.figmaCard] : null]}>
-                  <ThemedText type="f14" style={[styles.bold, { color: selected ? theme.text : theme.textAssistive }]}>
+                  style={[styles.tab, selected ? [styles.tabActive, { borderBottomColor: theme.text }] : null]}>
+                  <ThemedText type="tab" style={{ color: selected ? theme.text : theme.textAssistive }}>
                     {item.label}
                   </ThemedText>
                 </Pressable>
@@ -989,20 +988,28 @@ const styles = StyleSheet.create({
   strike: { textDecorationLine: 'line-through' },
   pressed: { opacity: 0.6 },
 
-  /* 탭 `mx-5 rounded-2xl p-1`, 칸 `h-11 rounded-xl`. */
-  /* 규격서 「nav 390×52 pad 4 · mar 0 20 0 20 · bg #F7F8F9 · r16」, 칸 «127×44 · r22 · 14/700 · 켠 칸 흰 면 + shadow». */
+  /*
+   * v3.29 정본 `대메뉴_웨딩노트.dc.html` `tabNav`/`seg()`(WP-NOTE-001) —
+   * `flex:0 0 auto;gap:0;padding:0 20px;box-shadow:inset 0 -1px 0 BORDER;margin-bottom:16px`,
+   * 칸 `flex:1;height:48px;font:16/700`. 활성 칸은 배경이 아니라
+   * `box-shadow:inset 0 -2px 0 INK`(하단 밑줄)로 표시하고 비활성은 회색 글자다.
+   * 예전 규격서의 회색 필 세그먼트(둥근 흰 활성 칸)는 정본에 없다 — 지웠다.
+   */
   tabs: {
-    marginHorizontal: Layout.pageX,
-    borderRadius: Radius.cardLarge,
-    padding: Spacing.one,
+    paddingHorizontal: Layout.cardPadding,
+    marginBottom: Spacing.three,
+    borderBottomWidth: Border.hairline,
     flexDirection: 'row',
   },
   tab: {
     flex: 1,
-    height: Layout.touchTarget,
-    borderRadius: Radius.hero,
+    height: Layout.tabEmphasized,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  tabActive: {
+    borderBottomWidth: 2,
+    marginBottom: -Border.hairline,
   },
 
   /* 패널 `mx-5 mt-4 rounded-[26px] border p-5`. */
