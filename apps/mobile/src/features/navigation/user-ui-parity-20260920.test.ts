@@ -74,7 +74,8 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
   });
   it('검색 제목/결과 머리 계약을 유지한다', () => {
     const s = mobile('app/(tabs)/search/index.tsx');
-    expect(s).toContain("const TITLE = '업체 탐색'");
+    // v3.28이 제목을 «검색»으로 되돌렸다(「탐색」 금지어 · 대조표 [bad]). 기준선을 옮긴 것이지 검사를 뺀 것이 아니다.
+    expect(s).toContain("const TITLE = '검색'");
     expect(s).not.toContain("const SUBTITLE = '우리 조건에 맞는 선택만 모았어요'");
     expect(s).toContain('styles.filterRow');
     expect(s).toContain("budgetBand(filters.budget)?.label ?? '가격'");
@@ -161,7 +162,8 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(consult).toContain('submitLock.current = true');
     expect(consult).toContain('group.decidedVendorId === vendorId');
     expect(consult).toContain('최종 Pick 확인이 필요해요');
-    expect(consult).toContain('일정 등록하기');
+    // v3.28 WP-PICK-009 — CTA가 고른 값을 그대로 말한다(「9월 20일 오후 2시로 잡기」).
+    expect(consult).toContain('로 잡기');
   });
 
   it('빈 상태는 페이지 전체와 섹션 범위를 구분한다', () => {

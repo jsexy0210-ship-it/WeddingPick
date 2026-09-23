@@ -335,7 +335,7 @@
   },
 
   "search": {
-    "title": "업체 탐색",
+    "title": "검색",
     "subtitle": "우리 조건에 맞는 선택만 모았어요",
     "placeholder": "업체 이름, 지역, 카테고리 검색",
     "back": "홈으로 돌아가기",
@@ -361,8 +361,6 @@
     "filter.group.all": "전체",
     "filter.group.region": "지역",
     "filter.group.budget": "예산",
-    "filter.onlyVerified": "실 제보가 있는 곳만",
-    "filter.onlyVerifiedDesc": "금액을 볼 수 있는 곳만 보기",
     "empty.title": "조건에 맞는 곳이\n없어요",
     "empty.body": "예산 조건을 풀면 {n}곳이 나와요",
     "empty.cta": "예산 조건 풀기",
