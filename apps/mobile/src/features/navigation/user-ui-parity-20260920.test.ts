@@ -86,8 +86,16 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     // v3.28이 제목을 «검색»으로 되돌렸다(「탐색」 금지어 · 대조표 [bad]). 기준선을 옮긴 것이지 검사를 뺀 것이 아니다.
     expect(s).toContain("const TITLE = '검색'");
     expect(s).not.toContain("const SUBTITLE = '우리 조건에 맞는 선택만 모았어요'");
-    expect(s).toContain('styles.filterRow');
-    expect(s).toContain("budgetBand(filters.budget)?.label ?? '가격'");
+    /*
+     * v3.29(2026-09-23) WP-SRCH-001 재대조 — 정본 `countRow`에는 결과 수와 정렬 칩
+     * 하나뿐이고, 카테고리 ▾ · 지역 ▾ · 가격 ▾ 세 칩(`styles.filterRow`)은 없다.
+     * 그 세 조건은 헤더의 필터 단추(`headerFilterBtn`) 하나로 필터 시트를 연다 —
+     * 같은 시트를 여는 진입점을 둘 두지 않는다. 2026-09-20 기준선이 그 칩 줄을
+     * 있어야 한다고 적었던 것을 여기서 v3.29로 덮는다.
+     */
+    expect(s).not.toContain('styles.filterRow');
+    expect(s).not.toContain("budgetBand(filters.budget)?.label ?? '가격'");
+    expect(s).toContain('headerFilterBtn');
     expect(s).not.toContain('sortSlot:');
   });
   it('Pick Root는 상단 탭 없이(v3.28) 홈의 추천 딥링크만 받고 compare로 이어진다', () => {

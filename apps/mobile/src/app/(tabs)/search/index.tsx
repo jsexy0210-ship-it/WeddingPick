@@ -7,7 +7,6 @@ import {
 } from '@weddingpick/api-contract';
 import {
   type BudgetBandKey,
-  budgetBand,
   DISCLOSURE_THRESHOLDS,
   formatCount,
   priceLine,
@@ -36,7 +35,9 @@ import { PickDoneSheet, UnpickSheet } from '@/features/pick/pick-sheets';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
 import {
   addRecentSearch,
+  clearRecentSearches,
   loadRecentSearches,
+  removeRecentSearch,
 } from '@/features/search/recent-searches';
 import { FilterSheet, type SearchFilterValue } from '@/features/search/filter-sheet';
 import { SORT_LABEL, SortSheet } from '@/features/search/sort-sheet';
@@ -109,6 +110,9 @@ const AUTOCOMPLETE_REGIONS = 3;
 const AC_GROUP_VENDOR = '업체 · 바로 상세로';
 const AC_GROUP_REGION = '지역';
 const AC_GROUP_KEYWORD = '이 말로 검색';
+/** 최근 검색 — v3.29 WP-SRCH-004 `acLabel` · `acClearAll`. */
+const AC_GROUP_RECENT = '최근 검색';
+const AC_CLEAR_ALL = '전체 삭제';
 
 /** 결과 없음 카드. spec/strings.ko.json search.empty.* */
 const EMPTY_TITLE = '조건에 맞는 곳이\n없어요';
@@ -242,7 +246,12 @@ export default function SearchScreen() {
   const regionNames = regions.map((region) => region.name);
 
   const trimmedQ = filters.q.trim();
-  const showAutocomplete = acOpen && trimmedQ.length > 0;
+  /*
+   * v3.29 WP-SRCH-004 tagDesc: 「검색창을 누르면 열립니다」 — 입력 전에도(포커스만
+   * 잡혀도) 열려 최근 검색을 보여준다. 입력이 생기면 업체·지역·«이 말로 검색» 묶음이
+   * 대신 뜬다(아래 renderAutocomplete). 서버 제안 요청은 검색어가 있을 때만 보낸다.
+   */
+  const showAutocomplete = acOpen;
 
   /*
    * 밖에서 걸어 들어온 조건(홈 조건 칩 · Pick 탭 · 필터 시트)을 그대로 적용해 결과로
@@ -355,7 +364,7 @@ export default function SearchScreen() {
    * «이 말로 검색» 행은 결과 수를 미리 보여준다(시안 WP-SRCH-002).
    */
   useEffect(() => {
-    if (!isServerConfigured || !showAutocomplete) return;
+    if (!isServerConfigured || !showAutocomplete || !trimmedQ) return;
     const id = (acRequestId.current += 1);
     const timer = setTimeout(() => {
       searchVendors({ q: trimmedQ })
@@ -565,15 +574,21 @@ export default function SearchScreen() {
   // ─── 자동완성 · WP-SRCH-002 ───────────────────────────────────────────────
 
   /**
-   * 시안 06-search #16b. 그룹 셋 — «업체 · 바로 상세로»(이름 18 · «지역 · 업종» 14 · 꼬리 «실 제보 N건») ·
-   * «지역»(지역명 · «N곳») · «이 말로 검색»(검색어 · «결과 N곳»). 행 56 · padding 12 0 · 아래 선 1.
-   * 그룹 제목 t14m · 그룹 사이 20.
+   * v3.29 정본 WP-SRCH-004. 검색어가 없으면 «최근 검색»(각 줄 X · «전체 삭제»)만 보여준다
+   * (`acSec`/`acRecent`/`acClearAll`). 검색어가 생기면 «업체 · 바로 상세로»(이름 18 ·
+   * «지역 · 업종» 14 · 꼬리 «실 제보 N건») · «지역»(지역명 · «N곳») · «이 말로 검색»
+   * (검색어 · «결과 N곳») 순으로 뜬다. 행 56 · padding 12 0 · 아래 선 1. 그룹 제목
+   * t14m · 그룹 사이 20.
+   *
+   * 정본의 «추천 검색어»(입력한 글자를 굵게 표시하는 조합 문구, 예: «강남**구 웨딩홀**»)는
+   * 만들지 않는다 — 서버에 그런 문구를 조립할 자료가 없고, 지어내면 실제로 없는 결과로
+   * 이어질 수 있다(DESIGN_UNRESOLVED).
    */
   function renderAutocomplete() {
     const lower = trimmedQ.toLowerCase();
-    const regionRows = regions
-      .filter((region) => region.name.toLowerCase().includes(lower))
-      .slice(0, AUTOCOMPLETE_REGIONS);
+    const regionRows = trimmedQ
+      ? regions.filter((region) => region.name.toLowerCase().includes(lower)).slice(0, AUTOCOMPLETE_REGIONS)
+      : [];
 
     const row = (
       key: string,
@@ -603,7 +618,48 @@ export default function SearchScreen() {
 
     return (
       <View style={styles.acPanel}>
-        {acVendors.length > 0 ? (
+        {!trimmedQ && recentSearches.length > 0 ? (
+          <View style={styles.acGroup}>
+            <View style={styles.acHead}>
+              <ThemedText type="t7" themeColor="textAssistive" style={styles.bold}>
+                {AC_GROUP_RECENT}
+              </ThemedText>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={AC_CLEAR_ALL}
+                hitSlop={Spacing.two}
+                onPress={() => clearRecentSearches().then(() => setRecentSearches([]))}>
+                <ThemedText type="t7" themeColor="textAssistive" style={styles.bold}>
+                  {AC_CLEAR_ALL}
+                </ThemedText>
+              </Pressable>
+            </View>
+            <View style={styles.acList}>
+              {recentSearches.map((query) => (
+                <View key={query} style={styles.acRow}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`${query} 검색`}
+                    style={styles.acRecentQuery}
+                    onPress={() => submitSearch(query)}>
+                    <ProductSymbol name="clock" size={Layout.iconField} color={theme.textAssistive} />
+                    <ThemedText type="t5" numberOfLines={1} style={styles.acRecentText}>
+                      {query}
+                    </ThemedText>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`${query} 삭제`}
+                    hitSlop={Spacing.two}
+                    onPress={() => removeRecentSearch(query, recentSearches).then(setRecentSearches)}>
+                    <ProductSymbol name="close" size={Layout.iconField} color={theme.textAssistive} />
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+          </View>
+        ) : null}
+        {trimmedQ && acVendors.length > 0 ? (
           <View style={styles.acGroup}>
             <ThemedText type="t7" themeColor="textAssistive" style={styles.bold}>{AC_GROUP_VENDOR}</ThemedText>
             <View style={styles.acList}>
@@ -637,19 +693,21 @@ export default function SearchScreen() {
             </View>
           </View>
         ) : null}
-        <View style={styles.acGroup}>
-          <ThemedText type="t7" themeColor="textAssistive" style={styles.bold}>{AC_GROUP_KEYWORD}</ThemedText>
-          <View style={styles.acList}>
-            {row(
-              'keyword',
-              trimmedQ,
-              null,
-              acTotal === null ? null : `결과 ${acTotal}곳`,
-              () => submitSearch(trimmedQ),
-              `${trimmedQ} 검색`
-            )}
+        {trimmedQ ? (
+          <View style={styles.acGroup}>
+            <ThemedText type="t7" themeColor="textAssistive" style={styles.bold}>{AC_GROUP_KEYWORD}</ThemedText>
+            <View style={styles.acList}>
+              {row(
+                'keyword',
+                trimmedQ,
+                null,
+                acTotal === null ? null : `결과 ${acTotal}곳`,
+                () => submitSearch(trimmedQ),
+                `${trimmedQ} 검색`
+              )}
+            </View>
           </View>
-        </View>
+        ) : null}
       </View>
     );
   }
@@ -825,55 +883,34 @@ export default function SearchScreen() {
     return (
       <>
         {/*
-          칩 줄 — 피그마 `Search.tsx`(2026-09-14 정본 · 최상위 규칙 1). «카테고리 ▾ ·
-          지역 ▾ · 가격 ▾» 셋은 필터 시트를 열고, 오른쪽 끝의 «추천순 ▾»은 정렬 시트를
-          연다. 위 24 · 아래 8 · 칩 사이 8. 조건이 걸린 칩은 그 값을 라벨로 적고
-          잉크로 채운다(«메이크업» · «경기» · «100~200만원»).
+          결과 수 · 정렬 — v3.29 정본 WP-SRCH-001 `countRow`: 왼쪽 결과 수(14/700 잉크) ·
+          오른쪽 정렬 칩 하나(«추천순 ▾», `sortChip`). 카테고리 · 지역 · 가격을 각각
+          여는 칩 줄은 정본에 없다 — 그 세 조건은 헤더의 필터 단추(`headerFilterBtn`)
+          하나로 필터 시트(WP-SRCH-002)를 열어 고른다. 필터 진입점을 헤더 하나로
+          묶는다(2026-09-23 대표 지시 「등록 버튼은 헤더 영역에 있는 것만 쓴다 —
+          전체 UX 통일」과 같은 원칙 — 여기서는 등록이 아니라 필터지만 «같은 동작을
+          여는 진입점은 하나만 둔다»는 같은 이유다). 예전에 여기 있던 카테고리 ▾ ·
+          지역 ▾ · 가격 ▾ 칩 셋은 필터 단추와 같은 시트를 여는 중복 진입점이었다 —
+          v3.29 재대조로 뺐다(2026-09-23).
 
-          피그마의 지역 칩 기본 라벨은 «서울»인데 그것은 시안의 가짜 기본값(«서울 전체»)
-          이다 — 우리는 기본 지역이 없으므로 «지역»으로 적는다. 카테고리 칩의 업종 이름은
-          VENDOR_CATEGORY_LABEL 하나만 본다(본식스냅 · 헤어변형 · 결정사).
-
-          업종 칩 일곱(전체 · 웨딩홀 · …)이 여기 서 있었다(루트 시안 16a). 피그마가
-          그 자리를 드롭다운 칩으로 바꿨고 업종은 필터 시트의 첫 그룹으로 갔다.
+          정렬 칩은 열림 상태를 캐럿 방향으로 보여준다(WP-SRCH-003 `sortChipOn`
+          `caretUp` vs 기본 `caretDim`) — 시트가 열려 있으면 위, 닫혀 있으면 아래.
         */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={{ backgroundColor: theme.background }}
-          contentContainerStyle={styles.filterRow}>
-          <DropdownChip
-            label={filters.category ? VENDOR_CATEGORY_LABEL[filters.category] : '카테고리'}
-            active={filters.category !== null}
-            onPress={() => setFilterOpen(true)}
-          />
-          <DropdownChip
-            label={filters.region ?? '지역'}
-            active={filters.region !== null}
-            onPress={() => setFilterOpen(true)}
-          />
-          <DropdownChip
-            label={budgetBand(filters.budget)?.label ?? '가격'}
-            active={filters.budget !== null}
-            onPress={() => setFilterOpen(true)}
-          />
-          <View style={[styles.chipDivider, { backgroundColor: theme.border }]} />
+        <View style={[styles.countRow, { backgroundColor: theme.background }]}>
+          <View style={styles.countText}>
+            <ThemedText type="f14" numeric style={styles.bold}>
+              {formatCount(total)}개 업체
+            </ThemedText>
+            <DelayedLoader active={refreshing} size={20} />
+          </View>
           <View style={styles.sortChip}>
             <DropdownChip
               label={SORT_LABEL[filters.sort]}
               active={false}
+              open={sortOpen}
               accessibilityLabel={`정렬: ${SORT_LABEL[filters.sort]}`}
               onPress={() => setSortOpen(true)}
             />
-          </View>
-        </ScrollView>
-
-        <View style={[styles.countRow, { backgroundColor: theme.background }]}>
-          <View style={styles.countText}>
-            <ThemedText type="f12" themeColor="textAssistive" numeric style={styles.medium}>
-              {formatCount(total)}개 업체
-            </ThemedText>
-            <DelayedLoader active={refreshing} size={20} />
           </View>
         </View>
 
@@ -934,21 +971,18 @@ export default function SearchScreen() {
 
         {/* ── 헤더 ── */}
         {/*
-          검색은 Root 5탭의 1Depth라 뒤로가기를 두지 않는다. 나머지는 정본대로 위 12 ·
-          좌우 20 · 아래 16이며 제목 20/700과 결과 수 11/17, 검색창 48을 한 덩어리로 둔다.
+          검색은 Root 5탭의 1Depth라 뒤로가기를 두지 않는다.
 
-          제목은 v3.28 시안(`대메뉴_검색.dc.html` WP-SRCH-001 `headTitleRoot`)의 «검색»이다 —
-          2026-09-20 정본의 «업체 탐색»은 「탐색」 금지어라 v3.28 대조표가 `[bad]`로 짚었다.
-          검색 Root에는 Back을 두지 않는다.
+          v3.29 정본(`대메뉴_검색.dc.html` WP-SRCH-001) `stickyHead`: `headTop`은
+          `headTitleRoot`(«검색» 22/700) 하나뿐이고 옆에 결과 수를 적지 않는다 — 결과
+          수는 검색창 아래 별도 `countRow`에 있다(2026-09-23 v3.29 재대조로 여기 있던
+          중복 «N곳» 표시를 뺐다). 검색 Root에는 Back을 두지 않는다.
         */}
         <ThemedView style={[styles.header, { borderBottomColor: theme.border }]}>
           <View style={styles.headerTitleRow}>
             <View style={styles.headerTitleText}>
               <ThemedText type="f20" style={[styles.bold, styles.title]}>
                 {TITLE}
-              </ThemedText>
-              <ThemedText type="f11" themeColor="textAssistive" numeric>
-                {formatCount(total)}곳
               </ThemedText>
             </View>
           </View>
@@ -1176,19 +1210,23 @@ function ResultCard({
 }
 
 /**
- * 결과 위 칩 «라벨 ▾» — 피그마 `Search.tsx` 칩 줄(2026-09-14 정본). 36 · 좌우 14 ·
- * radius 999 · 테두리 1 · 14/700 · 꺾쇠 14(반투명 .5). 조건이 걸리면 잉크 채움 · 흰 글자.
- * 누르면 시트가 열린다 — 피그마의 인라인 드롭다운 대신 우리 정렬 시트(최상위 규칙 5:
- * 바텀시트는 기존 정본 그대로).
+ * 결과 위 정렬 칩 «추천순 ▾» — v3.29 정본 WP-SRCH-001 `sortChip` / WP-SRCH-003
+ * `sortChipOn`. 36 · 좌우 14 · radius 999 · 테두리 1 #eaebee · 배경 흰색 · 14/700 ·
+ * 꺾쇠 14(반투명 .5). 열려 있으면 꺾쇠가 위를 본다(`caretUp`), 닫혀 있으면 아래
+ * (`caretDim`). 누르면 정렬 시트가 열린다 — 정본의 인라인 드롭다운 패널 대신 기존
+ * 바텀시트를 그대로 쓴다(정렬 시트는 v3.29 이전부터 있던 공용 컴포넌트).
  */
 function DropdownChip({
   label,
   active,
+  open,
   onPress,
   accessibilityLabel,
 }: {
   label: string;
   active: boolean;
+  /** 이 칩이 여는 시트가 지금 열려 있는가 — 꺾쇠 방향만 바꾼다. */
+  open?: boolean;
   onPress: () => void;
   accessibilityLabel?: string;
 }) {
@@ -1207,11 +1245,11 @@ function DropdownChip({
         },
         pressed ? styles.pressed : null,
       ]}>
-      {/* 규격서: 칩 «14/600 · lh 20». */}
-      <ThemedText type="f14" numberOfLines={1} style={[styles.semibold, { color }]}>
+      {/* 정본: 칩 «14/700». */}
+      <ThemedText type="f14" numberOfLines={1} style={[styles.bold, { color }]}>
         {label}
       </ThemedText>
-      <View style={styles.dropChevron}>
+      <View style={[styles.dropChevron, open ? styles.dropChevronOpen : null]}>
         <ProductSymbol name="chevronDown" size={Layout.iconSmall} color={color} />
       </View>
     </Pressable>
@@ -1307,6 +1345,25 @@ const styles = StyleSheet.create({
   },
   acTail: {
     flexShrink: 0,
+  },
+  /* 최근 검색 묶음 머리 — 정본 `acHead`: 제목 ↔ «전체 삭제» 양끝. */
+  acHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.three,
+  },
+  /* 최근 검색 한 줄 — 시계 아이콘 + 검색어(누르면 그 검색어로), X는 그 줄만 지운다. */
+  acRecentQuery: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Layout.rowPaddingY,
+  },
+  acRecentText: {
+    flex: 1,
+    minWidth: 0,
   },
 
   // ── 홈 ──
@@ -1449,25 +1506,10 @@ const styles = StyleSheet.create({
     marginTop: Layout.sectionGap,
   },
 
-  // ── 결과 — 피그마 `Search.tsx`(2026-09-14 정본) ──
-  /* 칩 줄 `flex items-center gap-2 px-5 pt-3 pb-2` — 위 12 · 아래 8 · 칩 사이 8. 넘치면 줄을 바꾼다. */
-  filterRow: {
-    minWidth: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-    paddingHorizontal: Layout.pageX,
-    paddingTop: Layout.inlineGap,
-    paddingBottom: Spacing.two,
-  },
-  /* 정렬 칩 `ml-auto` — 오른쪽 끝에 붙는다. */
+  // ── 결과 — v3.29 정본 WP-SRCH-001 `countRow` ──
+  /* 정렬 칩 — countRow 오른쪽 끝(`sortChip` `margin-left:auto`). */
   sortChip: {
     marginLeft: 'auto',
-  },
-  chipDivider: {
-    width: Border.hairline,
-    height: Layout.iconInline,
-    marginHorizontal: Spacing.one,
   },
   /* 칩 `h-9 px-3.5 rounded-full border gap-1` — 36 · 좌우 14 · 라벨↔꺾쇠 4. */
   dropChip: {
@@ -1484,13 +1526,18 @@ const styles = StyleSheet.create({
   dropChevron: {
     opacity: 0.5,
   },
-  /* 결과 수 `mb-3 px-5` — 아래 12. 새로고침 표시가 같은 줄에 붙는다, 사이 4. */
+  /* 열려 있을 때 — 정본 `caretUp`은 위를 본다. `chevronDown`을 뒤집는다. */
+  dropChevronOpen: {
+    transform: [{ rotate: '180deg' }],
+  },
+  /* 정본 `countRow`: padding 12px 20px(우리 값은 Layout.pageX=24) · 결과 수 왼쪽 · 정렬 칩 오른쪽. */
   countRow: {
     minHeight: Layout.chip,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
     paddingHorizontal: Layout.pageX,
+    paddingTop: Layout.inlineGap,
     marginBottom: Layout.inlineGap,
   },
   countText: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },

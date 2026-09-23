@@ -36,6 +36,15 @@ import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
  * 시안의 「촬영일」 · 「조건(원본 전체 · 야외 포함 …)」 두 묶음은 두지 않는다. 업체의
  * 촬영 가능일도 상품 구성도 아직 어디에도 모아둔 것이 없다 — 눌러도 아무것도 걸리지
  * 않는 칩을 두는 것이 빠뜨리는 것보다 나쁘다.
+ *
+ * **DESIGN_UNRESOLVED — 「스타일」 그룹(2026-09-23 v3.29 재대조).** v3.29 정본
+ * (`대메뉴_검색.dc.html` WP-SRCH-002)은 카테고리 · 지역 · 예산 다음에 스타일(도시적인 ·
+ * 자연스러운 · 로맨틱한 · 화려한, 단일 선택) 넷째 묶음을 그린다. 여기서는 만들지
+ * 않았다 — `vendorSearchQuerySchema`(packages/api-contract)에 `style` 질의 칸이
+ * 없고 서버도 이 조건으로 거르지 않는다. 바로 위 문단의 원칙과 같다: 화면에서만
+ * 칩을 만들면 눌러도 아무것도 안 걸린다. 서버 질의·저장(`vendorSummarySchema.styleTags`는
+ * 있지만 검색 필터로는 안 쓰인다)까지 잇는 것은 이 화면군(검색 목록·필터) 범위를
+ * 넘는 API 작업이라 여기서 만들지 않는다.
  */
 
 /** spec/strings.ko.json search.filter.* */
