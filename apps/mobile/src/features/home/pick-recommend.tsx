@@ -12,7 +12,6 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import {
-  ActionButton,
   Border,
   Layout,
   Radius,
@@ -38,92 +37,13 @@ type SharedRecommendationProps = {
   onPressMore: () => void;
 };
 
-type HomeRecommendationProps = Omit<SharedRecommendationProps, 'onPressCompare'> & {
-  onPressCompare: (vendorIds: readonly string[]) => void;
-};
-
-/**
- * 홈 전용 추천.
- * 홈 정본은 아코디언이 아니라 첫 미결정 업종의 업체 카드 최대 3장과 비교 CTA다.
+/*
+ * `HomeRecommendations`(홈 전용 「웨딩픽 추천」 카드 + 비교 CTA)는 2026-09-23 v3.29
+ * 홈 재구축에서 지웠다 — 정본(대메뉴_홈.dc.html)에 그 섹션이 없고, 유일한 호출부였던
+ * `app/(tabs)/index.tsx`가 이제 이 컴포넌트를 부르지 않아 고아 코드가 됐다. 「웨딩픽
+ * 추천」 전체 화면(`app/(tabs)/(home)/recommendations.tsx`)은 `PickRecommend`(아래)를
+ * 계속 쓴다 — 이번 정리는 홈 화면 것만이다.
  */
-export function HomeRecommendations({
-  groups,
-  isPicked,
-  onPressVendor,
-  onPressPick,
-  onPressCompare,
-  onPressMore,
-}: HomeRecommendationProps) {
-  const theme = useTheme();
-  const group = groups[0] ?? null;
-
-  return (
-    <View style={styles.homeSection}>
-      <View style={styles.homeHeading}>
-        <View style={styles.homeHeadingCopy}>
-          <ThemedText type="f20" style={styles.bold}>{S['recommend.title']}</ThemedText>
-          {group === null ? null : (
-            <ThemedText type="f13" themeColor="textAssistive" style={styles.homeSub}>
-              {`${group.categoryLabel} 후보를 좁힐 차례예요`}
-            </ThemedText>
-          )}
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="웨딩픽 추천 전체 보기"
-          onPress={onPressMore}
-          hitSlop={Spacing.two}
-          style={({ pressed }) => [styles.more, pressed && styles.pressed]}>
-          <ThemedText type="f13" themeColor="textAssistive">{S.more}</ThemedText>
-          <SeedIcon name="chevronRightRegular" size={Layout.iconField} color={theme.textAssistive} />
-        </Pressable>
-      </View>
-
-      {group === null ? (
-        <ThemedView type="backgroundElement" style={[styles.homeEmpty, { borderColor: theme.border }]}>
-          <ThemedText type="f13" themeColor="textAssistive">{S['recommend.empty']}</ThemedText>
-        </ThemedView>
-      ) : (
-        <>
-          {group.vendors.length === 0 ? (
-            <ThemedView type="backgroundElement" style={[styles.homeEmpty, { borderColor: theme.border }]}>
-              <ThemedText type="f13" themeColor="textAssistive">{NOT_ENOUGH_DATA}</ThemedText>
-            </ThemedView>
-          ) : (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.scroll}
-              contentContainerStyle={styles.homeCards}>
-              {group.vendors.slice(0, 3).map((vendor) => (
-                <VendorCard
-                  key={vendor.id}
-                  vendor={vendor}
-                  picked={isPicked(vendor.id)}
-                  onPress={() => onPressVendor(vendor.id)}
-                  onPressPick={() => onPressPick(vendor)}
-                  showTags={false}
-                />
-              ))}
-              <View style={styles.tail} />
-            </ScrollView>
-          )}
-
-          {group.vendors.length >= 2 ? (
-            <View style={styles.compareCta}>
-              <ActionButton
-                variant="primary"
-                size="xlarge"
-                label={`${Math.min(3, group.vendors.length)}곳 비교하기`}
-                onPress={() => onPressCompare(group.vendors.slice(0, 3).map((vendor) => vendor.id))}
-              />
-            </View>
-          ) : null}
-        </>
-      )}
-    </View>
-  );
-}
 
 export type PickRecommendProps = SharedRecommendationProps & {
   open: VendorCategory | null;
@@ -435,30 +355,6 @@ function groupReportLine(group: CategoryRecommendation): string {
 }
 
 const styles = StyleSheet.create({
-  homeSection: { marginBottom: Layout.sectionGap },
-  homeHeading: {
-    paddingHorizontal: Layout.gutter,
-    marginBottom: Layout.sectionHeadGap,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Layout.inlineGap,
-  },
-  homeHeadingCopy: { flex: 1, minWidth: 0 },
-  homeSub: { marginTop: Spacing.half },
-  homeCards: {
-    flexDirection: 'row',
-    gap: Layout.inlineGap,
-    paddingLeft: Layout.gutter,
-    paddingBottom: Spacing.one,
-  },
-  homeEmpty: {
-    marginHorizontal: Layout.gutter,
-    borderRadius: Radius.medium,
-    borderWidth: Border.hairline,
-    padding: Layout.cardPadding,
-  },
-  compareCta: { paddingHorizontal: Layout.gutter, marginTop: Spacing.three },
   more: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
 
   section: { marginBottom: Layout.sectionGap },

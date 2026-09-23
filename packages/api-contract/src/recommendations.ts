@@ -1,77 +1,19 @@
 import { z } from 'zod';
 
-import { CATEGORY_PICK_STATES, RECOMMEND_VENDORS_PER_CATEGORY, TOP3_REASONS } from '@weddingpick/domain';
+import { CATEGORY_PICK_STATES, RECOMMEND_VENDORS_PER_CATEGORY } from '@weddingpick/domain';
 
-import { idSchema, vendorCategorySchema } from './common';
-import { paidPriceSchema } from './payment-proofs';
-import { guidePriceSchema, vendorSummarySchema, weddingStyleSchema } from './vendors';
+import { vendorCategorySchema } from './common';
+import { vendorSummarySchema } from './vendors';
 
-/**
- * TOP3 추천. 통합정책 v3.10 §2.
- *
- * 한 줄의 위계는 정책이 정했다(v3.10 디자인 §): `대표 이미지 → 추천 이유 →
- * 업체명 → 핵심 조건 → 실제 결제 데이터 → 현재 혜택 → Pick`.
- *
- * **혜택 칸은 없다.** 아직 우리가 가진 자료가 아니다. 칸을 미리 뚫어두고 늘
- * null을 채워 보내면 화면은 그 칸을 그리려 들고, 그러다 빈 회색 자리가 남는다
- * (정책이 금지한 그 화면이다). 이미지 칸은 vendor_images가 생기면서 열었다
- * (2026-09-08) — 없으면 카테고리 기본으로 대체한다.
+/*
+ * `GET /v1/recommendations/top3`(TOP3 추천 · 통합정책 v3.10 §2)를 이 계약이 지키던
+ * 요청·응답 스키마(top3QuerySchema · top3ItemSchema · top3ResponseSchema ·
+ * top3ReasonSchema)는 2026-09-23 v3.29 홈 재구축에서 지웠다 — 그 라우트를 부르는
+ * 화면(top3.tsx)이 먼저 지워졌고 API·클라이언트가 뒤늦게 orphan으로 남아 있었다.
+ * 업종별 추천(`categoryRecommendationSchema` 아래)이 홈과 「웨딩픽 추천」 전체 화면을
+ * 계속 맡는다. `Top3Reason`(도메인 · `packages/domain/src/top3.ts`)은 그 업종별
+ * 추천이 그대로 쓰므로 남겨 뒀다.
  */
-export const top3ReasonSchema = z.enum(TOP3_REASONS);
-
-export const top3ItemSchema = z.object({
-  vendorId: idSchema,
-  name: z.string().min(1),
-  category: vendorCategorySchema,
-  region: z.string().min(1),
-  /** 승인된 대표 이미지. 없으면 null — 카테고리 기본으로 대체한다. */
-  imageUrl: z.string().nullable(),
-  /**
-   * 왜 이 곳인지. **비어 있을 수 없다.**
-   *
-   * 이유 없는 추천을 계약이 표현할 수 없게 만든다 — 서버가 이유를 못 찾으면
-   * 그 업체를 빼는 것 말고 다른 길이 없다.
-   */
-  reasons: z.array(top3ReasonSchema).min(1),
-  /** 실 제보 건수. 추천 자격의 근거라 그대로 내려준다. */
-  confirmedCount: z.int().nonnegative(),
-  /** 실제 결제. 공개 사다리를 그대로 쓴다 — 검색·상세와 같은 값이어야 한다. */
-  paidPrice: paidPriceSchema,
-  /** 업체 스타일 태그(v3.22). 고른 것과 겹치는 것만 화면이 coral로 켠다. */
-  styleTags: z.array(weddingStyleSchema),
-  /** 업체 안내 가격(정보 0층). 실 제보 3건 미만이면 이것으로 금액 자리를 채운다. */
-  guidePrice: guidePriceSchema.nullable(),
-});
-
-export const top3ResponseSchema = z.object({
-  /** 무엇을 기준으로 고른 것인지. 화면이 "서울 · 웨딩홀"처럼 적는다. */
-  region: z.string().nullable(),
-  category: vendorCategorySchema,
-  /** 최대 세 곳. 자료가 모자라면 그만큼만 — 억지로 채우지 않는다. */
-  items: z.array(top3ItemSchema).max(3),
-  /**
-   * 세 곳을 못 채웠으면 그 사실을 적은 한 줄. 다 채웠으면 null.
-   *
-   * 빈자리를 설명하지 않으면 읽는 사람은 무언가 빠졌다고 느낀다.
-   */
-  note: z.string().nullable(),
-});
-
-/**
- * 무엇을 기준으로 고를지. 둘 다 선택이다.
- *
- * 지역을 받는 이유: 지연 로그인이라 로그인 전에도 홈이 뜬다. 그때 지역은
- * 서버가 아니라 기기에 적혀 있다(최소 온보딩 초안). 로그인한 사람은 안 보내면
- * 서버가 자기 웨딩에서 읽는다.
- */
-export const top3QuerySchema = z.object({
-  region: z.string().trim().min(1).optional(),
-  category: vendorCategorySchema.optional(),
-});
-
-export type Top3Query = z.infer<typeof top3QuerySchema>;
-export type Top3Item = z.infer<typeof top3ItemSchema>;
-export type Top3Response = z.infer<typeof top3ResponseSchema>;
 
 /* ------------------------------------------------- 업종별 추천(Pick 추천 · 2026-09-15) */
 

@@ -77,10 +77,14 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(mobile('app/setup.tsx')).toContain('markNextHomeLoadingCoveredBySetup()');
     expect(mobile('app/(tabs)/index.tsx')).toContain('setupCoveredLoading ? null');
   });
-  it('홈 추천 비교는 표시한 업체 id를 compare route에 넘긴다', () => {
-    expect(mobile('app/(tabs)/index.tsx')).toContain("pathname: '/search/compare'");
-    expect(mobile('features/home/pick-recommend.tsx')).toContain("group.vendors.slice(0, 3).map((vendor) => vendor.id)");
-  });
+  /*
+   * 「홈 추천 비교는 표시한 업체 id를 compare route에 넘긴다」는 2026-09-23 v3.29 홈
+   * 재구축에서 뺐다 — 검사 대상이던 홈의 「웨딩픽 추천」 카드·비교 CTA
+   * (`HomeRecommendations`, 표시한 vendorId 배열을 `/search/compare`로 넘기던 그
+   * 컴포넌트)를 정본에 없어 지웠다. 「웨딩픽 추천」 전체 화면은 같은 파일의
+   * `PickRecommend`를 그대로 쓰는데, 그쪽 비교는 vendorId 배열이 아니라 업종 하나를
+   * `/pick/{category}`로 보낸다 — 다른 메커니즘이라 이 시험을 옮겨 쓰지 않는다.
+   */
   it('검색 제목/결과 머리 계약을 유지한다', () => {
     const s = mobile('app/(tabs)/search/index.tsx');
     // v3.28이 제목을 «검색»으로 되돌렸다(「탐색」 금지어 · 대조표 [bad]). 기준선을 옮긴 것이지 검사를 뺀 것이 아니다.
@@ -103,10 +107,15 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(pick).toContain("pathname: '/search/compare'");
     expect(mobile('app/(tabs)/search/compare.tsx')).not.toContain('PickSectionTabs');
 
+    /*
+     * 2026-09-23 v3.29 홈 재구축 — 「내 웨딩 준비」 4칸(`MyWeddingPrep`)이 같은 규칙으로
+     * 딥링크를 만든다. 항목 이름이 `item`(12업종 하나)에서 `card`(4칸 그룹, 열
+     * 업종은 `targetCategory`)로 바뀌었다.
+     */
     const home = mobile('app/(tabs)/index.tsx');
-    expect(home).toContain('item.pickCount > 0');
-    expect(home).toContain(`/pick/\${item.category}`);
-    expect(home).toContain(`/pick?section=recommendations&category=\${item.category}`);
+    expect(home).toContain('card.pickCount > 0');
+    expect(home).toContain(`/pick/\${card.targetCategory}`);
+    expect(home).toContain(`/pick?section=recommendations&category=\${card.targetCategory}`);
 
     const recommendations = mobile('app/(tabs)/(home)/recommendations.tsx');
     expect(recommendations).toContain("pathname: '/pick'");
@@ -118,11 +127,16 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(mobile('app/(tabs)/pick/[category].tsx')).not.toContain('<PickSectionTabs');
   });
   it('홈 재진입과 핵심 검색 화면의 로딩은 기존 shell을 보존한다', () => {
+    /*
+     * 2026-09-23 v3.29 홈 재구축 — 추천(`recommendationLoadedOnce`)은 홈에서 지운
+     * 섹션이라 없다. 대신 신설한 웨딩일정(`tasksLoadedOnce`)이 같은 «한 번이라도
+     * 받아왔는가» 중복 방지 규칙을 지킨다.
+     */
     const home = mobile('app/(tabs)/index.tsx');
-    expect(home).toContain('recommendationLoadedOnce.current');
+    expect(home).toContain('tasksLoadedOnce.current');
     expect(home).toContain('contentLoadedOnce.current');
     expect(home).toContain('bootLoadedOnce.current');
-    expect(home).toContain("if (!recommendationLoadedOnce.current) setRecommendationStatus('loading')");
+    expect(home).toContain("if (!tasksLoadedOnce.current) setTaskStatus('loading')");
     expect(home).toContain("if (!contentLoadedOnce.current) setContentStatus('loading')");
 
     const search = mobile('app/(tabs)/search/index.tsx');

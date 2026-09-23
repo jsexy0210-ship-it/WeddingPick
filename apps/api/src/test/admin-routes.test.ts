@@ -123,7 +123,9 @@ describeWithDb('관리자 콘솔 라우트', () => {
         enabled: false,
       });
 
-      const response = await get('/v1/recommendations/top3?category=hall', operator.headers);
+      // /v1/recommendations/top3는 2026-09-23 v3.29 홈 재구축에서 지웠다 — 같은
+      // 스위치(ai-recommendations)를 타는 살아있는 라우트로 바꿔 확인한다.
+      const response = await get('/v1/me/recommendations', operator.headers);
       expect(response.statusCode).toBe(503);
       expect(response.json()).toMatchObject({ error: { code: 'feature_disabled' } });
     });

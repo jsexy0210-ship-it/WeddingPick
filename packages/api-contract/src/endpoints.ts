@@ -117,11 +117,7 @@ import {
   vendorRegionsResponseSchema,
   vendorSearchResponseSchema,
 } from './vendors';
-import {
-  categoryRecommendationsResponseSchema,
-  top3QuerySchema,
-  top3ResponseSchema,
-} from './recommendations';
+import { categoryRecommendationsResponseSchema } from './recommendations';
 import {
   createVerificationRequestSchema,
   createVerificationResponseSchema,
@@ -237,23 +233,11 @@ export const ENDPOINTS = {
   },
 
   /**
-   * TOP3 추천. v3.10 §2.
-   *
-   * 지역·업종은 쿼리로 넘길 수 있다 — 지연 로그인이라 로그인 전에도 홈이 뜨고,
-   * 그때 지역은 기기에만 있다.
-   */
-  getTop3: {
-    method: 'GET',
-    path: '/v1/recommendations/top3',
-    response: top3ResponseSchema,
-  },
-
-  /**
    * Pick 추천 — 아직 정하지 않은 업종과 업종별 추천 업체(대표 사양 §4 · §10 · §12).
    *
    * **홈과 「웨딩픽 추천」 전체 페이지가 이 하나를 나눠 쓴다.** 홈은 `limit=3`으로 앞의
    * 셋만, 전체 페이지는 `limit` 없이 전부 받는다 — 둘이 다른 순서를 보여줄 길이 없다.
-   * `getTop3`와 같은 `recommendVendors()`가 업종마다 돈다. 추천 규칙을 두 벌 두지 않는다.
+   * `recommendVendors()`가 업종마다 돈다. 추천 규칙을 두 벌 두지 않는다.
    */
   getCategoryRecommendations: {
     method: 'GET',

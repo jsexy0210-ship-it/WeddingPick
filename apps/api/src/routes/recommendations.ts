@@ -1,5 +1,4 @@
 import type { VendorSummary } from '@weddingpick/api-contract';
-import { top3QuerySchema } from '@weddingpick/api-contract';
 import {
   DEFAULT_PERIOD_LABEL,
   DEFAULT_PERIOD_MONTHS,
@@ -7,8 +6,6 @@ import {
   RECOMMEND_VENDORS_PER_CATEGORY,
   RECENT_PERIOD_MONTHS,
   TOP3_LIMIT,
-  TOP3_EMPTY,
-  TOP3_PARTIAL_NOTE,
   TOP3_REASON_LABEL,
   VENDOR_CATEGORY_LABEL,
   categoryPickState,
@@ -35,7 +32,7 @@ import {
 } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
 
-import { currentUserId, optionalUser, optionalUserId, requireUser } from '../auth/plugin';
+import { currentUserId, requireUser } from '../auth/plugin';
 import type { AppContext } from '../context';
 import { assertFeatureEnabled } from '../kill-switches';
 import { summaryRating } from '../review-view';
@@ -446,18 +443,14 @@ async function vendorsFor(
  * 눈에 띈다.
  */
 export function registerRecommendationRoutes(app: FastifyInstance, context: AppContext): void {
-  const auth = { preHandler: optionalUser(context) };
-
-  /**
-   * 이 지역·업종의 TOP3.
-   *
-   * 비회원도 부른다. 지연 로그인이라 로그인 전에도 홈이 뜨고, 그때 지역은 기기에
-   * 적혀 있어 쿼리로 넘어온다.
-   */
   /**
    * Pick 추천 — 아직 정하지 않은 업종과 업종별 추천 업체.
    *
    * 로그인한 사람만이다. 준비 상태가 웨딩에 매달려 있어 비회원에게는 세울 업종이 없다.
+   *
+   * `GET /v1/recommendations/top3`는 2026-09-23 v3.29 홈 재구축에서 지웠다 — 그
+   * 라우트를 부르던 화면(top3.tsx)이 먼저 지워졌는데 API·클라이언트(`getTop3`)가
+   * 안 지워진 채 남아 있었다. `recommendVendors`(위)는 이 라우트가 그대로 쓴다.
    */
   app.get<{ Querystring: { limit?: string } }>(
     '/v1/me/recommendations',
@@ -471,42 +464,4 @@ export function registerRecommendationRoutes(app: FastifyInstance, context: AppC
       });
     }
   );
-
-  app.get('/v1/recommendations/top3', auth, async (request) => {
-    const query = top3QuerySchema.parse(request.query);
-    const userId = optionalUserId(request);
-
-    const { region, category, items } = await recommendVendors(context, {
-      userId,
-      category: query.category,
-      region: query.region,
-    });
-
-    return {
-      region,
-      category,
-      items: items.map((item) => ({
-        vendorId: item.id,
-        name: item.name,
-        category: item.category,
-        region: item.region,
-        imageUrl: item.imageUrl,
-        reasons: item.reasonKeys,
-        confirmedCount: item.confirmedCount,
-        paidPrice: item.paidPrice,
-        styleTags: item.styleTags,
-        guidePrice: item.guidePrice,
-      })),
-      /*
-       * 세 곳을 못 채웠으면 그렇다고 적는다. 아무 말 없이 두 줄만 두면 읽는
-       * 사람은 세 번째가 로딩 중이거나 빠진 것이라고 읽는다.
-       */
-      note:
-        items.length === 0
-          ? TOP3_EMPTY
-          : items.length < TOP3_LIMIT
-            ? TOP3_PARTIAL_NOTE
-            : null,
-    };
-  });
 }

@@ -1,9 +1,10 @@
 import type { CategoryRecommendation, VendorSummary } from '@weddingpick/api-contract';
 import React from 'react';
 import { act, create, type ReactTestRenderer, type ReactTestRendererJSON } from 'react-test-renderer';
-import { PendingPreparation, HomeBudget } from './home-summary';
+import { MyWeddingPrep, HomeBudget } from './home-summary';
 import { ceremonyLine } from './hero';
-import { HomeRecommendations, PickRecommend } from './pick-recommend';
+import { homePrepCards } from './prep-groups';
+import { PickRecommend } from './pick-recommend';
 import { VendorCard } from './vendor-card';
 
 jest.mock('./category-image', () => ({ CategoryImage: () => null }));
@@ -54,26 +55,6 @@ describe('최신 홈·추천 연결', () => {
   const views: ReactTestRenderer[] = [];
   const mount = (element: React.ReactElement) => { const view = render(element); views.push(view); return view; };
   afterEach(() => { act(() => { views.splice(0).forEach((view) => view.unmount()); }); });
-
-  it('홈 추천은 아코디언 대신 첫 업종 카드와 비교 CTA를 바로 보여준다', () => {
-    const onCompare = jest.fn();
-    const view = mount(<HomeRecommendations groups={[groupWithVendor]} isPicked={() => false}
-      onPressVendor={jest.fn()} onPressPick={jest.fn()} onPressCompare={onCompare} onPressMore={jest.fn()} />);
-    expect(text(view)).toContain('웨딩픽 추천');
-    expect(text(view)).toContain('테스트 업체');
-    expect(text(view)).toContain('선호하는 분위기가 같아요');
-    expect(view.root.findAllByProps({ accessibilityState: { expanded: true } })).toHaveLength(0);
-  });
-
-  it('홈 추천은 업체가 넷이어도 정본대로 세 곳까지만 보여준다', () => {
-    const vendors = [1, 2, 3, 4].map((n) => ({ ...vendor, id: `vendor-${n}`, name: `테스트 업체 ${n}` }));
-    const view = mount(<HomeRecommendations groups={[{ ...group, vendors }]} isPicked={() => false}
-      onPressVendor={jest.fn()} onPressPick={jest.fn()} onPressCompare={jest.fn()} onPressMore={jest.fn()} />);
-    expect(text(view)).toContain('테스트 업체 1');
-    expect(text(view)).toContain('테스트 업체 3');
-    expect(text(view)).not.toContain('테스트 업체 4');
-    expect(text(view)).toContain('3곳 비교하기');
-  });
 
   it('추천 전체는 기본 카드에서 이유를 숨기고 카드를 누르면 이유 확장 상태로 교체한다', () => {
     const view = mount(<PickRecommend groups={[groupWithVendor]} open="studio" onToggle={jest.fn()}
@@ -143,16 +124,25 @@ describe('최신 홈·추천 연결', () => {
     expect(onDetail).not.toHaveBeenCalled();
   });
 
-  it('완료한 준비는 카드에서 제외하고 다음 업종으로 바꾼다', () => {
-    const view = mount(<PendingPreparation statuses={[
-      { category: 'hall', label: '웨딩홀', state: 'decided', pickCount: 1, decidedName: '정한 업체' },
-      { category: 'studio', label: '스튜디오', state: 'picking', pickCount: 2, decidedName: null },
-      { category: 'dress', label: '드레스', state: 'before', pickCount: 0, decidedName: null },
-    ]} onOpen={jest.fn()} onMore={jest.fn()} onComplete={jest.fn()} />);
-    expect(text(view)).not.toContain('정한 업체');
-    expect(text(view)).toContain('후보 2곳 담김');
-    expect(view.root.findAllByProps({ accessibilityLabel: '웨딩홀' })).toHaveLength(0);
-    expect(view.root.findAllByProps({ name: 'clockRegular' })).toHaveLength(1);
+  it('「내 웨딩 준비」는 완료해도 사라지지 않고 항상 4칸이다', () => {
+    const statuses = ['wedding_info_company', 'hall', 'studio', 'dress', 'makeup', 'hair', 'snap', 'bouquet', 'invitation', 'goods', 'dowry', 'honeymoon']
+      .map((category) => ({ category: category as never, label: category, state: 'before' as const, pickCount: 0, decidedName: null }));
+    const cards = homePrepCards({
+      statuses: statuses.map((row) => row.category === 'hall' ? { ...row, state: 'decided' as const } : row),
+      venueName: '테스트 웨딩홀',
+    });
+
+    expect(cards).toHaveLength(4);
+    const hallCard = cards.find((card) => card.key === 'start')!;
+    expect(hallCard.label).toBe('웨딩홀');
+    expect(hallCard.state).toBe('contracted');
+    expect(hallCard.detail).toBe('계약 완료 · 테스트 웨딩홀');
+
+    const view = mount(<MyWeddingPrep cards={cards} sub="지금은 스튜디오 차례예요" onOpen={jest.fn()} onMore={jest.fn()} />);
+    expect(text(view)).toContain('웨딩홀');
+    expect(text(view)).toContain('계약 완료 · 테스트 웨딩홀');
+    expect(text(view)).toContain('아직 정하지 않았어요');
+    expect(view.root.findAllByProps({ accessibilityLabel: '웨딩홀' }).length).toBeGreaterThan(0);
   });
 
   it('예산이 0이면 0%로 오해시키지 않고 설정 행동을 준다', () => {

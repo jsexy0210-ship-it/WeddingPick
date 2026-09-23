@@ -1,25 +1,17 @@
 import type {
   AppBootstrapResponse,
   CandidateListResponse,
-  CategoryRecommendation,
   CurrentUser,
   MyMonthlyDrawResponse,
-  VendorCandidate,
-  VendorSummary,
+  WeddingTask,
 } from '@weddingpick/api-contract';
-import {
-  HOME_RECOMMEND_CATEGORIES,
-  daysUntil,
-  formatCount,
-  hasUnread,
-  type VendorCategory,
-} from '@weddingpick/domain';
+import { daysUntil, formatCount, hasUnread } from '@weddingpick/domain';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { getAppBootstrap, getCategoryRecommendations, getMyMonthlyDraw } from '@/api/client';
+import { getAppBootstrap, getMyMonthlyDraw, listWeddingTasks } from '@/api/client';
 import {
   ActionButton,
   ErrorView,
@@ -44,12 +36,12 @@ import { BenefitSheet } from '@/features/home/benefit-sheet';
 import { hasSeenBenefitSheet, markBenefitSheetSeen } from '@/features/home/benefit-sheet-seen';
 import { listWeddingContent, type WeddingContentItem } from '@/features/home/content';
 import { Hero } from '@/features/home/hero';
-import { HomeBudget, PendingPreparation } from '@/features/home/home-summary';
-import { HomeRecommendations } from '@/features/home/pick-recommend';
-import { categoryStatuses } from '@/features/home/state';
+import { HomeBudget, MyWeddingPrep } from '@/features/home/home-summary';
+import { homePrepCards, homePrepSectionSub } from '@/features/home/prep-groups';
+import { scheduleRows } from '@/features/home/schedule-view';
+import { categoryStatuses, currentCategory } from '@/features/home/state';
+import { UpcomingSchedule } from '@/features/home/wedding-schedule';
 import { WeddingContent } from '@/features/home/wedding-content';
-import { PickDoneSheet, UnpickSheet } from '@/features/pick/pick-sheets';
-import { useMyCandidates } from '@/features/pick/use-my-candidates';
 import { isWebShellScreen } from '@/features/webshell/config';
 import { WebShellView } from '@/features/webshell/WebShellView';
 import strings from '../../../../../spec/strings.ko.json';
@@ -58,11 +50,13 @@ const S = strings.home;
 const HOME_FEED_PREVIEW_COUNT = 2;
 
 /**
- * 홈. WP-HOME-001.
+ * 홈. WP-HOME-001~003.
  *
- * 화면 모양과 섹션 순서는 `docs/design/figma-export/01-home.dc.html`이 정한다.
- * 수치·문구·상태는 `docs/design/handoff/`를 적용하되 화면 골격을 바꾸지 않는다.
- * 코랄 D-day → 남은 준비 → 가로 추천 → 예산현황 → 웨딩피드 순서를 유지한다.
+ * 화면 모양과 섹션 순서는 `docs/design/html/대메뉴_홈(로그인, 온보딩).dc.html`이
+ * 정본이다(2026-09-23 v3.29 재구축 — CLAUDE.md 「현재 디자인 기준」). 코랄 D-day
+ * 히어로 → 「내 웨딩 준비」(4칸, 항상 4개) → 「웨딩일정」 → 예산현황 → 웨딩 준비 팁
+ * 순서다. 옛 「추천」 섹션은 v3.29 핵심 메시지(추천 개념 삭제)를 어겨 뺐다 —
+ * `/v1/recommendations/top3`·`getTop3`도 같은 정리에서 지웠다.
  */
 
 type HomeData = {
@@ -71,9 +65,8 @@ type HomeData = {
   budget: AppBootstrapResponse['budget'];
   bracketAnswered: boolean;
   partnerInvitePending: boolean;
-  groups: readonly CategoryRecommendation[];
-  remaining: number;
-  remainingCategories: readonly VendorCategory[];
+  /** 웨딩일정 — `GET /v1/weddings/:id/tasks`. 웨딩이 없으면(온보딩 전) 빈 배열. */
+  tasks: readonly WeddingTask[];
   content: readonly WeddingContentItem[];
   /** 안 읽은 알림 수. 벨의 점이 이 값을 본다. */
   unread: number;
@@ -85,9 +78,7 @@ const EMPTY: HomeData = {
   budget: null,
   bracketAnswered: false,
   partnerInvitePending: false,
-  groups: [],
-  remaining: 0,
-  remainingCategories: [],
+  tasks: [],
   content: [],
   unread: 0,
 };
@@ -96,11 +87,11 @@ export default function HomeScreen() {
   const theme = useTheme();
   const loadVersion = useRef(0);
   const bootLoadedOnce = useRef(false);
-  const recommendationLoadedOnce = useRef(false);
+  const tasksLoadedOnce = useRef(false);
   const contentLoadedOnce = useRef(false);
   const [data, setData] = useState<HomeData>(EMPTY);
   const [bootError, setBootError] = useState(false);
-  const [recommendationStatus, setRecommendationStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [taskStatus, setTaskStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [contentStatus, setContentStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   /*
    * 한 번이라도 받아왔는가. **자료가 없는 것과 아직 모르는 것은 다르다** — 앞은
@@ -119,10 +110,6 @@ export default function HomeScreen() {
   const [benefit, setBenefit] = useState<MyMonthlyDrawResponse | null>(null);
   const [benefitOpen, setBenefitOpen] = useState(false);
   const benefitChecked = useRef(false);
-  const candidates = useMyCandidates();
-  const reloadCandidates = candidates.reload;
-  const [pickDoneOpen, setPickDoneOpen] = useState(false);
-  const [unpickTarget, setUnpickTarget] = useState<VendorCandidate | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   const load = useCallback(() => {
@@ -132,7 +119,7 @@ export default function HomeScreen() {
     const version = ++loadVersion.current;
     const current = () => version === loadVersion.current;
     setBootError(false);
-    if (!recommendationLoadedOnce.current) setRecommendationStatus('loading');
+    if (!tasksLoadedOnce.current) setTaskStatus('loading');
     if (!contentLoadedOnce.current) setContentStatus('loading');
 
     void listWeddingContent(HOME_FEED_PREVIEW_COUNT)
@@ -149,8 +136,8 @@ export default function HomeScreen() {
       });
 
     /*
-     * 회원 · 알림 · 담아둔 후보 · 개인화 추천을 한 번에 받는다(GET /v1/app/bootstrap).
-     * 서버 안에서 병렬로 모은 것이라 기기가 인터넷을 여러 번 왕복하지 않는다.
+     * 회원 · 알림 · 담아둔 후보를 한 번에 받는다(GET /v1/app/bootstrap). 서버 안에서
+     * 병렬로 모은 것이라 기기가 인터넷을 여러 번 왕복하지 않는다.
      */
     void getAppBootstrap()
       .then((boot) => {
@@ -165,6 +152,31 @@ export default function HomeScreen() {
           unread: boot.notifications?.unread ?? 0,
         }));
         bootLoadedOnce.current = true;
+
+        /*
+         * 웨딩일정 — 웨딩노트가 이미 쓰는 GET /v1/weddings/:id/tasks 그대로다(새 API를
+         * 만들지 않는다). weddingId를 boot 응답이 알려준 뒤에야 부를 수 있어 여기 묶었다.
+         * 웨딩이 아직 없으면(온보딩 전) 빈 목록 그대로 둔다 — 다가오는 일정이 없는 것과
+         * 다르지 않게 보이면 안 되므로 taskStatus는 'ready'로 두고 섹션 자체를 안 그린다.
+         */
+        const weddingId = boot.member?.weddingId ?? null;
+        if (weddingId === null) {
+          tasksLoadedOnce.current = true;
+          setTaskStatus('ready');
+          return;
+        }
+        void listWeddingTasks(weddingId)
+          .then((response) => {
+            if (!current()) return;
+            setData((previous) => ({ ...previous, tasks: response.tasks }));
+            tasksLoadedOnce.current = true;
+            setTaskStatus('ready');
+          })
+          .catch(() => {
+            if (!current()) return;
+            if (tasksLoadedOnce.current) setToast(strings.journey.loadFailed);
+            else setTaskStatus('error');
+          });
       })
       .catch(() => {
         if (!current()) return;
@@ -172,31 +184,12 @@ export default function HomeScreen() {
         else setBootError(true);
       })
       .finally(() => { if (current()) setSettled(true); });
-
-    void getCategoryRecommendations(HOME_RECOMMEND_CATEGORIES)
-      .then((response) => {
-        if (!current()) return;
-        setData((previous) => ({
-          ...previous,
-          groups: response.groups,
-          remaining: response.remaining,
-          remainingCategories: response.remainingCategories,
-        }));
-        recommendationLoadedOnce.current = true;
-        setRecommendationStatus('ready');
-      })
-      .catch(() => {
-        if (!current()) return;
-        if (recommendationLoadedOnce.current) setToast(S['recommend.error']);
-        else setRecommendationStatus('error');
-      });
   }, []);
 
   useFocusEffect(useCallback(() => {
     load();
-    void reloadCandidates().catch(() => undefined);
     return () => { loadVersion.current += 1; };
-  }, [load, reloadCandidates]));
+  }, [load]));
 
   useEffect(() => {
     if (!settled || data.me?.setupComplete !== true || benefitChecked.current) return;
@@ -239,26 +232,6 @@ export default function HomeScreen() {
     router.push('/my/rewards');
   }, []);
 
-  async function onPressPick(vendor: VendorSummary) {
-    const existing = candidates.candidateFor(vendor.id);
-    if (existing) {
-      setUnpickTarget(existing);
-      return;
-    }
-    const result = await candidates.pick(vendor.id);
-    if (result === 'picked') { setPickDoneOpen(true); load(); }
-    else if (result === 'login') router.push('/login');
-    else setToast(S['pick.failed']);
-  }
-
-  async function confirmUnpick() {
-    if (!unpickTarget) return;
-    const ok = await candidates.unpick(unpickTarget);
-    setUnpickTarget(null);
-    if (!ok) setToast(S['unpick.failed']);
-    else load();
-  }
-
   // 하이브리드 웹뷰 쉘 POC. `EXPO_PUBLIC_WEBSHELL_SCREENS`에 "home"이 없으면
   // (기본값) 이 분기는 타지 않고 기존 네이티브 화면 그대로다.
   if (isWebShellScreen('home')) {
@@ -283,12 +256,23 @@ export default function HomeScreen() {
 
   const daysLeft = data.me?.weddingDate == null ? null : daysUntil(data.me.weddingDate);
 
+  const statuses = categoryStatuses({
+    candidates: data.candidates,
+    preparedCategories: data.me?.preparedCategories ?? [],
+  });
+  const prepCards = homePrepCards({ statuses, venueName: venueName(data.candidates, data.me) });
+  const current = currentCategory(statuses, data.candidates?.nextCategory ?? null);
+  const currentLabel = current === null ? null : (statuses.find((row) => row.category === current)?.label ?? null);
+  const prepSub = homePrepSectionSub({ cards: prepCards, currentLabel });
+
+  const schedule = scheduleRows(data.tasks);
+  const scheduleHasDate = schedule[0]?.kind === 'dated';
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <Header
           unread={data.unread}
-          onPressSearch={() => router.push('/search')}
           onPressBell={() => router.push('/my/notifications')}
         />
 
@@ -313,39 +297,31 @@ export default function HomeScreen() {
             onPressPartner={() => router.push('/wedding/partner')}
           />
 
-          <PendingPreparation
-            statuses={categoryStatuses({
-              candidates: data.candidates,
-              preparedCategories: data.me?.preparedCategories ?? [],
-            })}
-            onOpen={(item) =>
+          <MyWeddingPrep
+            cards={prepCards}
+            sub={prepSub}
+            onOpen={(card) =>
               router.push(
-                item.pickCount > 0
-                  ? `/pick/${item.category}`
-                  : `/pick?section=recommendations&category=${item.category}`
+                card.pickCount > 0
+                  ? `/pick/${card.targetCategory}`
+                  : `/pick?section=recommendations&category=${card.targetCategory}`
               )
             }
-            onMore={() => router.push('/progress')}
-            onComplete={() => router.push('/wedding')}
+            onMore={() => router.push('/pick')}
           />
 
-          {recommendationStatus === 'error' ? (
+          {taskStatus === 'error' ? (
             <View style={styles.block}>
-              <ThemedText type="f14">{S['recommend.error']}</ThemedText>
+              <ThemedText type="f13" themeColor="textAssistive">{strings.journey.loadFailed}</ThemedText>
               <ActionButton variant="secondary" label={strings.common['cta.retry']} onPress={load} />
             </View>
-          ) : recommendationStatus === 'loading' ? (
+          ) : taskStatus === 'loading' ? (
             <View style={styles.block}><DelayedLoader size={28} /></View>
           ) : (
-            <HomeRecommendations
-              groups={data.groups}
-              isPicked={(vendorId) => candidates.candidateFor(vendorId) !== null}
-              onPressVendor={(vendorId) => router.push(`/search/${vendorId}`)}
-              onPressPick={(vendor) => void onPressPick(vendor)}
-              onPressCompare={(vendorIds) =>
-                router.push({ pathname: '/search/compare', params: { ids: vendorIds.join(',') } })
-              }
-              onPressMore={() => router.push('/pick?section=recommendations')}
+            <UpcomingSchedule
+              rows={schedule}
+              hasDate={scheduleHasDate}
+              onMore={() => router.push('/wedding')}
             />
           )}
 
@@ -395,14 +371,6 @@ export default function HomeScreen() {
           onOpenBenefit={openBenefit}
         />
       ) : null}
-      <PickDoneSheet visible={pickDoneOpen} onDismiss={() => setPickDoneOpen(false)} />
-      <UnpickSheet
-        candidate={unpickTarget}
-        partnerName={candidates.partnerName}
-        busy={candidates.busyVendorId !== null}
-        onConfirm={() => void confirmUnpick()}
-        onDismiss={() => setUnpickTarget(null)}
-      />
       <Toast message={toast} onHidden={() => setToast(null)} />
     </ThemedView>
   );
@@ -412,11 +380,9 @@ export default function HomeScreen() {
 
 function Header({
   unread,
-  onPressSearch,
   onPressBell,
 }: {
   unread: number;
-  onPressSearch: () => void;
   onPressBell: () => void;
 }) {
   const theme = useTheme();
@@ -425,14 +391,12 @@ function Header({
     <ThemedView style={styles.header}>
       <ThemedText type="f26" style={styles.brand}>웨딩픽</ThemedText>
 
+      {/*
+        .dc.html WP-HOME-001~003 header `headIcons` — 아이콘 하나(벨)뿐이다. 검색은
+        Root 탭에서 들어가고(WP-TAB), 홈 헤더의 검색 아이콘은 진입점 중복이라 뺐다
+        (2026-09-23 v3.29 재검증 — 「헤더에 아이콘이 2개인데 정본은 벨 1개뿐」).
+      */}
       <View style={styles.headerButtons}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="검색"
-          onPress={onPressSearch}
-          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
-          <SeedIcon name="searchRegular" size={Layout.iconRow} color={theme.text} />
-        </Pressable>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={hasUnread({ unread, total: unread }) ? `알림 ${formatCount(unread)}건` : '알림'}
