@@ -122,14 +122,17 @@ describe('다섯 질문의 순서 (v3.28)', () => {
   it('스타일만 최소 1개 필수 — 나머지 넷은 미정도 답이다', () => {
     expect(canAdvance('style', { ...FULL, style: [] })).toBe(false);
     expect(canAdvance('style', { ...FULL, style: ['NATURAL'] })).toBe(true);
+    /* 예식일만 칩으로 미정을 고른다 — 안 고르면 «다음»이 잠긴다. */
+    expect(canAdvance('date', EMPTY_ANSWERS)).toBe(false);
     expect(canAdvance('date', { ...EMPTY_ANSWERS, date: { value: null } })).toBe(true);
-    expect(canAdvance('region', { ...EMPTY_ANSWERS, region: { region: null, district: null } })).toBe(true);
-    /* 진행 상황 · 예산은 아무것도 안 골라도 «다음»을 누를 수 있다 — 누르면 미정이 된다. */
+    /* 지역 · 진행 상황 · 예산은 아무것도 안 골라도 «다음»을 누를 수 있다 — 누르면 미정이 된다. */
+    expect(canAdvance('region', EMPTY_ANSWERS)).toBe(true);
     expect(canAdvance('prep', EMPTY_ANSWERS)).toBe(true);
     expect(canAdvance('budget', EMPTY_ANSWERS)).toBe(true);
   });
 
-  it('«다음»이 진행 상황 · 예산의 빈 답을 미정으로 확정한다', () => {
+  it('«다음»이 지역 · 진행 상황 · 예산의 빈 답을 미정으로 확정한다', () => {
+    expect(settleAnswer('region', EMPTY_ANSWERS).region).toEqual({ region: null, district: null });
     expect(settleAnswer('prep', EMPTY_ANSWERS).prep).toEqual({ categories: [] });
     expect(settleAnswer('budget', EMPTY_ANSWERS).budget).toEqual({ amount: null });
     expect(settleAnswer('prep', FULL)).toBe(FULL);

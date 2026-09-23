@@ -98,9 +98,9 @@ import {
  * **상단 뒤로가기가 없다.** 첫 질문은 «다음»만, 두 번째부터 «이전 · 다음».
  * 안드로이드 물리 뒤로가기는 «이전»과 같고 첫 질문에서는 로그인으로 나간다.
  *
- * **미정을 억지로 받지 않는다.** 예식일 · 지역은 «아직 정하지 않았어요» 칩, 진행
- * 상황 · 예산은 아무것도 안 고르고 «다음»을 누르면 미정이다(시안에 미정 칩이 따로
- * 없다 — `settleAnswer`). 스타일만 최소 1개 필수다 — 추천의 근거라 없으면 첫 화면에
+ * **미정을 억지로 받지 않는다.** 예식일은 «아직 정하지 않았어요» 칩, 지역 · 진행
+ * 상황 · 예산은 아무것도 안 고르고 «다음»을 누르면 미정이다(시안 세 화면에 미정 칩이
+ * 없다 — `settleAnswer` · 2026-09-23 「정본에 없는 요소는 제거」로 지역 칩을 걷어냈다). 스타일만 최소 1개 필수다 — 추천의 근거라 없으면 첫 화면에
  * 보여줄 것이 없다. 최대 2개이며 3번째 선택은 정본 토스트로 알린다(CLAUDE.md
  * v3.24 · 대조표 「4종 버튼 · 최대 2개」). 이미 고른 스타일이 서버에 있으면(다시
  * 들어온 계정) 초기화하지 않고 복원해서 보여준다.
@@ -465,7 +465,6 @@ export default function SetupScreen() {
   const chosenStyles = answers.style ?? [];
   const date = answers.date?.value ?? null;
   const dateUndecided = answers.date !== null && date === null;
-  const regionUndecided = answers.region !== null && answers.region.region === null;
   const preparedCategories = answers.prep?.categories ?? [];
   const remaining = date ? dDay(date) : null;
 
@@ -527,7 +526,7 @@ export default function SetupScreen() {
           </View>
         ) : null}
 
-        {/* 지역 2/5 — 56px 필드가 시/도 · 시/군/구 2열 휠 바텀시트를 연다. */}
+        {/* 지역 2/5 — 56px 필드가 시/도 · 시/군/구 2열 휠 바텀시트를 연다. 시안에 미정 칩이 없다 — 안 고르고 «다음»이면 미정(`settleAnswer`). */}
         {step === 'region' ? (
           <View style={styles.selectionSection}>
             <Pressable
@@ -541,20 +540,6 @@ export default function SetupScreen() {
               ]}>
               <ThemedText type="f16" style={styles.selectionFieldLabel}>
                 {regionLabelOf(answers.region) ?? REGION_PICK_LABEL}
-              </ThemedText>
-            </Pressable>
-
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ selected: regionUndecided }}
-              onPress={() => update({ region: { region: null, district: null } })}
-              style={({ pressed }) => [
-                styles.undecidedChip,
-                { backgroundColor: regionUndecided ? theme.tintSurface : theme.backgroundSelected },
-                pressed && styles.pressed,
-              ]}>
-              <ThemedText type="f15" themeColor={regionUndecided ? 'tint' : 'textSecondary'} style={styles.bold}>
-                {UNDECIDED_LABEL}
               </ThemedText>
             </Pressable>
           </View>

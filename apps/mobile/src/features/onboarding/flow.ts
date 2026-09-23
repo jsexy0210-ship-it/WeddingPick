@@ -57,7 +57,7 @@ export type Answers = {
 
 export const EMPTY_ANSWERS: Answers = { date: null, region: null, prep: null, budget: null, style: null };
 
-/** 예식일 · 지역의 미정 문구 — 둘 다 같은 말로 통일(v3.19). */
+/** 예식일의 미정 칩 문구(WP-AUTH-002 `chipUndecided`). 지역 화면에는 칩이 없다(v3.28). */
 export const UNDECIDED_LABEL = '아직 정하지 않았어요';
 
 /** 완료 요약 · 답 줄에서 미정값을 적는 말. 빈칸이나 «—»를 쓰지 않는다(SPEC §13.6). */
@@ -323,23 +323,27 @@ export function ddayLabel(days: number): string {
   return days === 0 ? 'D-DAY' : `D-${days}`;
 }
 
+/** «다음»이 미정으로 확정해 주는 질문 — 시안에 미정 칩이 없는 셋. */
+const SETTLED_BY_NEXT: readonly QuestionStep[] = ['region', 'prep', 'budget'];
+
 /**
  * 지금 답으로 «다음»을 누를 수 있는가. 스타일만 최소 1개 필수 — 나머지는 미정도
- * 답이다. 진행 상황 · 예산은 아무것도 안 고르고도 누를 수 있다(누르는 순간
+ * 답이다. 지역 · 진행 상황 · 예산은 아무것도 안 고르고도 누를 수 있다(누르는 순간
  * `settleAnswer`가 미정으로 적는다).
  */
 export function canAdvance(step: QuestionStep, answers: Answers): boolean {
-  if (step === 'prep' || step === 'budget') return true;
+  if (SETTLED_BY_NEXT.includes(step)) return true;
 
   return isAnswered(step, answers);
 }
 
 /**
- * «다음»을 누를 때 아직 null인 진행 상황 · 예산을 미정으로 확정한다 — 카드를 하나도
- * 안 골랐으면 «아직 시작 전», 금액을 안 적었으면 «미정». 시안의 두 화면에는
- * 미정 칩이 따로 없어서 «다음» 자체가 미정 선택이다.
+ * «다음»을 누를 때 아직 null인 지역 · 진행 상황 · 예산을 미정으로 확정한다 — 지역을
+ * 안 골랐으면 «미정», 카드를 하나도 안 골랐으면 «아직 시작 전», 금액을 안 적었으면
+ * «미정». 시안의 세 화면에는 미정 칩이 따로 없어서 «다음» 자체가 미정 선택이다.
  */
 export function settleAnswer(step: QuestionStep, answers: Answers): Answers {
+  if (step === 'region' && answers.region === null) return { ...answers, region: { region: null, district: null } };
   if (step === 'prep' && answers.prep === null) return { ...answers, prep: { categories: [] } };
   if (step === 'budget' && answers.budget === null) return { ...answers, budget: { amount: null } };
 

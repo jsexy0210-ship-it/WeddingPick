@@ -1,4 +1,4 @@
-import { POLICY_DOCUMENTS, dDay } from '@weddingpick/domain';
+import { POLICY_DOCUMENTS } from '@weddingpick/domain';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,7 +10,6 @@ import {
   LineHeight,
   MaxContentWidth,
   Radius,
-  SocialColors,
   SocialLogo,
   Spacing,
   ProductSymbol,
@@ -21,14 +20,12 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import { LoginFailureSheet } from '@/features/auth/login-failure-sheet';
-import { maskEmail } from '@/features/auth/mask-email';
 import {
   canSignInWith,
   providerLabel,
   providerTone,
   useAuthProviders,
 } from '@/features/auth/providers';
-import { loadRememberedAccount, type RememberedAccount } from '@/features/auth/remembered-account';
 import { bootOwnsSigningInMessage, takePendingSignInError } from '@/features/auth/sign-in-handoff';
 import { SigningInBody, signingInMessage } from '@/features/auth/signing-in-view';
 import { useSignIn } from '@/features/auth/use-sign-in';
@@ -44,10 +41,13 @@ const BENEFITS = [
 
 const AGE_CONFIRM_LABEL = '만 14세 이상이에요';
 
-/** WP-AUTH-008 마지막 계정 카드의 배지 — strings.ko.json `onboarding.auth.remember.recentLabel`. */
-const RECENT_LOGIN_BADGE = '최근 로그인';
-/** 카드 첫 줄 — 로그인 방법 이름. 초기 버전은 카카오만이다. */
-const KAKAO_PROVIDER_NAME = '카카오';
+/*
+ * «기억된 계정» 변형(옛 WP-AUTH-008 — «다시 오셨네요» · 최근 로그인 카드 · «카카오로
+ * 계속하기»)은 2026-09-23에 걷어냈다. v3.28 정본 홈 파일에 그 화면이 없고, 「정본에 없는
+ * 기능은 제거한다」(CLAUDE.md 2026-09-23 대표 지시)가 화면 안 요소까지 덮는다. 로그인은
+ * 언제나 한 모양이다 — 만 14세 체크 + «카카오로 시작하기». 기기에 적어 둔 계정
+ * (`features/auth/remembered-account.ts`)은 로그인 유지 판정이 계속 쓰므로 그대로다.
+ */
 
 export default function LoginScreen() {
   const theme = useTheme();
@@ -55,25 +55,21 @@ export default function LoginScreen() {
   const { signIn, busy, busyProvider, error, retry, dismissError, reportError } = useSignIn();
   /** «만 14세 이상이에요»를 사람이 눌렀는가. 기본값은 꺼짐 — 미리 켜두지 않는다. */
   const [ageChecked, setAgeChecked] = useState(false);
-  /** undefined = 아직 안 읽음, null = 기억된 계정 없음(WP-AUTH-001). */
-  const [remembered, setRemembered] = useState<RememberedAccount | null | undefined>(undefined);
 
   useEffect(() => {
-    loadRememberedAccount().then(setRemembered);
     const failure = takePendingSignInError();
 
     if (failure) reportError(failure);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- 마운트 때 한 번만
   }, []);
 
-  const showRemembered = Boolean(remembered);
   /* 서버 목록 그대로 — 순서(카카오 · 애플 · 개발용)와 거르기는 `usableProviders`가 정한다. */
   const options = providers ?? [];
   const primary = options.find((provider) => provider.provider === 'kakao' && !provider.isDevelopmentStandIn)
     ?? options[0]
     ?? null;
-  /* 신규 로그인은 화면에서 연령 확인을 먼저 받아야 시작할 수 있다. 로그인 유지는 다시 묻지 않는다. */
-  const ageBlocked = !showRemembered && !ageChecked;
+  /* 화면에서 연령 확인을 먼저 받아야 시작할 수 있다. */
+  const ageBlocked = !ageChecked;
 
   return (
     <ThemedView style={styles.container}>
@@ -84,34 +80,23 @@ export default function LoginScreen() {
               <WeddingMark size={MARK} color={theme.tint} />
             </View>
             <ThemedText type="f32" style={styles.title}>
-              {showRemembered && remembered
-                ? `${remembered.displayName ? `${remembered.displayName}님,\n` : ''}다시 오셨네요`
-                : HERO_TITLE}
+              {HERO_TITLE}
             </ThemedText>
-            {showRemembered && remembered?.weddingDate ? (
-              <ThemedText type="f16" themeColor="textSecondary" style={styles.sub}>
-                {remainingLine(remembered.weddingDate)}
-              </ThemedText>
-            ) : null}
 
             <View style={styles.benefitWrap}>
-              {showRemembered && remembered ? (
-                <RememberedAccountCard account={remembered} />
-              ) : (
-                BENEFITS.map((benefit) => (
-                  <View key={benefit} style={styles.benefitRow}>
-                    <View style={[styles.benefitDot, { backgroundColor: theme.tint }]} />
-                    <ThemedText type="f15" themeColor="textSecondary" style={styles.benefitText}>
-                      {benefit}
-                    </ThemedText>
-                  </View>
-                ))
-              )}
+              {BENEFITS.map((benefit) => (
+                <View key={benefit} style={styles.benefitRow}>
+                  <View style={[styles.benefitDot, { backgroundColor: theme.tint }]} />
+                  <ThemedText type="f15" themeColor="textSecondary" style={styles.benefitText}>
+                    {benefit}
+                  </ThemedText>
+                </View>
+              ))}
             </View>
           </View>
 
           <View style={styles.authBlock}>
-            {providers === null || remembered === undefined || busy ? (
+            {providers === null || busy ? (
               <ThemedView style={styles.busy}>
                 <SigningInBody
                   size={28}
@@ -121,11 +106,7 @@ export default function LoginScreen() {
               </ThemedView>
             ) : (
               <>
-                <AgeConfirmRow
-                  visible={!showRemembered}
-                  checked={ageChecked}
-                  onToggle={() => setAgeChecked((was) => !was)}
-                />
+                <AgeConfirmRow checked={ageChecked} onToggle={() => setAgeChecked((was) => !was)} />
 
                 {primary ? (
                   <ProviderButton
@@ -135,7 +116,7 @@ export default function LoginScreen() {
                         <SocialLogo provider={primary.provider} size={KAKAO_LOGO} />
                       )
                     }
-                    label={providerLabel(primary, showRemembered ? 'continue' : 'start')}
+                    label={providerLabel(primary, 'start')}
                     hint={
                       primary.isDevelopmentStandIn
                         ? '실제 카카오 로그인이 아니에요. 개발 중인 서버에만 있어요'
@@ -147,13 +128,7 @@ export default function LoginScreen() {
                 ) : null}
 
                 <ThemedText type="f12" themeColor="textAssistive" style={styles.terms}>
-                  {showRemembered ? (
-                    '이 기기에서 로그인을 유지하고 있어요'
-                  ) : (
-                    <>
-                      시작하면 <PolicyLink id="terms" />과 <PolicyLink id="privacy" />에 동의하게 돼요
-                    </>
-                  )}
+                  시작하면 <PolicyLink id="terms" />과 <PolicyLink id="privacy" />에 동의하게 돼요
                 </ThemedText>
               </>
             )}
@@ -217,28 +192,13 @@ function ProviderButton({
   );
 }
 
-function remainingLine(weddingDate: string): string {
-  const remaining = dDay(weddingDate);
-
-  return remaining.kind === 'upcoming' ? `예식까지 ${remaining.days}일 남았어요` : remaining.text;
-}
-
 /**
  * 만 14세 확인 — v3.28 WP-AUTH-001 `ageCta`. 카카오 버튼 «위»에 같은 높이 56으로
  * 선다: 코랄 면(tintSurface) · 코랄 1.5 테두리 · radius 6 · 가운데 정렬 · 체크 22
  * (radius 6) + 16/700 코랄 글자. 켜기 전에도 같은 모양이고 체크 안만 비어 있다.
  */
-function AgeConfirmRow({
-  visible,
-  checked,
-  onToggle,
-}: {
-  visible: boolean;
-  checked: boolean;
-  onToggle: () => void;
-}) {
+function AgeConfirmRow({ checked, onToggle }: { checked: boolean; onToggle: () => void }) {
   const theme = useTheme();
-  if (!visible) return null;
 
   return (
     <Pressable
@@ -273,38 +233,6 @@ function AgeConfirmRow({
   );
 }
 
-/** 기억된 계정 카드(WP-AUTH-008) — 규격서에 없는 기존 정본. 값은 옛 시안 그대로(아바타 40 · 로고 18 · 배지 좌우 9). */
-function RememberedAccountCard({ account }: { account: RememberedAccount }) {
-  const theme = useTheme();
-
-  return (
-    <View style={styles.accountWrap}>
-      <View style={[styles.account, { backgroundColor: theme.backgroundElement }]}>
-        <View style={[styles.avatar, { backgroundColor: SocialColors.kakao.background }]}>
-          <SocialLogo provider="kakao" size={AVATAR_LOGO} />
-        </View>
-
-        <View style={styles.accountText}>
-          <ThemedText type="f16" numberOfLines={1} style={styles.bold}>
-            {KAKAO_PROVIDER_NAME}
-          </ThemedText>
-          {account.email ? (
-            <ThemedText type="f12" themeColor="textAssistive" numberOfLines={1}>
-              {maskEmail(account.email)}
-            </ThemedText>
-          ) : null}
-        </View>
-
-        <View style={[styles.badge, { backgroundColor: theme.tintSubtle }]}>
-          <ThemedText type="f12" themeColor="tint" style={styles.bold}>
-            {RECENT_LOGIN_BADGE}
-          </ThemedText>
-        </View>
-      </View>
-    </View>
-  );
-}
-
 function PolicyLink({ id }: { id: 'terms' | 'privacy' }) {
   const theme = useTheme();
   const policy = POLICY_DOCUMENTS.find((document) => document.id === id);
@@ -329,17 +257,12 @@ function PolicyLink({ id }: { id: 'terms' | 'privacy' }) {
 
 /*
  * v3.28 WP-AUTH-001 고정값 — 브랜드 블록 위 72(`loginBrand`) · 마크 상자 64 안의 마크 40
- * (`markBox`) · 만 14세 체크 22(`ageCheck`) · 카카오 로고 20(`kakaoMark`). 기억된 계정
- * 카드는 옛 시안 — 로고 18 · 배지 좌우 9 · 카드 안쪽 16/18.
+ * (`markBox`) · 만 14세 체크 22(`ageCheck`) · 카카오 로고 20(`kakaoMark`).
  */
 const BRAND_TOP = 72;
 const MARK = 40;
 const AGE_CHECK = 22;
 const KAKAO_LOGO = 20;
-const AVATAR_LOGO = 18;
-const BADGE_PADDING_X = 9;
-const ACCOUNT_PADDING_Y = 16;
-const ACCOUNT_PADDING_X = 18;
 
 const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
@@ -359,7 +282,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   title: { fontWeight: 700, lineHeight: LineHeight.t1, letterSpacing: LetterSpacing.n064 },
-  sub: { lineHeight: LineHeight.lh24, marginTop: 10 },
   benefitWrap: {
     flexShrink: 0,
     paddingTop: 24,
@@ -379,7 +301,6 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.four + Spacing.four,
     gap: 10,
   },
-  section: { gap: Layout.cardGap },
   ageConfirmRow: {
     height: Layout.ctaSheet,
     borderRadius: Radius.control,
@@ -411,24 +332,6 @@ const styles = StyleSheet.create({
   hint: { textAlign: 'center', marginTop: Spacing.one },
   terms: { textAlign: 'center', paddingTop: Spacing.one, lineHeight: LineHeight.micro },
   busy: { alignItems: 'center', justifyContent: 'center', minHeight: Layout.ctaSheet },
-  accountWrap: {},
-  account: {
-    borderRadius: Radius.medium,
-    paddingVertical: ACCOUNT_PADDING_Y,
-    paddingHorizontal: ACCOUNT_PADDING_X,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Layout.rowPaddingY,
-  },
-  avatar: {
-    width: Layout.iconButton,
-    height: Layout.iconButton,
-    borderRadius: Radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  accountText: { flex: 1, minWidth: 0, gap: Spacing.half },
-  badge: { paddingVertical: Spacing.one, paddingHorizontal: BADGE_PADDING_X, borderRadius: Radius.badge },
   policyLink: { fontWeight: 700, textDecorationLine: 'underline', textDecorationStyle: 'solid' },
   bold: { fontWeight: 700 },
   disabled: { opacity: 0.4 },

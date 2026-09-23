@@ -17,8 +17,9 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     /* v3.28(2026-09-22) WP-AUTH-001 markBox — 64 코랄 면 상자 안에 40 마크. 9/20의 «64 마크»를 덮는다. */
     expect(s).toContain('<WeddingMark size={MARK} color={theme.tint} />');
     expect(s).toContain('const MARK = 40;');
-    expect(s).toContain('visible={!showRemembered}');
-    expect(s).toContain('const ageBlocked = !showRemembered && !ageChecked;');
+    /* v3.28(2026-09-22)에 «기억된 계정» 변형이 없다 — 2026-09-23 「정본에 없는 기능은 제거」로 걷어냈다. */
+    expect(s).not.toContain('showRemembered');
+    expect(s).toContain('const ageBlocked = !ageChecked;');
     expect(s).not.toContain('다른 계정으로 시작하기');
   });
 
