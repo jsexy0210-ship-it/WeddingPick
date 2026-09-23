@@ -100,7 +100,6 @@ export const ROUTES: readonly string[] = [
   '/my/faq/[faqKey]',
   '/my/guide',
   '/my/membership',
-  '/my/notification-settings',
   '/my/notifications',
   '/my/privacy',
   '/my/profile',
