@@ -46,9 +46,14 @@ describe('저장된 세션의 첫 화면 복구', () => {
     await expect(resolveSessionEntry()).rejects.toBe(error);
   });
 
-  it('가입 미완료 계정은 회원 전용 API를 호출하지 않고 설정으로 보낸다', async () => {
+  it('가입 미완료 계정은 회원 전용 API를 호출하지 않고 약관 동의로 보낸다', async () => {
+    /*
+     * v3.29 — 가입이 안 끝난 계정은 온보딩(`setup`)보다 약관 동의 · 권한 안내
+     * (`consent`, WP-AUTH-010)가 먼저다(CHANGELOG v3.29 「약관 동의 · 권한 안내
+     * 한 화면 통합」).
+     */
     jest.mocked(getSignupState).mockResolvedValue({ activated: false } as never);
-    await expect(resolveSessionEntry()).resolves.toBe('setup');
+    await expect(resolveSessionEntry()).resolves.toBe('consent');
     expect(getSignupState).toHaveBeenCalledTimes(1);
     expect(getCurrentUser).not.toHaveBeenCalled();
     expect(getAppBootstrap).not.toHaveBeenCalled();

@@ -1,5 +1,4 @@
-import { POLICY_DOCUMENTS } from '@weddingpick/domain';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -12,13 +11,12 @@ import {
   Radius,
   SocialLogo,
   Spacing,
-  ProductSymbol,
-  readWebInteractionState,
   ThemedText,
   ThemedView,
   WeddingMark,
   useTheme,
 } from '@weddingpick/ui';
+import { AgeConfirmSheet } from '@/features/auth/age-confirm-sheet';
 import { LoginFailureSheet } from '@/features/auth/login-failure-sheet';
 import {
   canSignInWith,
@@ -29,32 +27,56 @@ import {
 import { bootOwnsSigningInMessage, takePendingSignInError } from '@/features/auth/sign-in-handoff';
 import { SigningInBody, signingInMessage } from '@/features/auth/signing-in-view';
 import { useSignIn } from '@/features/auth/use-sign-in';
-import { openExternal } from '@/features/open-external';
 
-/** WP-AUTH-001 — 2026-09-20 전달 정본의 최신 로그인 계약. */
-const HERO_TITLE = '웨딩 준비,\n진짜 견적부터\n확인해 보세요'; // pick-language: 로그인 정본 카피
+/**
+ * WP-AUTH-001 — v3.29 정본 `대메뉴_홈(로그인, 온보딩).dc.html` 2번 화면(`loginTitle` ·
+ * `benefits`).
+ *
+ * **v3.29가 타이틀·혜택을 다시 바꿨다**(CHANGELOG v3.29 「로그인 화면 타이틀 · 혜택 4줄
+ * 교체」). 핵심 메시지 「플래너 없이, 직접 고르는 웨딩 준비」를 그대로 로그인 타이틀에
+ * 쓴다 — README.md·PROJECT_RULES.md 맨 앞줄과 같은 문장이다.
+ */
+const HERO_TITLE = '플래너 없이,\n직접 고르는\n웨딩 준비'; // pick-language: v3.29 로그인 정본 카피
 const BENEFITS = [
-  '실제 견적 금액을 비교해요', // pick-language: 로그인 정본 혜택
-  '마음에 드는 곳을 함께 Pick해요',
-  '일정과 지출도 한곳에서 관리해요',
+  '업체별 가격과 조건을 한눈에 확인해요', // pick-language: v3.29 로그인 정본 혜택(dc.html benefits)
+  '광고보다 내 기준으로 직접 골라요',
+  '플래너를 거치지 않고 직접 연결돼요',
+  '계약부터 결혼식까지 한곳에서 챙겨요',
 ] as const;
-
-const AGE_CONFIRM_LABEL = '만 14세 이상이에요';
 
 /*
  * «기억된 계정» 변형(옛 WP-AUTH-008 — «다시 오셨네요» · 최근 로그인 카드 · «카카오로
- * 계속하기»)은 2026-09-23에 걷어냈다. v3.28 정본 홈 파일에 그 화면이 없고, 「정본에 없는
- * 기능은 제거한다」(CLAUDE.md 2026-09-23 대표 지시)가 화면 안 요소까지 덮는다. 로그인은
- * 언제나 한 모양이다 — 만 14세 체크 + «카카오로 시작하기». 기기에 적어 둔 계정
- * (`features/auth/remembered-account.ts`)은 로그인 유지 판정이 계속 쓰므로 그대로다.
+ * 계속하기»)은 2026-09-23에 걷어냈다. 정본 홈 파일에 그 화면이 없고, 「정본에 없는
+ * 기능은 제거한다」(CLAUDE.md 2026-09-23 대표 지시)가 화면 안 요소까지 덮는다. 기기에
+ * 적어 둔 계정(`features/auth/remembered-account.ts`)은 로그인 유지 판정이 계속 쓰므로
+ * 그대로다.
+ *
+ * **v3.29에서 만 14세 체크 · 약관 문구가 이 화면에서 빠졌다**(CHANGELOG v3.29 「만 14세
+ * 체크 · 약관 문구를 약관 동의 화면으로 일원화」). dc.html 2번 화면은 브랜드 블록 +
+ * 「카카오로 시작하기」 버튼뿐이다. 그 둘은 WP-AUTH-010(`app/login/consent.tsx`)으로
+ * 옮겼다 — 로그인 성공 뒤(카카오가 연령대를 줘서 통과한 대부분의 경우) 그 화면이 연다.
+ *
+ * **카카오가 연령대를 안 줘 판정하지 못하는 드문 경우**(`needsAgeConfirm`)는 다르다 —
+ * 그 판정은 세션이 열리기 «전»에 끝나야 해서 약관 동의 화면(세션이 있어야 여는 화면)으로
+ * 미룰 수 없다. dc.html에는 이 상태가 없다 — 그려둔 화면이 아니라 로그인 자체를 한 번 더
+ * 받는 기존 안전장치이므로, 코랄 체크박스 화면 대신 `AgeConfirmSheet`(작은 확인 시트)로
+ * 남긴다. 「확인 못 함」의 기본값은 통과가 아니라 차단이다(`packages/domain/src/signup.ts`).
  */
 
 export default function LoginScreen() {
   const theme = useTheme();
   const { providers, error: loadError } = useAuthProviders();
-  const { signIn, busy, busyProvider, error, retry, dismissError, reportError } = useSignIn();
-  /** «만 14세 이상이에요»를 사람이 눌렀는가. 기본값은 꺼짐 — 미리 켜두지 않는다. */
-  const [ageChecked, setAgeChecked] = useState(false);
+  const {
+    signIn,
+    busy,
+    busyProvider,
+    error,
+    retry,
+    dismissError,
+    reportError,
+    needsAgeConfirm,
+    dismissAgeConfirm,
+  } = useSignIn();
 
   useEffect(() => {
     const failure = takePendingSignInError();
@@ -68,8 +90,6 @@ export default function LoginScreen() {
   const primary = options.find((provider) => provider.provider === 'kakao' && !provider.isDevelopmentStandIn)
     ?? options[0]
     ?? null;
-  /* 화면에서 연령 확인을 먼저 받아야 시작할 수 있다. */
-  const ageBlocked = !ageChecked;
 
   return (
     <ThemedView style={styles.container}>
@@ -106,8 +126,10 @@ export default function LoginScreen() {
               </ThemedView>
             ) : (
               <>
-                <AgeConfirmRow checked={ageChecked} onToggle={() => setAgeChecked((was) => !was)} />
-
+                {/*
+                 * v3.29 dc.html 2번 화면 — 브랜드 블록 아래 카카오 버튼 하나뿐이다.
+                 * 만 14세 체크 · 약관 안내 줄은 WP-AUTH-010(약관 동의 화면)으로 옮겼다.
+                 */}
                 {primary ? (
                   <ProviderButton
                     tone={providerTone(primary) ?? { background: theme.tint, text: theme.onTint }}
@@ -122,14 +144,10 @@ export default function LoginScreen() {
                         ? '실제 카카오 로그인이 아니에요. 개발 중인 서버에만 있어요'
                         : null
                     }
-                    disabled={busy || !canSignInWith(primary) || ageBlocked}
-                    onPress={() => signIn(primary, { ageAcknowledged: ageChecked })}
+                    disabled={busy || !canSignInWith(primary)}
+                    onPress={() => signIn(primary, {})}
                   />
                 ) : null}
-
-                <ThemedText type="f12" themeColor="textAssistive" style={styles.terms}>
-                  시작하면 <PolicyLink id="terms" />과 <PolicyLink id="privacy" />에 동의하게 돼요
-                </ThemedText>
               </>
             )}
 
@@ -145,6 +163,13 @@ export default function LoginScreen() {
       </SafeAreaView>
 
       <LoginFailureSheet visible={error !== null} onRetry={retry} onDismiss={dismissError} />
+      {/* 카카오가 연령대를 안 준 드문 경우만(`needsAgeConfirm`) — v3.29 dc.html에 없는 상태다. */}
+      <AgeConfirmSheet
+        visible={needsAgeConfirm}
+        busy={busy}
+        onConfirm={() => { if (primary) void signIn(primary, { ageAcknowledged: true }); }}
+        onDismiss={dismissAgeConfirm}
+      />
     </ThemedView>
   );
 }
@@ -192,76 +217,12 @@ function ProviderButton({
   );
 }
 
-/**
- * 만 14세 확인 — v3.28 WP-AUTH-001 `ageCta`. 카카오 버튼 «위»에 같은 높이 56으로
- * 선다: 코랄 면(tintSurface) · 코랄 1.5 테두리 · radius 6 · 가운데 정렬 · 체크 22
- * (radius 6) + 16/700 코랄 글자. 켜기 전에도 같은 모양이고 체크 안만 비어 있다.
- */
-function AgeConfirmRow({ checked, onToggle }: { checked: boolean; onToggle: () => void }) {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      accessibilityRole="checkbox"
-      accessibilityState={{ checked }}
-      accessibilityLabel={AGE_CONFIRM_LABEL}
-      onPress={onToggle}
-      style={(state) => {
-        const { focused } = readWebInteractionState(state);
-
-        return [
-          styles.ageConfirmRow,
-          { backgroundColor: theme.tintSurface, borderColor: theme.tint },
-          focused
-            ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: 2 }
-            : null,
-        ];
-      }}>
-      <View
-        style={[
-          styles.ageCheck,
-          checked
-            ? { backgroundColor: theme.tint }
-            : { borderWidth: Border.checkbox, borderColor: theme.tint },
-        ]}>
-        {checked ? <ProductSymbol name="check" size={14} color={theme.onTint} /> : null}
-      </View>
-      <ThemedText type="f16" themeColor="tint" style={styles.ageLabel}>
-        {AGE_CONFIRM_LABEL}
-      </ThemedText>
-    </Pressable>
-  );
-}
-
-function PolicyLink({ id }: { id: 'terms' | 'privacy' }) {
-  const theme = useTheme();
-  const policy = POLICY_DOCUMENTS.find((document) => document.id === id);
-
-  if (!policy?.url) return <>{id === 'terms' ? '이용약관' : '개인정보처리방침'}</>;
-
-  const { url } = policy;
-
-  return (
-    <ThemedText
-      type="f11"
-      themeColor="textSecondary"
-      accessibilityRole="link"
-      style={[styles.policyLink, { textDecorationColor: theme.textSecondary }]}
-      onPress={() => {
-        void openExternal(url, { title: policy.title });
-      }}>
-      {policy.title}
-    </ThemedText>
-  );
-}
-
 /*
- * v3.28 WP-AUTH-001 고정값 — 브랜드 블록 위 72(`loginBrand`) · 마크 상자 64 안의 마크 40
- * (`markBox`) · 만 14세 체크 22(`ageCheck`) · 카카오 로고 20(`kakaoMark`).
+ * v3.29 WP-AUTH-001 고정값 — 브랜드 블록 위 72(`loginBrand`) · 마크 상자 64 안의 마크 40
+ * (`markBox`) · 카카오 로고 20(`kakaoMark`). 만 14세 체크(`ageCheck`)는 이 화면에서 빠졌다.
  */
 const BRAND_TOP = 72;
 const MARK = 40;
-const AGE_CHECK = 22;
 const KAKAO_LOGO = 20;
 
 const styles = StyleSheet.create({
@@ -301,23 +262,6 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.four + Spacing.four,
     gap: 10,
   },
-  ageConfirmRow: {
-    height: Layout.ctaSheet,
-    borderRadius: Radius.control,
-    borderWidth: Border.selected,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Layout.iconTextGap,
-  },
-  ageCheck: {
-    width: AGE_CHECK,
-    height: AGE_CHECK,
-    borderRadius: Radius.control,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ageLabel: { fontWeight: 700 },
   card: { borderRadius: Radius.medium, padding: Spacing.three, gap: Spacing.one },
   provider: {
     height: Layout.ctaSheet,
@@ -330,10 +274,7 @@ const styles = StyleSheet.create({
   },
   providerLabel: { fontWeight: 700, lineHeight: LineHeight.lh23 },
   hint: { textAlign: 'center', marginTop: Spacing.one },
-  terms: { textAlign: 'center', paddingTop: Spacing.one, lineHeight: LineHeight.micro },
   busy: { alignItems: 'center', justifyContent: 'center', minHeight: Layout.ctaSheet },
-  policyLink: { fontWeight: 700, textDecorationLine: 'underline', textDecorationStyle: 'solid' },
-  bold: { fontWeight: 700 },
   disabled: { opacity: 0.4 },
   pressed: { opacity: 0.8 },
 });
