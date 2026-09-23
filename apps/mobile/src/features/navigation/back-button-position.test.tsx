@@ -4,33 +4,23 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { Layout } from '@weddingpick/ui';
 
 import { BackBar } from '@/components/back-bar';
+import { TOUCH_SLOT_SIZE, BACK_ICON_SIZE } from '@/components/back-button';
 import { NavBar } from '@/features/wedding/screen-kit';
 
 /**
  * **뒤로 가기 단추의 자리**를 지킨다.
  *
  * 2026-09-11 대표 지시 — 「Back 버튼 위치가 다른 상세 화면과 다른 부분이 있다.
- * 통일 하라」.
- *
- * 무엇이 어긋나 있었나. 상세 화면의 상단 막대를 그리는 부품이 셋인데
- * (`BackBar` · `NavBar` · `SubScreen`) 막대의 좌측 패딩 12는 셋이 같았다. 다른 것은
- * **40 상자 안에서 아이콘을 어디에 두는가**였다 —
- *
- * ```
- * NavBar · SubScreen   alignItems: 'center'       12 + (40−24)/2 = 20
- * BackBar              alignItems: 'flex-start'   12 + 0         = 12
- * ```
- *
- * 8px이다. 한 화면만 보면 모르지만 두 화면을 오가면 화살표가 움직인다.
+ * 통일 하라」. 값은 v3.29로 다시 맞췄다(CLAUDE.md 「일반 화면」 행 — 헤더 56px ·
+ * 좌측 36px 슬롯 뒤로가기 24px 아이콘). 옛 40 상자·24/20 아이콘 값에서 바뀌었다 —
+ * `back-button.tsx`가 내보내는 `TOUCH_SLOT_SIZE`(36)·`BACK_ICON_SIZE`(24)를 그대로
+ * 가져다 쓴다. 두 부품(`BackBar` · `NavBar`)은 여전히 같은 `BackButton`을 쓰므로
+ * 자리도 같이 움직인다 — 이 시험은 그 사실을 지킨다.
  *
  * **기존 시험은 이것을 잡을 수 없었다.** `depth-back-buttons.test.tsx`는 뒤로가기가
  * **어디로 가는지**(경로 문자열)만 본다. 게다가 그 파일은 `BackBar`를 문자열로
  * 갈아끼우므로(`jest.mock`) 스타일이 아예 실행되지 않는다. 저장소 전체에
  * 자리·치수를 보는 단언이 하나도 없었다. 그래서 이 파일을 따로 둔다.
- *
- * 시안 근거: `backBtn`이 20개 dc.html에 정의돼 있고 전부 같다 —
- * `width:40px;height:40px;border-radius:999px;display:flex;align-items:center;`
- * `justify-content:center`. `navBack`은 19개 전부 `padding:0 20px 0 12px`.
  */
 
 /* 자리만 보는 시험이라 어디로 가는지는 상관없다 — 훅이 서기만 하면 된다. */
@@ -40,8 +30,8 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({}),
 }));
 
-/** 시안 backBtn·navBack에서 나오는 값. 화살표 왼쪽 끝이 화면 왼쪽에서 떨어진 거리. */
-const CANONICAL_ICON_LEFT = 20;
+/** 화살표 왼쪽 끝이 화면 왼쪽에서 떨어진 거리 — 막대 좌측 패딩 + 36 상자 안에서 24 아이콘이 밀려난 만큼. */
+const CANONICAL_ICON_LEFT = 12 + (TOUCH_SLOT_SIZE - BACK_ICON_SIZE) / 2;
 const CANONICAL_NAV_HEIGHT = 56;
 const CANONICAL_NAV_PADDING_LEFT = 12;
 const CANONICAL_NAV_PADDING_RIGHT = 20;
@@ -86,20 +76,20 @@ function barStyle() {
 }
 
 /**
- * 화살표 왼쪽 끝의 x. 막대의 좌측 패딩 + 40 상자 안에서 24 아이콘이 밀려난 만큼.
- * 가운데 정렬이면 8, 왼쪽 붙임이면 0이다.
+ * 화살표 왼쪽 끝의 x. 막대의 좌측 패딩 + 36 상자 안에서 24 아이콘이 밀려난 만큼.
+ * 가운데 정렬이면 그만큼, 왼쪽 붙임이면 0이다.
  */
 function iconLeft(box: { alignItems?: unknown; width?: unknown }) {
-  const inset = box.alignItems === 'center' ? (Layout.iconButton - Layout.iconTab) / 2 : 0;
+  const inset = box.alignItems === 'center' ? (TOUCH_SLOT_SIZE - BACK_ICON_SIZE) / 2 : 0;
 
   return barStyle().paddingLeft + inset;
 }
 
-it('BackBar의 화살표는 시안 자리(20)에 앉는다', () => {
+it(`BackBar의 화살표는 시안 자리(${CANONICAL_ICON_LEFT})에 앉는다`, () => {
   const box = backButtonStyle(<BackBar title="문의하기" />);
 
-  expect(box.width).toBe(Layout.iconButton);
-  expect(box.height).toBe(Layout.iconButton);
+  expect(box.width).toBe(TOUCH_SLOT_SIZE);
+  expect(box.height).toBe(TOUCH_SLOT_SIZE);
   /* 이 줄이 flex-start였다. 고침을 되돌리면 여기서 걸린다. */
   expect(box.alignItems).toBe('center');
   expect(iconLeft(box)).toBe(CANONICAL_ICON_LEFT);
@@ -108,7 +98,7 @@ it('BackBar의 화살표는 시안 자리(20)에 앉는다', () => {
 it('NavBar의 화살표도 같은 자리에 앉는다', () => {
   const box = backButtonStyle(<NavBar title="일정" />);
 
-  expect(box.width).toBe(Layout.iconButton);
+  expect(box.width).toBe(TOUCH_SLOT_SIZE);
   expect(iconLeft(box)).toBe(CANONICAL_ICON_LEFT);
 });
 
