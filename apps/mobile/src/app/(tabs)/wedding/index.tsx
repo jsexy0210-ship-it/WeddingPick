@@ -519,7 +519,7 @@ function CalendarPanel({
   return (
     <View style={styles.calendarStack}>
       {weddingDate !== null ? (
-        <View style={[styles.panel, { backgroundColor: theme.background, borderColor: theme.border }]}>
+        <View style={[styles.ddayCard, { backgroundColor: theme.backgroundElement }]}>
           <View style={styles.ddayTop}>
             {/* 규격서 19/700 — 사다리에 없는 값이라 가장 가까운 f18을 쓴다. */}
             <ThemedText type="f18" numeric style={styles.bold}>
@@ -554,7 +554,7 @@ function CalendarPanel({
           accessibilityRole="button"
           accessibilityLabel={showPast ? PAST_EVENTS_HIDE : PAST_EVENTS_SHOW}
           onPress={() => setShowPast((prev) => !prev)}
-          style={styles.pastRow}>
+          style={[styles.pastRow, { borderBottomColor: theme.border }]}>
           <ThemedText type="f14" themeColor="textAssistive" numeric>
             {`지난 일정 ${past.length}건`}
           </ThemedText>
@@ -570,9 +570,11 @@ function CalendarPanel({
         <TimelineGroupView key={group.title} {...group} onEdit={onEdit} onDelete={onDelete} />
       ))}
 
-      <View style={[styles.panel, { backgroundColor: theme.background, borderColor: theme.border }]}>
-        {/* 등록 버튼은 헤더 영역에 있는 것만 쓴다 — 「할 일 추가」는 화면 헤더로 옮겼다(2026-09-23). */}
-        <ThemedText type="t6" style={[styles.bold, styles.clHead]}>
+      <View style={styles.taskSection}>
+        {/* 등록 버튼은 헤더 영역에 있는 것만 쓴다 — 「할 일 추가」는 화면 헤더로 옮겼다(2026-09-23).
+            v3.29 정본 WP-NOTE-001 `sec`는 카드(테두리·배경·radius)가 아니라 그냥 padding 섹션이다 —
+            위 타임라인과 같은 흐름 위에 놓인다. */}
+        <ThemedText type="f15" style={[styles.bold, styles.clHead]}>
           {TASKS_TITLE}
         </ThemedText>
         {(tasks ?? []).map((task) => {
@@ -657,13 +659,20 @@ function TimelineGroupView({
       {items.map((item) => {
         if (item.kind === 'wedding') {
           return (
-            <View key="wedding-day" style={[styles.eventRow, styles.weddingRow, { borderColor: theme.tint }]}>
-              <ThemedText type="f14" style={[styles.bold, styles.grow]}>
-                예식일
-              </ThemedText>
-              <ThemedText type="f12" themeColor="tint" numeric style={styles.bold}>
-                {formatDateDot(item.date)}
-              </ThemedText>
+            <View key="wedding-day" style={styles.tlRow}>
+              {/* 정본 tlRail/tlLine(WP-NOTE-001) — 예식일 점은 12px, 나머지는 9px. */}
+              <View style={styles.tlRail}>
+                <View style={[styles.tlDot, styles.tlDotWedding, { backgroundColor: theme.tint }]} />
+                <View style={[styles.tlLine, { backgroundColor: theme.border }]} />
+              </View>
+              <View style={[styles.tlCard, styles.weddingCard, { backgroundColor: theme.background, borderColor: theme.tint }]}>
+                <ThemedText type="f14" style={[styles.bold, styles.grow]}>
+                  예식일
+                </ThemedText>
+                <ThemedText type="f12" themeColor="tint" numeric style={styles.bold}>
+                  {formatDateDot(item.date)}
+                </ThemedText>
+              </View>
             </View>
           );
         }
@@ -671,36 +680,42 @@ function TimelineGroupView({
         const event = item.event;
         const done = dimmed || event.status === 'done';
         return (
-          <View
-            key={event.id}
-            style={[styles.eventRow, { backgroundColor: done ? theme.backgroundSelected : theme.backgroundElement }]}>
-            <View style={styles.grow}>
+          <View key={event.id} style={styles.tlRow}>
+            <View style={styles.tlRail}>
+              {/* 정본 dot 배경 #dcdee3(완료·지난 항목) — 팔레트에 이 값 하나만 쓰는 자리라
+                  전용 테마 토큰이 없다(theme.border는 다른 값). 문자열 그대로 둔다. */}
+              <View style={[styles.tlDot, { backgroundColor: done ? '#dcdee3' : theme.tint }]} />
+              <View style={[styles.tlLine, { backgroundColor: theme.border }]} />
+            </View>
+            <View style={[styles.tlCard, { backgroundColor: done ? theme.backgroundElement : theme.backgroundSelected }]}>
               <ThemedText type="f11" themeColor={done ? 'textAssistive' : 'tint'} numeric style={styles.bold}>
                 {formatMonthDayTimeDot(event.startsAt)}
               </ThemedText>
-              <ThemedText
-                type="f15"
-                numberOfLines={1}
-                themeColor={done ? 'textAssistive' : undefined}
-                style={[styles.semibold, done ? styles.strike : null]}>
-                {event.title}
-              </ThemedText>
+              <View style={styles.tlCardTitleRow}>
+                <ThemedText
+                  type="f15"
+                  numberOfLines={1}
+                  themeColor={done ? 'textAssistive' : undefined}
+                  style={[styles.semibold, styles.grow, done ? styles.strike : null]}>
+                  {event.title}
+                </ThemedText>
+                {!dimmed ? (
+                  <View style={styles.rowActions}>
+                    <Pressable accessibilityRole="button" accessibilityLabel={`${event.title} ${EDIT}`} onPress={() => onEdit(event)} style={styles.rowActionBtn}>
+                      <ProductSymbol name="edit" size={Layout.iconSmall} color={theme.textAssistive} />
+                    </Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel={`${event.title} ${DELETE}`} onPress={() => onDelete(event)} style={styles.rowActionBtn}>
+                      <ProductSymbol name="trash" size={Layout.iconSmall} color={theme.textAssistive} />
+                    </Pressable>
+                  </View>
+                ) : null}
+              </View>
               {event.memo ? (
                 <ThemedText type="f13" themeColor="textSecondary" numberOfLines={1}>
                   {event.memo}
                 </ThemedText>
               ) : null}
             </View>
-            {!dimmed ? (
-              <View style={styles.rowActions}>
-                <Pressable accessibilityRole="button" accessibilityLabel={`${event.title} ${EDIT}`} onPress={() => onEdit(event)} style={styles.rowActionBtn}>
-                  <ProductSymbol name="edit" size={Layout.iconSmall} color={theme.textAssistive} />
-                </Pressable>
-                <Pressable accessibilityRole="button" accessibilityLabel={`${event.title} ${DELETE}`} onPress={() => onDelete(event)} style={styles.rowActionBtn}>
-                  <ProductSymbol name="trash" size={Layout.iconSmall} color={theme.textAssistive} />
-                </Pressable>
-              </View>
-            ) : null}
           </View>
         );
       })}
@@ -1039,8 +1054,21 @@ const styles = StyleSheet.create({
     padding: Layout.cardPadding,
   },
 
-  // ── 캘린더 — v3.29 주 단위 흐름 ──
+  // ── 캘린더 — v3.29 주 단위 흐름(WP-NOTE-001) ──
   calendarStack: { gap: 0 },
+  /*
+   * D-day 카드 — 정본 `ddayCard`: `margin:4px 24px 0;padding:18px 20px;border-radius:12px;
+   * background:#f7f8fa`. 테두리 없는 회색 채움 카드다 — 예전엔 다른 패널들과 같은
+   * `styles.panel`(테두리 있는 흰 카드, radius 26)을 그대로 썼는데 정본과 달랐다.
+   * radius 12·margin-top 4는 래더에 없는 값이라 그대로 쓴다(파일 관례).
+   */
+  ddayCard: {
+    marginHorizontal: Layout.pageX,
+    marginTop: 4,
+    borderRadius: 12,
+    padding: Layout.cardPadding,
+    gap: Spacing.one,
+  },
   /* D-day 카드 위 줄 — 날짜 · D-N 양끝 정렬. */
   ddayTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: Layout.inlineGap },
   /* «예약현황 N곳» — 선 위 · 양끝 정렬. */
@@ -1053,28 +1081,47 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     minHeight: Layout.touchTarget,
   },
-  /* «지난 일정 N건 · 보기» — 선 없이 한 줄. */
+  /*
+   * «지난 일정 N건 · 보기» — 정본 `pastRow`에 `box-shadow:inset 0 -1px 0 #eaebee`(아래 선)가
+   * 있는데 빠져 있었다. borderBottomColor는 JSX에서 theme.border로 채운다.
+   */
   pastRow: {
     marginHorizontal: Layout.pageX,
     marginTop: Spacing.three,
     minHeight: Layout.rowMinHeightCompact,
+    borderBottomWidth: Border.hairline,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   timelineGroup: { marginHorizontal: Layout.pageX, marginTop: Spacing.four, gap: Spacing.two },
   timelineGroupHead: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.two },
-  /* 행 `rounded-2xl px-3.5 py-3 gap-3` — 좌우 14(같은 값의 chipPaddingX) · 상하 12 · 사이 12. */
-  eventRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Layout.inlineGap,
-    borderRadius: Radius.cardLarge,
-    paddingHorizontal: Layout.chipPaddingX,
-    paddingVertical: Layout.inlineGap,
+  /*
+   * 타임라인 행 — 정본 `tlRow`(display:flex;gap:12px;padding-bottom:8px)는 왼쪽 레일(점+선)과
+   * 오른쪽 카드 둘로 나뉜다. 예전엔 레일 없이 카드 하나만 그렸다 — 정본에 있는 요소가
+   * 빠져 있던 것이라 추가했다(2026-09-23, WP-NOTE-001 1:1 대조).
+   */
+  tlRow: { flexDirection: 'row', gap: Layout.inlineGap, paddingBottom: Spacing.two },
+  /* 정본 `tlRail`: width:12px, 세로 중앙 정렬, gap:6px(=Layout.menuGroupGap, 값만 재사용). */
+  tlRail: { width: 12, alignItems: 'center', gap: Layout.menuGroupGap },
+  /* 정본 `dot`: 9×9 원, margin-top:16px(카드 시간 라벨과 눈높이를 맞춘다). */
+  tlDot: { width: 9, height: 9, borderRadius: Radius.pill, marginTop: Spacing.three },
+  /* 예식일만 12×12로 더 크다. */
+  tlDotWedding: { width: 12, height: 12 },
+  /* 정본 `tlLine`: flex:1, width:1px, min-height:6px — 다음 점까지 이어지는 선. */
+  tlLine: { flex: 1, width: 1, minHeight: Layout.menuGroupGap },
+  /* 정본 `card`: flex:1, padding:14px 16px, border-radius:10px(Radius.medium), gap:3px. */
+  tlCard: {
+    flex: 1,
+    minWidth: 0,
+    borderRadius: Radius.medium,
+    paddingHorizontal: 16,
+    paddingVertical: Layout.chipPaddingX,
+    gap: 3,
   },
-  /* 예식일 줄 — 정본 `tlItem` 'wed' 스타일: 흰 면 + 코랄 테두리. */
-  weddingRow: { borderWidth: Border.focus },
+  /* 예식일 카드만 흰 배경 + 코랄 1.5px 링(정본 inset 0 0 0 1.5px) — Border.focus(2)로 근사한다. */
+  weddingCard: { borderWidth: Border.focus },
+  tlCardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: Layout.inlineGap },
   /* 수정 · 삭제 `h-8 w-8 rounded-xl`(32 · 같은 값의 avatarRow), 사이 2. */
   rowActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.half },
   rowActionBtn: {
@@ -1086,6 +1133,12 @@ const styles = StyleSheet.create({
   },
 
   // ── 할 일 ──
+  /*
+   * 정본 `sec`(WP-NOTE-001): `padding:0 24px 20px` — 카드가 아니라 페이지 흐름 위의 padding
+   * 섹션이다. 예전엔 다른 패널과 같은 `styles.panel`(테두리·radius 26 카드)을 썼는데, 이
+   * 화면 안에서 위 타임라인과 다른 시각 단위로 떠 보이는 이중 카드였다.
+   */
+  taskSection: { marginTop: Spacing.four, paddingHorizontal: Layout.pageX, paddingBottom: Layout.listGap },
   /* 「할 일」 섹션 라벨 — 옆의 등록 버튼은 헤더로 옮겨서 이제 라벨 하나뿐이다. */
   clHead: { marginBottom: Spacing.three },
   taskRow: {
