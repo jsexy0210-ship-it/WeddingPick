@@ -32,7 +32,8 @@ describe('2026-09-19 사용자 화면 검수 회귀', () => {
 
     expect(home).toContain("router.push('/community?tab=feed'");
     expect(community).toContain("requestedTab === 'feed'");
-    expect(community).toContain("{ value: 'feed', label: '웨딩피드' }");
+    /* v3.28 대조표 — 탭 이름은 「웨딩정보」다. 「웨딩피드」는 관리자·서버 쪽 이름이다. */
+    expect(community).toContain("{ value: 'feed', label: S['tab.feed'] }");
   });
 
   it('FAQ에서 문의하기 경로를 노출하지 않는다', () => {
