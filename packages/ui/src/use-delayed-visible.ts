@@ -11,7 +11,7 @@ import { Motion } from './theme';
  *
  * ```tsx
  * const showLoader = useDelayedVisible(isLoading);
- * {showLoader ? <CategoryCycleLoader size={28} /> : null}
+ * {showLoader ? <CircleLoader size={28} /> : null}
  * ```
  */
 export function useDelayedVisible(active: boolean, delay: number = Motion.loaderThreshold): boolean {

@@ -10,11 +10,20 @@ export type FabProps = {
   /** 화면에 보이는 기호. 아이콘 폰트가 없어 글자로 그린다. */
   glyph?: string;
   onPress: () => void;
+  /**
+   * 기기 하단 안전 영역(`useSafeAreaInsets().bottom`). 디바이스 대응 규칙 —
+   * 「inset은 하드코딩하지 않는다. 하단 고정 요소에만 더한다」. 탭바 높이가
+   * 기기마다(SE 72 · 노치 106 · 3버튼 안드로이드 120) 갈리므로 이 값을 더하지
+   * 않으면 탭바와의 간격이 기기마다 달라진다. 넘기지 않으면 기존과 같다.
+   */
+  bottomInset?: number;
 };
 
-/** 핸드오프 15번: 56px, 탭바 위 120px. */
+/** 핸드오프 15번: 56px, 탭바 위 120px(노치 기준 safeBottom 34 포함). */
 const SIZE = 56;
 const BOTTOM = 120;
+/** 시안 기준값(위 `BOTTOM`)이 이미 담고 있는 safeBottom — 다른 기기 값과의 차만 더한다. */
+const BASELINE_SAFE_BOTTOM = 34;
 
 /**
  * 떠 있는 추가 단추. 디자인 핸드오프 15·16번.
@@ -25,8 +34,9 @@ const BOTTOM = 120;
  * 그림자는 핸드오프 `elevation.floatingCard`(0 2px 6px rgba(0,0,0,.16))다 — 그림자를 거의
  * 쓰지 않는 SEED 규칙에서 떠 있는 요소만 예외다.
  */
-export function Fab({ label, glyph = '+', onPress }: FabProps) {
+export function Fab({ label, glyph = '+', onPress, bottomInset = BASELINE_SAFE_BOTTOM }: FabProps) {
   const theme = useTheme();
+  const bottom = BOTTOM + (bottomInset - BASELINE_SAFE_BOTTOM);
 
   return (
     <Pressable
@@ -36,6 +46,7 @@ export function Fab({ label, glyph = '+', onPress }: FabProps) {
       style={({ pressed }) => [
         styles.fab,
         {
+          bottom,
           backgroundColor: theme.tint,
           opacity: pressed ? 0.86 : 1,
         },
@@ -54,7 +65,6 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: Layout.gutter,
-    bottom: BOTTOM,
     width: SIZE,
     height: SIZE,
     borderRadius: Radius.pill,

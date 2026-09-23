@@ -55,8 +55,9 @@ function NativeConfirmation({ active }: { active: ActiveNativeConfirmation }) {
         <SheetPanel>
           <View style={styles.sheetHead}>
             <ThemedText type="t4">{request.title}</ThemedText>
+            {/* WP-DLG bodyStyle — 14/22 · MUTED. `body`(16/24)가 아니라 `t7`(14/19)이 정본에 더 가깝다. */}
             {request.message ? (
-              <ThemedText type="body" themeColor="textSecondary">
+              <ThemedText type="t7" themeColor="textSecondary">
                 {request.message}
               </ThemedText>
             ) : null}
@@ -120,8 +121,9 @@ function NativeConfirmation({ active }: { active: ActiveNativeConfirmation }) {
           <ThemedText type="t4" style={styles.centerText}>
             {request.title}
           </ThemedText>
+          {/* WP-DLG bodyStyle(alert/confirm/danger) — 14/22 · MUTED · 가운데. */}
           {request.message ? (
-            <ThemedText type="body" themeColor="textSecondary" style={styles.centerText}>
+            <ThemedText type="t7" themeColor="textSecondary" style={styles.centerText}>
               {request.message}
             </ThemedText>
           ) : null}
