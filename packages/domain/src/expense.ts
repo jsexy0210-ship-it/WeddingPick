@@ -8,7 +8,12 @@ import type { VendorCategory } from './vendor';
  * 온 값인지는 줄마다 적는다.
  */
 
-export const EXPENSE_SOURCES = ['payment_proof', 'manual'] as const;
+/*
+ * `consultation` — 상담 녹음을 정리해 나온 금액(2026-09-23 대표 결정 · CLAUDE.md
+ * 「웨딩노트 [open] 2건」). 실 제보와 분리하지 않는다 — 총액·막대에 함께 들어가고,
+ * 어디서 온 값인지는 줄마다 배지로 적는다. 위 규칙 그대로다.
+ */
+export const EXPENSE_SOURCES = ['payment_proof', 'manual', 'consultation'] as const;
 
 export type ExpenseSource = (typeof EXPENSE_SOURCES)[number];
 
@@ -21,6 +26,7 @@ export type ExpenseSource = (typeof EXPENSE_SOURCES)[number];
 export const EXPENSE_SOURCE_LABEL: Record<ExpenseSource, string> = {
   payment_proof: 'Pick 인증 자료',
   manual: '직접 입력',
+  consultation: '상담 정리',
 };
 
 export const EXPENSE_STATUSES = ['paid', 'scheduled'] as const;

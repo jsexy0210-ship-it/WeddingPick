@@ -1,5 +1,5 @@
 import type { ExpenseSummaryResponse } from '@weddingpick/api-contract';
-import { manwon } from '@weddingpick/domain';
+import { EXPENSE_SOURCE_LABEL, manwon } from '@weddingpick/domain';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -94,7 +94,8 @@ export default function ExpenseListScreen() {
             {rows.map((expense) => {
               const scheduled = expense.status === 'scheduled';
               const meta = [
-                expense.source === 'payment_proof' ? '실 제보 연결' : '직접 입력',
+                /* 출처는 줄마다 적는다 — 상담 정리 금액은 «상담 정리» 배지(2026-09-23 결정). */
+                expense.source === 'payment_proof' ? '실 제보 연결' : EXPENSE_SOURCE_LABEL[expense.source],
                 expense.spentOn ? formatDateDot(expense.spentOn) : null,
                 scheduled ? expense.statusLabel : null,
               ]
