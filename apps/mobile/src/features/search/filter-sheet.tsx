@@ -5,7 +5,7 @@ import {
   VENDOR_CATEGORY_LABEL,
   type VendorCategory,
 } from '@weddingpick/domain';
-import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import {
   ActionButton,
@@ -29,6 +29,10 @@ import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
  * 바뀝니다»). 그 수는 시트가 스스로 세지 않고 부모가 넘긴다 — 결과 화면이 이미 같은
  * 조건으로 서버를 부르고 있어서, 여기서 또 부르면 같은 질의를 두 번 한다.
  *
+ * **「실 제보가 있는 곳만」 토글을 뺐다**(2026-09-23 대표 지시 「정본과 다른 기능은 제거한다」).
+ * v3.28 WP-SRCH-002가 그리는 묶음은 카테고리 · 지역 · 예산 · 스타일 넷뿐이고, 이 토글은
+ * 6개 `.dc.html` 어디에도 없다. 서버의 `onlyVerified` 질의값은 그대로 두고 화면에서만 뺀다.
+ *
  * 시안의 「촬영일」 · 「조건(원본 전체 · 야외 포함 …)」 두 묶음은 두지 않는다. 업체의
  * 촬영 가능일도 상품 구성도 아직 어디에도 모아둔 것이 없다 — 눌러도 아무것도 걸리지
  * 않는 칩을 두는 것이 빠뜨리는 것보다 나쁘다.
@@ -44,8 +48,6 @@ const S = {
   allCategories: '전체',
   groupRegion: '지역',
   groupBudget: '예산',
-  onlyVerified: '실 제보가 있는 곳만',
-  onlyVerifiedDesc: '금액을 볼 수 있는 곳만 보기',
 };
 
 export type SearchFilterValue = {
@@ -53,7 +55,6 @@ export type SearchFilterValue = {
   category: VendorCategory | null;
   region: string | null;
   budget: BudgetBandKey | null;
-  onlyVerified: boolean;
 };
 
 export function FilterSheet({
@@ -83,12 +84,6 @@ export function FilterSheet({
    */
   const set = (patch: Partial<SearchFilterValue>) => onChange({ ...value, ...patch });
 
-  const switchProps = {
-    trackColor: { true: theme.tint, false: theme.track },
-    thumbColor: theme.onTint,
-    ios_backgroundColor: theme.track,
-  };
-
   return (
     <BottomSheet visible={visible} onRequestClose={onDismiss}>
       <SheetPanel style={styles.panel}>
@@ -98,7 +93,7 @@ export function FilterSheet({
             accessibilityRole="button"
             accessibilityLabel={S.reset}
             hitSlop={Spacing.three}
-            onPress={() => onChange({ category: null, region: null, budget: null, onlyVerified: false })}>
+            onPress={() => onChange({ category: null, region: null, budget: null })}>
             {/*
               v3.28 WP-SRCH-002 — 「상단 우측에 초기화가 primary 색 텍스트로 있습니다」.
               시안의 `resetBtn`도 `color: P`(#ff6f61 코랄)다. 옛 정본의 #4D5159 회색에서 되돌렸다.
@@ -185,23 +180,6 @@ export function FilterSheet({
             </View>
           </View>
 
-          {/* 실 제보가 있는 곳만 — 금액을 볼 수 있는 곳만 남긴다. */}
-          <View style={styles.group}>
-            <ThemedText type="t6" style={styles.bold}>
-              {S.onlyVerified}
-            </ThemedText>
-            <View style={styles.toggleRow}>
-              <ThemedText type="t6" themeColor="textSecondary">
-                {S.onlyVerifiedDesc}
-              </ThemedText>
-              <Switch
-                value={value.onlyVerified}
-                onValueChange={(next) => set({ onlyVerified: next })}
-                accessibilityLabel={S.onlyVerified}
-                {...switchProps}
-              />
-            </View>
-          </View>
         </ScrollView>
 
         {/* dock — 화면당 Primary CTA 하나. 고른 조건으로 몇 곳인지 그대로 적는다. */}
@@ -229,13 +207,6 @@ const styles = StyleSheet.create({
   bodyContent: { gap: Layout.sectionGap, paddingBottom: Spacing.one },
   group: { gap: Layout.cardGap },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Layout.chipGap },
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: Layout.rowMinHeight,
-    gap: Spacing.three,
-  },
   dock: {
     borderTopWidth: 1,
     paddingTop: Layout.sheetPaddingTop,

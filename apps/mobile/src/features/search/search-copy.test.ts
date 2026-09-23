@@ -53,11 +53,16 @@ describe('검색 문구는 spec과 같다', () => {
     expect(sheet).not.toContain('필터 적용');
   });
 
-  it('«실 제보가 있는 곳만» 토글의 두 줄이 다 있다', () => {
+  it('«실 제보가 있는 곳만» 토글을 두지 않는다', () => {
+    /*
+     * 2026-09-23 대표 지시 「정본과 다른 기능은 제거한다」. v3.28 WP-SRCH-002가 그리는
+     * 묶음은 카테고리 · 지역 · 예산 · 스타일 넷뿐이고 이 토글은 6개 .dc.html 어디에도 없다.
+     * 지웠다는 사실을 세는 자리 — 문구가 돌아오면 여기서 걸린다.
+     */
     const sheet = read('filter-sheet.tsx');
 
-    expect(sheet).toContain(strings.search['filter.onlyVerified']);
-    expect(sheet).toContain(strings.search['filter.onlyVerifiedDesc']);
+    expect(sheet).not.toContain('실 제보가 있는 곳만');
+    expect(strings.search['filter.onlyVerified']).toBeUndefined();
   });
 
   it('예산은 구간 칩이다 — 만원 숫자 입력 칸을 두지 않는다', () => {

@@ -133,8 +133,6 @@ type Filters = {
   region: string | null;
   /** 예산 구간 한 칸(WP-SRCH-005). 고르지 않았으면 null. */
   budget: BudgetBandKey | null;
-  /** «실 제보가 있는 곳만» — 금액을 볼 수 있는 곳만 남긴다(WP-SRCH-005). */
-  onlyVerified: boolean;
   sort: VendorSort;
 };
 
@@ -171,7 +169,6 @@ export default function SearchScreen() {
     category: null,
     region: null,
     budget: null,
-    onlyVerified: false,
     sort: 'data',
   });
   /*
@@ -307,7 +304,6 @@ export default function SearchScreen() {
       region: filters.region ?? undefined,
       category: filters.category ?? undefined,
       budget: filters.budget ?? undefined,
-      onlyVerified: filters.onlyVerified || undefined,
       sort: filters.sort,
     }, {
       force,
@@ -391,7 +387,7 @@ export default function SearchScreen() {
         ? 'category'
         : null;
 
-  const relaxedKey = `${filters.q.trim()}|${filters.region ?? ''}|${filters.category ?? ''}|${filters.budget ?? ''}|${filters.onlyVerified ? '1' : ''}|${filters.sort}`;
+  const relaxedKey = `${filters.q.trim()}|${filters.region ?? ''}|${filters.category ?? ''}|${filters.budget ?? ''}|${filters.sort}`;
   const relaxedTotal = relaxed?.key === relaxedKey ? relaxed.total : null;
   const similar = relaxed?.key === relaxedKey ? relaxed.similar : [];
 
@@ -404,7 +400,6 @@ export default function SearchScreen() {
       region: relaxKey === 'region' ? undefined : (filters.region ?? undefined),
       category: relaxKey === 'category' ? undefined : (filters.category ?? undefined),
       budget: relaxKey === 'budget' ? undefined : (filters.budget ?? undefined),
-      onlyVerified: filters.onlyVerified || undefined,
       sort: filters.sort,
     })
       .then((response) => {
@@ -434,7 +429,6 @@ export default function SearchScreen() {
         cursor: nextCursor,
         category: filters.category ?? undefined,
         budget: filters.budget ?? undefined,
-        onlyVerified: filters.onlyVerified || undefined,
         sort: filters.sort,
       });
       if (id !== requestId.current) return;
@@ -511,7 +505,6 @@ export default function SearchScreen() {
     filters.category,
     filters.region,
     filters.budget,
-    filters.onlyVerified ? 'verified' : null,
   ].filter(Boolean).length;
 
   // ─── 검색창 ───────────────────────────────────────────────────────────────
@@ -994,7 +987,6 @@ export default function SearchScreen() {
             category: filters.category,
             region: filters.region,
             budget: filters.budget,
-            onlyVerified: filters.onlyVerified,
           }}
           regions={regionNames}
           count={total}
