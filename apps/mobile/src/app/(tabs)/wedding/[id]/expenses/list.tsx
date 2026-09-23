@@ -68,7 +68,7 @@ export default function ExpenseListScreen() {
 
   return (
     <Screen>
-      <NavBar title="지출 내역" right={{ label: '추가', brand: true, onPress: openAdd }} />
+      <NavBar title="지출 내역" variant="close" right={{ label: '추가', brand: true, onPress: openAdd }} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Hero
