@@ -80,8 +80,8 @@ export default function LoginScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.brandBlock}>
-            <View style={styles.markBox}>
-              <WeddingMark size={64} color={theme.tint} />
+            <View style={[styles.markBox, { backgroundColor: theme.tintSurface }]}>
+              <WeddingMark size={MARK} color={theme.tint} />
             </View>
             <ThemedText type="f32" style={styles.title}>
               {showRemembered && remembered
@@ -146,7 +146,7 @@ export default function LoginScreen() {
                   />
                 ) : null}
 
-                <ThemedText type="f13" themeColor="textAssistive" style={styles.terms}>
+                <ThemedText type="f12" themeColor="textAssistive" style={styles.terms}>
                   {showRemembered ? (
                     '이 기기에서 로그인을 유지하고 있어요'
                   ) : (
@@ -223,6 +223,11 @@ function remainingLine(weddingDate: string): string {
   return remaining.kind === 'upcoming' ? `예식까지 ${remaining.days}일 남았어요` : remaining.text;
 }
 
+/**
+ * 만 14세 확인 — v3.28 WP-AUTH-001 `ageCta`. 카카오 버튼 «위»에 같은 높이 56으로
+ * 선다: 코랄 면(tintSurface) · 코랄 1.5 테두리 · radius 6 · 가운데 정렬 · 체크 22
+ * (radius 6) + 16/700 코랄 글자. 켜기 전에도 같은 모양이고 체크 안만 비어 있다.
+ */
 function AgeConfirmRow({
   visible,
   checked,
@@ -246,7 +251,7 @@ function AgeConfirmRow({
 
         return [
           styles.ageConfirmRow,
-          { borderBottomColor: theme.line },
+          { backgroundColor: theme.tintSurface, borderColor: theme.tint },
           focused
             ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: 2 }
             : null,
@@ -257,11 +262,11 @@ function AgeConfirmRow({
           styles.ageCheck,
           checked
             ? { backgroundColor: theme.tint }
-            : { borderWidth: Border.checkbox, borderColor: theme.track },
+            : { borderWidth: Border.checkbox, borderColor: theme.tint },
         ]}>
-        {checked ? <ProductSymbol name="check" size={12} color={theme.onTint} /> : null}
+        {checked ? <ProductSymbol name="check" size={14} color={theme.onTint} /> : null}
       </View>
-      <ThemedText type="f15" themeColor="textSecondary" style={styles.grow}>
+      <ThemedText type="f16" themeColor="tint" style={styles.ageLabel}>
         {AGE_CONFIRM_LABEL}
       </ThemedText>
     </Pressable>
@@ -322,7 +327,14 @@ function PolicyLink({ id }: { id: 'terms' | 'privacy' }) {
   );
 }
 
-/* 규격서 고정값 — 카카오 로고 20(«span 20×20»). 기억된 계정 카드는 옛 시안 — 로고 18 · 배지 좌우 9 · 카드 안쪽 16/18. */
+/*
+ * v3.28 WP-AUTH-001 고정값 — 브랜드 블록 위 72(`loginBrand`) · 마크 상자 64 안의 마크 40
+ * (`markBox`) · 만 14세 체크 22(`ageCheck`) · 카카오 로고 20(`kakaoMark`). 기억된 계정
+ * 카드는 옛 시안 — 로고 18 · 배지 좌우 9 · 카드 안쪽 16/18.
+ */
+const BRAND_TOP = 72;
+const MARK = 40;
+const AGE_CHECK = 22;
 const KAKAO_LOGO = 20;
 const AVATAR_LOGO = 18;
 const BADGE_PADDING_X = 9;
@@ -335,12 +347,13 @@ const styles = StyleSheet.create({
   content: { flexGrow: 1 },
   brandBlock: {
     flex: 1,
-    paddingTop: 88,
+    paddingTop: BRAND_TOP,
     paddingHorizontal: Layout.gutter,
   },
   markBox: {
-    width: 64,
-    height: 64,
+    width: Spacing.six,
+    height: Spacing.six,
+    borderRadius: Radius.cardLarge,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
@@ -368,20 +381,22 @@ const styles = StyleSheet.create({
   },
   section: { gap: Layout.cardGap },
   ageConfirmRow: {
-    height: 44,
+    height: Layout.ctaSheet,
+    borderRadius: Radius.control,
+    borderWidth: Border.selected,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    borderBottomWidth: Border.hairline,
+    justifyContent: 'center',
+    gap: Layout.iconTextGap,
   },
   ageCheck: {
-    width: 18,
-    height: 18,
-    borderRadius: Radius.pill,
+    width: AGE_CHECK,
+    height: AGE_CHECK,
+    borderRadius: Radius.control,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  grow: { flex: 1 },
+  ageLabel: { fontWeight: 700 },
   card: { borderRadius: Radius.medium, padding: Spacing.three, gap: Spacing.one },
   provider: {
     height: Layout.ctaSheet,
@@ -394,7 +409,7 @@ const styles = StyleSheet.create({
   },
   providerLabel: { fontWeight: 700, lineHeight: LineHeight.lh23 },
   hint: { textAlign: 'center', marginTop: Spacing.one },
-  terms: { textAlign: 'center', paddingTop: 6, lineHeight: LineHeight.lh19 },
+  terms: { textAlign: 'center', paddingTop: Spacing.one, lineHeight: LineHeight.micro },
   busy: { alignItems: 'center', justifyContent: 'center', minHeight: Layout.ctaSheet },
   accountWrap: {},
   account: {

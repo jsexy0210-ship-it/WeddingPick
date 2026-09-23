@@ -2,6 +2,7 @@ import {
   STYLE_PICK_LIMIT_TOAST,
   WEDDING_STYLES,
   WEDDING_STYLE_LABEL,
+  budgetBracketForAmount,
   combineRegion,
   dDay,
   formatDateDot,
@@ -20,7 +21,6 @@ import {
   Border,
   FontSize,
   Layout,
-  ProductSymbol,
   Radius,
   Spacing,
   ThemedText,
@@ -34,29 +34,32 @@ import {
   takeFullScreenLoading,
 } from '@/features/loading/first-run';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
+import { BudgetAmount } from '@/features/onboarding/budget-amount';
 import { DatePickerSheet } from '@/features/onboarding/date-picker-sheet';
 import {
   DONE_CTA,
+  DONE_DESCRIPTION,
   DONE_PROGRESS,
   DONE_TITLE_LINES,
+  EDIT_CTA,
   EMPTY_ANSWERS,
   NEXT_CTA,
+  PREP_CARDS,
   PREV_CTA,
-  QUESTION_STEPS,
-  STEP_LABEL,
   STEP_TITLE_LINES,
   STYLE_DESCRIPTION,
   UNDECIDED_LABEL,
-  answerSummary,
   canAdvance,
   doneRows,
+  isPrepCardSelected,
   nextStep,
   prevStep,
   resumeStep,
+  settleAnswer,
   stepDescription,
   stepProgress,
   stepsFor,
-  styleCta,
+  togglePrepCard,
   type Answers,
   type QuestionStep,
 } from '@/features/onboarding/flow';
@@ -74,34 +77,35 @@ import {
 } from '@/features/onboarding/wedding-draft';
 
 /**
- * 초기 설정. 디자인 핸드오프 v3.22 20-onboarding-v2.dc.html · SPEC §13.6 · §13.7
- * (WP-APP-020 ~ 023).
+ * 초기 설정 — v3.28 정본 `docs/design/html/대메뉴_홈(로그인, 온보딩).dc.html`
+ * WP-AUTH-002 ~ 007.
  *
- *   예식일 1/3 → 지역 2/3 → 스타일 3/3 → 완료
+ *   예식일 1/5 → 지역 2/5 → 진행 상황 3/5 → 예산 4/5 → 스타일 5/5 → 완료
  *
- * **다섯에서 셋으로 줄였다**(2026-09-14 대표 확정 · 피그마 `FlowScreens.tsx` 3단계).
- * 준비 현황과 예산은 첫 진입에서 묻지 않는다 — 없어진 값이 아니라 MY의 웨딩 설정
- * (`app/(tabs)/my/wedding-settings.tsx`)에서 계속 고칠 수 있다. 순서와 개수는
+ * **셋에서 다시 다섯이 됐다**(2026-09-22 v3.28). 2026-09-14의 3단계는 그때의 피그마
+ * 기준이었고 v3.28이 그 위에 선다. 준비 현황과 예산은 MY의 웨딩 설정
+ * (`app/(tabs)/my/wedding-settings.tsx`)에서도 계속 고칠 수 있다. 순서와 개수는
  * `features/onboarding/flow.ts`가 정한다.
  *
  * **큰 질문 하나 = Step 하나.** 순서·건너뛰기는 전부 `features/onboarding/flow.ts`가
  * 정하고 이 화면은 그 답을 그린다.
  *
- * 최신 시각 정본(06-onboarding-login)은 2/3에 예식일, 3/3에 예식일·지역 답 줄을
- * 보여주고 각 줄에 «바꾸기»를 둔다. 2026-09-19 1:1 매칭 작업에서는 현재 정본을
- * 그대로 따르며, «바꾸기»는 해당 질문만 다시 연다. **하단 CTA도 정본대로 고정한다.**
+ * 질문 화면에는 답 줄이 없다 — 시안 다섯 장 모두 진행바 · 질문 · 입력 · dock뿐이다.
+ * 답을 다시 보는 자리는 완료 화면 하나이고 거기의 «바꾸기»가 해당 질문을 다시 연다
+ * (WP-AUTH-007 「여기서 바꾸면 해당 단계로 돌아갑니다」). **하단 CTA는 다섯 질문
+ * 모두 «다음»이다.**
  *
  * **상단 뒤로가기가 없다.** 첫 질문은 «다음»만, 두 번째부터 «이전 · 다음».
  * 안드로이드 물리 뒤로가기는 «이전»과 같고 첫 질문에서는 로그인으로 나간다.
  *
- * **미정을 억지로 받지 않는다.** 예식일 · 지역 «아직 정하지 않았어요», 준비 현황
- * «아직 시작 전이에요», 예산 «아직 모르겠어요». 스타일만 최소 1개 필수다 — 추천의
- * 근거라 없으면 첫 화면에 보여줄 것이 없다. 최대 2개이며 3번째 선택은 정본 토스트로
- * 알린다. 3/3은 건너뛰지 않는다. 이미 고른 스타일이 서버에
- * 있으면(다시 들어온 계정) 초기화하지 않고 복원해서 보여준다.
+ * **미정을 억지로 받지 않는다.** 예식일 · 지역은 «아직 정하지 않았어요» 칩, 진행
+ * 상황 · 예산은 아무것도 안 고르고 «다음»을 누르면 미정이다(시안에 미정 칩이 따로
+ * 없다 — `settleAnswer`). 스타일만 최소 1개 필수다 — 추천의 근거라 없으면 첫 화면에
+ * 보여줄 것이 없다. 최대 2개이며 3번째 선택은 정본 토스트로 알린다(CLAUDE.md
+ * v3.24 · 대조표 「4종 버튼 · 최대 2개」). 이미 고른 스타일이 서버에 있으면(다시
+ * 들어온 계정) 초기화하지 않고 복원해서 보여준다.
  *
- * **스크롤은 화면 전체 하나다**(SPEC §13.5.5). 준비 현황이 뷰포트를 넘치면 화면이
- * 스크롤한다 — 목록 전용 스크롤을 두지 않는다. 3/3은 200 × 2행이라 스크롤이 없다.
+ * **스크롤은 화면 전체 하나다**(SPEC §13.5.5). 목록 전용 스크롤을 두지 않는다.
  *
  * **만 14세 확인은 여기 없다.** 로그인(`POST /v1/auth/sessions`)이 판정하고 서버에
  * 기록한다 — 이 화면은 동의만 보낸다. 예전에는 여기서 `ageVerified: true`를 함께
@@ -113,8 +117,9 @@ import {
  * 답하는 중인 값은 기기에 적어둔다 — 앱을 닫았다 열어도 답한 데까지 이어서 묻는다.
  * 서버에 올리고 나면 지운다.
  *
- * 화면의 모양·수치·줄바꿈은 현재 docs/design/figma-export/06-onboarding-login.dc.html을
- * 기준으로 맞춘다. 정책/저장 계약은 기존 3문항 규칙을 유지한다.
+ * 화면의 모양·수치·줄바꿈은 v3.28 시안의 CSS 문자열(`qBlock` · `dateField` · `amtField` ·
+ * `sumCard` …)을 기준으로 맞춘다. 저장 계약(`completeSetup`)은 그대로다 — 예산은 만원
+ * 금액을 구간으로 옮겨 보낸다(`budgetBracketForAmount`).
  */
 /** 예식일 첫 줄 — 아직 안 골랐을 때. 고르면 그 날짜가 이 자리에 선다. */
 const DATE_PICK_LABEL = '날짜 고르기';
@@ -143,9 +148,9 @@ export default function SetupScreen() {
   const [step, setStep] = useState<QuestionStep | 'done'>('date');
   /** 기기에 적어둔 답을 읽기 전에는 첫 질문을 그리지 않는다 — 잠깐 스쳤다 바뀌면 안 된다. */
   const [restored, setRestored] = useState(false);
-  /** 서버에 이미 있는 스타일 — 3/3에 닿았을 때 아직 안 골랐으면 이걸로 복원한다. */
+  /** 서버에 이미 있는 스타일 — 5/5에 닿았을 때 아직 안 골랐으면 이걸로 복원한다. */
   const [seedStyle, setSeedStyle] = useState<readonly WeddingStyle[] | null>(null);
-  /** 서버 응답이 올 때 이미 3/3에 있는지 보려고 지금 Step을 적어 둔다. */
+  /** 서버 응답이 올 때 이미 5/5에 있는지 보려고 지금 Step을 적어 둔다. */
   const stepRef = useRef<QuestionStep | 'done'>('date');
   const [sheetOpen, setSheetOpen] = useState(false);
   const [regionSheetOpen, setRegionSheetOpen] = useState(false);
@@ -170,8 +175,8 @@ export default function SetupScreen() {
 
     /*
      * 이미 고른 스타일이 있으면 복원한다(SPEC §13.6 «진입 — 기존 선택값을 초기화하지 않고
-     * 복원»). 3/3에 들어설 때 `enter`가 채우고, 응답이 늦어 이미 3/3에 있으면 여기서 채운다.
-     * 못 읽으면 없는 것 — 그 앞에서는 채우지 않는다(채우면 3/3을 건너뛰게 된다).
+     * 복원»). 5/5에 들어설 때 `enter`가 채우고, 응답이 늦어 이미 5/5에 있으면 여기서 채운다.
+     * 못 읽으면 없는 것 — 그 앞에서는 채우지 않는다(채우면 5/5를 건너뛰게 된다).
      */
     let active = true;
     void (async () => {
@@ -209,7 +214,7 @@ export default function SetupScreen() {
     setAnswers((current) => ({ ...current, ...patch }));
   }
 
-  /** Step을 연다. 3/3에 처음 닿았고 서버에 고른 스타일이 있으면 그걸로 채운다. */
+  /** Step을 연다. 5/5에 처음 닿았고 서버에 고른 스타일이 있으면 그걸로 채운다. */
   const enter = useCallback(
     (target: QuestionStep) => {
       if (target === 'style' && answers.style === null && seedStyle !== null) {
@@ -272,14 +277,18 @@ export default function SetupScreen() {
 
     const region = source.region?.region ?? null;
     const styleTags = [...(source.style ?? [])];
+    /* 진행 상황(3/5) — 고른 카드의 업종 전부. 빈 배열은 «아직 시작 전». */
+    const preparedCategories = [...(source.prep?.categories ?? [])];
     /*
-     * 준비 현황·예산은 3단계로 줄이면서 여기서 묻지 않는다(2026-09-14 대표 확정).
-     * 초안의 칸은 그대로 두고 비워 보낸다 — 두 값은 MY의 웨딩 설정에서 채운다.
+     * 예산(4/5) — 화면은 만원 금액을 받지만 계약은 아직 구간만 받는다. 적지 않았으면
+     * «아직 모르겠어요»(unknown)다. 정확한 금액을 저장하는 계약 확장은 PR의 「판단 필요」.
      */
+    const budgetBracket = budgetBracketForAmount(source.budget?.amount ?? 0);
     const draft = {
       weddingDate: source.date?.value ?? null,
       region: region === null ? null : combineRegion(region, source.region?.district ?? null),
-      budgetBracket: null,
+      budgetBracket,
+      preparedCategories,
       styleTags,
     };
 
@@ -311,15 +320,12 @@ export default function SetupScreen() {
           return;
         }
 
-        /*
-         * 준비 현황·예산은 키를 아예 보내지 않는다. 계약은 둘 다 선택 항목이라
-         * (`completeSetupRequestSchema`) 빼도 되고, null을 보내면 MY에서 이미
-         * 채워 둔 값을 지우게 된다.
-         */
         await completeSetup({
           weddingDate: draft.weddingDate,
           region: draft.region,
-          /* 계약은 최소 1개를 받는다 — 3/3은 건너뛰지 않으므로 늘 있지만, 없으면 키를 아예 보내지 않는다. */
+          preparedCategories: draft.preparedCategories,
+          budgetBracket: draft.budgetBracket,
+          /* 계약은 최소 1개를 받는다 — 5/5는 건너뛰지 않으므로 늘 있지만, 없으면 키를 아예 보내지 않는다. */
           ...(styleTags.length > 0 ? { styleTags } : {}),
         });
 
@@ -366,7 +372,11 @@ export default function SetupScreen() {
   function goNext() {
     if (step === 'done') return;
 
-    const next = nextStep(step, answers);
+    /* 진행 상황 · 예산은 아무것도 안 고르고 누르면 그 자체가 미정 답이다. */
+    const settled = settleAnswer(step, answers);
+    if (settled !== answers) setAnswers(settled);
+
+    const next = nextStep(step, settled);
 
     setError(null);
 
@@ -415,27 +425,35 @@ export default function SetupScreen() {
          */
         onNext={() => void finish()}
         error={error}>
-        <QuestionHead lines={DONE_TITLE_LINES} />
+        <QuestionHead lines={DONE_TITLE_LINES} description={DONE_DESCRIPTION} />
 
+        {/* 시안 sumCard — gray50 · radius 10 · 행 56 · 좌우 16 · 행 사이 hairline. */}
         <View style={styles.section}>
           <View style={[styles.summary, { backgroundColor: theme.backgroundElement }]}>
-            {doneRows(answers).map((row) => (
-              <View key={row.step} style={styles.summaryRow}>
-                <ThemedText type="t6" themeColor="textSecondary">
+            {doneRows(answers).map((row, index, rows) => (
+              <View
+                key={row.step}
+                style={[
+                  styles.summaryRow,
+                  index < rows.length - 1 && { borderBottomWidth: Border.hairline, borderBottomColor: theme.line },
+                ]}>
+                <ThemedText type="f14" themeColor="textAssistive" style={styles.summaryKey}>
                   {row.label}
                 </ThemedText>
-                <ThemedText type="t6" numeric numberOfLines={1} style={styles.summaryValue}>
+                <ThemedText type="f16" numeric numberOfLines={1} style={styles.summaryValue}>
                   {row.value}
                 </ThemedText>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${row.label} ${EDIT_CTA}`}
+                  onPress={() => enter(row.step)}
+                  style={({ pressed }) => [pressed && styles.pressed]}>
+                  <ThemedText type="f14" themeColor="tint" style={styles.summaryEdit}>
+                    {EDIT_CTA}
+                  </ThemedText>
+                </Pressable>
               </View>
             ))}
-          </View>
-
-          <View style={[styles.note, { backgroundColor: theme.backgroundElement }]}>
-            <ThemedText type="t5">MY에서 언제든 바꿀 수 있어요</ThemedText>
-            <ThemedText type="body" themeColor="textSecondary">
-              정보를 바꾸면 추천도 함께 달라져요.
-            </ThemedText>
           </View>
         </View>
       </StepFrame>
@@ -448,9 +466,7 @@ export default function SetupScreen() {
   const date = answers.date?.value ?? null;
   const dateUndecided = answers.date !== null && date === null;
   const regionUndecided = answers.region !== null && answers.region.region === null;
-  const answeredSteps = QUESTION_STEPS.slice(0, QUESTION_STEPS.indexOf(step)).filter(
-    (answeredStep) => answerSummary(answeredStep, answers) !== null
-  );
+  const preparedCategories = answers.prep?.categories ?? [];
   const remaining = date ? dDay(date) : null;
 
   return (
@@ -460,43 +476,14 @@ export default function SetupScreen() {
         stepKey={step}
         prevLabel={previous === null ? undefined : PREV_CTA}
         onPrev={previous === null ? undefined : goPrev}
-        nextLabel={step === 'style' ? styleCta(chosenStyles.length) : NEXT_CTA}
+        nextLabel={NEXT_CTA}
         nextDisabled={!canAdvance(step, answers) || sending}
         onNext={goNext}
         error={error}>
-        {answeredSteps.length > 0 ? (
-          <View style={styles.answeredWrap}>
-            {answeredSteps.map((answeredStep) => (
-              <Pressable
-                key={answeredStep}
-                accessibilityRole="button"
-                accessibilityLabel={`${STEP_LABEL[answeredStep]} 바꾸기`}
-                onPress={() => enter(answeredStep)}
-                style={({ pressed }) => [styles.answeredRow, pressed && styles.pressed]}>
-                <View style={[styles.answeredCheck, { backgroundColor: theme.tint }]}>
-                  <ProductSymbol name="check" size={12} color={theme.onTint} />
-                </View>
-                <ThemedText type="f14" themeColor="textAssistive" style={styles.answeredLabel}>
-                  {STEP_LABEL[answeredStep]}
-                </ThemedText>
-                <ThemedText type="f14" numberOfLines={1} style={styles.answeredValue}>
-                  {answerSummary(answeredStep, answers)}
-                </ThemedText>
-                <ThemedText type="f13" themeColor="textAssistive" style={styles.answeredEdit}>
-                  바꾸기
-                </ThemedText>
-              </Pressable>
-            ))}
-          </View>
-        ) : null}
+        {/* 시안 qBlock — 다섯 질문 모두 같은 크기(28/38 · 20/24/24). 답 줄은 없다. */}
+        <QuestionHead lines={STEP_TITLE_LINES[step]} description={stepDescription(step)} />
 
-        <QuestionHead
-          lines={STEP_TITLE_LINES[step]}
-          description={stepDescription(step)}
-          compact={step !== 'date'}
-        />
-
-        {/* 예식일 1/3 — 56px 날짜 필드 + D-day + «아직 정하지 않았어요» chip. */}
+        {/* 예식일 1/5 — 56px 날짜 필드 + D-day + «아직 정하지 않았어요» chip. */}
         {step === 'date' ? (
           <View style={styles.selectionSection}>
             <Pressable
@@ -540,7 +527,7 @@ export default function SetupScreen() {
           </View>
         ) : null}
 
-        {/* 지역 2/3 — 56px 필드가 시/도 · 시/군/구 2열 휠 바텀시트를 연다. */}
+        {/* 지역 2/5 — 56px 필드가 시/도 · 시/군/구 2열 휠 바텀시트를 연다. */}
         {step === 'region' ? (
           <View style={styles.selectionSection}>
             <Pressable
@@ -573,7 +560,31 @@ export default function SetupScreen() {
           </View>
         ) : null}
 
-        {/* 스타일 3/3 — 설명 한 줄이 붙은 4버튼. 최대 2개이며 사진 타일은 쓰지 않는다. */}
+        {/* 진행 상황 3/5 — 시안 PREP_CATS 카드 넷(이름 17/700 · 부제 13 · 체크). 여러 개 고른다. */}
+        {step === 'prep' ? (
+          <View style={styles.prepOptions}>
+            {PREP_CARDS.map((card) => (
+              <OptionRow
+                key={card.key}
+                role="checkbox"
+                label={card.name}
+                description={card.description}
+                selected={isPrepCardSelected(card, preparedCategories)}
+                onPress={() => update({ prep: { categories: togglePrepCard(card, preparedCategories) } })}
+              />
+            ))}
+          </View>
+        ) : null}
+
+        {/* 예산 4/5 — 만원 금액 직접 입력 + 빠른 입력 칩 + 안내 한 줄. */}
+        {step === 'budget' ? (
+          <BudgetAmount
+            value={answers.budget?.amount ?? null}
+            onChange={(amount) => update({ budget: { amount } })}
+          />
+        ) : null}
+
+        {/* 스타일 5/5 — 설명 한 줄이 붙은 4버튼. 최대 2개이며 사진 타일은 쓰지 않는다. */}
         {step === 'style' ? (
           <View style={styles.styleOptions}>
             {WEDDING_STYLES.map((style) => (
@@ -625,6 +636,9 @@ export default function SetupScreen() {
   );
 }
 
+/* 시안 sumK — 요약 라벨 칸 폭 72. */
+const SUMMARY_KEY_WIDTH = 72;
+
 const styles = StyleSheet.create({
   blank: { flex: 1 },
   /* 시안 padSec — 좌우 24 · 아래 24 · 사이 12. */
@@ -633,28 +647,6 @@ const styles = StyleSheet.create({
     paddingBottom: Layout.gutter,
     gap: Layout.rowPaddingY,
   },
-  answeredWrap: {
-    paddingTop: Spacing.one,
-    paddingHorizontal: Layout.gutter,
-  },
-  answeredRow: {
-    minHeight: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Layout.iconTextGap,
-  },
-  answeredCheck: {
-    width: 20,
-    height: 20,
-    flexShrink: 0,
-    borderRadius: Radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  answeredLabel: { flexShrink: 0 },
-  answeredValue: { flex: 1, minWidth: 0, fontWeight: 700 },
-  answeredEdit: { flexShrink: 0, fontWeight: 700 },
-
   selectionSection: {
     paddingHorizontal: Layout.gutter,
     paddingBottom: Layout.listGap,
@@ -687,6 +679,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
+  /* 시안 prepSec — 좌우 24 · 아래 20 · 카드 사이 10. */
+  prepOptions: {
+    paddingHorizontal: Layout.gutter,
+    paddingBottom: Layout.listGap,
+    gap: Layout.iconTextGap,
+  },
+  /* 시안 styleBtnWrap — 좌우 24 · 아래 16 · 카드 사이 10. */
   styleOptions: {
     paddingHorizontal: Layout.gutter,
     paddingBottom: Spacing.three,
@@ -699,23 +698,19 @@ const styles = StyleSheet.create({
   },
   bold: { fontWeight: 700 },
   pressed: { opacity: 0.8 },
-  /* 완료 요약 — gray50 · radius 10 · 안쪽 20 · 행 상하 9. 안쪽 상자 없음. */
+  /* 시안 sumCard — gray50 · radius 10. 행은 56 · 좌우 16 · 사이 12 · 라벨 폭 72. */
   summary: {
     borderRadius: Radius.medium,
-    padding: Layout.cardPadding,
-    gap: Spacing.half,
+    overflow: 'hidden',
   },
   summaryRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.three,
-    paddingVertical: Layout.summaryRowPaddingY,
+    gap: Layout.inlineGap,
+    minHeight: Layout.rowMinHeight,
+    paddingHorizontal: Spacing.three,
   },
-  summaryValue: { flexShrink: 1, textAlign: 'right', fontWeight: 700 },
-  note: {
-    borderRadius: Radius.medium,
-    padding: Layout.cardPadding,
-    gap: Spacing.two,
-  },
+  summaryKey: { width: SUMMARY_KEY_WIDTH, flexShrink: 0 },
+  summaryValue: { flex: 1, minWidth: 0, fontWeight: 700 },
+  summaryEdit: { fontWeight: 700 },
 });

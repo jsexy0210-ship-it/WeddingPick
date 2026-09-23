@@ -14,7 +14,9 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(s).toContain("'실제 견적 금액을 비교해요'");
     expect(s).toContain("'마음에 드는 곳을 함께 Pick해요'");
     expect(s).toContain("'일정과 지출도 한곳에서 관리해요'");
-    expect(s).toContain('<WeddingMark size={64} color={theme.tint} />');
+    /* v3.28(2026-09-22) WP-AUTH-001 markBox — 64 코랄 면 상자 안에 40 마크. 9/20의 «64 마크»를 덮는다. */
+    expect(s).toContain('<WeddingMark size={MARK} color={theme.tint} />');
+    expect(s).toContain('const MARK = 40;');
     expect(s).toContain('visible={!showRemembered}');
     expect(s).toContain('const ageBlocked = !showRemembered && !ageChecked;');
     expect(s).not.toContain('다른 계정으로 시작하기');
