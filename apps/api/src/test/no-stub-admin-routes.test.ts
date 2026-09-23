@@ -75,6 +75,10 @@ const ALLOWED = new Map<string, string>([
     'POST /v1/admin/site-meta/publish',
     '폐기한 배포는 인증 후 409 deployment_retired만 반환한다. 아래 소스 검사와 site-publish-retired.test.ts가 성공 응답·외부 호출·DB 변경을 막는다.',
   ],
+  [
+    'POST /v1/admin/expos/collect',
+    'Gemini 검색 그라운딩으로 박람회를 짓던 수집기를 지웠다(2026-09-23, gemini-scope.test.ts). 대체 출처(예: TourAPI)가 없어 껍데기를 두는 대신 항상 invalid_request를 던진다 — 성공으로 보이는 대신 확실히 실패한다.',
+  ],
 ]);
 
 type Route = { method: string; path: string; body: string; file: string };
