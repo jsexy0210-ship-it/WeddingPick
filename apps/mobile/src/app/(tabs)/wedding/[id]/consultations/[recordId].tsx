@@ -119,7 +119,8 @@ export default function ConsultationDetailRoute() {
                 ) : null}
 
                 <Lines label="기본 포함" items={list(record.common, 'included')} />
-                <Lines label="추가 비용" items={list(record.after, 'additionalCosts')} />
+                {/* v3.28 웨딩노트 대조표 「분석 라벨」 — «추가 비용»이 아니라 «별도로 확인할 비용». */}
+                <Lines label="별도로 확인할 비용" items={list(record.after, 'additionalCosts')} />
                 <Lines label="혜택" items={list(record.after, 'benefits')} />
                 <Lines label="주의할 점" items={list(record.after, 'warnings')} />
                 <Lines label="다시 확인할 것" items={list(record.after, 'missingInformation')} />

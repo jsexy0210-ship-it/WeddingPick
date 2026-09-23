@@ -1,5 +1,5 @@
 import type { ExpenseSummaryResponse } from '@weddingpick/api-contract';
-import { manwon } from '@weddingpick/domain';
+import { EXPENSE_SOURCE_LABEL, manwon, type ExpenseSource } from '@weddingpick/domain';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -10,21 +10,32 @@ import { useDepthBack } from '@/features/navigation/depth-back';
 import { ActionButton, ErrorView, FilterChip, Layout, SkeletonView, Spacing } from '@weddingpick/ui';
 import { Hero, ListRow, NavBar, RowValue, Screen, Section } from '@/features/wedding/screen-kit';
 
-type Filter = 'all' | 'linked' | 'manual';
+type Filter = 'all' | ExpenseSource;
 
-/** 필터 칩 3 — screens.json WP-OUR-009 «전체 / 제보 연계 / 직접 입력». */
+/**
+ * 필터 칩 — «전체 / 제보 연계 / 직접 입력 / 상담 정리». 넷째 칩은 v3.28 웨딩노트 대조표
+ * 「금액 출처」(2026-09-23 대표 결정) — 상담에서 나온 금액도 같은 목록에 들어온다.
+ */
 const FILTERS: { key: Filter; label: string }[] = [
   { key: 'all', label: '전체' },
-  { key: 'linked', label: '제보 연계' },
-  { key: 'manual', label: '직접 입력' },
+  { key: 'payment_proof', label: '제보 연계' },
+  { key: 'manual', label: EXPENSE_SOURCE_LABEL.manual },
+  { key: 'consultation', label: EXPENSE_SOURCE_LABEL.consultation },
 ];
+
+/** 행 메타의 출처 한 마디. 제보 연계만 «실 제보 연결»로 적고 나머지는 도메인 라벨 그대로다. */
+const SOURCE_META: Record<ExpenseSource, string> = {
+  payment_proof: '실 제보 연결',
+  manual: EXPENSE_SOURCE_LABEL.manual,
+  consultation: EXPENSE_SOURCE_LABEL.consultation,
+};
 
 /**
  * 지출 내역. WP-OUR-009. 지출 요약(WP-OUR-008) nav의 «내역»으로 들어온다.
  *
  *   nav     «지출 내역» · 오른쪽 «추가»(WP-OUR-014)
  *   hero    «지출 N건을 적었어요» · «총 2,140만원»
- *   칩 3    전체 · 제보 연계 · 직접 입력
+ *   칩 4    전체 · 제보 연계 · 직접 입력 · 상담 정리
  *   행      항목 18/24 · «실 제보 연결 · 2027.05.16(토)» · 금액 16/22 700 — 잔금 예정은 회색
  *
  * 행을 누르면 지출 상세(WP-OUR-010). 삭제는 상세에서 한다 — 목록의 줄마다 단추를 두지 않는다.
@@ -52,9 +63,7 @@ export default function ExpenseListScreen() {
     return <SkeletonView />;
   }
 
-  const rows = page.expenses.filter((expense) =>
-    filter === 'all' ? true : filter === 'linked' ? expense.source === 'payment_proof' : expense.source === 'manual'
-  );
+  const rows = page.expenses.filter((expense) => filter === 'all' || expense.source === filter);
   const openAdd = () => router.push(`/wedding/${id}/expenses/add` as never);
 
   return (
@@ -94,7 +103,7 @@ export default function ExpenseListScreen() {
             {rows.map((expense) => {
               const scheduled = expense.status === 'scheduled';
               const meta = [
-                expense.source === 'payment_proof' ? '실 제보 연결' : '직접 입력',
+                SOURCE_META[expense.source],
                 expense.spentOn ? formatDateDot(expense.spentOn) : null,
                 scheduled ? expense.statusLabel : null,
               ]

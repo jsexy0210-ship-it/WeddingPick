@@ -55,14 +55,14 @@ export function WeddingCompleteView({ weddingId }: { weddingId: string }) {
   const linkedCategories = new Set(
     paid.filter((expense) => expense.source === 'payment_proof').map((expense) => expense.category)
   );
-  /* 인증이 남은 것 — 결정했는데 실 제보가 없는 업종 + 직접 입력만 있는 지출(결정 업종 밖). */
+  /* 인증이 남은 것 — 결정했는데 실 제보가 없는 업종 + Pick 인증이 아닌 지출(직접 입력 · 상담 정리, 결정 업종 밖). */
   const decidedCategories = new Set(decisions.decisions.map((decision) => decision.category));
   const unverified: { key: string; label: string }[] = [
     ...decisions.decisions
       .filter((decision) => !linkedCategories.has(decision.category))
       .map((decision) => ({ key: `d:${decision.category}`, label: decision.categoryLabel })),
     ...paid
-      .filter((expense) => expense.source === 'manual' && (expense.category === null || !decidedCategories.has(expense.category)))
+      .filter((expense) => expense.source !== 'payment_proof' && (expense.category === null || !decidedCategories.has(expense.category)))
       .map((expense) => ({ key: `e:${expense.id}`, label: expense.label })),
   ];
   const verifiedCount = paid.filter((expense) => expense.source === 'payment_proof').length;

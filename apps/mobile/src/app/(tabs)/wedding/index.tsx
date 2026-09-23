@@ -83,10 +83,11 @@ const CONSULT_EMPTY_TITLE = '녹음 파일을 올려주세요';
 const CONSULT_EMPTY_BODY = '휴대폰 녹음앱에서 저장한 파일이면 돼요';
 const CONSULT_SAVED = '저장됨';
 const CONSULT_PENDING = '확인 필요';
-const ADD_LABEL: Record<Tab, string> = { calendar: '추가', budget: '추가', consult: '녹음 올리기' };
+/* 헤더 우측 «추가» 텍스트 — v3.28 `대메뉴_웨딩노트.dc.html` headAdd «일정 추가 · 상담 추가 · 예산 추가». 우하단 FAB는 없다. */
+const ADD_LABEL: Record<Tab, string> = { calendar: '일정 추가', budget: '예산 추가', consult: '상담 추가' };
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
 
-/** 진행바 값 — 피그마 `h-2`(8). 예산 정본은 원형 그래프를 쓰지 않는다. */
+/** 진행바 높이 — v3.28 웨딩노트 대조표 「예산 그래프」: 도넛이 아니라 가로 진행바 8(`track: height:8px`). */
 const BAR_HEIGHT = 8;
 const EVENT_DOT = 4;
 
