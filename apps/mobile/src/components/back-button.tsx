@@ -1,10 +1,11 @@
 import { Pressable, StyleSheet } from 'react-native';
 
-import { Layout, ProductSymbol, Radius, useTheme } from '@weddingpick/ui';
+import { ProductSymbol, Radius, useTheme } from '@weddingpick/ui';
 import { useDepthBack } from '@/features/navigation/depth-back';
 
 /**
- * 좌상단 뒤로가기. 핸드오프 토큰 `size.backButton`(40) 터치 영역.
+ * 좌상단 뒤로가기 · 닫기. v3.29 공통 헤더 규격 — 좌측 36px 슬롯(일반 화면은 24px
+ * 화살, 풀팝업은 16px X). 옛 40px·20/24 값에서 이 파일 전용 상수로 바꿨다(아래).
  *
  * **History 우선, 없으면 Depth Back이다**(`features/navigation/depth-back.ts`
  * `useDepthBack`) — 방문 기록이 있으면 실제 직전 화면으로, 없으면(딥링크 등)
@@ -16,18 +17,8 @@ import { useDepthBack } from '@/features/navigation/depth-back';
  * 브라우저는 화면 안의 버튼이 유일한 길이다(2026-09-08). 안드로이드 하드웨어 버튼과
  * 브라우저 뒤로가기는 History Back 그대로 둔다 — 막지 않는다.
  *
- * **자리는 `NavBar`(`features/wedding/screen-kit.tsx`) · `SubScreen`
- * (`features/settings/my-kit.tsx`)과 같다.** 40 상자 안에서 아이콘을 **가운데**
- * 둔다 — 시안 `backBtn`의 `display:flex;align-items:center;justify-content:center`
- * 그대로이고, 20개 dc.html이 모두 같다.
- *
- * 2026-09-11 대표 지시(「Back 버튼 위치가 다른 상세 화면과 다른 부분이 있다. 통일
- * 하라」)로 고친 자리다. 이 상자는 `alignItems: 'flex-start'`였다 — 막대의 좌측
- * 패딩 12는 `NavBar`와 같았는데 아이콘만 상자 왼쪽 끝에 붙어서, 화살표가 화면
- * 왼쪽에서 12에 앉았다. `NavBar` · `SubScreen`은 가운데 정렬이라 `12 + (40−24)/2 = 20`
- * 이다. **같은 토큰을 쓰면서 8px 어긋나 있었고**, 그 8px이 `BackBar`를 쓰는 화면
- * 전부와 나머지 화면 사이를 갈랐다(`theme.ts`의 navPaddingLeft 주석이 「아이콘 24가
- * 20 선에 앉는다」고 적어 둔 그 선이다).
+ * 상자 안에서 아이콘은 **가운데** 둔다 — 시안 `backBtn`·`vicoBack`의
+ * `display:flex;align-items:center;justify-content:center` 그대로다.
  */
 export function BackButton({
   onPress,
@@ -59,18 +50,28 @@ export function BackButton({
       */}
       <ProductSymbol
         name={variant === 'close' ? 'close' : 'arrowLeft'}
-        size={variant === 'close' ? Layout.iconTab : Layout.iconRow}
+        size={variant === 'close' ? CLOSE_ICON_SIZE : BACK_ICON_SIZE}
         color={theme.text}
       />
     </Pressable>
   );
 }
 
+/*
+ * v3.29 공통 헤더 규격(CLAUDE.md 「일반 화면 · 풀팝업」 행) — 좌측 36px 슬롯.
+ * 일반 화면 뒤로가기는 24px 아이콘, 풀팝업 닫기는 16px 아이콘이다. 40×40·20/24
+ * 이던 옛 값에서 바꿨다 — `Layout.iconButton`·`iconRow`·`iconTab`은 탭바·홈 카드 등
+ * 다른 아이콘 버튼도 같이 쓰는 범용 토큰이라 여기서 값만 바꾸면 그 화면들까지
+ * 흔들린다. 그래서 이 버튼 전용 상수로 뗐다.
+ */
+export const TOUCH_SLOT_SIZE = 36;
+export const BACK_ICON_SIZE = 24;
+export const CLOSE_ICON_SIZE = 16;
+
 const styles = StyleSheet.create({
-  /* 시안 backBtn — 40×40 · pill · 안쪽 가운데. `screen-kit`의 navButton과 같은 값. */
   button: {
-    width: Layout.iconButton,
-    height: Layout.iconButton,
+    width: TOUCH_SLOT_SIZE,
+    height: TOUCH_SLOT_SIZE,
     borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',

@@ -3,7 +3,6 @@ import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
   Image,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -16,7 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listVendorPhotos } from '@/api/client';
-import { formatDateDot } from '@/features/common/format-date';
+import { DepthHeader } from '@/components/depth-header';
 import { useDepthBack } from '@/features/navigation/depth-back';
 import {
   Colors,
@@ -24,34 +23,36 @@ import {
   ErrorView,
   Layout,
   MaxContentWidth,
+  ProductSymbol,
   Radius,
   Spacing,
   ThemedText,
   ThemedView,
-  useTheme,
-  Skeleton,
 } from '@weddingpick/ui';
 
 /**
- * WP-VEND-002 업체 이미지 전체보기. 진입은 업체 상세의 대표 이미지 탭.
+ * WP-VEND-006 업체 이미지 전체보기. 업체 상세의 대표 이미지를 누르면 **바로 이 화면이
+ * 열린다**(v3.29 대메뉴_검색.dc.html WP-VEND-006 — 「대표 이미지를 누르면 열립니다」).
+ * 카드 목록을 한 단계 더 거치지 않는다 — `depth-back-rules.ts`도 「전체보기 → 업체 상세」
+ * 한 칸으로 못박아 뒀다.
+ *
+ * 헤더는 공통 풀팝업 규격이다 — 56px · 좌측 36px 회색 원형 X(16px 아이콘) · 중앙에
+ * 몇 장 중 몇 번째인지만(설명·좋아요 없음) · 우측 36px 빈칸으로 중앙 정렬을 맞춘다.
+ *
+ * `?index=` 로 시작 위치를 받는다 — 카드마다 다른 사진에서 열었을 때 그 사진부터 보여준다.
  *
  * 핸드오프는 "업체 제공" · "제보 사진" 2탭을 그렸지만, 지금 DB에는 그 둘을 가를
  * 축이 없다 — `vendor_images`가 승인해 내려주는 것은 저작권 근거(copyright_basis)
  * 뿐이고, 그건 "누가 올렸는가"를 말하지 않는다. 없는 축으로 탭을 나누면 둘 중
- * 하나는 지어낸 값이 된다. 그래서 여기는 대표 이미지가 맨 앞에 오는 단일
- * 목록이다 — 제보 사진을 가릴 데이터원이 생기면 그때 탭을 나눈다.
- *
- * 이미지가 0장이면 이 화면에 올 이유가 없다 — 진입 지점(업체 상세)이 그 경우
- * 버튼 자체를 보여주지 않는다. 그래도 직접 링크로 들어온 경우를 대비해 빈
- * 상태 안내는 둔다.
+ * 하나는 지어낸 값이 된다. 그래서 대표 이미지가 맨 앞에 오는 단일 목록이다 —
+ * 제보 사진을 가릴 데이터원이 생기면 그때 탭을 나눈다.
  */
 export default function VendorImagesScreen() {
   const depthBack = useDepthBack();
-  const { vendorId } = useLocalSearchParams<{ vendorId: string }>();
+  const { vendorId, index } = useLocalSearchParams<{ vendorId: string; index?: string }>();
 
   const [photos, setPhotos] = useState<VendorPhoto[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   useEffect(() => {
     listVendorPhotos(vendorId)
@@ -69,114 +70,79 @@ export default function VendorImagesScreen() {
     );
   }
 
+  /*
+   * 로딩·빈 상태는 canon(WP-VEND-006)이 그리지 않는 방어 상태다 — 다크 고정 팝업
+   * 껍데기 대신 앱 공통 테마의 `DepthHeader`(닫기 variant)를 그대로 쓴다. 사진이
+   * 실제로 있을 때만 다크 뷰어(`GalleryHeader`)로 들어간다.
+   */
   if (!photos) {
     return (
       <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <View style={styles.header}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="돌아가기"
-              onPress={depthBack}
-              style={styles.backBtn}>
-              <ThemedText type="t6">돌아가기</ThemedText>
-            </Pressable>
-            <ThemedText type="t5">사진</ThemedText>
-            <View style={styles.backBtn} />
-          </View>
-          <View style={styles.grid}>
-            {Array.from({ length: 6 }, (_, index) => (
-              <View key={index} style={styles.thumbWrap}>
-                <Skeleton radius={Radius.medium} style={styles.thumbSkeleton} />
-              </View>
-            ))}
-          </View>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+          <DepthHeader title="사진" onBack={depthBack} variant="close" />
         </SafeAreaView>
       </ThemedView>
     );
   }
 
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.header}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="돌아가기"
-            onPress={depthBack}
-            style={styles.backBtn}>
-            <ThemedText type="t6">돌아가기</ThemedText>
-          </Pressable>
-          <ThemedText type="t5">사진 {photos.length}장</ThemedText>
-          <View style={styles.backBtn} />
-        </View>
-
-        {photos.length === 0 ? (
+  if (photos.length === 0) {
+    /*
+     * 진입 지점(업체 상세)이 사진 0장이면 버튼 자체를 보여주지 않는다. 그래도 직접
+     * 링크로 들어온 경우를 대비해 빈 상태 안내는 둔다.
+     */
+    return (
+      <ThemedView style={styles.container}>
+        <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+          <DepthHeader title="사진" onBack={depthBack} variant="close" />
           <EmptyView scope="section" title="아직 등록된 사진이 없어요" />
-        ) : (
-          <ScrollView contentContainerStyle={styles.grid} showsVerticalScrollIndicator={false}>
-            {photos.map((photo, index) => (
-              <PhotoThumb
-                key={photo.id}
-                photo={photo}
-                onPress={() => setViewerIndex(index)}
-              />
-            ))}
-          </ScrollView>
-        )}
-      </SafeAreaView>
+        </SafeAreaView>
+      </ThemedView>
+    );
+  }
 
-      {viewerIndex !== null ? (
-        <PhotoViewer
-          photos={photos}
-          initialIndex={viewerIndex}
-          onClose={() => setViewerIndex(null)}
-        />
-      ) : null}
-    </ThemedView>
-  );
+  const startIndex = clampIndex(Number(index ?? 0), photos.length);
+
+  return <PhotoViewer photos={photos} initialIndex={startIndex} onClose={depthBack} />;
 }
 
-/** 그리드 한 칸. 마우스 hover·키보드 focus에서도 눌리는 자리라는 것을 보여준다. */
-function PhotoThumb({ photo, onPress }: { photo: VendorPhoto; onPress: () => void }) {
-  const theme = useTheme();
-  const [highlighted, setHighlighted] = useState(false);
+function clampIndex(value: number, length: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(Math.max(Math.trunc(value), 0), length - 1);
+}
 
+/**
+ * 공통 풀팝업 헤더 — 좌측 36px 회색 원형 X(16px 아이콘) · 중앙 타이틀 · 우측 36px 빈칸.
+ * 갤러리는 스킨·시스템 모드와 무관하게 다크 고정이라(WP-VEND-006 배경 `#17181c`) 원형은
+ * 늘 밝은 회색, 아이콘은 늘 어두운 잉크다 — 시안 `galClose`·`icoXw` 그대로.
+ *
+ * 타이틀은 `navTitleW`(14px·700·흰색) 그대로다 — `t6`(16/400)이 아니라 `t7`(14)에
+ * 굵기를 더한 값이다. 2026-09-23 재검증에서 잡은 값(`t6`로 적혀 있어 16px·보통 굵기로
+ * 그려지고 있었다).
+ */
+function GalleryHeader({ label, onClose }: { label: string; onClose: () => void }) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={photo.isRepresentative ? '대표 사진 크게 보기' : '사진 크게 보기'}
-      onHoverIn={() => setHighlighted(true)}
-      onHoverOut={() => setHighlighted(false)}
-      onFocus={() => setHighlighted(true)}
-      onBlur={() => setHighlighted(false)}
-      onPress={onPress}
-      style={[
-        styles.thumbWrap,
-        { borderColor: highlighted ? theme.tint : 'transparent' },
-      ]}>
-      <Image
-        source={{ uri: photo.url }}
-        style={styles.thumbImage}
-        resizeMode={photo.useContain ? 'contain' : 'cover'}
-      />
-      {photo.isRepresentative ? (
-        <View style={[styles.repBadge, { backgroundColor: theme.scrim }]}>
-          <ThemedText type="badge" style={styles.repBadgeText}>
-            대표
-          </ThemedText>
-        </View>
-      ) : null}
-    </Pressable>
+    <View style={styles.viewerHeader}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="닫기"
+        onPress={onClose}
+        style={styles.galleryClose}>
+        <ProductSymbol name="close" size={Layout.iconField} color={Colors.light.text} />
+      </Pressable>
+      <ThemedText
+        type="t7"
+        numeric
+        style={[styles.viewerIndicator, styles.bold, { color: Colors.dark.text }]}>
+        {label}
+      </ThemedText>
+      <View style={styles.galleryHeaderPad} />
+    </View>
   );
 }
 
 /**
  * 전체화면 뷰어. 다크 배경 고정 — 스킨·시스템 모드와 무관하게 사진에 집중하는
- * 자리다(핸드오프 WP-VEND-002).
- *
- * 배경 스크롤을 막는다. 웹에서 Modal 뒤 body가 같이 스크롤되면 뷰어를 닫았을 때
- * 목록이 엉뚱한 위치에 가 있다.
+ * 자리다(핸드오프 WP-VEND-006). `images.tsx` 자체가 이 화면이다 — 모달로 얹지 않는다.
  */
 function PhotoViewer({
   photos,
@@ -192,8 +158,7 @@ function PhotoViewer({
   const stripScrollRef = useRef<ScrollView>(null);
   const [index, setIndex] = useState(initialIndex);
 
-  const current = photos[index] ?? photos[0]!;
-  const stripItemWidth = STRIP_THUMB_SIZE + Spacing.two;
+  const stripItemWidth = STRIP_THUMB_SIZE + Spacing.one;
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof document === 'undefined') return undefined;
@@ -214,33 +179,20 @@ function PhotoViewer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
 
-  function goTo(next: number) {
-    setIndex(next);
-    mainScrollRef.current?.scrollTo({ x: next * width, animated: true });
-  }
-
   function onMainScrollEnd(event: NativeSyntheticEvent<NativeScrollEvent>) {
     const next = Math.round(event.nativeEvent.contentOffset.x / width);
     setIndex(Math.min(photos.length - 1, Math.max(0, next)));
   }
 
+  function goTo(next: number) {
+    setIndex(next);
+    mainScrollRef.current?.scrollTo({ x: next * width, animated: true });
+  }
+
   return (
-    <Modal
-      visible
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-      statusBarTranslucent
-      supportedOrientations={['portrait', 'landscape']}>
-      <View style={styles.viewerRoot}>
-        {/* close nav + 페이지 인디케이터 */}
-        <View style={styles.viewerHeader}>
-          <CloseButton onPress={onClose} />
-          {/* 시안 t18w — 뷰어 제목은 18/24 흰 700이다(09b-vendor-sub.dc.html L56·L279). */}
-          <ThemedText type="t5" style={styles.viewerIndicator} numeric>
-            {index + 1}/{photos.length}
-          </ThemedText>
-        </View>
+    <View style={styles.viewerRoot}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <GalleryHeader label={`${index + 1} / ${photos.length}`} onClose={onClose} />
 
         {/* 본 이미지 — 좌우 스와이프로 넘긴다 */}
         <ScrollView
@@ -267,22 +219,6 @@ function PhotoViewer({
           ))}
         </ScrollView>
 
-        {/* 출처 + 확인일 */}
-        {current.sourceNote || current.verifiedAt ? (
-          <View style={styles.viewerCaption}>
-            {current.sourceNote ? (
-              <ThemedText type="t7" style={styles.viewerCaptionText}>
-                {current.sourceNote}
-              </ThemedText>
-            ) : null}
-            {current.verifiedAt ? (
-              <ThemedText type="t7" style={styles.viewerCaptionMuted}>
-                확인일 {formatDateDot(current.verifiedAt)}
-              </ThemedText>
-            ) : null}
-          </View>
-        ) : null}
-
         {/* 썸네일 스트립 */}
         {photos.length > 1 ? (
           <ScrollView
@@ -301,28 +237,8 @@ function PhotoViewer({
             ))}
           </ScrollView>
         ) : null}
-      </View>
-    </Modal>
-  );
-}
-
-function CloseButton({ onPress }: { onPress: () => void }) {
-  const [highlighted, setHighlighted] = useState(false);
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel="닫기"
-      onHoverIn={() => setHighlighted(true)}
-      onHoverOut={() => setHighlighted(false)}
-      onFocus={() => setHighlighted(true)}
-      onBlur={() => setHighlighted(false)}
-      onPress={onPress}
-      style={[styles.viewerCloseBtn, highlighted && styles.viewerCloseBtnHighlighted]}>
-      <ThemedText type="t6" style={styles.viewerCloseBtnText}>
-        닫기
-      </ThemedText>
-    </Pressable>
+      </SafeAreaView>
+    </View>
   );
 }
 
@@ -368,93 +284,46 @@ function StripThumb({
 
 // ─── 레이아웃 상수 ──────────────────────────────────────────────────────────
 
-const STRIP_THUMB_SIZE = 52;
-/** 헤더 + 캡션 + 스트립이 대략 차지하는 높이. 본 이미지 자리를 그만큼 남긴다. */
-const VIEWER_CHROME_HEIGHT = 160;
+/* 시안 gcell — 64×64 · radius 6. 2026-09-23 재검증에서 잡은 값(52로 적혀 있었다). */
+const STRIP_THUMB_SIZE = 64;
+/** 헤더(56) + 스트립(72)이 차지하는 높이 — 시안 galNav·galStrip 고정값 그대로. 본 이미지 자리를 그만큼 남긴다. */
+const VIEWER_CHROME_HEIGHT = Layout.navBar + 72;
 
 const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
-
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Layout.gutter,
-    paddingVertical: Spacing.two,
-    minHeight: Layout.rowMinHeight,
-  },
-  backBtn: {
-    minHeight: Layout.touchTarget,
-    minWidth: Layout.touchTarget,
-    justifyContent: 'center',
-  },
-
-  // ── 그리드 ──
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: Layout.gutter,
-    paddingBottom: Spacing.five,
-    gap: Spacing.two,
-  },
-  thumbWrap: {
-    width: `${100 / 3 - 2}%`,
-    aspectRatio: 1,
-    borderRadius: Radius.medium,
-    borderWidth: 2,
-    overflow: 'hidden',
-  },
-  thumbSkeleton: { width: '100%', height: '100%' },
-  thumbImage: {
-    width: '100%',
-    height: '100%',
-  },
-  repBadge: {
-    position: 'absolute',
-    left: Spacing.one,
-    top: Spacing.one,
-    borderRadius: Radius.small,
-    paddingHorizontal: Spacing.one,
-    paddingVertical: 2,
-  },
-  repBadgeText: {
-    /*
-     * `scrim`(어두운 반투명) 위에 얹히므로 `onInk`(흰색)다. `onTint`가 아니다 —
-     * 2026-09-14 새 팔레트에서 `onTint`가 흰색에서 플럼 #FFFFFF로 바뀌었고, 그대로
-     * 두면 어두운 면에 어두운 글자가 된다.
-     */
-    color: Colors.light.onInk,
-  },
 
   // ── 전체화면 뷰어. 스킨·시스템 모드와 무관하게 고정 다크. ──
   viewerRoot: {
     flex: 1,
     backgroundColor: Colors.dark.backgroundInk,
   },
+  /*
+   * 시안 galNav — 56px · 좌우 16px(`Spacing.three`) · 좌측 36px 회색 원형 X · 중앙
+   * 타이틀 · 우측 36px 빈칸. `Layout.gutter`(24)가 아니다 — 2026-09-23 재검증에서
+   * 잡은 값이다(galNav의 `padding:0 16px`를 그대로 옮기지 않고 화면 공용 거터를
+   * 썼었다).
+   */
   viewerHeader: {
+    height: Layout.navBar,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.three,
-    paddingBottom: Spacing.two,
-  },
-  viewerCloseBtn: {
-    minHeight: Layout.touchTarget,
+    gap: Layout.navGap,
     paddingHorizontal: Spacing.three,
-    justifyContent: 'center',
+  },
+  galleryClose: {
+    width: 36,
+    height: 36,
     borderRadius: Radius.pill,
-    backgroundColor: Colors.dark.backgroundSelected,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.light.backgroundSelected,
   },
-  viewerCloseBtnHighlighted: {
-    backgroundColor: Colors.dark.border,
-  },
-  viewerCloseBtnText: {
-    color: Colors.dark.text,
-  },
+  galleryHeaderPad: { width: 36 },
+  bold: { fontWeight: 700 },
   viewerIndicator: {
-    color: Colors.dark.textSecondary,
+    flex: 1,
+    textAlign: 'center',
   },
   viewerPager: {
     flexGrow: 0,
@@ -467,26 +336,17 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  viewerCaption: {
-    paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.two,
-    gap: 2,
-  },
-  viewerCaptionText: {
-    color: Colors.dark.textSecondary,
-  },
-  viewerCaptionMuted: {
-    color: Colors.dark.textAssistive,
-  },
+  /* 시안 galStrip — 고정 높이 72 · 안쪽 패딩 8 전체 · 칸 사이 4. */
   viewerStrip: {
     flexGrow: 0,
-    marginTop: Spacing.two,
+    height: 72,
   },
   viewerStripContent: {
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.two,
-    gap: Spacing.two,
+    gap: Spacing.one,
   },
+  /* 시안 gcell — 64×64 · radius 6(`Radius.small`). */
   stripThumbWrap: {
     width: STRIP_THUMB_SIZE,
     height: STRIP_THUMB_SIZE,

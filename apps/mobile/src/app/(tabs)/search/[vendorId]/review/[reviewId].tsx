@@ -398,8 +398,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  navBar: { height: Layout.navBar, flexDirection: 'row', alignItems: 'center', paddingHorizontal: Spacing.three },
-  navTitle: { flex: 1, minWidth: 0, textAlign: 'center', paddingRight: Layout.iconButton },
   content: { paddingBottom: Spacing.four },
   /* `gap-3 px-5 py-5 border-b`. */
   author: {
