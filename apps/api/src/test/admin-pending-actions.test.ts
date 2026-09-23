@@ -106,7 +106,14 @@ it.each(['toString', 'constructor', '__proto__', 'valueOf', 'hasOwnProperty'])(
   }
 );
 
-it.each(['terms', 'privacy', 'marketing'])('%s는 약관 문서다', (value) => {
+it.each([
+  'terms',
+  'privacy',
+  'marketing',
+  'pick_verification',
+  'consultation_recording',
+  'contact_sharing',
+])('%s는 약관 문서다', (value) => {
   expect(isDocType(value)).toBe(true);
 });
 

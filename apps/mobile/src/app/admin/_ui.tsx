@@ -1,8 +1,9 @@
 /**
  * 관리자 콘솔 공용 부품.
  *
- * 시안은 `docs/design/handoff/html/22-admin-ops.dc.html`(v3.27)이고 규칙은
- * `docs/design/handoff/ADMIN.md`의 「공통 규칙」이다. 화면마다 배너·카드·표를
+ * 시안은 `docs/design/html/웨딩픽 관리자.dc.html` · `웨딩픽 관리자 운영.dc.html`(v3.29)이고
+ * 규칙은 CLAUDE.md 「v3.27 관리자」 절의 「공통 규칙」이다. 옛 `docs/design/handoff/`
+ * 경로는 2026-09-22에 파기됐다 — 되살려 근거로 쓰지 않는다. 화면마다 배너·카드·표를
  * 따로 그리면 여섯 규칙 중 무엇 하나는 반드시 어긋난다 — 여기 한 곳에서만 그린다.
  *
  *   1. 넓은 상태 띠는 관리자 전 화면에서 사용하지 않는다

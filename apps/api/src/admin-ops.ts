@@ -747,12 +747,21 @@ export async function triggerRollback(
 // 약관 · 방침 (WP-ADM-036)
 // ───────────────────────────────────────────────────────────────────────────
 
-export type DocType = 'terms' | 'privacy' | 'marketing';
+export type DocType =
+  | 'terms'
+  | 'privacy'
+  | 'marketing'
+  | 'pick_verification'
+  | 'consultation_recording'
+  | 'contact_sharing';
 
 const DOC_LABEL: Record<DocType, string> = {
   terms: '이용약관',
   privacy: '개인정보처리방침',
   marketing: '마케팅 정보 수신 동의',
+  pick_verification: 'Pick 인증 자료 수집·이용 동의',
+  consultation_recording: '상담 녹음 수집·이용 동의',
+  contact_sharing: '상담 예약 시 업체 연락처 제공 동의',
 };
 
 /*
