@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
   },
   nameCol: { flex: 1, minWidth: 0, gap: Layout.rowGap },
   winBadge: {
-    height: WIN_BADGE_H,
+    minHeight: WIN_BADGE_H,
     paddingHorizontal: WIN_BADGE_PAD_X,
     borderRadius: Radius.pill,
     alignItems: 'center',
