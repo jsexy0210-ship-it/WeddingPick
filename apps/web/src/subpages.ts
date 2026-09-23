@@ -111,7 +111,7 @@ a{color:inherit}
 .sp-cta-btn{height:38px;padding:0 18px;border-radius:999px;display:inline-flex;align-items:center;font-size:15px;font-weight:700;text-decoration:none;white-space:nowrap;flex-shrink:0;background:${C};color:#fff}
 
 /* Title band */
-.sp-titleband{padding:52px 64px 44px;border-bottom:1px solid ${DIVIDER}}
+.sp-titleband{padding:52px 64px 44px;border-bottom:1px solid ${DIVIDER};background:${HERO_TINT}}
 .sp-dash{display:block;width:26px;height:4px;border-radius:2px;background:${C};margin-bottom:12px}
 .sp-titleband h1{font-size:38px;line-height:52px;font-weight:700;color:${INK};letter-spacing:-1.2px;margin:0;white-space:pre-line}
 
