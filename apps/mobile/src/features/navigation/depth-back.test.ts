@@ -46,7 +46,6 @@ describe('depthBackTarget — 대표 경로', () => {
     ['/wedding/w-1/consultations/c-1', '/wedding', '상담기록 상세 → 웨딩노트 상담기록'],
     ['/wedding/w-1/consultations/upload', '/wedding', '상담 녹음 추가 → 웨딩노트 상담기록'],
     ['/wedding/w-1/complete', '/wedding', 'WP-OUR-013 예식 완료 → 웨딩일정 탭'],
-    ['/pick/history', '/pick', 'WP-PICK-007 결정 내역 → Pick 탭'],
     ['/pick/studio', '/pick', '업종별 Pick → Pick 탭'],
     ['/feed', '/', '홈 하위 스택(피드) → 홈'],
     ['/feed/f-1', '/feed', '홈 웨딩피드 글 상세 → 웨딩피드 목록'],
@@ -67,7 +66,6 @@ describe('depthBackTarget — 대표 경로', () => {
     ['/capture/verify-status/rq-1', '/my/reports', 'WP-RPT-008 처리 결과 → 내 제보 내역'],
     ['/search/compare', '/pick', 'WP-CMP-002 비교 결과 → Pick'],
     ['/pick/done', '/pick', 'WP-PICK-006 결정 완료 → Pick(끝난 확인 시트로 돌아가지 않는다)'],
-    ['/pick/removed', '/pick/history', '제거된 후보 → 결정 내역'],
     ['/my/faq/payment', '/my/guide', 'FAQ 질문 상세 → FAQ 목록'],
     ['/my/referral', '/my/rewards', '초대 현황 → 혜택'],
 
@@ -109,8 +107,7 @@ describe('depthBackTarget — 대표 경로', () => {
 });
 
 describe('matchRoute — 글자 그대로 적힌 라우트가 이긴다', () => {
-  it('`/pick/category`는 `/pick/[category]`가 아니다', () => {
-    expect(matchRoute('/pick/category')).toBe('/pick/category');
+  it('`/pick/studio`는 동적 `/pick/[category]`로 간다', () => {
     expect(matchRoute('/pick/studio')).toBe('/pick/[category]');
   });
 

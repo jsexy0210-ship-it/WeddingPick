@@ -163,7 +163,6 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(status).toContain("scope === 'section'");
     expect(mobile('app/(tabs)/(home)/recommendations.tsx')).toContain('<EmptyView scope="section"');
     expect(mobile('app/(tabs)/search/[vendorId]/images.tsx')).toContain('<EmptyView scope="section"');
-    expect(mobile('app/(tabs)/pick/history.tsx')).toContain('<EmptyView scope="section"');
   });
   it('최초 예산은 만원 입력을 원으로 환산한다', () => {
     const s = mobile('app/(tabs)/wedding/index.tsx');

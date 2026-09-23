@@ -67,10 +67,7 @@ import {
   PICK_COMPARE_BANNER_HINT,
   PICK_COMPARE_MAX,
   PICK_COMPARE_REMOVE_LABEL,
-  PICK_SUBTITLE,
-  PICK_VERIFY_LABEL,
   compareBasketLabel,
-  pickCountLabel,
 } from '@/features/pick/canonical-rules';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import { isWebShellScreen } from '@/features/webshell/config';
@@ -78,8 +75,6 @@ import { WebShellView } from '@/features/webshell/WebShellView';
 import { RecommendationsContent } from '../(home)/recommendations';
 
 /* 문구 — spec/strings.ko.json `pick` · features/pick/canonical-rules. */
-const SUBTITLE = PICK_SUBTITLE;
-const PRICE_REPORT = PICK_VERIFY_LABEL;
 const COMPARE_HINT = PICK_COMPARE_BANNER_HINT;
 const COMPARE_ALL = '비교하기';
 const CHIP_ALL = '전체';
@@ -94,6 +89,10 @@ const EMPTY_CTA = `업체 ${TERMS.search}하기`;
 const UNDECIDE_TITLE = '결정을 취소할까요?';
 const UNDECIDE_BODY = '웨딩노트의 결정 상태가 풀려요. 언제든 다시 결정할 수 있어요.';
 const MIN_COMPARE = 2;
+/** 정본 catMeta — «3개 · 최신순». */
+function groupMetaLabel(count: number): string {
+  return `${count}개 · 최신순`;
+}
 
 type Filter = VendorCategory | 'all';
 
@@ -165,12 +164,11 @@ export default function PickScreen() {
       isDecided: group.decidedVendorId === candidate.vendorId,
     }))
   );
-  /* 칩은 후보가 있는 업종만, 그룹 순서대로(피그마 `categories` — Pick 목록에서 뽑는다). */
-  const categories = (page?.groups ?? [])
-    .filter((group) => group.candidates.length > 0)
-    .map((group) => group.category);
-  const visible = filter === 'all' ? rows : rows.filter((row) => row.candidate.category === filter);
-  const partner = me?.spouseLinked ? (me.partnerDisplayName ?? TERMS.spouse) : null;
+  /* 칩은 후보가 있는 업종만, 그룹 순서대로. 목록도 같은 묶음이다 — 정본 1번 화면은 업종별로
+     «{업종} · N개 · 최신순» 머리를 두고 그 아래 카드를 쌓는다(서버가 added_at DESC로 준다). */
+  const groups = (page?.groups ?? []).filter((group) => group.candidates.length > 0);
+  const categories = groups.map((group) => group.category);
+  const visibleGroups = filter === 'all' ? groups : groups.filter((group) => group.category === filter);
   const weddingId = me?.weddingId ?? null;
 
   function showToast(message: string, undo: UndoCandidate | null = null) {
@@ -297,7 +295,7 @@ export default function PickScreen() {
             </View>
           ) : (
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-              <Header me={me} partner={partner} total={page?.total ?? 0} />
+              <Header />
 
               {/* 비교 배너 — 피그마 `compareIds.length >= 2`: 잉크 면 · radius 16 · 안쪽 16/14. */}
               {compare.size >= MIN_COMPARE ? (
@@ -349,21 +347,41 @@ export default function PickScreen() {
                     ))}
                   </ScrollView>
 
-                  <View style={styles.list}>
-                    {visible.map((row) => (
-                      <CandidateCard
-                        key={row.candidate.id}
-                        row={row}
-                        comparing={compare.has(row.candidate.vendorId)}
-                        compareFull={compare.size >= PICK_COMPARE_MAX}
-                        busy={busy}
-                        onCompare={() => toggleCompare(row.candidate.vendorId)}
-                        onDecide={() => goDecide(row.candidate)}
-                        onUndecide={() => askUndecide(row.candidate)}
-                        onRemove={() => void unpick(row)}
-                      />
-                    ))}
-                  </View>
+                  {visibleGroups.map((group) => (
+                    <View key={group.category} style={styles.group}>
+                      {/* 정본 catHead: 제목 18/700 · «N개 · 최신순» 13 회색 tabular. */}
+                      <View style={styles.groupHead}>
+                        <ThemedText type="f18" style={styles.bold}>
+                          {VENDOR_CATEGORY_LABEL[group.category]}
+                        </ThemedText>
+                        <ThemedText type="f13" numeric themeColor="textAssistive">
+                          {groupMetaLabel(group.candidates.length)}
+                        </ThemedText>
+                      </View>
+                      <View style={styles.list}>
+                        {group.candidates.map((candidate) => {
+                          const row: Row = {
+                            candidate,
+                            groupDecided: group.state === 'decided',
+                            isDecided: group.decidedVendorId === candidate.vendorId,
+                          };
+                          return (
+                            <CandidateCard
+                              key={candidate.id}
+                              row={row}
+                              comparing={compare.has(candidate.vendorId)}
+                              compareFull={compare.size >= PICK_COMPARE_MAX}
+                              busy={busy}
+                              onCompare={() => toggleCompare(candidate.vendorId)}
+                              onDecide={() => goDecide(candidate)}
+                              onUndecide={() => askUndecide(candidate)}
+                              onRemove={() => void unpick(row)}
+                            />
+                          );
+                        })}
+                      </View>
+                    </View>
+                  ))}
                 </>
               )}
               <View style={styles.bottomSpacer} />
@@ -387,111 +405,18 @@ export default function PickScreen() {
 }
 
 /* ────────────────────────────────────────────
-   Header — 피그마 `px-5 pb-5 pt-6`: 제목 24/700 + «N곳» 배지 · 부제 14 ·
-   배우자 상자(radius 16 · 회색 면 · 안쪽 16/12 · 아바타 32 둘 · «Pick 인증»)
+   Header — v3.28 정본 1번 화면: 제목 «Pick» 한 줄뿐(rH1 28/700). «N곳» · 부제 · 배우자
+   함께-보기 상자 · «Pick 인증» 고리는 정본에 없어 지웠다(2026-09-23 대표 지시 —
+   정본에 없는 기능은 제거한다). Pick 인증 진입은 MY · 웨딩노트가 갖고 있다.
 ──────────────────────────────────────────── */
-function Header({ me, partner, total }: { me: CurrentUser; partner: string | null; total: number }) {
-  const theme = useTheme();
-
+function Header() {
   return (
-    <View style={styles.head}>
-      <View style={styles.titleRow}>
-        {/* 규격서: «Pick» 24/700 lh 32 ls -0.6 · 배지 12/700 흰 글자 lh 16 pad 4 12 · 부제 14/400 #868B94 lh 20. */}
-        <ThemedText type="f26" style={[styles.bold, styles.title]}>
-          {TERMS.pick}
-        </ThemedText>
-        <ThemedText type="f14" themeColor="textAssistive" style={styles.bold}>
-          {pickCountLabel(total)}
-        </ThemedText>
-      </View>
-      <View style={styles.headBody}>
-        <ThemedText type="f14" themeColor="textAssistive">
-          {SUBTITLE}
-        </ThemedText>
-
-        {/*
-          함께-보기 상자는 배우자가 연결됐을 때만 선다 — 피그마의 «준혁님과 함께 보고 있어요»는
-          배우자가 있는 시안값이다. «Pick 인증»는 업체 무관 전역 진입이라 Pick 인증 동의 화면으로
-          바로 보낸다(폐기된 별도 제보 화면을 거치지 않는다).
-        */}
-        {partner ? (
-          <View style={[styles.partnerBox, { backgroundColor: theme.backgroundElement }]}>
-            <View style={styles.partnerLeft}>
-              <View style={styles.avatars}>
-                <Avatar initial={me.displayName?.[0] ?? null} background={theme.text} ring={theme.backgroundElement} />
-                <Avatar
-                  initial={partner[0] ?? null}
-                  background={theme.textAssistive}
-                  ring={theme.backgroundElement}
-                  overlap
-                />
-              </View>
-              {/* 규격서: «12/600 #1A1C20 · lh 16». */}
-              <ThemedText type="f12" numberOfLines={1} style={[styles.semibold, styles.partnerText]}>
-                {partnerWith(partner, '함께 보고 있어요')}
-              </ThemedText>
-            </View>
-            <Pressable
-              onPress={() => router.push('/capture/payment/consent?from=pick')}
-              accessibilityRole="button"
-              accessibilityLabel={PICK_VERIFY_LABEL}
-              style={(state) => {
-                const { hovered, focused } = readWebInteractionState(state);
-                return [
-                  styles.priceReportLink,
-                  hovered ? { opacity: 0.8 } : null,
-                  focused
-                    ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: 2 }
-                    : null,
-                ];
-              }}>
-              <ProductSymbol name="link" size={Layout.iconSmall} color={theme.tint} />
-              {/* 규격서: «Pick 인증» 12/700 키 컬러 lh 16 · 고리 14. */}
-              <ThemedText type="f12" themeColor="tint" style={styles.bold}>
-                {PRICE_REPORT}
-              </ThemedText>
-            </Pressable>
-          </View>
-        ) : null}
-      </View>
+    <View style={styles.titleRow}>
+      <ThemedText type="f26" style={[styles.bold, styles.title]}>
+        {TERMS.pick}
+      </ThemedText>
     </View>
   );
-}
-
-/** 이름 첫 글자 원 32 — 피그마 `h-8 w-8 rounded-full ring-2 ring-secondary`, 둘째는 -8 겹침. */
-function Avatar({
-  initial,
-  background,
-  ring,
-  overlap = false,
-}: {
-  initial: string | null;
-  background: string;
-  ring: string;
-  overlap?: boolean;
-}) {
-  const theme = useTheme();
-  return (
-    <View style={[styles.avatar, { backgroundColor: background, borderColor: ring }, overlap ? styles.avatarOverlap : null]}>
-      {initial ? (
-        /* 규격서: 아바타 글자 «11/700 #FFFFFF · lh 17». */
-        <ThemedText type="f11" style={[styles.bold, { color: theme.onInk }]}>
-          {initial}
-        </ThemedText>
-      ) : (
-        /* 이름을 아직 안 정했으면 빈 원 대신 사람 기호. */
-        <ProductSymbol name="person" size={Layout.iconField} color={theme.onInk} />
-      )}
-    </View>
-  );
-}
-
-/**
- * «준호님과 함께 보고 있어요» · «배우자와 함께 보고 있어요». 이름을 모르면 «배우자님»이라
- * 부르지 않는다.
- */
-function partnerWith(partner: string, tail: string): string {
-  return partner === TERMS.spouse ? `${partner}와 ${tail}` : `${partner}님과 ${tail}`;
 }
 
 /* ────────────────────────────────────────────
@@ -767,57 +692,22 @@ const styles = StyleSheet.create({
   /* 비교함이 찼을 때의 «비교하기» `opacity-40`. */
   disabled: { opacity: 0.4 },
 
-  head: { paddingBottom: Layout.listGap },
-  /* Root 제목행: Back 없음 · 56 · 좌우 24. */
+  /* Root 제목행: Back 없음 · 56 · 좌우 24. 정본 headBlock은 제목 아래 24 여백. */
   titleRow: {
     height: Layout.navBar,
     paddingHorizontal: Layout.gutter,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Layout.iconTextGap,
+    paddingBottom: Layout.listGap,
   },
-  headBody: {
-    paddingHorizontal: Layout.gutter,
-  },
-  /* 03-pick shareBar: mt 16 · radius 10 · 안쪽 16/12. */
-  partnerBox: {
-    marginTop: Spacing.three,
-    borderRadius: Radius.medium,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Layout.inlineGap,
+  /* 업종 묶음 — 정본 catGroupSec: 머리 + 카드 목록, 묶음 사이 20. */
+  group: { gap: Layout.inlineGap, marginBottom: Layout.sectionGap },
+  groupHead: {
+    paddingHorizontal: Layout.pageX,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: Spacing.two,
-  },
-  /* 아바타 묶음 ↔ 글 `gap-2.5` = 10(같은 값의 iconTextGap). */
-  partnerLeft: {
-    flex: 1,
-    minWidth: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Layout.iconTextGap,
-  },
-  partnerText: { flexShrink: 1 },
-  avatars: { flexDirection: 'row' },
-  /* `h-8 w-8 ring-2` — 32 원 · 테두리 2(같은 값의 Border.focus). */
-  avatar: {
-    width: Layout.avatarRow,
-    height: Layout.avatarRow,
-    borderRadius: Radius.pill,
-    borderWidth: Border.focus,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  /* `-space-x-2` — 둘째가 8 겹친다. */
-  avatarOverlap: { marginLeft: -Spacing.two },
-  /* «Pick 인증» `flex items-center gap-1`. */
-  priceReportLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-    minHeight: Layout.touchTarget,
-    justifyContent: 'center',
+    gap: Layout.inlineGap,
   },
 
   // ── 03-pick 비교 배너: mx 24 · mb 16 · radius 10 · px 16 · py 14 ──
