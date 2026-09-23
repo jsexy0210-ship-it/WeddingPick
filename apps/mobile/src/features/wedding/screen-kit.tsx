@@ -431,19 +431,28 @@ export function Field({ label, hint, hintColor = 'textAssistive', style: _style,
   );
 }
 
-/** 필드처럼 보이는 버튼 — 날짜처럼 눌러서 고르는 값. */
+/**
+ * 필드처럼 보이는 버튼 — 날짜처럼 눌러서 고르는 값.
+ *
+ * `accent` · `icon` — WP-NOTE-002 `dateInput`(정본 `box-shadow:inset 0 0 0 1.5px` + coral
+ * `icoCal`)처럼 강조가 필요한 자리만 켠다. 기본은 옛 회색 테두리 그대로라 다른 호출을 안 건드린다.
+ */
 export function FieldButton({
   label,
   value,
   placeholder,
   onPress,
   open = false,
+  accent = false,
+  icon,
 }: {
   label: string;
   value: string | null;
   placeholder: string;
   onPress: () => void;
   open?: boolean;
+  accent?: boolean;
+  icon?: ReactNode;
 }) {
   const theme = useTheme();
 
@@ -460,12 +469,16 @@ export function FieldButton({
         style={({ pressed }) => [
           styles.input,
           styles.inputButton,
-          { borderColor: open ? theme.text : theme.fieldBorder, backgroundColor: theme.background },
+          {
+            borderColor: accent ? theme.tint : open ? theme.text : theme.fieldBorder,
+            backgroundColor: theme.background,
+          },
           pressed && styles.pressed,
         ]}>
         <ThemedText type="t6" themeColor={value ? 'text' : 'textDisabled'} numeric numberOfLines={1}>
           {value ?? placeholder}
         </ThemedText>
+        {icon}
       </Pressable>
     </View>
   );
@@ -601,7 +614,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: Layout.fieldPaddingX,
   },
-  inputButton: { justifyContent: 'center' },
+  inputButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 
   dock: {
     borderTopWidth: 1,

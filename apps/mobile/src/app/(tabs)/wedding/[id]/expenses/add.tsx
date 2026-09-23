@@ -8,7 +8,7 @@ import {
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { addExpense } from '@/api/client';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
@@ -22,11 +22,21 @@ import {
   NoteCard,
   Section,
 } from '@/features/wedding/screen-kit';
-import { ActionButton, FilterChip, Spacing, ThemedText } from '@weddingpick/ui';
+import { ActionButton, FilterChip, ProductSymbol, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 
 import WeddingScreen from '../../index';
 
 const PROOF_KINDS = ['영수증', '문자', '앱 화면 1장'] as const;
+
+/**
+ * `DESIGN_UNRESOLVED` — 정본(WP-NOTE-007)은 항목/예산/낸 금액을 한 화면에 묻고 사진을
+ * 올리면 필드가 바로 채워지는 모델이다. 이 화면은 pick/done.tsx · complete-view.tsx가
+ * 같이 쓰는 «지출 하나 기록하기» 화면이라(업체 · 금액 · 낸 날짜 · 항목 카테고리) 정본과
+ * 데이터 모델이 다르다 — 정본대로 필드를 바꾸면 그 두 화면의 흐름이 깨진다. 사진→필드
+ * 자동 채움도 실제로 동기적으로 값을 돌려주는 서버 경로가 없어(Pick 인증은 별도 여러
+ * 단계 플로우) 「채워져요」라고 적어 놓고 안 채우는 거짓 UI를 만들지 않았다. 헤더 ·
+ * 카피 정리만 이번에 반영하고, 필드 모델 통합은 대표님 확인 뒤 별도 세션에서 판단한다.
+ */
 
 function isVendorCategory(value: string | undefined): value is VendorCategory {
   return value !== undefined && (VENDOR_CATEGORIES as readonly string[]).includes(value);
@@ -43,7 +53,8 @@ export default function AddExpenseRoute() {
   }>();
 
   const { height } = useWindowDimensions();
-    const initialCategory = isVendorCategory(category) ? category : null;
+  const theme = useTheme();
+  const initialCategory = isVendorCategory(category) ? category : null;
   const initialDay = todayDay();
 
   const [label, setLabel] = useState(vendorName ?? '');
@@ -126,9 +137,18 @@ export default function AddExpenseRoute() {
         <SheetPanel>
           <View style={styles.sheetHead}>
             <ThemedText type="t4">지출 추가</ThemedText>
-            <ThemedText type="t7" themeColor="textSecondary">
-              지출 내역을 보면서 바로 추가할 수 있어요.
-            </ThemedText>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="닫기"
+              onPress={requestClose}
+              hitSlop={4}
+              style={({ pressed }) => [
+                styles.formClose,
+                { backgroundColor: theme.backgroundSelected },
+                pressed && styles.pressed,
+              ]}>
+              <ProductSymbol name="close" size={16} color={theme.text} />
+            </Pressable>
           </View>
 
           <ScrollView
@@ -137,8 +157,6 @@ export default function AddExpenseRoute() {
             contentContainerStyle={styles.content}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}>
-            <ThemedText type="t2">얼마를 내셨어요?</ThemedText>
-
             <View style={styles.fields}>
               <Field
                 label="업체"
@@ -229,7 +247,6 @@ export default function AddExpenseRoute() {
               onPress={() => void saveAndVerify()}
             />
           </View>
-          <ActionButton label="취소" disabled={saving !== null} onPress={requestClose} />
         </SheetPanel>
       </BottomSheet>
     </View>
@@ -239,7 +256,9 @@ export default function AddExpenseRoute() {
 const styles = StyleSheet.create({
   host: { flex: 1 },
   sheetHost: { flexShrink: 1 },
-  sheetHead: { gap: Spacing.one },
+  sheetHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
+  formClose: { width: 36, height: 36, borderRadius: Radius.pill, alignItems: 'center', justifyContent: 'center' },
+  pressed: { opacity: 0.8 },
   scroll: { flexShrink: 1 },
   content: { paddingBottom: Spacing.two, gap: Spacing.three },
   fields: { gap: Spacing.three },
