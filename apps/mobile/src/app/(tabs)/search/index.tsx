@@ -95,7 +95,7 @@ import { DelayedLoader } from '@/features/loading/delayed-loader';
  * 웨딩일정 · 준비 현황이 한꺼번에 흔들린다(2026-09-11 MASTER 판단 — 그대로 둔다).
  */
 /* 헤더 · 칩 문구 — spec/strings.ko.json `search`. 피그마 `Search.tsx`(2026-09-14 정본)에서 왔다. */
-const TITLE = '업체 탐색';
+const TITLE = '검색';
 const PLACEHOLDER = '업체 이름, 지역, 카테고리 검색';
 const CLEAR_LABEL = '검색어 지우기';
 
@@ -940,7 +940,9 @@ export default function SearchScreen() {
           검색은 Root 5탭의 1Depth라 뒤로가기를 두지 않는다. 나머지는 정본대로 위 12 ·
           좌우 20 · 아래 16이며 제목 20/700과 결과 수 11/17, 검색창 48을 한 덩어리로 둔다.
 
-          제목은 2026-09-20 전달 정본의 «업체 탐색»이다. 검색 Root에는 Back을 두지 않는다.
+          제목은 v3.28 시안(`대메뉴_검색.dc.html` WP-SRCH-001 `headTitleRoot`)의 «검색»이다 —
+          2026-09-20 정본의 «업체 탐색»은 「탐색」 금지어라 v3.28 대조표가 `[bad]`로 짚었다.
+          검색 Root에는 Back을 두지 않는다.
         */}
         <ThemedView style={[styles.header, { borderBottomColor: theme.border }]}>
           <View style={styles.headerTitleRow}>

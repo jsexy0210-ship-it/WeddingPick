@@ -17,7 +17,7 @@
  *   용어집이 Pick을 후보 담기 행동으로 정해 두었다. 결정은 확인 시트(`/pick/confirm`)가 한다.
  * - 결정한 카드의 «상담하기»는 만들지 않는다 — 이용약관 제3조, 고지 후 구현 대기.
  *   «상담취소» 자리는 «결정 취소»이고 한 번 더 묻는다(위험한 조작).
- * - 검색 Root 제목은 2026-09-20 전달 정본의 «업체 탐색»을 쓴다.
+ * - 검색 Root 제목은 v3.28 시안의 «검색»을 쓴다(「탐색」 금지어).
  */
 import type { CandidateListResponse, CurrentUser, VendorCandidate } from '@weddingpick/api-contract';
 import {

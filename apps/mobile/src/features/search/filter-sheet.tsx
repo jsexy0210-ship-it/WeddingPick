@@ -99,8 +99,11 @@ export function FilterSheet({
             accessibilityLabel={S.reset}
             hitSlop={Spacing.three}
             onPress={() => onChange({ category: null, region: null, budget: null, onlyVerified: false })}>
-            {/* 시안 «초기화» 16/700 #4D5159 — 코랄이 아니다. 되돌리기는 강조할 행동이 아니다. */}
-            <ThemedText type="t6" themeColor="textSecondary" style={styles.bold}>
+            {/*
+              v3.28 WP-SRCH-002 — 「상단 우측에 초기화가 primary 색 텍스트로 있습니다」.
+              시안의 `resetBtn`도 `color: P`(#ff6f61 코랄)다. 옛 정본의 #4D5159 회색에서 되돌렸다.
+            */}
+            <ThemedText type="t6" style={[styles.bold, { color: theme.tint }]}>
               {S.reset}
             </ThemedText>
           </Pressable>
