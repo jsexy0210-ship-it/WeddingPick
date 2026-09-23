@@ -90,7 +90,7 @@ const REVIEW_COLS: Col[] = [
 const PROOF_COLS: Col[] = [
   { key: 'merchant', label: '영수증 가맹점명', width: 220, grow: true },
   { key: 'vendor', label: '매칭된 업체', width: 200 },
-  { key: 'amount', label: '결제 금액', width: 130, align: 'right' },
+  { key: 'amount', label: '낸 금액', width: 130, align: 'right' },
   { key: 'paidAt', label: '낸 날짜', width: 160 },
 ];
 const CLAIM_COLS: Col[] = [
@@ -282,7 +282,7 @@ export default function UserDetailScreen() {
               { label: '웨딩', value: `${formatCount(data.weddings.length)}건` },
               { label: 'Pick 후보', value: `${formatCount(data.candidateCount)}곳`, note: `결정 ${data.decisions.length}건` },
               { label: '쓴 후기', value: `${formatCount(data.reviews.length)}건` },
-              { label: '결제 제보', value: `${formatCount(data.paymentProofs.length)}건` },
+              { label: '증빙 제보', value: `${formatCount(data.paymentProofs.length)}건` },
               { label: '상담 기록', value: `${formatCount(data.consultationCount)}건` },
               { label: '보낸 문의', value: `${formatCount(data.inquiries.length)}건` },
             ]}
@@ -316,8 +316,8 @@ export default function UserDetailScreen() {
               <DataTable cols={REVIEW_COLS} rows={reviewRows} empty="쓴 후기가 없어요" />
             </Card>
 
-            <Card title="결제 제보" sub="가맹점명은 영수증에 찍힌 그대로" full>
-              <DataTable cols={PROOF_COLS} rows={proofRows} empty="낸 결제 제보가 없어요" />
+            <Card title="증빙 제보" sub="가맹점명은 영수증에 찍힌 그대로" full>
+              <DataTable cols={PROOF_COLS} rows={proofRows} empty="낸 증빙 제보가 없어요" />
             </Card>
 
             <Card title="업체 소유 확인 신청" full>

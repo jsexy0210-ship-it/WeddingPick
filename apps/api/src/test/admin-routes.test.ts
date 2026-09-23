@@ -938,6 +938,7 @@ describeWithDb('관리자 콘솔 라우트', () => {
         'objections',
         'pii-reviews',
         'biz-queue',
+        'inquiries',
       ]);
       /* 빈 큐가 정상 상태다 — 줄 자체를 지우지 않는다. 화면이 「확인할 것이 없어요」를 그린다. */
       expect(body.humanQueue.every((q) => q.count === 0)).toBe(true);
