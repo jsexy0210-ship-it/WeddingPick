@@ -472,6 +472,43 @@ const routes = {
     ],
   },
 
+  /* 결정한 업체(WP-OUR-003). PR #495 검수 때 빠져 있던 것을 채웠다 — 한 업종 하나를
+     결정 + 관련 일정 하나 + 관련 지출 하나로 세 섹션이 모두 보이게 둔다. */
+  'GET /v1/weddings/:weddingId/decisions': {
+    decisions: [
+      {
+        category: 'hall',
+        categoryLabel: '웨딩홀',
+        vendor: { id: '11111111-1111-4111-8111-111111111111', name: '강남 A 웨딩홀', region: '서울 강남구' },
+        decidedAt: '2026-09-10T05:00:00.000Z',
+        decidedByPartner: false,
+        events: [
+          { id: '11111111-1111-4111-8111-111111111112', title: '웨딩홀 계약금 납부', startsAt: '2026-10-01T05:00:00.000Z', location: null },
+        ],
+        expenses: { bucket: 'hall', bucketLabel: '웨딩홀', paidTotal: 3_000_000, paidCount: 1, scheduledTotal: 15_000_000, scheduledCount: 1 },
+      },
+    ],
+  },
+
+  /* 변경 내역(WP-CPL-005). PR #495 검수 때 빠져 있던 것을 채웠다 — 오늘 그룹 하나에
+     알림 한 줄이 보이게 둔다. */
+  'GET /v1/me/notifications': {
+    notifications: [
+      {
+        id: '11111111-1111-4111-8111-111111111113',
+        kind: 'verification',
+        kindLabel: '자료 확인',
+        title: '견적서 확인이 끝났어요',
+        body: '강남 A 웨딩홀 견적서를 확인했어요.',
+        targetId: null,
+        createdAt: new Date().toISOString(),
+        readAt: null,
+      },
+    ],
+    unread: 1,
+    total: 1,
+  },
+
   /*
    * 웨딩노트 캘린더 · 예산현황. 일정은 **오늘** 둘(하나는 지난 시각 = done)과 열흘 뒤 하나 —
    * 오늘이 기본 선택일이라 오늘에 일정이 없으면 목록 자리가 빈 상태로만 찍힌다.
