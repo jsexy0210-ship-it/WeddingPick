@@ -39,7 +39,8 @@ import {
 
 /** `spec/strings.ko.json` `withdraw.*` · 시안 13b-withdrawal. */
 const S = {
-  title: '회원 탈퇴',
+  /* 시안(WP-MY-012) navTitle — 「회원탈퇴」 4글자는 붙여 쓴다(전체 공통 규칙). */
+  title: '회원탈퇴',
   sheetCancel: '취소',
   done: '로그인으로 돌아가기',
   supportTitle: '문의가 필요하면',
