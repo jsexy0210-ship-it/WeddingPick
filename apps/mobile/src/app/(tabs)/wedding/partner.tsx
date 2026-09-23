@@ -1,7 +1,7 @@
 import type { CurrentUser, WeddingInvite } from '@weddingpick/api-contract';
 import { TERMS, inviteShareMessage } from '@weddingpick/domain';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 
 import {
@@ -9,7 +9,6 @@ import {
   ensureWedding,
   getCurrentUser,
   getWeddingInvite,
-  revokeWeddingInvite,
   unlinkPartner,
 } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
@@ -17,70 +16,103 @@ import strings from '../../../../../../spec/strings.ko.json';
 import { shareOrCopy } from '@/components/share-or-copy';
 import { formatDateTimeDot } from '@/features/common/format-date';
 import { useDepthBack } from '@/features/navigation/depth-back';
-import { ErrorView, Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { ActionButton, Border, ErrorView, Layout, Radius, SocialColors, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
-import {
-  Badge,
-  Dock,
-  DockButton,
-  Hero,
-  ListRow,
-  NavBar,
-  NoteCard,
-  Screen,
-  Section,
-} from '@/features/wedding/screen-kit';
-
-/** `spec/strings.ko.json` `couple.*` · 시안 14-couple #1 · #6. */
-const S = {
-  inviteNav: '연결관리',
-  linkedNav: '연결관리',
-  unlinkNav: '연결 해제',
-  inviteTitle: '둘이 같이 보면 결정이 빨라져요',
-  inviteSub: `${TERMS.picked} · 일정 · 지출이 함께 보여요`,
-  inviteCode: '초대 코드',
-  sharedLabel: '연결하면 같이 보여요',
-  ownLabel: '각자 남아요',
-  noteTitle: strings.journey.partnerShareTitle,
-  noteBody: strings.journey.partnerShareBody,
-  copy: '코드 복사',
-  copied: '복사했어요',
-  send: '링크 보내기',
-  make: '초대 코드 만들기',
-  remake: '새 코드 만들기',
-  revoke: '초대 취소',
-  haveCode: '코드 받았어요',
-  unlink: '연결 끊기',
-  keep: '그대로 둘게요',
-} as const;
-
-/** 연결하면 같이 보이는 것 4 — SPEC 4.1 · 시안 문구. */
-const SHARED: { title: string; sub: string }[] = [
-  { title: TERMS.picked, sub: '둘 다 고른 곳이 위로 올라와요' },
-  { title: '일정', sub: '한 명이 넣으면 둘 다 알림을 받아요' },
-  { title: '지출', sub: '누가 얼마 냈는지 같이 보여요' },
-  { title: '메모', sub: '업체마다 의견을 남길 수 있어요' },
-];
-/** 연결해도 각자에게 남아요 2 — SPEC 4.1. */
-const OWN = ['검색 기록', '알림 설정'] as const;
-/** 끊으면 각자에게 남아요 3 — SPEC 4.3. */
-const REMAINS: { title: string; sub: string }[] = [
-  { title: `내가 고른 곳`, sub: '내 목록에 그대로 남아요' },
-  { title: '내가 등록한 일정과 지출', sub: '내 기록으로 남아요' },
-  { title: '함께 쓴 메모', sub: '각자 사본으로 남아요' },
-];
+import { Badge, Dock, Hero, ListRow, NavBar, NoteCard, Screen, Section } from '@/features/wedding/screen-kit';
 
 /**
- * 배우자 초대 · 연결 · 해제. WP-CPL-001 · WP-CPL-006 · 핸드오프 14-couple #1 · #6 · SPEC 4.
- *
- *   혼자    hero · 초대 코드 카드(brand · 32) · 공유 4행 «공유» · 각자 2행 «각자» · note · dock
- *          dock — 코드 있음: «코드 복사» + «링크 보내기» / 보낸 초대만: «초대 취소» + «새 코드 만들기» /
- *                 없음: «코드 받았어요» + «초대 코드 만들기»
- *   함께    hero «{배우자}님과 함께 준비하고 있어요» · 공유 4행 · dock «연결 끊기»
- *   해제    hero «{배우자}님과 연결을 끊을까요?» · 멈추는 것 4행 «공유 종료» · 각자에게 남아요 3행 · note · dock danger
+ * `spec/strings.ko.json` `couple.*` · 정본 `docs/design/html/대메뉴_MY.dc.html`
+ * WP-CPL-001(배우자 초대) · WP-CPL-006(연결 해제). 「연결됨」(이미 연결된 사람이 보는 관리
+ * 화면)은 WP-MY-014(연결관리)에 속해 이번 작업 범위 밖이라 그대로 둔다.
+ */
+const S = {
+  inviteNav: '배우자 초대',
+  linkedNav: '연결관리',
+  unlinkNav: '연결 해제',
+  qTitle: '같이 준비할\n사람을 초대해요',
+  inviteCode: '초대 코드',
+  copy: '코드 복사',
+  copied: '복사했어요',
+  remake: '코드 다시 받기',
+  make: '초대 코드 만들기',
+  kakao: '카카오로 초대하기',
+  sharedLabel: '연결하면 같이 봐요',
+  scopeNote: '검색 기록과 알림 설정은 각자 봐요.',
+  haveCode: '코드 받았어요',
+  unlinkQTitle: '해제하면\n이렇게 돼요',
+  cutLabel: '끝나요',
+  keepLabel: '그대로예요',
+  unlinkNote: '다시 초대하면 같이 볼 수 있어요.',
+  unlink: '연결 해제하기',
+} as const;
+
+/** WP-CPL-001 scopeRows(연결하면 같이 봐요) — 4행, 코랄 점 + 라벨만(배지 없음). */
+const SHARE_SCOPE = [`${TERMS.picked} · Pick`, '일정', '지출', '메모'];
+
+/** WP-CPL-006 cutRows(끝나요) — 3행, 회색 점 + 라벨만. */
+const CUT_ROWS = ['일정 · 지출 공유', `${TERMS.picked} 비교 같이 보기`, '변경 알림'];
+
+/** WP-CPL-006 keepRows(그대로예요) — 3행, 라벨 + 「그대로 남아요」. */
+const KEEP_ROWS = ['내가 쓴 일정 · 지출', `내 ${TERMS.picked}`, `${TERMS.picked} 인증내역`];
+
+/** 정본 listCard 행 — 코랄/회색 점 + 라벨. WP-CPL-001·002·006이 함께 쓰는 모양이다. */
+function DotList({ items, tone }: { items: string[]; tone: 'brand' | 'muted' }) {
+  const theme = useTheme();
+  return (
+    <View style={[styles.listCard, { borderColor: theme.border, backgroundColor: theme.background }]}>
+      {items.map((label, index) => (
+        <View
+          key={label}
+          style={[
+            styles.scopeRow,
+            index < items.length - 1 && { borderBottomWidth: Border.hairline, borderBottomColor: theme.border },
+          ]}>
+          <View style={[styles.scopeDot, { backgroundColor: tone === 'brand' ? theme.tint : theme.textDisabled }]} />
+          <ThemedText type="f15" numberOfLines={1} style={styles.scopeLabel}>
+            {label}
+          </ThemedText>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/** 정본 doneRows/keepRows 행 — 라벨 + 보조문 두 줄, 점·배지 없음. */
+function InfoList({ items }: { items: { label: string; sub: string }[] }) {
+  const theme = useTheme();
+  return (
+    <View style={[styles.listCard, { borderColor: theme.border, backgroundColor: theme.background }]}>
+      {items.map((row, index) => (
+        <View
+          key={row.label}
+          style={[
+            styles.infoRow,
+            index < items.length - 1 && { borderBottomWidth: Border.hairline, borderBottomColor: theme.border },
+          ]}>
+          <ThemedText type="f15">{row.label}</ThemedText>
+          <ThemedText type="f12" themeColor="textAssistive">
+            {row.sub}
+          </ThemedText>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/**
+ * 배우자 초대 · 연결 · 해제. WP-CPL-001 · WP-CPL-006.
  *
  * 연결은 양쪽이 각각 동의해야 이뤄진다 — 이 화면은 초대하는 쪽이다. 코드는 만들 때 한 번만
- * 내려오고 서버는 해시만 들고 있어 다시 보여줄 수 없다. 혼자인 상태를 결핍으로 적지 않는다.
+ * 내려오고 서버는 해시만 들고 있어 다시 보여줄 수 없다(기존 구현 그대로). 그래서 정본의
+ * 「코드가 항상 보인다」는 목업 한 장을 문자 그대로 옮기지 못한다 — 코드를 아직 모르는 상태
+ * (보낸 초대는 있는데 이 화면을 나갔다 돌아온 경우)에는 마스킹값을 보여주고 "코드 다시 받기"
+ * 하나만 남긴다. 혼자인 상태를 결핍으로 적지 않는다.
+ *
+ * DESIGN_UNRESOLVED — 정본 dockSingle의 «카카오로 초대하기»는 카카오톡 공유 SDK 전용
+ * 버튼이다. 이 저장소에는 콘텐츠 공유용 카카오 SDK가 없고(로그인만 카카오를 쓴다),
+ * 새로 붙이는 것은 이번 디자인 대조 범위를 넘는 인프라 작업이라 기존 `shareOrCopy`
+ * (OS 공유 시트 — 카카오톡을 포함해 고를 수 있다)를 그대로 연결한다. 버튼 라벨·색은
+ * 정본 그대로(`SocialColors.kakao`) 쓰되, 실제로 카카오톡으로 강제 전달하지는 않는다.
  */
 export default function PartnerScreen() {
   const depthBack = useDepthBack();
@@ -94,6 +126,8 @@ export default function PartnerScreen() {
   const [error, setError] = useState<string | null>(null);
   const [confirmingUnlink, setConfirmingUnlink] = useState(false);
   const [copied, setCopied] = useState(false);
+  /** ref다 — 자동 생성은 한 번만 시도하면 되는 신호일 뿐 화면에 그릴 상태가 아니다. */
+  const autoTried = useRef(false);
 
   const load = useCallback(async () => {
     if (!isServerConfigured) return;
@@ -134,6 +168,16 @@ export default function PartnerScreen() {
     }
   }
 
+  // 정본(WP-CPL-001)은 코드 카드가 항상 채워져 있다 — 초대를 아직 만든 적이 없으면 화면
+  // 진입과 함께 한 번 만들어 그 모양에 맞춘다. 이미 보낸 초대가 있으면(코드는 몰라도)
+  // 새로 만들지 않는다.
+  useEffect(() => {
+    if (autoTried.current || !weddingId || !me || me.spouseLinked || invite || code) return;
+    autoTried.current = true;
+    void makeInvite();
+    /* makeInvite는 매 렌더 새로 만들어지지만 autoTried ref가 한 번만 돌게 막는다. */
+  }, [weddingId, me, invite, code]);
+
   async function copyCode() {
     if (!code) return;
 
@@ -161,21 +205,6 @@ export default function PartnerScreen() {
     if (result.copied) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
-    }
-  }
-
-  async function revoke() {
-    if (busy || !weddingId || !invite) return;
-    setBusy(true);
-
-    try {
-      await revokeWeddingInvite(weddingId, invite.inviteId);
-      setInvite(null);
-      setCode(null);
-    } catch (caught) {
-      setError((caught as Error).message);
-    } finally {
-      setBusy(false);
     }
   }
 
@@ -222,140 +251,182 @@ export default function PartnerScreen() {
       <Screen>
         <NavBar title={S.unlinkNav} onBack={() => setConfirmingUnlink(false)} />
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <Hero title={`${partner}님과 연결을 끊을까요?`} sub="공유가 멈추고 지금까지 쌓인 기록은 각자에게 남아요" />
-          <Section label="멈추는 것">
-            {SHARED.map((item) => (
-              <ListRow key={item.title} title={`${item.title} 공유`} right={<Badge label="공유 종료" tone="no" />} />
-            ))}
-          </Section>
-          <Section label="각자에게 남아요">
-            {REMAINS.map((item) => (
-              <ListRow key={item.title} title={item.title} sub={item.sub} subLines={1} />
-            ))}
-          </Section>
-          {errorLine}
-          <View style={styles.noteWrap}>
-            <NoteCard title={`${partner}님에게 알림이 가요`} body="다시 연결하려면 초대 코드를 새로 보내야 해요." />
+          <View style={styles.qBlock}>
+            <ThemedText type="t2">{S.unlinkQTitle}</ThemedText>
           </View>
+
+          <View style={styles.sec}>
+            <ThemedText type="t7" themeColor="textAssistive" style={styles.bold}>
+              {S.cutLabel}
+            </ThemedText>
+            <DotList items={CUT_ROWS} tone="muted" />
+          </View>
+
+          <View style={styles.sec}>
+            <ThemedText type="t7" themeColor="textAssistive" style={styles.bold}>
+              {S.keepLabel}
+            </ThemedText>
+            <InfoList items={KEEP_ROWS.map((label) => ({ label, sub: '그대로 남아요' }))} />
+            <ThemedText type="f13" themeColor="textAssistive">
+              {S.unlinkNote}
+            </ThemedText>
+          </View>
+
+          {errorLine}
         </ScrollView>
         <Dock>
-          <DockButton label={S.keep} onPress={() => setConfirmingUnlink(false)} />
-          <DockButton variant="danger" label={busy ? '끊는 중…' : S.unlink} disabled={busy} onPress={() => void unlink()} />
+          <ActionButton
+            variant="danger"
+            size="sheet"
+            label={busy ? '끊는 중…' : S.unlink}
+            disabled={busy}
+            onPress={() => void unlink()}
+          />
         </Dock>
       </Screen>
     );
   }
 
-  /* ---------------------------------------------------------- 연결됨 */
+  /* ---------------------------------------------------------- 연결됨 · WP-MY-014(이번 작업 범위 밖 — 그대로 둔다) */
   if (me.spouseLinked) {
     return (
       <Screen>
         <NavBar title={S.linkedNav} />
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <Hero title={`${partner}님과 함께 준비하고 있어요`} sub={`${S.inviteSub} · 메모도 함께 써요`} />
+          <Hero title={`${partner}님과 함께 준비하고 있어요`} sub={`${TERMS.picked} · 일정 · 지출이 함께 보여요 · 메모도 함께 써요`} />
           <Section label="같이 보고 있어요">
-            {SHARED.map((item) => (
-              <ListRow key={item.title} title={item.title} sub={item.sub} subLines={1} right={<Badge label="공유" tone="ok" />} />
+            {SHARE_SCOPE.map((item) => (
+              <ListRow key={item} title={item} right={<Badge label="공유" tone="ok" />} />
             ))}
           </Section>
-          <Section label={S.ownLabel}>
-            {OWN.map((item) => (
+          <Section label="각자 남아요">
+            {['검색 기록', '알림 설정'].map((item) => (
               <ListRow key={item} title={item} right={<Badge label="각자" tone="none" />} />
             ))}
           </Section>
           {errorLine}
           <View style={styles.noteWrap}>
-            <NoteCard title={S.noteTitle} body={S.noteBody} />
+            <NoteCard title={strings.journey.partnerShareTitle} body={strings.journey.partnerShareBody} />
           </View>
         </ScrollView>
         <Dock>
-          <DockButton label={S.unlink} onPress={() => setConfirmingUnlink(true)} />
+          <ActionButton variant="secondary" size="sheet" label="연결 끊기" onPress={() => setConfirmingUnlink(true)} />
         </Dock>
       </Screen>
     );
   }
 
   /* ---------------------------------------------------------- 혼자 · 초대 · WP-CPL-001 */
-  const codeLine = code
-    ? invite
-      ? `${formatDateTimeDot(invite.expiresAt)}까지 쓸 수 있어요`
-      : '지금 보내주세요'
+  const codeMeta = code
+    ? (copied ? S.copied : `${formatDateTimeDot(invite?.expiresAt ?? '')}까지 쓸 수 있어요`)
     : invite
       ? `보낸 초대가 있어요 · ${formatDateTimeDot(invite.expiresAt)}까지`
-      : '아직 만들지 않았어요';
+      : '만드는 중…';
 
   return (
     <Screen>
       <NavBar title={S.inviteNav} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Hero title={S.inviteTitle} sub={S.inviteSub} />
-
-        {/* 초대 코드 카드 — brand 배경 · coral 테두리 · 코드 32/43. */}
-        <View style={styles.block}>
-          <View style={[styles.codeCard, { backgroundColor: theme.tintSurface, borderColor: theme.tintBorder }]}>
-            <ThemedText type="t7" themeColor="tint" style={styles.bold}>
-              {S.inviteCode}
-            </ThemedText>
-            <ThemedText type="amount" themeColor={code ? 'text' : 'textDisabled'} numeric numberOfLines={1}>
-              {code ?? (invite ? '••••••' : '—')}
-            </ThemedText>
-            <ThemedText type="t7" themeColor={copied ? 'tint' : 'textAssistive'} numeric>
-              {copied ? S.copied : codeLine}
-            </ThemedText>
-          </View>
+        <View style={styles.qBlock}>
+          <ThemedText type="t2">{S.qTitle}</ThemedText>
         </View>
 
-        <Section label={S.sharedLabel}>
-          {SHARED.map((item) => (
-            <ListRow key={item.title} title={item.title} sub={item.sub} subLines={1} right={<Badge label="공유" tone="ok" />} />
-          ))}
-        </Section>
+        <View style={styles.sec}>
+          <View style={[styles.codeCard, { backgroundColor: theme.backgroundElement }]}>
+            <ThemedText type="f13" themeColor="textAssistive">
+              {S.inviteCode}
+            </ThemedText>
+            <ThemedText type="f32" themeColor={code ? 'text' : 'textDisabled'} numeric numberOfLines={1} style={styles.bold}>
+              {code ?? (invite ? '••••••' : '—')}
+            </ThemedText>
+            <ThemedText type="f13" themeColor={copied ? 'tint' : 'textAssistive'} numeric>
+              {codeMeta}
+            </ThemedText>
+          </View>
 
-        <Section label={S.ownLabel}>
-          {OWN.map((item) => (
-            <ListRow key={item} title={item} right={<Badge label="각자" tone="none" />} />
-          ))}
-        </Section>
+          {invite ? (
+            <View style={styles.btnRow}>
+              {code ? (
+                <View style={styles.btnRowItem}>
+                  <ActionButton variant="ghost" size="large" label={S.copy} onPress={() => void copyCode()} />
+                </View>
+              ) : null}
+              <View style={styles.btnRowItem}>
+                <ActionButton
+                  variant="ghost"
+                  size="large"
+                  label={busy ? '만드는 중…' : S.remake}
+                  disabled={busy}
+                  onPress={() => void makeInvite()}
+                />
+              </View>
+            </View>
+          ) : null}
+        </View>
+
+        <View style={styles.sec}>
+          <ThemedText type="t7" themeColor="textAssistive" style={styles.bold}>
+            {S.sharedLabel}
+          </ThemedText>
+          <DotList items={SHARE_SCOPE} tone="brand" />
+          <ThemedText type="f13" themeColor="textAssistive">
+            {S.scopeNote}
+          </ThemedText>
+        </View>
 
         {errorLine}
 
-        <View style={styles.noteWrap}>
-          <NoteCard title={S.noteTitle} body={S.noteBody} />
-        </View>
+        {/*
+         * 정본(WP-CPL-001)에는 없는 보조 진입점이다 — 내가 초대를 만드는 화면과 별개로,
+         * 상대에게 받은 코드를 입력하는 길(WP-CPL-002)이 따로 있어야 한다. 헤더가 아니라
+         * 화면 맨 아래 작은 밑줄 텍스트로 둬 Primary CTA(카카오로 초대하기)와 겹치지
+         * 않게 한다 — 로그아웃 링크와 같은 자리(CLAUDE.md 「강조하지 않되 찾을 수는
+         * 있게」).
+         */}
+        <ThemedText
+          type="t7"
+          themeColor="textAssistive"
+          style={styles.haveCodeLink}
+          onPress={() => router.push('/wedding/join' as never)}>
+          {S.haveCode}
+        </ThemedText>
       </ScrollView>
 
-      {code ? (
-        <Dock>
-          <DockButton label={S.copy} onPress={() => void copyCode()} />
-          <DockButton variant="primary" label={S.send} onPress={() => void share()} />
-        </Dock>
-      ) : invite ? (
-        <Dock note="코드는 다시 보여드릴 수 없어요. 잃어버렸으면 새로 만들어주세요.">
-          <DockButton label={S.revoke} disabled={busy} onPress={() => void revoke()} />
-          <DockButton variant="primary" label={busy ? '만드는 중…' : S.remake} disabled={busy} onPress={() => void makeInvite()} />
-        </Dock>
-      ) : (
-        <Dock>
-          <DockButton label={S.haveCode} onPress={() => router.push('/wedding/join')} />
-          <DockButton variant="primary" label={busy ? '만드는 중…' : S.make} disabled={busy} onPress={() => void makeInvite()} />
-        </Dock>
-      )}
+      <Dock>
+        <ActionButton
+          variant="primary"
+          size="sheet"
+          tone={code ? { background: SocialColors.kakao.background, text: SocialColors.kakao.text } : undefined}
+          label={code ? S.kakao : busy ? '만드는 중…' : S.make}
+          disabled={busy && !code}
+          onPress={() => (code ? void share() : void makeInvite())}
+        />
+      </Dock>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   content: { paddingBottom: Spacing.four },
-  block: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four },
-  /* 코드 카드 — radius 10 · padding 20 · gap 6 · 테두리 1. */
-  codeCard: {
-    borderRadius: Radius.medium,
-    borderWidth: 1,
-    padding: Layout.cardPadding,
-    gap: Spacing.one + Spacing.half,
-  },
-  noteWrap: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionGap },
-  error: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.three },
+  error: { paddingHorizontal: Layout.cardPadding, paddingBottom: Spacing.three },
   bold: { fontWeight: 700 },
+  noteWrap: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionGap },
+
+  /* qBlock — padding 16 20 20. */
+  qBlock: { paddingHorizontal: Layout.cardPadding, paddingTop: Layout.rowPaddingY + 4, paddingBottom: Spacing.four },
+  sec: { paddingHorizontal: Layout.cardPadding, paddingBottom: Spacing.four, gap: Layout.rowPaddingY },
+
+  /* codeCard — radius 10 · 배경 회색(코랄 아님) · padding 20 · gap 6 · 가운데 정렬. */
+  codeCard: { borderRadius: Radius.medium, padding: Layout.cardPadding, alignItems: 'center', gap: Spacing.two },
+  btnRow: { flexDirection: 'row', gap: Layout.rowPaddingY, marginTop: Layout.rowPaddingY },
+  btnRowItem: { flex: 1 },
+
+  listCard: { borderRadius: Radius.medium, borderWidth: Border.hairline, overflow: 'hidden' },
+  scopeRow: { flexDirection: 'row', alignItems: 'center', gap: Layout.rowPaddingY, minHeight: 52, paddingHorizontal: Layout.rowPaddingY + 4 },
+  scopeDot: { width: 5, height: 5, borderRadius: Radius.pill },
+  scopeLabel: { flex: 1, minWidth: 0 },
+  infoRow: { justifyContent: 'center', gap: 3, minHeight: 64, paddingHorizontal: Layout.rowPaddingY + 4 },
+
+  haveCodeLink: { paddingHorizontal: Layout.cardPadding, textDecorationLine: 'underline' },
 });

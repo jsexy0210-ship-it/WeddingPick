@@ -367,13 +367,13 @@ function ReviewList({
               style={({ pressed }) => [styles.reviewTap, pressed ? styles.pressed : null]}>
             <View style={styles.reviewHead}>
               <View style={[styles.reviewAvatar, { backgroundColor: theme.backgroundSelected }]}>
-                <ThemedText type="f13" style={styles.bold}>
+                <ThemedText type="f15" style={styles.bold}>
                   {review.mine ? '나' : review.roleLabel.slice(0, 1)}
                 </ThemedText>
               </View>
               <View style={styles.reviewHeadText}>
                 <View style={styles.reviewNameRow}>
-                  <ThemedText type="f14" style={styles.bold}>
+                  <ThemedText type="f15" style={styles.bold}>
                     {who}
                   </ThemedText>
                   {verified ? <Badge kind="ok">{R.verifiedBadge}</Badge> : null}
@@ -669,55 +669,71 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.8 },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: Spacing.four },
-  segment: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.inlineGap },
+  /* 정본(WP-LNG-001~003) — sec·chipBar·revCard·guideRow 모두 좌우 20px(Layout.cardPadding)다. */
+  segment: { paddingHorizontal: Layout.cardPadding, paddingBottom: Layout.inlineGap },
   chipScroll: { flexGrow: 0 },
-  chipBar: { gap: Layout.chipGap, paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionHeadGap },
+  chipBar: { gap: Layout.chipGap, paddingHorizontal: Layout.cardPadding, paddingBottom: Layout.sectionHeadGap },
 
+  /* revCard: padding 18px 20px — 위아래 대칭 18(cardPaddingCompactY), 좌우 20(cardPadding). */
   reviewCard: {
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.cardPadding,
     paddingTop: Layout.cardPaddingCompactY,
-    paddingBottom: Layout.cardPadding,
+    paddingBottom: Layout.cardPaddingCompactY,
     borderBottomWidth: Border.hairline,
     gap: Layout.inlineGap,
   },
   reviewTap: { gap: Layout.inlineGap },
+  /* revImg: height 240 — 카드 폭(정본 phone 430 − 좌우 20*2 = 390)/240 ≈ 1.625. */
   reviewImage: {
     width: '100%',
-    aspectRatio: 1.55,
+    aspectRatio: 1.625,
     borderRadius: Radius.medium,
     backgroundColor: '#F7F8F9',
   },
-  reviewActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.four },
+  /* revFoot: gap 18px. */
+  reviewActions: { flexDirection: 'row', alignItems: 'center', gap: 18 },
   reviewAction: { minHeight: Layout.touchTarget, justifyContent: 'center' },
-  reviewHead: { flexDirection: 'row', alignItems: 'center', gap: Layout.inlineGap },
+  /* revHead: gap 10px. */
+  reviewHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  /* revAvatar: 40×40(정본 — Layout 토큰에 40이 없어 px 그대로 둔다). */
   reviewAvatar: {
-    width: Layout.avatarRow,
-    height: Layout.avatarRow,
+    width: 40,
+    height: 40,
     borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
   reviewHeadText: { flex: 1, minWidth: 0, gap: Spacing.half },
-  reviewNameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  reviewAnswers: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  reviewChip: { height: 26, borderRadius: Radius.pill, paddingHorizontal: Layout.chipPaddingX, justifyContent: 'center' },
+  /* revNameRow: gap 6px. */
+  reviewNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  /* revAnswers: gap 6px. */
+  reviewAnswers: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  /* revChip: height 26 · padding 0 10px. */
+  reviewChip: { height: 26, borderRadius: Radius.pill, paddingHorizontal: 10, justifyContent: 'center' },
   reviewBody: { lineHeight: LineHeight.lh22 },
   rebuttal: { borderRadius: Radius.medium, padding: Spacing.three, gap: Spacing.one },
-  caveat: { paddingHorizontal: Layout.gutter, paddingTop: Spacing.three },
+  caveat: { paddingHorizontal: Layout.cardPadding, paddingTop: Spacing.three },
 
+  /* guideRow: padding 16px 20px. */
   guideRow: {
     flexDirection: 'row',
     gap: Layout.sectionHeadGap,
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.cardPadding,
     paddingVertical: Spacing.three,
     borderBottomWidth: Border.hairline,
   },
   guideThumb: { width: Layout.avatarLarge, height: Layout.avatarLarge, borderRadius: Radius.medium, overflow: 'hidden' },
   guideCol: { flex: 1, minWidth: 0, justifyContent: 'center', gap: Spacing.one },
-  section: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.listGap, gap: Layout.inlineGap },
-  expoCard: { borderRadius: Radius.medium, padding: Layout.cardPaddingCompactY, gap: Layout.inlineGap },
+  section: { paddingHorizontal: Layout.cardPadding, paddingBottom: Layout.listGap, gap: Layout.inlineGap },
+  /* expoCard(card): radius 10 · padding 16px 20px · gap 12. */
+  expoCard: {
+    borderRadius: Radius.medium,
+    paddingVertical: Spacing.three,
+    paddingHorizontal: Layout.cardPadding,
+    gap: Layout.inlineGap,
+  },
   expoHead: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Layout.inlineGap },
   expoCol: { flex: 1, minWidth: 0, gap: Spacing.one },
-  empty: { paddingHorizontal: Layout.gutter, paddingTop: Layout.sectionGap, gap: Spacing.two, alignItems: 'center' },
+  empty: { paddingHorizontal: Layout.cardPadding, paddingTop: Layout.sectionGap, gap: Spacing.two, alignItems: 'center' },
   emptyAction: { marginTop: Spacing.two, alignSelf: 'stretch' },
 });
