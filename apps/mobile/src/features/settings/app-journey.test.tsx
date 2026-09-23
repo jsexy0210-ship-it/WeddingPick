@@ -5,8 +5,6 @@ import { router } from 'expo-router';
 import { listNotifications, readNotification, readAllNotifications, getCurrentUser, getSettings, setDisplayName, updateSettings, searchVendors, listVendorRegions } from '@/api/client';
 import NotificationsScreen from '@/app/(tabs)/my/notifications';
 import NotificationSettingsScreen from '@/app/(tabs)/my/notification-settings';
-import AccountScreen from '@/app/(tabs)/my/account';
-import SettingsScreen from '@/app/(tabs)/my/settings';
 import ProfileScreen from '@/app/(tabs)/my/profile';
 import AutocompleteScreen from '@/app/(tabs)/search/autocomplete';
 import PriceReportScreen from '@/app/(tabs)/search/[vendorId]/price-report';
@@ -102,7 +100,7 @@ describe('알림 이동과 읽음 복구', () => {
   });
 });
 
-describe.each([['알림 설정', NotificationSettingsScreen], ['계정', AccountScreen], ['설정', SettingsScreen]] as const)('%s 저장 경합', (_name, Component) => {
+describe.each([['알림 설정', NotificationSettingsScreen]] as const)('%s 저장 경합', (_name, Component) => {
   it('저장 응답 전 두 번째 토글을 차단하고 완료 후 다시 활성화한다', async () => {
     const pending = deferred();
     jest.mocked(updateSettings).mockReturnValue(pending.promise as never);

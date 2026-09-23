@@ -35,7 +35,7 @@ describe('depthBackTarget — 대표 경로', () => {
     ['/search/expo', '/search', '박람회 목록 → 검색'],
     ['/my/rewards/npay', '/my/rewards', 'Npay 수령 → 혜택'],
     ['/my/rewards', '/my', '혜택 → MY'],
-    ['/my/settings', '/my', '설정 → MY'],
+    ['/my/taste', '/my', '스타일 다시 고르기 → MY'],
     ['/my/scraps', '/my', '스크랩 → MY'],
     ['/my/rebuttals/r-2', '/my/rebuttals', '반론 상세 → 반론 목록'],
     ['/my/vendor-claims/v-7', '/my/vendor-claims', '관계자 인증 상세 → 목록'],

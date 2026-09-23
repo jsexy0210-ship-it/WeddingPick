@@ -22,6 +22,17 @@ const S = {
   needsCheck: '보완 필요',
 } as const;
 
+/**
+ * Pick 인증내역 · WP-MY-004 · `docs/design/html/대메뉴_MY.dc.html` 4.
+ *
+ * **v3.29 대조 — 미룬 것 둘.** 시안의 `certs`는 네 상태(반영됨 · 확인 중 · 보완 필요 ·
+ * 안 됐어요)이고 「보완 필요」 카드에는 «날짜 입력하기» 같은 행동 버튼이 붙는데,
+ * `myReportSchema`는 `inUse` · `needsCheck` 둘뿐이라 「안 됐어요」(반려)를 따로 가리킬 값이
+ * 없고 보완 행동이 어디로 가는지도 계약에 없다 — 값을 지어내는 대신 지금 세 상태(반영됨 ·
+ * 확인 중 · 보완 필요)만 배지로 두고 행동 버튼은 달지 않는다. 상단 «N건 인증했고 M건이
+ * 반영됐어요» 머리글(`Hero`)도 이 시안에는 없지만, `Hero`가 다른 MY 하위 화면과 함께 쓰는
+ * 공용 부품이라 이 화면만 보고 빼지 않았다 — 확인이 필요하다.
+ */
 function badgeKind(report: MyReport): 'none' | 'ok' | 'wait' {
   return report.inUse ? 'ok' : report.needsCheck ? 'wait' : 'none';
 }
