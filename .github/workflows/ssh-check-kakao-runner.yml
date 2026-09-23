@@ -1,0 +1,63 @@
+# SSH into Kakao VM to check/restart the self-hosted runner when it can't fix itself.
+name: SSH Check Kakao Runner
+
+# 자체 호스팅 러너(weddingpick-kakao)가 죽으면 repair-kakao-runner.yml도 같이
+# 못 돈다 — 그 워크플로는 self-hosted 잡이라 러너가 살아 있어야만 실행된다.
+# 이 워크플로는 GitHub-hosted(ubuntu-latest)에서 SSH로 직접 들어가 상태를 보고,
+# 필요할 때만 사람이 명시적으로 재시작을 고른다. 자동 트리거 없이 수동 실행만
+# 허용한다 — 운영 서버에 SSH로 명령을 보내는 유일한 경로라 실수로 도는 일이
+# 없어야 한다(2026-09-23 대표 지시로 KAKAO_PROD_KEY 시크릿 등록).
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: '상태만 볼지(status), 죽어 있으면 재시작까지 할지(restart)'
+        type: choice
+        options:
+          - status
+          - restart
+        default: status
+
+permissions:
+  contents: read
+
+jobs:
+  ssh-check:
+    name: SSH into Kakao VM
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: SSH 키 준비
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          umask 077
+          printf '%s\n' "${{ secrets.KAKAO_PROD_KEY }}" > ~/.ssh/kakao_prod.pem
+          chmod 600 ~/.ssh/kakao_prod.pem
+
+      - name: 러너 상태 확인
+        id: status
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/kakao_prod.pem \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=10 \
+            -o BatchMode=yes \
+            ubuntu@210.109.82.212 \
+            'cd /home/ubuntu/actions-runner && sudo -n ./svc.sh status'
+
+      - name: 러너 재시작
+        if: ${{ inputs.action == 'restart' }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/kakao_prod.pem \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=10 \
+            -o BatchMode=yes \
+            ubuntu@210.109.82.212 \
+            'cd /home/ubuntu/actions-runner && sudo -n ./svc.sh stop; sleep 2; sudo -n ./svc.sh start; sleep 2; sudo -n ./svc.sh status'
+
+      - name: SSH 키 정리
+        if: always()
+        run: rm -f ~/.ssh/kakao_prod.pem
