@@ -29,6 +29,12 @@ function list(data: Record<string, unknown>, key: string): string[] {
   return Array.isArray(raw) ? raw.filter((item): item is string => typeof item === 'string') : [];
 }
 
+/** 홑 문자열 칸(`consultation-spec.ts`의 `text()`) — 값이 없으면 null. */
+function str(data: Record<string, unknown>, key: string): string | null {
+  const raw = data[key];
+  return typeof raw === 'string' && raw.length > 0 ? raw : null;
+}
+
 export default function ConsultationDetailRoute() {
   const { id, recordId } = useLocalSearchParams<{ id: string; recordId: string }>();
   const { height } = useWindowDimensions();
@@ -118,12 +124,26 @@ export default function ConsultationDetailRoute() {
                   </View>
                 ) : null}
 
-                <Lines label="기본 포함" items={list(record.common, 'included')} />
-                {/* v3.28 웨딩노트 대조표 「분석 라벨」 — «추가 비용»이 아니라 «별도로 확인할 비용». */}
+                {/* WP-NOTE-005 정본 analysis 5블록 — 라벨은 정본 문구 그대로(대조표 「분석 라벨」). */}
+                <Lines label="포함" items={list(record.common, 'included')} />
                 <Lines label="별도로 확인할 비용" items={list(record.after, 'additionalCosts')} />
+                <Lines
+                  label="진행 조건"
+                  items={[str(record.common, 'scheduleNote'), str(record.common, 'changeCondition')].filter(
+                    (v): v is string => v !== null
+                  )}
+                />
+                <Lines
+                  label="취소 · 환불"
+                  items={[str(record.common, 'cancelCondition'), str(record.common, 'refundCondition')].filter(
+                    (v): v is string => v !== null
+                  )}
+                />
+                <Lines label="확인 필요" items={list(record.after, 'missingInformation')} warn />
+                {/* 정본 5블록 밖의 실제 추출 값 — 지우면 있는 정보를 없는 것처럼 만든다.
+                    DESIGN_UNRESOLVED: 정본 목업엔 없는 두 칸, 대표님 확인 전까지 유지. */}
                 <Lines label="혜택" items={list(record.after, 'benefits')} />
                 <Lines label="주의할 점" items={list(record.after, 'warnings')} />
-                <Lines label="다시 확인할 것" items={list(record.after, 'missingInformation')} />
 
                 {typeof record.after.summary === 'string' ? (
                   <View style={styles.group}>
@@ -156,11 +176,12 @@ export default function ConsultationDetailRoute() {
   );
 }
 
-function Lines({ label, items }: { label: string; items: string[] }) {
+/** 정본 `ab()` — 5블록 중 「확인 필요」만 `warn`(amber #805217 · `theme.cautionary`)로 그린다. */
+function Lines({ label, items, warn = false }: { label: string; items: string[]; warn?: boolean }) {
   if (items.length === 0) return null;
   return (
     <View style={styles.group}>
-      <ThemedText type="t7" themeColor="textSecondary">{label}</ThemedText>
+      <ThemedText type="t7" themeColor={warn ? 'cautionary' : 'textSecondary'}>{label}</ThemedText>
       {items.map((item) => <ThemedText key={item} type="body">· {item}</ThemedText>)}
     </View>
   );
