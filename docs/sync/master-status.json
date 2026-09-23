@@ -1420,5 +1420,32 @@
       "prAction": "closed-after-cherry-pick"
     },
     "notTouched": "32개 이미 ARCHIVED 세션은 조치 없음. 9개 신규 v3.29 디스패치 세션은 RUNNING이라 손대지 않았다."
+  },
+  "v329ReverificationSprint20260923": {
+    "trigger": "대표님이 웨딩노트 탭 스타일이 정본과 다르다고 지적 → CLAUDE.md에 「비교표 제출 전 수정 금지」 절차 신설 → 나머지 8개 화면군도 같은 방식으로 재검증하라는 지시.",
+    "method": "화면군마다 Agent(isolation: worktree)를 백그라운드로 병렬 디스패치. 각각 담당 draft PR을 자기 PR 본문 주장을 그대로 믿지 않고 docs/design/html/*.dc.html의 실제 <script> style 리터럴(hex·px·flex)을 직접 읽어 코드와 재대조, 발견한 불일치를 직접 수정·검증(typecheck·lint·카피린트·seed토큰·jest)한 뒤 자기 브랜치에 push. MASTER가 각 브랜치를 순서대로 로컬 병합→전체 재검증→main push→PR 코멘트+close→세션 archive.",
+    "merged": [
+      {"pr": 502, "title": "웨딩노트", "commit": "a37cc2d1→ccc9ec47(cherry-pick 후 별도)", "result": "월 격자 캘린더 폐기 → D-day 카드+주간 타임라인+체크리스트로 전면 재구성. 이후 MASTER가 탭 스타일(둥근 필→밑줄형, 14px→16px)과 「할 일」 추가 버튼 헤더 이동도 별도로 고쳤다(커밋 d66450f5·ba3412cd)."},
+      {"pr": 501, "title": "Pick", "commit": "9966d0b3", "result": "PR 제목 그대로 실제 코드 변경 0건(JSDoc만)이었던 걸 재검증 세션이 발견 — WP-PICK-010 상담 예약 완료 화면이 통째로 빠져 있어 신설. WP-PICK-006 비교 화면(옛 표 형태 vs 정본 카드랭킹형)은 큰 구조변경이라 DESIGN_UNRESOLVED로 남김."},
+      {"pr": 504, "title": "검색·업체상세", "commit": "5fb2b193", "result": "이미지 전체보기(WP-VEND-006) 헤더 패딩(16)·타이포(14/700)·썸네일 규격(64px·gap4)을 정본 실측값으로 재수정, 정본에 없는 출처·확인일 캡션 제거."},
+      {"pr": 499, "title": "공통 컴포넌트·디바이스 대응", "commit": "a8606e61", "result": "SegmentedTabs(radius10/8·14px·gap2)·EmptyView(카드 배경 복원)·ConfirmationDialogHost·ConfirmSheet(버튼56) — 앱 전역 공유 컴포넌트라 영향 범위 큼."},
+      {"pr": 507, "title": "MY", "commit": "83bc4bcb", "result": "옛 시안 잔재 5파일 삭제(account·display·notification-settings·settings·support), 닉네임 한 칸·알림/계정 설정 프로필 흡수 확인."},
+      {"pr": 505, "title": "홈·로그인·온보딩", "commit": "b67d39a7", "result": "만14세안내 옛 잔재 제거, top3.tsx 삭제(금지된 「추천」 화면), 약관동의(WP-AUTH-010)·약관상세(WP-AUTH-011) 재작업. **홈 화면 본체는 이 PR도 손 안 댐 — 아래 openIssues 참고.**"},
+      {"pr": 503, "title": "웹 랜딩", "commit": "702a2d42", "result": "히어로/섹션 타이포·푸터 배경(#3A2F30)·titleBand 연결 정본 실측값 재수정. 기능섹션 phone-mockup 실데이터화·intro 신설·FAQ 개편은 「출시 전 허위 정보 금지」 정책과 충돌해 보류."},
+      {"pr": 506, "title": "관리자 + 약관 DB 확장", "commit": "pending(전체 jest 확인 후 push)", "result": "terms_doc_kind enum 3종(pick_verification·consultation_recording·contact_sharing) DRAFT로만 추가, DocType 동기화. 관리자 화면 4건 추가 발견 — openIssues 참고."}
+    ],
+    "closedNoCodeChange": {"pr": 500, "title": "참고자료 감사(IA·컴포넌트시트·사용자흐름·스토어이미지)", "result": "기존 감사 5건 전부 정확했음을 재확인. TOP3/추천 잔존(아래 openIssues)을 새로 찾아 PR 코멘트로 보고, 코드는 건드리지 않고 종료."},
+    "infraFinding": "8개 worktree 에이전트가 같은 공유 Postgres 테스트 DB(weddingpick_test)에 동시에 resetSchema를 걸어 데드락·스키마 유실이 반복됐다(코드 문제 아님) — MY·관리자 merge 시점엔 api jest를 완전히 신뢰 못 해 mobile/typecheck/lint만으로 우선 push하고, 전 에이전트 종료 후 스키마 리셋+전체 재실행으로 마무리했다.",
+    "openIssues": [
+      "**최우선** — 홈 화면(WP-HOME-001~003) 구조 개편 미착수. 헤더 아이콘 2개(정본 1개=벨) · 「내 웨딩 준비」 대신 「남은 스케줄」+12업종 체계 · 「웨딩일정」 섹션 부재 · **「웨딩픽 추천」 섹션이 화면에 남아 v3.29 핵심 금지 문구(「추천」) 위반** · Pick 48px FAB 정책 충돌. top3.tsx 화면은 지웠지만 GET /v1/recommendations/top3 API·클라이언트 함수·헤더 하드코딩 문구 2곳·my/biz/index.tsx 카피는 안 지워짐 — 두 세션(참고자료 감사·홈 재검증)이 독립적으로 같은 걸 발견. 데이터 모델 변경(12업종→4그룹)까지 걸린 큰 작업이라 대표님 판단 필요.",
+      "Pick 비교 화면(WP-PICK-006, search/compare.tsx)이 옛 표 형태 — 정본 카드랭킹형으로 전면 재구성 필요.",
+      "`웨딩픽 관리자.dc.html` 정본 파일 자체가 1440×900로 CLAUDE.md v3.27(1920×1080) 규칙과 모순 — 정본 재전달 필요 여부 확인 필요.",
+      "관리자 업체 관리(WP-ADM-014)에 「성평등가족부 결혼중개업 등록현황 자동 대조」 요소 통째로 빠짐, 백엔드 없음.",
+      "관리자 약관·방침 편집기가 정본 3열 구조와 다른 탭+모달 구조 — 제품 판단 필요.",
+      "관리자 홈 Bars 차트 렌더 오버플로 버그(2026-09-15부터 기존 버그, 원인 미파악) — 별도 세션 필요.",
+      "admin 디렉토리 14개 파일에 2026-09-22 파기된 옛 시안 경로 주석 잔존(1개만 정정됨).",
+      "MY 홈 「스크랩」 메뉴 행 유지 여부·`my/privacy.tsx` 삭제 대 정본 재연결·공용 헤더 back 40px→36px·알림 토글 On 색상 실기기 재확인 — 4건 대표님/후속 세션 판단 필요.",
+      "search/images.tsx의 navPaddingLeft/Right 비대칭·Layout.gutter(24) vs 정본 20px·팔레트 미세 오차 — 공용 토큰이라 common-components 세션이 기록만 남기고 안 고침."
+    ]
   }
 }
