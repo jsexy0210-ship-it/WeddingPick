@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listVendorPhotos } from '@/api/client';
+import { DepthHeader } from '@/components/depth-header';
 import { formatDateDot } from '@/features/common/format-date';
 import { useDepthBack } from '@/features/navigation/depth-back';
 import {
@@ -70,13 +71,18 @@ export default function VendorImagesScreen() {
     );
   }
 
+  /*
+   * 로딩·빈 상태는 canon(WP-VEND-006)이 그리지 않는 방어 상태다 — 다크 고정 팝업
+   * 껍데기 대신 앱 공통 테마의 `DepthHeader`(닫기 variant)를 그대로 쓴다. 사진이
+   * 실제로 있을 때만 다크 뷰어(`GalleryHeader`)로 들어간다.
+   */
   if (!photos) {
     return (
-      <View style={styles.viewerRoot}>
+      <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-          <GalleryHeader label="" onClose={depthBack} />
+          <DepthHeader title="사진" onBack={depthBack} variant="close" />
         </SafeAreaView>
-      </View>
+      </ThemedView>
     );
   }
 
@@ -88,7 +94,7 @@ export default function VendorImagesScreen() {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-          <GalleryHeader label="사진" onClose={depthBack} />
+          <DepthHeader title="사진" onBack={depthBack} variant="close" />
           <EmptyView scope="section" title="아직 등록된 사진이 없어요" />
         </SafeAreaView>
       </ThemedView>
