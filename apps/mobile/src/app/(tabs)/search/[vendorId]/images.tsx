@@ -16,7 +16,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listVendorPhotos } from '@/api/client';
 import { DepthHeader } from '@/components/depth-header';
-import { formatDateDot } from '@/features/common/format-date';
 import { useDepthBack } from '@/features/navigation/depth-back';
 import {
   Colors,
@@ -115,6 +114,10 @@ function clampIndex(value: number, length: number): number {
  * 공통 풀팝업 헤더 — 좌측 36px 회색 원형 X(16px 아이콘) · 중앙 타이틀 · 우측 36px 빈칸.
  * 갤러리는 스킨·시스템 모드와 무관하게 다크 고정이라(WP-VEND-006 배경 `#17181c`) 원형은
  * 늘 밝은 회색, 아이콘은 늘 어두운 잉크다 — 시안 `galClose`·`icoXw` 그대로.
+ *
+ * 타이틀은 `navTitleW`(14px·700·흰색) 그대로다 — `t6`(16/400)이 아니라 `t7`(14)에
+ * 굵기를 더한 값이다. 2026-09-23 재검증에서 잡은 값(`t6`로 적혀 있어 16px·보통 굵기로
+ * 그려지고 있었다).
  */
 function GalleryHeader({ label, onClose }: { label: string; onClose: () => void }) {
   return (
@@ -126,7 +129,10 @@ function GalleryHeader({ label, onClose }: { label: string; onClose: () => void 
         style={styles.galleryClose}>
         <ProductSymbol name="close" size={Layout.iconField} color={Colors.light.text} />
       </Pressable>
-      <ThemedText type="t6" numeric style={[styles.viewerIndicator, { color: Colors.dark.text }]}>
+      <ThemedText
+        type="t7"
+        numeric
+        style={[styles.viewerIndicator, styles.bold, { color: Colors.dark.text }]}>
         {label}
       </ThemedText>
       <View style={styles.galleryHeaderPad} />
@@ -152,8 +158,7 @@ function PhotoViewer({
   const stripScrollRef = useRef<ScrollView>(null);
   const [index, setIndex] = useState(initialIndex);
 
-  const current = photos[index] ?? photos[0]!;
-  const stripItemWidth = STRIP_THUMB_SIZE + Spacing.two;
+  const stripItemWidth = STRIP_THUMB_SIZE + Spacing.one;
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof document === 'undefined') return undefined;
@@ -213,22 +218,6 @@ function PhotoViewer({
             </Pressable>
           ))}
         </ScrollView>
-
-        {/* 출처 + 확인일 */}
-        {current.sourceNote || current.verifiedAt ? (
-          <View style={styles.viewerCaption}>
-            {current.sourceNote ? (
-              <ThemedText type="t7" style={styles.viewerCaptionText}>
-                {current.sourceNote}
-              </ThemedText>
-            ) : null}
-            {current.verifiedAt ? (
-              <ThemedText type="t7" style={styles.viewerCaptionMuted}>
-                확인일 {formatDateDot(current.verifiedAt)}
-              </ThemedText>
-            ) : null}
-          </View>
-        ) : null}
 
         {/* 썸네일 스트립 */}
         {photos.length > 1 ? (
@@ -295,9 +284,10 @@ function StripThumb({
 
 // ─── 레이아웃 상수 ──────────────────────────────────────────────────────────
 
-const STRIP_THUMB_SIZE = 52;
-/** 헤더 + 캡션 + 스트립이 대략 차지하는 높이. 본 이미지 자리를 그만큼 남긴다. */
-const VIEWER_CHROME_HEIGHT = 160;
+/* 시안 gcell — 64×64 · radius 6. 2026-09-23 재검증에서 잡은 값(52로 적혀 있었다). */
+const STRIP_THUMB_SIZE = 64;
+/** 헤더(56) + 스트립(72)이 차지하는 높이 — 시안 galNav·galStrip 고정값 그대로. 본 이미지 자리를 그만큼 남긴다. */
+const VIEWER_CHROME_HEIGHT = Layout.navBar + 72;
 
 const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
@@ -308,13 +298,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.dark.backgroundInk,
   },
-  /* 시안 galNav — 56px · 좌측 36px 회색 원형 X · 중앙 타이틀 · 우측 36px 빈칸. */
+  /*
+   * 시안 galNav — 56px · 좌우 16px(`Spacing.three`) · 좌측 36px 회색 원형 X · 중앙
+   * 타이틀 · 우측 36px 빈칸. `Layout.gutter`(24)가 아니다 — 2026-09-23 재검증에서
+   * 잡은 값이다(galNav의 `padding:0 16px`를 그대로 옮기지 않고 화면 공용 거터를
+   * 썼었다).
+   */
   viewerHeader: {
     height: Layout.navBar,
     flexDirection: 'row',
     alignItems: 'center',
     gap: Layout.navGap,
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Spacing.three,
   },
   galleryClose: {
     width: 36,
@@ -325,6 +320,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.backgroundSelected,
   },
   galleryHeaderPad: { width: 36 },
+  bold: { fontWeight: 700 },
   viewerIndicator: {
     flex: 1,
     textAlign: 'center',
@@ -340,26 +336,17 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  viewerCaption: {
-    paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.two,
-    gap: 2,
-  },
-  viewerCaptionText: {
-    color: Colors.dark.textSecondary,
-  },
-  viewerCaptionMuted: {
-    color: Colors.dark.textAssistive,
-  },
+  /* 시안 galStrip — 고정 높이 72 · 안쪽 패딩 8 전체 · 칸 사이 4. */
   viewerStrip: {
     flexGrow: 0,
-    marginTop: Spacing.two,
+    height: 72,
   },
   viewerStripContent: {
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.two,
-    gap: Spacing.two,
+    gap: Spacing.one,
   },
+  /* 시안 gcell — 64×64 · radius 6(`Radius.small`). */
   stripThumbWrap: {
     width: STRIP_THUMB_SIZE,
     height: STRIP_THUMB_SIZE,
