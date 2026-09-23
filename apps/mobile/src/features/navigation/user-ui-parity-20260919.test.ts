@@ -20,7 +20,8 @@ describe('2026-09-19 사용자 화면 검수 회귀', () => {
     const flow = readFeature('onboarding/flow.ts');
     const setup = readApp('setup.tsx');
 
-    expect(flow).toContain("DONE_TITLE_LINES = ['선택한 정보로', '준비할게요']");
+    /* v3.28(2026-09-22) WP-AUTH-007 «이대로 시작할까요?»가 9/19의 «선택한 정보로 준비할게요»를 덮는다. */
+    expect(flow).toContain("DONE_TITLE_LINES = ['이대로', '시작할까요?']");
     expect(setup).toContain('return <DelayedRecommendingView />');
     expect(setup).toContain('remainingLoadingMs = 3000 -');
     expect(setup).toContain('takeFullScreenLoading()');

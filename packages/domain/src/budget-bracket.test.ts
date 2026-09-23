@@ -3,6 +3,7 @@ import {
   BUDGET_BRACKET_LABEL,
   WEDDING_BUDGET_BRACKETS,
   budgetBracketCeiling,
+  budgetBracketForAmount,
   budgetBracketRange,
   budgetOverlaps,
 } from './budget-bracket';
@@ -76,5 +77,22 @@ describe('예산 구간', () => {
       expect(budgetOverlaps('under_5m', 5_000_000, 5_000_000)).toBe(true);
       expect(budgetOverlaps('under_5m', 5_000_001, 5_000_001)).toBe(false);
     });
+  });
+});
+
+describe('직접 적은 금액 → 구간 (v3.28 온보딩 4/5)', () => {
+  it('경계는 구간 라벨 그대로다 — 500은 «500만원 이하», 501은 «500~1,000만원»', () => {
+    expect(budgetBracketForAmount(500)).toBe('under_5m');
+    expect(budgetBracketForAmount(501)).toBe('5m_10m');
+    expect(budgetBracketForAmount(1_000)).toBe('5m_10m');
+    expect(budgetBracketForAmount(2_000)).toBe('10m_20m');
+    expect(budgetBracketForAmount(3_000)).toBe('20m_30m');
+    expect(budgetBracketForAmount(5_000)).toBe('over_30m');
+  });
+
+  it('적지 않은 금액(0 · 음수 · NaN)은 «아직 모르겠어요»다', () => {
+    expect(budgetBracketForAmount(0)).toBe('unknown');
+    expect(budgetBracketForAmount(-1)).toBe('unknown');
+    expect(budgetBracketForAmount(Number.NaN)).toBe('unknown');
   });
 });
