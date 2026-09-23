@@ -401,12 +401,11 @@
     "title": "{category} {n}곳 비교",
     "summary": "웨딩픽 요약",
     "selectTitle": "비교할 곳을 골라주세요",
-    "selectBody": "같은 카테고리에서 2~5곳까지",
+    "selectBody": "같은 카테고리에서 2~3곳까지",
     "row.verified": "제보 금액",
     "row.median": "기준금액",
     "row.count": "실 제보",
-    "row.benefit": "현재 혜택",
-"best": "제보 많음"
+    "row.benefit": "현재 혜택"
   },
 
   "pick": {

@@ -1,29 +1,32 @@
 /**
  * Pick — Pick한 업체 목록. WP-PICK-001.
  *
- * 피그마 `Pick.tsx`(2026-09-14 정본 · 최상위 규칙 1)대로 그린다. 헤더(«Pick» + «N곳» 회색 텍스트
- * + 부제 + 배우자 함께-보기 상자) → 비교 배너(2곳 이상 고르면) → 업종 칩 → 카드 목록.
+ * v3.28 정본 `docs/design/html/대메뉴_Pick.dc.html` 1번 화면대로 그린다. 헤더(«Pick») →
+ * 업종 칩 → 비교 배너(2곳 이상 담으면 «N곳 담았어요 · 비교하기») → 카드 목록.
  * 카드는 검색 결과와 같은 틀(썸네일 104×116 · 정보 안쪽 14)이고 아래에 CTA 띠가 붙는다.
  *
- * 그 앞에는 루트 시안 07-pick #17a의 «13개 중 N개를 결정했어요» 진행바 + 업종별 행 목록이
- * 있었다. 피그마가 그 자리를 이긴다 — 업종별 후보 화면(`/pick/[category]`)은 그대로 있고
- * 업종 칩이 그 역할(업종으로 걸러 보기)을 이 화면 안에서 한다.
+ * **v3.28이 정한 것**(`docs/design/screen-inventory.md` Pick 대조표).
+ * - Pick 탭 안에 «추천 · 내 Pick»(옛 Figma) 같은 상단 탭을 두지 않는다 — 추천 → 비교 → 결정이
+ *   한 화면에서 끝난다. 준비 현황(웨딩픽 추천)은 홈에서만 들어오는 별도 화면이라
+ *   `/pick?section=recommendations` 딥링크만 받아 그린다(홈의 `(home)/recommendations.tsx`가
+ *   그리로 보낸다).
+ * - Pick = 후보 담기. 최종 결정은 확인 시트(`/pick/confirm`) → 완료 화면(`/pick/done`)이고
+ *   상담 예약은 완료 화면에서만 이어진다 — 후보 담기만으로 예약할 수 없다.
+ * - 카드 CTA는 Primary 1개(«결정하기»)이고 비교는 텍스트 링크(«비교에 담기»)다.
+ * - 삭제(WP-PICK-008)는 확인 시트 없이 «빼기»로 즉시 지우고 «되돌리기» 토스트만 띄운다.
  *
- * **피그마를 그대로 옮기지 않은 것.**
- * - 카드의 해시태그 · 별점 · 인기 수 · 금액은 서버가 후보에 주지 않는다
+ * **정본을 그대로 옮기지 않은 것.**
+ * - 카드의 태그 · 제보 금액 · 실 제보 건수는 서버가 후보에 주지 않는다
  *   (`vendorCandidateSchema`) — 만들어 넣지 않는다. 그 자리에는 후보 메모(`note`)가 있으면 적는다.
- * - 배지 «인기 · 신규»는 우리 값이 없다. 같은 자리에 **«함께»**(배우자도 고른 곳)를 세운다.
- * - «Pick하기»는 우리 말로 **«결정하기»**다 — 이 화면의 카드는 이미 Pick한 곳이고,
- *   용어집이 Pick을 후보 담기 행동으로 정해 두었다. 결정은 확인 시트(`/pick/confirm`)가 한다.
- * - 결정한 카드의 «상담하기»는 만들지 않는다 — 이용약관 제3조, 고지 후 구현 대기.
- *   «상담취소» 자리는 «결정 취소»이고 한 번 더 묻는다(위험한 조작).
- * - 검색 Root 제목은 2026-09-20 전달 정본의 «업체 탐색»을 쓴다.
+ * - 배지 «인기»는 우리 값이 없다. 같은 자리에 **«함께»**(배우자도 고른 곳)를 세운다.
+ * - 결정 취소는 되돌릴 수 있는 조작이라 한 번 더 묻는다(위험한 조작).
  */
 import type { CandidateListResponse, CurrentUser, VendorCandidate } from '@weddingpick/api-contract';
 import {
   TERMS,
   VENDOR_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
+  withParticle,
   type VendorCategory,
 } from '@weddingpick/domain';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -69,13 +72,12 @@ import {
   compareBasketLabel,
   pickCountLabel,
 } from '@/features/pick/canonical-rules';
-import { PickSectionTabs, type PickSection } from '@/features/pick/pick-section-tabs';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import { isWebShellScreen } from '@/features/webshell/config';
 import { WebShellView } from '@/features/webshell/WebShellView';
 import { RecommendationsContent } from '../(home)/recommendations';
 
-/* 문구 — spec/strings.ko.json `pick`. 피그마 `Pick.tsx`에서 왔다. */
+/* 문구 — spec/strings.ko.json `pick` · features/pick/canonical-rules. */
 const SUBTITLE = PICK_SUBTITLE;
 const PRICE_REPORT = PICK_VERIFY_LABEL;
 const COMPARE_HINT = PICK_COMPARE_BANNER_HINT;
@@ -120,8 +122,8 @@ export default function PickScreen() {
     rawCategory && VENDOR_CATEGORIES.includes(rawCategory as VendorCategory)
       ? (rawCategory as VendorCategory)
       : null;
-  const section: PickSection =
-    requestedSection === 'recommendations' || requestedSection === 'compare' ? requestedSection : 'pick';
+  /* 홈의 «웨딩픽 추천» 딥링크만 받는다. Pick 탭 자체에는 상단 탭이 없다(v3.28 대조표 «탭 구성»). */
+  const showRecommendations = requestedSection === 'recommendations';
   const theme = useTheme();
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [page, setPage] = useState<CandidateListResponse | null>(null);
@@ -225,23 +227,10 @@ export default function PickScreen() {
     }
   }
 
-  function askUnpick(row: Row) {
-    const { candidate, isDecided } = row;
-    const who = partner && partner !== TERMS.spouse ? `${partner}님` : TERMS.spouse;
-    const impacts = [
-      isDecided ? '최종 결정도 함께 취소돼요.' : null,
-      candidate.addedByPartner ? `${who} 목록에서도 함께 사라져요.` : null,
-      '다시 Pick할 수 있어요.',
-    ].filter(Boolean);
-
-    confirmAlert('후보에서 뺄까요?', impacts.join(' '), [
-      { text: '그대로 둘게요', style: 'cancel' },
-      { text: '빼기', onPress: () => confirmUnpick(candidate, isDecided) },
-    ]);
-  }
-
-  async function confirmUnpick(candidate: VendorCandidate, wasDecided: boolean) {
-    if (!weddingId) return;
+  /** 삭제(WP-PICK-008) — 확인 시트 없이 즉시 빼고 «되돌리기» 토스트만 띄운다. */
+  async function unpick(row: Row) {
+    const { candidate, isDecided: wasDecided } = row;
+    if (!weddingId || busy) return;
     setBusy(true);
     try {
       await removeCandidate(weddingId, candidate.id);
@@ -250,7 +239,7 @@ export default function PickScreen() {
         next.delete(candidate.vendorId);
         return next;
       });
-      showToast('후보에서 뺐어요', { candidate, wasDecided });
+      showToast(`${withParticle(candidate.vendorName, '을를')} 뺐어요`, { candidate, wasDecided });
       load();
     } catch {
       showToast('후보를 빼지 못했어요. 잠시 후 다시 시도해주세요.');
@@ -290,8 +279,7 @@ export default function PickScreen() {
     <ThemedView style={styles.root}>
       <SafeAreaView style={styles.safeArea}>
         <View style={[styles.wrapper, { maxWidth: MaxContentWidth }]}>
-          <PickSectionTabs active={section} />
-          {section === 'recommendations' ? (
+          {showRecommendations ? (
             <RecommendationsContent requestedCategory={requestedCategory} />
           ) : error ? (
             <ScrollView contentContainerStyle={styles.scroll}>
@@ -307,16 +295,6 @@ export default function PickScreen() {
             <View style={styles.loadingCenter}>
               <DelayedLoader size={40} />
             </View>
-          ) : section === 'compare' ? (
-            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-              <CompareBasket
-                rows={rows.filter((row) => compare.has(row.candidate.vendorId))}
-                onRemove={(vendorId) => toggleCompare(vendorId)}
-                onCompare={startCompare}
-                onOpenPick={() => router.replace('/pick')}
-              />
-              <View style={styles.bottomSpacer} />
-            </ScrollView>
           ) : (
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
               <Header me={me} partner={partner} total={page?.total ?? 0} />
@@ -382,7 +360,7 @@ export default function PickScreen() {
                         onCompare={() => toggleCompare(row.candidate.vendorId)}
                         onDecide={() => goDecide(row.candidate)}
                         onUndecide={() => askUndecide(row.candidate)}
-                        onRemove={() => askUnpick(row)}
+                        onRemove={() => void unpick(row)}
                       />
                     ))}
                   </View>
@@ -615,7 +593,7 @@ function CandidateCard({
                 {candidate.vendorName}
               </ThemedText>
             </View>
-            {/* × — 후보에서 뺀다. 피그마 `text-muted-foreground/40 p-1`. 실제 빼기는 UnpickSheet가 묻는다. */}
+            {/* × — 후보에서 즉시 뺀다(WP-PICK-008). 되돌리기는 토스트가 맡는다. */}
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`${candidate.vendorName} 빼기`}
@@ -696,101 +674,6 @@ function CandidateCard({
             </ThemedText>
           </Pressable>
         ) : null}
-      </View>
-    </View>
-  );
-}
-
-/** Pick 루트의 비교함. 담긴 업체를 한곳에서 빼거나 2~3곳 비교로 이어간다. */
-function CompareBasket({
-  rows,
-  onRemove,
-  onCompare,
-  onOpenPick,
-}: {
-  rows: readonly Row[];
-  onRemove: (vendorId: string) => void;
-  onCompare: () => void;
-  onOpenPick: () => void;
-}) {
-  const theme = useTheme();
-  const canCompare = rows.length >= MIN_COMPARE;
-
-  return (
-    <View>
-      <View style={styles.rootTitleRow}>
-        <ThemedText type="f26" style={[styles.bold, styles.rootTitle]}>
-          비교함
-        </ThemedText>
-      </View>
-      <View style={styles.compareBasketBody}>
-        {rows.length === 0 ? (
-          <View style={styles.compareEmpty}>
-            <ThemedText type="f16" style={styles.bold}>비교할 업체를 담아주세요</ThemedText>
-            <ThemedText type="f13" themeColor="textAssistive" style={styles.compareEmptyBody}>
-              나의 Pick에서 2~3곳을 담으면 금액과 조건을 나란히 볼 수 있어요
-            </ThemedText>
-            <Pressable
-              accessibilityRole="button"
-              onPress={onOpenPick}
-              style={({ pressed }) => [
-                styles.comparePrimary,
-                { backgroundColor: theme.text },
-                pressed ? styles.pressed : null,
-              ]}>
-              <ThemedText type="f14" style={[styles.bold, { color: theme.onInk }]}>나의 Pick 보기</ThemedText>
-            </Pressable>
-          </View>
-        ) : (
-          <>
-            <ThemedText type="f13" themeColor="textAssistive">
-              {compareBasketLabel(rows.length)} · 최대 {PICK_COMPARE_MAX}곳
-            </ThemedText>
-            <View style={styles.compareBasketList}>
-              {rows.map(({ candidate }) => (
-                <View
-                  key={candidate.vendorId}
-                  style={[styles.compareBasketRow, { borderColor: theme.border, backgroundColor: theme.background }]}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`${candidate.vendorName} 상세 보기`}
-                    onPress={() => router.push(`/search/${candidate.vendorId}`)}
-                    style={styles.compareBasketInfo}>
-                    <ThemedText type="f11" themeColor="textAssistive" style={styles.bold}>
-                      {VENDOR_CATEGORY_LABEL[candidate.category]}
-                    </ThemedText>
-                    <ThemedText type="f16" numberOfLines={1} style={styles.bold}>{candidate.vendorName}</ThemedText>
-                    <ThemedText type="f12" numberOfLines={1} themeColor="textAssistive">{candidate.region}</ThemedText>
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`${candidate.vendorName} 비교에서 빼기`}
-                    hitSlop={Spacing.two}
-                    onPress={() => onRemove(candidate.vendorId)}
-                    style={styles.compareBasketRemove}>
-                    <ProductSymbol name="close" size={Layout.iconField} color={theme.textAssistive} />
-                  </Pressable>
-                </View>
-              ))}
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ disabled: !canCompare }}
-              disabled={!canCompare}
-              onPress={onCompare}
-              style={({ pressed }) => [
-                styles.comparePrimary,
-                { backgroundColor: canCompare ? theme.tint : theme.backgroundElement },
-                pressed && canCompare ? styles.pressed : null,
-              ]}>
-              <ThemedText
-                type="f14"
-                style={[styles.bold, { color: canCompare ? theme.onTint : theme.textDisabled }]}>
-                {canCompare ? `${rows.length}곳 비교하기` : '한 곳 더 담아주세요'}
-              </ThemedText>
-            </Pressable>
-          </>
-        )}
       </View>
     </View>
   );
@@ -962,52 +845,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: Radius.small,
     paddingHorizontal: Spacing.three,
-  },
-
-  rootTitleRow: {
-    height: Layout.navBar,
-    paddingHorizontal: Layout.gutter,
-    justifyContent: 'center',
-  },
-  rootTitle: { letterSpacing: LetterSpacing.n065 },
-  compareBasketBody: {
-    paddingHorizontal: Layout.gutter,
-    paddingBottom: Layout.listGap,
-    gap: Spacing.three,
-  },
-  compareBasketList: { gap: Spacing.two },
-  compareBasketRow: {
-    minHeight: 84,
-    borderWidth: Border.hairline,
-    borderRadius: Radius.medium,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-  },
-  compareBasketInfo: { flex: 1, minWidth: 0, gap: Spacing.half },
-  compareBasketRemove: {
-    width: Layout.touchTarget,
-    height: Layout.touchTarget,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: Radius.pill,
-  },
-  compareEmpty: {
-    alignItems: 'center',
-    paddingVertical: Layout.pickEmptyPaddingY,
-  },
-  compareEmptyBody: {
-    marginTop: Spacing.one,
-    marginBottom: Spacing.four,
-    textAlign: 'center',
-  },
-  comparePrimary: {
-    minHeight: Layout.ctaPick,
-    borderRadius: Radius.control,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 
   // ── 업종 칩 `gap-2 px-5 pb-4` ──

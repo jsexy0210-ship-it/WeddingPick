@@ -1,11 +1,10 @@
 import type { CandidateListResponse, VendorCandidate } from '@weddingpick/api-contract';
-import { VENDOR_CATEGORY_LABEL, type VendorCategory } from '@weddingpick/domain';
+import { VENDOR_CATEGORY_LABEL, withParticle, type VendorCategory } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BackBar } from '@/components/back-bar';
-import { confirmAlert } from '@/components/confirm-alert';
 import { DialogToast } from '@/components/confirm-alert-toast';
 import { useDepthBack } from '@/features/navigation/depth-back';
 
@@ -88,26 +87,15 @@ export default function PickCategoryScreen() {
     setToast(message);
   }
 
+  /** 삭제(WP-PICK-008) — 확인 시트 없이 즉시 빼고 «되돌리기» 토스트만 띄운다. */
   function remove(candidate: VendorCandidate, isDecided: boolean) {
     if (!weddingId) return;
-    const impacts = [
-      isDecided ? '최종 결정도 함께 취소돼요.' : null,
-      candidate.addedByPartner ? '배우자 목록에서도 함께 사라져요.' : null,
-      '다시 Pick할 수 있어요.',
-    ].filter(Boolean);
-    confirmAlert('후보에서 뺄까요?', impacts.join(' '), [
-      { text: '그대로 둘게요', style: 'cancel' },
-      {
-        text: '빼기',
-        onPress: () =>
-          removeCandidate(weddingId, candidate.id)
-            .then(() => {
-              showToast('후보에서 뺐어요', { candidate, wasDecided: isDecided });
-              load();
-            })
-            .catch((caught: Error) => setError(caught.message)),
-      },
-    ]);
+    removeCandidate(weddingId, candidate.id)
+      .then(() => {
+        showToast(`${withParticle(candidate.vendorName, '을를')} 뺐어요`, { candidate, wasDecided: isDecided });
+        load();
+      })
+      .catch((caught: Error) => setError(caught.message));
   }
 
   async function undoUnpick(target: UndoCandidate) {

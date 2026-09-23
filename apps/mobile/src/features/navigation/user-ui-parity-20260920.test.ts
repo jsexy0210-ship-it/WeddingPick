@@ -77,22 +77,18 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(s).toContain("budgetBand(filters.budget)?.label ?? '가격'");
     expect(s).not.toContain('sortSlot:');
   });
-  it('Pick 3보기는 같은 Root 안에서 전환하고 compare로 이어진다', () => {
-    const s = mobile('features/pick/pick-section-tabs.tsx');
-    expect(s).toContain("label: '나의 Pick'");
-    expect(s).toContain("label: '웨딩픽 추천'");
-    expect(s).toContain("label: '비교함'");
-    expect(s).toContain("pathname: '/pick'");
-    expect(s).not.toContain("router.replace('/recommendations'");
-    expect(s).not.toContain("router.replace('/pick/wedding_info_company'");
+  it('Pick Root는 상단 탭 없이(v3.28) 홈의 추천 딥링크만 받고 compare로 이어진다', () => {
+    /* v3.28(2026-09-22) 대조표 «탭 구성 · 준비 현황» — Pick 탭 안 추천 · 비교함 탭을 없앴다. */
+    expect(() => mobile('features/pick/pick-section-tabs.tsx')).toThrow();
 
     const pick = mobile('app/(tabs)/pick/index.tsx');
-    expect(pick).toContain("requestedSection === 'recommendations' || requestedSection === 'compare'");
-    expect(pick).toContain("section === 'recommendations'");
-    expect(pick).toContain("section === 'compare'");
+    expect(pick).not.toContain('PickSectionTabs');
+    expect(pick).not.toContain('<CompareBasket');
+    expect(pick).toContain("const showRecommendations = requestedSection === 'recommendations'");
     expect(pick).toContain('<RecommendationsContent requestedCategory={requestedCategory} />');
     expect(pick).toContain('VENDOR_CATEGORIES.includes(rawCategory as VendorCategory)');
-    expect(pick).toContain('<CompareBasket');
+    expect(pick).toContain("pathname: '/search/compare'");
+    expect(mobile('app/(tabs)/search/compare.tsx')).not.toContain('PickSectionTabs');
 
     const home = mobile('app/(tabs)/index.tsx');
     expect(home).toContain('item.pickCount > 0');

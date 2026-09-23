@@ -35,7 +35,6 @@ import {
   removeCandidate,
 } from '@/api/client';
 import { DepthHeader } from '@/components/depth-header';
-import { confirmAlert } from '@/components/confirm-alert';
 import { DialogToast } from '@/components/confirm-alert-toast';
 import { useDepthBack } from '@/features/navigation/depth-back';
 import { PICK_COMPARE_MAX, PICK_COMPARE_MIN } from '@/features/pick/canonical-rules';
@@ -177,36 +176,22 @@ export default function CategoryPickScreen() {
     });
   }
 
-  function askUnpick(candidate: VendorCandidate) {
-    const who = partner && partner !== TERMS.spouse ? `${partner}님` : TERMS.spouse;
+  /** 삭제(WP-PICK-008) — 확인 시트 없이 즉시 빼고 «되돌리기» 토스트만 띄운다. */
+  async function unpick(candidate: VendorCandidate) {
+    if (!weddingId) return;
     const wasDecided = candidate.vendorId === decidedVendorId;
-    const impacts = [
-      wasDecided ? '최종 결정도 함께 취소돼요.' : null,
-      candidate.addedByPartner ? `${who} 목록에서도 함께 사라져요.` : null,
-      '다시 Pick할 수 있어요.',
-    ].filter(Boolean);
-
-    confirmAlert('후보에서 뺄까요?', impacts.join(' '), [
-      { text: '그대로 둘게요', style: 'cancel' },
-      {
-        text: '빼기',
-        onPress: async () => {
-          if (!weddingId) return;
-          try {
-            await removeCandidate(weddingId, candidate.id);
-            setSelected((prev) => {
-              const next = new Set(prev);
-              next.delete(candidate.vendorId);
-              return next;
-            });
-            showToast('후보에서 뺐어요', { candidate, wasDecided });
-            load();
-          } catch {
-            showToast('후보를 빼지 못했어요. 잠시 후 다시 시도해주세요.');
-          }
-        },
-      },
-    ]);
+    try {
+      await removeCandidate(weddingId, candidate.id);
+      setSelected((prev) => {
+        const next = new Set(prev);
+        next.delete(candidate.vendorId);
+        return next;
+      });
+      showToast(`${withParticle(candidate.vendorName, '을를')} 뺐어요`, { candidate, wasDecided });
+      load();
+    } catch {
+      showToast('후보를 빼지 못했어요. 잠시 후 다시 시도해주세요.');
+    }
   }
 
   async function undoUnpick(target: UndoCandidate) {
@@ -311,7 +296,7 @@ export default function CategoryPickScreen() {
                   partner={partner}
                   onToggle={() => toggleSelect(candidate)}
                   onDecide={() => goDecide(candidate)}
-                  onRemove={() => askUnpick(candidate)}
+                  onRemove={() => void unpick(candidate)}
                 />
               ))
             )}
