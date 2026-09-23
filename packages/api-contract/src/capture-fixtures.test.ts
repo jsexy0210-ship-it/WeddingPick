@@ -30,7 +30,7 @@ import {
   weddingFeedListResponseSchema,
 } from './wedding-feed';
 import { weddingEventListResponseSchema } from './wedding-events';
-import { expenseSummaryResponseSchema } from './wedding-plan';
+import { expenseSummaryResponseSchema, weddingTaskListResponseSchema } from './wedding-plan';
 import {
   vendorComparisonResponseSchema,
   conditionStatsSchema,
@@ -78,6 +78,7 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/weddings/:weddingId/consultations', consultationListResponseSchema],
   ['GET /v1/weddings/:weddingId/events', weddingEventListResponseSchema],
   ['GET /v1/weddings/:weddingId/expenses', expenseSummaryResponseSchema],
+  ['GET /v1/weddings/:weddingId/tasks', weddingTaskListResponseSchema],
   ['GET /v1/vendors/regions', vendorRegionsResponseSchema],
   ['GET /v1/vendors', vendorSearchResponseSchema],
   ['GET /v1/vendors/compare', vendorComparisonResponseSchema],

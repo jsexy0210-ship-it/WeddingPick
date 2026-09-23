@@ -59,10 +59,13 @@ export function UpcomingSchedule({
               {row.kind === 'dated' ? (
                 <>
                   <ThemedText type="f11" themeColor="textAssistive">{row.month}</ThemedText>
+                  {/* 정본 19/700 — 래더에 없는 값이라 가장 가까운 f18을 쓴다(wedding/index.tsx의
+                      ddayTop과 같은 대체 규칙). 리터럴 fontSize를 직접 적지 않는다
+                      (apps/api/src/test/typography.test.ts). */}
                   <ThemedText
-                    type="f14"
+                    type="f18"
                     numeric
-                    style={[styles.bold, styles.day]}
+                    style={styles.bold}
                     themeColor={row.near ? 'tint' : 'text'}>
                     {row.day}
                   </ThemedText>
@@ -107,7 +110,6 @@ const styles = StyleSheet.create({
   /* .dc.html `row`/`row2` — min-height 64 · padding 0 14px. 그대로 옮겼다. */
   row: { flexDirection: 'row', alignItems: 'center', gap: Layout.inlineGap, minHeight: 64, paddingHorizontal: 14 },
   dateCol: { width: 44, flex: 0, alignItems: 'center', justifyContent: 'center', gap: 1 },
-  day: { fontSize: 19, lineHeight: 25 },
   /* .dc.html `numStyle` — 24×24 원. 기존 토큰 중 정확히 24인 값이 없어 그대로 적었다. */
   numBadge: { width: 24, height: 24, borderRadius: Radius.pill, alignItems: 'center', justifyContent: 'center' },
   titleCol: { flex: 1, minWidth: 0, gap: Spacing.half },
