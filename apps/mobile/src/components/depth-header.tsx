@@ -18,13 +18,31 @@ export function DepthHeader({
 }) {
   const pathname = usePathname();
   const resolvedTitle = title ?? depthHeaderTitle(pathname);
+  const isFullPopup = variant === 'close';
 
   return (
     <View style={styles.bar}>
       <BackButton onPress={onBack} variant={variant} />
-      <ThemedText type="t5" numberOfLines={1} style={styles.title}>
-        {resolvedTitle}
-      </ThemedText>
+      {isFullPopup ? (
+        /*
+          v3.28(CLAUDE.md 「풀팝업」 행) — 풀팝업 헤더는 좌측 X 닫기 + 중앙 타이틀이다.
+          오른쪽에 액션(`right`)이 붙는 화면도 있어 좌우 폭이 다를 수 있으므로, `flex:1`
+          정렬 대신 막대 전체 폭 기준 절대 배치로 실제 가운데에 앉힌다. `grow`는 기존
+          `right ?? null`을 막대 오른쪽 끝으로 미는 빈 자리를 그대로 잇는다.
+        */
+        <>
+          <View style={styles.grow} />
+          <View style={styles.centerLayer} pointerEvents="none">
+            <ThemedText type="t5" numberOfLines={1} style={styles.centerTitle}>
+              {resolvedTitle}
+            </ThemedText>
+          </View>
+        </>
+      ) : (
+        <ThemedText type="t5" numberOfLines={1} style={styles.title}>
+          {resolvedTitle}
+        </ThemedText>
+      )}
       {right ?? null}
     </View>
   );
@@ -70,4 +88,12 @@ const styles = StyleSheet.create({
     gap: Layout.navGap,
   },
   title: { flex: 1, minWidth: 0 },
+  grow: { flex: 1, minWidth: 0 },
+  centerLayer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  centerTitle: { maxWidth: '60%', textAlign: 'center' },
 });
