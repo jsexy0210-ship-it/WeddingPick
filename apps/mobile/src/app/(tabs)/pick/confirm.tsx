@@ -27,7 +27,12 @@ import {
 import { useDepthBack } from '@/features/navigation/depth-back';
 
 /**
- * 최종 결정 확인 · WP-PICK-005 · WP-SHT-005. 시안 09-core-loop.dc.html #10d.
+ * 최종 결정 확인 시트 · WP-SHT-005.
+ *
+ * v3.29 정본 `docs/design/html/대메뉴_Pick.dc.html`의 diffs 「최종 결정: 확인 시트 →
+ * 완료 화면 신설 — 무엇이 어디에 들어가는지 먼저 보여준다」가 이 화면과 `/pick/done`의
+ * 근거다. 그 파일 자체에는 이 시트가 별도 화면 카드(WP-PICK-XXX)로 안 실려 있다 —
+ * 옛 07-pick·09-core-loop 시안(삭제됨)의 화면 ID를 더는 참조하지 않는다.
  *
  *   시트   공용 SheetPanel(그래버 40×4 · padding 12 24 28 · gap 20)
  *   머리   썸네일 64 radius 10 · 업체명 24 · «제보 금액 152~184만원» 16
@@ -36,8 +41,8 @@ import { useDepthBack } from '@/features/navigation/depth-back';
  *          «결정은 언제든 바꿀 수 있어요»
  *   버튼   «다시 볼게요»(gray · flex 1) + «최종 결정»(coral · flex 1.4) · 52(tokens size.ctaPrimary — 시안 56보다 토큰이 우선)
  *
- * 결정 기록은 **여기서만** 만든다 — 목록(WP-PICK-002)이 먼저 기록하고 이 화면이 또 기록하던 것을
- * 하나로 모았다. 기록이 끝나면 결정 완료(WP-PICK-006)로 바꿔 끼운다.
+ * 결정 기록은 **여기서만** 만든다 — 목록이 먼저 기록하고 이 화면이 또 기록하던 것을
+ * 하나로 모았다. 기록이 끝나면 결정 완료(`/pick/done`)로 바꿔 끼운다.
  *
  * 문구는 spec/strings.ko.json pick.decideTitle · pick.decideNote1~3.
  */

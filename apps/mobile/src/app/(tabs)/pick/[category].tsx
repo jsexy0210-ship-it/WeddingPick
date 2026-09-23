@@ -42,7 +42,13 @@ import { PICK_COMPARE_MAX, PICK_COMPARE_MIN } from '@/features/pick/canonical-ru
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 
 /**
- * 업종별 Pick 목록 · WP-PICK-002. 시안 09-core-loop.dc.html #10c.
+ * 업종별 Pick 목록.
+ *
+ * v3.29 정본 `docs/design/html/대메뉴_Pick.dc.html`에는 이 화면이 별도 화면 카드로
+ * 실려 있지 않다 — 옛 09-core-loop 시안(삭제됨) #10c의 WP-PICK-002 번호를 더는
+ * 참조하지 않는다. 홈의 «웨딩픽 추천» 흐름(`(home)/recommendations.tsx`)과 홈
+ * 목록(`(tabs)/index.tsx`)이 이 라우트로 들어오므로 화면 자체는 남긴다 — Pick 화면군
+ * 단독 대조로 지우지 않는다(다른 화면군이 같이 쓰는 라우트).
  *
  *   nav 56   뒤로 · «스튜디오 Pick» · «편집»
  *   hero     «3곳 중 2곳은 준호님도 골랐어요» + «둘 다 고른 곳부터 비교해보세요»
@@ -51,8 +57,9 @@ import { vendorImageCategory } from '@/features/search/vendor-image-category';
  *   dock 92  «N곳 비교하기» 52(tokens size.ctaPrimary) — 체크한 후보 2~3곳
  *
  * 체크는 **비교 후보 선택**이다(SPEC §13.11 — Pick 탭 진입은 그 업종의 내 후보만 · 체크로 2~3곳).
- * 최종 결정은 카드 아래 «최종 결정»으로 WP-PICK-005 시트에 넘긴다 — 결정 자체는 그 시트가 한다.
- * «편집»을 누르면 카드마다 «빼기»가 나오고, 빼기는 WP-SHT-003 시트로 한 번 묻는다.
+ * 최종 결정은 카드 아래 «최종 결정»으로 확인 시트(`/pick/confirm`)에 넘긴다 — 결정 자체는
+ * 그 시트가 한다. «편집»을 누르면 카드마다 «빼기»가 나오고, 삭제(WP-PICK-008)는 확인 시트
+ * 없이 즉시 지우고 «되돌리기» 토스트만 띄운다 — index.tsx와 같은 패턴이다.
  */
 
 /** 03-pick 정본은 한 화면 최대 3곳이다. API 상한과 별개로 UI는 이 값을 넘기지 않는다. */
@@ -164,7 +171,7 @@ export default function CategoryPickScreen() {
     });
   }
 
-  /** 최종 결정은 확인 시트(WP-PICK-005)가 한다 — 여기서 먼저 결정 기록을 만들지 않는다. */
+  /** 최종 결정은 확인 시트(`/pick/confirm`)가 한다 — 여기서 먼저 결정 기록을 만들지 않는다. */
   function goDecide(candidate: VendorCandidate) {
     router.push({
       pathname: '/pick/confirm',
@@ -538,7 +545,7 @@ const styles = StyleSheet.create({
     paddingBottom: Layout.sectionGap,
   },
   /*
-   * 시안 09-core-loop 10c(WP-PICK-002) dock 버튼은 «2곳 비교하기» height 56이다.
+   * dock 버튼은 «2곳 비교하기» height 56이다.
    * `size.ctaPick`이 그 값이고, tokens.json이 「업체 상세·비교의 Pick CTA 전용 —
    * Pick하기 · N곳 비교하기」로 적어둔 바로 그 버튼이다. 화면당 Primary CTA는
    * 여전히 하나다.
