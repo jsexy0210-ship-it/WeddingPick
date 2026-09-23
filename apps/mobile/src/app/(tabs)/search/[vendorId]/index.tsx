@@ -1096,20 +1096,6 @@ const styles = StyleSheet.create({
     borderTopWidth: Border.hairline,
     padding: Spacing.three,
   },
-  /* 상단 내비 — 피그마 `h-14 px-4 border-b`: 56 · 좌우 16 · 아래 선. ← 40 + 제목 가운데(오른쪽 40 비움). */
-  navBar: {
-    height: Layout.navBar,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.three,
-    borderBottomWidth: Border.hairline,
-  },
-  navTitle: {
-    flex: 1,
-    minWidth: 0,
-    textAlign: 'center',
-    paddingRight: Layout.iconButton,
-  },
   bold: {
     fontWeight: 700,
   },
