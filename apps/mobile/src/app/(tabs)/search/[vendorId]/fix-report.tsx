@@ -7,7 +7,11 @@ import { CheckCircle } from '@/features/onboarding/check-circle';
 import { useDepthBack } from '@/features/navigation/depth-back';
 import { Dock, Hero, NoteBox, Row, Rows, Section, SubScreen } from '@/features/settings/my-kit';
 
-/** 시안 09b-vendor-sub #5 «정보 오류 제보 · WP-VEND-006»의 renderVals. */
+/**
+ * v3.29 대메뉴_검색.dc.html WP-VEND-008 「정보 오류 제보」의 renderVals(2026-09-23
+ * 재검증 — 이전 주석은 v3.28 이전 번호인 WP-VEND-006을 적고 있었다. v3.29는 화면
+ * 1~17을 다시 매겼고 WP-VEND-006은 지금 「이미지 전체보기」다).
+ */
 const S = {
   title: '정보 오류 제보',
   hero: ['어떤 정보가', '틀렸나요?'],
@@ -23,7 +27,8 @@ const S = {
    * (domain `INQUIRY_RESPONSE_BUSINESS_DAYS`가 null이다). 지키지 못할 기한을 적지 않는다.
    */
   noteBody: '사람이 직접 확인하고 결과를 알림으로 보내드려요.',
-  cta: '제보하기',
+  /* WP-VEND-008 `ctaFull2` — 「제출하기」. 2026-09-23 재검증에서 잡은 값(전에는 「제보하기」). */
+  cta: '제출하기',
   sending: '보내는 중…',
   failed: '보내지 못했어요',
 } as const;
@@ -45,8 +50,13 @@ const ITEMS = [
 type ItemKey = (typeof ITEMS)[number]['key'];
 
 /**
- * 정보 오류 제보 · WP-VEND-006. 시안 09b-vendor-sub #5 — 항목 라디오 5 → 올바른 정보 →
- * 근거 링크(선택) → note → CTA «제보하기».
+ * 정보 오류 제보 · WP-VEND-008(v3.29 대메뉴_검색.dc.html — 2026-09-23 재검증에서
+ * 옛 번호 WP-VEND-006 표기를 바로잡았다). 시안 항목 라디오 4 → 올바른 정보 → 근거
+ * 링크(선택) → CTA «제출하기». 이 화면의 항목 목록(5개 · «영업 종료했어요» ·
+ * «다른 업체와 섞여 있어요» 포함)과 note 상자는 정본의 4항목(가격·요금 정보 ·
+ * 영업시간·연락처 · 주소·위치 · 영업 종료·폐업)과 다르다 — `data_correction` 접수
+ * 분류가 이 항목 이름에 걸려 있어 이번 재검증에서는 문구·CTA만 맞추고 항목 구성은
+ * `DESIGN_UNRESOLVED`로 남긴다(PR 본문 참고).
  *
  * 업체 상세 ⑩ «정보가 틀렸나요? 제보하기»와 공식 정보(WP-VEND-005)가 여기로 온다. 그전에는
  * 범용 문의 화면(`/my/contact`)이 항목만 채워진 채 열려서, 무엇이 틀렸는지 사용자가 문장으로
