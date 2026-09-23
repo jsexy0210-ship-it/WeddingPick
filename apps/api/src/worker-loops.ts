@@ -5,7 +5,6 @@ import { createGeminiAnalyzer } from './analysis/gemini-analyzer';
 import { runForever } from './analysis/worker';
 import { createGeminiFeedWriter } from './analysis/wedding-feed-writer';
 import type { Config } from './config';
-import { createGeminiExpoDiscoverer, runExpoCollection } from './expo-collector';
 import { createExpoPush } from './push/expo';
 import { sendPriceChangeNudges, sendTaskNudges } from './notify/nudges';
 import { alertOperators } from './retention/alert';
@@ -20,8 +19,6 @@ const RETENTION_SWEEP_MS = 10 * 60 * 1000;
 
 /** 종료 박람회 정리는 하루 1회면 충분하다(`docs/expo-agent-spec.md` 21절 권장 주기). */
 const EXPO_SWEEP_MS = 24 * 60 * 60 * 1000;
-/** 신규 박람회 탐색·검증도 정본 권장대로 하루 1회. */
-const EXPO_COLLECTION_MS = 24 * 60 * 60 * 1000;
 
 /*
  * 사용자 알림은 자주 볼 필요가 없다. 일정 알림은 하루 단위이고, 가격 변동은
@@ -237,41 +234,20 @@ export function startWorkerLoops({ pool, storage, config, signal }: WorkerDeps):
    */
   const geminiApiKey = process.env.GEMINI_API_KEY ?? '';
 
-  const expoCollectionEnabled = process.env.EXPO_COLLECTION_ENABLED !== 'false';
-  const collectExpos = async () => {
-    if (config.expoAutoDeleteEnabled) {
-      await sweepEndedExpos(pool);
-    }
-    const result = await runExpoCollection({
-      pool,
-      discover: createGeminiExpoDiscoverer({ apiKey: geminiApiKey, model: config.geminiModel }),
-      model: config.geminiModel,
-      trigger: 'scheduled',
-    });
-    if (!result.skipped) {
-      console.log(
-        `박람회 자동 수집: 발견 ${result.discovered} · 신규 ${result.created} · 업데이트 ${result.updated} · 중복/제외 ${result.duplicates}`
-      );
-    }
-  };
-
-  console.log(
-    expoCollectionEnabled && geminiApiKey
-      ? '박람회 자동 수집 켜짐 (하루 1회, worker 시작 시에도 최근 성공 여부 확인)'
-      : expoCollectionEnabled
-        ? '박람회 자동 수집 대기 — GEMINI_API_KEY가 없어 실행하지 않는다.'
-        : '박람회 자동 수집 꺼짐 — EXPO_COLLECTION_ENABLED=false'
-  );
-
-  if (expoCollectionEnabled && geminiApiKey) {
-    void collectExpos().catch((error) => console.error('박람회 자동 수집 실패:', error));
-  }
-  const expoCollection =
-    expoCollectionEnabled && geminiApiKey
-      ? setInterval(() => {
-          void collectExpos().catch((error) => console.error('박람회 자동 수집 실패:', error));
-        }, EXPO_COLLECTION_MS)
-      : null;
+  /*
+   * **박람회 자동 수집(신규 발견)을 껐다**(2026-09-23 대표 지시 — 「제미나이 api는
+   * 사진·이미지 분석 및 정보 추출, 녹음 파일 정보 추출, 관리자 피드 자동생성
+   * 말고는 절대 사용 금지한다」). `createGeminiExpoDiscoverer`가 Google Search로
+   * 웹을 검색해 후보를 짓던 자리라 그 셋 중 무엇도 아니다 — 지웠다
+   * (`expo-collector.ts`). 종료 박람회 정리(`sweepEndedExpos`, 기존에도
+   * `expoAutoDeleteEnabled` 기본 꺼짐)는 발견과 무관해 그대로 둔다.
+   *
+   * `runExpoCollection`·`ExpoDiscoverer` 타입은 출처를 가리지 않으므로 공공데이터
+   * (예: 한국관광공사 TourAPI) 기반 수집기가 생기면 여기 다시 잇는다. 그전까지
+   * `EXPO_COLLECTION_ENABLED`는 읽지 않는다 — 무엇을 켜고 끌지가 없어졌다.
+   */
+  const expoCollection: ReturnType<typeof setInterval> | null = null;
+  console.log('박람회 자동 수집 꺼짐 — Gemini 검색 사용 금지(2026-09-23), 대체 수집기 미구현');
 
   const feedAutowrite = process.env.WEDDING_FEED_AUTOWRITE === 'true';
 
