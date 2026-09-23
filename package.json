@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@seed-design/css": "2.8.1",
+    "css-to-react-native-transform": "^2.1.0",
     "zod": "^4.4.3"
   }
 }

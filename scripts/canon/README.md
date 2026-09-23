@@ -53,6 +53,22 @@ node scripts/canon/resolve-tokens.mjs --all --json > /tmp/tokens.json
 추측하면 안 된다(2026-09-23에 실제로 이 착각으로 오류가 하나 났다 — 이 도구를 만드는
 과정에서 스스로 잡았다). 확실하지 않으면 `resolve-tokens.mjs`로 직접 찍어봐라.
 
+## 4. CSS → RN 스타일 일괄 변환 — `convert-to-rn.mjs`
+
+`extract-style.mjs`가 화면 하나씩 손으로 대조하기 위한 도구라면, 이건 16개 정본 파일
+전체의 CSS를 `css-to-react-native-transform`으로 한 번에 돌려 RN 스타일 사전을 만드는
+도구다(2026-09-23 대표 지시). 결과와 "78%만 자동 변환되는 이유"는
+`docs/rn-migration/css-to-rn/README.md`에 있다.
+
+```bash
+node scripts/canon/convert-to-rn.mjs --all
+node scripts/canon/convert-to-rn.mjs --file "docs/design/html/<파일>.dc.html"
+```
+
+**이 도구도 값 변환만 한다 — HTML 구조를 RN 컴포넌트로 옮기는 것은 별도 작업이고,
+"변환 성공"이 "RN 네이티브에서 쓸 수 있다"의 동의어가 아니다**(`cursor`·`transition`
+같은 웹 전용 속성은 타입만 맞으면 성공 처리된다 — `webOnlyOrInvalid`로 따로 갈라둔다).
+
 ## 알려진 한계
 
 - `--list-wp`/`--wp`는 `WP-XXX-000` 꼴만 화면ID로 본다. 관리자(`웨딩픽 관리자.dc.html`)와

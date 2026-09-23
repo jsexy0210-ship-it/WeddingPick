@@ -1,0 +1,2285 @@
+{
+  "file": "docs/design/html/웨딩픽 랜딩 하위페이지.dc.html",
+  "convertedAtUtc": "2026-09-23T13:05:12.849Z",
+  "tool": "css-to-react-native-transform",
+  "renderValsError": null,
+  "summary": {
+    "uniqueDeclarationBlocks": 114,
+    "fullyConverted": 92,
+    "withIssues": 22
+  },
+  "results": [
+    {
+      "raw": "display:flex;flex-direction:column;gap:48px;align-items:flex-start;padding:64px;width:max-content",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": 48,
+        "alignItems": "flex-start",
+        "paddingTop": 64,
+        "paddingRight": 64,
+        "paddingBottom": 64,
+        "paddingLeft": 64,
+        "width": "max-content"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "root"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "font-size:14px;line-height:19px;font-weight:700;color:#ff6f61",
+      "style": {
+        "fontSize": 14,
+        "lineHeight": 19,
+        "fontWeight": "700",
+        "color": "#ff6f61"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "docEyebrow"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "font-size:40px;line-height:52px;font-weight:700;color:#212124",
+      "style": {
+        "fontSize": 40,
+        "lineHeight": 52,
+        "fontWeight": "700",
+        "color": "#212124"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "docTitle"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "font-size:18px;line-height:26px;color:#393a40;text-wrap:pretty",
+      "style": {
+        "fontSize": 18,
+        "lineHeight": 26,
+        "color": "#393a40",
+        "textWrap": "pretty"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "docBody"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "height:26px;display:flex;align-items:center;gap:8px;font-size:18px;line-height:24px;font-weight:700;color:#212124;white-space:nowrap",
+      "style": {
+        "height": 26,
+        "display": "flex",
+        "alignItems": "center",
+        "gap": 8,
+        "fontSize": 18,
+        "lineHeight": 24,
+        "fontWeight": "700",
+        "color": "#212124"
+      },
+      "webOnlyOrInvalid": {
+        "whiteSpace": "nowrap"
+      },
+      "unconverted": [],
+      "keyPaths": [
+        "label"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "width:26px;height:26px;flex:0 0 26px;border-radius:6px;background:#212124;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700",
+      "style": {
+        "width": 26,
+        "height": 26,
+        "flexGrow": 0,
+        "flexShrink": 0,
+        "flexBasis": 26,
+        "borderRadius": 6,
+        "backgroundColor": "#212124",
+        "color": "#fff",
+        "display": "inline-flex",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "fontSize": 14,
+        "fontWeight": "700"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "labelId"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "width:1280px;background:#fff;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(58,47,48,.10)",
+      "style": {
+        "width": 1280,
+        "backgroundColor": "#fff",
+        "display": "flex",
+        "flexDirection": "column",
+        "shadowOffset": {
+          "width": 0,
+          "height": 10
+        },
+        "shadowRadius": 40,
+        "shadowColor": "rgba(58,47,48,.10)",
+        "shadowOpacity": 1
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "page"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "width:1280px;background:#fff;box-shadow:0 10px 40px rgba(58,47,48,.10)",
+      "style": {
+        "width": 1280,
+        "backgroundColor": "#fff",
+        "shadowOffset": {
+          "width": 0,
+          "height": 10
+        },
+        "shadowRadius": 40,
+        "shadowColor": "rgba(58,47,48,.10)",
+        "shadowOpacity": 1
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "pageShadow"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "height:26px;min-width:26px;padding:0 7px;flex:0 0 auto;border-radius:6px;background:#ff6f61;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700",
+      "style": {
+        "height": 26,
+        "minWidth": 26,
+        "paddingTop": 0,
+        "paddingRight": 7,
+        "paddingBottom": 0,
+        "paddingLeft": 7,
+        "flexGrow": 0,
+        "flexShrink": 0,
+        "flexBasis": "auto",
+        "borderRadius": 6,
+        "backgroundColor": "#ff6f61",
+        "color": "#fff",
+        "display": "inline-flex",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "fontSize": 14,
+        "fontWeight": "700"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "labelIdBrand"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "width:1280px;background:#fff;box-shadow:0 10px 40px rgba(58,47,48,.10);padding:40px 64px;display:flex;flex-direction:column;gap:32px",
+      "style": {
+        "width": 1280,
+        "backgroundColor": "#fff",
+        "shadowOffset": {
+          "width": 0,
+          "height": 10
+        },
+        "shadowRadius": 40,
+        "shadowColor": "rgba(58,47,48,.10)",
+        "shadowOpacity": 1,
+        "paddingTop": 40,
+        "paddingRight": 64,
+        "paddingBottom": 40,
+        "paddingLeft": 64,
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": 32
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "faviconCard"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "display:flex;gap:32px;align-items:flex-end;flex-wrap:wrap",
+      "style": {
+        "display": "flex",
+        "gap": 32,
+        "alignItems": "flex-end",
+        "flexWrap": "wrap"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "faviconRow"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "display:flex;flex-direction:column;align-items:center;gap:8px",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "alignItems": "center",
+        "gap": 8
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "faviconCell"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "font-size:14px;line-height:19px;font-weight:700;color:#212124;white-space:nowrap",
+      "style": {
+        "fontSize": 14,
+        "lineHeight": 19,
+        "fontWeight": "700",
+        "color": "#212124"
+      },
+      "webOnlyOrInvalid": {
+        "whiteSpace": "nowrap"
+      },
+      "unconverted": [],
+      "keyPaths": [
+        "faviconName"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "font-size:13px;line-height:18px;color:#adb1ba;white-space:nowrap;font-variant-numeric:tabular-nums",
+      "style": {
+        "fontSize": 13,
+        "lineHeight": 18,
+        "color": "#adb1ba",
+        "fontVariantNumeric": "tabular-nums"
+      },
+      "webOnlyOrInvalid": {
+        "whiteSpace": "nowrap"
+      },
+      "unconverted": [],
+      "keyPaths": [
+        "faviconSpec"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "display:flex;gap:4px;padding:10px 10px 0;border-radius:10px 10px 0 0;background:#EDEEF0;align-items:flex-end",
+      "style": {
+        "display": "flex",
+        "gap": 4,
+        "paddingTop": 10,
+        "paddingRight": 10,
+        "paddingBottom": 0,
+        "paddingLeft": 10,
+        "borderTopLeftRadius": 10,
+        "borderTopRightRadius": 10,
+        "borderBottomRightRadius": 0,
+        "borderBottomLeftRadius": 0,
+        "backgroundColor": "#EDEEF0",
+        "alignItems": "flex-end"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "faviconTabs"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "font-size:15px;color:#adb1ba;margin-left:2px",
+      "style": {
+        "fontSize": 15,
+        "color": "#adb1ba",
+        "marginLeft": 2
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "tabClose"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "font-size:15px;line-height:25px;color:#4d5159;text-wrap:pretty;max-width:820px",
+      "style": {
+        "fontSize": 15,
+        "lineHeight": 25,
+        "color": "#4d5159",
+        "textWrap": "pretty",
+        "maxWidth": 820
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "faviconNote"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "width:64px;height:64px;display:flex;align-items:center;justify-content:center;border-radius:10px;box-shadow:inset 0 0 0 1px #eaebee",
+      "style": {
+        "width": 64,
+        "height": 64,
+        "display": "flex",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "borderRadius": 10
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [
+        {
+          "prop": "box-shadow",
+          "value": "inset 0 0 0 1px #eaebee",
+          "error": "Failed to parse declaration \"boxShadow: inset 0 0 0 1px #eaebee\"",
+          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
+          "kind": "FAILED"
+        }
+      ],
+      "keyPaths": [
+        "favicons[0].frame",
+        "favicons[1].frame",
+        "favicons[2].frame"
+      ],
+      "occurrences": 3
+    },
+    {
+      "raw": "width:16px;height:16px;border-radius:3px;background-image:url(\"assets/favicon-16.png\");background-size:contain;background-position:center;background-repeat:no-repeat",
+      "style": {
+        "width": 16,
+        "height": 16,
+        "borderRadius": 3,
+        "backgroundImage": "url(\"assets/favicon-16.png\")",
+        "backgroundSize": "contain",
+        "backgroundPosition": "center",
+        "backgroundRepeat": "no-repeat"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "favicons[0].img"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "width:32px;height:32px;border-radius:6px;background-image:url(\"assets/favicon-32.png\");background-size:contain;background-position:center;background-repeat:no-repeat",
+      "style": {
+        "width": 32,
+        "height": 32,
+        "borderRadius": 6,
+        "backgroundImage": "url(\"assets/favicon-32.png\")",
+        "backgroundSize": "contain",
+        "backgroundPosition": "center",
+        "backgroundRepeat": "no-repeat"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "favicons[1].img"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "width:48px;height:48px;border-radius:9px;background-image:url(\"assets/favicon-48.png\");background-size:contain;background-position:center;background-repeat:no-repeat",
+      "style": {
+        "width": 48,
+        "height": 48,
+        "borderRadius": 9,
+        "backgroundImage": "url(\"assets/favicon-48.png\")",
+        "backgroundSize": "contain",
+        "backgroundPosition": "center",
+        "backgroundRepeat": "no-repeat"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "favicons[2].img"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "display:flex",
+      "style": {
+        "display": "flex"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "favicons[3].frame",
+        "favicons[4].frame",
+        "favicons[5].frame"
+      ],
+      "occurrences": 3
+    },
+    {
+      "raw": "width:76px;height:76px;border-radius:17px;background-image:url(\"assets/apple-touch-icon.png\");background-size:contain;background-position:center;background-repeat:no-repeat",
+      "style": {
+        "width": 76,
+        "height": 76,
+        "borderRadius": 17,
+        "backgroundImage": "url(\"assets/apple-touch-icon.png\")",
+        "backgroundSize": "contain",
+        "backgroundPosition": "center",
+        "backgroundRepeat": "no-repeat"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "favicons[3].img"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "width:76px;height:76px;border-radius:17px;background-image:url(\"assets/icon-192.png\");background-size:contain;background-position:center;background-repeat:no-repeat",
+      "style": {
+        "width": 76,
+        "height": 76,
+        "borderRadius": 17,
+        "backgroundImage": "url(\"assets/icon-192.png\")",
+        "backgroundSize": "contain",
+        "backgroundPosition": "center",
+        "backgroundRepeat": "no-repeat"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "favicons[4].img"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "width:76px;height:76px;border-radius:999px;background-image:url(\"assets/maskable-512.png\");background-size:contain;background-position:center;background-repeat:no-repeat",
+      "style": {
+        "width": 76,
+        "height": 76,
+        "borderRadius": 999,
+        "backgroundImage": "url(\"assets/maskable-512.png\")",
+        "backgroundSize": "contain",
+        "backgroundPosition": "center",
+        "backgroundRepeat": "no-repeat"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "favicons[5].img"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "width:64px;height:64px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:#f2f3f6",
+      "style": {
+        "width": 64,
+        "height": 64,
+        "display": "flex",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "borderRadius": 10,
+        "backgroundColor": "#f2f3f6"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "favicons[6].frame"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "width:32px;height:32px;border-radius:6px;background-image:url(\"assets/favicon-mono-32.png\");background-size:contain;background-position:center;background-repeat:no-repeat",
+      "style": {
+        "width": 32,
+        "height": 32,
+        "borderRadius": 6,
+        "backgroundImage": "url(\"assets/favicon-mono-32.png\")",
+        "backgroundSize": "contain",
+        "backgroundPosition": "center",
+        "backgroundRepeat": "no-repeat"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "favicons[6].img"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "width:240px;height:36px;border-radius:8px 8px 0 0;background:#fff;display:flex;align-items:center;gap:8px;padding:0 12px",
+      "style": {
+        "width": 240,
+        "height": 36,
+        "borderTopLeftRadius": 8,
+        "borderTopRightRadius": 8,
+        "borderBottomRightRadius": 0,
+        "borderBottomLeftRadius": 0,
+        "backgroundColor": "#fff",
+        "display": "flex",
+        "alignItems": "center",
+        "gap": 8,
+        "paddingTop": 0,
+        "paddingRight": 12,
+        "paddingBottom": 0,
+        "paddingLeft": 12
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "tabPreview[0].tab"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;color:#212124",
+      "style": {
+        "flexGrow": 1,
+        "flexShrink": 1,
+        "flexBasis": 0,
+        "minWidth": 0,
+        "overflow": "hidden",
+        "fontSize": 13,
+        "color": "#212124"
+      },
+      "webOnlyOrInvalid": {
+        "textOverflow": "ellipsis",
+        "whiteSpace": "nowrap"
+      },
+      "unconverted": [],
+      "keyPaths": [
+        "tabPreview[0].label"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "width:190px;height:34px;border-radius:8px 8px 0 0;background:rgba(255,255,255,.55);display:flex;align-items:center;gap:8px;padding:0 12px",
+      "style": {
+        "width": 190,
+        "height": 34,
+        "borderTopLeftRadius": 8,
+        "borderTopRightRadius": 8,
+        "borderBottomRightRadius": 0,
+        "borderBottomLeftRadius": 0,
+        "backgroundColor": "rgba(255,255,255,.55)",
+        "display": "flex",
+        "alignItems": "center",
+        "gap": 8,
+        "paddingTop": 0,
+        "paddingRight": 12,
+        "paddingBottom": 0,
+        "paddingLeft": 12
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "tabPreview[1].tab",
+        "tabPreview[2].tab"
+      ],
+      "occurrences": 2
+    },
+    {
+      "raw": "flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;color:#6B5F60",
+      "style": {
+        "flexGrow": 1,
+        "flexShrink": 1,
+        "flexBasis": 0,
+        "minWidth": 0,
+        "overflow": "hidden",
+        "fontSize": 13,
+        "color": "#6B5F60"
+      },
+      "webOnlyOrInvalid": {
+        "textOverflow": "ellipsis",
+        "whiteSpace": "nowrap"
+      },
+      "unconverted": [],
+      "keyPaths": [
+        "tabPreview[1].label",
+        "tabPreview[2].label"
+      ],
+      "occurrences": 2
+    },
+    {
+      "raw": "height:76px;flex:0 0 76px;display:flex;align-items:center;justify-content:space-between;padding:0 64px;box-shadow:inset 0 -1px 0 #eaebee",
+      "style": {
+        "height": 76,
+        "flexGrow": 0,
+        "flexShrink": 0,
+        "flexBasis": 76,
+        "display": "flex",
+        "alignItems": "center",
+        "justifyContent": "space-between",
+        "paddingTop": 0,
+        "paddingRight": 64,
+        "paddingBottom": 0,
+        "paddingLeft": 64
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [
+        {
+          "prop": "box-shadow",
+          "value": "inset 0 -1px 0 #eaebee",
+          "error": "Failed to parse declaration \"boxShadow: inset 0 -1px 0 #eaebee\"",
+          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
+          "kind": "FAILED"
+        }
+      ],
+      "keyPaths": [
+        "gnb"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "font-size:19px;font-weight:700;color:#212124",
+      "style": {
+        "fontSize": 19,
+        "fontWeight": "700",
+        "color": "#212124"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "gnbWord"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "height:38px;padding:0 18px;border-radius:999px;background:#ff6f61;color:#fff;display:inline-flex;align-items:center;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap",
+      "style": {
+        "height": 38,
+        "paddingTop": 0,
+        "paddingRight": 18,
+        "paddingBottom": 0,
+        "paddingLeft": 18,
+        "borderRadius": 999,
+        "backgroundColor": "#ff6f61",
+        "color": "#fff",
+        "display": "inline-flex",
+        "alignItems": "center",
+        "fontSize": 15,
+        "fontWeight": "700"
+      },
+      "webOnlyOrInvalid": {
+        "cursor": "pointer",
+        "whiteSpace": "nowrap"
+      },
+      "unconverted": [],
+      "keyPaths": [
+        "gnbCta"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "padding:52px 64px 44px;display:flex;flex-direction:column;gap:8px;background:#FDF8F7",
+      "style": {
+        "paddingTop": 52,
+        "paddingRight": 64,
+        "paddingBottom": 44,
+        "paddingLeft": 64,
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": 8,
+        "backgroundColor": "#FDF8F7"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "titleBand"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "width:26px;height:4px;border-radius:2px;background:#ff6f61;margin-bottom:10px",
+      "style": {
+        "width": 26,
+        "height": 4,
+        "borderRadius": 2,
+        "backgroundColor": "#ff6f61",
+        "marginBottom": 10
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "dash"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "font-size:14px;line-height:19px;color:#868b94",
+      "style": {
+        "fontSize": 14,
+        "lineHeight": 19,
+        "color": "#868b94"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "crumb"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "font-size:38px;line-height:52px;font-weight:700;color:#212124;letter-spacing:-1.2px",
+      "style": {
+        "fontSize": 38,
+        "lineHeight": 52,
+        "fontWeight": "700",
+        "color": "#212124",
+        "letterSpacing": -1.2
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "pageTitle"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "font-size:17px;line-height:27px;color:#4d5159;max-width:700px;text-wrap:pretty;padding-top:4px",
+      "style": {
+        "fontSize": 17,
+        "lineHeight": 27,
+        "color": "#4d5159",
+        "maxWidth": 700,
+        "textWrap": "pretty",
+        "paddingTop": 4
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "pageSub"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "font-size:16px;line-height:27px;color:#4d5159;max-width:760px;text-wrap:pretty",
+      "style": {
+        "fontSize": 16,
+        "lineHeight": 27,
+        "color": "#4d5159",
+        "maxWidth": 760,
+        "textWrap": "pretty"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "lead"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "flex:0 0 220px;position:sticky;top:24px;display:flex;flex-direction:column;gap:2px;padding:20px;border-radius:12px;background:#f7f8fa",
+      "style": {
+        "flexGrow": 0,
+        "flexShrink": 0,
+        "flexBasis": 220,
+        "position": "sticky",
+        "top": 24,
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": 2,
+        "paddingTop": 20,
+        "paddingRight": 20,
+        "paddingBottom": 20,
+        "paddingLeft": 20,
+        "borderRadius": 12,
+        "backgroundColor": "#f7f8fa"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "toc"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "font-size:13px;line-height:18px;font-weight:700;color:#adb1ba;padding-bottom:6px",
+      "style": {
+        "fontSize": 13,
+        "lineHeight": 18,
+        "fontWeight": "700",
+        "color": "#adb1ba",
+        "paddingBottom": 6
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "tocLabel"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "font-size:13px;line-height:20px;color:#adb1ba;padding-top:12px;margin-top:8px;box-shadow:inset 0 1px 0 #eaebee;text-wrap:pretty",
+      "style": {
+        "fontSize": 13,
+        "lineHeight": 20,
+        "color": "#adb1ba",
+        "paddingTop": 12,
+        "marginTop": 8,
+        "textWrap": "pretty"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [
+        {
+          "prop": "box-shadow",
+          "value": "inset 0 1px 0 #eaebee",
+          "error": "Failed to parse declaration \"boxShadow: inset 0 1px 0 #eaebee\"",
+          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
+          "kind": "FAILED"
+        }
+      ],
+      "keyPaths": [
+        "tocNote"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "font-size:13px;line-height:18px;font-weight:700;color:#ff6f61",
+      "style": {
+        "fontSize": 13,
+        "lineHeight": 18,
+        "fontWeight": "700",
+        "color": "#ff6f61"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "cardEyebrow"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "font-size:18px;line-height:25px;font-weight:700;color:#212124",
+      "style": {
+        "fontSize": 18,
+        "lineHeight": 25,
+        "fontWeight": "700",
+        "color": "#212124"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "cardTitle",
+        "noteTitle"
+      ],
+      "occurrences": 2
+    },
+    {
+      "raw": "font-size:15px;line-height:24px;color:#4d5159;text-wrap:pretty",
+      "style": {
+        "fontSize": 15,
+        "lineHeight": 24,
+        "color": "#4d5159",
+        "textWrap": "pretty"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "cardBody"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "display:flex;align-items:center;gap:16px;min-height:56px;padding:16px 0",
+      "style": {
+        "display": "flex",
+        "alignItems": "center",
+        "gap": 16,
+        "minHeight": 56,
+        "paddingTop": 16,
+        "paddingRight": 0,
+        "paddingBottom": 16,
+        "paddingLeft": 0
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "row"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "font-size:17px;line-height:24px;font-weight:700;color:#212124",
+      "style": {
+        "fontSize": 17,
+        "lineHeight": 24,
+        "fontWeight": "700",
+        "color": "#212124"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "rowTitle"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "font-size:15px;line-height:23px;color:#868b94;text-wrap:pretty",
+      "style": {
+        "fontSize": 15,
+        "lineHeight": 23,
+        "color": "#868b94",
+        "textWrap": "pretty"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "rowDesc"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "height:1px;background:#eaebee",
+      "style": {
+        "height": 1,
+        "backgroundColor": "#eaebee"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "hr"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "width:30px;height:30px;flex:0 0 30px;border-radius:999px;background:#FFE9E6;color:#ff6f61;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;margin-top:1px",
+      "style": {
+        "width": 30,
+        "height": 30,
+        "flexGrow": 0,
+        "flexShrink": 0,
+        "flexBasis": 30,
+        "borderRadius": 999,
+        "backgroundColor": "#FFE9E6",
+        "color": "#ff6f61",
+        "display": "flex",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "fontSize": 14,
+        "fontWeight": "700",
+        "marginTop": 1
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "stepNo"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "font-size:14px;line-height:19px;color:#adb1ba;white-space:nowrap",
+      "style": {
+        "fontSize": 14,
+        "lineHeight": 19,
+        "color": "#adb1ba"
+      },
+      "webOnlyOrInvalid": {
+        "whiteSpace": "nowrap"
+      },
+      "unconverted": [],
+      "keyPaths": [
+        "stepMeta"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "font-size:15px;line-height:21px;color:#4d5159",
+      "style": {
+        "fontSize": 15,
+        "lineHeight": 21,
+        "color": "#4d5159"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "fieldLabel"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "flex:1;font-size:15px;line-height:23px;color:#4d5159;text-wrap:pretty",
+      "style": {
+        "flexGrow": 1,
+        "flexShrink": 1,
+        "flexBasis": 0,
+        "fontSize": 15,
+        "lineHeight": 23,
+        "color": "#4d5159",
+        "textWrap": "pretty"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "consent"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "align-self:flex-start;height:52px;padding:0 28px;border-radius:8px;background:#ff6f61;color:#fff;display:inline-flex;align-items:center;font-size:17px;font-weight:700;cursor:pointer",
+      "style": {
+        "alignSelf": "flex-start",
+        "height": 52,
+        "paddingTop": 0,
+        "paddingRight": 28,
+        "paddingBottom": 0,
+        "paddingLeft": 28,
+        "borderRadius": 8,
+        "backgroundColor": "#ff6f61",
+        "color": "#fff",
+        "display": "inline-flex",
+        "alignItems": "center",
+        "fontSize": 17,
+        "fontWeight": "700"
+      },
+      "webOnlyOrInvalid": {
+        "cursor": "pointer"
+      },
+      "unconverted": [],
+      "keyPaths": [
+        "formCta"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "border-radius:12px;background:#f7f8fa;padding:26px;display:flex;flex-direction:column;gap:8px",
+      "style": {
+        "borderRadius": 12,
+        "backgroundColor": "#f7f8fa",
+        "paddingTop": 26,
+        "paddingRight": 26,
+        "paddingBottom": 26,
+        "paddingLeft": 26,
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": 8
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "noteBox"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "font-size:16px;line-height:26px;color:#4d5159;text-wrap:pretty",
+      "style": {
+        "fontSize": 16,
+        "lineHeight": 26,
+        "color": "#4d5159",
+        "textWrap": "pretty"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "noteBody"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "width:22px;height:22px;flex:0 0 22px;border-radius:6px;background:#f2f3f6;color:#868b94;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums",
+      "style": {
+        "width": 22,
+        "height": 22,
+        "flexGrow": 0,
+        "flexShrink": 0,
+        "flexBasis": 22,
+        "borderRadius": 6,
+        "backgroundColor": "#f2f3f6",
+        "color": "#868b94",
+        "display": "flex",
+        "alignItems": "center",
+        "justifyContent": "center",
+        "fontSize": 12,
+        "fontWeight": "700",
+        "marginTop": 2,
+        "fontVariantNumeric": "tabular-nums"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "clauseNo"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "font-size:16px;line-height:27px;color:#4d5159;text-wrap:pretty",
+      "style": {
+        "fontSize": 16,
+        "lineHeight": 27,
+        "color": "#4d5159",
+        "textWrap": "pretty"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "clauseText"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "display:flex;flex-direction:column;border-radius:12px;box-shadow:inset 0 0 0 1px #eaebee;overflow:hidden",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "borderRadius": 12,
+        "overflow": "hidden"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [
+        {
+          "prop": "box-shadow",
+          "value": "inset 0 0 0 1px #eaebee",
+          "error": "Failed to parse declaration \"boxShadow: inset 0 0 0 1px #eaebee\"",
+          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
+          "kind": "FAILED"
+        }
+      ],
+      "keyPaths": [
+        "tableWrap"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "display:flex;gap:20px;padding:14px 20px;background:#f7f8fa",
+      "style": {
+        "display": "flex",
+        "gap": 20,
+        "paddingTop": 14,
+        "paddingRight": 20,
+        "paddingBottom": 14,
+        "paddingLeft": 20,
+        "backgroundColor": "#f7f8fa"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "tableHead"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "display:flex;gap:20px;padding:14px 20px;box-shadow:inset 0 1px 0 #eaebee",
+      "style": {
+        "display": "flex",
+        "gap": 20,
+        "paddingTop": 14,
+        "paddingRight": 20,
+        "paddingBottom": 14,
+        "paddingLeft": 20
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [
+        {
+          "prop": "box-shadow",
+          "value": "inset 0 1px 0 #eaebee",
+          "error": "Failed to parse declaration \"boxShadow: inset 0 1px 0 #eaebee\"",
+          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
+          "kind": "FAILED"
+        }
+      ],
+      "keyPaths": [
+        "tableRow"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "background:#3A2F30;padding:0 64px",
+      "style": {
+        "backgroundColor": "#3A2F30",
+        "paddingTop": 0,
+        "paddingRight": 64,
+        "paddingBottom": 0,
+        "paddingLeft": 64
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "footer"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "height:76px;display:flex;align-items:center;justify-content:space-between;gap:40px",
+      "style": {
+        "height": 76,
+        "display": "flex",
+        "alignItems": "center",
+        "justifyContent": "space-between",
+        "gap": 40
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "footRow1"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "font-size:17px;font-weight:700;color:#fff",
+      "style": {
+        "fontSize": 17,
+        "fontWeight": "700",
+        "color": "#fff"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "footBrand"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "display:flex;gap:26px",
+      "style": {
+        "display": "flex",
+        "gap": 26
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "footNav"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "font-size:15px;line-height:22px;color:rgba(255,255,255,.72);white-space:nowrap;cursor:pointer",
+      "style": {
+        "fontSize": 15,
+        "lineHeight": 22,
+        "color": "rgba(255,255,255,.72)"
+      },
+      "webOnlyOrInvalid": {
+        "whiteSpace": "nowrap",
+        "cursor": "pointer"
+      },
+      "unconverted": [],
+      "keyPaths": [
+        "footNavLink"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "font-size:15px;line-height:22px;color:rgba(255,255,255,.72)",
+      "style": {
+        "fontSize": 15,
+        "lineHeight": 22,
+        "color": "rgba(255,255,255,.72)"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "footMail"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "height:1px;background:rgba(255,255,255,.12)",
+      "style": {
+        "height": 1,
+        "backgroundColor": "rgba(255,255,255,.12)"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "footDivider"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "height:60px;display:flex;align-items:center;justify-content:space-between;gap:40px",
+      "style": {
+        "height": 60,
+        "display": "flex",
+        "alignItems": "center",
+        "justifyContent": "space-between",
+        "gap": 40
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "footRow2"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "font-size:13px;line-height:19px;color:rgba(255,255,255,.44)",
+      "style": {
+        "fontSize": 13,
+        "lineHeight": 19,
+        "color": "rgba(255,255,255,.44)"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "footCopy"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "display:flex;gap:22px",
+      "style": {
+        "display": "flex",
+        "gap": 22
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "footLegal"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "font-size:13px;line-height:19px;color:rgba(255,255,255,.56);white-space:nowrap;cursor:pointer",
+      "style": {
+        "fontSize": 13,
+        "lineHeight": 19,
+        "color": "rgba(255,255,255,.56)"
+      },
+      "webOnlyOrInvalid": {
+        "whiteSpace": "nowrap",
+        "cursor": "pointer"
+      },
+      "unconverted": [],
+      "keyPaths": [
+        "footLegalLink"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "font-size:16px;line-height:22px;white-space:nowrap;cursor:pointer;color:#212124;font-weight:700",
+      "style": {
+        "fontSize": 16,
+        "lineHeight": 22,
+        "color": "#212124",
+        "fontWeight": "700"
+      },
+      "webOnlyOrInvalid": {
+        "whiteSpace": "nowrap",
+        "cursor": "pointer"
+      },
+      "unconverted": [],
+      "keyPaths": [
+        "pages[0].nav[0].style",
+        "pages[1].nav[1].style",
+        "pages[2].nav[2].style"
+      ],
+      "occurrences": 3
+    },
+    {
+      "raw": "font-size:16px;line-height:22px;white-space:nowrap;cursor:pointer;color:#4d5159",
+      "style": {
+        "fontSize": 16,
+        "lineHeight": 22,
+        "color": "#4d5159"
+      },
+      "webOnlyOrInvalid": {
+        "whiteSpace": "nowrap",
+        "cursor": "pointer"
+      },
+      "unconverted": [],
+      "keyPaths": [
+        "pages[0].nav[1].style",
+        "pages[0].nav[2].style",
+        "pages[1].nav[0].style",
+        "pages[1].nav[2].style",
+        "pages[2].nav[0].style",
+        "pages[2].nav[1].style",
+        "pages[3].nav[0].style",
+        "pages[3].nav[1].style",
+        "pages[3].nav[2].style",
+        "pages[4].nav[0].style",
+        "pages[4].nav[1].style",
+        "pages[4].nav[2].style"
+      ],
+      "occurrences": 12
+    },
+    {
+      "raw": "display:flex;flex-direction:column;gap:16px",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": 16
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "pages[0].blocks[0].wrap",
+        "pages[0].blocks[1].wrap",
+        "pages[0].blocks[2].wrap",
+        "pages[1].blocks[0].wrap",
+        "pages[1].blocks[1].wrap",
+        "pages[2].blocks[0].wrap",
+        "pages[2].blocks[1].wrap",
+        "pages[2].blocks[2].wrap",
+        "pages[4].blocks[0].wrap",
+        "pages[4].blocks[3].wrap"
+      ],
+      "occurrences": 10
+    },
+    {
+      "raw": "font-size:24px;line-height:32px;font-weight:700;color:#212124",
+      "style": {
+        "fontSize": 24,
+        "lineHeight": 32,
+        "fontWeight": "700",
+        "color": "#212124"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "pages[0].blocks[0].titleStyle",
+        "pages[0].blocks[1].titleStyle",
+        "pages[0].blocks[2].titleStyle",
+        "pages[1].blocks[0].titleStyle",
+        "pages[1].blocks[1].titleStyle",
+        "pages[2].blocks[0].titleStyle",
+        "pages[2].blocks[1].titleStyle",
+        "pages[2].blocks[2].titleStyle"
+      ],
+      "occurrences": 8
+    },
+    {
+      "raw": "display:grid;grid-template-columns:repeat(3,1fr);gap:16px",
+      "style": {
+        "display": "grid",
+        "gridTemplateColumns": "repeat(3,1fr)",
+        "gap": 16
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "pages[0].blocks[1].grid",
+        "pages[0].blocks[2].grid",
+        "pages[1].blocks[0].grid",
+        "pages[2].blocks[0].grid"
+      ],
+      "occurrences": 4
+    },
+    {
+      "raw": "border-radius:12px;padding:26px 24px;display:flex;flex-direction:column;gap:8px;background:#f7f8fa;",
+      "style": {
+        "borderRadius": 12,
+        "paddingTop": 26,
+        "paddingRight": 24,
+        "paddingBottom": 26,
+        "paddingLeft": 24,
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": 8,
+        "backgroundColor": "#f7f8fa"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "pages[0].blocks[1].cards[0].card",
+        "pages[0].blocks[1].cards[1].card",
+        "pages[0].blocks[2].cards[0].card",
+        "pages[0].blocks[2].cards[1].card",
+        "pages[0].blocks[2].cards[2].card",
+        "pages[1].blocks[0].cards[0].card",
+        "pages[1].blocks[0].cards[1].card",
+        "pages[1].blocks[0].cards[2].card",
+        "pages[1].blocks[0].cards[3].card",
+        "pages[1].blocks[0].cards[4].card",
+        "pages[1].blocks[0].cards[5].card",
+        "pages[2].blocks[0].cards[1].card",
+        "pages[2].blocks[0].cards[2].card"
+      ],
+      "occurrences": 13
+    },
+    {
+      "raw": "border-radius:12px;padding:26px 24px;display:flex;flex-direction:column;gap:8px;box-shadow:inset 0 0 0 1.5px #ff6f61;background:#FDF8F7;",
+      "style": {
+        "borderRadius": 12,
+        "paddingTop": 26,
+        "paddingRight": 24,
+        "paddingBottom": 26,
+        "paddingLeft": 24,
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": 8,
+        "backgroundColor": "#FDF8F7"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [
+        {
+          "prop": "box-shadow",
+          "value": "inset 0 0 0 1.5px #ff6f61",
+          "error": "Failed to parse declaration \"boxShadow: inset 0 0 0 1.5px #ff6f61\"",
+          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
+          "kind": "FAILED"
+        }
+      ],
+      "keyPaths": [
+        "pages[0].blocks[1].cards[2].card",
+        "pages[2].blocks[0].cards[0].card"
+      ],
+      "occurrences": 2
+    },
+    {
+      "raw": "padding:56px 64px 72px;display:flex;flex-direction:column;gap:52px;max-width:1008px",
+      "style": {
+        "paddingTop": 56,
+        "paddingRight": 64,
+        "paddingBottom": 72,
+        "paddingLeft": 64,
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": 52,
+        "maxWidth": 1008
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "pages[0].bodyStyle",
+        "pages[1].bodyStyle",
+        "pages[2].bodyStyle"
+      ],
+      "occurrences": 3
+    },
+    {
+      "raw": "display:flex;flex-direction:column;gap:52px",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": 52
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "pages[0].mainStyle",
+        "pages[1].mainStyle",
+        "pages[2].mainStyle"
+      ],
+      "occurrences": 3
+    },
+    {
+      "raw": "font-size:16px;line-height:22px;white-space:nowrap;font-variant-numeric:tabular-nums;color:#868b94",
+      "style": {
+        "fontSize": 16,
+        "lineHeight": 22,
+        "fontVariantNumeric": "tabular-nums",
+        "color": "#868b94"
+      },
+      "webOnlyOrInvalid": {
+        "whiteSpace": "nowrap"
+      },
+      "unconverted": [],
+      "keyPaths": [
+        "pages[1].blocks[1].rows[0].vStyle",
+        "pages[1].blocks[1].rows[1].vStyle",
+        "pages[1].blocks[1].rows[2].vStyle",
+        "pages[1].blocks[1].rows[3].vStyle",
+        "pages[1].blocks[1].rows[4].vStyle",
+        "pages[1].blocks[1].rows[5].vStyle",
+        "pages[2].blocks[1].rows[0].vStyle",
+        "pages[2].blocks[1].rows[1].vStyle",
+        "pages[2].blocks[1].rows[2].vStyle",
+        "pages[2].blocks[1].rows[3].vStyle",
+        "pages[2].blocks[1].rows[4].vStyle"
+      ],
+      "occurrences": 11
+    },
+    {
+      "raw": "display:flex;flex-direction:column",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "pages[1].blocks[2].wrap",
+        "pages[2].blocks[3].wrap"
+      ],
+      "occurrences": 2
+    },
+    {
+      "raw": "height:52px;border-radius:8px;box-shadow:inset 0 0 0 1px #d1d3d8;padding:0 14px;display:flex;align-items:center;font-size:16px;color:#adb1ba",
+      "style": {
+        "height": 52,
+        "borderRadius": 8,
+        "paddingTop": 0,
+        "paddingRight": 14,
+        "paddingBottom": 0,
+        "paddingLeft": 14,
+        "display": "flex",
+        "alignItems": "center",
+        "fontSize": 16,
+        "color": "#adb1ba"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [
+        {
+          "prop": "box-shadow",
+          "value": "inset 0 0 0 1px #d1d3d8",
+          "error": "Failed to parse declaration \"boxShadow: inset 0 0 0 1px #d1d3d8\"",
+          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
+          "kind": "FAILED"
+        }
+      ],
+      "keyPaths": [
+        "pages[2].blocks[2].fields[0].control",
+        "pages[2].blocks[2].fields[1].control"
+      ],
+      "occurrences": 2
+    },
+    {
+      "raw": "min-height:120px;border-radius:8px;box-shadow:inset 0 0 0 1px #d1d3d8;padding:14px;display:flex;font-size:16px;color:#adb1ba",
+      "style": {
+        "minHeight": 120,
+        "borderRadius": 8,
+        "paddingTop": 14,
+        "paddingRight": 14,
+        "paddingBottom": 14,
+        "paddingLeft": 14,
+        "display": "flex",
+        "fontSize": 16,
+        "color": "#adb1ba"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [
+        {
+          "prop": "box-shadow",
+          "value": "inset 0 0 0 1px #d1d3d8",
+          "error": "Failed to parse declaration \"boxShadow: inset 0 0 0 1px #d1d3d8\"",
+          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
+          "kind": "FAILED"
+        }
+      ],
+      "keyPaths": [
+        "pages[2].blocks[2].fields[2].control"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "display:flex;flex-direction:column;gap:12px",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": 12
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "pages[3].blocks[0].wrap",
+        "pages[3].blocks[1].wrap",
+        "pages[3].blocks[2].wrap",
+        "pages[3].blocks[3].wrap",
+        "pages[3].blocks[4].wrap",
+        "pages[3].blocks[5].wrap",
+        "pages[3].blocks[6].wrap",
+        "pages[3].blocks[7].wrap",
+        "pages[3].blocks[8].wrap",
+        "pages[3].blocks[9].wrap",
+        "pages[3].blocks[10].wrap",
+        "pages[3].blocks[11].wrap",
+        "pages[3].blocks[12].wrap",
+        "pages[3].blocks[13].wrap",
+        "pages[3].blocks[14].wrap",
+        "pages[3].blocks[15].wrap",
+        "pages[3].blocks[16].wrap",
+        "pages[3].blocks[17].wrap",
+        "pages[3].blocks[18].wrap",
+        "pages[3].blocks[19].wrap",
+        "pages[4].blocks[1].wrap",
+        "pages[4].blocks[2].wrap",
+        "pages[4].blocks[4].wrap",
+        "pages[4].blocks[5].wrap",
+        "pages[4].blocks[6].wrap",
+        "pages[4].blocks[7].wrap",
+        "pages[4].blocks[8].wrap",
+        "pages[4].blocks[9].wrap",
+        "pages[4].blocks[10].wrap",
+        "pages[4].blocks[11].wrap",
+        "pages[4].blocks[12].wrap",
+        "literal-style-attr[1]",
+        "literal-style-attr[2]",
+        "literal-style-attr[4]"
+      ],
+      "occurrences": 34
+    },
+    {
+      "raw": "font-size:19px;line-height:26px;font-weight:700;color:#212124",
+      "style": {
+        "fontSize": 19,
+        "lineHeight": 26,
+        "fontWeight": "700",
+        "color": "#212124"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "pages[3].blocks[0].titleStyle",
+        "pages[3].blocks[1].titleStyle",
+        "pages[3].blocks[2].titleStyle",
+        "pages[3].blocks[3].titleStyle",
+        "pages[3].blocks[4].titleStyle",
+        "pages[3].blocks[5].titleStyle",
+        "pages[3].blocks[6].titleStyle",
+        "pages[3].blocks[7].titleStyle",
+        "pages[3].blocks[8].titleStyle",
+        "pages[3].blocks[9].titleStyle",
+        "pages[3].blocks[10].titleStyle",
+        "pages[3].blocks[11].titleStyle",
+        "pages[3].blocks[12].titleStyle",
+        "pages[3].blocks[13].titleStyle",
+        "pages[3].blocks[14].titleStyle",
+        "pages[3].blocks[15].titleStyle",
+        "pages[3].blocks[16].titleStyle",
+        "pages[3].blocks[17].titleStyle",
+        "pages[3].blocks[18].titleStyle",
+        "pages[3].blocks[19].titleStyle",
+        "pages[4].blocks[0].titleStyle",
+        "pages[4].blocks[1].titleStyle",
+        "pages[4].blocks[2].titleStyle",
+        "pages[4].blocks[3].titleStyle",
+        "pages[4].blocks[4].titleStyle",
+        "pages[4].blocks[5].titleStyle",
+        "pages[4].blocks[6].titleStyle",
+        "pages[4].blocks[7].titleStyle",
+        "pages[4].blocks[8].titleStyle",
+        "pages[4].blocks[9].titleStyle",
+        "pages[4].blocks[10].titleStyle",
+        "pages[4].blocks[11].titleStyle",
+        "pages[4].blocks[12].titleStyle"
+      ],
+      "occurrences": 33
+    },
+    {
+      "raw": "font-size:15px;line-height:23px;padding:7px 0;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#868b94",
+      "style": {
+        "fontSize": 15,
+        "lineHeight": 23,
+        "paddingTop": 7,
+        "paddingRight": 0,
+        "paddingBottom": 7,
+        "paddingLeft": 0,
+        "overflow": "hidden",
+        "color": "#868b94"
+      },
+      "webOnlyOrInvalid": {
+        "cursor": "pointer",
+        "whiteSpace": "nowrap",
+        "textOverflow": "ellipsis"
+      },
+      "unconverted": [],
+      "keyPaths": [
+        "pages[3].toc[0].style",
+        "pages[3].toc[1].style",
+        "pages[3].toc[2].style",
+        "pages[3].toc[3].style",
+        "pages[3].toc[4].style",
+        "pages[3].toc[5].style",
+        "pages[3].toc[6].style",
+        "pages[3].toc[7].style",
+        "pages[3].toc[8].style",
+        "pages[3].toc[9].style",
+        "pages[3].toc[10].style",
+        "pages[3].toc[11].style",
+        "pages[3].toc[12].style",
+        "pages[3].toc[13].style",
+        "pages[3].toc[14].style",
+        "pages[3].toc[15].style",
+        "pages[3].toc[16].style",
+        "pages[3].toc[17].style",
+        "pages[3].toc[18].style",
+        "pages[3].toc[19].style",
+        "pages[4].toc[0].style",
+        "pages[4].toc[1].style",
+        "pages[4].toc[2].style",
+        "pages[4].toc[3].style",
+        "pages[4].toc[4].style",
+        "pages[4].toc[5].style",
+        "pages[4].toc[6].style",
+        "pages[4].toc[7].style",
+        "pages[4].toc[8].style",
+        "pages[4].toc[9].style",
+        "pages[4].toc[10].style",
+        "pages[4].toc[11].style",
+        "pages[4].toc[12].style"
+      ],
+      "occurrences": 33
+    },
+    {
+      "raw": "padding:56px 64px 72px;display:flex;gap:56px;align-items:flex-start",
+      "style": {
+        "paddingTop": 56,
+        "paddingRight": 64,
+        "paddingBottom": 72,
+        "paddingLeft": 64,
+        "display": "flex",
+        "gap": 56,
+        "alignItems": "flex-start"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "pages[3].bodyStyle",
+        "pages[4].bodyStyle"
+      ],
+      "occurrences": 2
+    },
+    {
+      "raw": "flex:1;min-width:0;display:flex;flex-direction:column;gap:40px",
+      "style": {
+        "flexGrow": 1,
+        "flexShrink": 1,
+        "flexBasis": 0,
+        "minWidth": 0,
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": 40
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "pages[3].mainStyle",
+        "pages[4].mainStyle"
+      ],
+      "occurrences": 2
+    },
+    {
+      "raw": "width:150px;flex:0 0 auto;min-width:0;font-size:15px;line-height:23px;color:#212124;font-weight:700;text-wrap:pretty",
+      "style": {
+        "width": 150,
+        "flexGrow": 0,
+        "flexShrink": 0,
+        "flexBasis": "auto",
+        "minWidth": 0,
+        "fontSize": 15,
+        "lineHeight": 23,
+        "color": "#212124",
+        "fontWeight": "700",
+        "textWrap": "pretty"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "pages[4].blocks[0].cols[0].style",
+        "pages[4].blocks[3].cols[0].style"
+      ],
+      "occurrences": 2
+    },
+    {
+      "raw": "width:auto;flex:1 1 0;min-width:0;font-size:15px;line-height:23px;color:#212124;font-weight:700;text-wrap:pretty",
+      "style": {
+        "width": "auto",
+        "flexGrow": 1,
+        "flexShrink": 1,
+        "flexBasis": 0,
+        "minWidth": 0,
+        "fontSize": 15,
+        "lineHeight": 23,
+        "color": "#212124",
+        "fontWeight": "700",
+        "textWrap": "pretty"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "pages[4].blocks[0].cols[1].style",
+        "pages[4].blocks[3].cols[1].style"
+      ],
+      "occurrences": 2
+    },
+    {
+      "raw": "width:230px;flex:0 0 auto;min-width:0;font-size:15px;line-height:23px;color:#212124;font-weight:700;text-wrap:pretty",
+      "style": {
+        "width": 230,
+        "flexGrow": 0,
+        "flexShrink": 0,
+        "flexBasis": "auto",
+        "minWidth": 0,
+        "fontSize": 15,
+        "lineHeight": 23,
+        "color": "#212124",
+        "fontWeight": "700",
+        "textWrap": "pretty"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "pages[4].blocks[0].cols[2].style"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "width:150px;flex:0 0 auto;min-width:0;font-size:15px;line-height:23px;color:#4d5159;text-wrap:pretty",
+      "style": {
+        "width": 150,
+        "flexGrow": 0,
+        "flexShrink": 0,
+        "flexBasis": "auto",
+        "minWidth": 0,
+        "fontSize": 15,
+        "lineHeight": 23,
+        "color": "#4d5159",
+        "textWrap": "pretty"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "pages[4].blocks[0].trows[0].cells[0].style",
+        "pages[4].blocks[0].trows[1].cells[0].style",
+        "pages[4].blocks[0].trows[2].cells[0].style",
+        "pages[4].blocks[0].trows[3].cells[0].style",
+        "pages[4].blocks[0].trows[4].cells[0].style",
+        "pages[4].blocks[0].trows[5].cells[0].style",
+        "pages[4].blocks[0].trows[6].cells[0].style",
+        "pages[4].blocks[0].trows[7].cells[0].style",
+        "pages[4].blocks[3].trows[0].cells[0].style",
+        "pages[4].blocks[3].trows[1].cells[0].style",
+        "pages[4].blocks[3].trows[2].cells[0].style",
+        "pages[4].blocks[3].trows[3].cells[0].style",
+        "pages[4].blocks[3].trows[4].cells[0].style"
+      ],
+      "occurrences": 13
+    },
+    {
+      "raw": "width:auto;flex:1 1 0;min-width:0;font-size:15px;line-height:23px;color:#4d5159;text-wrap:pretty",
+      "style": {
+        "width": "auto",
+        "flexGrow": 1,
+        "flexShrink": 1,
+        "flexBasis": 0,
+        "minWidth": 0,
+        "fontSize": 15,
+        "lineHeight": 23,
+        "color": "#4d5159",
+        "textWrap": "pretty"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "pages[4].blocks[0].trows[0].cells[1].style",
+        "pages[4].blocks[0].trows[1].cells[1].style",
+        "pages[4].blocks[0].trows[2].cells[1].style",
+        "pages[4].blocks[0].trows[3].cells[1].style",
+        "pages[4].blocks[0].trows[4].cells[1].style",
+        "pages[4].blocks[0].trows[5].cells[1].style",
+        "pages[4].blocks[0].trows[6].cells[1].style",
+        "pages[4].blocks[0].trows[7].cells[1].style",
+        "pages[4].blocks[3].trows[0].cells[1].style",
+        "pages[4].blocks[3].trows[1].cells[1].style",
+        "pages[4].blocks[3].trows[2].cells[1].style",
+        "pages[4].blocks[3].trows[3].cells[1].style",
+        "pages[4].blocks[3].trows[4].cells[1].style"
+      ],
+      "occurrences": 13
+    },
+    {
+      "raw": "width:230px;flex:0 0 auto;min-width:0;font-size:15px;line-height:23px;color:#4d5159;text-wrap:pretty",
+      "style": {
+        "width": 230,
+        "flexGrow": 0,
+        "flexShrink": 0,
+        "flexBasis": "auto",
+        "minWidth": 0,
+        "fontSize": 15,
+        "lineHeight": 23,
+        "color": "#4d5159",
+        "textWrap": "pretty"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "pages[4].blocks[0].trows[0].cells[2].style",
+        "pages[4].blocks[0].trows[1].cells[2].style",
+        "pages[4].blocks[0].trows[2].cells[2].style",
+        "pages[4].blocks[0].trows[3].cells[2].style",
+        "pages[4].blocks[0].trows[4].cells[2].style",
+        "pages[4].blocks[0].trows[5].cells[2].style",
+        "pages[4].blocks[0].trows[6].cells[2].style",
+        "pages[4].blocks[0].trows[7].cells[2].style"
+      ],
+      "occurrences": 8
+    },
+    {
+      "raw": "width:260px;flex:0 0 auto;min-width:0;font-size:15px;line-height:23px;color:#212124;font-weight:700;text-wrap:pretty",
+      "style": {
+        "width": 260,
+        "flexGrow": 0,
+        "flexShrink": 0,
+        "flexBasis": "auto",
+        "minWidth": 0,
+        "fontSize": 15,
+        "lineHeight": 23,
+        "color": "#212124",
+        "fontWeight": "700",
+        "textWrap": "pretty"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "pages[4].blocks[3].cols[2].style"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "width:260px;flex:0 0 auto;min-width:0;font-size:15px;line-height:23px;color:#4d5159;text-wrap:pretty",
+      "style": {
+        "width": 260,
+        "flexGrow": 0,
+        "flexShrink": 0,
+        "flexBasis": "auto",
+        "minWidth": 0,
+        "fontSize": 15,
+        "lineHeight": 23,
+        "color": "#4d5159",
+        "textWrap": "pretty"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "pages[4].blocks[3].trows[0].cells[2].style",
+        "pages[4].blocks[3].trows[1].cells[2].style",
+        "pages[4].blocks[3].trows[2].cells[2].style",
+        "pages[4].blocks[3].trows[3].cells[2].style",
+        "pages[4].blocks[3].trows[4].cells[2].style"
+      ],
+      "occurrences": 5
+    },
+    {
+      "raw": "display:flex;flex-direction:column;gap:10px;max-width:920px",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": 10,
+        "maxWidth": 920
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "literal-style-attr[0]"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "width:16px;height:16px;border-radius:3px;flex:0 0 16px",
+      "style": {
+        "width": 16,
+        "height": 16,
+        "borderRadius": 3,
+        "flexGrow": 0,
+        "flexShrink": 0,
+        "flexBasis": 16
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "literal-style-attr[3]"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "display:flex;align-items:center;gap:9px",
+      "style": {
+        "display": "flex",
+        "alignItems": "center",
+        "gap": 9
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "literal-style-attr[5]"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "display:flex;align-items:center;gap:28px",
+      "style": {
+        "display": "flex",
+        "alignItems": "center",
+        "gap": 28
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "literal-style-attr[6]"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "display:flex;flex-direction:column;gap:2px",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": 2
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "literal-style-attr[7]",
+        "literal-style-attr[9]"
+      ],
+      "occurrences": 2
+    },
+    {
+      "raw": "flex:1;min-width:0;display:flex;flex-direction:column;gap:3px",
+      "style": {
+        "flexGrow": 1,
+        "flexShrink": 1,
+        "flexBasis": 0,
+        "minWidth": 0,
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": 3
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "literal-style-attr[8]"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "display:flex;align-items:flex-start;gap:16px;padding:18px 0",
+      "style": {
+        "display": "flex",
+        "alignItems": "flex-start",
+        "gap": 16,
+        "paddingTop": 18,
+        "paddingRight": 0,
+        "paddingBottom": 18,
+        "paddingLeft": 0
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "literal-style-attr[10]"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "flex:1;min-width:0;display:flex;flex-direction:column;gap:4px",
+      "style": {
+        "flexGrow": 1,
+        "flexShrink": 1,
+        "flexBasis": 0,
+        "minWidth": 0,
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": 4
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "literal-style-attr[11]"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "display:flex;flex-direction:column;gap:18px",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": 18
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "literal-style-attr[12]"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "display:flex;flex-direction:column;gap:7px",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": 7
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "literal-style-attr[13]"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "display:flex;align-items:flex-start;gap:10px;padding-top:2px",
+      "style": {
+        "display": "flex",
+        "alignItems": "flex-start",
+        "gap": 10,
+        "paddingTop": 2
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "literal-style-attr[14]"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "display:flex;flex-direction:column;gap:9px",
+      "style": {
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": 9
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "literal-style-attr[15]"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "display:flex;gap:12px;align-items:flex-start",
+      "style": {
+        "display": "flex",
+        "gap": 12,
+        "alignItems": "flex-start"
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "literal-style-attr[16]"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "flex:1;{{ clauseText }}",
+      "style": {
+        "flexGrow": 1,
+        "flexShrink": 1,
+        "flexBasis": 0
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "literal-style-attr[17]"
+      ],
+      "occurrences": 1
+    },
+    {
+      "raw": "display:flex;align-items:center;gap:8px",
+      "style": {
+        "display": "flex",
+        "alignItems": "center",
+        "gap": 8
+      },
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "keyPaths": [
+        "literal-style-attr[18]"
+      ],
+      "occurrences": 1
+    }
+  ]
+}

@@ -1,0 +1,117 @@
+{
+  "generatedAtUtc": "2026-09-23T13:05:12.930Z",
+  "files": [
+    {
+      "source": "docs/design/html/공통_다이얼로그 빈상태 로더.dc.html",
+      "output": "docs/rn-migration/css-to-rn/공통_다이얼로그_빈상태_로더.json",
+      "uniqueDeclarationBlocks": 269,
+      "fullyConverted": 205,
+      "withIssues": 64
+    },
+    {
+      "source": "docs/design/html/대메뉴_MY.dc.html",
+      "output": "docs/rn-migration/css-to-rn/대메뉴_MY.json",
+      "uniqueDeclarationBlocks": 234,
+      "fullyConverted": 179,
+      "withIssues": 55
+    },
+    {
+      "source": "docs/design/html/대메뉴_Pick.dc.html",
+      "output": "docs/rn-migration/css-to-rn/대메뉴_Pick.json",
+      "uniqueDeclarationBlocks": 262,
+      "fullyConverted": 198,
+      "withIssues": 64
+    },
+    {
+      "source": "docs/design/html/대메뉴_검색.dc.html",
+      "output": "docs/rn-migration/css-to-rn/대메뉴_검색.json",
+      "uniqueDeclarationBlocks": 293,
+      "fullyConverted": 223,
+      "withIssues": 70
+    },
+    {
+      "source": "docs/design/html/대메뉴_웨딩노트.dc.html",
+      "output": "docs/rn-migration/css-to-rn/대메뉴_웨딩노트.json",
+      "uniqueDeclarationBlocks": 253,
+      "fullyConverted": 192,
+      "withIssues": 61
+    },
+    {
+      "source": "docs/design/html/대메뉴_홈(로그인, 온보딩).dc.html",
+      "output": "docs/rn-migration/css-to-rn/대메뉴_홈로그인_온보딩.json",
+      "uniqueDeclarationBlocks": 381,
+      "fullyConverted": 273,
+      "withIssues": 108
+    },
+    {
+      "source": "docs/design/html/웨딩픽 관리자 운영.dc.html",
+      "output": "docs/rn-migration/css-to-rn/웨딩픽_관리자_운영.json",
+      "uniqueDeclarationBlocks": 187,
+      "fullyConverted": 91,
+      "withIssues": 96
+    },
+    {
+      "source": "docs/design/html/웨딩픽 관리자.dc.html",
+      "output": "docs/rn-migration/css-to-rn/웨딩픽_관리자.json",
+      "uniqueDeclarationBlocks": 571,
+      "fullyConverted": 497,
+      "withIssues": 74
+    },
+    {
+      "source": "docs/design/html/웨딩픽 디바이스 대응.dc.html",
+      "output": "docs/rn-migration/css-to-rn/웨딩픽_디바이스_대응.json",
+      "uniqueDeclarationBlocks": 71,
+      "fullyConverted": 49,
+      "withIssues": 22
+    },
+    {
+      "source": "docs/design/html/웨딩픽 랜딩 v4.dc.html",
+      "output": "docs/rn-migration/css-to-rn/웨딩픽_랜딩_v4.json",
+      "uniqueDeclarationBlocks": 112,
+      "fullyConverted": 90,
+      "withIssues": 22
+    },
+    {
+      "source": "docs/design/html/웨딩픽 랜딩 하위페이지.dc.html",
+      "output": "docs/rn-migration/css-to-rn/웨딩픽_랜딩_하위페이지.json",
+      "uniqueDeclarationBlocks": 114,
+      "fullyConverted": 92,
+      "withIssues": 22
+    },
+    {
+      "source": "docs/design/html/웨딩픽 사용자 흐름.dc.html",
+      "output": "docs/rn-migration/css-to-rn/웨딩픽_사용자_흐름.json",
+      "uniqueDeclarationBlocks": 28,
+      "fullyConverted": 21,
+      "withIssues": 7
+    },
+    {
+      "source": "docs/design/html/웨딩픽 스토어 이미지.dc.html",
+      "output": "docs/rn-migration/css-to-rn/웨딩픽_스토어_이미지.json",
+      "uniqueDeclarationBlocks": 104,
+      "fullyConverted": 84,
+      "withIssues": 20
+    },
+    {
+      "source": "docs/design/html/웨딩픽 약관 방침.dc.html",
+      "output": "docs/rn-migration/css-to-rn/웨딩픽_약관_방침.json",
+      "uniqueDeclarationBlocks": 77,
+      "fullyConverted": 58,
+      "withIssues": 19
+    },
+    {
+      "source": "docs/design/html/웨딩픽 전체 IA.dc.html",
+      "output": "docs/rn-migration/css-to-rn/웨딩픽_전체_IA.json",
+      "uniqueDeclarationBlocks": 19,
+      "fullyConverted": 19,
+      "withIssues": 0
+    },
+    {
+      "source": "docs/design/html/웨딩픽 컴포넌트 시트.dc.html",
+      "output": "docs/rn-migration/css-to-rn/웨딩픽_컴포넌트_시트.json",
+      "uniqueDeclarationBlocks": 143,
+      "fullyConverted": 127,
+      "withIssues": 16
+    }
+  ]
+}
