@@ -545,7 +545,7 @@ export default function VendorDetailScreen() {
                         key={photo.url}
                         accessibilityRole="button"
                         accessibilityLabel={`포트폴리오 ${index + 1}`}
-                        onPress={() => router.push(`/search/${vendor.id}/images`)}>
+                        onPress={() => router.push(`/search/${vendor.id}/images?index=${index}` as never)}>
                         <VendorImage
                           source={{ uri: photo.url }}
                           category={vendorImageCategory(vendor.category)}
