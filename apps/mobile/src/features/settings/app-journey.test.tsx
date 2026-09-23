@@ -178,7 +178,7 @@ it('프로필은 알림 설정 조회가 실패해도 계정 기능을 계속 �
   expect(tree.root.findAllByType('ErrorView' as never)).toHaveLength(0);
   const rows = tree.root.findAllByType('Row' as never);
   expect(rows.some((node) => node.props.name === '로그아웃')).toBe(true);
-  expect(rows.some((node) => node.props.name === '회원 탈퇴')).toBe(true);
+  expect(rows.some((node) => node.props.name === '회원탈퇴')).toBe(true);
   expect(tree.root.findAllByType('ActionButton' as never).some((node) => node.props.label === '다시 불러오기')).toBe(true);
 });
 

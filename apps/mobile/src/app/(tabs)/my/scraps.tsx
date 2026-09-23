@@ -126,7 +126,7 @@ export default function ScrapsScreen() {
             <ActionButton
               variant="secondary"
               size="large"
-              label="라운지 둘러보기"
+              label="라운지 보기"
               onPress={() => router.push('/community' as never)}
             />
           </View>

@@ -42,7 +42,8 @@ const S = {
   social: '카카오',
   connected: '연결됨',
   logout: '로그아웃',
-  withdraw: '회원 탈퇴',
+  /* 메뉴 4글자는 붙여 쓴다(전체 공통 규칙) — WP-MY-012 navTitle과 같은 표기. */
+  withdraw: '회원탈퇴',
   logoutTitle: '로그아웃할까요',
   logoutBody: '기기에 저장된 문서는 그대로 남아요',
   stay: '계속 이용하기',
