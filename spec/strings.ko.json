@@ -467,7 +467,7 @@
 
   "ourWedding": {
     "title": "웨딩노트",
-    "tab.calendar": "캘린더",
+    "tab.calendar": "웨딩일정",
     "tab.consult": "상담기록",
     "tab.budget": "예산현황",
     "calendar.hint": "빈 날짜를 누르면 일정을 바로 추가해요",
@@ -485,6 +485,7 @@
     "budget.used": "사용",
     "budget.paid": "{amount} 집행",
     "budget.unpaid": "미집행",
+    "budget.spendLink": "지출내역",
     "consult.emptyTitle": "녹음 파일을 선택해 주세요",
     "consult.emptyBody": "스마트폰 녹음앱에서 저장한 파일을 올릴 수 있어요",
     "consult.saved": "저장됨",
@@ -520,7 +521,7 @@
     "spendDetail.refundState": "환불 상태",
     "spendDetail.registeredOn": "등록일",
     "spendDetail.installmentEmpty": "아직 없어요",
-    "decided.title": "결정한 업체",
+    "decided.title": "예약현황",
     "decided.link": "결정한 업체",
     "decided.empty.title": "아직 결정한 곳이 없어요",
     "decided.empty.body": "업종마다 마음에 드는 곳을 정하면 여기 모여요",
