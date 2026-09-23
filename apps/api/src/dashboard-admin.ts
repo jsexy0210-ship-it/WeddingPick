@@ -1,6 +1,7 @@
 import type { Pool } from 'pg';
 
 import * as aiCostAdmin from './ai-cost-admin';
+import * as inquiryAdmin from './inquiry-admin';
 import * as objectionAdmin from './objection-admin';
 import * as piiAdmin from './pii-admin';
 import * as rebuttalAdmin from './rebuttal-admin';
@@ -245,6 +246,7 @@ export async function dashboard(pool: Pool): Promise<Dashboard> {
     objections,
     piiReviews,
     vendorClaims,
+    pendingInquiries,
     budgets,
     proofCount,
     proofVendorCount,
@@ -260,6 +262,7 @@ export async function dashboard(pool: Pool): Promise<Dashboard> {
     objectionAdmin.list(pool),
     piiAdmin.list(pool),
     vendorClaimAdmin.list(pool),
+    inquiryAdmin.list(pool),
     aiCostAdmin.status(pool),
     countRows(pool, 'SELECT count(*)::text AS n FROM structured.usable_payment_proofs'),
     countRows(pool, 'SELECT count(DISTINCT vendor_id)::text AS n FROM structured.usable_payment_proofs'),
@@ -324,6 +327,18 @@ export async function dashboard(pool: Pool): Promise<Dashboard> {
       why: '승인하면 업체 정보를 고칠 수 있게 돼요',
       count: vendorClaims.length,
       tone: 'danger',
+    },
+    /*
+     * 2026-09-23 관리자-프론트 연결 재검증에서 더했다. `inquiryAdmin.list`가
+     * 원래부터 있었지만(문의하기 · 고객지원 · 정보 오류 제보가 모이는 곳)
+     * 대시보드도 화면도 그 존재를 몰랐다 — 사람이 터미널을 열어야만 보였다.
+     */
+    {
+      key: 'inquiries',
+      label: '문의 확인 대기',
+      why: '문의하신 분이 답을 기다리고 있어요',
+      count: pendingInquiries.length,
+      tone: 'caution',
     },
   ];
 

@@ -124,6 +124,11 @@ const NO_CONTRACT = new Set([
   'GET /v1/admin/data/pipeline',
   'GET /v1/admin/pii-reviews',
   'GET /v1/admin/policy-engine',
+  /* 문의(2026-09-23 새 화면) — 관리자 전용이라 사용자 계약이 없다. 위 admin과 같은 자리다. */
+  'GET /v1/admin/inquiries',
+  'GET /v1/admin/inquiries/:id',
+  /* 회원 상세 360뷰(2026-09-23 새 화면) — 관리자 전용, 같은 자리다. */
+  'GET /v1/admin/users/:id',
   'GET /v1/weddings/:weddingId/candidates/removed',
 ]);
 

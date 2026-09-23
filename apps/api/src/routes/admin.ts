@@ -30,6 +30,7 @@ import { createGeminiFeedWriter } from '../analysis/wedding-feed-writer';
 import { NotAnOperator } from '../decisions';
 import { ApiError, forbidden, notFound } from '../errors';
 import * as inquiryAdmin from '../inquiry-admin';
+import * as memberAdmin from '../member-admin';
 import { holdReview, resolveObjection } from '../objection-decide';
 import * as objectionAdmin from '../objection-admin';
 import * as paymentProofAdmin from '../payment-proof-admin';
@@ -1421,6 +1422,18 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
       hasMore,
       nextCursor: hasMore ? items[items.length - 1]!.created_at.toISOString() : null,
     };
+  });
+
+  /*
+   * 회원 상세(360뷰). 2026-09-23 대표 지시 「회원에 대한 모든 활동과 모든 정보를
+   * 내가 확인할 수 있어야 한다」 — 위 목록의 한 줄(계정 정보)만으로는 그 회원이
+   * 실제로 무엇을 했는지 모른다. `member-admin.ts`가 이미 있는 표들을 회원 id로
+   * 묶어 한 번에 돌려준다. 새 표는 없다.
+   */
+  app.get<{ Params: { id: string } }>('/v1/admin/users/:id', auth, async (request) => {
+    const found = await memberAdmin.detail(context.pool, request.params.id);
+    if (!found) throw notFound('회원');
+    return found;
   });
 
   // ─── Vendors ──────────────────────────────────────────────────────────────

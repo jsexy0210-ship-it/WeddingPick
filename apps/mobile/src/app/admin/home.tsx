@@ -135,6 +135,7 @@ const SCREEN_PATH: Record<string, string> = {
   objections: '/admin/objections',
   'pii-reviews': '/admin/pii-reviews',
   'biz-queue': '/admin/biz-queue',
+  inquiries: '/admin/inquiries',
   'ai-usage': '/admin/ai-usage',
   campaigns: '/admin/campaigns',
   'price-stats': '/admin/price-stats',

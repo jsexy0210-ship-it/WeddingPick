@@ -20,6 +20,9 @@
  *   (`vendorCandidateSchema`) — 만들어 넣지 않는다. 그 자리에는 후보 메모(`note`)가 있으면 적는다.
  * - 배지 «인기»는 우리 값이 없다. 같은 자리에 **«함께»**(배우자도 고른 곳)를 세운다.
  * - 결정 취소는 되돌릴 수 있는 조작이라 한 번 더 묻는다(위험한 조작).
+ * - **별점은 다르다**(v3.28 2026-09-23 「후기 별점 UI를 되살린다」) — `vendorCandidateSchema`에
+ *   추가됐다. 검색·상세와 같은 관문(`scored_reviews`)에서 오고, 확인된 후기가 모자라거나
+ *   체크리스트 업종(결정사)이면 null이라 그때 카드는 별점 줄을 안 그린다.
  */
 import type { CandidateListResponse, CurrentUser, VendorCandidate } from '@weddingpick/api-contract';
 import {
@@ -44,6 +47,7 @@ import {
   MaxContentWidth,
   ProductSymbol,
   Radius,
+  RatingStars,
   Spacing,
   ThemedText,
   ThemedView,
@@ -537,6 +541,10 @@ function CandidateCard({
               {candidate.region}
             </ThemedText>
           </View>
+          {/* 정본 「평가 지표」(screen-inventory.md) — 확인된 후기가 모자라면 null이라 줄을 안 그린다. */}
+          {candidate.rating ? (
+            <RatingStars value={candidate.rating.average} count={candidate.rating.count} />
+          ) : null}
           {candidate.note ? (
             /* 규격서 해시태그 줄 자리 «10/500 #868B94 · lh 15 · mar 8 0 0 0». */
             <ThemedText type="f10" themeColor="textAssistive" numberOfLines={1} style={[styles.medium, styles.note]}>

@@ -1,10 +1,14 @@
 /**
  * WP-ADM-021 확인 필요 — 실 제보 인증 심사 큐.
  *
- * **2026-09-15 대표 확정 — 「확인 필요」 화면의 탭 셋 중 하나(확인 필요 자신)다**
- * (확인 필요 · 제보 처리 · 개인정보 검토). 매일 들어오는 셋을 한 화면 탭으로
+ * **2026-09-15 대표 확정 — 「확인 필요」 화면의 탭 중 하나(확인 필요 자신)다**
+ * (확인 필요 · 제보 처리 · 개인정보 검토). 매일 들어오는 것들을 한 화면 탭으로
  * 묶었다 — 이 파일 맨 아래 `QueueShell`이 그 껍데기고, 여기 있던 본문은
  * `QueuePanel`로 이름만 바꿨다.
+ *
+ * **2026-09-23에 「문의」 탭을 넷째로 더했다** — 서버(`inquiry-admin.ts`)는
+ * 이미 완성돼 있었는데 이 화면이 없어 사람이 터미널로만 답할 수 있었다
+ * (관리자-프론트 연결 재검증). 매일 들어오는 것이라는 성격이 같아 같은 셸에 둔다.
  */
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -15,6 +19,7 @@ import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { AdminTabShell, type AdminTabDef } from './_ui';
 import { DataPipelinePanel } from './data-pipeline';
+import { InquiryPanel } from './inquiries';
 import { PiiReviewsPanel } from './pii-reviews';
 import { ConfirmDecision } from '@/features/admin/confirm-decision';
 import { verificationDecisionRequest, type VerificationAction } from '@/features/admin/review-decision';
@@ -277,6 +282,7 @@ const TABS: AdminTabDef[] = [
   { key: 'queue', label: '확인 필요' },
   { key: 'data-pipeline', label: '제보 처리' },
   { key: 'pii-reviews', label: '개인정보 검토' },
+  { key: 'inquiries', label: '문의' },
 ];
 
 /**
@@ -294,6 +300,7 @@ export default function QueueShell() {
       {active === 'queue' && <QueuePanel />}
       {active === 'data-pipeline' && <DataPipelinePanel />}
       {active === 'pii-reviews' && <PiiReviewsPanel />}
+      {active === 'inquiries' && <InquiryPanel />}
     </AdminTabShell>
   );
 }

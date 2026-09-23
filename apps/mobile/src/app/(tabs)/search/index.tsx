@@ -661,7 +661,11 @@ export default function SearchScreen() {
    * `Search.tsx` 구조 채택, B등급이라 색·수치는 옮기지 않는다 — 이미지 폭·높이는
    * 이 화면 전용 로컬 값이다, `CARD_IMAGE_HEIGHT`가 예전에 그랬던 것과 같다).
    * 카드에 배경 상자를 두지 않는다 — 이미지와 글이 곧 카드다(이중 컨테이너 금지,
-   * 2026-09-08). 해시태그 · 별점 · 저장수는 서버에 없어(`VendorSummary`) 넣지 않는다.
+   * 2026-09-08). 해시태그 · 저장수는 서버에 없어 넣지 않는다. **별점은 이제 있다**
+   * (`VendorSummary.rating`, v3.28 2026-09-23 「후기 별점 UI를 되살린다」) — 이 목록
+   * 카드에 태우는 것은 이번 복원 범위(검색 업체상세 · Pick 후보카드 · MY 후기목록) 밖이라
+   * 함께 손대지 않았다. 넣을 때는 이 가로형 카드(2026-09-14, B등급 스코프)의 값을
+   * 더 옮기지 않는다는 원칙과 같이 검토한다.
    */
   function renderVendorCard(item: VendorSummary) {
     const chosen = candidates.candidateFor(item.id) !== null;

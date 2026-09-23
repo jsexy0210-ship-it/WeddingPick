@@ -390,7 +390,11 @@ export default function VendorDetailScreen() {
       : []),
   ];
 
-  /* «이용한 사람들의 경험»은 3명 미만이면 섹션째 숨긴다(SPEC §2). 별점은 그리지 않는다(§6.1). */
+  /*
+   * «이용한 사람들의 경험»은 3명 미만이면 섹션째 숨긴다(SPEC §2). 별점은 그린다 —
+   * v3.28 2026-09-23 「후기 별점 UI를 되살린다」로 §6.1의 「그리지 않는다」가 뒤집혔다.
+   * 아래 <RatingStars>가 이미 그 값을 그린다.
+   */
   const experience = vendor.usageScore;
   const showExperience = experience.available && experience.count >= EXPERIENCE_MIN_PEOPLE;
   const previewReviews = reviews.slice(0, REVIEW_PREVIEW);

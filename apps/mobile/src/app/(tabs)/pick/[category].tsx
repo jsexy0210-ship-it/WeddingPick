@@ -19,6 +19,7 @@ import {
   MaxContentWidth,
   ProductSymbol,
   Radius,
+  RatingStars,
   Skeleton,
   Spacing,
   ThemedText,
@@ -424,6 +425,10 @@ function CandidateCard({
             <ThemedText type="t7" themeColor="textAssistive" numberOfLines={1}>
               {candidate.region}
             </ThemedText>
+            {/* 정본 「평가 지표」(screen-inventory.md) — 확인된 후기가 모자라면 null이라 줄을 안 그린다. */}
+            {candidate.rating ? (
+              <RatingStars value={candidate.rating.average} count={candidate.rating.count} showValue={false} />
+            ) : null}
           </View>
         </Pressable>
 
