@@ -36,6 +36,12 @@
   16개) 하나뿐이다. **`docs/design/handoff/`·`docs/design/figma-export/`는 2026-09-22에
   파기됐고 이 저장소에 없다** — 정본으로 적지 않는다. `.dc.html`은 파일 이름만 보지 않고
   해당 WP-ID 구역을 실제로 연다.
+- 값은 손으로 읽지 않고 `scripts/canon/`으로 실행해서 뽑는다(`scripts/canon/README.md`):
+  `node scripts/canon/extract-style.mjs --file "<...dc.html>" --wp WP-XXX-000`(정본) ·
+  `node scripts/canon/extract-rn-style.mjs --file "<구현 파일>" --key <스타일 키>`(구현,
+  토큰까지 실제 숫자로 풀어서) · `node scripts/canon/resolve-tokens.mjs --token <이름>`
+  (토큰 단독 조회). 이름이 같다고 값이 같다고 가정하지 않는다 — 일치·불일치 판정은
+  도구가 안 하니 뽑은 값을 표에 사람이 채운다.
 - 코드를 고치기 전에 아래 표를 먼저 쓴다:
 
   | 항목 | 정본(.dc.html 경로+WP-ID) | 구현(파일 경로+줄) | 일치 | 조치 |
