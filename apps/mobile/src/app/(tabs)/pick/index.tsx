@@ -1,18 +1,22 @@
 /**
  * Pick — Pick한 업체 목록. WP-PICK-001.
  *
- * v3.28 정본 `docs/design/html/대메뉴_Pick.dc.html` 1번 화면대로 그린다. 헤더(«Pick») →
- * 업종 칩 → 비교 배너(2곳 이상 담으면 «N곳 담았어요 · 비교하기») → 카드 목록.
+ * v3.29 정본 `docs/design/html/대메뉴_Pick.dc.html` 1번 화면대로 그린다(screen-inventory.md는
+ * v3.29 16개 파일 기준으로 아직 없어 html을 직접 대조한다). 헤더(«Pick») → 업종 칩 →
+ * 비교 배너(2곳 이상 담으면 «N곳 담았어요 · 비교하기») → 카드 목록.
  * 카드는 검색 결과와 같은 틀(썸네일 104×116 · 정보 안쪽 14)이고 아래에 CTA 띠가 붙는다.
  *
- * **v3.28이 정한 것**(`docs/design/screen-inventory.md` Pick 대조표).
- * - Pick 탭 안에 «추천 · 내 Pick»(옛 Figma) 같은 상단 탭을 두지 않는다 — 추천 → 비교 → 결정이
- *   한 화면에서 끝난다. 준비 현황(웨딩픽 추천)은 홈에서만 들어오는 별도 화면이라
- *   `/pick?section=recommendations` 딥링크만 받아 그린다(홈의 `(home)/recommendations.tsx`가
- *   그리로 보낸다).
- * - Pick = 후보 담기. 최종 결정은 확인 시트(`/pick/confirm`) → 완료 화면(`/pick/done`)이고
- *   상담 예약은 완료 화면에서만 이어진다 — 후보 담기만으로 예약할 수 없다.
- * - 카드 CTA는 Primary 1개(«결정하기»)이고 비교는 텍스트 링크(«비교에 담기»)다.
+ * **v3.29 대조로 정한 것.**
+ * - Pick 탭 안에 «추천 · 내 Pick»(Figma 원본) 같은 상단 탭을 두지 않는다 — v3.29 diffs
+ *   «탭 구성»이 명시한다. 추천 → 비교 → 결정이 한 화면에서 끝난다. 준비 현황(웨딩픽 추천)은
+ *   홈에서만 들어오는 별도 화면이라 `/pick?section=recommendations` 딥링크만 받아 그린다
+ *   (홈의 `(home)/recommendations.tsx`가 그리로 보낸다).
+ * - Pick = 후보 담기 · 최종 결정은 별도(v3.29 diffs «Pick 의미»). 최종 결정은 확인 시트
+ *   (`/pick/confirm`) → 완료 화면(`/pick/done`)이고 상담 예약은 완료 화면에서만 이어진다 —
+ *   후보 담기만으로 예약할 수 없다(v3.29 diffs «상담 진입» · CLAUDE.md 「최종 Pick의 서버
+ *   저장 성공 뒤에만 상담 예약을 연결한다」).
+ * - 카드 CTA는 Primary 1개(«결정하기»)이고 비교는 텍스트 링크(«비교에 담기»)다(v3.29 diffs
+ *   «카드 CTA» — 화면당 Primary 1개).
  * - 삭제(WP-PICK-008)는 확인 시트 없이 «빼기»로 즉시 지우고 «되돌리기» 토스트만 띄운다.
  *
  * **정본을 그대로 옮기지 않은 것.**
@@ -125,7 +129,7 @@ export default function PickScreen() {
     rawCategory && VENDOR_CATEGORIES.includes(rawCategory as VendorCategory)
       ? (rawCategory as VendorCategory)
       : null;
-  /* 홈의 «웨딩픽 추천» 딥링크만 받는다. Pick 탭 자체에는 상단 탭이 없다(v3.28 대조표 «탭 구성»). */
+  /* 홈의 «웨딩픽 추천» 딥링크만 받는다. Pick 탭 자체에는 상단 탭이 없다(v3.29 diffs «탭 구성»). */
   const showRecommendations = requestedSection === 'recommendations';
   const theme = useTheme();
   const [me, setMe] = useState<CurrentUser | null>(null);
@@ -194,7 +198,7 @@ export default function PickScreen() {
     router.push({ pathname: '/search/compare', params: { ids: Array.from(compare).join(',') } });
   }
 
-  /** 최종 결정은 확인 시트(WP-PICK-005)가 한다 — 여기서 먼저 결정 기록을 만들지 않는다. */
+  /** 최종 결정은 확인 시트(`/pick/confirm`)가 한다 — 여기서 먼저 결정 기록을 만들지 않는다. */
   function goDecide(candidate: VendorCandidate) {
     router.push({
       pathname: '/pick/confirm',
