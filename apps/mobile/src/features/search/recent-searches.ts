@@ -1,10 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
- * 최근 검색어 저장소. 검색 홈(WP-SRCH-001)이 쓴다.
+ * 최근 검색어 저장소. 검색 결과 화면(`search/index.tsx`)의 자동완성 패널(WP-SRCH-004)이
+ * 쓴다.
  *
- * 자동완성 화면(`search/autocomplete.tsx`)과 **같은 키**를 쓴다 — 두 화면이 서로
- * 다른 목록을 들고 있으면 한쪽에서 지운 검색어가 다른 쪽에 남는다.
+ * **독립 자동완성 페이지(`search/autocomplete.tsx`)는 2026-09-23에 지웠다** — v3.29
+ * WP-SRCH-004는 자동완성을 검색 Root 화면 위에 겹쳐 그린다(자체 뒤로가기 헤더가 있는
+ * 별도 화면이 아니다). 그 화면은 실제로 아무 곳에서도 `router.push`되지 않는 죽은
+ * 라우트였고, 이 저장소를 자기만의 로컬 함수로 다시 구현해 들고 있었다(같은 키를
+ * 쓰지만 별도 구현). 검색 Root 하나만 이 저장소를 쓴다.
  */
 const STORAGE_KEY = 'weddingpick.recent_searches';
 const MAX_RECENT = 8;

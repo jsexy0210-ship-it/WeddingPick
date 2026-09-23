@@ -62,7 +62,7 @@ describe('Root 1Depth 제목 헤더', () => {
     expect(tag).toContain(weightStyle);
   });
 
-  it('검색 Root는 Back만 빼고 전달 정본의 20px 제목·결과 수·20px 여백을 유지한다', () => {
+  it('검색 Root는 Back만 빼고 20px 제목·20px 여백을 유지한다', () => {
     const text = source('search/index.tsx');
     const header = styleBlock(text, 'header');
     const titleAt = text.indexOf('{TITLE}');
@@ -71,6 +71,21 @@ describe('Root 1Depth 제목 헤더', () => {
 
     expect(header).toContain('paddingHorizontal: Layout.pageX');
     expect(tag).toContain('type="f20"');
-    expect(text).toContain('{formatCount(total)}곳');
+  });
+
+  /*
+   * v3.29 정본(`대메뉴_검색.dc.html` WP-SRCH-001) `stickyHead`: `headTop`은
+   * `headTitleRoot`(«검색») 하나뿐이고 제목 옆에 결과 수를 적지 않는다 — 결과 수는
+   * 검색창 아래 별도 `countRow`에 있다. 2026-09-23 재대조로 헤더의 중복 «N곳»
+   * 표시를 뺐다(위 시험이 예전엔 그 중복을 정본으로 잘못 알고 있었다).
+   */
+  it('검색 Root 제목 옆에는 결과 수를 적지 않는다 — 결과 수는 countRow에 있다', () => {
+    const text = source('search/index.tsx');
+    const titleAt = text.indexOf('{TITLE}');
+    const headerCloseAt = text.indexOf('</View>', titleAt);
+    const titleBlock = text.slice(titleAt, headerCloseAt);
+
+    expect(titleBlock).not.toContain('{formatCount(total)}곳');
+    expect(text).toContain('{formatCount(total)}개 업체');
   });
 });

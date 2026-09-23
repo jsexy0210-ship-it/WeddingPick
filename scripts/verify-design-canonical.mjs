@@ -112,8 +112,27 @@ if (!search.includes("const TITLE = '검색'")) fail('검색 정본 제목이 �
 const explorationRule = glossary.banned.find((entry) => entry.term === '탐색');
 if (explorationRule?.allow?.includes('업체 탐색')) fail('해제한 「업체 탐색」 예외가 카피 게이트에 남아 있음');
 
-if (!search.includes('styles.filterRow') || !search.includes("budgetBand(filters.budget)?.label ?? '가격'")) {
-  fail('검색 결과 필터 칩 줄이 정본과 다름');
+/*
+ * v3.29 재검증(2026-09-23, WP-SRCH-001)이 이 계약을 뒤집었다. 옛 계약은 결과 위에
+ * 카테고리 ▾ · 지역 ▾ · 가격 ▾ 칩 셋(`styles.filterRow` + `budgetBand(...).label`)을
+ * 요구했는데, `docs/design/html/대메뉴_검색.dc.html`의 WP-SRCH-001을
+ * `node scripts/canon/extract-style.mjs --wp WP-SRCH-001`로 실행해 뽑아 보면 그 칩
+ * 셋은 없다 — `stickyHead`에 검색창과 한 줄인 `filterBtn`(48×48) 하나뿐이고, 그
+ * 아래 `countRow`에 결과 수 + 정렬 칩(`sortChip`) 하나만 있다. 세 조건은 그 단추가
+ * 여는 필터 시트(WP-SRCH-002)에서 고른다 — CLAUDE.md 「등록 버튼은 헤더 영역에
+ * 있는 것만 쓴다」와 같은 「같은 동작을 여는 진입점은 하나만 둔다」 원칙이다.
+ * PR #514가 옛 칩 셋을 지우고 헤더 필터 단추 하나로 합쳤으므로 게이트를 그 계약에
+ * 맞춘다 — 코드가 아니라 이 게이트가 v3.28 계약에 묶여 낡아 있었다.
+ */
+if (
+  !search.includes('styles.headerFilterBtn') ||
+  !search.includes('styles.countRow') ||
+  !search.includes('styles.sortChip')
+) {
+  fail('검색 헤더 필터 단추 · 결과 수 · 정렬 칩 계약이 정본과 다름');
+}
+if (search.includes('styles.filterRow')) {
+  fail('검색 결과 위에 폐기된 카테고리·지역·가격 칩 줄이 되살아남(v3.29 WP-SRCH-001엔 없음)');
 }
 if (search.includes('<BackButton') || search.includes('<DepthHeader')) fail('검색 Root에 Back 계열 헤더가 있음');
 if (!capture.includes('<Redirect href="/capture/payment/consent?from=reports" />')) fail('없어진 제보 홈 리다이렉트가 아님');

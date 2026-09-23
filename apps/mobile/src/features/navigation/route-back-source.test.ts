@@ -42,7 +42,6 @@ describe('비-MY 사용자 라우트의 직접 History Back', () => {
     expect(actual).toEqual({
       'capture/camera.tsx': 2,
       'capture/review.tsx': 1,
-      'search/autocomplete.tsx': 1,
       'wedding/[id]/conflict.tsx': 2,
       'wedding/[id]/events/[eventId].tsx': 1,
       'wedding/[id]/expenses/[expenseId].tsx': 1,

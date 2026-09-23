@@ -2,10 +2,9 @@ import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { Switch } from 'react-native';
 import { router } from 'expo-router';
-import { listNotifications, readNotification, readAllNotifications, getCurrentUser, getSettings, setDisplayName, updateSettings, searchVendors, listVendorRegions } from '@/api/client';
+import { listNotifications, readNotification, readAllNotifications, getCurrentUser, getSettings, setDisplayName, updateSettings } from '@/api/client';
 import NotificationsScreen from '@/app/(tabs)/my/notifications';
 import ProfileScreen from '@/app/(tabs)/my/profile';
-import AutocompleteScreen from '@/app/(tabs)/search/autocomplete';
 import PriceReportScreen from '@/app/(tabs)/search/[vendorId]/price-report';
 
 jest.mock('react-native', () => Object.setPrototypeOf({ Switch: 'Switch' }, jest.requireActual('react-native')));
@@ -16,9 +15,8 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('@/api/client', () => ({
   listNotifications: jest.fn(), readNotification: jest.fn(), readAllNotifications: jest.fn(),
-  getCurrentUser: jest.fn(), getSettings: jest.fn(), setDisplayName: jest.fn(), updateSettings: jest.fn(), searchVendors: jest.fn(), listVendorRegions: jest.fn(),
+  getCurrentUser: jest.fn(), getSettings: jest.fn(), setDisplayName: jest.fn(), updateSettings: jest.fn(),
 }));
-jest.mock('@/components/back-bar', () => ({ BackBar: 'BackBar' }));
 /*
  * 세션 상태를 시험마다 바꿔 끼운다. `jest.mock`은 끌어올려지므로 이름이 `mock`으로
  * 시작해야 밖의 값을 읽을 수 있다.
@@ -223,17 +221,3 @@ it('로그아웃 상태면 넘기지 않고 로그인으로 보낸다', async ()
   }
 });
 
-it('자동완성 업체조회 실패는 검색결과 없음 대신 오류를 표시하고 재시도한다', async () => {
-  jest.useFakeTimers();
-  jest.mocked(searchVendors).mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({ vendors: [] } as never);
-  jest.mocked(listVendorRegions).mockResolvedValue({ regions: [] });
-  try {
-    await mount(<AutocompleteScreen />);
-    await act(async () => { jest.advanceTimersByTime(201); });
-    const error = tree.root.findByType('ErrorView' as never);
-    expect(error.props.title).toBe('제안을 불러오지 못했어요');
-    await act(async () => error.props.onRetry());
-    expect(searchVendors).toHaveBeenCalledTimes(2);
-    expect(tree.root.findAllByType('ErrorView' as never)).toHaveLength(0);
-  } finally { jest.useRealTimers(); }
-});

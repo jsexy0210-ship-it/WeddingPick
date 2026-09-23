@@ -139,7 +139,6 @@ export const ROUTES: readonly string[] = [
   '/search/[vendorId]/review/[reviewId]',
   '/search/[vendorId]/reviews',
   '/search/[vendorId]/write-review',
-  '/search/autocomplete',
   '/search/compare',
   '/search/expo',
   '/search/expo/[expoId]',
