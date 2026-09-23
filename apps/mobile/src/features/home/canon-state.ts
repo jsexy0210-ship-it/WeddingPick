@@ -1,10 +1,11 @@
 import type { AppBootstrapResponse, CategoryRecommendation } from '@weddingpick/api-contract';
-import type { CategoryStatus } from './state';
 
-/** docs/design/figma-export/README.md: 완료 업종은 빼고 다음 업종을 최대 네 칸까지 표시한다. */
-export function pendingPreparations(statuses: readonly CategoryStatus[]): CategoryStatus[] {
-  return statuses.filter((item) => item.state !== 'decided').slice(0, 4);
-}
+/*
+ * `pendingPreparations`(완료 업종을 빼고 최대 4칸)는 2026-09-23 v3.29 홈 재구축에서
+ * 지웠다 — 근거가 이미 파기된 `docs/design/figma-export/README.md`였고, 현재 정본
+ * (`docs/design/html/대메뉴_홈(로그인, 온보딩).dc.html`)은 항상 4칸(완료해도 안
+ * 사라짐)을 요구한다. 새 계산은 `./prep-groups.ts`의 `homePrepCards`가 맡는다.
+ */
 
 /** 0원 예산에는 비율이 없다. 초과 지출도 막대 폭은 100%를 넘기지 않는다. */
 export function budgetProgress(budget: AppBootstrapResponse['budget']): number | null {

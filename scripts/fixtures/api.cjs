@@ -503,6 +503,29 @@ const routes = {
       ],
     };
   })(),
+  /*
+   * 웨딩일정(홈 「웨딩일정」 · 웨딩노트 체크리스트) — GET /v1/weddings/:id/tasks.
+   * 날짜 셋을 **오늘 기준 상대값**으로 둔다 — 고정 과거 날짜면 홈의 `scheduleRows`가
+   * (지난 일정은 뺀다) 전부 걸러내 빈 목록만 찍힌다.
+   */
+  'GET /v1/weddings/:weddingId/tasks': (() => {
+    const today = new Date();
+    const day = (offset) => {
+      const value = new Date(today.getFullYear(), today.getMonth(), today.getDate() + offset);
+      return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+    };
+    const task = (id, label, dueDate, vendorLabel) => ({
+      id, label, dueDate, vendorId: null, vendorLabel, state: 'upcoming', stateLabel: '예정', manualState: false,
+    });
+    return {
+      tasks: [
+        task('41111111-1111-4111-8111-111111111111', '드레스 피팅', day(2), '그레이스 드레스'),
+        task('42222222-2222-4222-8222-222222222222', '스튜디오 촬영', day(10), '블루밍 스튜디오'),
+        task('43333333-3333-4333-8333-333333333333', '본식 리허설', day(24), '더채플 청담'),
+      ],
+      progress: { done: 3, total: 14 },
+    };
+  })(),
   'GET /v1/weddings/:weddingId/expenses': {
     paidTotal: 12000000,
     scheduledTotal: 0,

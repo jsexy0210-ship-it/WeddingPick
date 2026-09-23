@@ -1,11 +1,10 @@
 import type { AppBootstrapResponse } from '@weddingpick/api-contract';
-import { formatCount, manwon, type VendorCategory } from '@weddingpick/domain';
+import { manwon } from '@weddingpick/domain';
 import { Pressable, StyleSheet, View } from 'react-native';
 import {
   ActionButton,
   Border,
   CategoryIcon,
-  type CategoryIconKind,
   Layout,
   Radius,
   SeedIcon,
@@ -14,77 +13,73 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import strings from '../../../../../spec/strings.ko.json';
-import { budgetProgress, pendingPreparations } from './canon-state';
-import type { CategoryStatus } from './state';
+import { budgetProgress } from './canon-state';
+import type { HomePrepCard } from './prep-groups';
 
 const S = strings.home;
 
-/** 완료한 업종은 제외하고 다음 미완료 업종을 정본의 2×2 네 칸으로 표시한다. */
-export function PendingPreparation({
-  statuses, onOpen, onMore, onComplete,
+/**
+ * 홈 「내 웨딩 준비」 — 항상 4칸(웨딩홀 · 스드메 · 본식 · 예물 · 신혼). .dc.html
+ * WP-HOME-001~003. 옛 구현(«남은 스케줄»)은 12업종 중 미완료만 최대 4개 승격해
+ * 보여줬고, 완료해도 카드가 사라지지 않는 정본과 달랐다 — `prep-groups.ts`의
+ * `homePrepCards`가 만든 4장을 그대로 그린다.
+ */
+export function MyWeddingPrep({
+  cards, sub, onOpen, onMore,
 }: {
-  statuses: readonly CategoryStatus[];
-  onOpen: (item: CategoryStatus) => void;
+  cards: readonly HomePrepCard[];
+  sub: string;
+  onOpen: (card: HomePrepCard) => void;
   onMore: () => void;
-  onComplete: () => void;
 }) {
   const theme = useTheme();
-  const items = pendingPreparations(statuses);
-  const rows = [items.slice(0, 2), items.slice(2, 4)].filter((row) => row.length > 0);
+  const rows = [cards.slice(0, 2), cards.slice(2, 4)].filter((row) => row.length > 0);
 
   return (
     <View style={styles.section}>
-      <SummaryHeading title={S['section.pending']} onMore={onMore} />
-      {items.length === 0 ? (
-        <View style={styles.empty}>
-          <ThemedText type="f14">{S['pending.done']}</ThemedText>
-          <ActionButton variant="secondary" label={S['note.open']} onPress={onComplete} />
-        </View>
-      ) : rows.map((row) => (
-        <View key={row[0]!.category} style={styles.row}>
-          {row.map((item) => {
-            const icon = categoryIconKind(item.category);
-            const active = item.state === 'picking';
+      <SummaryHeading title={S['section.myPrep']} sub={sub} onMore={onMore} />
+      {rows.map((row) => (
+        <View key={row[0]!.key} style={styles.row}>
+          {row.map((card) => {
+            const contracted = card.state === 'contracted';
+            const picking = card.state === 'picking';
             return (
               <Pressable
-                key={item.category}
+                key={card.key}
                 accessibilityRole="button"
-                accessibilityLabel={item.label}
-                onPress={() => onOpen(item)}
+                accessibilityLabel={card.label}
+                onPress={() => onOpen(card)}
                 style={({ pressed }) => [
                   styles.card,
                   {
-                    backgroundColor: active ? theme.tintSurface : theme.backgroundElement,
-                    borderColor: active ? theme.tintBorder : theme.border,
+                    backgroundColor: contracted || picking ? theme.tintSurface : theme.backgroundElement,
+                    borderColor: contracted ? theme.tint : picking ? theme.tintBorder : theme.border,
+                    borderWidth: contracted ? Border.selected : Border.hairline,
                   },
                   pressed && styles.pressed,
                 ]}>
                 <View style={styles.cardTop}>
-                  {icon ? (
-                    <CategoryIcon
-                      kind={icon}
-                      size={Layout.iconRow}
-                      color={active ? theme.tint : theme.textAssistive}
-                    />
-                  ) : (
-                    <View style={styles.categoryIconSpacer} />
-                  )}
-                  {active ? (
+                  <CategoryIcon
+                    kind={card.icon}
+                    size={Layout.iconRow}
+                    color={contracted || picking ? theme.tint : theme.textAssistive}
+                  />
+                  {contracted ? (
+                    <SeedIcon name="checkFlowerFill" size={Layout.iconField} color={theme.tint} />
+                  ) : picking ? (
                     <SeedIcon name="clockRegular" size={Layout.iconField} color={theme.tint} />
                   ) : (
                     <View style={[styles.todoMark, { borderColor: theme.track }]} />
                   )}
                 </View>
                 <ThemedText type="f14" style={styles.bold} numberOfLines={1}>
-                  {item.label}
+                  {card.label}
                 </ThemedText>
                 <ThemedText
                   type="f12"
-                  themeColor={active ? 'tint' : 'textAssistive'}
+                  themeColor={contracted || picking ? 'tint' : 'textAssistive'}
                   numberOfLines={1}>
-                  {item.pickCount > 0
-                    ? S['pending.count'].replace('{n}', formatCount(item.pickCount))
-                    : S['pending.before']}
+                  {card.detail}
                 </ThemedText>
               </Pressable>
             );
@@ -105,7 +100,7 @@ export function HomeBudget({ budget, onOpen }: {
 
   return (
     <View style={styles.section}>
-      <SummaryHeading title={S['section.budget']} onMore={onOpen} />
+      <SummaryHeading title={S['section.budget']} sub={null} onMore={onOpen} />
       {budget === null || progress === null ? (
         <View style={styles.empty}>
           <ThemedText type="f13" themeColor="textAssistive">{S['budget.empty']}</ThemedText>
@@ -145,11 +140,20 @@ export function HomeBudget({ budget, onOpen }: {
   );
 }
 
-function SummaryHeading({ title, onMore }: { title: string; onMore: () => void }) {
+/**
+ * 섹션 제목 줄 — .dc.html `secHeadPad`/`secHead`(타이틀 14/20/700 + 서브 12/17/뮤트,
+ * 우측 「자세히」). `sub`가 null이면(예산현황) 서브카피 없이 제목만 쓴다.
+ */
+function SummaryHeading({ title, sub, onMore }: { title: string; sub: string | null; onMore: () => void }) {
   const theme = useTheme();
   return (
     <View style={styles.heading}>
-      <ThemedText type="f20" style={styles.bold}>{title}</ThemedText>
+      <View style={styles.headingCol}>
+        <ThemedText type="f14" style={styles.bold}>{title}</ThemedText>
+        {sub === null ? null : (
+          <ThemedText type="f12" themeColor="textAssistive">{sub}</ThemedText>
+        )}
+      </View>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${title} ${S.more}`}
@@ -161,24 +165,6 @@ function SummaryHeading({ title, onMore }: { title: string; onMore: () => void }
       </Pressable>
     </View>
   );
-}
-
-function categoryIconKind(category: VendorCategory): CategoryIconKind | null {
-  switch (category) {
-    case 'wedding_info_company': return 'agency';
-    case 'hall': return 'hall';
-    case 'studio': return 'studio';
-    case 'dress': return 'dress';
-    case 'makeup': return 'makeup';
-    case 'hair': return 'hair';
-    case 'snap': return 'snap';
-    case 'bouquet': return 'bouquet';
-    case 'goods': return 'ring';
-    case 'dowry': return 'dowry';
-    case 'honeymoon': return 'honeymoon';
-    case 'invitation': return 'invitation';
-    case 'etc': return null;
-  }
 }
 
 const styles = StyleSheet.create({
@@ -195,6 +181,7 @@ const styles = StyleSheet.create({
     marginBottom: Layout.sectionHeadGap - Layout.gap2col,
   },
   more: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  headingCol: { flex: 1, minWidth: 0, gap: Spacing.half },
   row: { flexDirection: 'row', gap: Layout.gap2col },
   card: {
     flex: 1,
@@ -212,7 +199,6 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
     marginBottom: Spacing.one,
   },
-  categoryIconSpacer: { width: Layout.iconRow, height: Layout.iconRow },
   todoMark: {
     width: Layout.iconField,
     height: Layout.iconField,

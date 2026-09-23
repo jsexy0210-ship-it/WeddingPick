@@ -11,7 +11,7 @@ const S = {
   adRules: '광고 독립성',
   noEffect: '영향 없음',
   noteTitle: '광고와 추천은 따로 운영해요',
-  noteBody: 'TOP3 · 웨딩픽 추천 · 검색 순위 · 후기 · 실 제보는 광고와 완전히 분리돼 있어요.',
+  noteBody: '검색 순위 · 후기 · 실 제보는 광고와 완전히 분리돼 있어요.',
 } as const;
 
 type BizItem = { name: string; meta: string; route: string };
@@ -28,8 +28,13 @@ const KINDS: readonly BizItem[] = [
   { name: '후기 · 정보 반론', meta: '올라온 후기나 내용에 대한 업체 입장', route: '/my/rebuttals' },
 ];
 
-/** 광고가 손대지 못하는 것. 08c adRules. */
-const AD_RULES = ['TOP3 추천', '웨딩픽 추천', '검색 순위', '후기 · 실 제보'] as const;
+/**
+ * 광고가 손대지 못하는 것. 08c adRules.
+ *
+ * v3.29(2026-09-23)에서 「TOP3」 · 「웨딩픽 추천」을 뺐다 — 그 이름의 화면과
+ * API(`/v1/recommendations/top3`)를 지웠다. 남는 것은 실제로 아직 도는 둘이다.
+ */
+const AD_RULES = ['검색 순위', '후기 · 실 제보'] as const;
 
 /**
  * 업체 · 플래너 문의 · WP-BIZ-001. 유형을 고르고 들어간다. 광고 독립성 표를 첫 화면에 둔다 —
