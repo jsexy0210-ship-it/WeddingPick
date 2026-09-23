@@ -66,7 +66,7 @@ type Tab = 'calendar' | 'consult' | 'budget';
 
 /* 문구 — spec/strings.ko.json `ourWedding`. 피그마 `OurWedding.tsx`에서 왔다. */
 const TABS: readonly { key: Tab; label: string }[] = [
-  { key: 'calendar', label: '캘린더' },
+  { key: 'calendar', label: '웨딩일정' },
   { key: 'consult', label: '상담기록' },
   { key: 'budget', label: '예산현황' },
 ];
@@ -82,6 +82,8 @@ const UNPAID = '미집행';
 const CONSULT_EMPTY_TITLE = '녹음 파일을 올려주세요';
 const CONSULT_EMPTY_BODY = '휴대폰 녹음앱에서 저장한 파일이면 돼요';
 const CONSULT_SAVED = '저장됨';
+/* v3.28 웨딩노트 대조표 — 예산현황 패널 하단에서 지출 목록으로 잇는다. `ourWedding.budget.viewExpenses`. */
+const EXPENSE_LINK = '지출내역';
 const CONSULT_PENDING = '확인 필요';
 /* 헤더 우측 «추가» 텍스트 — v3.28 `대메뉴_웨딩노트.dc.html` headAdd «일정 추가 · 상담 추가 · 예산 추가». 우하단 FAB는 없다. */
 const ADD_LABEL: Record<Tab, string> = { calendar: '일정 추가', budget: '예산 추가', consult: '상담 추가' };
@@ -328,6 +330,7 @@ export default function WeddingScreen({
               error={expensesError}
               onEditBudget={openBudgetEditor}
               onRetry={retryExpenses}
+              onOpenExpenses={() => (weddingId ? router.push(`/wedding/${weddingId}/expenses/list` as never) : null)}
             />
           ) : (
             <ConsultPanel
@@ -578,11 +581,13 @@ function BudgetPanel({
   error,
   onEditBudget,
   onRetry,
+  onOpenExpenses,
 }: {
   expenses: ExpenseSummaryResponse | null;
   error: boolean;
   onEditBudget: () => void;
   onRetry: () => void;
+  onOpenExpenses: () => void;
 }) {
   const theme = useTheme();
 
@@ -688,6 +693,21 @@ function BudgetPanel({
           );
         })}
       </View>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={EXPENSE_LINK}
+        onPress={onOpenExpenses}
+        style={({ pressed }) => [
+          styles.expenseLink,
+          { borderTopColor: theme.border },
+          pressed ? styles.pressed : null,
+        ]}>
+        <ThemedText type="f14" style={[styles.bold, styles.grow]}>
+          {EXPENSE_LINK}
+        </ThemedText>
+        <ProductSymbol name="chevronRight" size={Layout.iconInline} color={theme.textAssistive} />
+      </Pressable>
 
       <View style={[styles.proofInvite, { borderTopColor: theme.border }]}>
         <View style={styles.grow}>
@@ -997,6 +1017,14 @@ const styles = StyleSheet.create({
   barFill: { height: '100%', borderRadius: Radius.pill },
   /* `mt-1.5 flex justify-between`. */
   bucketFoot: { marginTop: Layout.menuGroupGap, flexDirection: 'row', justifyContent: 'space-between' },
+  expenseLink: {
+    marginTop: Layout.listGap,
+    paddingTop: Layout.listGap,
+    borderTopWidth: Border.hairline,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Layout.inlineGap,
+  },
   proofInvite: {
     marginTop: Layout.listGap,
     paddingTop: Layout.listGap,
