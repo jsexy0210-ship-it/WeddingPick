@@ -23,6 +23,7 @@ jest.mock('./wedding-draft', () => ({
   saveOnboardingAnswers: jest.fn(), saveWeddingDraft: jest.fn(),
 }));
 jest.mock('@/features/loading/delayed-loader', () => ({ DelayedRecommendingView: 'Loading' }));
+jest.mock('./budget-amount', () => ({ BudgetAmount: 'BudgetAmount' }));
 jest.mock('./date-picker-sheet', () => ({ DatePickerSheet: 'DatePickerSheet' }));
 jest.mock('./inline-toast', () => ({ InlineToast: 'InlineToast', useInlineToast: () => ({ toast: null, show: jest.fn(), hide: jest.fn() }) }));
 jest.mock('./option-row', () => ({ OptionRow: 'OptionRow' }));
@@ -42,7 +43,8 @@ jest.mock('@weddingpick/ui', () => ({
 }));
 
 const answers: Answers = {
-  date: { value: null }, region: { region: null, district: null }, style: ['URBAN'],
+  date: { value: null }, region: { region: null, district: null },
+  prep: { categories: [] }, budget: { amount: null }, style: ['URBAN'],
 };
 const pendingSignup = { activated: false } as Awaited<ReturnType<typeof getSignupState>>;
 const activeSignup = { activated: true } as Awaited<ReturnType<typeof getSignupState>>;

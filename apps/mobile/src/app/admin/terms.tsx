@@ -73,6 +73,14 @@ const DOC_LABEL: Record<DocType, string> = {
   marketing: '마케팅 정보 수신 동의',
 };
 
+/** 시안(WP-ADM-036)의 버전 상태 셋. 초안은 아직 공개 전, 공개 중은 지금 사용자가 보는 판이다. */
+type VersionState = '공개 중' | '초안' | '지난 버전';
+
+function versionState(v: TermsVersion, currentVersion: string): VersionState {
+  if (v.isDraft) return '초안';
+  return v.version === currentVersion ? '공개 중' : '지난 버전';
+}
+
 export function TermsPanel() {
   const [data, setData] = useState<TermsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -385,7 +393,8 @@ export function TermsPanel() {
                 <Text style={styles.actionError}>{actionError}</Text>
               )}
 
-              <ScrollView>
+              <View style={styles.docSplit}>
+              <ScrollView style={styles.clauseScroll}>
                 {/*
                   빈 상태가 정상 상태다(v3.27). 마케팅 동의는 저장소에 본문이 한 번도
                   없었다 — 「고장 났다」가 아니라 「아직 안 쓰셨다」이고, 다음에 무엇을
@@ -435,6 +444,43 @@ export function TermsPanel() {
                   </View>
                 ))}
               </ScrollView>
+
+              {/*
+                버전 이력. 서버가 `versions`를 내려주는데 화면이 버리고 있었다 —
+                v3.28 시안(WP-ADM-036)은 이 자리를 오른쪽 기둥으로 그린다.
+                상태 셋은 시안 그대로 «공개 중 · 초안 · 지난 버전»이고, 색은
+                SEED 토큰이 시안 값과 같다(positive #1aa174 · cautionary #805217).
+              */}
+              <View style={styles.versionAside}>
+                <Text style={styles.versionAsideLabel}>버전 이력</Text>
+                <ScrollView>
+                  {activeDocData.versions.map((v) => {
+                    const state = versionState(v, activeDocData.currentVersion);
+                    return (
+                      <View key={`${v.version}-${v.publishedAt ?? 'draft'}`} style={styles.versionRow}>
+                        <View style={[styles.versionDot, VERSION_DOT[state]]} />
+                        <View style={styles.versionRowMain}>
+                          <Text style={[styles.versionRowTitle, state === '지난 버전' && styles.versionRowTitleMuted]}>
+                            {v.version}
+                          </Text>
+                          <Text style={styles.versionRowWhen}>
+                            {v.publishedAt ? formatDateDot(v.publishedAt) : '공개 전'}
+                            {v.effectiveOn ? ` · 시행 ${formatDateDot(v.effectiveOn)}` : ''}
+                          </Text>
+                        </View>
+                        <Text style={[styles.versionBadge, VERSION_BADGE[state]]}>{state}</Text>
+                      </View>
+                    );
+                  })}
+                  {activeDocData.versions.length === 0 && (
+                    <Text style={styles.versionEmpty}>아직 만들어진 판이 없어요.</Text>
+                  )}
+                </ScrollView>
+                <Text style={styles.versionAsideNote}>
+                  공개된 버전은 수정하지 않고 새 버전으로 올려요. 이전 버전은 사용자도 볼 수 있게 남겨둬요.
+                </Text>
+              </View>
+              </View>{/* docSplit — 조문 목록 + 버전 이력 */}
             </View>
           )}
         </View>
@@ -745,7 +791,55 @@ const styles = StyleSheet.create({
   saveBtn: { flex: 1, paddingVertical: 10, borderRadius: 6, alignItems: 'center', backgroundColor: Colors.light.tint },
   saveBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   btnDisabled: { opacity: 0.5 },
+  docSplit: { flex: 1, flexDirection: 'row' },
+  clauseScroll: { flex: 1 },
+  versionAside: {
+    width: 380,
+    flexShrink: 0,
+    padding: 28,
+    borderLeftWidth: 1,
+    borderLeftColor: Colors.light.border,
+    backgroundColor: Colors.light.background,
+  },
+  versionAsideLabel: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.textSecondary, marginBottom: 6 },
+  versionRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    minHeight: 56,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.border,
+  },
+  versionDot: { width: 8, height: 8, borderRadius: 4, marginTop: 8, flexShrink: 0 },
+  versionRowMain: { flex: 1, minWidth: 0, gap: 2 },
+  versionRowTitle: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.text },
+  versionRowTitleMuted: { color: Colors.light.textAssistive },
+  versionRowWhen: { fontSize: FontSize.tab, color: Colors.light.textAssistive },
+  versionBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+    fontSize: FontSize.tab,
+    fontWeight: '700',
+    overflow: 'hidden',
+  },
+  versionEmpty: { fontSize: FontSize.tab, color: Colors.light.textAssistive, paddingVertical: 12 },
+  versionAsideNote: { fontSize: FontSize.tab, color: Colors.light.textAssistive, marginTop: 10, lineHeight: LineHeight.t7Loose },
 });
+
+/** 시안의 점·배지 색. SEED 토큰이 시안 hex와 같은 값이라 토큰으로 적는다. */
+const VERSION_DOT: Record<VersionState, { backgroundColor: string }> = {
+  '공개 중': { backgroundColor: Colors.light.positive },
+  '초안': { backgroundColor: Colors.light.cautionary },
+  '지난 버전': { backgroundColor: Colors.light.fieldBorder },
+};
+
+const VERSION_BADGE: Record<VersionState, { backgroundColor: string; color: string }> = {
+  '공개 중': { backgroundColor: Colors.light.positiveBackground, color: Colors.light.positive },
+  '초안': { backgroundColor: Colors.light.cautionaryBackground, color: Colors.light.cautionary },
+  '지난 버전': { backgroundColor: Colors.light.backgroundSelected, color: Colors.light.textAssistive },
+};
 
 /**
  * 옛 주소는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은 `/admin/faq`(사이트·기록)의 약관·방침 탭에 있다 —

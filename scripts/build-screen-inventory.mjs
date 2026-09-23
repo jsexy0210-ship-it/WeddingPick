@@ -29,8 +29,13 @@ const FILES = [
   ['legal', '웨딩픽 약관 방침.dc.html', '약관 방침(관리자 편집 도구)'],
 ];
 
+/*
+ * 화면 태그는 두 벌이다 — 검색·Pick 파일의 업체상세 화면군은 `{{ vtag }}`/`{{ vtagId }}`/
+ * `{{ vtagDesc }}`를 쓴다. `tag`만 찾던 동안 검색 파일의 화면 8개(WP-VEND-001~008)가
+ * 인벤토리에서 통째로 빠져 있었다 — README가 적은 「14개」와 목록의 4개가 그래서 어긋났다.
+ */
 const TAG_RE =
-  /<div style="\{\{ tag \}\}"><span style="\{\{ tagId \}\}">([^<]*)<\/span>(?:<span style="\{\{ tagText \}\}">([^<]*)<\/span>|([^<]*))<\/div>\s*(?:<span style="\{\{ tagDesc \}\}">([^<]*)<\/span>)?/g;
+  /<div style="\{\{ v?tag \}\}"><span style="\{\{ v?tagId \}\}">([^<]*)<\/span>(?:<span style="\{\{ v?tagText \}\}">([^<]*)<\/span>|([^<]*))<\/div>\s*(?:<span style="\{\{ v?tagDesc \}\}">([^<]*)<\/span>)?/g;
 const SECTION_RE =
   /padding:16px 0 0;font-size:22px;line-height:30px;font-weight:700;color:#212124">([^<]*)<\/div>/g;
 
@@ -71,11 +76,37 @@ function extractScreens(src) {
   return out;
 }
 
+/**
+ * **표마다 열 순서가 다르다 — 머리글을 읽어서 정한다.**
+ *
+ * 다섯 파일은 「항목 · Figma 원본 · 정본 · 근거」 순인데, 검색 파일의 둘째 표
+ * (`diffHead`, 화면 14 「검색 · 정본과 다른 점」)만 「항목 · **정본** · **Figma** · 판단」으로
+ * 뒤집혀 있다. 함수 이름(`diff`/`vdiff`)으로는 구분되지 않는다 — 같은 `diff()`가 홈 파일에선
+ * Figma 먼저고 검색 파일에선 정본 먼저다.
+ *
+ * 그 표를 다른 표와 같은 순서로 읽던 동안 검색 13건이 정본과 Figma를 맞바꾼 채 실려 있었다 —
+ * 「제목: 정본=업체 탐색」처럼 금지어가 정본으로 뒤집히고, 「스타일: 정본=미니멀·클래식」처럼
+ * `WeddingStyle` 네 값과 어긋났다. 답안지가 답을 반대로 적고 있었다.
+ */
+const HEAD_RE = /<div style="\{\{ (v?)diffHead \}\}">([\s\S]*?)<\/div>/g;
+
+/** 파일 안 두 표의 열 순서. `true`면 둘째 인자가 Figma 값이다(기본값). */
+function figmaFirstByTable(src) {
+  const out = { vdiff: true, diff: true };
+  for (const m of src.matchAll(HEAD_RE)) {
+    const labels = [...m[2].matchAll(/\{\{ \w+ \}\}">([^<]*)<\/span>/g)].map((h) => h[1].trim());
+    out[m[1] === 'v' ? 'vdiff' : 'diff'] = (labels[1] ?? '').startsWith('Figma');
+  }
+  return out;
+}
+
 function extractDiffs(src) {
+  const figmaFirst = figmaFirstByTable(src);
   const out = [];
   for (const m of src.matchAll(CALL_RE)) {
     const [, fn, k, a, b, why, kind] = m;
-    out.push({ fn, item: unescape(k), figma: unescape(a), canon: unescape(b), reason: unescape(why), kind });
+    const [figma, canon] = figmaFirst[fn] ? [a, b] : [b, a];
+    out.push({ fn, item: unescape(k), figma: unescape(figma), canon: unescape(canon), reason: unescape(why), kind });
   }
   return out;
 }
@@ -88,6 +119,8 @@ lines.push('파싱했다 — 사람이 옮겨 적은 것이 아니다.\n');
 lines.push('**`.dc.html`은 이 환경에서 렌더되지 않는다.** `_ds/`(SEED 번들)와 `support.js`가 v3.28 전달 ZIP에');
 lines.push('없어서(용량 이유, `docs/design/README.md`) 브라우저로 열어도 빈 틀만 보인다. 이 문서는 그 대신');
 lines.push('소스 안의 태그·설명·대조표 텍스트를 그대로 옮긴 것이다.\n');
+lines.push('**열 순서는 파일마다 다른 것을 맞춰 실었다.** 검색 파일의 둘째 표만 소스에서');
+lines.push('「항목 · 정본 · Figma · 판단」 순으로 뒤집혀 있어, 여기서는 다른 표와 같은 순서로 돌려놓았다.\n');
 lines.push('| 표시 | 뜻 |');
 lines.push('| --- | --- |');
 lines.push('| (표시 없음) | 이미 v3.28 시안에 반영됨 — 구현이 이 값을 따라야 한다 |');

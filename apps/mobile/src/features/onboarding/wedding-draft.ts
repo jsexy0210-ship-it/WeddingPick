@@ -11,7 +11,7 @@ import {
   type WeddingStyle,
 } from '@weddingpick/domain';
 
-import type { Answers } from './flow';
+import type { Answers, PreparedCategory } from './flow';
 
 const STORAGE_KEY = 'weddingpick.weddingDraft.v1';
 const ANSWERS_KEY = 'weddingpick.onboardingAnswers.v1';
@@ -137,13 +137,15 @@ export async function loadOnboardingAnswers(): Promise<Answers | null> {
     const value = parsed as Partial<Record<keyof Answers, unknown>>;
 
     /*
-     * 3단계로 줄기 전에 적어 둔 초안에는 `prep` · `budget`이 남아 있다. 읽지 않고
-     * 버린다 — 없는 칸을 지어내지 않는 것과 같은 이유로, 더 이상 묻지 않는 칸도
-     * 되살리지 않는다.
+     * 3단계이던 동안(2026-09-14 ~ 09-22) 적어 둔 초안에는 `prep` · `budget`이 없다.
+     * 없는 칸은 null — «아직 답하지 않음»이라 다시 열면 그 질문부터 묻는다.
+     * 옛 5단계(v3.22)의 `budget`은 구간 문자열이라 모양이 다르다 — 읽지 않고 버린다.
      */
     return {
       date: readDateAnswer(value.date),
       region: readRegionAnswer(value.region),
+      prep: readPrepAnswer(value.prep),
+      budget: readBudgetAnswer(value.budget),
       style: readStyleTags(value.style) ?? null,
     };
   } catch {
@@ -161,10 +163,10 @@ function readBracket(value: unknown): WeddingBudgetBracket | null {
     : null;
 }
 
-function readCategories(value: unknown): VendorCategory[] | undefined {
+function readCategories(value: unknown): PreparedCategory[] | undefined {
   if (!Array.isArray(value)) return undefined;
 
-  return value.filter((item): item is VendorCategory => PREPARATION_CATEGORIES.includes(item as VendorCategory));
+  return value.filter((item): item is PreparedCategory => PREPARATION_CATEGORIES.includes(item as VendorCategory));
 }
 
 /**
@@ -190,6 +192,27 @@ function readDateAnswer(value: unknown): Answers['date'] {
 
   if (inner === null) return { value: null };
   if (typeof inner === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(inner)) return { value: inner };
+
+  return null;
+}
+
+/** `{ categories: [...] }`만 읽는다. 준비 순서 밖의 업종은 걷어낸다. */
+function readPrepAnswer(value: unknown): Answers['prep'] {
+  if (value === null || typeof value !== 'object') return null;
+
+  const categories = readCategories((value as { categories?: unknown }).categories);
+
+  return categories === undefined ? null : { categories };
+}
+
+/** `{ amount: 만원 | null }`만 읽는다. 0 이하 · 정수가 아닌 값은 적지 않은 것으로 본다. */
+function readBudgetAnswer(value: unknown): Answers['budget'] {
+  if (value === null || typeof value !== 'object') return null;
+
+  const amount = (value as { amount?: unknown }).amount;
+
+  if (amount === null) return { amount: null };
+  if (typeof amount === 'number' && Number.isInteger(amount) && amount > 0) return { amount };
 
   return null;
 }

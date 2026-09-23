@@ -30,7 +30,11 @@ import VendorDetailScreen from './index';
 
 const TITLE = '상담 예약';
 const HEADLINE = '우리에게 편한 시간으로\n상담을 예약해요.';
-const TIMES = ['오전 10:00', '오전 11:30', '오후 1:00', '오후 2:00', '오후 3:30', '오후 5:00'] as const;
+/*
+ * 시간은 «숫자 대신 말로» 적는다 — 시안 WP-PICK-009 `times`가 그대로 이 여섯이다.
+ * 「오전 10:00」 꼴은 Figma 원본이고 정본 대조표가 「오전 10시」로 바꿔 적었다.
+ */
+const TIMES = ['오전 10시', '오전 11시 반', '오후 1시', '오후 2시', '오후 3시 반', '오후 5시'] as const;
 const NOTE_PLACEHOLDER = '원하는 스타일, 특별한 요청이 있으면 남겨주세요.';
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
 const DAY_COUNT = 7;
@@ -45,11 +49,13 @@ function upcomingDays(from: Date): DayOption[] {
   });
 }
 
+/** 「오전 11시 반」처럼 말로 적은 라벨을 24시간 시각으로 읽는다. 「반」은 30분이다. */
 function parseTime(label: string): { hour: number; minute: number } {
-  const [meridiem, clock] = label.split(' ');
-  const [rawHour, rawMinute] = clock.split(':').map(Number);
+  const [meridiem, ...rest] = label.split(' ');
+  const rawHour = Number(rest[0].replace('시', ''));
+  const minute = rest.includes('반') ? 30 : 0;
   const hour = meridiem === '오후' && rawHour !== 12 ? rawHour + 12 : rawHour;
-  return { hour, minute: rawMinute };
+  return { hour, minute };
 }
 
 /**
@@ -375,8 +381,9 @@ export default function ConsultRoute() {
                     size={Layout.iconField}
                     color={theme.text}
                   />
+                  {/* 탭 이름과 맞춘다 — 「커플 캘린더」는 Figma 원본이다(정본 대조표 「공유 안내」). */}
                   <ThemedText type="f14" style={styles.bold}>
-                    커플 캘린더에 자동으로 공유돼요
+                    웨딩노트에 같이 올라가요
                   </ThemedText>
                 </View>
                 <ThemedText type="f12" themeColor="textAssistive" style={styles.syncBody}>
@@ -401,7 +408,7 @@ export default function ConsultRoute() {
                 <>
                   <SeedIcon name="checkFlowerFill" size={Layout.iconField} color={theme.onTint} />
                   <ThemedText type="f14" themeColor="onTint" style={styles.bold}>
-                    {chosen.date.getMonth() + 1}월 {chosen.day}일 · {selectedTime} 일정 등록하기
+                    {chosen.date.getMonth() + 1}월 {chosen.day}일 {selectedTime}로 잡기
                   </ThemedText>
                 </>
               ) : (

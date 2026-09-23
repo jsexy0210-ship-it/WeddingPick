@@ -40,9 +40,10 @@ const R = strings.review;
 
 type Tab = 'review' | 'feed' | 'expo';
 const TABS: { value: Tab; label: string }[] = [
-  { value: 'review', label: '후기' },
-  { value: 'feed', label: '웨딩피드' },
-  { value: 'expo', label: '박람회' },
+  { value: 'review', label: S['tab.review'] },
+  /* 시안 9 «웨딩정보» — 「웨딩피드」는 관리자·서버 쪽 이름이고 사용자 화면에는 쓰지 않는다. */
+  { value: 'feed', label: S['tab.feed'] },
+  { value: 'expo', label: S['tab.expo'] },
 ];
 const CATEGORIES = ['전체', '웨딩홀', '드레스', '스튜디오', '메이크업', '예산', '허니문'] as const;
 type CategoryLabel = (typeof CATEGORIES)[number];
@@ -50,7 +51,7 @@ type Loaded<T> = { status: 'loading' } | { status: 'error' } | { status: 'ready'
 type LoungeReview = LoungeReviewListResponse['reviews'][number];
 
 /**
- * 라운지 — docs/design/figma-export/07-lounge-my.dc.html 1~3.
+ * 라운지 — docs/design/html/대메뉴_MY.dc.html 8 · 9 · 10(리얼후기 · 웨딩정보 · 박람회).
  *
  * Root 탭이 아니다. 홈/MY에서 들어오는 하위 화면이고, 헤더 Back은 진입한 화면으로 돌아간다.
  * 후기에는 별점/평점 숫자를 노출하지 않는다. 서버의 과거 후기 계약에 정본 3축 값이
@@ -68,7 +69,10 @@ export default function CommunityScreen() {
   const requestedTab = Array.isArray(params.tab) ? params.tab[0] : params.tab;
   const write = Array.isArray(params.write) ? params.write[0] : params.write;
   const writeVendorId = Array.isArray(params.vendorId) ? params.vendorId[0] : params.vendorId;
-  const [tab, setTab] = useState<Tab>(requestedTab === 'feed' ? 'feed' : 'review');
+  /* MY 「라운지」 세 줄이 각각 자기 탭으로 들어온다(시안 1 `mySections`). */
+  const [tab, setTab] = useState<Tab>(
+    requestedTab === 'feed' || requestedTab === 'expo' ? requestedTab : 'review'
+  );
   const [category, setCategory] = useState<CategoryLabel>('전체');
   const [reviews, setReviews] = useState<Loaded<LoungeReviewListResponse>>({ status: 'loading' });
   const [reviewMoreLoading, setReviewMoreLoading] = useState(false);
