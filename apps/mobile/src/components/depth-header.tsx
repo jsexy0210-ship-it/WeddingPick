@@ -22,10 +22,13 @@ export function DepthHeader({
   return (
     <View style={styles.bar}>
       <BackButton onPress={onBack} variant={variant} />
-      <ThemedText type="t5" numberOfLines={1} style={styles.title}>
+      <ThemedText
+        type="t5"
+        numberOfLines={1}
+        style={[styles.title, variant === 'close' ? styles.titleCentered : null]}>
         {resolvedTitle}
       </ThemedText>
-      {right ?? null}
+      {right ?? (variant === 'close' ? <View style={styles.pad} /> : null)}
     </View>
   );
 }
@@ -70,4 +73,10 @@ const styles = StyleSheet.create({
     gap: Layout.navGap,
   },
   title: { flex: 1, minWidth: 0 },
+  /*
+   * v3.28 풀팝업 — 좌측 X 닫기 + 중앙 타이틀. 오른쪽 액션이 없으면 닫기 단추와 같은
+   * 폭의 빈 칸을 두어 제목이 화면 가운데 앉는다. `back` 헤더는 그대로다.
+   */
+  titleCentered: { textAlign: 'center' },
+  pad: { width: Layout.iconButton },
 });
