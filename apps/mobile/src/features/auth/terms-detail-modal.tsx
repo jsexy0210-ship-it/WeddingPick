@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ActionButton, Layout, MaxContentWidth, ProductSymbol, Radius, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+import { ActionButton, Layout, LineHeight, MaxContentWidth, ProductSymbol, Radius, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
 
 /**
  * 약관 상세 — WP-AUTH-011. 공통 풀팝업.
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   head: { gap: 6 },
   article: { gap: 6 },
   articleTitle: { fontWeight: 700 },
-  articleBody: { lineHeight: 22 },
+  articleBody: { lineHeight: LineHeight.lh22 },
   dock: { paddingHorizontal: Layout.gutter, paddingTop: 12, borderTopWidth: 1 },
   pressed: { opacity: 0.8 },
 });

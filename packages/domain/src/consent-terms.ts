@@ -67,7 +67,7 @@ export type AppPermissionItem = { key: 'notification' | 'camera' | 'photo' | 'mi
 
 export const APP_PERMISSION_ITEMS: readonly AppPermissionItem[] = [
   { key: 'notification', name: '알림', desc: '웨딩 일정 · Pick 인증 결과 · 상담 소식을 알려드려요' },
-  { key: 'camera', name: '카메라', desc: '계약서 · 영수증을 촬영해 Pick 인증할 때 사용해요' },
+  { key: 'camera', name: '카메라', desc: '금액이 보이는 사진을 촬영해 Pick 인증할 때 사용해요' },
   { key: 'photo', name: '사진', desc: '리얼후기 · Pick 인증에 사진을 첨부할 때 사용해요' },
   { key: 'mic', name: '마이크', desc: '상담 내용을 녹음해 상담기록으로 남길 때 사용해요' },
 ];
@@ -170,7 +170,7 @@ export const TERM_DOCUMENTS: readonly TermDocument[] = [
     articles: [
       {
         title: '수집 항목',
-        body: '회원이 올린 계약서 · 영수증 · 결제 화면 사진, 업체명, 계약 금액, 계약일, 포함 항목.',
+        body: '회원이 올린 영수증 등 금액이 보이는 사진, 업체명, 제보 금액, 제보일, 포함 항목.',
       },
       {
         title: '이용 목적',
