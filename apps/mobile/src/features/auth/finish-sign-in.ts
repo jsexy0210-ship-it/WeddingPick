@@ -22,7 +22,7 @@ export async function finishSignIn(identity: Identity, entry?: SessionEntry) {
   if (entry) {
     const next = await entryAfterSignIn(entry);
 
-    void rememberSignedIn(identity, next === '/setup');
+    void rememberSignedIn(identity, next === '/login/consent');
     dismissToOrReplace(next);
 
     return;
@@ -40,12 +40,12 @@ export async function finishSignIn(identity: Identity, entry?: SessionEntry) {
       weddingDate: null,
     });
     /*
-     * 별도의 «가입 마무리» 화면은 없다. 만 14세 확인은 로그인 화면의 체크박스로
-     * 이미 끝났고(v3.13 §3.5), 동의는 그 화면 CTA에 붙은 안내(«시작하면
-     * 이용약관과 개인정보처리방침에 동의하게 돼요»)로 받는다. 온보딩(`/setup`)이
-     * 둘 다 서버에 올린다.
+     * v3.29 — 약관 동의 · 권한 안내(WP-AUTH-010, `app/login/consent.tsx`)가 별도
+     * 화면으로 생겼다(CHANGELOG v3.29 「약관 동의 · 권한 안내 한 화면 통합」). 만
+     * 14세 확인은 로그인(카카오)이 이미 끝냈고(v3.13 §3.5), 그 화면이 필수 5 ·
+     * 선택 3 동의를 받아 가입을 활성화한 뒤 초기 설정(`/setup`)으로 넘긴다.
      */
-    dismissToOrReplace('/setup');
+    dismissToOrReplace('/login/consent');
 
     return;
   }
@@ -75,7 +75,7 @@ export async function finishSignIn(identity: Identity, entry?: SessionEntry) {
  * (`completeAfterSignIn`, 서버에 다시 묻지 않는다 — 기기 저장소만 읽는다).
  */
 export async function entryAfterSignIn(entry: SessionEntry): Promise<PostSignInRoute> {
-  if (!entry.activated) return '/setup';
+  if (!entry.activated) return '/login/consent';
 
   const after = await completeAfterSignIn({ activated: true });
 
@@ -111,7 +111,7 @@ export async function rememberSignedIn(identity: Identity, pending: boolean): Pr
  * 예식일·지역·예산·분위기를 한 번도 묻지 않고 홈에 도착했다. 같은 결정을 두 곳에
  * 적으면 한쪽만 고쳐지는 날이 온다.
  */
-export type PostSignInRoute = '/(tabs)' | '/setup' | `/search/${string}`;
+export type PostSignInRoute = '/(tabs)' | '/login/consent' | '/setup' | `/search/${string}`;
 
 export function nextAfterSignIn(state: {
   setupComplete?: boolean;

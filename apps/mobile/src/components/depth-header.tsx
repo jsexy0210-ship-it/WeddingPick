@@ -40,7 +40,6 @@ function depthHeaderTitle(pathname: string): string {
     [/^\/my\/biz\/claim(?:\/|$)/, '업체 인증'],
     [/^\/my\/biz\/data(?:\/|$)/, '자료 제공'],
     [/^\/my\/biz\/benefit(?:\/|$)/, '혜택 등록'],
-    [/^\/top3(?:\/|$)/, 'TOP 3'],
     [/^\/feed(?:\/|$)/, '웨딩피드'],
     [/^\/recommendations(?:\/|$)/, '웨딩픽 추천'],
     [/^\/pick\/category(?:\/|$)/, 'Pick'],

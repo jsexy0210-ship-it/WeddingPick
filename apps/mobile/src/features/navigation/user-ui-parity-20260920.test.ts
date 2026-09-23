@@ -8,19 +8,28 @@ const mobile = (path: string) => readFileSync(join(MOBILE, path), 'utf8');
 const root = (path: string) => readFileSync(join(ROOT, path), 'utf8');
 
 describe('2026-09-20 사용자 공통 UI 회귀', () => {
-  it('로그인은 정본 카피·Pick 마크·연령 동의 상태를 유지한다', () => {
+  it('로그인은 정본 카피·Pick 마크를 유지하고 만 14세 확인은 약관 동의 화면으로 옮겼다', () => {
     const s = mobile('app/login/index.tsx');
-    expect(s).toContain("const HERO_TITLE = '웨딩 준비,\\n진짜 견적부터\\n확인해 보세요'");
-    expect(s).toContain("'실제 견적 금액을 비교해요'");
-    expect(s).toContain("'마음에 드는 곳을 함께 Pick해요'");
-    expect(s).toContain("'일정과 지출도 한곳에서 관리해요'");
+    /* v3.29(2026-09-23) WP-AUTH-001 — 타이틀·혜택 4줄 교체(CHANGELOG v3.29). 9/20·v3.28 카피를 덮는다. */
+    expect(s).toContain("const HERO_TITLE = '플래너 없이,\\n직접 고르는\\n웨딩 준비'");
+    expect(s).toContain("'업체별 가격과 조건을 한눈에 확인해요'");
+    expect(s).toContain("'광고보다 내 기준으로 직접 골라요'");
+    expect(s).toContain("'플래너를 거치지 않고 직접 연결돼요'");
+    expect(s).toContain("'계약부터 결혼식까지 한곳에서 챙겨요'");
     /* v3.28(2026-09-22) WP-AUTH-001 markBox — 64 코랄 면 상자 안에 40 마크. 9/20의 «64 마크»를 덮는다. */
     expect(s).toContain('<WeddingMark size={MARK} color={theme.tint} />');
     expect(s).toContain('const MARK = 40;');
     /* v3.28(2026-09-22)에 «기억된 계정» 변형이 없다 — 2026-09-23 「정본에 없는 기능은 제거」로 걷어냈다. */
     expect(s).not.toContain('showRemembered');
-    expect(s).toContain('const ageBlocked = !ageChecked;');
     expect(s).not.toContain('다른 계정으로 시작하기');
+    /*
+     * v3.29(2026-09-23) — 만 14세 체크 · 약관 문구를 약관 동의 화면(WP-AUTH-010)으로
+     * 일원화했다(CHANGELOG v3.29). 로그인 화면에는 더 이상 연령 체크박스가 없다.
+     */
+    expect(s).not.toContain('AgeConfirmRow');
+    expect(s).not.toContain('const ageBlocked');
+    const consent = mobile('app/login/consent.tsx');
+    expect(consent).toContain("동의하고 시작하기");
   });
 
   it('Kakao 복귀는 기본 로더와 진행 문구를 같이 둔다', () => {

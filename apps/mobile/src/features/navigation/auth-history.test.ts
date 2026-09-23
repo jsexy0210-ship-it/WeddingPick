@@ -14,7 +14,13 @@ const rootLayout = readFileSync(join(__dirname, '..', '..', 'app', '_layout.tsx'
 describe('auth history isolation', () => {
   it('로그인 성공은 replace 단독 대신 dismissTo fallback 경로로 제품 화면에 진입한다', () => {
     expect(finishSignIn).toContain('dismissToOrReplace(next);');
-    expect(finishSignIn).toContain("dismissToOrReplace('/setup');");
+    /*
+     * v3.29 — 가입이 안 끝난 계정은 온보딩(`/setup`)이 아니라 약관 동의 · 권한 안내
+     * (WP-AUTH-010, `/login/consent`)로 먼저 간다(CHANGELOG v3.29). 그 화면이 동의를
+     * 받은 뒤 `/setup`으로 넘긴다 — auth history를 접는 방식(`dismissToOrReplace`)은
+     * 그대로다.
+     */
+    expect(finishSignIn).toContain("dismissToOrReplace('/login/consent');");
     expect(finishSignIn).not.toContain('router.replace(next);');
   });
 
