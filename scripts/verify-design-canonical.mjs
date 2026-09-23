@@ -102,14 +102,15 @@ if (!register.includes('pickFromLibrary(1)') || !register.includes('uploadPaymen
 }
 if (!paymentProofRoute.includes('images.length !== 1')) fail('API가 Pick 인증 사진 한 장 계약을 강제하지 않음');
 /*
- * **이 두 줄은 v3.28과 어긋나는 자리다 — 대표님 판단을 기다린다.**
- * v3.28 전달본 README는 「`탐색`→`검색`」이라고 적었는데 화면 제목은 「업체 탐색」이고,
- * 카피 게이트가 그것을 예외로 허용하고 있다. 지금 고치면 사용자에게 보이는 말이 바뀌므로
- * 업로드 커밋에 섞지 않았다. 정하시면 이 검사와 `spec/glossary.json`을 함께 바꾼다.
+ * **이 자리가 v3.28과 어긋나 보였던 것은 인벤토리가 열을 바꿔 실었기 때문이다.**
+ * 「README는 `탐색`→`검색`인데 화면 제목은 「업체 탐색」」으로 읽혔던 대조표 행은
+ * 검색 파일 둘째 표만 「항목 · 정본 · Figma · 판단」 순이라 뒤집힌 것이었다. 바로 읽으면
+ * 정본=«검색» · Figma=«업체 탐색»이고, 시안 markup도 WP-SRCH-001 `headTitleRoot`에
+ * «검색»을 그린다. 셋이 같은 말을 하므로 제목을 되돌리고 게이트 예외를 뺐다.
  */
-if (!search.includes("const TITLE = '업체 탐색'")) fail('검색 정본 제목이 아님');
+if (!search.includes("const TITLE = '검색'")) fail('검색 정본 제목이 아님');
 const explorationRule = glossary.banned.find((entry) => entry.term === '탐색');
-if (!explorationRule?.allow?.includes('업체 탐색')) fail('정본 검색 제목이 카피 게이트 예외에 없음');
+if (explorationRule?.allow?.includes('업체 탐색')) fail('해제한 「업체 탐색」 예외가 카피 게이트에 남아 있음');
 
 if (!search.includes('styles.filterRow') || !search.includes("budgetBand(filters.budget)?.label ?? '가격'")) {
   fail('검색 결과 필터 칩 줄이 정본과 다름');

@@ -24,14 +24,12 @@ import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { Avatar, Row, Rows, Section, SubScreen } from '@/features/settings/my-kit';
 
-/** 시안 `docs/design/figma-export/07-lounge-my.dc.html` 4-5 · screens.json WP-MY-002. */
+/** 시안 `docs/design/html/대메뉴_MY.dc.html` 2 · WP-MY-002. */
 const S = {
   title: '프로필',
   basic: '기본',
-  name: '이름',
-  partnerName: '배우자에게 보이는 이름',
+  name: '닉네임',
   nameEmpty: '정하기',
-  nameUnavailable: '연결 계정에서 확인',
   notifications: '알림',
   service: '서비스 알림',
   serviceMeta: '일정 · Pick 변화 · 인증 결과',
@@ -48,7 +46,7 @@ const S = {
   logoutBody: '기기에 저장된 문서는 그대로 남아요',
   stay: '계속 이용하기',
   logoutFail: '로그아웃하지 못했어요',
-  note: '다른 사용자에게는 김OO처럼 일부만 보여요.',
+  note: '배우자와 다른 사용자 모두에게 이 닉네임으로 보여요.',
   sheetTitle: '어떻게 불러드릴까요?',
   placeholder: '비워두면 이름 없이 인사해요',
   cancel: '취소',
@@ -59,15 +57,16 @@ const S = {
 } as const;
 
 /**
- * 프로필 · WP-MY-002 · 시안 4-5. MY 상단 프로필 카드를 누르면 들어온다.
+ * 프로필 · WP-MY-002 · 시안 2. MY 상단 프로필 카드를 누르면 들어온다.
  *
  * **MY의 설정 섹션을 흡수했다**(시안 「설정 섹션을 흡수해 이름 · 알림 · 계정을 한 화면에서
  * 다룹니다. 로그아웃과 탈퇴가 맨 아래입니다」).
  * 알림 설정은 시안대로 세 토글을 이 화면에서 바로 바꾼다. 서비스 알림은 서버의 전체 푸시와
  * 가격 변동 푸시를 함께 켜고 끈다 — 정본은 둘을 한 줄로 합쳤다.
  *
- * API의 displayName은 배우자와 후기에 보일 이름이다. 법적·연결 계정 이름은 읽기 계약이 없으므로
- * 같은 값으로 가장하지 않고 연결 계정에서 확인하도록 표시한다. 사진 바꾸기도 저장 계약이 없어 두지 않는다.
+ * **이름 칸은 하나다**(v3.28 — 「이름 / 배우자에게 보이는 이름」 두 칸 → 「닉네임」 한 칸).
+ * API의 displayName이 그 한 칸이고 배우자·후기·다른 사용자에게 모두 이 값으로 보인다.
+ * 사진 바꾸기는 저장 계약이 없어 두지 않는다.
  */
 export default function ProfileScreen() {
   const theme = useTheme();
@@ -191,14 +190,9 @@ export default function ProfileScreen() {
       <Section title={S.basic}>
         <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.track }]}>
           <Rows>
+            {/* v3.28 — 「이름 / 배우자에게 보이는 이름」 두 칸을 «닉네임» 한 칸으로 합쳤다. */}
             <Row
               name={S.name}
-              tail={S.nameUnavailable}
-              tailDim
-              inset
-            />
-            <Row
-              name={S.partnerName}
               tail={me.displayName ?? S.nameEmpty}
               tailDim={!me.displayName}
               chevron

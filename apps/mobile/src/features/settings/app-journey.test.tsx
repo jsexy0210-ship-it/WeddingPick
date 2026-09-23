@@ -178,15 +178,18 @@ it('프로필은 알림 설정 조회가 실패해도 계정 기능을 계속 �
   expect(tree.root.findAllByType('ActionButton' as never).some((node) => node.props.label === '다시 불러오기')).toBe(true);
 });
 
-it('프로필의 배우자 노출 이름만 displayName 편집을 연다', async () => {
+/*
+ * v3.28 — 「이름 / 배우자에게 보이는 이름」 두 칸이 「닉네임」 한 칸이 됐다.
+ * 두 칸 시절의 「연결 계정에서 확인」 줄이 되살아나지 않는지도 같이 센다.
+ */
+it('프로필의 닉네임 한 칸이 displayName 편집을 연다', async () => {
   await mount(<ProfileScreen />);
   const rows = tree.root.findAllByType('Row' as never);
-  const accountName = rows.find((node) => node.props.name === '이름');
-  const partnerName = rows.find((node) => node.props.name === '배우자에게 보이는 이름');
-  expect(accountName?.props.tail).toBe('연결 계정에서 확인');
-  expect(accountName?.props.onPress).toBeUndefined();
-  expect(partnerName?.props.tail).toBe('지수');
-  expect(partnerName?.props.onPress).toEqual(expect.any(Function));
+  const nickname = rows.find((node) => node.props.name === '닉네임');
+  expect(rows.some((node) => node.props.name === '배우자에게 보이는 이름')).toBe(false);
+  expect(rows.some((node) => node.props.tail === '연결 계정에서 확인')).toBe(false);
+  expect(nickname?.props.tail).toBe('지수');
+  expect(nickname?.props.onPress).toEqual(expect.any(Function));
 });
 
 it('폐기된 수동 가격 제보 링크는 Pick 인증 동의로 연결한다', async () => {

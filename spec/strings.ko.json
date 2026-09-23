@@ -335,7 +335,7 @@
   },
 
   "search": {
-    "title": "업체 탐색",
+    "title": "검색",
     "subtitle": "우리 조건에 맞는 선택만 모았어요",
     "placeholder": "업체 이름, 지역, 카테고리 검색",
     "back": "홈으로 돌아가기",
@@ -361,8 +361,6 @@
     "filter.group.all": "전체",
     "filter.group.region": "지역",
     "filter.group.budget": "예산",
-    "filter.onlyVerified": "실 제보가 있는 곳만",
-    "filter.onlyVerifiedDesc": "금액을 볼 수 있는 곳만 보기",
     "empty.title": "조건에 맞는 곳이\n없어요",
     "empty.body": "예산 조건을 풀면 {n}곳이 나와요",
     "empty.cta": "예산 조건 풀기",
@@ -401,12 +399,11 @@
     "title": "{category} {n}곳 비교",
     "summary": "웨딩픽 요약",
     "selectTitle": "비교할 곳을 골라주세요",
-    "selectBody": "같은 카테고리에서 2~5곳까지",
+    "selectBody": "같은 카테고리에서 2~3곳까지",
     "row.verified": "제보 금액",
     "row.median": "기준금액",
     "row.count": "실 제보",
-    "row.benefit": "현재 혜택",
-"best": "제보 많음"
+    "row.benefit": "현재 혜택"
   },
 
   "pick": {
@@ -479,7 +476,7 @@
     "review.confirm": "확인했어요. 저장할게요",
     "review.amount": "제시 금액",
     "review.included": "기본 포함",
-    "review.extra": "추가 비용",
+    "review.extra": "별도로 확인할 비용",
     "review.benefit": "혜택",
     "review.warning": "주의할 점",
     "review.missing": "다시 확인할 것",
@@ -525,9 +522,9 @@
     "consult.emptyTitle": "녹음 파일을 선택해 주세요",
     "consult.emptyBody": "스마트폰 녹음앱에서 저장한 파일을 올릴 수 있어요",
     "consult.saved": "저장됨",
-    "fab.event": "일정 추가",
-    "fab.expense": "지출 추가",
-    "fab.consult": "녹음 파일 추가",
+    "headerAdd.event": "일정 추가",
+    "headerAdd.expense": "예산 추가",
+    "headerAdd.consult": "상담 추가",
     "heroTogether": "{partner}님과 함께\n{n}가지를 끝냈어요",
     "progress": "{done}/{total} 완료",
     "section.nextSchedule": "다음 일정",
@@ -784,16 +781,19 @@
     "dday.past": "{n}일 지났어요",
     "group.activity": "내 활동",
     "group.together": "함께 준비하기",
-    "group.browse": "둘러보기",
+    "group.lounge": "라운지",
     "group.support": "고객지원",
     "group.terms": "약관",
     "item.certLog": "Pick 인증내역",
     "item.myReview": "내가 쓴 후기",
+    "item.scrap": "스크랩",
     "item.benefit": "혜택 · 이벤트",
     "item.weddingSetting": "내 웨딩설정",
     "item.taste": "스타일 다시 고르기",
     "item.partner": "연결관리",
-    "item.lounge": "라운지",
+    "item.realReview": "리얼후기",
+    "item.weddingInfo": "웨딩정보",
+    "item.expo": "박람회",
     "item.faq": "자주 묻는 질문",
     "item.contact": "문의하기",
     "item.bizInquiry": "업체 · 플래너 문의",
@@ -1056,19 +1056,6 @@
     "stats.hint": "Pick 인증까지 완료한 분의 수예요",
     "empty.title": "아직 초대한 친구가 없어요",
     "empty.body": "코드를 공유하면 이곳에 현황이 나와요"
-  },
-
-  "pickHistory": {
-    "title": "Pick 히스토리",
-    "decided": "결정",
-    "decidedAt": "{date} 결정",
-    "addedAt": "{date} 추가",
-    "cta.addCandidate": "다시 후보 추가",
-    "section.decided": "결정한 곳",
-    "section.candidates": "아직 안 정한 것",
-    "empty.title": "아직 Pick한 곳이 없어요",
-    "empty.body": "업체를 찾아 Pick에 담아보세요",
-    "empty.cta": "업체 검색"
   },
 
   "confirm": {

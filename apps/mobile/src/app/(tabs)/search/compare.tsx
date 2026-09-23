@@ -19,10 +19,8 @@ import { DepthHeader } from '@/components/depth-header';
 import { useDepthBack } from '@/features/navigation/depth-back';
 import { savePendingAction } from '@/features/auth/pending-action';
 import { PickDoneSheet } from '@/features/pick/pick-sheets';
-import { PickSectionTabs } from '@/features/pick/pick-section-tabs';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
-import strings from '../../../../../../spec/strings.ko.json';
 import {
   ErrorView,
   Layout,
@@ -39,9 +37,10 @@ import {
 } from '@weddingpick/ui';
 
 /**
- * 비교 결과 · WP-CMP-002. 2026-09-14 대표 지시로 **표 형태**로 바꿨다
- * (피그마 `Pick.tsx` `CompareScreen`, 98행 — B등급이라 색·문구는 옮기지 않고
- * 구조만 가져온다). 이전 판단("좁은 화면에 표는 아무것도 안 읽힌다")은 지웠다.
+ * 비교 결과 · WP-CMP-002 (v3.28 `대메뉴_Pick.dc.html` 1-1 «비교» WP-PICK-006).
+ * 2026-09-14 대표 지시로 **표 형태**로 바꿨다. v3.28 대조표가 정한 것 — 비교 기준은
+ * 제보 금액 · 실 제보 · 기준금액 순, 우세 표시는 **우세값만 700 진하게**(배경 · 배지 없음 —
+ * 가치판단 표현 금지), 결론 한 줄은 Hero에, 최대 3곳(`PICK_COMPARE_MAX`).
  *
  * 좁은 화면에서 표가 읽히는 이유 — **라벨열을 고정하고 업체열만 가로로 민다.**
  * 세로로 길어지면 헤더(업체 사진·이름)가 위로 사라지므로, 라벨열은 왼쪽에
@@ -52,17 +51,14 @@ import {
  * 단서(caveats)는 서버가 결과와 함께 내려준다 — 표만 그리고 «금액만으로는
  * 비교할 수 없다»는 말을 빠뜨리면 우리가 만든 표가 오해를 부추긴다.
  *
- * 값은 우세한 쪽만 #212124(text), 나머지는 #393a40(textStrong)이다. 금액이 없는 쪽(0층·1층)은 회색.
+ * 값은 우세한 쪽만 text 색 · 700, 나머지는 textAssistive · 400이다(v3.28 «우세 표시»).
  * 웨딩픽은 비싸다 싸다를 판정하지 않는다 — 우세는 «정보가 더 있다»(실 제보 건수)로만 가른다.
- * BEST 배지는 그 우세(tone==='text') 칸에만 붙는다.
  */
 const KEY_LETTERS = 'ABCDE';
 
 /** 건수 차이가 이만큼(공개 사다리 한 단 · DISCLOSURE_THRESHOLDS.limited) 이상이면 «갈린다»고 말한다. */
 const COUNT_GAP_NOTABLE = DISCLOSURE_THRESHOLDS.limited;
 
-/** 문구. spec/strings.ko.json compare.* */
-const BEST_BADGE = strings.compare.best;
 const SUMMARY_TITLE = '웨딩픽 요약';
 const ROW_PRICE = '제보 금액';
 const ROW_MEDIAN = TERMS.baseAmount;
@@ -120,7 +116,6 @@ export default function CompareScreen() {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
-          <PickSectionTabs active="compare" />
           <DepthHeader title="업체 비교" />
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
             <View style={styles.hero}>
@@ -185,14 +180,22 @@ export default function CompareScreen() {
     theme.textDisabled,
   ] as const;
 
-  /** 속성 블록 한 줄의 값. tone: 우세(text) · 보통(textStrong) · 없음(textAssistive). */
-  type Cell = { value: string; tone: 'text' | 'textStrong' | 'textAssistive' };
+  /** 속성 블록 한 줄의 값. best: 우세(text · 700) / 그 외(textAssistive · 400). */
+  type Cell = { value: string; best: boolean };
+  /* 행 순서는 v3.28 «비교 기준» — 제보 금액 · 실 제보 · 기준금액. 포함 항목 · 조건은 서버 값이 없다. */
   const blocks: { label: string; cells: Cell[] }[] = [
     {
       label: ROW_PRICE,
       cells: lines.map((line, i) => ({
         value: line.text,
-        tone: line.dim ? 'textAssistive' : counts[i] === maxCount ? 'text' : 'textStrong',
+        best: !line.dim && counts[i] === maxCount,
+      })),
+    },
+    {
+      label: ROW_COUNT,
+      cells: counts.map((count) => ({
+        value: `${formatCount(count)}건`,
+        best: count === maxCount && count > 0,
       })),
     },
     {
@@ -200,29 +203,22 @@ export default function CompareScreen() {
       cells: vendors.map((vendor) => {
         const pp = vendor.prices.paidPrice;
         return pp.stage === 'detailed'
-          ? { value: manwon(pp.median), tone: 'text' as const }
-          : { value: COLLECTING_LABEL, tone: 'textAssistive' as const };
+          ? { value: manwon(pp.median), best: true }
+          : { value: COLLECTING_LABEL, best: false };
       }),
-    },
-    {
-      label: ROW_COUNT,
-      cells: counts.map((count) => ({
-        value: `${formatCount(count)}건`,
-        tone: count === maxCount && count > 0 ? 'text' : count === 0 ? 'textAssistive' : 'textStrong',
-      })),
     },
     {
       label: ROW_CATEGORY,
       cells: vendors.map((vendor) => ({
         value: `${VENDOR_CATEGORY_LABEL[vendor.category]} · ${regionLabel(vendor.region)}`,
-        tone: 'textStrong' as const,
+        best: false,
       })),
     },
     {
       label: ROW_SOURCE,
       cells: vendors.map((vendor) => ({
         value: vendor.sourceNote ?? SOURCE_FROM_DOCUMENT,
-        tone: 'textStrong' as const,
+        best: false,
       })),
     },
   ];
@@ -230,7 +226,6 @@ export default function CompareScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <PickSectionTabs active="compare" />
         <DepthHeader title={`${categoryLabel} ${vendors.length}곳 비교`} />
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -297,26 +292,15 @@ export default function CompareScreen() {
                   <View key={block.label} style={[styles.tableRow, { borderBottomColor: theme.border }]}>
                     {block.cells.map((cell, i) => (
                       <View key={vendors[i]!.id} style={styles.tableCol}>
+                        {/* 우세 표시(v3.28) — 우세값만 700 진하게. 배경 · 배지를 붙이지 않는다. */}
                         <ThemedText
                           type="t6"
                           numeric
                           numberOfLines={3}
-                          themeColor={cell.tone}
-                          style={[styles.bold, styles.tableCellText]}>
+                          themeColor={cell.best ? 'text' : 'textAssistive'}
+                          style={[cell.best ? styles.bold : null, styles.tableCellText]}>
                           {cell.value}
                         </ThemedText>
-                        {/*
-                          우세 배지 — 정보가 더 있다(실 제보 건수)는 뜻이지 값을 평가하지 않는다.
-                          2026-09-15 대표 지시 「이딴 영문 싹다 없애」로 `BEST`를 한국어로 바꿨다.
-                          문구는 `spec/strings.ko.json` `compare.best`다.
-                        */}
-                        {cell.tone === 'text' ? (
-                          <View style={[styles.bestBadge, { backgroundColor: theme.tintSurface }]}>
-                            <ThemedText type="micro" themeColor="tint" style={styles.bold}>
-                              {BEST_BADGE}
-                            </ThemedText>
-                          </View>
-                        ) : null}
                       </View>
                     ))}
                   </View>
@@ -460,13 +444,6 @@ const styles = StyleSheet.create({
   tableThumbWrap: { position: 'relative', marginBottom: Spacing.half },
   tableThumbKey: { position: 'absolute', top: 6, left: 6 },
   tableCellText: {},
-  bestBadge: {
-    marginTop: 3,
-    alignSelf: 'flex-start',
-    borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.one,
-    paddingVertical: 2,
-  },
   keyChip: {
     width: KEY_CHIP,
     height: KEY_CHIP,

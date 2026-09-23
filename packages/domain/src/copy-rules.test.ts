@@ -90,7 +90,7 @@ describe('v3.18 · v3.22 금지어를 게이트가 잡는다', () => {
   });
 
   it('대신 쓰는 말은 통과한다', () => {
-    for (const text of ['웨딩픽 추천', '업체 탐색', '업체 검색', 'Pick 목록', '실 제보 12건', 'Npay 5,000원']) {
+    for (const text of ['웨딩픽 추천', '업체 검색', 'Pick 목록', '실 제보 12건', 'Npay 5,000원']) {
       expect(violatesCopyRules(text)).toBe(false);
     }
   });

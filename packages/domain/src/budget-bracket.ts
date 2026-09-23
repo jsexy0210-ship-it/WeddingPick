@@ -120,3 +120,19 @@ export function budgetAffordable(
 export function budgetBracketCeiling(bracket: WeddingBudgetBracket): number | null {
   return budgetBracketRange(bracket)?.max ?? null;
 }
+
+/**
+ * 직접 적은 금액(만원)을 여섯 구간에 넣는다 — v3.28 온보딩 4/5(WP-AUTH-005)는
+ * 구간을 고르지 않고 금액을 만원 단위로 적는데, 서버 계약(`completeSetup`)은
+ * 아직 `budgetBracket`만 받는다. 경계는 구간 라벨 그대로다 — 500은 «500만원
+ * 이하», 501은 «500~1,000만원». 0이나 음수는 적지 않은 것이라 `unknown`이다.
+ */
+export function budgetBracketForAmount(manWon: number): WeddingBudgetBracket {
+  if (!Number.isFinite(manWon) || manWon <= 0) return 'unknown';
+  if (manWon <= 500) return 'under_5m';
+  if (manWon <= 1_000) return '5m_10m';
+  if (manWon <= 2_000) return '10m_20m';
+  if (manWon <= 3_000) return '20m_30m';
+
+  return 'over_30m';
+}

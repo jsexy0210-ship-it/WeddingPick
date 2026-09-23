@@ -2,6 +2,8 @@ import {
   EXPENSE_BUCKETS,
   EXPENSE_REFUND_STATUSES,
   EXPENSE_REFUND_STATUS_LABEL,
+  EXPENSE_SOURCES,
+  EXPENSE_SOURCE_LABEL,
   SCHEDULED_NOTE,
   bucketFor,
   budgetView,
@@ -74,6 +76,17 @@ describe('환불 상태', () => {
     for (const status of EXPENSE_REFUND_STATUSES) {
       expect(EXPENSE_REFUND_STATUS_LABEL[status].length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('지출 출처', () => {
+  it('상담 정리가 셋째 출처다 — 실 제보와 분리하지 않고 줄마다 출처를 적는다', () => {
+    // v3.28 웨딩노트 대조표 「금액 출처」 · 2026-09-23 대표 결정.
+    expect(EXPENSE_SOURCES).toEqual(['payment_proof', 'manual', 'consultation']);
+    for (const source of EXPENSE_SOURCES) {
+      expect(EXPENSE_SOURCE_LABEL[source].length).toBeGreaterThan(0);
+    }
+    expect(EXPENSE_SOURCE_LABEL.consultation).toBe('상담 정리');
   });
 });
 

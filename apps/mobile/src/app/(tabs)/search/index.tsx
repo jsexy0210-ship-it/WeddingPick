@@ -95,7 +95,7 @@ import { DelayedLoader } from '@/features/loading/delayed-loader';
  * 웨딩일정 · 준비 현황이 한꺼번에 흔들린다(2026-09-11 MASTER 판단 — 그대로 둔다).
  */
 /* 헤더 · 칩 문구 — spec/strings.ko.json `search`. 피그마 `Search.tsx`(2026-09-14 정본)에서 왔다. */
-const TITLE = '업체 탐색';
+const TITLE = '검색';
 const PLACEHOLDER = '업체 이름, 지역, 카테고리 검색';
 const CLEAR_LABEL = '검색어 지우기';
 
@@ -133,8 +133,6 @@ type Filters = {
   region: string | null;
   /** 예산 구간 한 칸(WP-SRCH-005). 고르지 않았으면 null. */
   budget: BudgetBandKey | null;
-  /** «실 제보가 있는 곳만» — 금액을 볼 수 있는 곳만 남긴다(WP-SRCH-005). */
-  onlyVerified: boolean;
   sort: VendorSort;
 };
 
@@ -171,7 +169,6 @@ export default function SearchScreen() {
     category: null,
     region: null,
     budget: null,
-    onlyVerified: false,
     sort: 'data',
   });
   /*
@@ -307,7 +304,6 @@ export default function SearchScreen() {
       region: filters.region ?? undefined,
       category: filters.category ?? undefined,
       budget: filters.budget ?? undefined,
-      onlyVerified: filters.onlyVerified || undefined,
       sort: filters.sort,
     }, {
       force,
@@ -391,7 +387,7 @@ export default function SearchScreen() {
         ? 'category'
         : null;
 
-  const relaxedKey = `${filters.q.trim()}|${filters.region ?? ''}|${filters.category ?? ''}|${filters.budget ?? ''}|${filters.onlyVerified ? '1' : ''}|${filters.sort}`;
+  const relaxedKey = `${filters.q.trim()}|${filters.region ?? ''}|${filters.category ?? ''}|${filters.budget ?? ''}|${filters.sort}`;
   const relaxedTotal = relaxed?.key === relaxedKey ? relaxed.total : null;
   const similar = relaxed?.key === relaxedKey ? relaxed.similar : [];
 
@@ -404,7 +400,6 @@ export default function SearchScreen() {
       region: relaxKey === 'region' ? undefined : (filters.region ?? undefined),
       category: relaxKey === 'category' ? undefined : (filters.category ?? undefined),
       budget: relaxKey === 'budget' ? undefined : (filters.budget ?? undefined),
-      onlyVerified: filters.onlyVerified || undefined,
       sort: filters.sort,
     })
       .then((response) => {
@@ -434,7 +429,6 @@ export default function SearchScreen() {
         cursor: nextCursor,
         category: filters.category ?? undefined,
         budget: filters.budget ?? undefined,
-        onlyVerified: filters.onlyVerified || undefined,
         sort: filters.sort,
       });
       if (id !== requestId.current) return;
@@ -511,7 +505,6 @@ export default function SearchScreen() {
     filters.category,
     filters.region,
     filters.budget,
-    filters.onlyVerified ? 'verified' : null,
   ].filter(Boolean).length;
 
   // ─── 검색창 ───────────────────────────────────────────────────────────────
@@ -940,7 +933,9 @@ export default function SearchScreen() {
           검색은 Root 5탭의 1Depth라 뒤로가기를 두지 않는다. 나머지는 정본대로 위 12 ·
           좌우 20 · 아래 16이며 제목 20/700과 결과 수 11/17, 검색창 48을 한 덩어리로 둔다.
 
-          제목은 2026-09-20 전달 정본의 «업체 탐색»이다. 검색 Root에는 Back을 두지 않는다.
+          제목은 v3.28 시안(`대메뉴_검색.dc.html` WP-SRCH-001 `headTitleRoot`)의 «검색»이다 —
+          2026-09-20 정본의 «업체 탐색»은 「탐색」 금지어라 v3.28 대조표가 `[bad]`로 짚었다.
+          검색 Root에는 Back을 두지 않는다.
         */}
         <ThemedView style={[styles.header, { borderBottomColor: theme.border }]}>
           <View style={styles.headerTitleRow}>
@@ -992,7 +987,6 @@ export default function SearchScreen() {
             category: filters.category,
             region: filters.region,
             budget: filters.budget,
-            onlyVerified: filters.onlyVerified,
           }}
           regions={regionNames}
           count={total}

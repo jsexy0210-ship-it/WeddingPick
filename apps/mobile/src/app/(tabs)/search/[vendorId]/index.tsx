@@ -111,7 +111,8 @@ type VendorTab = 'intro' | 'price' | 'review' | 'info';
 
 const VENDOR_TABS: { key: VendorTab; label: string }[] = [
   { key: 'intro', label: '소개' },
-  { key: 'price', label: '가격' },
+  // v3.28 WP-VEND-002의 탭 이름은 «패키지»다(시안 `tabs`). 내부 키는 그대로 둔다.
+  { key: 'price', label: '패키지' },
   { key: 'review', label: '후기' },
   { key: 'info', label: '정보' },
 ];

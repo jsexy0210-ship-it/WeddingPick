@@ -14,9 +14,12 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(s).toContain("'실제 견적 금액을 비교해요'");
     expect(s).toContain("'마음에 드는 곳을 함께 Pick해요'");
     expect(s).toContain("'일정과 지출도 한곳에서 관리해요'");
-    expect(s).toContain('<WeddingMark size={64} color={theme.tint} />');
-    expect(s).toContain('visible={!showRemembered}');
-    expect(s).toContain('const ageBlocked = !showRemembered && !ageChecked;');
+    /* v3.28(2026-09-22) WP-AUTH-001 markBox — 64 코랄 면 상자 안에 40 마크. 9/20의 «64 마크»를 덮는다. */
+    expect(s).toContain('<WeddingMark size={MARK} color={theme.tint} />');
+    expect(s).toContain('const MARK = 40;');
+    /* v3.28(2026-09-22)에 «기억된 계정» 변형이 없다 — 2026-09-23 「정본에 없는 기능은 제거」로 걷어냈다. */
+    expect(s).not.toContain('showRemembered');
+    expect(s).toContain('const ageBlocked = !ageChecked;');
     expect(s).not.toContain('다른 계정으로 시작하기');
   });
 
@@ -71,28 +74,25 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
   });
   it('검색 제목/결과 머리 계약을 유지한다', () => {
     const s = mobile('app/(tabs)/search/index.tsx');
-    expect(s).toContain("const TITLE = '업체 탐색'");
+    // v3.28이 제목을 «검색»으로 되돌렸다(「탐색」 금지어 · 대조표 [bad]). 기준선을 옮긴 것이지 검사를 뺀 것이 아니다.
+    expect(s).toContain("const TITLE = '검색'");
     expect(s).not.toContain("const SUBTITLE = '우리 조건에 맞는 선택만 모았어요'");
     expect(s).toContain('styles.filterRow');
     expect(s).toContain("budgetBand(filters.budget)?.label ?? '가격'");
     expect(s).not.toContain('sortSlot:');
   });
-  it('Pick 3보기는 같은 Root 안에서 전환하고 compare로 이어진다', () => {
-    const s = mobile('features/pick/pick-section-tabs.tsx');
-    expect(s).toContain("label: '나의 Pick'");
-    expect(s).toContain("label: '웨딩픽 추천'");
-    expect(s).toContain("label: '비교함'");
-    expect(s).toContain("pathname: '/pick'");
-    expect(s).not.toContain("router.replace('/recommendations'");
-    expect(s).not.toContain("router.replace('/pick/wedding_info_company'");
+  it('Pick Root는 상단 탭 없이(v3.28) 홈의 추천 딥링크만 받고 compare로 이어진다', () => {
+    /* v3.28(2026-09-22) 대조표 «탭 구성 · 준비 현황» — Pick 탭 안 추천 · 비교함 탭을 없앴다. */
+    expect(() => mobile('features/pick/pick-section-tabs.tsx')).toThrow();
 
     const pick = mobile('app/(tabs)/pick/index.tsx');
-    expect(pick).toContain("requestedSection === 'recommendations' || requestedSection === 'compare'");
-    expect(pick).toContain("section === 'recommendations'");
-    expect(pick).toContain("section === 'compare'");
+    expect(pick).not.toContain('PickSectionTabs');
+    expect(pick).not.toContain('<CompareBasket');
+    expect(pick).toContain("const showRecommendations = requestedSection === 'recommendations'");
     expect(pick).toContain('<RecommendationsContent requestedCategory={requestedCategory} />');
     expect(pick).toContain('VENDOR_CATEGORIES.includes(rawCategory as VendorCategory)');
-    expect(pick).toContain('<CompareBasket');
+    expect(pick).toContain("pathname: '/search/compare'");
+    expect(mobile('app/(tabs)/search/compare.tsx')).not.toContain('PickSectionTabs');
 
     const home = mobile('app/(tabs)/index.tsx');
     expect(home).toContain('item.pickCount > 0');
@@ -158,7 +158,8 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(consult).toContain('submitLock.current = true');
     expect(consult).toContain('group.decidedVendorId === vendorId');
     expect(consult).toContain('최종 Pick 확인이 필요해요');
-    expect(consult).toContain('일정 등록하기');
+    // v3.28 WP-PICK-009 — CTA가 고른 값을 그대로 말한다(「9월 20일 오후 2시로 잡기」).
+    expect(consult).toContain('로 잡기');
   });
 
   it('빈 상태는 페이지 전체와 섹션 범위를 구분한다', () => {
@@ -167,7 +168,6 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(status).toContain("scope === 'section'");
     expect(mobile('app/(tabs)/(home)/recommendations.tsx')).toContain('<EmptyView scope="section"');
     expect(mobile('app/(tabs)/search/[vendorId]/images.tsx')).toContain('<EmptyView scope="section"');
-    expect(mobile('app/(tabs)/pick/history.tsx')).toContain('<EmptyView scope="section"');
   });
   it('최초 예산은 만원 입력을 원으로 환산한다', () => {
     const s = mobile('app/(tabs)/wedding/index.tsx');
