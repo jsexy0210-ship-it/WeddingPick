@@ -146,10 +146,20 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
   });
 
   it('최종 Pick 저장 뒤에만 상담 예약을 열고 직접 URL에서도 다시 검증한다', () => {
-    const detail = mobile('app/(tabs)/search/[vendorId]/index.tsx');
-    expect(detail).toContain("decided ? '상담 예약하기' : picked ? '최종 Pick하기'");
-    expect(detail).toContain("group.decidedVendorId === currentVendor.id");
-    expect(detail).toContain("pathname: '/pick/confirm'");
+    /*
+     * v3.29(2026-09-23) 대메뉴_검색.dc.html WP-VEND-001~004 vdiffs(#13) — 업체 상세의
+     * 하단 CTA는 하트+«Pick하기» 1개뿐이고, «최종 Pick하기 / 상담 예약하기» 2단계 라벨과
+     * «업체 상세에서 바로» 상담 진입은 Figma 원본이지 정본이 아니다. 정본은 «Pick →
+     * 최종 결정 → 상담 잡기»고 그 흐름은 Pick 탭(`pick/index.tsx`·`pick/[category].tsx`)이
+     * 이미 따로 갖고 있다 — 업체 상세에서 지운 것은 그 흐름의 중복 진입점이지 흐름
+     * 자체가 아니다. 아래는 Pick 탭 쪽에서 같은 게이트가 여전히 도는지를 본다.
+     */
+    const pickCategory = mobile('app/(tabs)/pick/[category].tsx');
+    expect(pickCategory).toContain("pathname: '/pick/confirm'");
+    const pickIndex = mobile('app/(tabs)/pick/index.tsx');
+    expect(pickIndex).toContain("pathname: '/pick/confirm'");
+    const pickDone = mobile('app/(tabs)/pick/done.tsx');
+    expect(pickDone).toContain('router.replace(`/search/${decidedVendorId}/consult`)');
 
     const review = mobile('app/(tabs)/search/[vendorId]/review/[reviewId].tsx');
     expect(review).not.toContain("router.push(\`/search/\${vendorId}/consult\`)");

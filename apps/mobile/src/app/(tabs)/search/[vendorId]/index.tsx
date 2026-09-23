@@ -274,12 +274,7 @@ export default function VendorDetailScreen() {
             </View>
           </ScrollView>
           <View style={[styles.footer, { borderTopColor: theme.border, backgroundColor: theme.background }]}>
-            <View style={styles.actionRow}>
-              <Skeleton width={PICK_CTA_HEIGHT} height={PICK_CTA_HEIGHT} radius={Radius.cardLarge} />
-              <View style={styles.loadingPrimary}>
-                <Skeleton height={PICK_CTA_HEIGHT} radius={Radius.cardLarge} />
-              </View>
-            </View>
+            <Skeleton height={PICK_CTA_HEIGHT} radius={Radius.control} />
           </View>
         </SafeAreaView>
       </ThemedView>
@@ -290,26 +285,6 @@ export default function VendorDetailScreen() {
   const myCandidate = candidates.candidateFor(currentVendor.id);
   const picked = myCandidate !== null;
   const pickBusy = candidates.busyVendorId === currentVendor.id;
-  const decided =
-    candidates.page?.groups.some((group) => group.decidedVendorId === currentVendor.id) ?? false;
-  const primaryLabel = decided ? '상담 예약하기' : picked ? '최종 Pick하기' : '먼저 Pick해주세요';
-
-  function openPrimaryAction() {
-    if (decided) {
-      router.push(`/search/${currentVendor.id}/consult`);
-      return;
-    }
-    if (!myCandidate) return;
-    router.push({
-      pathname: '/pick/confirm',
-      params: {
-        category: currentVendor.category,
-        vendorId: currentVendor.id,
-        vendorName: currentVendor.name,
-        shared: myCandidate.addedByPartner ? '1' : '0',
-      },
-    });
-  }
 
   /**
    * Pick(SPEC §13.1). 비회원 상세는 폐기됐으므로 이 화면 안에 로그인 시트를 겹쳐 띄우지 않는다.
@@ -911,10 +886,15 @@ export default function VendorDetailScreen() {
           </>
           ) : null}
 
-          {/* ⑩ 공식정보 — 「정보」 탭. 항목마다 출처. 마지막 확인일 · 지도 · 정보 오류 제보 */}
+          {/*
+            ⑩ 「정보」 탭. v3.29 WP-VEND-004 `secTitle`은 「기본 정보」다(2026-09-23
+            재검증에서 잡은 값 — `spec/strings.ko.json` `vendor.section.official`
+            「공식정보」는 다른 화면(WP-VEND-005 · 아직 안 만든 화면, IA 참고)의 이름이라
+            여기 쓰지 않는다). 항목마다 출처. 마지막 확인일 · 지도 · 정보 오류 제보
+          */}
           {tab === 'info' ? (
           <View style={styles.tabSection}>
-            <ThemedText type="t4">공식정보</ThemedText>
+            <ThemedText type="t4">기본 정보</ThemedText>
             <View style={styles.rows}>
               <View>
                 <View style={styles.row}>
@@ -968,70 +948,42 @@ export default function VendorDetailScreen() {
         </ScrollView>
 
         {/*
-          ⑤ Pick 56 Primary(coral) + 비교 Secondary — 탭 전환과 무관하게 항상 보이는 하단
-          고정 영역(Figma `VendorDetailPage`의 fixed CTA 배치를 가져왔다). 근거를 다 읽은
-          자리라는 원래 의도(④ 다음)는 「가격」 탭을 열면 바로 위에 실 제보가 있는 것으로
-          지킨다. Primary는 Pick 하나뿐 — 화면당 Primary CTA 1개(CLAUDE.md).
-        */}
-        {/*
-          규격서 vendor-1.txt 고정 CTA: 안쪽 16 · 위 선 · 사이 8 · 단추 56 · radius 16.
-          [♡ 56 정사각 = Pick][상담 일정 잡기 Primary] — 2026-09-15 「고지가 먼저」 파기로 규격서 그대로다.
+          ⑤ Pick 하나 — 탭 전환과 무관하게 항상 보이는 하단 고정 영역. 화면당 Primary
+          CTA 1개(CLAUDE.md). v3.29 대메뉴_검색.dc.html WP-VEND-001~004 `dockSingle` ·
+          2026-09-23 재검증에서 잡은 값 — 전에는 하트 정사각 단추 + 「최종 Pick하기 /
+          상담 예약하기」 단추 2개였다. vdiffs 표(같은 dc.html #13)가 그 2버튼 구성을
+          Figma 원본으로, 정본은 하트 아이콘 + 「Pick하기」 글자를 한 단추에 담은 1개짜리
+          라고 못박아 뒀다 — 「하트와 상담이 헷갈린다」. 상담 예약 진입도 같은 표가
+          「업체 상세에서 바로」가 아니라 「Pick → 최종 결정 → 상담 잡기」로 옮겼다 —
+          그 흐름은 Pick 탭(WP-PICK-001·005·009)에 있고 이 화면은 Pick 담기·빼기만 한다.
         */}
         <View style={[styles.footer, { borderTopColor: theme.border, backgroundColor: theme.background }]}>
-          <View style={styles.actionRow}>
-            {/*
-              규격서 vendor-1.txt 맨 아래(2026-09-15 「고지가 먼저」 파기 — 상담 예약을 만든다):
-                button 56×56  bg #FFFFFF · r16 · border 1     svg 20×20  ← Pick(하트 · 담기면 잉크 면 + 흰 하트)
-                button 334×56 "상담 일정 잡기" · 14/700 #FFFFFF · gap 8 · bg primary · r16   svg 16×16
-              비교 진입은 여기서 뺐다 — 규격서에 없다. 비교는 Pick 탭 · 홈 «비교하기»에서 간다(판단 필요 — PR 본문).
-            */}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={picked ? `${vendor.name} Pick했어요` : `${vendor.name} Pick하기`}
-              accessibilityState={{ disabled: pickBusy, selected: picked }}
-              disabled={pickBusy}
-              style={({ pressed }) => [
-                styles.compareBtn,
-                picked
-                  ? { backgroundColor: theme.text, borderColor: theme.text }
-                  : { borderColor: theme.border, backgroundColor: pressed ? theme.backgroundElement : theme.background },
-                pickBusy ? styles.busy : null,
-              ]}
-              onPress={() => void pick()}>
-              <Svg width={Layout.iconRow} height={Layout.iconRow} viewBox="0 0 24 24" fill="none">
-                <Path
-                  d={MARK_HEART_PATH}
-                  fill={picked ? theme.onTint : 'none'}
-                  stroke={picked ? theme.onTint : theme.text}
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </Svg>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={primaryLabel}
-              accessibilityState={{ disabled: !picked }}
-              disabled={!picked}
-              style={({ pressed }) => [
-                styles.pickBtn,
-                { backgroundColor: picked ? theme.tint : theme.backgroundElement },
-                pressed && picked ? styles.pressed : null,
-              ]}
-              onPress={openPrimaryAction}>
-              <ProductSymbol
-                name={decided ? 'calendar' : 'check'}
-                size={Layout.iconField}
-                color={picked ? theme.onTint : theme.textDisabled}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={picked ? `${vendor.name} Pick 취소하기` : `${vendor.name} Pick하기`}
+            accessibilityState={{ disabled: pickBusy, selected: picked }}
+            disabled={pickBusy}
+            style={({ pressed }) => [
+              styles.pickCta,
+              { backgroundColor: theme.tint },
+              pickBusy ? styles.busy : null,
+              pressed ? styles.pressed : null,
+            ]}
+            onPress={() => void pick()}>
+            <Svg width={Layout.iconRow} height={Layout.iconRow} viewBox="0 0 24 24" fill="none">
+              <Path
+                d={MARK_HEART_PATH}
+                fill={picked ? theme.onTint : 'none'}
+                stroke={theme.onTint}
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
               />
-              <ThemedText
-                type="f14"
-                style={[styles.bold, { color: picked ? theme.onTint : theme.textDisabled }]}>
-                {primaryLabel}
-              </ThemedText>
-            </Pressable>
-          </View>
+            </Svg>
+            <ThemedText type="f18" style={[styles.bold, { color: theme.onTint }]}>
+              Pick하기
+            </ThemedText>
+          </Pressable>
         </View>
       </SafeAreaView>
 
@@ -1090,11 +1042,16 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: Spacing.four,
   },
-  /* 하단 고정 CTA — 시안: 위 테두리 1 · 배경 화면색(스크롤에 비쳐도 CTA가 또렷하다). */
-  /* 하단 고정 CTA `border-t p-4` — 안쪽 16. */
+  /*
+   * 하단 고정 CTA — v3.29 WP-VEND-001~004 `dockSingle`: 위 테두리 1 · 배경 화면색
+   * (스크롤에 비쳐도 CTA가 또렷하다) · 안쪽 세로 12(`Layout.inlineGap`) · 가로 20
+   * (`Layout.cardPadding`). 2026-09-23 재검증에서 잡은 값 — 전에는 규격서 vendor-1.txt의
+   * 균등 16(`Spacing.three`)을 썼다.
+   */
   footer: {
     borderTopWidth: Border.hairline,
-    padding: Spacing.three,
+    paddingHorizontal: Layout.cardPadding,
+    paddingVertical: Layout.inlineGap,
   },
   bold: {
     fontWeight: 700,
@@ -1125,7 +1082,6 @@ const styles = StyleSheet.create({
     paddingTop: Layout.gutter,
     gap: Layout.sectionHeadGap,
   },
-  loadingPrimary: { flex: 1 },
 
   // ── 대표 이미지 — handoff 260 · 아래 어두운 막 ──
   hero: {
@@ -1411,27 +1367,16 @@ const styles = StyleSheet.create({
     height: 1,
   },
 
-  // ── Pick 56 + 비교 · 시안: gap 10 · 비교 padding 0 20 ──
-  /* 피그마 `flex gap-2`: 정사각 56 · radius 16 · 테두리 + Primary 56 · radius 16 · 아이콘↔글 8. */
-  actionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-  },
-  pickBtn: {
-    flex: 1,
+  /*
+   * Pick 단추 하나 — v3.29 WP-VEND-001~004 `ctaPick`: 전폭 · 높이 56 · radius 6
+   * (`Radius.control`) · 코랄 배경 · 흰 하트 20(마진 8) + 흰 글자 18/700. 2026-09-23
+   * 재검증에서 잡은 값 — 전에는 규격서 vendor-1.txt를 따라 하트 정사각 + Primary
+   * 글자 단추 2개 · radius 16(`Radius.cardLarge`)이었다.
+   */
+  pickCta: {
     height: PICK_CTA_HEIGHT,
-    borderRadius: Radius.cardLarge,
+    borderRadius: Radius.control,
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.two,
-  },
-  compareBtn: {
-    width: PICK_CTA_HEIGHT,
-    height: PICK_CTA_HEIGHT,
-    borderRadius: Radius.cardLarge,
-    borderWidth: Border.hairline,
     alignItems: 'center',
     justifyContent: 'center',
   },
