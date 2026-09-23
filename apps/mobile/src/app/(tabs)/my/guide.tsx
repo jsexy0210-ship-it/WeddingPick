@@ -7,6 +7,7 @@ import { ActionButton, Layout, MaxContentWidth, Radius, Spacing, ThemedText, The
 import { APP_VERSION } from '@/features/settings/version';
 import { BackBar } from '@/components/back-bar';
 import { useFaq } from '@/features/faq/use-faq';
+import strings from '../../../../../../spec/strings.ko.json';
 
 const SHOOTING_TIPS = [
   '문서가 화면에 꽉 차게, 네 귀퉁이가 모두 보이게 찍어주세요.',
@@ -25,7 +26,7 @@ export default function GuideScreen() {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
-          <BackBar title="자주 묻는 질문" />
+          <BackBar title={strings.my['item.faq']} />
           <ScrollView contentContainerStyle={styles.content}>
             <ThemedView style={styles.section}>
               <ThemedText type="subtitle">자주 찾는 질문</ThemedText>

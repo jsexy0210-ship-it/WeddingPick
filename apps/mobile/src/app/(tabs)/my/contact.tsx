@@ -244,6 +244,14 @@ export default function ContactScreen() {
             </ThemedView>
           ) : null}
 
+          {/* 시안 7(WP-MY-008) «답변 시간을 미리 적습니다» — 보내기 전에 언제 답이 오는지 말한다. */}
+          <ThemedView type="backgroundElement" style={styles.card}>
+            <ThemedText type="smallBold">평일 오전 10시부터 오후 6시까지 답변드려요</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              주말과 공휴일에 남긴 문의는 다음 영업일에 처리해요.
+            </ThemedText>
+          </ThemedView>
+
         </ScrollView>
         <ThemedView style={[styles.dock, { borderTopColor: theme.border }]}>
           <ActionButton
