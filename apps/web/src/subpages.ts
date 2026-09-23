@@ -44,12 +44,6 @@ function pickMark(size: number, stroke: string): string {
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${esc(stroke)}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z"></path><path d="M9.4 11.9l1.7 1.7 3.4-3.4"></path></svg>`;
 }
 
-const NAV = [
-  { label: '서비스 소개', href: '/intro.html' },
-  { label: '자주 묻는 질문', href: '/faq.html' },
-  { label: '고객지원', href: '/support.html' },
-];
-
 /**
  * 하위 5종(소개 · FAQ · 고객지원 · 이용약관 · 처리방침)의 GNB.
  *
@@ -61,7 +55,7 @@ const NAV = [
  * 체크박스가 `.sp-nav`보다 **앞에** 있어야 `~` 선택자가 걸린다.
  */
 function subGnb(activePath: string | null): string {
-  const links = NAV.map(n => {
+  const links = COPY.nav.map(n => {
     const on = activePath === n.href;
     return `<a class="sp-nav-link" href="${esc(n.href)}"${on ? ' aria-current="page"' : ''}${on ? ` style="color:${INK};font-weight:700"` : ''}>${esc(n.label)}</a>`;
   }).join('');
@@ -81,11 +75,8 @@ function subGnb(activePath: string | null): string {
  * 시안에 없는 `.sp-foot-biz` 한 덩어리는 남긴다 — 사업자 정보는 표시 의무가 있다.
  */
 function subFooter(): string {
-  const nav = NAV.map(n => `<a href="${esc(n.href)}">${esc(n.label)}</a>`).join('');
-  const legal = [
-    { label: '이용약관', href: '/terms.html' },
-    { label: '개인정보처리방침', href: '/privacy.html' },
-  ].map(l => `<a href="${esc(l.href)}">${esc(l.label)}</a>`).join('');
+  const nav = COPY.nav.map(n => `<a href="${esc(n.href)}">${esc(n.label)}</a>`).join('');
+  const legal = COPY.legal.map(l => `<a href="${esc(l.href)}">${esc(l.label)}</a>`).join('');
   return `<footer class="sp-foot">
     <div class="sp-foot-top">
       <a class="sp-foot-brand" href="/">${pickMark(20, C)}<span>${esc(COPY.brand)}</span></a>
@@ -121,6 +112,7 @@ a{color:inherit}
 
 /* Title band */
 .sp-titleband{padding:52px 64px 44px;border-bottom:1px solid ${DIVIDER}}
+.sp-dash{display:block;width:26px;height:4px;border-radius:2px;background:${C};margin-bottom:12px}
 .sp-titleband h1{font-size:38px;line-height:52px;font-weight:700;color:${INK};letter-spacing:-1.2px;margin:0;white-space:pre-line}
 
 /* Body */
@@ -248,6 +240,7 @@ ${fontPreloadTag()}
 
 function titleBand(crumb: string, h1: string, h1sub?: string): string {
   return `<div class="sp-titleband">
+  <span class="sp-dash" aria-hidden="true"></span>
   <p style="font-size:14px;line-height:19px;color:${esc(TER)};margin:0 0 16px">${esc(crumb)}</p>
   <h1>${esc(h1)}</h1>
   ${h1sub ? `<p style="font-size:17px;line-height:27px;color:${esc(SEC)};margin:4px 0 0;max-width:700px">${esc(h1sub)}</p>` : ''}
@@ -261,25 +254,25 @@ export function renderIntroPage(): string {
     `<div class="sp-editorial">${COPY.steps.map(s => `<section><span class="sp-number">${esc(s.n)}</span><h2>${esc(s.title)}</h2><p>${esc(s.body)}</p></section>`).join('')}
     <section><h2>${esc(COPY.pickTitle).replace(/\n/g,' ')}</h2><p>${esc(COPY.pickBody)}</p></section>
     <section><h2>${esc(COPY.trustTitle).replace(/\n/g,' ')}</h2><p>${esc(COPY.trustBody)}</p><p>${esc(COPY.trustNote)}</p></section>
-    <a class="sp-link" href="/#how">${esc(COPY.introLink)}</a></div>`});
+    <a class="sp-link" href="/">${esc(COPY.introLink)}</a></div>`});
 }
 
 export function renderFaqPage(): string {
-  return subDocument({path:'/faq.html',title:COPY.nav[2]!.label,description:COPY.faqTitle,activePath:'/faq.html',titleBand:titleBand(COPY.nav[2]!.label,COPY.faqTitle),body:
+  return subDocument({path:'/faq.html',title:COPY.nav[1]!.label,description:COPY.faqTitle,activePath:'/faq.html',titleBand:titleBand(COPY.nav[1]!.label,COPY.faqTitle),body:
     `<div class="sp-editorial sp-faq-list">${COPY.faq.map(f=>`<details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join('')}
     <p class="sp-support-note">${esc(COPY.faqSupport)}</p><a class="sp-link" href="/support.html">${esc(COPY.contact)}</a></div>`});
 }
 
 export function renderSupportPage(): string {
   const contact=CONTACT_EMAIL ? `<a class="sp-link" href="mailto:${esc(CONTACT_EMAIL)}">${esc(COPY.supportMail)}</a><p>${esc(CONTACT_EMAIL)}</p><p>${esc(COPY.supportMailNote)}</p>` : `<p>${esc(COPY.supportFallback)}</p>`;
-  return subDocument({path:'/support.html',title:COPY.footerLinks[1]!.label,description:COPY.supportBody,activePath:'/support.html',titleBand:titleBand(COPY.footerLinks[1]!.label,COPY.supportTitle,COPY.supportBody),body:
+  return subDocument({path:'/support.html',title:COPY.nav[2]!.label,description:COPY.supportBody,activePath:'/support.html',titleBand:titleBand(COPY.nav[2]!.label,COPY.supportTitle,COPY.supportBody),body:
     /*
      * WP-BIZ-008 웹 하단 업체 문의 진입. **앱과 같은 창구로 보낸다** — 업체용
      * 접수 경로를 따로 만들면 두 큐를 사람이 나눠 봐야 하고, 한쪽이 밀린다.
      * 로그인을 먼저 요구하지 않는다: 소속 확인은 접수한 뒤의 일이고, 앞에 두면
      * 정보가 틀렸다고 알리러 온 사람이 가입부터 해야 한다.
      */
-    `<div class="sp-editorial"><section><h2>${esc(COPY.contact)}</h2>${contact}<p class="sp-support-note">${esc(COPY.supportPrivacy)}</p></section><section id="vendor"><h2>${esc(COPY.supportVendorTitle)}</h2><p>${esc(COPY.supportVendorBody)}</p>${contact}<p class="sp-support-note">${esc(COPY.supportVendorNote)}</p></section><section><h2>${esc(COPY.supportFaq)}</h2><a class="sp-link" href="/faq.html">${esc(COPY.nav[2]!.label)}</a></section></div>`});
+    `<div class="sp-editorial"><section><h2>${esc(COPY.contact)}</h2>${contact}<p class="sp-support-note">${esc(COPY.supportPrivacy)}</p></section><section id="vendor"><h2>${esc(COPY.supportVendorTitle)}</h2><p>${esc(COPY.supportVendorBody)}</p>${contact}<p class="sp-support-note">${esc(COPY.supportVendorNote)}</p></section><section><h2>${esc(COPY.supportFaq)}</h2><a class="sp-link" href="/faq.html">${esc(COPY.nav[1]!.label)}</a></section></div>`});
 }
 
 /**
