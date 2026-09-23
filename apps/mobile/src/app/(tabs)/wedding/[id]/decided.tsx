@@ -59,7 +59,7 @@ export default function DecidedVendorsScreen() {
 
   return (
     <Screen>
-      <NavBar title={S.title} />
+      <NavBar title={S.title} variant="close" />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Hero
