@@ -349,7 +349,7 @@ export default function WeddingScreen({
                   accessibilityLabel={item.label}
                   onPress={() => setTab(item.key)}
                   style={[styles.tab, selected ? [styles.tabActive, { borderBottomColor: theme.text }] : null]}>
-                  <ThemedText type="tab" style={{ color: selected ? theme.text : theme.textAssistive }}>
+                  <ThemedText type="t6" style={[styles.bold, { color: selected ? theme.text : theme.textAssistive }]}>
                     {item.label}
                   </ThemedText>
                 </Pressable>

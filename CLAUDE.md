@@ -103,6 +103,23 @@ v3.29가 바꾼 것(근거: `docs/design/CHANGELOG.md`) — 별점 항목만 위
 저장소에 없다** — 다른 세션에 지시를 넘길 때 그 경로를 정본으로 적지 않는다. `.dc.html`은
 **파일 이름만 보고 판단하지 않는다.** 해당 화면 ID(`WP-XXX-000`) 구역을 실제로 연다.
 
+**값은 손으로 읽지 않고 실행해서 뽑는다(2026-09-23 신설, `scripts/canon/README.md`).**
+`.dc.html`의 실제 style 값은 `<script>` 안에 문자열 결합(`'flex:1;...' + (on.a ? ... : ...)`)
+으로 박혀 있다 — 오늘 사고가 정확히 이걸 손으로 안 풀어봐서 났다.
+
+```
+node scripts/canon/extract-style.mjs --file "docs/design/html/<파일>.dc.html" --wp WP-XXX-000
+node scripts/canon/extract-rn-style.mjs --file "<구현 파일>" --key <스타일 키>
+node scripts/canon/resolve-tokens.mjs --token Layout.cardPadding
+```
+
+첫째는 정본 값을, 둘째는 구현의 `StyleSheet.create` 값을(`packages/ui` 토큰까지 실제
+숫자로 풀어서) 실행해서 뽑는다 — **이름이 같다고 값이 같다고 가정하지 않는다**
+(`FontSize.tab`은 12, `LineHeight.tab`은 16이고 이 둘을 합친 `type="tab"`은 12px다 —
+16px일 거라고 추측했다가 오늘 실제로 한 번 틀렸다). 일치·불일치 판정은 이 도구가 안
+한다 — CSS와 RN StyleSheet는 속성 체계가 달라 기계 판정이 오히려 잘못된 확신을 준다.
+사람이 표에 채워 넣는다.
+
 **1. 코드를 고치기 전에 비교표부터 쓴다. 비교표 없이 코드를 고치는 것을 금지한다.**
 
 | 항목 | 정본(`.dc.html` 경로 + WP-ID) | 구현(파일 경로 + 줄) | 일치 | 조치 |
