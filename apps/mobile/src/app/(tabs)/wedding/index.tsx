@@ -66,7 +66,7 @@ type Tab = 'calendar' | 'consult' | 'budget';
 
 /* 문구 — spec/strings.ko.json `ourWedding`. 피그마 `OurWedding.tsx`에서 왔다. */
 const TABS: readonly { key: Tab; label: string }[] = [
-  { key: 'calendar', label: '캘린더' },
+  { key: 'calendar', label: '웨딩일정' },
   { key: 'consult', label: '상담기록' },
   { key: 'budget', label: '예산현황' },
 ];
@@ -79,6 +79,8 @@ const EDIT = '수정';
 const DELETE = '삭제';
 const DELETE_TITLE = '삭제할까요?';
 const UNPAID = '미집행';
+/* v3.28 `spendGoRow` — 예산 카드 맨 아래에서 지출 목록(WP-OUR-014b)으로 간다. */
+const SPEND_LINK = '지출내역';
 const CONSULT_EMPTY_TITLE = '녹음 파일을 올려주세요';
 const CONSULT_EMPTY_BODY = '휴대폰 녹음앱에서 저장한 파일이면 돼요';
 const CONSULT_SAVED = '저장됨';
@@ -327,6 +329,9 @@ export default function WeddingScreen({
               error={expensesError}
               onEditBudget={openBudgetEditor}
               onRetry={retryExpenses}
+              onOpenSpend={() =>
+                weddingId ? router.push(`/wedding/${weddingId}/expenses/list` as never) : null
+              }
             />
           ) : (
             <ConsultPanel
@@ -577,11 +582,13 @@ function BudgetPanel({
   error,
   onEditBudget,
   onRetry,
+  onOpenSpend,
 }: {
   expenses: ExpenseSummaryResponse | null;
   error: boolean;
   onEditBudget: () => void;
   onRetry: () => void;
+  onOpenSpend: () => void;
 }) {
   const theme = useTheme();
 
@@ -687,6 +694,17 @@ function BudgetPanel({
           );
         })}
       </View>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={SPEND_LINK}
+        onPress={onOpenSpend}
+        style={({ pressed }) => [styles.spendLink, { borderTopColor: theme.border }, pressed ? styles.pressed : null]}>
+        <ThemedText type="f14" style={styles.bold}>
+          {SPEND_LINK}
+        </ThemedText>
+        <ProductSymbol name="chevronRight" size={Layout.iconField} color={theme.textAssistive} />
+      </Pressable>
 
       <View style={[styles.proofInvite, { borderTopColor: theme.border }]}>
         <View style={styles.grow}>
@@ -996,6 +1014,17 @@ const styles = StyleSheet.create({
   barFill: { height: '100%', borderRadius: Radius.pill },
   /* `mt-1.5 flex justify-between`. */
   bucketFoot: { marginTop: Layout.menuGroupGap, flexDirection: 'row', justifyContent: 'space-between' },
+  /* v3.28 `spendGoRow` — 선 위 · 최소 높이 44 · 양끝 정렬 · 14/700. */
+  spendLink: {
+    marginTop: Layout.listGap,
+    paddingTop: Spacing.one,
+    borderTopWidth: Border.hairline,
+    minHeight: Layout.touchTarget,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Layout.inlineGap,
+  },
   proofInvite: {
     marginTop: Layout.listGap,
     paddingTop: Layout.listGap,
