@@ -3,10 +3,12 @@ import { StyleSheet, View } from 'react-native';
 import { Layout, Radius, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
 
 /**
- * 온보딩 진행 표시 — docs/design/figma-export/06-onboarding-login.dc.html.
+ * 온보딩 진행 표시 — 정본 `docs/design/html/대메뉴_홈(로그인, 온보딩).dc.html` WP-AUTH-002~007
+ * (prog20~prog100). 옛 `docs/design/figma-export/06-onboarding-login.dc.html`은 2026-09-22에
+ * 파기됐다.
  *
- * 56px 행 안에 4px 단일 트랙 + N/3만 둔다. «이전»은 상단에 두지 않고 StepFrame의
- * 하단 dock으로 내려간다. 정본의 1/3 · 2/3 · 3/3이 각각 33 · 66 · 100%를 채운다.
+ * 56px 행 안에 4px 단일 트랙 + N/5만 둔다. «이전»은 상단에 두지 않고 StepFrame의
+ * 하단 dock으로 내려간다. 정본의 5단계가 각각 20 · 40 · 60 · 80 · 100%를 채운다.
  */
 export function OnboardingProgress({ label }: { label: string }) {
   const theme = useTheme();

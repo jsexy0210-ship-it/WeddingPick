@@ -34,7 +34,8 @@ describe('ROOT_TABS', () => {
    *
    * 검색은 2026-09-14에 「초기 이미지 데이터가 없어서」 임시로 내렸던 것이고
    * 라운지는 「후기와 박람회가 몇 건뿐이라 탭 한 칸이 빈 화면을 띄운다」가 이유다
-   * (`docs/design/figma-export/README.md`).
+   * (옛 `docs/design/figma-export/README.md`, 2026-09-22 파기 — 결정 자체는 현 정본
+   * `docs/design/README.md`·CLAUDE.md의 Root 탭 다섯 개 규칙으로 유효하다).
    */
   it('검색이 탭으로 돌아오고 라운지가 내려갔다', () => {
     expect(isRootTab('search')).toBe(true);

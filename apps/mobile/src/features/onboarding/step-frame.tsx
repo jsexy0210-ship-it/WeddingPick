@@ -17,7 +17,9 @@ import {
 import { OnboardingProgress } from './progress';
 
 /**
- * 온보딩 한 장의 틀 — docs/design/figma-export/06-onboarding-login.dc.html.
+ * 온보딩 한 장의 틀 — 정본 `docs/design/html/대메뉴_홈(로그인, 온보딩).dc.html` WP-AUTH-002~007
+ * (초기 설정 5단계 + 확인 화면) 공통 틀. 옛 `docs/design/figma-export/06-onboarding-login.dc.html`은
+ * 2026-09-22에 파기됐다.
  *
  * 상단은 56px 진행행, 가운데만 스크롤, 하단은 92px 고정 dock이다. 첫 질문은
  * Primary 하나, 2/3·3/3은 «이전» + Primary 두 버튼을 둔다.

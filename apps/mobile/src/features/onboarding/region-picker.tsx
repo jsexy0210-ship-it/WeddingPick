@@ -8,11 +8,13 @@ import { UNDECIDED_LABEL, type Answers } from './flow';
 import { OptionRow } from './option-row';
 
 /**
- * 지역 2/3 — 보기는 규격서 docs/design/figma-export/06-onboarding-login.dc.html의 65 줄(`OptionRow`)이다. 피그마의 보기 세 개
- * («서울 · 경기·인천 · 다른 지역»)는 시안용 가짜 값이고, **지역은 짧은 꼴 아홉**(`WEDDING_REGIONS` ·
- * 용어 규칙)이라 아홉 + «아직 정하지 않았어요»를 같은 줄 모양으로 세운다.
+ * 지역 — 정본 `docs/design/html/대메뉴_홈(로그인, 온보딩).dc.html` WP-AUTH-003(`OptionRow`).
+ * 시안의 보기 세 개(«서울 · 경기·인천 · 다른 지역»)는 시안용 가짜 값이고, **지역은 짧은 꼴 아홉**
+ * (`WEDDING_REGIONS` · 용어 규칙)이라 아홉 + «아직 정하지 않았어요»를 같은 줄 모양으로 세운다.
  *
- * 구 세부(區) 목록은 규격서에 없는 자리다 — 기존 정본(행 52 · 체크 22)을 그대로 둔다(CLAUDE.md 3번).
+ * 구 세부(區) 목록은 정본에 없는 자리다 — 기존 구현(시/군/구 선택)을 그대로 둔다(CLAUDE.md 3번).
+ * 옛 `docs/design/figma-export/06-onboarding-login.dc.html`은 2026-09-22에 파기됐다 — 되살려
+ * 근거로 쓰지 않는다.
  */
 export function RegionPicker({
   value,

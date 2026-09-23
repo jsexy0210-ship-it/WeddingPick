@@ -3,7 +3,8 @@ import { StyleSheet, View } from 'react-native';
 import { FontSize, Layout, LineHeight, Spacing, ThemedText } from '@weddingpick/ui';
 
 /**
- * 질문 머리 — docs/design/figma-export/06-onboarding-login.dc.html.
+ * 질문 머리 — 정본 `docs/design/html/대메뉴_홈(로그인, 온보딩).dc.html` WP-AUTH-002~006.
+ * 옛 `docs/design/figma-export/06-onboarding-login.dc.html`은 2026-09-22에 파기됐다.
  *
  * 1/3은 qBlock(20/24/24 · 28/38), 2/3·3/3은 qBlockSm(12/24/20 · 26/35)다.
  * 제목 줄바꿈도 정본의 <br> 위치를 그대로 둔다. 영문 eyebrow는 없다.
