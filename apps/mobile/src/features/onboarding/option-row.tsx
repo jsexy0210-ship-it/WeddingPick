@@ -14,8 +14,13 @@ import {
 /**
  * 온보딩 선택 행.
  *
- * 기본형은 기존 설정 화면 호환용이고, description이 있으면 06-onboarding-login의
- * 스타일 4버튼(72px · 18/16 padding · radius 10 · 보조문구)을 그대로 쓴다.
+ * 기본형(`role="radio"`, description 없음)은 기존 설정 화면 호환용이고,
+ * description이 있으면 v3.29 정본 `docs/design/html/대메뉴_홈(로그인, 온보딩).dc.html`
+ * WP-AUTH-004(`prepCell`) · WP-AUTH-006(`styleBtn`)의 카드(72px min-height ·
+ * padding 16 18 · radius 10 · 이름 17/700 · 보조문구 13/19)를 그대로 쓴다 —
+ * 진행 상황(3/5)은 `role="checkbox"` 여러 개, 스타일(5/5)은 `role="checkbox"`
+ * 최대 2개다(2026-09-23 대표님 확인 대기 — CLAUDE.md 「⚠️」 참고, 정본 원문은
+ * 개수 제한 없음이지만 확인 전까지 기존 2개 제한을 유지한다).
  */
 export function OptionRow({
   label,

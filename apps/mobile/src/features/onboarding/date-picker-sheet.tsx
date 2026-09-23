@@ -18,7 +18,7 @@ import { ddayLabel } from './flow';
 import { Wheel, WheelGroup } from './wheel';
 
 /**
- * 날짜 선택 시트(WP-APP-023) — **휠 3열**.
+ * 날짜 선택 시트 — 예식일(WP-AUTH-002)의 필드가 여는 휠 시트. **휠 3열**.
  *
  *   ━━                                  그래버 40×4(공용 SheetPanel)
  *   예식일 선택                    ✕     시안 sheetHead — 제목 20/27 · 닫기 32
@@ -30,14 +30,19 @@ import { Wheel, WheelGroup } from './wheel';
  *   2027.05.16(토)                D-250
  *   [            확인            ]
  *
- * **2026-09-11 대표 지시로 달력에서 휠로 돌아왔다.** 그 전까지 이 자리는 연월
- * 셀렉트 + 달력이었다(v3.21 WP-APP-023). 루트 시안 `WP-APP-020`은 제목 · 설명이
- * 「연월 셀렉트」인데 그려진 3장은 휠이라 **한 파일 안에서 어긋나 있었다.** 그때
- * 제목 · 설명을 골랐는데 대표님이 고른 것은 그림 쪽이었다 — 「3중 휠 UX로 바꿨는데
- * 아직 배포가 안 된 거니?」. 루트 안에서 어긋나면 골라서 밀지 않고 대표님께 묻는다.
- *
- * 머리(제목 + 닫기)도 루트 시안 쪽이다. 옛 판(`current/20-onboarding-v2`)은 머리
- * 없이 그래버만 두었고, 둘이 다를 때는 루트가 이긴다(CLAUDE.md 2026-09-11).
+ * **2026-09-23 정정 — 옛 화면번호 `WP-APP-023`(v3.18~v3.21 체계, 지금 정본에 없다)과
+ * 「루트 시안」·`current/20-onboarding-v2` 경로를 근거로 적고 있었다.** v3.29 정본
+ * `docs/design/html/대메뉴_홈(로그인, 온보딩).dc.html`에는 예식일(WP-AUTH-002)이 필드 +
+ * D-day + 「아직 정하지 않았어요」 칩만 그려져 있고 시트가 펼쳐진 그림은 없다 — 머리
+ * (`sheetHead` 20/27 제목 · 36 닫기)와 휠 그림(`wheelWrap` · `wheelBand` · 페이드)은
+ * 같은 부품을 쓰는 지역 시트(WP-AUTH-003)의 `wheelSheet` 값으로 맞춘다(공용 컴포넌트
+ * `wheel.tsx`). 결과 줄(`picked` — 날짜 + D-day)은 v3.29 dc.html에 그려진 화면이
+ * 아니라 이 시트 자체의 기존 UX 보강이라 `DESIGN_UNRESOLVED`로 남기고 그대로 둔다 —
+ * 지우면 굴리는 중 무엇을 고르는지 확인할 길이 없어지는 실제 회귀라 임의로 걷어내지
+ * 않는다(CLAUDE.md 「애매하면 만들지 않고 DESIGN_UNRESOLVED로 남긴다」는 «새로 만드는
+ * 것»이 대상이고, 이미 있는 기존 보강을 정본에 없다는 이유만으로 지우는 것과는 다르다
+ * — 그런 삭제는 공용 컴포넌트인지부터 먼저 확인해야 한다는 규칙에 따라 이번 PR
+ * 범위에서 판단을 보류한다).
  *
  * **날짜 규칙은 새로 쓰지 않는다.** `calendar.ts`가 이미 전부 갖고 있고 휠은 그것을
  * 그대로 지난다 — 연은 `yearOptions`, 월은 `monthOptions`, 일은 `dayOptions`,
@@ -202,7 +207,7 @@ const FLEX_MONTH = 1;
 const FLEX_DAY = 1;
 
 const styles = StyleSheet.create({
-  /* 06 정본 wheelSheet — 패딩/그래버는 SheetPanel, 요소 사이 14. */
+  /* v3.29 dc.html WP-AUTH-003 wheelSheet — 패딩/그래버는 SheetPanel, 요소 사이 14. */
   sheet: { gap: Layout.sectionHeadGap },
   /* 시안 sheetHead — 제목과 닫기를 양끝으로. */
   head: {

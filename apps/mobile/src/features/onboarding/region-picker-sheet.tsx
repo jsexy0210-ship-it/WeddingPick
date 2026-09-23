@@ -141,7 +141,7 @@ const FLEX_REGION = 1;
 const FLEX_DISTRICT = 1;
 
 const styles = StyleSheet.create({
-  /* 06 정본 wheelSheet — 요소 간격 14. 패딩/그래버는 SheetPanel이 맡는다. */
+  /* v3.29 dc.html WP-AUTH-003 wheelSheet — 요소 간격 14. 패딩/그래버는 SheetPanel이 맡는다. */
   sheet: { gap: Layout.sectionHeadGap },
   head: {
     flexDirection: 'row',

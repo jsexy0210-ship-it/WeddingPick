@@ -1,12 +1,28 @@
 import { useEffect, useState } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 
-import { Colors, FontSize, LineHeight, Spacing, USE_NATIVE_DRIVER, WeddingMark } from '@weddingpick/ui';
+import {
+  Colors,
+  FontSize,
+  LetterSpacing,
+  LineHeight,
+  Spacing,
+  USE_NATIVE_DRIVER,
+  WeddingMark,
+} from '@weddingpick/ui';
 
 /**
- * 스플래시(WP-APP-002). 시안 `01-onboarding.dc.html` #11a —
+ * 스플래시 — WP-APP-001. v3.29 정본
+ * `docs/design/html/대메뉴_홈(로그인, 온보딩).dc.html` 1번 화면(`splashStage` ·
+ * `splashMark` · `splashName`).
  *
- *   코랄 바탕 · 세로 중앙 · 마크 112(흰색) · 아래 18 · «웨딩픽» 32/43 700 흰색
+ *   코랄 바탕(`splashStage` background) · 세로 중앙 · 마크 64(흰색, `splashMark`
+ *   width/height) · 마크-이름 사이 16(`splashStage` gap) · «웨딩픽» 20/700 흰색
+ *   (`splashName` font-size · font-weight · color)
+ *
+ * **2026-09-23 정정 — 옛 `01-onboarding.dc.html`(v3.25 이전, 저장소에 이미 없다)의
+ * 값(마크 112 · gap 18 · 32/43)을 쓰고 있었다.** v3.29 정본 수치로 다시 맞춘다 —
+ * `docs/session-prompt.md`가 막는 바로 그 실수(옛 파일 링크를 정본으로 쓰는 것)다.
  *
  * 키 컬러 전면에 심볼과 이름만. **슬로건도 영문 이름도 넣지 않는다** — 시안이 그렇게
  * 정했고, 서비스 설명은 바로 다음 화면(로그인)이 한다. 마크의 획은 확정본 1.9
@@ -89,9 +105,9 @@ export function SplashView() {
   );
 }
 
-/* 시안 고정값 — 마크 112 · 마크와 이름 사이 18. */
-const MARK_SIZE = 112;
-const TITLE_GAP = 18;
+/* v3.29 dc.html 고정값 — splashMark 64×64 · splashStage gap 16(마크-이름 사이). */
+const MARK_SIZE = 64;
+const TITLE_GAP = 16;
 
 const styles = StyleSheet.create({
   screen: {
@@ -99,12 +115,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  /* 시안 — 32/43 700 흰색. 자간은 iOS 0(spec/tokens.json platform.letterSpacing). */
+  /* dc.html splashName — 20/700 흰색(ThemedText type="t4"와 같은 크기·굵기). */
   title: {
     marginTop: TITLE_GAP,
-    fontSize: FontSize.t1,
-    lineHeight: LineHeight.t1,
+    fontSize: FontSize.t4,
+    lineHeight: LineHeight.t4,
     fontWeight: '700',
+    letterSpacing: LetterSpacing.n06,
     color: Colors.light.onTint,
   },
 });
