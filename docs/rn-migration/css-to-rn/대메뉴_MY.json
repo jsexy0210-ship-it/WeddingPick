@@ -1,12 +1,13 @@
 {
   "file": "docs/design/html/대메뉴_MY.dc.html",
-  "convertedAtUtc": "2026-09-23T13:05:12.190Z",
-  "tool": "css-to-react-native-transform",
+  "convertedAtUtc": "2026-09-23T13:13:46.336Z",
+  "tool": "css-to-react-native-transform + 규칙 기반 2차 변환",
   "renderValsError": null,
   "summary": {
     "uniqueDeclarationBlocks": 234,
-    "fullyConverted": 179,
-    "withIssues": 55
+    "fullyConverted": 234,
+    "idiomResolved": 56,
+    "stillOpen": 0
   },
   "results": [
     {
@@ -18,6 +19,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "grp"
       ],
@@ -33,6 +35,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "c1",
         "c9",
@@ -72,6 +75,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "cW12",
         "colWide"
@@ -92,6 +96,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "root"
       ],
@@ -107,6 +112,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "intro"
       ],
@@ -122,6 +128,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "eyebrow"
       ],
@@ -137,6 +144,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "h0"
       ],
@@ -152,6 +160,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "lead"
       ],
@@ -167,6 +176,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "row"
       ],
@@ -183,10 +193,17 @@
         "fontWeight": "700",
         "color": "#212124"
       },
-      "webOnlyOrInvalid": {
-        "whiteSpace": "nowrap"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "white-space"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN Text는 기본적으로 줄바꿈된다 — 한 줄을 유지하려면 해당 <Text numberOfLines={1}>을 쓴다(말줄임 없이 자르려면 ellipsizeMode=\"clip\")."
+        }
+      ],
       "keyPaths": [
         "tag"
       ],
@@ -200,10 +217,17 @@
         "alignItems": "center",
         "gap": 8
       },
-      "webOnlyOrInvalid": {
-        "whiteSpace": "nowrap"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "white-space"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN Text는 기본적으로 줄바꿈된다 — 한 줄을 유지하려면 해당 <Text numberOfLines={1}>을 쓴다(말줄임 없이 자르려면 ellipsizeMode=\"clip\")."
+        }
+      ],
       "keyPaths": [
         "tagRow"
       ],
@@ -218,6 +242,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "tagText",
         "profName"
@@ -243,6 +268,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "tagId"
       ],
@@ -268,10 +294,17 @@
         "fontSize": 13,
         "fontWeight": "700"
       },
-      "webOnlyOrInvalid": {
-        "whiteSpace": "nowrap"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "white-space"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN Text는 기본적으로 줄바꿈된다 — 한 줄을 유지하려면 해당 <Text numberOfLines={1}>을 쓴다(말줄임 없이 자르려면 ellipsizeMode=\"clip\")."
+        }
+      ],
       "keyPaths": [
         "tagIdWide"
       ],
@@ -281,23 +314,23 @@
       "raw": "height:66px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;line-height:21px;color:#4d5159;text-wrap:pretty",
       "style": {
         "height": 66,
-        "display": "-webkit-box",
         "overflow": "hidden",
         "fontSize": 14,
         "lineHeight": 21,
         "color": "#4d5159",
         "textWrap": "pretty"
       },
-      "webOnlyOrInvalid": {
-        "WebkitLineClamp": 3,
-        "WebkitBoxOrient": "vertical"
-      },
-      "unconverted": [
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "resolvedIdioms": [
         {
-          "prop": "-webkit-line-clamp",
-          "value": "3",
-          "note": "변환됐지만 경고 있음: Expected style \"WebkitLineClamp: 3\" to contain units",
-          "kind": "WARNED"
+          "props": [
+            "-webkit-line-clamp",
+            "-webkit-box-orient",
+            "display"
+          ],
+          "kind": "LINE_CLAMP_TEXT",
+          "componentNote": "style이 아니라 컴포넌트 prop이다 — 해당 <Text numberOfLines={3}>로 구현한다."
         }
       ],
       "keyPaths": [
@@ -316,16 +349,36 @@
         "display": "flex",
         "flexDirection": "column",
         "backgroundColor": "#fff",
+        "shadowColor": "rgb(0, 27, 55)",
         "shadowOffset": {
           "width": 0,
           "height": 15
         },
-        "shadowRadius": 75,
-        "shadowColor": "rgba(0,27,55,.14)",
-        "shadowOpacity": 1
+        "shadowOpacity": 0.14,
+        "shadowRadius": 37.5,
+        "elevation": 38
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "box-shadow"
+          ],
+          "kind": "BOX_SHADOW",
+          "style": {
+            "shadowColor": "rgb(0, 27, 55)",
+            "shadowOffset": {
+              "width": 0,
+              "height": 15
+            },
+            "shadowOpacity": 0.14,
+            "shadowRadius": 37.5,
+            "elevation": 38
+          },
+          "componentNote": "iOS는 shadow*로 정확하고, Android elevation은 색·오프셋 없는 단일 수치 근사치다 — 실기기에서 확인한다."
+        }
+      ],
       "keyPaths": [
         "phone"
       ],
@@ -349,6 +402,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "bar"
       ],
@@ -371,6 +425,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "head"
       ],
@@ -385,6 +440,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "h1",
         "doneTitle"
@@ -400,6 +456,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "headAct",
         "avatarAct"
@@ -418,16 +475,23 @@
         "paddingTop": 0,
         "paddingRight": 16,
         "paddingBottom": 0,
-        "paddingLeft": 16
+        "paddingLeft": 16,
+        "borderBottomWidth": 1,
+        "borderBottomColor": "#eaebee"
       },
       "webOnlyOrInvalid": {},
-      "unconverted": [
+      "unconverted": [],
+      "resolvedIdioms": [
         {
-          "prop": "box-shadow",
-          "value": "inset 0 -1px 0 #eaebee",
-          "error": "Failed to parse declaration \"boxShadow: inset 0 -1px 0 #eaebee\"",
-          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
-          "kind": "FAILED"
+          "props": [
+            "box-shadow"
+          ],
+          "kind": "BOX_SHADOW",
+          "style": {
+            "borderBottomWidth": 1,
+            "borderBottomColor": "#eaebee"
+          },
+          "componentNote": ""
         }
       ],
       "keyPaths": [
@@ -449,6 +513,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "navTitle",
         "navTitleL"
@@ -465,6 +530,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "navPad"
       ],
@@ -487,6 +553,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "icoBack"
       ],
@@ -507,6 +574,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "icoRight"
       ],
@@ -527,6 +595,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "icoChat"
       ],
@@ -544,10 +613,17 @@
         "paddingTop": 16,
         "scrollbarWidth": "none"
       },
-      "webOnlyOrInvalid": {
-        "overflowY": "auto"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "overflow-y"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN은 축별 overflow 제어가 없다 — style.overflow는 \"hidden\"/\"visible\"만 쓰고, 세로 스크롤은 ScrollView 기본값을 쓴다."
+        }
+      ],
       "keyPaths": [
         "scroll"
       ],
@@ -574,6 +650,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "segWrap"
       ],
@@ -594,18 +671,43 @@
         "fontWeight": "700",
         "backgroundColor": "#fff",
         "color": "#212124",
+        "shadowColor": "rgb(0, 27, 55)",
         "shadowOffset": {
           "width": 0,
           "height": 1
         },
-        "shadowRadius": 3,
-        "shadowColor": "rgba(0,27,55,.10)",
-        "shadowOpacity": 1
+        "shadowOpacity": 0.1,
+        "shadowRadius": 1.5,
+        "elevation": 2
       },
-      "webOnlyOrInvalid": {
-        "cursor": "pointer"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "cursor"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN 네이티브에는 커서가 없다 — Pressable/TouchableOpacity가 이미 처리하므로 그냥 뺀다."
+        },
+        {
+          "props": [
+            "box-shadow"
+          ],
+          "kind": "BOX_SHADOW",
+          "style": {
+            "shadowColor": "rgb(0, 27, 55)",
+            "shadowOffset": {
+              "width": 0,
+              "height": 1
+            },
+            "shadowOpacity": 0.1,
+            "shadowRadius": 1.5,
+            "elevation": 2
+          },
+          "componentNote": "iOS는 shadow*로 정확하고, Android elevation은 색·오프셋 없는 단일 수치 근사치다 — 실기기에서 확인한다."
+        }
+      ],
       "keyPaths": [
         "segReview[0].style",
         "segFeed[1].style",
@@ -628,10 +730,17 @@
         "fontWeight": "700",
         "color": "#868b94"
       },
-      "webOnlyOrInvalid": {
-        "cursor": "pointer"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "cursor"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN 네이티브에는 커서가 없다 — Pressable/TouchableOpacity가 이미 처리하므로 그냥 뺀다."
+        }
+      ],
       "keyPaths": [
         "segReview[1].style",
         "segReview[2].style",
@@ -656,10 +765,17 @@
         "paddingLeft": 20,
         "scrollbarWidth": "none"
       },
-      "webOnlyOrInvalid": {
-        "overflowX": "auto"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "overflow-x"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN은 축별 overflow 제어가 없다 — style.overflow는 \"hidden\"/\"visible\"만 쓰고, 가로 스크롤이 필요하면 ScrollView의 horizontal prop을 쓴다."
+        }
+      ],
       "keyPaths": [
         "chipBar"
       ],
@@ -684,11 +800,24 @@
         "backgroundColor": "#212124",
         "color": "#fff"
       },
-      "webOnlyOrInvalid": {
-        "whiteSpace": "nowrap",
-        "cursor": "pointer"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "cursor"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN 네이티브에는 커서가 없다 — Pressable/TouchableOpacity가 이미 처리하므로 그냥 뺀다."
+        },
+        {
+          "props": [
+            "white-space"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN Text는 기본적으로 줄바꿈된다 — 한 줄을 유지하려면 해당 <Text numberOfLines={1}>을 쓴다(말줄임 없이 자르려면 ellipsizeMode=\"clip\")."
+        }
+      ],
       "keyPaths": [
         "cats[0].style",
         "faqCats[0].style",
@@ -715,11 +844,24 @@
         "backgroundColor": "#f2f3f6",
         "color": "#4d5159"
       },
-      "webOnlyOrInvalid": {
-        "whiteSpace": "nowrap",
-        "cursor": "pointer"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "cursor"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN 네이티브에는 커서가 없다 — Pressable/TouchableOpacity가 이미 처리하므로 그냥 뺀다."
+        },
+        {
+          "props": [
+            "white-space"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN Text는 기본적으로 줄바꿈된다 — 한 줄을 유지하려면 해당 <Text numberOfLines={1}>을 쓴다(말줄임 없이 자르려면 ellipsizeMode=\"clip\")."
+        }
+      ],
       "keyPaths": [
         "cats[1].style",
         "cats[2].style",
@@ -745,16 +887,23 @@
         "flexShrink": 0,
         "flexBasis": 76,
         "display": "flex",
-        "paddingTop": 8
+        "paddingTop": 8,
+        "borderTopWidth": 1,
+        "borderTopColor": "#eaebee"
       },
       "webOnlyOrInvalid": {},
-      "unconverted": [
+      "unconverted": [],
+      "resolvedIdioms": [
         {
-          "prop": "box-shadow",
-          "value": "inset 0 1px 0 #eaebee",
-          "error": "Failed to parse declaration \"boxShadow: inset 0 1px 0 #eaebee\"",
-          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
-          "kind": "FAILED"
+          "props": [
+            "box-shadow"
+          ],
+          "kind": "BOX_SHADOW",
+          "style": {
+            "borderTopWidth": 1,
+            "borderTopColor": "#eaebee"
+          },
+          "componentNote": ""
         }
       ],
       "keyPaths": [
@@ -775,6 +924,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "tabCell"
       ],
@@ -795,6 +945,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "tabsLounge[0].icon",
         "tabsMy[0].icon"
@@ -811,6 +962,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "tabsLounge[0].label",
         "tabsLounge[1].label",
@@ -839,6 +991,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "tabsLounge[1].icon",
         "tabsMy[1].icon"
@@ -860,6 +1013,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "tabsLounge[2].icon",
         "tabsMy[2].icon"
@@ -881,6 +1035,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "tabsLounge[3].icon",
         "tabsMy[3].icon"
@@ -902,6 +1057,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "tabsLounge[4].icon"
       ],
@@ -922,6 +1078,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "tabsMy[4].icon"
       ],
@@ -937,6 +1094,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "tabsMy[4].label"
       ],
@@ -954,16 +1112,23 @@
         "paddingLeft": 20,
         "display": "flex",
         "flexDirection": "column",
-        "gap": 12
+        "gap": 12,
+        "borderBottomWidth": 1,
+        "borderBottomColor": "#eaebee"
       },
       "webOnlyOrInvalid": {},
-      "unconverted": [
+      "unconverted": [],
+      "resolvedIdioms": [
         {
-          "prop": "box-shadow",
-          "value": "inset 0 -1px 0 #eaebee",
-          "error": "Failed to parse declaration \"boxShadow: inset 0 -1px 0 #eaebee\"",
-          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
-          "kind": "FAILED"
+          "props": [
+            "box-shadow"
+          ],
+          "kind": "BOX_SHADOW",
+          "style": {
+            "borderBottomWidth": 1,
+            "borderBottomColor": "#eaebee"
+          },
+          "componentNote": ""
         }
       ],
       "keyPaths": [
@@ -980,6 +1145,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "revHead"
       ],
@@ -1004,6 +1170,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "revAvatar"
       ],
@@ -1022,6 +1189,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "revNameCol",
         "setCol",
@@ -1039,6 +1207,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "revNameRow"
       ],
@@ -1053,6 +1222,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "revName",
         "noteT"
@@ -1067,6 +1237,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "revMeta",
         "guideMeta",
@@ -1087,10 +1258,17 @@
         "fontSize": 11,
         "fontWeight": "700"
       },
-      "webOnlyOrInvalid": {
-        "whiteSpace": "nowrap"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "white-space"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN Text는 기본적으로 줄바꿈된다 — 한 줄을 유지하려면 해당 <Text numberOfLines={1}>을 쓴다(말줄임 없이 자르려면 ellipsizeMode=\"clip\")."
+        }
+      ],
       "keyPaths": [
         "badgeVerify"
       ],
@@ -1109,10 +1287,17 @@
         "fontSize": 11,
         "fontWeight": "700"
       },
-      "webOnlyOrInvalid": {
-        "whiteSpace": "nowrap"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "white-space"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN Text는 기본적으로 줄바꿈된다 — 한 줄을 유지하려면 해당 <Text numberOfLines={1}>을 쓴다(말줄임 없이 자르려면 ellipsizeMode=\"clip\")."
+        }
+      ],
       "keyPaths": [
         "badgeWarn"
       ],
@@ -1127,6 +1312,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "revAnswers"
       ],
@@ -1150,6 +1336,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "revChip"
       ],
@@ -1166,6 +1353,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "revImg"
       ],
@@ -1181,6 +1369,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "revText"
       ],
@@ -1195,6 +1384,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "revFoot"
       ],
@@ -1212,6 +1402,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "revCmt",
         "reviews[1].likeStyle"
@@ -1233,6 +1424,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "reviews[0].stars[0].style",
         "reviews[0].stars[1].style",
@@ -1258,6 +1450,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "reviews[0].likeStyle"
       ],
@@ -1278,6 +1471,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "reviews[0].likeIcon"
       ],
@@ -1298,6 +1492,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "reviews[1].stars[4].style"
       ],
@@ -1318,6 +1513,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "reviews[1].likeIcon"
       ],
@@ -1334,16 +1530,23 @@
         "paddingTop": 16,
         "paddingRight": 20,
         "paddingBottom": 16,
-        "paddingLeft": 20
+        "paddingLeft": 20,
+        "borderBottomWidth": 1,
+        "borderBottomColor": "#eaebee"
       },
       "webOnlyOrInvalid": {},
-      "unconverted": [
+      "unconverted": [],
+      "resolvedIdioms": [
         {
-          "prop": "box-shadow",
-          "value": "inset 0 -1px 0 #eaebee",
-          "error": "Failed to parse declaration \"boxShadow: inset 0 -1px 0 #eaebee\"",
-          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
-          "kind": "FAILED"
+          "props": [
+            "box-shadow"
+          ],
+          "kind": "BOX_SHADOW",
+          "style": {
+            "borderBottomWidth": 1,
+            "borderBottomColor": "#eaebee"
+          },
+          "componentNote": ""
         }
       ],
       "keyPaths": [
@@ -1365,6 +1568,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "guideThumb"
       ],
@@ -1384,6 +1588,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "guideCol"
       ],
@@ -1398,6 +1603,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "guideCat"
       ],
@@ -1410,19 +1616,19 @@
         "lineHeight": 22,
         "fontWeight": "700",
         "color": "#212124",
-        "display": "-webkit-box",
         "overflow": "hidden"
       },
-      "webOnlyOrInvalid": {
-        "WebkitLineClamp": 2,
-        "WebkitBoxOrient": "vertical"
-      },
-      "unconverted": [
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "resolvedIdioms": [
         {
-          "prop": "-webkit-line-clamp",
-          "value": "2",
-          "note": "변환됐지만 경고 있음: Expected style \"WebkitLineClamp: 2\" to contain units",
-          "kind": "WARNED"
+          "props": [
+            "-webkit-line-clamp",
+            "-webkit-box-orient",
+            "display"
+          ],
+          "kind": "LINE_CLAMP_TEXT",
+          "componentNote": "style이 아니라 컴포넌트 prop이다 — 해당 <Text numberOfLines={2}>로 구현한다."
         }
       ],
       "keyPaths": [
@@ -1446,6 +1652,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "sec"
       ],
@@ -1468,6 +1675,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "secFoot"
       ],
@@ -1482,6 +1690,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "secLabel"
       ],
@@ -1497,6 +1706,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "note",
         "certNote"
@@ -1513,6 +1723,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "expoHead",
         "faqHead"
@@ -1532,6 +1743,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "expoCol",
         "profCol",
@@ -1548,6 +1760,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "expoMeta",
         "profSub",
@@ -1572,6 +1785,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "expos[0].thumbCell",
         "expos[1].thumbCell",
@@ -1597,6 +1811,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "expos[0].card",
         "expos[1].card"
@@ -1612,6 +1827,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "expos[0].nameStyle",
         "expos[1].nameStyle",
@@ -1627,10 +1843,17 @@
         "fontWeight": "700",
         "color": "#ff6f61"
       },
-      "webOnlyOrInvalid": {
-        "whiteSpace": "nowrap"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "white-space"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN Text는 기본적으로 줄바꿈된다 — 한 줄을 유지하려면 해당 <Text numberOfLines={1}>을 쓴다(말줄임 없이 자르려면 ellipsizeMode=\"clip\")."
+        }
+      ],
       "keyPaths": [
         "expos[0].ddayStyle",
         "expos[1].ddayStyle"
@@ -1656,6 +1879,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "expos[0].tagStyle",
         "expos[1].tagStyle",
@@ -1679,6 +1903,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "expos[2].card"
       ],
@@ -1693,6 +1918,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "expos[2].nameStyle"
       ],
@@ -1705,10 +1931,17 @@
         "fontWeight": "700",
         "color": "#adb1ba"
       },
-      "webOnlyOrInvalid": {
-        "whiteSpace": "nowrap"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "white-space"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN Text는 기본적으로 줄바꿈된다 — 한 줄을 유지하려면 해당 <Text numberOfLines={1}>을 쓴다(말줄임 없이 자르려면 ellipsizeMode=\"clip\")."
+        }
+      ],
       "keyPaths": [
         "expos[2].ddayStyle"
       ],
@@ -1727,6 +1960,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "profCard"
       ],
@@ -1745,6 +1979,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "profTop"
       ],
@@ -1769,6 +2004,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "profAvatar"
       ],
@@ -1783,6 +2019,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "profNameRow"
       ],
@@ -1796,6 +2033,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "profDiv"
       ],
@@ -1815,6 +2053,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "profRow"
       ],
@@ -1831,6 +2070,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "profRowT"
       ],
@@ -1850,6 +2090,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "listCard"
       ],
@@ -1866,11 +2107,18 @@
         "color": "#212124",
         "overflow": "hidden"
       },
-      "webOnlyOrInvalid": {
-        "textOverflow": "ellipsis",
-        "whiteSpace": "nowrap"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "white-space",
+            "text-overflow"
+          ],
+          "kind": "ELLIPSIS_TEXT",
+          "componentNote": "style이 아니라 컴포넌트 prop이다 — 해당 <Text numberOfLines={1} ellipsizeMode=\"tail\">로 구현한다."
+        }
+      ],
       "keyPaths": [
         "myLabel"
       ],
@@ -1888,6 +2136,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "myLabelDim"
       ],
@@ -1903,6 +2152,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "myCount"
       ],
@@ -1918,6 +2168,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "knob"
       ],
@@ -1933,16 +2184,23 @@
         "paddingTop": 0,
         "paddingRight": 20,
         "paddingBottom": 0,
-        "paddingLeft": 20
+        "paddingLeft": 20,
+        "borderBottomWidth": 1,
+        "borderBottomColor": "#eaebee"
       },
       "webOnlyOrInvalid": {},
-      "unconverted": [
+      "unconverted": [],
+      "resolvedIdioms": [
         {
-          "prop": "box-shadow",
-          "value": "inset 0 -1px 0 #eaebee",
-          "error": "Failed to parse declaration \"boxShadow: inset 0 -1px 0 #eaebee\"",
-          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
-          "kind": "FAILED"
+          "props": [
+            "box-shadow"
+          ],
+          "kind": "BOX_SHADOW",
+          "style": {
+            "borderBottomWidth": 1,
+            "borderBottomColor": "#eaebee"
+          },
+          "componentNote": ""
         }
       ],
       "keyPaths": [
@@ -1964,6 +2222,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "rowPlainLast"
       ],
@@ -1984,6 +2243,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "mySections[0].rows[0].icon"
       ],
@@ -1999,16 +2259,23 @@
         "paddingTop": 0,
         "paddingRight": 20,
         "paddingBottom": 0,
-        "paddingLeft": 20
+        "paddingLeft": 20,
+        "borderBottomWidth": 1,
+        "borderBottomColor": "#eaebee"
       },
       "webOnlyOrInvalid": {},
-      "unconverted": [
+      "unconverted": [],
+      "resolvedIdioms": [
         {
-          "prop": "box-shadow",
-          "value": "inset 0 -1px 0 #eaebee",
-          "error": "Failed to parse declaration \"boxShadow: inset 0 -1px 0 #eaebee\"",
-          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
-          "kind": "FAILED"
+          "props": [
+            "box-shadow"
+          ],
+          "kind": "BOX_SHADOW",
+          "style": {
+            "borderBottomWidth": 1,
+            "borderBottomColor": "#eaebee"
+          },
+          "componentNote": ""
         }
       ],
       "keyPaths": [
@@ -2047,10 +2314,17 @@
         "paddingBottom": 0,
         "paddingLeft": 3
       },
-      "webOnlyOrInvalid": {
-        "boxSizing": "border-box"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "box-sizing"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN Yoga 레이아웃은 기본적으로 border-box와 같은 방식이라 이 속성 자체가 불필요하다 — 뺀다."
+        }
+      ],
       "keyPaths": [
         "mySections[0].rows[0].track",
         "mySections[0].rows[1].track",
@@ -2087,6 +2361,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "mySections[0].rows[1].icon",
         "mySections[3].rows[1].icon"
@@ -2107,6 +2382,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "mySections[0].rows[1].rowStyle",
         "mySections[1].rows[0].rowStyle",
@@ -2135,6 +2411,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "mySections[1].rows[0].icon"
       ],
@@ -2155,6 +2432,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "mySections[2].rows[0].icon",
         "mySections[3].rows[0].icon"
@@ -2176,6 +2454,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "mySections[2].rows[1].icon"
       ],
@@ -2196,6 +2475,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "mySections[2].rows[2].icon"
       ],
@@ -2216,6 +2496,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "mySections[4].rows[0].icon",
         "mySections[4].rows[1].icon"
@@ -2233,6 +2514,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "logout"
       ],
@@ -2246,6 +2528,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "statRow",
         "btnRow",
@@ -2272,6 +2555,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "statCell"
       ],
@@ -2283,10 +2567,17 @@
         "fontSize": 12,
         "color": "#868b94"
       },
-      "webOnlyOrInvalid": {
-        "whiteSpace": "nowrap"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "white-space"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN Text는 기본적으로 줄바꿈된다 — 한 줄을 유지하려면 해당 <Text numberOfLines={1}>을 쓴다(말줄임 없이 자르려면 ellipsizeMode=\"clip\")."
+        }
+      ],
       "keyPaths": [
         "statLabel"
       ],
@@ -2302,6 +2593,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "certStats[0].numStyle"
       ],
@@ -2317,6 +2609,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "certStats[1].numStyle"
       ],
@@ -2332,6 +2625,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "certStats[2].numStyle"
       ],
@@ -2354,6 +2648,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "certCard"
       ],
@@ -2369,6 +2664,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "certHead"
       ],
@@ -2383,6 +2679,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "certDate",
         "mrMeta"
@@ -2399,6 +2696,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "certBody",
         "expoTitleRow"
@@ -2417,11 +2715,18 @@
         "color": "#212124",
         "overflow": "hidden"
       },
-      "webOnlyOrInvalid": {
-        "textOverflow": "ellipsis",
-        "whiteSpace": "nowrap"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "white-space",
+            "text-overflow"
+          ],
+          "kind": "ELLIPSIS_TEXT",
+          "componentNote": "style이 아니라 컴포넌트 prop이다 — 해당 <Text numberOfLines={1} ellipsizeMode=\"tail\">로 구현한다."
+        }
+      ],
       "keyPaths": [
         "certName"
       ],
@@ -2446,6 +2751,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "certBtn"
       ],
@@ -2464,10 +2770,17 @@
         "backgroundColor": "#e8faf6",
         "color": "#1aa174"
       },
-      "webOnlyOrInvalid": {
-        "whiteSpace": "nowrap"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "white-space"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN Text는 기본적으로 줄바꿈된다 — 한 줄을 유지하려면 해당 <Text numberOfLines={1}>을 쓴다(말줄임 없이 자르려면 ellipsizeMode=\"clip\")."
+        }
+      ],
       "keyPaths": [
         "certs[0].badge",
         "pastInquiries[0].badge"
@@ -2482,10 +2795,17 @@
         "fontVariantNumeric": "tabular-nums",
         "color": "#212124"
       },
-      "webOnlyOrInvalid": {
-        "whiteSpace": "nowrap"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "white-space"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN Text는 기본적으로 줄바꿈된다 — 한 줄을 유지하려면 해당 <Text numberOfLines={1}>을 쓴다(말줄임 없이 자르려면 ellipsizeMode=\"clip\")."
+        }
+      ],
       "keyPaths": [
         "certs[0].amtStyle",
         "certs[1].amtStyle"
@@ -2505,10 +2825,17 @@
         "backgroundColor": "#ffe3ba",
         "color": "#805217"
       },
-      "webOnlyOrInvalid": {
-        "whiteSpace": "nowrap"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "white-space"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN Text는 기본적으로 줄바꿈된다 — 한 줄을 유지하려면 해당 <Text numberOfLines={1}>을 쓴다(말줄임 없이 자르려면 ellipsizeMode=\"clip\")."
+        }
+      ],
       "keyPaths": [
         "certs[1].badge",
         "certs[2].badge"
@@ -2523,10 +2850,17 @@
         "fontVariantNumeric": "tabular-nums",
         "color": "#adb1ba"
       },
-      "webOnlyOrInvalid": {
-        "whiteSpace": "nowrap"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "white-space"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN Text는 기본적으로 줄바꿈된다 — 한 줄을 유지하려면 해당 <Text numberOfLines={1}>을 쓴다(말줄임 없이 자르려면 ellipsizeMode=\"clip\")."
+        }
+      ],
       "keyPaths": [
         "certs[2].amtStyle",
         "certs[3].amtStyle"
@@ -2546,10 +2880,17 @@
         "backgroundColor": "#ffe5e3",
         "color": "#e81607"
       },
-      "webOnlyOrInvalid": {
-        "whiteSpace": "nowrap"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "white-space"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN Text는 기본적으로 줄바꿈된다 — 한 줄을 유지하려면 해당 <Text numberOfLines={1}>을 쓴다(말줄임 없이 자르려면 ellipsizeMode=\"clip\")."
+        }
+      ],
       "keyPaths": [
         "certs[3].badge"
       ],
@@ -2570,6 +2911,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "coupleCard"
       ],
@@ -2586,6 +2928,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "coupleAvatars"
       ],
@@ -2607,6 +2950,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "av1"
       ],
@@ -2625,16 +2969,23 @@
         "justifyContent": "center",
         "fontSize": 16,
         "fontWeight": "700",
-        "marginLeft": -12
+        "marginLeft": -12,
+        "borderWidth": 3,
+        "borderColor": "#fff5f2"
       },
       "webOnlyOrInvalid": {},
-      "unconverted": [
+      "unconverted": [],
+      "resolvedIdioms": [
         {
-          "prop": "box-shadow",
-          "value": "0 0 0 3px #fff5f2",
-          "error": "Failed to parse declaration \"boxShadow: 0 0 0 3px #fff5f2\"",
-          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
-          "kind": "FAILED"
+          "props": [
+            "box-shadow"
+          ],
+          "kind": "BOX_SHADOW",
+          "style": {
+            "borderWidth": 3,
+            "borderColor": "#fff5f2"
+          },
+          "componentNote": "사방 3px 아웃셋 글로우 — RN border는 안쪽으로만 그려져 박스가 시각적으로 살짝 작아 보일 수 있다. 화면에서 눈으로 확인한다."
         }
       ],
       "keyPaths": [
@@ -2660,10 +3011,17 @@
         "paddingBottom": 0,
         "paddingLeft": 3
       },
-      "webOnlyOrInvalid": {
-        "boxSizing": "border-box"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "box-sizing"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN Yoga 레이아웃은 기본적으로 border-box와 같은 방식이라 이 속성 자체가 불필요하다 — 뺀다."
+        }
+      ],
       "keyPaths": [
         "shareOn[0].track",
         "shareOn[1].track",
@@ -2685,6 +3043,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "setK",
         "skinPrevK",
@@ -2700,11 +3059,18 @@
         "color": "#212124",
         "overflow": "hidden"
       },
-      "webOnlyOrInvalid": {
-        "textOverflow": "ellipsis",
-        "whiteSpace": "nowrap"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "white-space",
+            "text-overflow"
+          ],
+          "kind": "ELLIPSIS_TEXT",
+          "componentNote": "style이 아니라 컴포넌트 prop이다 — 해당 <Text numberOfLines={1} ellipsizeMode=\"tail\">로 구현한다."
+        }
+      ],
       "keyPaths": [
         "setV",
         "mrName"
@@ -2721,16 +3087,23 @@
         "paddingTop": 0,
         "paddingRight": 16,
         "paddingBottom": 0,
-        "paddingLeft": 16
+        "paddingLeft": 16,
+        "borderBottomWidth": 1,
+        "borderBottomColor": "#eaebee"
       },
       "webOnlyOrInvalid": {},
-      "unconverted": [
+      "unconverted": [],
+      "resolvedIdioms": [
         {
-          "prop": "box-shadow",
-          "value": "inset 0 -1px 0 #eaebee",
-          "error": "Failed to parse declaration \"boxShadow: inset 0 -1px 0 #eaebee\"",
-          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
-          "kind": "FAILED"
+          "props": [
+            "box-shadow"
+          ],
+          "kind": "BOX_SHADOW",
+          "style": {
+            "borderBottomWidth": 1,
+            "borderBottomColor": "#eaebee"
+          },
+          "componentNote": ""
         }
       ],
       "keyPaths": [
@@ -2755,6 +3128,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "weddingSet[4].rowStyle",
         "pastInquiries[0].rowStyle"
@@ -2776,6 +3150,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "noteBox"
       ],
@@ -2790,6 +3165,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "noteS"
       ],
@@ -2809,6 +3185,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "mrThumb"
       ],
@@ -2830,10 +3207,17 @@
         "fontSize": 13,
         "fontWeight": "700"
       },
-      "webOnlyOrInvalid": {
-        "whiteSpace": "nowrap"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "white-space"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN Text는 기본적으로 줄바꿈된다 — 한 줄을 유지하려면 해당 <Text numberOfLines={1}>을 쓴다(말줄임 없이 자르려면 ellipsizeMode=\"clip\")."
+        }
+      ],
       "keyPaths": [
         "writeBtn"
       ],
@@ -2849,16 +3233,23 @@
         "paddingTop": 12,
         "paddingRight": 16,
         "paddingBottom": 12,
-        "paddingLeft": 16
+        "paddingLeft": 16,
+        "borderBottomWidth": 1,
+        "borderBottomColor": "#eaebee"
       },
       "webOnlyOrInvalid": {},
-      "unconverted": [
+      "unconverted": [],
+      "resolvedIdioms": [
         {
-          "prop": "box-shadow",
-          "value": "inset 0 -1px 0 #eaebee",
-          "error": "Failed to parse declaration \"boxShadow: inset 0 -1px 0 #eaebee\"",
-          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
-          "kind": "FAILED"
+          "props": [
+            "box-shadow"
+          ],
+          "kind": "BOX_SHADOW",
+          "style": {
+            "borderBottomWidth": 1,
+            "borderBottomColor": "#eaebee"
+          },
+          "componentNote": ""
         }
       ],
       "keyPaths": [
@@ -2881,6 +3272,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "myReviews[1].rowStyle",
         "canWrite[1].rowStyle"
@@ -2897,16 +3289,23 @@
         "paddingRight": 20,
         "paddingBottom": 12,
         "paddingLeft": 20,
-        "display": "flex"
+        "display": "flex",
+        "borderTopWidth": 1,
+        "borderTopColor": "#eaebee"
       },
       "webOnlyOrInvalid": {},
-      "unconverted": [
+      "unconverted": [],
+      "resolvedIdioms": [
         {
-          "prop": "box-shadow",
-          "value": "inset 0 1px 0 #eaebee",
-          "error": "Failed to parse declaration \"boxShadow: inset 0 1px 0 #eaebee\"",
-          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
-          "kind": "FAILED"
+          "props": [
+            "box-shadow"
+          ],
+          "kind": "BOX_SHADOW",
+          "style": {
+            "borderTopWidth": 1,
+            "borderTopColor": "#eaebee"
+          },
+          "componentNote": ""
         }
       ],
       "keyPaths": [
@@ -2932,6 +3331,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "ctaFull"
       ],
@@ -2955,6 +3355,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "ctaDanger"
       ],
@@ -2978,6 +3379,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "ctaKakao"
       ],
@@ -2994,16 +3396,23 @@
         "paddingBottom": 12,
         "paddingLeft": 20,
         "display": "flex",
-        "gap": 10
+        "gap": 10,
+        "borderTopWidth": 1,
+        "borderTopColor": "#eaebee"
       },
       "webOnlyOrInvalid": {},
-      "unconverted": [
+      "unconverted": [],
+      "resolvedIdioms": [
         {
-          "prop": "box-shadow",
-          "value": "inset 0 1px 0 #eaebee",
-          "error": "Failed to parse declaration \"boxShadow: inset 0 1px 0 #eaebee\"",
-          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
-          "kind": "FAILED"
+          "props": [
+            "box-shadow"
+          ],
+          "kind": "BOX_SHADOW",
+          "style": {
+            "borderTopWidth": 1,
+            "borderTopColor": "#eaebee"
+          },
+          "componentNote": ""
         }
       ],
       "keyPaths": [
@@ -3029,6 +3438,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "btnGhostHalf"
       ],
@@ -3052,6 +3462,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "ctaHalf"
       ],
@@ -3072,6 +3483,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "skinPrev"
       ],
@@ -3092,6 +3504,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "skinPrevBtn"
       ],
@@ -3114,6 +3527,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "skins[0].mark",
         "inquiryTypes[0].mark"
@@ -3130,16 +3544,23 @@
         "paddingTop": 0,
         "paddingRight": 16,
         "paddingBottom": 0,
-        "paddingLeft": 16
+        "paddingLeft": 16,
+        "borderBottomWidth": 1,
+        "borderBottomColor": "#eaebee"
       },
       "webOnlyOrInvalid": {},
-      "unconverted": [
+      "unconverted": [],
+      "resolvedIdioms": [
         {
-          "prop": "box-shadow",
-          "value": "inset 0 -1px 0 #eaebee",
-          "error": "Failed to parse declaration \"boxShadow: inset 0 -1px 0 #eaebee\"",
-          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
-          "kind": "FAILED"
+          "props": [
+            "box-shadow"
+          ],
+          "kind": "BOX_SHADOW",
+          "style": {
+            "borderBottomWidth": 1,
+            "borderBottomColor": "#eaebee"
+          },
+          "componentNote": ""
         }
       ],
       "keyPaths": [
@@ -3182,6 +3603,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "skins[0].dot"
       ],
@@ -3195,16 +3617,23 @@
         "flexGrow": 0,
         "flexShrink": 0,
         "flexBasis": 22,
-        "borderRadius": 999
+        "borderRadius": 999,
+        "borderWidth": 1.5,
+        "borderColor": "#dcdee3"
       },
       "webOnlyOrInvalid": {},
-      "unconverted": [
+      "unconverted": [],
+      "resolvedIdioms": [
         {
-          "prop": "box-shadow",
-          "value": "inset 0 0 0 1.5px #dcdee3",
-          "error": "Failed to parse declaration \"boxShadow: inset 0 0 0 1.5px #dcdee3\"",
-          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
-          "kind": "FAILED"
+          "props": [
+            "box-shadow"
+          ],
+          "kind": "BOX_SHADOW",
+          "style": {
+            "borderWidth": 1.5,
+            "borderColor": "#dcdee3"
+          },
+          "componentNote": "사방 1.5px 인셋 링 — borderWidth로 정확히 옮겨진다."
         }
       ],
       "keyPaths": [
@@ -3233,6 +3662,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "skins[1].dot"
       ],
@@ -3251,6 +3681,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "skins[2].dot"
       ],
@@ -3269,6 +3700,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "skins[3].dot"
       ],
@@ -3287,6 +3719,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "skins[4].dot"
       ],
@@ -3306,6 +3739,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "skins[5].rowStyle",
         "notiAll[3].rowStyle",
@@ -3331,6 +3765,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "skins[5].dot"
       ],
@@ -3349,6 +3784,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "delDot"
       ],
@@ -3364,16 +3800,23 @@
         "paddingTop": 0,
         "paddingRight": 16,
         "paddingBottom": 0,
-        "paddingLeft": 16
+        "paddingLeft": 16,
+        "borderBottomWidth": 1,
+        "borderBottomColor": "#eaebee"
       },
       "webOnlyOrInvalid": {},
-      "unconverted": [
+      "unconverted": [],
+      "resolvedIdioms": [
         {
-          "prop": "box-shadow",
-          "value": "inset 0 -1px 0 #eaebee",
-          "error": "Failed to parse declaration \"boxShadow: inset 0 -1px 0 #eaebee\"",
-          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
-          "kind": "FAILED"
+          "props": [
+            "box-shadow"
+          ],
+          "kind": "BOX_SHADOW",
+          "style": {
+            "borderBottomWidth": 1,
+            "borderBottomColor": "#eaebee"
+          },
+          "componentNote": ""
         }
       ],
       "keyPaths": [
@@ -3400,6 +3843,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "delKeep[2].rowStyle",
         "doneRows[2].rowStyle",
@@ -3417,6 +3861,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "chkRow"
       ],
@@ -3439,6 +3884,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "chkOn"
       ],
@@ -3452,6 +3898,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "chkText",
         "notiT"
@@ -3474,6 +3921,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "faqField"
       ],
@@ -3494,6 +3942,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "icoSearch"
       ],
@@ -3507,6 +3956,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "faqPh",
         "qSub",
@@ -3529,6 +3979,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "faqQ"
       ],
@@ -3544,6 +3995,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "faqA"
       ],
@@ -3558,6 +4010,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "faqGo"
       ],
@@ -3572,16 +4025,23 @@
         "paddingTop": 16,
         "paddingRight": 16,
         "paddingBottom": 16,
-        "paddingLeft": 16
+        "paddingLeft": 16,
+        "borderBottomWidth": 1,
+        "borderBottomColor": "#eaebee"
       },
       "webOnlyOrInvalid": {},
-      "unconverted": [
+      "unconverted": [],
+      "resolvedIdioms": [
         {
-          "prop": "box-shadow",
-          "value": "inset 0 -1px 0 #eaebee",
-          "error": "Failed to parse declaration \"boxShadow: inset 0 -1px 0 #eaebee\"",
-          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
-          "kind": "FAILED"
+          "props": [
+            "box-shadow"
+          ],
+          "kind": "BOX_SHADOW",
+          "style": {
+            "borderBottomWidth": 1,
+            "borderBottomColor": "#eaebee"
+          },
+          "componentNote": ""
         }
       ],
       "keyPaths": [
@@ -3613,6 +4073,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "faqs[0].icon",
         "faqs[1].icon"
@@ -3634,6 +4095,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "faqs[2].icon",
         "faqs[3].icon",
@@ -3655,6 +4117,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "faqs[5].wrap"
       ],
@@ -3676,6 +4139,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "styleBtnWrap"
       ],
@@ -3690,6 +4154,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "styleDesc"
       ],
@@ -3707,18 +4172,30 @@
         "display": "flex",
         "alignItems": "center",
         "gap": 12,
-        "backgroundColor": "#fff5f2"
+        "backgroundColor": "#fff5f2",
+        "borderWidth": 1.5,
+        "borderColor": "#ff6f61"
       },
-      "webOnlyOrInvalid": {
-        "boxSizing": "border-box"
-      },
-      "unconverted": [
+      "webOnlyOrInvalid": {},
+      "unconverted": [],
+      "resolvedIdioms": [
         {
-          "prop": "box-shadow",
-          "value": "inset 0 0 0 1.5px #ff6f61",
-          "error": "Failed to parse declaration \"boxShadow: inset 0 0 0 1.5px #ff6f61\"",
-          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
-          "kind": "FAILED"
+          "props": [
+            "box-sizing"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN Yoga 레이아웃은 기본적으로 border-box와 같은 방식이라 이 속성 자체가 불필요하다 — 뺀다."
+        },
+        {
+          "props": [
+            "box-shadow"
+          ],
+          "kind": "BOX_SHADOW",
+          "style": {
+            "borderWidth": 1.5,
+            "borderColor": "#ff6f61"
+          },
+          "componentNote": "사방 1.5px 인셋 링 — borderWidth로 정확히 옮겨진다."
         }
       ],
       "keyPaths": [
@@ -3736,6 +4213,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "styleBtns2[0].nameStyle",
         "styleBtns2[1].nameStyle"
@@ -3759,6 +4237,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "styleBtns2[0].mark",
         "styleBtns2[1].mark"
@@ -3779,10 +4258,17 @@
         "gap": 12,
         "backgroundColor": "#f7f8fa"
       },
-      "webOnlyOrInvalid": {
-        "boxSizing": "border-box"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "box-sizing"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN Yoga 레이아웃은 기본적으로 border-box와 같은 방식이라 이 속성 자체가 불필요하다 — 뺀다."
+        }
+      ],
       "keyPaths": [
         "styleBtns2[2].card",
         "styleBtns2[3].card"
@@ -3798,6 +4284,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "styleBtns2[2].nameStyle",
         "styleBtns2[3].nameStyle"
@@ -3812,16 +4299,23 @@
         "flexGrow": 0,
         "flexShrink": 0,
         "flexBasis": 24,
-        "borderRadius": 999
+        "borderRadius": 999,
+        "borderWidth": 1.5,
+        "borderColor": "#dcdee3"
       },
       "webOnlyOrInvalid": {},
-      "unconverted": [
+      "unconverted": [],
+      "resolvedIdioms": [
         {
-          "prop": "box-shadow",
-          "value": "inset 0 0 0 1.5px #dcdee3",
-          "error": "Failed to parse declaration \"boxShadow: inset 0 0 0 1.5px #dcdee3\"",
-          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
-          "kind": "FAILED"
+          "props": [
+            "box-shadow"
+          ],
+          "kind": "BOX_SHADOW",
+          "style": {
+            "borderWidth": 1.5,
+            "borderColor": "#dcdee3"
+          },
+          "componentNote": "사방 1.5px 인셋 링 — borderWidth로 정확히 옮겨진다."
         }
       ],
       "keyPaths": [
@@ -3846,6 +4340,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "codeCard"
       ],
@@ -3862,6 +4357,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "codeText"
       ],
@@ -3875,6 +4371,8 @@
         "flexBasis": 0,
         "height": 48,
         "borderRadius": 6,
+        "borderWidth": 1,
+        "borderColor": "#d1d3d8",
         "display": "flex",
         "alignItems": "center",
         "justifyContent": "center",
@@ -3883,13 +4381,18 @@
         "color": "#212124"
       },
       "webOnlyOrInvalid": {},
-      "unconverted": [
+      "unconverted": [],
+      "resolvedIdioms": [
         {
-          "prop": "box-shadow",
-          "value": "inset 0 0 0 1px #d1d3d8",
-          "error": "Failed to parse declaration \"boxShadow: inset 0 0 0 1px #d1d3d8\"",
-          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
-          "kind": "FAILED"
+          "props": [
+            "box-shadow"
+          ],
+          "kind": "BOX_SHADOW",
+          "style": {
+            "borderWidth": 1,
+            "borderColor": "#d1d3d8"
+          },
+          "componentNote": "사방 1px 인셋 링 — borderWidth로 정확히 옮겨진다."
         }
       ],
       "keyPaths": [
@@ -3910,6 +4413,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "scopeDot"
       ],
@@ -3924,6 +4428,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "inviteTitle"
       ],
@@ -3938,6 +4443,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "inviteSub"
       ],
@@ -3960,6 +4466,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "doneHero"
       ],
@@ -3979,6 +4486,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "doneMark"
       ],
@@ -3997,6 +4505,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "artHero"
       ],
@@ -4013,6 +4522,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "artTitle"
       ],
@@ -4028,6 +4538,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "artP"
       ],
@@ -4050,6 +4561,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "wvCard"
       ],
@@ -4065,6 +4577,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "axBlock"
       ],
@@ -4078,6 +4591,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "axRow"
       ],
@@ -4098,16 +4612,23 @@
         "fontWeight": "700",
         "textAlign": "center",
         "backgroundColor": "#fff5f2",
-        "color": "#ff6f61"
+        "color": "#ff6f61",
+        "borderWidth": 1.5,
+        "borderColor": "#ff6f61"
       },
       "webOnlyOrInvalid": {},
-      "unconverted": [
+      "unconverted": [],
+      "resolvedIdioms": [
         {
-          "prop": "box-shadow",
-          "value": "inset 0 0 0 1.5px #ff6f61",
-          "error": "Failed to parse declaration \"boxShadow: inset 0 0 0 1.5px #ff6f61\"",
-          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
-          "kind": "FAILED"
+          "props": [
+            "box-shadow"
+          ],
+          "kind": "BOX_SHADOW",
+          "style": {
+            "borderWidth": 1.5,
+            "borderColor": "#ff6f61"
+          },
+          "componentNote": "사방 1.5px 인셋 링 — borderWidth로 정확히 옮겨진다."
         }
       ],
       "keyPaths": [
@@ -4135,6 +4656,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "wvAxes[0].opts[1].style",
         "wvAxes[0].opts[2].style",
@@ -4154,6 +4676,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "starRow"
       ],
@@ -4167,6 +4690,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "starPickRow"
       ],
@@ -4185,10 +4709,17 @@
         "mask": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2.5l2.9 6 6.6.7-4.9 4.5 1.3 6.5L12 16.9l-5.9 3.3 1.3-6.5-4.9-4.5 6.6-.7Z'/%3E%3C/svg%3E\") center/contain no-repeat",
         "backgroundColor": "#ff6f61"
       },
-      "webOnlyOrInvalid": {
-        "cursor": "pointer"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "cursor"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN 네이티브에는 커서가 없다 — Pressable/TouchableOpacity가 이미 처리하므로 그냥 뺀다."
+        }
+      ],
       "keyPaths": [
         "starPick[0].style",
         "starPick[1].style",
@@ -4210,10 +4741,17 @@
         "mask": "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2.5l2.9 6 6.6.7-4.9 4.5 1.3 6.5L12 16.9l-5.9 3.3 1.3-6.5-4.9-4.5 6.6-.7Z'/%3E%3C/svg%3E\") center/contain no-repeat",
         "backgroundColor": "#dcdee3"
       },
-      "webOnlyOrInvalid": {
-        "cursor": "pointer"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "cursor"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN 네이티브에는 커서가 없다 — Pressable/TouchableOpacity가 이미 처리하므로 그냥 뺀다."
+        }
+      ],
       "keyPaths": [
         "starPick[4].style"
       ],
@@ -4226,10 +4764,17 @@
         "fontWeight": "700",
         "color": "#ff6f61"
       },
-      "webOnlyOrInvalid": {
-        "whiteSpace": "nowrap"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "white-space"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN Text는 기본적으로 줄바꿈된다 — 한 줄을 유지하려면 해당 <Text numberOfLines={1}>을 쓴다(말줄임 없이 자르려면 ellipsizeMode=\"clip\")."
+        }
+      ],
       "keyPaths": [
         "expoDday"
       ],
@@ -4247,6 +4792,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "expoK"
       ],
@@ -4265,6 +4811,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "expoV"
       ],
@@ -4277,10 +4824,17 @@
         "fontWeight": "700",
         "color": "#ff6f61"
       },
-      "webOnlyOrInvalid": {
-        "whiteSpace": "nowrap"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "white-space"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN Text는 기본적으로 줄바꿈된다 — 한 줄을 유지하려면 해당 <Text numberOfLines={1}>을 쓴다(말줄임 없이 자르려면 ellipsizeMode=\"clip\")."
+        }
+      ],
       "keyPaths": [
         "navSave"
       ],
@@ -4303,6 +4857,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "avatarSec"
       ],
@@ -4324,6 +4879,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "avatarBig"
       ],
@@ -4336,10 +4892,17 @@
         "fontWeight": "700",
         "color": "#212124"
       },
-      "webOnlyOrInvalid": {
-        "whiteSpace": "nowrap"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "white-space"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN Text는 기본적으로 줄바꿈된다 — 한 줄을 유지하려면 해당 <Text numberOfLines={1}>을 쓴다(말줄임 없이 자르려면 ellipsizeMode=\"clip\")."
+        }
+      ],
       "keyPaths": [
         "setVal"
       ],
@@ -4364,6 +4927,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "kakaoMark"
       ],
@@ -4383,6 +4947,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "profileBasic[0].rowStyle"
       ],
@@ -4403,6 +4968,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "icoBookmark"
       ],
@@ -4429,6 +4995,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "icoExternal"
       ],
@@ -4450,6 +5017,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "qBlock"
       ],
@@ -4465,6 +5033,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "divider"
       ],
@@ -4481,6 +5050,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "qTitle"
       ],
@@ -4504,6 +5074,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "textarea"
       ],
@@ -4524,6 +5095,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "photoAdd"
       ],
@@ -4544,6 +5116,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "icoCam"
       ],
@@ -4565,10 +5138,17 @@
         "display": "flex",
         "flexDirection": "column"
       },
-      "webOnlyOrInvalid": {
-        "boxSizing": "border-box"
-      },
+      "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [
+        {
+          "props": [
+            "box-sizing"
+          ],
+          "kind": "BLANKET",
+          "componentNote": "RN Yoga 레이아웃은 기본적으로 border-box와 같은 방식이라 이 속성 자체가 불필요하다 — 뺀다."
+        }
+      ],
       "keyPaths": [
         "diffCard"
       ],
@@ -4580,16 +5160,23 @@
         "display": "flex",
         "alignItems": "center",
         "gap": 16,
-        "minHeight": 44
+        "minHeight": 44,
+        "borderBottomWidth": 1,
+        "borderBottomColor": "#dcdee3"
       },
       "webOnlyOrInvalid": {},
-      "unconverted": [
+      "unconverted": [],
+      "resolvedIdioms": [
         {
-          "prop": "box-shadow",
-          "value": "inset 0 -1px 0 #dcdee3",
-          "error": "Failed to parse declaration \"boxShadow: inset 0 -1px 0 #dcdee3\"",
-          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
-          "kind": "FAILED"
+          "props": [
+            "box-shadow"
+          ],
+          "kind": "BOX_SHADOW",
+          "style": {
+            "borderBottomWidth": 1,
+            "borderBottomColor": "#dcdee3"
+          },
+          "componentNote": ""
         }
       ],
       "keyPaths": [
@@ -4607,16 +5194,23 @@
         "paddingTop": 12,
         "paddingRight": 0,
         "paddingBottom": 12,
-        "paddingLeft": 0
+        "paddingLeft": 0,
+        "borderBottomWidth": 1,
+        "borderBottomColor": "#f2f3f6"
       },
       "webOnlyOrInvalid": {},
-      "unconverted": [
+      "unconverted": [],
+      "resolvedIdioms": [
         {
-          "prop": "box-shadow",
-          "value": "inset 0 -1px 0 #f2f3f6",
-          "error": "Failed to parse declaration \"boxShadow: inset 0 -1px 0 #f2f3f6\"",
-          "alternative": "RN은 box-shadow shorthand를 안 받는다 — iOS는 shadowColor/shadowOffset/shadowOpacity/shadowRadius, Android는 elevation으로 나눠 쓴다. packages/ui/src/theme.ts의 Elevation 토큰을 먼저 확인한다.",
-          "kind": "FAILED"
+          "props": [
+            "box-shadow"
+          ],
+          "kind": "BOX_SHADOW",
+          "style": {
+            "borderBottomWidth": 1,
+            "borderBottomColor": "#f2f3f6"
+          },
+          "componentNote": ""
         }
       ],
       "keyPaths": [
@@ -4637,6 +5231,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "dh1"
       ],
@@ -4655,6 +5250,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "dh2",
         "dh3"
@@ -4673,6 +5269,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "dh4"
       ],
@@ -4692,6 +5289,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "dc1"
       ],
@@ -4710,6 +5308,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "dc2"
       ],
@@ -4727,6 +5326,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "dc3"
       ],
@@ -4746,6 +5346,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "diffs[0].bStyle",
         "diffs[1].bStyle",
@@ -4797,6 +5398,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "literal-style-attr[0]"
       ],
@@ -4809,6 +5411,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "literal-style-attr[1]",
         "literal-style-attr[2]",
@@ -4845,6 +5448,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "literal-style-attr[8]",
         "literal-style-attr[17]"
@@ -4858,6 +5462,7 @@
       },
       "webOnlyOrInvalid": {},
       "unconverted": [],
+      "resolvedIdioms": [],
       "keyPaths": [
         "literal-style-attr[10]",
         "literal-style-attr[14]",

@@ -55,19 +55,25 @@ node scripts/canon/resolve-tokens.mjs --all --json > /tmp/tokens.json
 
 ## 4. CSS → RN 스타일 일괄 변환 — `convert-to-rn.mjs`
 
-`extract-style.mjs`가 화면 하나씩 손으로 대조하기 위한 도구라면, 이건 16개 정본 파일
-전체의 CSS를 `css-to-react-native-transform`으로 한 번에 돌려 RN 스타일 사전을 만드는
-도구다(2026-09-23 대표 지시). 결과와 "78%만 자동 변환되는 이유"는
+`extract-style.mjs`가 화면 하나씩 손으로 대조하기 위한 도구라면, 이건 정본 앱 화면
+6개(관리자·랜딩 제외 — 2026-09-23 대표 지시 「앱화면만 변환하면 된다」) 전체의 CSS를
+`css-to-react-native-transform` + 규칙 기반 2차 변환으로 한 번에 돌려 RN 스타일 사전을
+만드는 도구다. 결과와 "못 고친 나머지를 어떻게 규칙으로 더 풀었는지"는
 `docs/rn-migration/css-to-rn/README.md`에 있다.
 
 ```bash
-node scripts/canon/convert-to-rn.mjs --all
+node scripts/canon/convert-to-rn.mjs --app                       # 앱 화면 6개 — 기본 범위
+node scripts/canon/convert-to-rn.mjs --all                       # 정본 16개 전부(관리자·랜딩 포함, 보통은 안 씀)
 node scripts/canon/convert-to-rn.mjs --file "docs/design/html/<파일>.dc.html"
 ```
 
-**이 도구도 값 변환만 한다 — HTML 구조를 RN 컴포넌트로 옮기는 것은 별도 작업이고,
-"변환 성공"이 "RN 네이티브에서 쓸 수 있다"의 동의어가 아니다**(`cursor`·`transition`
-같은 웹 전용 속성은 타입만 맞으면 성공 처리된다 — `webOnlyOrInvalid`로 따로 갈라둔다).
+**이 도구도 값 변환만 한다 — HTML 구조를 RN 컴포넌트로 옮기는 것은 별도 작업이다.**
+`css-to-react-native-transform`이 포기하는 `box-shadow`·그라디언트·중앙정렬 `transform`과,
+"타입은 맞지만 RN 네이티브엔 없는" `cursor`·`white-space`·`text-overflow` 같은 속성은
+이 파일의 2차 규칙이 실제 RN 값이나 컴포넌트 차원의 대체안(`numberOfLines` 등)으로 직접
+풀어서 `resolvedIdioms`에 채운다 — 그래도 이 계산값이 "복사만 하면 끝"은 아니다(Android
+`elevation`은 근사치, 중앙정렬 margin은 같은 블록의 width/height를 근거로 역산한 값이라
+실제 화면에서 확인이 필요하다).
 
 ## 알려진 한계
 
