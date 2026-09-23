@@ -18,6 +18,7 @@ import {
   LineHeight,
   MaxContentWidth,
   Radius,
+  RatingStars,
   SegmentedTabs,
   Spacing,
   ThemedText,
@@ -374,6 +375,9 @@ function ReviewList({
                 </ThemedText>
               </View>
             </View>
+
+            {/* 정본(대메뉴_MY.dc.html · 대메뉴_검색.dc.html) — 별 5개 + 3축 3지선다(2026-09-23 복원). */}
+            <RatingStars value={review.overall} />
 
             {answers.length > 0 ? (
               <View style={styles.reviewAnswers}>

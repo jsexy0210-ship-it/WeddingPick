@@ -25,6 +25,7 @@ import { assertWeddingAccess } from '../access';
 import { currentUserId, requireUser } from '../auth/plugin';
 import type { AppContext } from '../context';
 import { ApiError, notFound } from '../errors';
+import { summaryRating } from '../review-view';
 
 type CandidateRow = {
   id: string;
@@ -36,6 +37,9 @@ type CandidateRow = {
   added_at: Date;
   added_by: string | null;
   image_url?: string | null;
+  /** 별점. 상세·검색 목록과 같은 관문(scored_reviews)에서 온 수와 평균이다. */
+  rating_count?: string;
+  rating_avg?: string | null;
 };
 
 export function registerCandidateRoutes(app: FastifyInstance, context: AppContext): void {
@@ -61,7 +65,11 @@ export function registerCandidateRoutes(app: FastifyInstance, context: AppContex
                 (SELECT i.source_url FROM structured.vendor_images i
             WHERE i.vendor_id = v.id AND i.status = 'approved' AND i.copyright_basis <> 'unknown'
               AND ${displayableImageUrlCondition('i.source_url')}
-            ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url
+            ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url,
+                (SELECT count(*) FROM structured.scored_reviews s WHERE s.vendor_id = v.id)
+                  AS rating_count,
+                (SELECT avg(s.overall) FROM structured.scored_reviews s WHERE s.vendor_id = v.id)
+                  AS rating_avg
          FROM structured.vendor_candidates c
          JOIN structured.vendors v ON v.id = c.vendor_id
          WHERE c.wedding_id = $1
@@ -128,6 +136,11 @@ export function registerCandidateRoutes(app: FastifyInstance, context: AppContex
             addedAt: row.added_at.toISOString(),
             // 상대가 마음에 들어 한 곳인지 알아야 이야기가 된다.
             addedByPartner: row.added_by !== null && row.added_by !== userId,
+            rating: summaryRating({
+              category: row.category,
+              count: Number(row.rating_count ?? 0),
+              average: row.rating_avg === null || row.rating_avg === undefined ? null : Number(row.rating_avg),
+            }),
           })),
           comparable: comparableWithin(candidates.length),
           state: decidedBy.has(category) ? ('decided' as const) : ('picking' as const),

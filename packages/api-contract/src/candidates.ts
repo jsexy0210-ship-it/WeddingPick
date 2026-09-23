@@ -22,6 +22,11 @@ export const vendorCandidateSchema = z.object({
   addedAt: timestampSchema,
   /** 배우자가 담았는지. 상대가 마음에 들어 한 곳인지 알아야 이야기가 된다. */
   addedByPartner: z.boolean(),
+  /**
+   * 별점. 업체 요약(`vendorSummarySchema.rating`)과 같은 관문 · 같은 판정이다 —
+   * 확인된 후기가 모자라거나 체크리스트 업종이면 null이고, 그때 카드는 별점 줄을 안 그린다.
+   */
+  rating: z.object({ average: z.number().min(0).max(5), count: z.int().positive() }).nullable(),
 });
 
 export const createCandidateRequestSchema = z.object({

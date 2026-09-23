@@ -532,6 +532,7 @@ const routes = {
             note: null,
             addedAt: '2026-08-01T00:00:00.000Z',
             addedByPartner: true,
+            rating: { average: 4.5, count: 12 },
           },
           {
             id: 'c2222222-2222-4222-8222-222222222222',
@@ -543,6 +544,8 @@ const routes = {
             note: null,
             addedAt: '2026-08-02T00:00:00.000Z',
             addedByPartner: true,
+            /* 확인된 후기가 모자란 경우 — 카드가 별점 줄을 그리지 않는 상태도 찍힌다. */
+            rating: null,
           },
         ],
         comparable: true,

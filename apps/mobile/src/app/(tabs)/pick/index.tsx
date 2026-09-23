@@ -41,6 +41,7 @@ import {
   MaxContentWidth,
   ProductSymbol,
   Radius,
+  RatingStars,
   Spacing,
   ThemedText,
   ThemedView,
@@ -634,6 +635,10 @@ function CandidateCard({
               {candidate.region}
             </ThemedText>
           </View>
+          {/* 정본(대메뉴_Pick.dc.html) — 5점 별점(2026-09-23 복원). 확인된 후기가 모자라면 rating이 null이라 안 그린다. */}
+          {candidate.rating ? (
+            <RatingStars value={candidate.rating.average} count={candidate.rating.count} />
+          ) : null}
           {candidate.note ? (
             /* 규격서 해시태그 줄 자리 «10/500 #868B94 · lh 15 · mar 8 0 0 0». */
             <ThemedText type="f10" themeColor="textAssistive" numberOfLines={1} style={[styles.medium, styles.note]}>
