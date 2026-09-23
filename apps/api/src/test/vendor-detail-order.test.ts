@@ -31,11 +31,16 @@ const ANCHORS: Record<string, string> = {
   name: '<DepthHeader title={vendor.name} />',
   key_conditions: 'VENDOR_CATEGORY_LABEL[vendor.category]',
   verified_data: 'type="t4">{TERMS.verifiedData}',
-  // 로딩 skeleton에도 actionRow가 있으므로 실제 고정 CTA의 접근성 라벨을 기준으로 잰다.
-  pick: 'accessibilityLabel={primaryLabel}',
+  // 2026-09-23 v3.29 재검증(WP-VEND-001~004 `dockSingle`)으로 하단 CTA가 하트+「Pick하기」
+  // 글자 1개 단추로 바뀌면서 accessibilityLabel이 picked 여부에 따른 두 갈래 템플릿
+  // 리터럴이 됐다(`accessibilityLabel={primaryLabel}`이던 자리) — 그래서 그 단추의
+  // 스타일 참조(소스에 한 번만 나오는 조각)로 잰다.
+  pick: 'styles.pickCta',
   experience: 'type="t4">{TERMS.experience}',
   reviews: 'type="t4">{TERMS.review}',
-  official_source: 'type="t4">공식정보',
+  // 2026-09-23 v3.29 재검증(WP-VEND-004 `secTitle`)으로 「공식정보」→「기본 정보」로
+  // 정정됐다. 「공식정보」는 다른 화면(WP-VEND-005, 아직 미구현)의 이름이다.
+  official_source: 'type="t4">기본 정보',
   report_error: '{REPORT_ERROR}',
 };
 
