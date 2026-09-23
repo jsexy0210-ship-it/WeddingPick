@@ -27,8 +27,9 @@ import type {
   CurrentUser,
   ExpenseSummaryResponse,
   WeddingEvent,
+  WeddingTask,
 } from '@weddingpick/api-contract';
-import { TERMS, budgetView, isBeforeWedding, lifecycle, manwon } from '@weddingpick/domain';
+import { TERMS, budgetView, daysUntil, isBeforeWedding, lifecycle, manwon } from '@weddingpick/domain';
 import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
@@ -37,7 +38,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ActionButton,
   Border,
-  Elevation,
   Layout,
   LetterSpacing,
   ProductSymbol,
@@ -49,50 +49,53 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import {
+  addWeddingTask,
   ensureWedding,
   getCurrentUser,
   getExpenses,
   listConsultations,
+  listDecisions,
   listWeddingEvents,
+  listWeddingTasks,
   removeWeddingEvent,
   setBudget,
+  updateWeddingTask,
 } from '@/api/client';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
+import { formatDateDot, formatMonthDayTimeDot } from '@/features/common/format-date';
 import { useSession } from '@/features/auth/use-session';
+import { CheckBox } from '@/features/wedding/screen-kit';
 import { WeddingCompleteView } from '@/features/wedding/complete-view';
-import { eventTime } from '@/features/wedding/screen-kit';
+import { buildUpcomingTimelineGroups, type TimelineItem } from '@/features/wedding/timeline-groups';
 
 type Tab = 'calendar' | 'consult' | 'budget';
 
 /* 문구 — spec/strings.ko.json `ourWedding`. 피그마 `OurWedding.tsx`에서 왔다. */
 const TABS: readonly { key: Tab; label: string }[] = [
-  { key: 'calendar', label: '캘린더' },
+  { key: 'calendar', label: '웨딩일정' },
   { key: 'consult', label: '상담기록' },
   { key: 'budget', label: '예산현황' },
 ];
-const CALENDAR_HINT = '빈 날짜를 누르면 일정을 바로 추가해요';
-const ADD_FOR_DAY = '이 날짜에 일정을 추가해요';
-const DONE = '완료';
-const PREV_MONTH = '이전 달';
-const NEXT_MONTH = '다음 달';
 const EDIT = '수정';
 const DELETE = '삭제';
 const DELETE_TITLE = '삭제할까요?';
 const UNPAID = '미집행';
+/* v3.28 `spendGoRow` — 예산 카드 맨 아래에서 지출 목록(WP-OUR-014b)으로 간다. */
+const SPEND_LINK = '지출내역';
 const CONSULT_EMPTY_TITLE = '녹음 파일을 올려주세요';
 const CONSULT_EMPTY_BODY = '휴대폰 녹음앱에서 저장한 파일이면 돼요';
 const CONSULT_SAVED = '저장됨';
 const CONSULT_PENDING = '확인 필요';
 /* 헤더 우측 «추가» 텍스트 — v3.28 `대메뉴_웨딩노트.dc.html` headAdd «일정 추가 · 상담 추가 · 예산 추가». 우하단 FAB는 없다. */
 const ADD_LABEL: Record<Tab, string> = { calendar: '일정 추가', budget: '예산 추가', consult: '상담 추가' };
-const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
+const DECIDED_LINK = '예약현황';
+const PAST_EVENTS_SHOW = '보기';
+const PAST_EVENTS_HIDE = '접기';
+const TASKS_TITLE = '할 일';
+const TASKS_ADD = '추가';
 
 /** 진행바 높이 — v3.28 웨딩노트 대조표 「예산 그래프」: 도넛이 아니라 가로 진행바 8(`track: height:8px`). */
 const BAR_HEIGHT = 8;
-const EVENT_DOT = 4;
-
-const pad = (value: number) => String(value).padStart(2, '0');
-const dayKey = (value: Date) => `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`;
 
 function parseTab(value: string | undefined): Tab | null {
   return value === 'calendar' || value === 'consult' || value === 'budget' ? value : null;
@@ -113,6 +116,8 @@ export default function WeddingScreen({
   const [expenses, setExpenses] = useState<ExpenseSummaryResponse | null>(null);
   const [expensesError, setExpensesError] = useState(false);
   const [consults, setConsults] = useState<ConsultationRecord[] | null>(null);
+  const [tasks, setTasks] = useState<WeddingTask[] | null>(null);
+  const [decidedCount, setDecidedCount] = useState<number | null>(null);
   const [tab, setTab] = useState<Tab>(initialTab ?? parseTab(params.tab) ?? 'calendar');
   const [toast, setToast] = useState<string | null>(null);
   const [budgetOpen, setBudgetOpen] = useState(false);
@@ -132,7 +137,7 @@ export default function WeddingScreen({
         setMe(current);
         if (!current.weddingId) return;
         const weddingId = current.weddingId;
-        // 세 목록은 따로 도착한다 — 가장 느린 것이 나머지를 가리지 않게 각각 반영한다.
+        // 다섯 목록은 따로 도착한다 — 가장 느린 것이 나머지를 가리지 않게 각각 반영한다.
         void listWeddingEvents(weddingId).then((r) => { if (active) setEvents(r.events); }).catch(() => undefined);
         void getExpenses(weddingId)
           .then((r) => {
@@ -144,6 +149,8 @@ export default function WeddingScreen({
             if (active) setExpensesError(true);
           });
         void listConsultations(weddingId).then((r) => { if (active) setConsults(r.records); }).catch(() => undefined);
+        void listWeddingTasks(weddingId).then((r) => { if (active) setTasks(r.tasks); }).catch(() => undefined);
+        void listDecisions(weddingId).then((r) => { if (active) setDecidedCount(r.decisions.length); }).catch(() => undefined);
       })
       .catch(() => undefined);
     return () => { active = false; };
@@ -282,14 +289,35 @@ export default function WeddingScreen({
     }
   }
 
+  /*
+   * 체크는 «직접 지정 완료», 되돌리면 자동 판정(`state: null`)으로 돌아간다 — tasks.tsx와
+   * 같은 규칙이다. 되돌린 뒤 실제 상태는 서버가 날짜로 다시 정하므로 미리 짐작하지 않고
+   * 다시 읽어온다.
+   */
+  async function toggleTask(task: WeddingTask) {
+    if (!weddingId) return;
+    try {
+      await updateWeddingTask(weddingId, task.id, { state: task.state === 'done' ? null : 'done' });
+      void listWeddingTasks(weddingId).then((r) => setTasks(r.tasks)).catch(() => undefined);
+    } catch {
+      setToast('할 일을 바꾸지 못했어요. 잠시 후 다시 시도해주세요.');
+    }
+  }
+
+  async function addTask(label: string) {
+    if (!weddingId) return;
+    await addWeddingTask(weddingId, { label });
+    void listWeddingTasks(weddingId).then((r) => setTasks(r.tasks)).catch(() => undefined);
+  }
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         {header}
 
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* 세 칸 탭 — 피그마 `grid grid-cols-3 rounded-2xl bg-secondary p-1`, 칸 `h-11 rounded-xl`. 켠 칸은 흰 면(그림자는 없다 — elevation.$rule). */}
-          <View accessibilityRole="tablist" style={[styles.tabs, { backgroundColor: theme.backgroundElement }]}>
+          {/* 세 칸 탭 — v3.29 `대메뉴_웨딩노트.dc.html` tabNav/seg(WP-NOTE-001): 밑줄형, 배경 없음. */}
+          <View accessibilityRole="tablist" style={[styles.tabs, { borderBottomColor: theme.border }]}>
             {TABS.map((item) => {
               const selected = item.key === tab;
               return (
@@ -299,8 +327,8 @@ export default function WeddingScreen({
                   accessibilityState={{ selected }}
                   accessibilityLabel={item.label}
                   onPress={() => setTab(item.key)}
-                  style={[styles.tab, selected ? [{ backgroundColor: theme.background }, Elevation.figmaCard] : null]}>
-                  <ThemedText type="f14" style={[styles.bold, { color: selected ? theme.text : theme.textAssistive }]}>
+                  style={[styles.tab, selected ? [styles.tabActive, { borderBottomColor: theme.text }] : null]}>
+                  <ThemedText type="tab" style={{ color: selected ? theme.text : theme.textAssistive }}>
                     {item.label}
                   </ThemedText>
                 </Pressable>
@@ -311,9 +339,9 @@ export default function WeddingScreen({
           {tab === 'calendar' ? (
             <CalendarPanel
               events={events ?? []}
-              onAdd={(date) =>
-                weddingId ? router.push({ pathname: `/wedding/${weddingId}/events/new`, params: { date } } as never) : null
-              }
+              weddingDate={me?.weddingDate ?? null}
+              decidedCount={decidedCount}
+              tasks={tasks}
               onEdit={(event) => (weddingId ? router.push(`/wedding/${weddingId}/events/${event.id}` as never) : null)}
               onDelete={(event) =>
                 confirmAlert(DELETE_TITLE, `"${event.title}" 일정을 삭제합니다.`, [
@@ -321,6 +349,9 @@ export default function WeddingScreen({
                   { text: '삭제하기', style: 'destructive', onPress: () => void deleteEvent(event) },
                 ])
               }
+              onOpenDecided={() => (weddingId ? router.push(`/wedding/${weddingId}/decided` as never) : null)}
+              onToggleTask={(task) => void toggleTask(task)}
+              onAddTask={addTask}
             />
           ) : tab === 'budget' ? (
             <BudgetPanel
@@ -328,6 +359,9 @@ export default function WeddingScreen({
               error={expensesError}
               onEditBudget={openBudgetEditor}
               onRetry={retryExpenses}
+              onOpenSpend={() =>
+                weddingId ? router.push(`/wedding/${weddingId}/expenses/list` as never) : null
+              }
             />
           ) : (
             <ConsultPanel
@@ -396,175 +430,264 @@ export default function WeddingScreen({
 }
 
 /* ────────────────────────────────────────────
-   캘린더 패널 — 달 제목 24/700 · ‹ 안내 › · 요일 · 날짜 격자(40 원) · 선 · 그날 일정
+   캘린더 패널 — v3.29 `대메뉴_웨딩노트.dc.html` WP-NOTE-001.
+   월 격자를 폐기하고 예식일까지 주 단위 흐름으로 바꿨다: D-day 카드 → 지난 일정
+   접은 줄 → 이번 주 · 다음 주 · 달 단위 타임라인 → 할 일 체크리스트.
 ──────────────────────────────────────────── */
 function CalendarPanel({
   events,
-  onAdd,
+  weddingDate,
+  decidedCount,
+  tasks,
+  onEdit,
+  onDelete,
+  onOpenDecided,
+  onToggleTask,
+  onAddTask,
+}: {
+  events: WeddingEvent[];
+  weddingDate: string | null;
+  decidedCount: number | null;
+  tasks: WeddingTask[] | null;
+  onEdit: (event: WeddingEvent) => void;
+  onDelete: (event: WeddingEvent) => void;
+  onOpenDecided: () => void;
+  onToggleTask: (task: WeddingTask) => void;
+  onAddTask: (label: string) => Promise<void>;
+}) {
+  const theme = useTheme();
+  const [now] = useState(() => new Date());
+  const [showPast, setShowPast] = useState(false);
+  const [taskSheetOpen, setTaskSheetOpen] = useState(false);
+  const [taskDraft, setTaskDraft] = useState('');
+  const [taskSaving, setTaskSaving] = useState(false);
+
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const past = events
+    .filter((event) => new Date(event.startsAt) < today)
+    .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+  const upcomingGroups = buildUpcomingTimelineGroups(events, weddingDate, now);
+
+  const days = weddingDate !== null ? daysUntil(weddingDate, now) : null;
+  const ddayText = days === null ? null : days > 0 ? `D-${days}` : days === 0 ? 'D-DAY' : `D+${-days}`;
+  const weekEnd = new Date(today);
+  weekEnd.setDate(weekEnd.getDate() + (6 - today.getDay()));
+  const dueThisWeek = (tasks ?? []).filter(
+    (task) => task.state !== 'done' && task.dueDate !== null && new Date(task.dueDate) >= today && new Date(task.dueDate) <= weekEnd
+  ).length;
+
+  async function submitTask() {
+    const label = taskDraft.trim();
+    if (label.length === 0 || taskSaving) return;
+    setTaskSaving(true);
+    try {
+      await onAddTask(label);
+      setTaskDraft('');
+      setTaskSheetOpen(false);
+    } finally {
+      setTaskSaving(false);
+    }
+  }
+
+  return (
+    <View style={styles.calendarStack}>
+      {weddingDate !== null ? (
+        <View style={[styles.panel, { backgroundColor: theme.background, borderColor: theme.border }]}>
+          <View style={styles.ddayTop}>
+            {/* 규격서 19/700 — 사다리에 없는 값이라 가장 가까운 f18을 쓴다. */}
+            <ThemedText type="f18" numeric style={styles.bold}>
+              {formatDateDot(weddingDate)}
+            </ThemedText>
+            <ThemedText type="f18" themeColor="tint" numeric style={styles.bold}>
+              {ddayText}
+            </ThemedText>
+          </View>
+          <ThemedText type="f13" themeColor="textSecondary" numeric>
+            {days !== null && days > 0
+              ? `남은 ${Math.max(1, Math.ceil(days / 7))}주 · 이번 주에 할 일 ${dueThisWeek}건`
+              : '예식이 곧이에요'}
+          </ThemedText>
+          {decidedCount !== null ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={DECIDED_LINK}
+              onPress={onOpenDecided}
+              style={[styles.decidedLinkRow, { borderTopColor: theme.border }]}>
+              <ThemedText type="f14" style={styles.bold}>
+                {`${DECIDED_LINK} ${decidedCount}곳`}
+              </ThemedText>
+              <ProductSymbol name="chevronRight" size={Layout.iconInline} color={theme.textAssistive} />
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
+
+      {past.length > 0 ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={showPast ? PAST_EVENTS_HIDE : PAST_EVENTS_SHOW}
+          onPress={() => setShowPast((prev) => !prev)}
+          style={styles.pastRow}>
+          <ThemedText type="f14" themeColor="textAssistive" numeric>
+            {`지난 일정 ${past.length}건`}
+          </ThemedText>
+          <ThemedText type="f14" themeColor="textSecondary" style={styles.bold}>
+            {showPast ? PAST_EVENTS_HIDE : PAST_EVENTS_SHOW}
+          </ThemedText>
+        </Pressable>
+      ) : null}
+
+      {showPast && past.length > 0 ? <TimelineGroupView title="지난 일정" range="" items={past.map((event) => ({ event, kind: 'event' as const }))} dimmed onEdit={onEdit} onDelete={onDelete} /> : null}
+
+      {upcomingGroups.map((group) => (
+        <TimelineGroupView key={group.title} {...group} onEdit={onEdit} onDelete={onDelete} />
+      ))}
+
+      <View style={[styles.panel, { backgroundColor: theme.background, borderColor: theme.border }]}>
+        <View style={styles.clHead}>
+          <ThemedText type="t6" style={styles.bold}>
+            {TASKS_TITLE}
+          </ThemedText>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={TASKS_ADD}
+            onPress={() => setTaskSheetOpen(true)}
+            hitSlop={Spacing.two}
+            style={({ pressed }) => (pressed ? styles.pressed : null)}>
+            <ThemedText type="f14" themeColor="tint" style={styles.bold}>
+              {TASKS_ADD}
+            </ThemedText>
+          </Pressable>
+        </View>
+        {(tasks ?? []).map((task) => {
+          const done = task.state === 'done';
+          return (
+            <Pressable
+              key={task.id}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: done }}
+              accessibilityLabel={task.label}
+              onPress={() => onToggleTask(task)}
+              style={[styles.taskRow, { borderBottomColor: theme.border }]}>
+              <CheckBox checked={done} />
+              <ThemedText
+                type="f15"
+                numberOfLines={1}
+                themeColor={done ? 'textAssistive' : undefined}
+                style={[styles.grow, done ? styles.strike : null]}>
+                {task.label}
+              </ThemedText>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <BottomSheet visible={taskSheetOpen} onRequestClose={() => setTaskSheetOpen(false)} testID="task-add-sheet">
+        <SheetPanel>
+          <ThemedText type="t3">할 일을 더해볼까요?</ThemedText>
+          <TextInput
+            value={taskDraft}
+            onChangeText={setTaskDraft}
+            editable={!taskSaving}
+            placeholder="예: 상견례 날짜 정하기"
+            placeholderTextColor={theme.textDisabled}
+            accessibilityLabel="할 일"
+            maxLength={40}
+            returnKeyType="done"
+            onSubmitEditing={() => void submitTask()}
+            style={[styles.taskInput, { color: theme.text, borderColor: theme.fieldBorder }]}
+          />
+          <ActionButton
+            variant="primary"
+            size="xlarge"
+            label={taskSaving ? '넣는 중…' : '할 일 넣기'}
+            disabled={taskDraft.trim().length === 0 || taskSaving}
+            onPress={() => void submitTask()}
+          />
+        </SheetPanel>
+      </BottomSheet>
+    </View>
+  );
+}
+
+function TimelineGroupView({
+  title,
+  range,
+  items,
+  dimmed = false,
   onEdit,
   onDelete,
 }: {
-  events: WeddingEvent[];
-  onAdd: (date: string) => void;
+  title: string;
+  range: string;
+  items: TimelineItem[];
+  dimmed?: boolean;
   onEdit: (event: WeddingEvent) => void;
   onDelete: (event: WeddingEvent) => void;
 }) {
   const theme = useTheme();
-  const [today] = useState(() => new Date());
-  const [cursor, setCursor] = useState(() => ({ year: today.getFullYear(), month: today.getMonth() }));
-  const [selected, setSelected] = useState(() => dayKey(today));
-
-  const firstWeekday = new Date(cursor.year, cursor.month, 1).getDay();
-  const dayCount = new Date(cursor.year, cursor.month + 1, 0).getDate();
-  const cells: (number | null)[] = [
-    ...Array.from<null>({ length: firstWeekday }).fill(null),
-    ...Array.from({ length: dayCount }, (_, index) => index + 1),
-  ];
-  while (cells.length % 7 !== 0) cells.push(null);
-  const rows = Array.from({ length: cells.length / 7 }, (_, row) => cells.slice(row * 7, row * 7 + 7));
-
-  const keyOf = (day: number) => `${cursor.year}-${pad(cursor.month + 1)}-${pad(day)}`;
-  const eventDays = new Set(events.map((event) => dayKey(new Date(event.startsAt))));
-  const dayEvents = events
-    .filter((event) => dayKey(new Date(event.startsAt)) === selected)
-    .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
-
-  function move(delta: number) {
-    setCursor((prev) => {
-      const next = new Date(prev.year, prev.month + delta, 1);
-      return { year: next.getFullYear(), month: next.getMonth() };
-    });
-  }
-
-  /* 피그마 `selectDate`: 날짜를 고르고, 그날 일정이 없으면 바로 추가로 간다. */
-  function selectDay(day: number) {
-    const key = keyOf(day);
-    setSelected(key);
-    if (!eventDays.has(key)) onAdd(key);
-  }
-
   return (
-    <View style={[styles.panel, { backgroundColor: theme.background, borderColor: theme.border }]}>
-      {/* 규격서: 달 «24/700 · lh 32». */}
-      <ThemedText type="f24" style={styles.bold}>{`${cursor.year}년 ${cursor.month + 1}월`}</ThemedText>
-
-      <View style={styles.monthNav}>
-        <Pressable accessibilityRole="button" accessibilityLabel={PREV_MONTH} onPress={() => move(-1)} style={styles.navBtn}>
-          <ProductSymbol name="chevronLeft" size={Layout.iconRow} color={theme.text} />
-        </Pressable>
-        {/* 규격서: «11/400 #868B94 · lh 17». */}
-        <ThemedText type="f11" themeColor="textAssistive">
-          {CALENDAR_HINT}
+    <View style={styles.timelineGroup}>
+      <View style={styles.timelineGroupHead}>
+        <ThemedText type="f15" style={styles.bold}>
+          {title}
         </ThemedText>
-        <Pressable accessibilityRole="button" accessibilityLabel={NEXT_MONTH} onPress={() => move(1)} style={styles.navBtn}>
-          <ProductSymbol name="chevronRight" size={Layout.iconRow} color={theme.text} />
-        </Pressable>
+        {range.length > 0 ? (
+          <ThemedText type="f13" themeColor="textAssistive" numeric>
+            {range}
+          </ThemedText>
+        ) : null}
       </View>
+      {items.map((item) => {
+        if (item.kind === 'wedding') {
+          return (
+            <View key="wedding-day" style={[styles.eventRow, styles.weddingRow, { borderColor: theme.tint }]}>
+              <ThemedText type="f14" style={[styles.bold, styles.grow]}>
+                예식일
+              </ThemedText>
+              <ThemedText type="f12" themeColor="tint" numeric style={styles.bold}>
+                {formatDateDot(item.date)}
+              </ThemedText>
+            </View>
+          );
+        }
 
-      <View style={styles.weekRow}>
-        {WEEKDAYS.map((label) => (
-          <View key={label} style={styles.weekCell}>
-            {/* 규격서: 요일 «10/600 #868B94 · lh 15». */}
-            <ThemedText type="f10" themeColor="textAssistive" style={styles.semibold}>
-              {label}
-            </ThemedText>
+        const event = item.event;
+        const done = dimmed || event.status === 'done';
+        return (
+          <View
+            key={event.id}
+            style={[styles.eventRow, { backgroundColor: done ? theme.backgroundSelected : theme.backgroundElement }]}>
+            <View style={styles.grow}>
+              <ThemedText type="f11" themeColor={done ? 'textAssistive' : 'tint'} numeric style={styles.bold}>
+                {formatMonthDayTimeDot(event.startsAt)}
+              </ThemedText>
+              <ThemedText
+                type="f15"
+                numberOfLines={1}
+                themeColor={done ? 'textAssistive' : undefined}
+                style={[styles.semibold, done ? styles.strike : null]}>
+                {event.title}
+              </ThemedText>
+              {event.memo ? (
+                <ThemedText type="f13" themeColor="textSecondary" numberOfLines={1}>
+                  {event.memo}
+                </ThemedText>
+              ) : null}
+            </View>
+            {!dimmed ? (
+              <View style={styles.rowActions}>
+                <Pressable accessibilityRole="button" accessibilityLabel={`${event.title} ${EDIT}`} onPress={() => onEdit(event)} style={styles.rowActionBtn}>
+                  <ProductSymbol name="edit" size={Layout.iconSmall} color={theme.textAssistive} />
+                </Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel={`${event.title} ${DELETE}`} onPress={() => onDelete(event)} style={styles.rowActionBtn}>
+                  <ProductSymbol name="trash" size={Layout.iconSmall} color={theme.textAssistive} />
+                </Pressable>
+              </View>
+            ) : null}
           </View>
-        ))}
-      </View>
-
-      <View style={styles.grid}>
-        {rows.map((row, rowIndex) => (
-          <View key={rowIndex} style={styles.gridRow}>
-            {row.map((day, cellIndex) => {
-              if (day === null) return <View key={`b${cellIndex}`} style={styles.dayCell} />;
-              const key = keyOf(day);
-              const isSelected = key === selected;
-              const hasEvent = eventDays.has(key);
-              return (
-                <View key={key} style={styles.dayCell}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`${cursor.month + 1}월 ${day}일`}
-                    accessibilityState={{ selected: isSelected }}
-                    onPress={() => selectDay(day)}
-                    style={[styles.dayCircle, isSelected ? { backgroundColor: theme.text } : null]}>
-                    {/* 규격서: 날짜 «12/500 · lh 16». */}
-                    <ThemedText type="f12" style={[styles.medium, { color: isSelected ? theme.onInk : theme.text }]}>
-                      {day}
-                    </ThemedText>
-                    {hasEvent ? (
-                      <View style={[styles.eventDot, { backgroundColor: isSelected ? theme.onInk : theme.text }]} />
-                    ) : null}
-                  </Pressable>
-                </View>
-              );
-            })}
-          </View>
-        ))}
-      </View>
-
-      <View style={[styles.dayList, { borderTopColor: theme.border }]}>
-        {dayEvents.length === 0 ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={ADD_FOR_DAY}
-            onPress={() => onAdd(selected)}
-            style={[styles.addForDay, { borderColor: theme.border }]}>
-            <ProductSymbol name="calendar" size={Layout.iconField} color={theme.textAssistive} />
-            <ThemedText type="t7" themeColor="textAssistive">
-              {ADD_FOR_DAY}
-            </ThemedText>
-          </Pressable>
-        ) : (
-          <View style={styles.eventList}>
-            {dayEvents.map((event) => {
-              const done = event.status === 'done';
-              return (
-                <View
-                  key={event.id}
-                  style={[styles.eventRow, { backgroundColor: done ? theme.backgroundSelected : theme.backgroundElement }]}>
-                  {/* 완료 표시 — 서버가 시각으로 정한다. 누르는 자리가 아니다. */}
-                  <View
-                    style={[
-                      styles.doneMark,
-                      done
-                        ? { backgroundColor: theme.text, borderColor: theme.text }
-                        : { borderColor: theme.textAssistive, opacity: 0.4 },
-                    ]}>
-                    {done ? <ProductSymbol name="check" size={Layout.iconMicro} color={theme.onInk} /> : null}
-                  </View>
-                  {/* 규격서: 일정 «14/600 · lh 20» · 시각 «11/400 #868B94 · lh 17». */}
-                  <ThemedText
-                    type="f14"
-                    numberOfLines={1}
-                    themeColor={done ? 'textAssistive' : undefined}
-                    style={[styles.semibold, styles.eventTitle, done ? styles.strike : null]}>
-                    {event.title}
-                  </ThemedText>
-                  {done ? (
-                    <View style={[styles.doneBadge, { backgroundColor: theme.backgroundSelected }]}>
-                      <ThemedText type="micro" themeColor="textAssistive" style={styles.bold}>
-                        {DONE}
-                      </ThemedText>
-                    </View>
-                  ) : null}
-                  <ThemedText type="f11" themeColor="textAssistive" numeric>
-                    {eventTime(event.startsAt)}
-                  </ThemedText>
-                  <View style={styles.rowActions}>
-                    <Pressable accessibilityRole="button" accessibilityLabel={`${event.title} ${EDIT}`} onPress={() => onEdit(event)} style={styles.rowActionBtn}>
-                      <ProductSymbol name="edit" size={Layout.iconSmall} color={theme.textAssistive} />
-                    </Pressable>
-                    <Pressable accessibilityRole="button" accessibilityLabel={`${event.title} ${DELETE}`} onPress={() => onDelete(event)} style={styles.rowActionBtn}>
-                      <ProductSymbol name="trash" size={Layout.iconSmall} color={theme.textAssistive} />
-                    </Pressable>
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-        )}
-      </View>
+        );
+      })}
     </View>
   );
 }
@@ -578,11 +701,13 @@ function BudgetPanel({
   error,
   onEditBudget,
   onRetry,
+  onOpenSpend,
 }: {
   expenses: ExpenseSummaryResponse | null;
   error: boolean;
   onEditBudget: () => void;
   onRetry: () => void;
+  onOpenSpend: () => void;
 }) {
   const theme = useTheme();
 
@@ -688,6 +813,17 @@ function BudgetPanel({
           );
         })}
       </View>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={SPEND_LINK}
+        onPress={onOpenSpend}
+        style={({ pressed }) => [styles.spendLink, { borderTopColor: theme.border }, pressed ? styles.pressed : null]}>
+        <ThemedText type="f14" style={styles.bold}>
+          {SPEND_LINK}
+        </ThemedText>
+        <ProductSymbol name="chevronRight" size={Layout.iconField} color={theme.textAssistive} />
+      </Pressable>
 
       <View style={[styles.proofInvite, { borderTopColor: theme.border }]}>
         <View style={styles.grow}>
@@ -852,20 +988,28 @@ const styles = StyleSheet.create({
   strike: { textDecorationLine: 'line-through' },
   pressed: { opacity: 0.6 },
 
-  /* 탭 `mx-5 rounded-2xl p-1`, 칸 `h-11 rounded-xl`. */
-  /* 규격서 「nav 390×52 pad 4 · mar 0 20 0 20 · bg #F7F8F9 · r16」, 칸 «127×44 · r22 · 14/700 · 켠 칸 흰 면 + shadow». */
+  /*
+   * v3.29 정본 `대메뉴_웨딩노트.dc.html` `tabNav`/`seg()`(WP-NOTE-001) —
+   * `flex:0 0 auto;gap:0;padding:0 20px;box-shadow:inset 0 -1px 0 BORDER;margin-bottom:16px`,
+   * 칸 `flex:1;height:48px;font:16/700`. 활성 칸은 배경이 아니라
+   * `box-shadow:inset 0 -2px 0 INK`(하단 밑줄)로 표시하고 비활성은 회색 글자다.
+   * 예전 규격서의 회색 필 세그먼트(둥근 흰 활성 칸)는 정본에 없다 — 지웠다.
+   */
   tabs: {
-    marginHorizontal: Layout.pageX,
-    borderRadius: Radius.cardLarge,
-    padding: Spacing.one,
+    paddingHorizontal: Layout.cardPadding,
+    marginBottom: Spacing.three,
+    borderBottomWidth: Border.hairline,
     flexDirection: 'row',
   },
   tab: {
     flex: 1,
-    height: Layout.touchTarget,
-    borderRadius: Radius.hero,
+    height: Layout.tabEmphasized,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  tabActive: {
+    borderBottomWidth: 2,
+    marginBottom: -Border.hairline,
   },
 
   /* 패널 `mx-5 mt-4 rounded-[26px] border p-5`. */
@@ -877,61 +1021,31 @@ const styles = StyleSheet.create({
     padding: Layout.cardPadding,
   },
 
-  // ── 캘린더 ──
-  /* `mt-4 flex items-center justify-between`, 단추 `h-9 w-9 rounded-full`. */
-  monthNav: {
+  // ── 캘린더 — v3.29 주 단위 흐름 ──
+  calendarStack: { gap: 0 },
+  /* D-day 카드 위 줄 — 날짜 · D-N 양끝 정렬. */
+  ddayTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: Layout.inlineGap },
+  /* «예약현황 N곳» — 선 위 · 양끝 정렬. */
+  decidedLinkRow: {
     marginTop: Spacing.three,
+    paddingTop: Spacing.three,
+    borderTopWidth: Border.hairline,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: Layout.touchTarget,
+  },
+  /* «지난 일정 N건 · 보기» — 선 없이 한 줄. */
+  pastRow: {
+    marginHorizontal: Layout.pageX,
+    marginTop: Spacing.three,
+    minHeight: Layout.rowMinHeightCompact,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  navBtn: {
-    width: Layout.headerBack,
-    height: Layout.headerBack,
-    borderRadius: Radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  /* 요일 `mt-4 grid grid-cols-7`. */
-  weekRow: { marginTop: Spacing.three, flexDirection: 'row' },
-  weekCell: { flex: 1, alignItems: 'center' },
-  /* 날짜 `mt-2 grid grid-cols-7`, 칸 `h-10 w-10 rounded-full`. */
-  grid: { marginTop: Spacing.two },
-  gridRow: { flexDirection: 'row' },
-  dayCell: { flex: 1, alignItems: 'center' },
-  dayCircle: {
-    width: Layout.controlMedium,
-    height: Layout.controlMedium,
-    borderRadius: Radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  /* 일정 점 `absolute bottom-1.5 h-1 w-1` — 4 · 아래 6(같은 값의 menuGroupGap). */
-  eventDot: {
-    position: 'absolute',
-    bottom: Layout.menuGroupGap,
-    width: EVENT_DOT,
-    height: EVENT_DOT,
-    borderRadius: Radius.pill,
-  },
-  /* 그날 일정 `mt-5 border-t pt-4`. */
-  dayList: {
-    marginTop: Layout.listGap,
-    paddingTop: Spacing.three,
-    borderTopWidth: Border.hairline,
-  },
-  /* 빈 날 `rounded-2xl border border-dashed py-5 gap-2`. */
-  addForDay: {
-    borderRadius: Radius.cardLarge,
-    borderWidth: Border.hairline,
-    borderStyle: 'dashed',
-    paddingVertical: Layout.listGap,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.two,
-  },
-  eventList: { gap: Spacing.two },
+  timelineGroup: { marginHorizontal: Layout.pageX, marginTop: Spacing.four, gap: Spacing.two },
+  timelineGroupHead: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.two },
   /* 행 `rounded-2xl px-3.5 py-3 gap-3` — 좌우 14(같은 값의 chipPaddingX) · 상하 12 · 사이 12. */
   eventRow: {
     flexDirection: 'row',
@@ -941,23 +1055,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: Layout.chipPaddingX,
     paddingVertical: Layout.inlineGap,
   },
-  /* 완료 원 `h-6 w-6 rounded-full border-2` — 24(같은 값의 iconTab) · 테두리 2. */
-  doneMark: {
-    width: Layout.iconTab,
-    height: Layout.iconTab,
-    borderRadius: Radius.pill,
-    borderWidth: Border.focus,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  eventTitle: { flex: 1, minWidth: 0 },
-  /* «완료» `rounded-full px-2 py-0.5`. */
-  doneBadge: {
-    borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.half,
-  },
+  /* 예식일 줄 — 정본 `tlItem` 'wed' 스타일: 흰 면 + 코랄 테두리. */
+  weddingRow: { borderWidth: Border.focus },
   /* 수정 · 삭제 `h-8 w-8 rounded-xl`(32 · 같은 값의 avatarRow), 사이 2. */
   rowActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.half },
   rowActionBtn: {
@@ -966,6 +1065,23 @@ const styles = StyleSheet.create({
     borderRadius: Radius.hero,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  // ── 할 일 ──
+  clHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: Layout.inlineGap },
+  taskRow: {
+    marginTop: Spacing.three,
+    paddingBottom: Spacing.three,
+    borderBottomWidth: Border.hairline,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Layout.inlineGap,
+  },
+  taskInput: {
+    height: Layout.field,
+    borderRadius: Radius.input,
+    borderWidth: 1,
+    paddingHorizontal: Layout.fieldPaddingX,
   },
 
   // ── 예산현황 ──
@@ -997,6 +1113,17 @@ const styles = StyleSheet.create({
   barFill: { height: '100%', borderRadius: Radius.pill },
   /* `mt-1.5 flex justify-between`. */
   bucketFoot: { marginTop: Layout.menuGroupGap, flexDirection: 'row', justifyContent: 'space-between' },
+  /* v3.28 `spendGoRow` — 선 위 · 최소 높이 44 · 양끝 정렬 · 14/700. */
+  spendLink: {
+    marginTop: Layout.listGap,
+    paddingTop: Spacing.one,
+    borderTopWidth: Border.hairline,
+    minHeight: Layout.touchTarget,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Layout.inlineGap,
+  },
   proofInvite: {
     marginTop: Layout.listGap,
     paddingTop: Layout.listGap,
