@@ -60,7 +60,7 @@ export default function ChangelogScreen() {
   if (!isServerConfigured) {
     return (
       <Screen>
-        <NavBar title="변경 내역" />
+        <NavBar title="변경 내역" variant="close" />
         <Hero title="아직 내역을 불러올 수 없어요" sub="이 빌드는 서버에 붙어 있지 않아요." />
       </Screen>
     );
@@ -96,7 +96,7 @@ export default function ChangelogScreen() {
 
   return (
     <Screen>
-      <NavBar title="변경 내역" />
+      <NavBar title="변경 내역" variant="close" />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {notifications.length === 0 ? (
