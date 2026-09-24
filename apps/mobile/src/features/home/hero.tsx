@@ -227,9 +227,12 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   ceremonyText: { flexShrink: 1, lineHeight: LineHeight.lh17, color: ON_TINT_DATE },
-  /* `heroVenueBadge` — 높이 18 · 좌우 6 · radius 4 · 흰색 16% · 글자 10/600 흰색 85%. */
+  /*
+   * `heroVenueBadge` — 높이 18 · 좌우 6 · radius 4 · 흰색 16% · 글자 10/600 흰색 85%.
+   * 세로는 못박지 않고 최소 높이로 둔다(badge-box.test — 줄 15 < 18이라 그림은 같다).
+   */
   venueBadge: {
-    height: 18,
+    minHeight: 18,
     paddingHorizontal: 6,
     borderRadius: 4,
     justifyContent: 'center',
