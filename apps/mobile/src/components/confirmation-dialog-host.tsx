@@ -2,7 +2,7 @@ import { usePathname } from 'expo-router';
 import { useEffect, useSyncExternalStore } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 
-import { Layout, Radius, ThemedText, useTheme } from '@weddingpick/ui';
+import { Layout, LineHeight, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import strings from '../../../../spec/strings.ko.json';
 
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
@@ -55,9 +55,9 @@ function NativeConfirmation({ active }: { active: ActiveNativeConfirmation }) {
         <SheetPanel>
           <View style={styles.sheetHead}>
             <ThemedText type="t4">{request.title}</ThemedText>
-            {/* WP-DLG bodyStyle — 14/22 · MUTED. `body`(16/24)가 아니라 `t7`(14/19)이 정본에 더 가깝다. */}
+            {/* WP-DLG bodyStyle — 14/22 · MUTED(`common.js:192`). */}
             {request.message ? (
-              <ThemedText type="t7" themeColor="textSecondary">
+              <ThemedText type="f14" themeColor="textSecondary" style={styles.body}>
                 {request.message}
               </ThemedText>
             ) : null}
@@ -75,10 +75,11 @@ function NativeConfirmation({ active }: { active: ActiveNativeConfirmation }) {
                   pressed && styles.pressed,
                 ]}>
                 <ThemedText
-                  type="t5"
-                  style={
-                    button.style === 'destructive' ? { color: theme.negativeAction } : undefined
-                  }>
+                  type="f16"
+                  style={[
+                    styles.actionLabel,
+                    button.style === 'destructive' ? { color: theme.negativeAction } : null,
+                  ]}>
                   {button.text}
                 </ThemedText>
               </Pressable>
@@ -118,12 +119,34 @@ function NativeConfirmation({ active }: { active: ActiveNativeConfirmation }) {
         <View
           accessibilityRole={danger ? 'alert' : undefined}
           style={[styles.dialogPanel, { backgroundColor: theme.background }]}>
-          <ThemedText type="t4" style={styles.centerText}>
+          <ThemedText type="f20" style={[styles.dialogTitle, styles.centerText]}>
             {request.title}
           </ThemedText>
-          {/* WP-DLG bodyStyle(alert/confirm/danger) — 14/22 · MUTED · 가운데. */}
-          {request.message ? (
-            <ThemedText type="t7" themeColor="textSecondary" style={styles.centerText}>
+          {/*
+           * WP-DLG-C 되돌릴 수 없음 — 「무엇이 사라지는지 항목으로」(`common.js:595`). web
+           * (`confirm-alert.web.ts`)과 같이 호출자가 준 안내를 줄 단위로만 항목화한다.
+           */}
+          {danger && request.message ? (
+            <View style={[styles.itemBox, { backgroundColor: theme.backgroundElement }]}>
+              {request.message
+                .split('\n')
+                .filter((line) => line.trim())
+                .map((line, index) => (
+                  <View key={`${request.id}-item-${index}`} style={styles.itemRow}>
+                    <View style={[styles.itemDot, { backgroundColor: theme.negativeAction }]} />
+                    <ThemedText type="f14" themeColor="textSecondary" style={styles.itemText}>
+                      {line}
+                    </ThemedText>
+                  </View>
+                ))}
+            </View>
+          ) : null}
+          {/* WP-DLG bodyStyle(alert/confirm) — 14/22 · MUTED · 가운데. */}
+          {!danger && request.message ? (
+            <ThemedText
+              type="f14"
+              themeColor="textSecondary"
+              style={[styles.body, styles.centerText]}>
               {request.message}
             </ThemedText>
           ) : null}
@@ -175,7 +198,7 @@ function DialogButton({
         { backgroundColor },
         pressed && styles.pressed,
       ]}>
-      <ThemedText type="t5" style={{ color, textAlign: 'center' }}>
+      <ThemedText type="f17" style={[styles.buttonLabel, { color }]}>
         {label}
       </ThemedText>
     </Pressable>
@@ -184,40 +207,73 @@ function DialogButton({
 
 function noop() {}
 
+/** 정본 item mark 'del' — 5px 점 · margin-top 9(`common.js:170`). 공용 토큰에 5가 없다. */
+const ITEM_DOT = 5;
+const ITEM_DOT_TOP = 9;
+
+/*
+ * RN 정본 `docs/design/React_Native/common.js:156~197`(common frame-001~005 · 008).
+ *   CENTER  좌우 32 · padding 28 24 20 · radius 14 · gap 10
+ *   제목    20/28 · 700 · 가운데          본문  14/22 · MUTED
+ *   버튼줄  gap 8 · 위 14                  버튼  높이 56 · radius 6 · 17 · 700
+ *   행동 목록(action) 행  min-height 56 · 16 · 700 · 아래 1px BORDER
+ */
 const styles = StyleSheet.create({
   modalRoot: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: Layout.gutter + Layout.iconTextGap,
+    paddingHorizontal: Spacing.five,
   },
   dialogPanel: {
     width: '100%',
     maxWidth: 390,
     alignSelf: 'center',
     borderRadius: Radius.pickCard,
-    padding: Layout.gutter,
+    paddingTop: Layout.sectionGap,
+    paddingHorizontal: Layout.gutter,
+    paddingBottom: Layout.cardPadding,
     gap: Layout.iconTextGap,
   },
+  dialogTitle: { fontWeight: '700' },
+  body: { lineHeight: LineHeight.lh22 },
   centerText: { textAlign: 'center' },
+  /* itemBox — padding 12 16 · radius 10 · REC · gap 8 / 항목 5px 빨강 점 · 위 9 · gap 10 · 14/21. */
+  itemBox: {
+    alignSelf: 'stretch',
+    paddingVertical: Layout.inlineGap,
+    paddingHorizontal: Layout.sectionBand,
+    borderRadius: Radius.medium,
+    gap: Layout.chipGap,
+  },
+  itemRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Layout.iconTextGap },
+  itemDot: {
+    width: ITEM_DOT,
+    height: ITEM_DOT,
+    marginTop: ITEM_DOT_TOP,
+    borderRadius: Radius.pill,
+  },
+  itemText: { flex: 1, lineHeight: LineHeight.t7Loose },
   buttonRow: {
     flexDirection: 'row',
-    gap: Layout.iconTextGap,
-    paddingTop: Layout.iconTextGap,
+    gap: Layout.chipGap,
+    paddingTop: Layout.sectionHeadGap,
   },
   button: {
     flex: 1,
-    minHeight: Layout.controlXLarge,
+    minHeight: Layout.ctaSheet,
     borderRadius: Radius.control,
     paddingHorizontal: Layout.iconTextGap,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  buttonLabel: { fontWeight: '700', textAlign: 'center' },
   sheetHead: { gap: Layout.sheetHeadGap },
   actionList: { width: '100%' },
   actionRow: {
-    minHeight: Layout.touchTarget,
+    minHeight: Layout.rowMinHeight,
     justifyContent: 'center',
     borderBottomWidth: 1,
   },
+  actionLabel: { fontWeight: '700' },
   pressed: { opacity: 0.7 },
 });

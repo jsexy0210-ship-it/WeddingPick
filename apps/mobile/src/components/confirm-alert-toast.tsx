@@ -74,48 +74,55 @@ function VisibleDialogToast({
   if (!visible) return null;
 
   return (
-    <View
-      accessibilityRole="alert"
-      style={[
-        styles.toast,
-        { backgroundColor: theme.backgroundInk, bottom: dialogToastBottom(docked) },
-      ]}>
-      <ThemedText type="t7" style={[styles.message, { color: theme.onInk }]}>
-        {message}
-      </ThemedText>
-      {hasAction ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={actionLabel ?? undefined}
-          hitSlop={Spacing.two}
-          onPress={() => {
-            onAction?.();
-            setVisible(false);
-            onHidden?.();
-          }}>
-          <ThemedText type="t7" themeColor="tint" style={styles.action}>
-            {actionLabel}
-          </ThemedText>
-        </Pressable>
-      ) : null}
+    <View pointerEvents="box-none" style={[styles.wrap, { bottom: dialogToastBottom(docked) }]}>
+      <View
+        accessibilityRole="alert"
+        style={[styles.toast, { backgroundColor: theme.backgroundInk }]}>
+        <ThemedText type="f15" style={[styles.message, { color: theme.onInk }]}>
+          {message}
+        </ThemedText>
+        {hasAction ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={actionLabel ?? undefined}
+            hitSlop={Spacing.two}
+            onPress={() => {
+              onAction?.();
+              setVisible(false);
+              onHidden?.();
+            }}>
+            <ThemedText type="t7" themeColor="tint" style={styles.action}>
+              {actionLabel}
+            </ThemedText>
+          </Pressable>
+        ) : null}
+      </View>
     </View>
   );
 }
 
+/*
+ * RN 정본 `docs/design/React_Native/common.js:198~199`(WP-DLG-F, common frame-006 · 007).
+ *   toastWrap  좌우 24 · 가운데 정렬 · bottom dock 100 / 없으면 32
+ *   toast      내용 폭(max 100%) · padding 14 18 · radius 10 · gap 14 · 15/22 · 700
+ */
 const styles = StyleSheet.create({
-  toast: {
+  wrap: {
     position: 'absolute',
     left: Layout.gutter,
     right: Layout.gutter,
     zIndex: 100,
-    minHeight: Layout.touchTarget,
+    alignItems: 'center',
+  },
+  toast: {
+    maxWidth: '100%',
     borderRadius: Radius.medium,
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.three,
+    paddingHorizontal: Layout.cardPaddingCompactY,
+    paddingVertical: Layout.sectionHeadGap,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.three,
+    gap: Layout.sectionHeadGap,
   },
-  message: { flex: 1 },
+  message: { flexShrink: 1, fontWeight: '700' },
   action: { fontWeight: '700' },
 });

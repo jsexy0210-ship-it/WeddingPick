@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Animated, Easing, Platform, StyleSheet, ToastAndroid } from 'react-native';
+import { Animated, Easing, Platform, StyleSheet, ToastAndroid, View } from 'react-native';
 
-import { Layout, Radius, Spacing, USE_NATIVE_DRIVER } from './theme';
+import { Layout, Radius, USE_NATIVE_DRIVER } from './theme';
 import { FontSize, LineHeight } from './typography';
 import { useTheme } from './use-theme';
 
@@ -11,8 +11,11 @@ export type ToastProps = {
   onHidden?: () => void;
 };
 
-/** 화면 하단에서 이만큼 띄운다. 핸드오프 — 96px. */
-const BOTTOM = 96;
+/**
+ * 화면 하단에서 이만큼 띄운다. RN 정본 WP-DLG-F `toastWrap`(`docs/design/React_Native/
+ * common.js:198`) — dock 위 100. 이 토스트는 dock 유무를 모르므로 탭바가 있는 화면 기준 값을 쓴다.
+ */
+const BOTTOM = 100;
 /** 사용자 설정: 결과 알림은 1초 뒤 사라진다. */
 export const TOAST_MS = 1000;
 const FADE_MS = 175;
@@ -71,27 +74,36 @@ export function Toast({ message, onHidden }: ToastProps) {
   if (Platform.OS === 'android' || shown === null) return null;
 
   return (
-    <Animated.Text
-      accessibilityRole="alert"
-      style={[styles.toast, { backgroundColor: theme.backgroundInk, color: theme.onInk, opacity }]}>
-      {shown}
-    </Animated.Text>
+    <View pointerEvents="none" style={styles.wrap}>
+      <Animated.Text
+        accessibilityRole="alert"
+        style={[styles.toast, { backgroundColor: theme.backgroundInk, color: theme.onInk, opacity }]}>
+        {shown}
+      </Animated.Text>
+    </View>
   );
 }
 
+/* 정본 toastStyle — 내용 폭 · padding 14 18 · radius 10 · 15/22 · 700(`common.js:199`). */
 const styles = StyleSheet.create({
-  toast: {
+  wrap: {
     position: 'absolute',
     left: Layout.gutter,
     right: Layout.gutter,
     bottom: BOTTOM,
     // 바텀시트 위에도 보여야 한다.
     zIndex: 100,
+    alignItems: 'center',
+  },
+  toast: {
+    maxWidth: '100%',
     borderRadius: Radius.medium,
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.three,
+    paddingHorizontal: Layout.cardPaddingCompactY,
+    paddingVertical: Layout.sectionHeadGap,
     textAlign: 'center',
-    fontSize: FontSize.t6,
-    lineHeight: LineHeight.t6,
+    fontSize: FontSize.f15,
+    lineHeight: LineHeight.lh22,
+    fontWeight: '700',
+    overflow: 'hidden',
   },
 });

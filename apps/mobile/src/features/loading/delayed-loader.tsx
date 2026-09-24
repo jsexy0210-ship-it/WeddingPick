@@ -41,7 +41,7 @@ import { useCurrentUserSnapshot } from './current-user-snapshot';
  *
  * ## v3.29 재대조(2026-09-23) — DESIGN_UNRESOLVED, 코드는 그대로 둔다
  *
- * 정본 `docs/design/html/공통_다이얼로그 빈상태 로더.dc.html`의 WP-LOAD-001(업종 순회
+ * RN 정본 `docs/design/React_Native/common.jsx:276`(common frame-016)의 WP-LOAD-001(업종 순회
  * 로딩) · WP-LOAD-002(업종 아이콘 8종) · WP-LOAD-003(기본 로더 · 업종 아이콘 순회)은
  * 「원형 스피너를 쓰지 않아요 — 로더는 업종 아이콘이 도는 것 하나뿐입니다」라고 적는다 —
  * 바로 위에서 없앴다고 적은 그 모양이다.

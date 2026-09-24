@@ -20,8 +20,8 @@ const HERO = 168;
  * WP-ST-007 — 목록 뼈대. 썸네일 52 + 바 두 줄(16 · 13) 패턴, 1400ms 숨쉬기.
  * 목록에는 스피너를 쓰지 않는다.
  *
- * 정본 WP-LOAD-004(`공통_다이얼로그 빈상태 로더.dc.html` `skRows`)와 재대조
- * (2026-09-23) — 3줄 · 72%/46% · 58%/38% · 66%/42% · 썸네일 52 전부 일치(PASS).
+ * 정본 WP-LOAD-004(`docs/design/React_Native/common.js:310` `skRows`, common frame-017)와 재대조
+ * (2026-09-24) — 3줄 · 72%/46% · 58%/38% · 66%/42% · 썸네일 52 전부 일치(PASS).
  */
 export function ListSkeleton({ rows = 3, hero = false, variant = 'default' }: ListSkeletonProps) {
   const widths = [
