@@ -28,10 +28,10 @@ type AiUsageData = {
 };
 
 function readAiUsageData(value: unknown): AiUsageData {
-  if (!value || typeof value !== 'object') throw new Error('사용량 데이터를 읽지 못했어요.');
+  if (!value || typeof value !== 'object') throw new Error('사용량 정보를 읽지 못했어요.');
   const data = value as Partial<AiUsageData>;
   if (!Array.isArray(data.usage) || !Array.isArray(data.budgetStatus)) {
-    throw new Error('사용량 데이터 형식을 확인해주세요.');
+    throw new Error('사용량 정보 형식을 확인해주세요.');
   }
   if (!data.usage.every((item) => item && typeof item.month === 'string' && typeof item.feature === 'string' &&
     typeof item.model === 'string' && typeof item.requestCount === 'number' && typeof item.successRate === 'number' &&
@@ -39,7 +39,7 @@ function readAiUsageData(value: unknown): AiUsageData {
     (item.userCorrectionRate === null || typeof item.userCorrectionRate === 'number') &&
     (item.estimatedCostUsd === null || typeof item.estimatedCostUsd === 'number')) ||
     !data.budgetStatus.every((item) => item && typeof item.spentUsd === 'number')) {
-    throw new Error('사용량 데이터 형식을 확인해주세요.');
+    throw new Error('사용량 정보 형식을 확인해주세요.');
   }
   return data as AiUsageData;
 }
