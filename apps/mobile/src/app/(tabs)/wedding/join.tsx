@@ -32,7 +32,7 @@ const S = {
   doneRows: [
     { label: TERMS.ourWedding, sub: '일정 · 지출을 같이 봐요' },
     { label: 'Pick', sub: '각자 담고 비교는 같이 봐요' },
-    { label: '알림', sub: '상대가 바뀌면 알려드려요' },
+    { label: '알림', sub: '상대가 바꾸면 알려드려요' },
   ],
   reflectedLabel: '이렇게 반영됐어요',
   goWedding: '웨딩노트로 가기',

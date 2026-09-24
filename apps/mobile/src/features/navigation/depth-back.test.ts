@@ -49,7 +49,10 @@ describe('depthBackTarget — 대표 경로', () => {
     ['/pick/studio', '/pick', '업종별 Pick → Pick 탭'],
     ['/feed', '/', '홈 하위 스택(피드) → 홈'],
     ['/feed/f-1', '/feed', '홈 웨딩피드 글 상세 → 웨딩피드 목록'],
-    ['/community/feed/f-1', '/community?tab=feed', '라운지 웨딩피드 상세 → 라운지 웨딩피드 탭'],
+    ['/community/feed/f-1', '/community/feed', '라운지 웨딩정보 상세 → 웨딩정보 화면(my.jsx frame-010)'],
+    ['/community/review', '/', '리얼후기 직접 진입 → 홈(옛 `/community`로 올라가면 리다이렉트로 되돌아온다)'],
+    ['/community/feed', '/', '웨딩정보 직접 진입 → 홈'],
+    ['/community/expo', '/', '박람회 직접 진입 → 홈'],
     ['/progress', '/', '준비 현황 → 홈'],
 
     // ── 폴더만 있고 화면이 없는 칸은 건너뛴다 ───────────────────────
@@ -87,9 +90,11 @@ describe('depthBackTarget — 대표 경로', () => {
 
   it('공유 화면은 허용된 진입 출처로 돌아가고 모르는 출처는 추측하지 않는다', () => {
     expect(depthBackTarget('/community?from=my')).toBe('/my');
+    expect(depthBackTarget('/community/review?from=my')).toBe('/my');
+    expect(depthBackTarget('/community/expo?from=my')).toBe('/my');
     expect(depthBackTarget('/search/v-101?from=pick')).toBe('/pick');
     expect(depthBackTarget('/search/v-101/write-review?from=vendor/v-101')).toBe('/search/v-101');
-    expect(depthBackTarget('/search/v-101/review/r-1?from=community')).toBe('/community');
+    expect(depthBackTarget('/search/v-101/review/r-1?from=community')).toBe('/community/review');
     expect(depthBackTarget('/capture/payment/register?from=budget')).toBe('/wedding?tab=budget');
     expect(depthBackTarget('/capture/payment/consent?from=reports')).toBe('/my/reports');
     expect(depthBackTarget('/community?from=https%3A%2F%2Fevil.example')).toBe('/');
@@ -208,7 +213,7 @@ describe('resolveBackAction — Android/공용 Back 정책', () => {
     expect(resolveBackAction('/community/feed/f-1', true)).toEqual({ kind: 'history' });
     expect(resolveBackAction('/community/feed/f-1', false)).toEqual({
       kind: 'depth',
-      target: '/community?tab=feed',
+      target: '/community/feed',
     });
   });
 });

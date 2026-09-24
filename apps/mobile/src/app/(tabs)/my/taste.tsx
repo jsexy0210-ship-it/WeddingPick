@@ -20,7 +20,7 @@ import { showResultToast } from '@/features/navigation/result-toast';
 import { Dock, Hero, NoteBox, Section, SubScreen } from '@/features/settings/my-kit';
 import { ErrorView, Layout } from '@weddingpick/ui';
 
-/** `spec/strings.ko.json` `my.item.taste` · 시안 13-my-sub WP-MY-014. */
+/** `spec/strings.ko.json` `my.item.taste` · 정본 WP-MY-014(docs/design/React_Native/my.jsx frame-016). */
 const S = {
   title: '스타일',
   save: '저장하기',

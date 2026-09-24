@@ -54,7 +54,8 @@ const S = {
   none: '아직 안 골랐어요',
   preparedCount: (n: number) => `${formatCount(n)}개 정함`,
   saved: '설정을 바꿨어요',
-  noteTitle: '내 웨딩설정은 언제든 바꿀 수 있어요',
+  /* 정본 my.jsx frame-003 noteBox(my.jsx:186). */
+  noteTitle: '바꾸면 추천이 다시 계산돼요',
   noteBody: '지금까지 고른 곳과 지출 기록은 그대로 남아요.',
   loadError: '지금 설정을 불러오지 못했어요',
   saveError: '바꾸지 못했어요',
@@ -79,7 +80,7 @@ type Editing = 'region' | 'budget' | 'prepared' | null;
  * 만들지 않는다.
  *
  * **스타일 행은 `/my/taste`(스타일 다시 고르기)로 연결된다** — 00-ia가 가리키던
- * «취향 다시 고르기»(WP-MY-004)와 같은 화면이다(v3.24가 취향을 스타일 4종으로 합치면서
+ * «취향 다시 고르기»와 같은 화면이다 — 정본 WP-MY-014(my.jsx frame-016)(v3.24가 취향을 스타일 4종으로 합치면서
  * 하나가 됐다). 같은 화면을 두 줄로 세우지 않는다.
  *
  * **예산 행 라벨은 시안 원문(«예산»)을 그대로 옮기지 않고 「준비 예산」을 유지했다** —

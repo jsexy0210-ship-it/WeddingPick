@@ -695,7 +695,7 @@
 
   "community": {
     "title": "라운지",
-    "tab.review": "후기",
+    "tab.review": "리얼후기",
     "tab.feed": "웨딩정보",
     "tab.expo": "박람회",
     "write": "글쓰기",
@@ -771,7 +771,7 @@
     "item.realReview": "리얼후기",
     "item.weddingInfo": "웨딩정보",
     "item.expo": "박람회",
-    "item.faq": "자주 묻는 질문",
+    "item.faq": "FAQ",
     "item.contact": "문의하기",
     "item.bizInquiry": "업체 · 플래너 문의",
     "item.terms": "이용약관",
@@ -781,7 +781,6 @@
     "item.account": "계정",
     "item.support": "고객지원",
     "item.serviceInfo": "서비스 정보",
-    "count": "{n}건",
     "benefitCount": "{n}개 참여 가능",
     "couple.unlinked": "미연결",
     "couple.invited": "초대 대기",
