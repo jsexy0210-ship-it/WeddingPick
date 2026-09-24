@@ -1,4 +1,9 @@
-import { WEDDING_FEED_LIMITS, type WeddingFeedTopic } from '@weddingpick/domain';
+import {
+  WEDDING_FEED_LIMITS,
+  formatStatFact,
+  type PublicStat,
+  type WeddingFeedTopic,
+} from '@weddingpick/domain';
 import { z } from 'zod';
 
 import { callGemini } from './gemini-call';
@@ -59,6 +64,8 @@ export const SYSTEM_PROMPT = `너는 한국의 결혼 준비 정보 글을 쓴�
 
 1. **숫자를 지어내지 마라.** 금액 · 비율 · 기간을 모르면 적지 않는다. 「보통 200만원쯤」
    같은 문장은 쓰지 마라 — 읽는 사람이 그것을 기준으로 삼는다.
+   **「공공 통계」가 함께 오면 그 숫자만 적힌 모양 그대로 쓴다.** 더하거나 나누거나
+   바꿔 적지 마라. 통계에 적힌 지역 이름은 써도 된다. 출처 줄은 적지 마라 — 따로 붙는다.
 2. **실제 업체 이름을 쓰지 마라.** 지역 이름도 예시로 들지 마라.
 3. 다음 말을 쓰지 마라: AI · 데이터 · 탐색 · 관심업체 · 찜 · 리뷰 · 평점 · 딜 ·
    확인된 제보 · 네이버페이 포인트. 각각 이렇게 쓴다 — 웨딩픽 · 정보 · 검색 · Pick ·
@@ -72,7 +79,8 @@ export const SYSTEM_PROMPT = `너는 한국의 결혼 준비 정보 글을 쓴�
 8. 본문은 문단 셋에서 다섯. 각 문단은 세 문장 안쪽.`;
 
 export type FeedWriter = {
-  write(topic: WeddingFeedTopic): Promise<{
+  /** `stats`는 통계 주제(`topic.statKeys`)일 때만 온다. */
+  write(topic: WeddingFeedTopic, stats?: readonly PublicStat[]): Promise<{
     draft: FeedDraft;
     usage: { inputTokens: number; outputTokens: number };
   }>;
@@ -108,7 +116,12 @@ export function createGeminiFeedWriter(options: { apiKey: string; model: string 
   }
 
   return {
-    async write(topic) {
+    async write(topic, stats = []) {
+      const facts =
+        stats.length > 0
+          ? `공공 통계(이 숫자만 쓴다):\n${stats.map((stat) => `- ${formatStatFact(stat)}`).join('\n')}\n\n`
+          : '';
+
       const { value, usage } = await callGemini({
         apiKey: options.apiKey,
         model: options.model,
@@ -119,6 +132,7 @@ export function createGeminiFeedWriter(options: { apiKey: string; model: string 
             text:
               `주제: ${topic.brief}\n` +
               `묶음: ${topic.categoryLabel}\n\n` +
+              facts +
               '이 주제로 한 편을 쓰고 스키마대로 채워라.',
           },
         ],

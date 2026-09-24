@@ -5,13 +5,17 @@ import {
   WEDDING_FEED_TARGET_PUBLISHED,
   WEDDING_FEED_TOPICS,
   checkWeddingFeedInput,
+  findUnlistedNumbers,
   pickTopics,
   shouldGenerate,
+  statSourceLine,
+  topicsMissingStats,
   type WeddingFeedStatus,
 } from '@weddingpick/domain';
 import { weddingFeedInputSchema } from '@weddingpick/api-contract';
 
 import { ApiError, notFound } from './errors';
+import { listStatKeys, loadStats } from './public-stats';
 import { isUuid } from './uuid';
 import { listTabs } from './wedding-feed-taxonomy';
 import type { FeedWriter } from './analysis/wedding-feed-writer';
@@ -352,7 +356,15 @@ export async function runGeneration(input: {
   trigger: 'schedule' | 'manual';
 }): Promise<{ created: number; skipped: string | null }> {
   const { pool, writer, model, trigger } = input;
-  const state = await counts(pool);
+  const counted = await counts(pool);
+  /*
+   * 통계가 표에 아직 없는 통계 주제는 쓴 주제처럼 뺀다 — 숫자 없이 통계 글을
+   * 쓰게 두면 모델이 숫자를 지어낸다.
+   */
+  const state = {
+    ...counted,
+    usedTopics: [...counted.usedTopics, ...topicsMissingStats(await listStatKeys(pool))],
+  };
 
   if (!shouldGenerate(state)) {
     const reason =
@@ -379,10 +391,32 @@ export async function runGeneration(input: {
 
   for (const topic of topics) {
     try {
-      const { draft, usage } = await writer.write(topic);
+      const stats = await loadStats(pool, topic.statKeys ?? []);
+      const { draft, usage } = await writer.write(topic, stats);
 
       inputTokens += usage.inputTokens;
       outputTokens += usage.outputTokens;
+
+      /*
+       * **통계 글은 넘긴 숫자만 쓴다.** 하나라도 다른 숫자가 있으면 버린다 —
+       * 「공공 통계」 옆에 지어낸 숫자가 서면 둘 다 공식 숫자로 읽힌다.
+       * 출처 줄은 모델이 아니라 여기서 붙인다.
+       */
+      let body = draft.body;
+
+      if (stats.length > 0) {
+        const unlisted = findUnlistedNumbers(
+          `${draft.title}\n${draft.summary}\n${draft.body}`,
+          stats
+        );
+
+        if (unlisted.length > 0) {
+          failures.push(`${topic.key}: 넘기지 않은 숫자 ${unlisted.join(', ')}`);
+          continue;
+        }
+
+        body = `${draft.body}\n\n${statSourceLine(stats)}`;
+      }
 
       /*
        * **모델이 넘긴 길이를 그대로 믿지 않는다.** 지시문에 한도를 적어도 넘겨서
@@ -392,7 +426,7 @@ export async function runGeneration(input: {
         categoryLabel: topic.categoryLabel,
         title: draft.title,
         summary: draft.summary,
-        body: draft.body,
+        body,
         imageKey: null,
         bodyImageKey: null,
         status: 'draft',
@@ -409,7 +443,7 @@ export async function runGeneration(input: {
            (category_label, category_id, title, summary, body, status, source, model, topic)
          VALUES ($1, (SELECT id FROM structured.wedding_feed_categories WHERE name = $1),
                  $2, $3, $4, 'draft', 'generated', $5, $6)`,
-        [topic.categoryLabel, draft.title, draft.summary, draft.body, model, topic.key]
+        [topic.categoryLabel, draft.title, draft.summary, body, model, topic.key]
       );
       created += 1;
     } catch (error) {

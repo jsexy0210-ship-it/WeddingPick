@@ -68,6 +68,40 @@ describe('웨딩피드 제미나이 작성기', () => {
     expect(text).toContain(TOPIC.categoryLabel);
   });
 
+  it('통계 주제면 넘긴 공공 통계를 적힌 모양 그대로 담는다', async () => {
+    callGemini.mockResolvedValue(okResponse());
+
+    await createGeminiFeedWriter({ apiKey: 'test-key', model: 'gemini-2.5-flash-lite' }).write(
+      TOPIC,
+      [
+        {
+          key: 'seoul.marriage.count',
+          label: '서울 혼인 건수',
+          value: 36324,
+          unit: '건',
+          period: '2025년',
+          sourceName: '서울특별시',
+          sourceUrl: 'https://www.data.go.kr/data/15000000/fileData.do',
+        },
+      ]
+    );
+
+    const call = callGemini.mock.calls[0]?.[0] as { parts: { text?: string }[] };
+    const text = call.parts.map((part) => part.text ?? '').join('\n');
+
+    expect(text).toContain('서울 혼인 건수: 36,324건 (2025년 · 서울특별시)');
+  });
+
+  it('통계가 없으면 공공 통계 줄을 넣지 않는다', async () => {
+    callGemini.mockResolvedValue(okResponse());
+
+    await createGeminiFeedWriter({ apiKey: 'test-key', model: 'gemini-2.5-flash-lite' }).write(TOPIC);
+
+    const call = callGemini.mock.calls[0]?.[0] as { parts: { text?: string }[] };
+
+    expect(call.parts.map((part) => part.text ?? '').join('\n')).not.toContain('공공 통계');
+  });
+
   it('읽은 글과 사용량을 그대로 돌려준다', async () => {
     callGemini.mockResolvedValue(okResponse());
 
