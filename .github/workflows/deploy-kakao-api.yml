@@ -195,7 +195,16 @@ jobs:
             -p 127.0.0.1:3002:3000 "$IMAGE" >/dev/null
 
           if ! health_ok http://127.0.0.1:3002/health 45 2; then
-            echo 'Candidate health failed; the existing API is unchanged. Runtime logs stay on the VM.' >&2
+            echo 'Candidate health failed. Dumping last container log lines (secrets redacted) for diagnosis:' >&2
+            sudo -n docker logs --tail 200 "$CANDIDATE_CONTAINER" 2>&1 \
+              | sed -E \
+                -e 's#(://[^:@[:space:]]+):[^@[:space:]]+@#\1:***@#g' \
+                -e 's#([Aa][Pp][Ii]_?[Kk][Ee][Yy]["'"'"':= ]+)[A-Za-z0-9_./+=-]{8,}#\1***#g' \
+                -e 's#([Tt][Oo][Kk][Ee][Nn]["'"'"':= ]+)[A-Za-z0-9_./+=-]{8,}#\1***#g' \
+                -e 's#([Ss][Ee][Cc][Rr][Ee][Tt]["'"'"':= ]+)[A-Za-z0-9_./+=-]{8,}#\1***#g' \
+                -e 's#([Pp][Aa][Ss][Ss][Ww][Oo][Rr][Dd]["'"'"':= ]+)[^"'"'"',[:space:]]+#\1***#g' \
+              >&2
+            echo 'Candidate health failed; the existing API is unchanged. (Above logs are the candidate only — production was never touched.)' >&2
             exit 1
           fi
           sudo -n docker rm -f "$CANDIDATE_CONTAINER" >/dev/null
