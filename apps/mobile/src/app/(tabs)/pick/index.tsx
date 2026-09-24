@@ -28,10 +28,12 @@
  */
 import type { CandidateListResponse, CurrentUser, VendorCandidate } from '@weddingpick/api-contract';
 import {
+  PREPARATION_GROUPS,
   TERMS,
   VENDOR_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
   withParticle,
+  type PreparationGroupKey,
   type VendorCategory,
   regionLabel,
 } from '@weddingpick/domain';
@@ -42,6 +44,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   Border,
+  Elevation,
   Layout,
   LetterSpacing,
   LineHeight,
@@ -67,6 +70,7 @@ import {
 } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
 import { DialogToast } from '@/components/confirm-alert-toast';
+import { HOME_PREP_GROUP_LABEL } from '@/features/home/prep-groups';
 import { showResultToast } from '@/features/navigation/result-toast';
 import {
   PICK_COMPARE_ADD_LABEL,
@@ -88,7 +92,10 @@ const ACTION_COMPARE = PICK_COMPARE_ADD_LABEL;
 const ACTION_COMPARING = PICK_COMPARE_REMOVE_LABEL;
 const ACTION_DECIDE = '결정하기';
 const ACTION_UNDECIDE = '결정 취소';
-const ACTION_CONSULT = '상담 예약하기';
+/* 정본 pick.js `sv().labelB` «상담 예약». */
+const ACTION_CONSULT = '상담 예약';
+/* 정본 pick.jsx frame-001 `moreBtn2`. */
+const GROUP_MORE = '더 보기';
 const BADGE_SHARED = '함께';
 const EMPTY_TITLE = '아직 담은 곳이 없어요';
 const EMPTY_BODY = '담아두면 여기서 비교할 수 있어요';
@@ -96,12 +103,27 @@ const EMPTY_CTA = '추천 보기';
 const UNDECIDE_TITLE = '결정을 취소할까요?';
 const UNDECIDE_BODY = '웨딩노트의 결정 상태가 풀려요. 언제든 다시 결정할 수 있어요.';
 const MIN_COMPARE = 2;
+/* 정본 pick.js `sv().thumb` radius 8 — 같은 값의 기존 토큰(Radius.picker). */
+const THUMB_RADIUS = Radius.picker;
 /** 정본 catMeta — «3개 · 최신순». */
 function groupMetaLabel(count: number): string {
   return `${count}개 · 최신순`;
 }
+/** 정본 frame-001 tagDesc «곧 3개씩 제공하고» — 묶음마다 먼저 보이는 카드 수. */
+const GROUP_PREVIEW = 3;
 
-type Filter = VendorCategory | 'all';
+/*
+ * 칩과 묶음은 업종이 아니라 준비 묶음 넷이다 — 정본 pick.js `cats` «전체 · 웨딩홀 · 스드메 · 본식 ·
+ * 예물 · 신혼» · `catGroups`, tagDesc «업종별로 카테고리(웨딩홀 · 스드메 · 본식 · 예물·신혼) 칩으로
+ * 거릅니다». 묶음은 `PREPARATION_GROUPS`, 이름은 홈 「내 웨딩 준비」와 같은 것을 쓴다.
+ */
+type Filter = PreparationGroupKey | 'all';
+
+type Section = {
+  key: string;
+  title: string;
+  rows: Row[];
+};
 
 type Row = {
   candidate: VendorCandidate;
@@ -116,6 +138,31 @@ type UndoCandidate = {
   /** 후보 삭제의 FK cascade로 같이 풀린 최종 결정을 되살려야 하는가. */
   wasDecided: boolean;
 };
+
+/**
+ * 후보를 준비 묶음 넷으로 나눈다 — 정본 `catGroups`처럼 넷은 늘 그리고(0개도), 묶음 안은 담은
+ * 순서 최신순(«N개 · 최신순»)이다. 넷 어디에도 안 드는 업종(기타 등)은 버리지 않고 그 업종
+ * 이름으로 뒤에 붙인다 — 정본에 없는 자리라 PR 본문 DESIGN_UNRESOLVED에 적었다.
+ */
+function pickSections(rows: readonly Row[]): Section[] {
+  const newestFirst = (a: Row, b: Row) => b.candidate.addedAt.localeCompare(a.candidate.addedAt);
+  const grouped = PREPARATION_GROUPS.map((group) => ({
+    key: group.key,
+    title: HOME_PREP_GROUP_LABEL[group.key],
+    rows: rows
+      .filter((row) => (group.categories as readonly VendorCategory[]).includes(row.candidate.category))
+      .sort(newestFirst),
+  }));
+  const covered = new Set<VendorCategory>(PREPARATION_GROUPS.flatMap((group) => group.categories));
+  const restCategories = [...new Set(rows.map((row) => row.candidate.category))].filter((category) => !covered.has(category));
+  const rest = restCategories
+    .map((category) => ({
+      key: category,
+      title: VENDOR_CATEGORY_LABEL[category],
+      rows: rows.filter((row) => row.candidate.category === category).sort(newestFirst),
+    }));
+  return [...grouped, ...rest];
+}
 
 export default function PickScreen() {
   const { section: sectionParam, category: categoryParam } = useLocalSearchParams<{
@@ -140,6 +187,8 @@ export default function PickScreen() {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [undoCandidate, setUndoCandidate] = useState<UndoCandidate | null>(null);
+  /** «더 보기»로 펼친 묶음. */
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
 
   const load = useCallback(() => {
     // 하이브리드 웹뷰 쉘 POC로 이 화면을 대체할 때는 이 밑 자료를 안 쓴다 —
@@ -171,12 +220,18 @@ export default function PickScreen() {
       isDecided: group.decidedVendorId === candidate.vendorId,
     }))
   );
-  /* 칩은 후보가 있는 업종만, 그룹 순서대로. 목록도 같은 묶음이다 — 정본 1번 화면은 업종별로
-     «{업종} · N개 · 최신순» 머리를 두고 그 아래 카드를 쌓는다(서버가 added_at DESC로 준다). */
-  const groups = (page?.groups ?? []).filter((group) => group.candidates.length > 0);
-  const categories = groups.map((group) => group.category);
-  const visibleGroups = filter === 'all' ? groups : groups.filter((group) => group.category === filter);
+  const sections = pickSections(rows);
+  const visibleSections = filter === 'all' ? sections : sections.filter((section) => section.key === filter);
   const weddingId = me?.weddingId ?? null;
+
+  function toggleExpanded(key: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
 
   function showToast(message: string, undo: UndoCandidate | null = null) {
     if (!undo) {
@@ -266,9 +321,6 @@ export default function PickScreen() {
           };
         }),
       }));
-      if (filter === candidate.category && page?.groups.find((group) => group.category === filter)?.candidates.length === 1) {
-        setFilter('all');
-      }
       setCompare((prev) => {
         const next = new Set(prev);
         next.delete(candidate.vendorId);
@@ -351,91 +403,109 @@ export default function PickScreen() {
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
               <Header />
 
-              {/* 비교 배너 — 피그마 `compareIds.length >= 2`: 잉크 면 · radius 16 · 안쪽 16/14. */}
-              {compare.size >= MIN_COMPARE ? (
-                <View style={[styles.compareBanner, { backgroundColor: theme.tintSurface, borderColor: theme.tintBorder }]}>
-                  <View style={styles.compareText}>
-                    <ThemedText type="t7" themeColor="tint" style={styles.bold}>
-                      {compareBasketLabel(compare.size)}
-                    </ThemedText>
-                    <View style={styles.compareHint}>
-                      <ThemedText type="micro" themeColor="textSecondary" style={styles.regular}>
-                        {COMPARE_HINT}
-                      </ThemedText>
-                    </View>
-                  </View>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={COMPARE_ALL}
-                    onPress={startCompare}
-                    style={({ pressed }) => [
-                      styles.compareBtn,
-                      { backgroundColor: theme.tint },
-                      pressed ? styles.pressed : null,
-                    ]}>
-                    <ThemedText type="t7" style={[styles.bold, { color: theme.onTint }]}>
-                      {COMPARE_ALL}
-                    </ThemedText>
-                  </Pressable>
-                </View>
-              ) : null}
-
               {rows.length === 0 ? (
                 <Empty />
               ) : (
                 <>
-                  {/* 업종 칩 — 피그마 `px-4 py-2.5 rounded-full text-sm font-semibold`: 40 · 좌우 16. */}
+                  {/* 정본 chipBarSticky: 위 4 · 아래 16 · 칩 사이 8. 칩은 준비 묶음 넷(위 `Filter`). */}
                   <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     style={styles.chipScroll}
                     contentContainerStyle={styles.chipRow}>
                     <CategoryChip label={CHIP_ALL} active={filter === 'all'} onPress={() => setFilter('all')} />
-                    {categories.map((category) => (
+                    {PREPARATION_GROUPS.map((group) => (
                       <CategoryChip
-                        key={category}
-                        label={VENDOR_CATEGORY_LABEL[category]}
-                        active={filter === category}
-                        onPress={() => setFilter(category)}
+                        key={group.key}
+                        label={HOME_PREP_GROUP_LABEL[group.key]}
+                        active={filter === group.key}
+                        onPress={() => setFilter(group.key)}
                       />
                     ))}
                   </ScrollView>
 
-                  {visibleGroups.map((group) => (
-                    <View key={group.category} style={styles.group}>
-                      {/* 정본 catHead: 제목 18/700 · «N개 · 최신순» 13 회색 tabular. */}
-                      <View style={styles.groupHead}>
-                        <ThemedText type="f18" style={styles.bold}>
-                          {VENDOR_CATEGORY_LABEL[group.category]}
-                        </ThemedText>
-                        <ThemedText type="f13" numeric themeColor="textAssistive">
-                          {groupMetaLabel(group.candidates.length)}
-                        </ThemedText>
+                  {/* 정본 mypickSec: 위 1px 선 · 위아래 20 — 비교 배너와 묶음 목록이 이 안에 든다. */}
+                  <View style={[styles.mypickSec, { borderTopColor: theme.border }]}>
+                    {/* 비교 배너 — 정본 banner: 바깥 16 · 안쪽 16 · radius 10 · #fff5f2 면 · #ffd9d4 선. */}
+                    {compare.size >= MIN_COMPARE ? (
+                      <View style={[styles.compareBanner, { backgroundColor: theme.tintSurface, borderColor: theme.tintBorder }]}>
+                        <View style={styles.compareText}>
+                          <ThemedText type="f14" style={styles.bold}>
+                            {compareBasketLabel(compare.size)}
+                          </ThemedText>
+                          <ThemedText type="f12" themeColor="textAssistive">
+                            {COMPARE_HINT}
+                          </ThemedText>
+                        </View>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={COMPARE_ALL}
+                          onPress={startCompare}
+                          style={({ pressed }) => [
+                            styles.compareBtn,
+                            { backgroundColor: theme.tint },
+                            pressed ? styles.pressed : null,
+                          ]}>
+                          <ThemedText type="f14" style={[styles.bold, { color: theme.onTint }]}>
+                            {COMPARE_ALL}
+                          </ThemedText>
+                        </Pressable>
                       </View>
-                      <View style={styles.list}>
-                        {group.candidates.map((candidate) => {
-                          const row: Row = {
-                            candidate,
-                            groupDecided: group.state === 'decided',
-                            isDecided: group.decidedVendorId === candidate.vendorId,
-                          };
-                          return (
-                            <CandidateCard
-                              key={candidate.id}
-                              row={row}
-                              comparing={compare.has(candidate.vendorId)}
-                              compareFull={compare.size >= PICK_COMPARE_MAX}
-                              busy={busy}
-                              onCompare={() => toggleCompare(candidate.vendorId)}
-                              onDecide={() => goDecide(candidate)}
-                              onUndecide={() => askUndecide(candidate)}
-                              onRemove={() => void unpick(row)}
-                            />
-                          );
-                        })}
-                      </View>
+                    ) : null}
+
+                    <View style={styles.groupWrap}>
+                      {visibleSections.map((section) => {
+                        const open = expanded.has(section.key);
+                        const shown = open ? section.rows : section.rows.slice(0, GROUP_PREVIEW);
+                        return (
+                          <View key={section.key} style={styles.group}>
+                            {/* 정본 catGroupHead: 제목 18/700 · «N개 · 최신순» 13 회색, 글줄 맞춤. */}
+                            <View style={styles.groupHead}>
+                              <ThemedText type="f18" style={styles.bold}>
+                                {section.title}
+                              </ThemedText>
+                              <ThemedText type="f13" numeric themeColor="textAssistive">
+                                {groupMetaLabel(section.rows.length)}
+                              </ThemedText>
+                            </View>
+                            {shown.length > 0 ? (
+                              <View style={styles.list}>
+                                {shown.map((row) => (
+                                  <CandidateCard
+                                    key={row.candidate.id}
+                                    row={row}
+                                    comparing={compare.has(row.candidate.vendorId)}
+                                    compareFull={compare.size >= PICK_COMPARE_MAX}
+                                    busy={busy}
+                                    onCompare={() => toggleCompare(row.candidate.vendorId)}
+                                    onDecide={() => goDecide(row.candidate)}
+                                    onUndecide={() => askUndecide(row.candidate)}
+                                    onRemove={() => void unpick(row)}
+                                  />
+                                ))}
+                              </View>
+                            ) : null}
+                            {/* 정본 moreBtn2 «더 보기». 가릴 카드가 있을 때만 그린다(DESIGN_UNRESOLVED — PR 본문). */}
+                            {section.rows.length > GROUP_PREVIEW && !open ? (
+                              <Pressable
+                                accessibilityRole="button"
+                                accessibilityLabel={`${section.title} ${GROUP_MORE}`}
+                                onPress={() => toggleExpanded(section.key)}
+                                style={({ pressed }) => [
+                                  styles.moreBtn,
+                                  { backgroundColor: theme.backgroundElement },
+                                  pressed ? styles.pressed : null,
+                                ]}>
+                                <ThemedText type="f14" themeColor="textSecondary" style={styles.bold}>
+                                  {GROUP_MORE}
+                                </ThemedText>
+                              </Pressable>
+                            ) : null}
+                          </View>
+                        );
+                      })}
                     </View>
-                  ))}
+                  </View>
                 </>
               )}
               <View style={styles.bottomSpacer} />
@@ -489,7 +559,7 @@ function CategoryChip({ label, active, onPress }: { label: string; active: boole
         { backgroundColor: active ? theme.text : theme.backgroundElement },
         pressed ? styles.pressed : null,
       ]}>
-      {/* WP-PICK-001 업종 칩: 14/700 · 높이 36 · 좌우 14. */}
+      {/* WP-PICK-001 칩: 14/700 · 높이 36 · 좌우 14. 끔 글자 #4d5159는 테마 키가 없어 보조색(PR 본문). */}
       <ThemedText type="f14" numberOfLines={1} style={[styles.bold, { color: active ? theme.onInk : theme.textAssistive }]}>
         {label}
       </ThemedText>
@@ -498,7 +568,7 @@ function CategoryChip({ label, active, onPress }: { label: string; active: boole
 }
 
 /* ────────────────────────────────────────────
-   카드 — 검색 결과 카드와 같은 틀 + 아래 CTA 띠(border-top · 안쪽 12/10 · 단추 40 · radius 22)
+   카드 — 정본 `sv()`: 썸네일 열 120 + 정보 + 아래 CTA 띠(border-top · 안쪽 8 14 10 · 단추 40 · radius 6)
 ──────────────────────────────────────────── */
 function CandidateCard({
   row,
@@ -544,7 +614,7 @@ function CandidateCard({
             category={vendorImageCategory(candidate.category)}
             width={Layout.thumbSearchWidth}
             height={Layout.thumbSearchHeight}
-            radius={Radius.thumb}
+            radius={THUMB_RADIUS}
           />
           {candidate.addedByPartner ? (
             <View style={[styles.badge, { backgroundColor: theme.text }]}>
@@ -568,7 +638,7 @@ function CandidateCard({
               <ThemedText type="f10" themeColor="textAssistive" style={[styles.bold, styles.tracked]}>
                 {VENDOR_CATEGORY_LABEL[candidate.category]}
               </ThemedText>
-              <ThemedText type="f16" numberOfLines={1} style={[styles.bold, styles.name]}>
+              <ThemedText type="f14" numberOfLines={1} style={[styles.bold, styles.name]}>
                 {candidate.vendorName}
               </ThemedText>
             </View>
@@ -576,18 +646,16 @@ function CandidateCard({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`${candidate.vendorName} 빼기`}
-              hitSlop={Spacing.two}
+              hitSlop={Spacing.three}
               onPress={onRemove}
               style={styles.removeBtn}>
-              <View style={styles.removeIcon}>
-                <ProductSymbol name="close" size={Layout.iconField} color={theme.textAssistive} />
-              </View>
+              <ProductSymbol name="close" size={Layout.iconField} color={theme.textDisabled} />
             </Pressable>
           </View>
           <View style={styles.location}>
             <ProductSymbol name="pin" size={Layout.iconMicro} color={theme.textAssistive} />
             {/* 규격서: 지역 «12/400 #868B94 · lh 16 · mar 6 0 0 0». */}
-            <ThemedText type="f12" themeColor="textAssistive" numberOfLines={1}>
+            <ThemedText type="f12" themeColor="textAssistive" numberOfLines={1} style={styles.locText}>
               {regionLabel(candidate.region)}
             </ThemedText>
           </View>
@@ -617,7 +685,7 @@ function CandidateCard({
             pressed ? styles.pressed : null,
           ]}>
           <ThemedText
-            type="f12"
+            type="f13"
             style={[
               styles.bold,
               { color: isDecided ? theme.textAssistive : comparing ? theme.tint : compareDisabled ? theme.textDisabled : theme.textAssistive },
@@ -638,7 +706,7 @@ function CandidateCard({
               pressed ? styles.pressed : null,
               busy ? styles.busy : null,
             ]}>
-            <ThemedText type="f12" style={[styles.bold, { color: theme.onTint }]}>
+            <ThemedText type="f13" style={[styles.bold, { color: theme.onTint }]}>
               {ACTION_CONSULT}
             </ThemedText>
           </Pressable>
@@ -652,7 +720,7 @@ function CandidateCard({
               { backgroundColor: theme.background, borderColor: theme.border },
               pressed ? styles.pressed : null,
             ]}>
-            <ThemedText type="f12" style={[styles.bold, { color: theme.text }]}>
+            <ThemedText type="f13" style={[styles.bold, { color: theme.text }]}>
               {ACTION_DECIDE}
             </ThemedText>
           </Pressable>
@@ -713,8 +781,8 @@ function RetryLink({ onPress }: { onPress: () => void }) {
 }
 
 /* ────────────────────────────────────────────
-   스타일 — 값은 피그마 `Pick.tsx`(2026-09-14 정본). 12 · 14 · 20 · 40처럼 사다리에 없는
-   값은 같은 값의 기존 토큰을 주석과 함께 쓴다(저장소 관례).
+   스타일 — 값은 앱 정본 `docs/design/React_Native/pick.js`(frame-001 · 005). 사다리에 없는
+   값은 같은 값의 기존 토큰을 주석과 함께 쓴다(저장소 관례). 좌우는 정본 20이 아니라 앱 거터 24다.
 ──────────────────────────────────────────── */
 const styles = StyleSheet.create({
   root: { flex: 1 },
@@ -723,58 +791,63 @@ const styles = StyleSheet.create({
   loadingCenter: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: { flexGrow: 1 },
   errorBox: { padding: Layout.gutter, gap: Layout.rowPaddingY },
-  /* 바깥 `pb-8` = 32. */
-  bottomSpacer: { height: Spacing.five },
+  /* 정본 frame-001 스크롤 끝 «height:24px». */
+  bottomSpacer: { height: Spacing.four },
 
   bold: { fontWeight: 700 },
   /* 규격서의 굵기 600 · 500 — spec/tokens.json typography.$weights의 피그마 예외. */
   semibold: { fontWeight: 600 },
   medium: { fontWeight: 500 },
-  regular: { fontWeight: 400 },
-  /* 규격서 «ls 0.5px» — 업종 라벨. */
-  tracked: { letterSpacing: LetterSpacing.p05 },
-  /* WP-PICK-001 Root 제목은 28/700, 전역 좌우 거터는 24. */
-  title: { letterSpacing: LetterSpacing.n065 },
+  /* 정본 `cat` 10/14 · ls .06em(0.6px — 같은 값 토큰이 없어 0.5, PR 본문). */
+  tracked: { letterSpacing: LetterSpacing.p05, lineHeight: LineHeight.lh14 },
+  /* 정본 rH1 28/36/700 · ls -0.02em(-0.56 — 같은 값 토큰이 없어 -0.65, PR 본문). 좌우 거터는 24. */
+  title: { letterSpacing: LetterSpacing.n065, lineHeight: LineHeight.lh36 },
   pressed: { transform: [{ scale: 0.97 }] },
   busy: { opacity: 0.6 },
   /* 비교함이 찼을 때의 «비교하기» `opacity-40`. */
   disabled: { opacity: 0.4 },
 
-  /* Root 제목행: Back 없음 · 56 · 좌우 24. */
+  /* 정본 headBlock: Back 없음 · 위 4 · 제목 36 · 아래 24 = 64. Root 헤더 공통 최소 56(root-header-contract). */
   titleRow: {
-    height: Layout.navBar,
+    minHeight: Layout.navBar,
+    paddingTop: Spacing.one,
+    paddingBottom: Spacing.four,
     paddingHorizontal: Layout.gutter,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingBottom: Layout.listGap,
   },
-  /* 업종 묶음 — 정본 catGroupSec: 머리 + 카드 목록, 묶음 사이 20. */
-  group: { gap: Layout.inlineGap, marginBottom: Layout.sectionGap },
+  /* 정본 mypickSec: 위 1px 선 · 위아래 20 · 안쪽 사이 10. */
+  mypickSec: {
+    borderTopWidth: Border.hairline,
+    paddingVertical: Layout.listGap,
+    gap: Layout.iconTextGap,
+  },
+  /* 정본 catGroupWrap: 위 16 · 묶음 사이 28. */
+  groupWrap: { paddingTop: Spacing.three, gap: Layout.sectionGap },
+  /* 정본 catGroupSec: 머리 · 카드 목록 · 더 보기 사이 12. */
+  group: { gap: Layout.inlineGap },
   groupHead: {
     paddingHorizontal: Layout.pageX,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'baseline',
     justifyContent: 'space-between',
     gap: Layout.inlineGap,
   },
 
-  // ── WP-PICK-001 비교 배너: mx 24 · mb 16 · radius 10 · px 16 · py 14 ──
+  // ── 정본 banner: 바깥 16 24(거터) · radius 10 · 안쪽 16 ──
   compareBanner: {
     marginHorizontal: Layout.gutter,
+    marginVertical: Spacing.three,
     borderWidth: Border.hairline,
-    marginBottom: Spacing.three,
     borderRadius: Radius.medium,
-    paddingHorizontal: Spacing.three,
-    /* 상하 14 — 같은 값의 fieldPaddingX. */
-    paddingVertical: Layout.fieldPaddingX,
+    padding: Spacing.three,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: Spacing.two,
   },
-  compareText: { flex: 1, minWidth: 0 },
-  /* 부제 `mt-0.5 text-white/50`. */
-  compareHint: { marginTop: Spacing.half, opacity: 0.5 },
+  /* 정본 bannerCol: 제목 · 부제 사이 2. */
+  compareText: { flex: 1, minWidth: 0, gap: Spacing.half },
   /* 03-pick bannerBtn: height 36 · radius 6 · px 16. */
   compareBtn: {
     height: Layout.chip,
@@ -785,13 +858,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
   },
 
-  // ── 업종 칩 `gap-2 px-5 pb-4` ──
+  // ── 정본 chipBarSticky: 위 4 · 아래 16 · 사이 8 ──
   /* 세로 스크롤 안의 가로 스크롤 — 늘어나지 않게 잡는다. 안 잡으면 칩 줄이 남는 높이를 다 먹는다. */
   chipScroll: { flexGrow: 0, flexShrink: 0 },
   chipRow: {
     flexDirection: 'row',
     gap: Spacing.two,
     paddingHorizontal: Layout.pageX,
+    paddingTop: Spacing.one,
     paddingBottom: Spacing.three,
   },
   /* WP-PICK-001 업종 칩: 높이 36 · 좌우 14. */
@@ -809,11 +883,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: Layout.pageX,
     gap: Layout.inlineGap,
   },
-  /* 03-pick card: radius 10 · hairline border · shadow 없음. */
+  /* 정본 `sv().card`: radius 16 · 1px 선(결정 1.5 코랄) · 0 1px 2px 그림자. */
   card: {
-    borderRadius: Radius.medium,
+    borderRadius: Radius.cardLarge,
     borderWidth: Border.hairline,
     overflow: 'hidden',
+    ...Elevation.figmaCard,
   },
   cardBody: { flexDirection: 'row' },
   /* 왼쪽 열 `p-2` 안에 썸네일 104×116 — 열 폭 120. */
@@ -851,22 +926,18 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
   },
   headText: { flex: 1, minWidth: 0 },
-  /* 규격서: 이름 «lh 22 · mar 2 0 0 0». */
-  name: { marginTop: Spacing.half, lineHeight: LineHeight.lh22 },
-  /* × `p-1 rounded-full`. */
-  removeBtn: {
-    padding: Spacing.one,
-    borderRadius: Radius.pill,
-    flexShrink: 0,
-  },
-  removeIcon: { opacity: 0.4 },
-  /* 핀 + 지역 `mt-1.5 gap-1` — 위 6(같은 값의 menuGroupGap). */
+  /* 정본 `name` 14/19/700 · nameCol 사이 2. */
+  name: { marginTop: Spacing.half, lineHeight: LineHeight.lh19 },
+  /* 정본 icoX: close-fill 16 · #adb1ba, 안쪽 여백 없음 — 누를 자리는 hitSlop이 넓힌다. */
+  removeBtn: { flexShrink: 0 },
+  /* 정본 loc: 위 4 · 사이 4 · 지역 12/17. */
   location: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.one,
-    marginTop: Layout.menuGroupGap,
+    marginTop: Spacing.one,
   },
+  locText: { lineHeight: LineHeight.lh17 },
   /* 메모 — 피그마 해시태그 줄 자리 `mt-2`. */
   note: { marginTop: Spacing.two },
 
@@ -884,6 +955,14 @@ const styles = StyleSheet.create({
   compareLink: {
     minHeight: Layout.controlMedium,
     paddingHorizontal: Spacing.one,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  /* 정본 moreBtn2: 좌우 20(거터 24) · 높이 44 · radius 8 · 14/700. */
+  moreBtn: {
+    marginHorizontal: Layout.pageX,
+    height: 44,
+    borderRadius: Radius.picker,
     alignItems: 'center',
     justifyContent: 'center',
   },

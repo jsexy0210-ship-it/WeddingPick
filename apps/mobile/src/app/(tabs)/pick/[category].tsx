@@ -45,8 +45,8 @@ import { vendorImageCategory } from '@/features/search/vendor-image-category';
 /**
  * 업종별 Pick 목록.
  *
- * v3.29 정본 `docs/design/html/대메뉴_Pick.dc.html`에는 이 화면이 별도 화면 카드로
- * 실려 있지 않다 — 옛 09-core-loop 시안(삭제됨) #10c의 WP-PICK-002 번호를 더는
+ * 앱 정본 `docs/design/React_Native/pick.jsx`(프레임 5개)에는 이 화면이 없다 — 옛
+ * 09-core-loop 시안(삭제됨) #10c의 WP-PICK-002 번호를 더는
  * 참조하지 않는다. 홈의 «웨딩픽 추천» 흐름(`(home)/recommendations.tsx`)과 홈
  * 목록(`(tabs)/index.tsx`)이 이 라우트로 들어오므로 화면 자체는 남긴다 — Pick 화면군
  * 단독 대조로 지우지 않는다(다른 화면군이 같이 쓰는 라우트).
