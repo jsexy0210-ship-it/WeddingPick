@@ -6,7 +6,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { listDecisions, listWeddingNotes } from '@/api/client';
 import { formatDateDot } from '@/features/common/format-date';
 import { useDepthBack } from '@/features/navigation/depth-back';
-import { ActionButton, Border, ErrorView, Layout, Radius, SkeletonView, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { ActionButton, Border, ErrorView, Layout, LineHeight, Radius, SkeletonView, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import { Hero, NavBar, Screen } from '@/features/wedding/screen-kit';
 
 /** `spec/strings.ko.json` `ourWedding.decided.*`. */
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   /* `memoAlwaysBox` — `margin-top:8px;padding-top:8px;gap:3px`, 위 선. */
   memo: { marginTop: Spacing.two, paddingTop: Spacing.two, borderTopWidth: Border.hairline, gap: 3 },
   /* `memoAlwaysText` 13/19. 19는 같은 값의 `LineHeight.t7`. */
-  memoText: { lineHeight: 19 },
+  memoText: { lineHeight: LineHeight.t7 },
   grow: { flex: 1, minWidth: 0 },
   bold: { fontWeight: 700 },
 });

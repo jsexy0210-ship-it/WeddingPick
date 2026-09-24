@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
   },
   col: { flex: 1, minWidth: 0, gap: 3 },
   bold: { fontWeight: 700 },
-  /* `spendBadge` — `height:24px;padding:0 8px;border-radius:4px`. */
-  badge: { height: 24, paddingHorizontal: Spacing.two, borderRadius: Radius.badge, justifyContent: 'center' },
+  /* `spendBadge` — `height:24px;padding:0 8px;border-radius:4px`. 글자가 커져도 잘리지 않게 minHeight로 둔다. */
+  badge: { minHeight: 24, paddingHorizontal: Spacing.two, borderRadius: Radius.badge, justifyContent: 'center' },
   pressed: { opacity: 0.6 },
 });
