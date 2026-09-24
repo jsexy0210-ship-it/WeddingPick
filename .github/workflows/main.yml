@@ -111,6 +111,9 @@ jobs:
       - name: API health validator test
         run: node --test scripts/check-api-health.test.mjs
 
+      - name: Public API probe test
+        run: node --test scripts/public-api-probe.test.mjs
+
       - name: Marketing preview
         run: npm run marketing --workspace @weddingpick/api -- demo "$GITHUB_WORKSPACE/$MARKETING_PREVIEW_DIR"
 
