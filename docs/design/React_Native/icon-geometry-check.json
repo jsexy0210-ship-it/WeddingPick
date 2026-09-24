@@ -1,0 +1,157 @@
+[
+  {
+    "name": "chevron-right",
+    "expectedUpstreamBlobSha": "b6184c4f2655c2a2e165b0796ce67f58d5297036",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "notification",
+    "expectedUpstreamBlobSha": "f253b521bde7a7d31685772cb26a711f236d0f3b",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "camera",
+    "expectedUpstreamBlobSha": "aa78b4230f78f03b76ea5195e12071555fb67937",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "photo",
+    "expectedUpstreamBlobSha": "bb411fbcb21dbb9125dfd62c82ed26b26191839d",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "mic",
+    "expectedUpstreamBlobSha": "d257d8423c52bf79c9f5ea70f4a40db3083657e3",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "chevron-left",
+    "expectedUpstreamBlobSha": "07cce4bd6b581b040c12ec733c5c83d86613b147",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "close-fill",
+    "expectedUpstreamBlobSha": "a0565085523039570e967bfe69bd363d9745bc0e",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "clock",
+    "expectedUpstreamBlobSha": "b165dca5e326c819ef5473619af962d144126e02",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "check-fill",
+    "expectedUpstreamBlobSha": "1ff71351f0b0418e4be407a276a50d635ab02772",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "heart-fill",
+    "expectedUpstreamBlobSha": "ba1673bd27d344ec7ab6e17b667850a6ee752c07",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "heart",
+    "expectedUpstreamBlobSha": "fd06bb19d5515948cc4fdc0561264b38288dbe36",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "home-fill",
+    "expectedUpstreamBlobSha": "a9ac3298b9fd4ad399c45a19b0cdf4db838a1eff",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "home",
+    "expectedUpstreamBlobSha": "33b5287a120a691ef9a5ae0cf08237268329fdc4",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "search",
+    "expectedUpstreamBlobSha": "684b42226f1093b2edefca77096bf9b9cdda9f96",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "search-fill",
+    "expectedUpstreamBlobSha": "40ce1e0682901b9acfe5721ae0ff590e87f202fe",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "calendar",
+    "expectedUpstreamBlobSha": "3f8bf9877afec194236bf74640a52e180eace1c7",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "profile",
+    "expectedUpstreamBlobSha": "db0cbb3adb6348d83eb8e7c2eb690bc4a88309af",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "profile-fill",
+    "expectedUpstreamBlobSha": "6a1c119b17e8b9bca114f7a44170db0686347759",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "more-horiz",
+    "expectedUpstreamBlobSha": "430834354b6d3b4d4a330ee96ad057c7f7ce1235",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "location",
+    "expectedUpstreamBlobSha": "e27fd88d24a348dd83d9e66a613adec2da7106ee",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "bookmark",
+    "expectedUpstreamBlobSha": "5e625ed77eaeba5966ad502b45ac6fa78c35b98f",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "chatting",
+    "expectedUpstreamBlobSha": "46dbc12a36ac39dff7644dde47bb882540858088",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "community",
+    "expectedUpstreamBlobSha": "1d188bd0aeea9c7ed4f8af511f5dc8b1e1afeb39",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "edit",
+    "expectedUpstreamBlobSha": "f8bd23cac705fd049250e1f1f31ae37e9d3ed6e0",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "trash",
+    "expectedUpstreamBlobSha": "0111e0c753bf2bc98af218b9fe2e284d541749a9",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "storefront",
+    "family": "Material Symbols",
+    "expectedUpstreamBlobSha": "5f2182a5f7c07faf40db2cb5602e161d9c93bb8b",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "face_retouching_natural",
+    "family": "Material Symbols",
+    "expectedUpstreamBlobSha": "979e55a183e25f212da10be602df350117440aa0",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "dry_cleaning",
+    "family": "Material Symbols",
+    "expectedUpstreamBlobSha": "4ec586b16adc4877f46002f85ec85782549d2a6d",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "diamond",
+    "family": "Material Symbols",
+    "expectedUpstreamBlobSha": "b604492fa8bf7cd2e7ce09b6f982c88d5b764942",
+    "reconstructedMatches": true
+  },
+  {
+    "name": "history",
+    "family": "Material Symbols",
+    "expectedUpstreamBlobSha": "2d8124b474acacab437409df3185de12793b5a43",
+    "reconstructedMatches": true
+  }
+]

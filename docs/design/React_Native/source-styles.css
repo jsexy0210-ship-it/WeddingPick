@@ -1,0 +1,74 @@
+/* home */
+
+ .design-canvas {margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+.nsb::-webkit-scrollbar{display:none}
+image-slot{background:#eaebee}
+image-slot::part(empty){display:none !important}
+
+/* search */
+
+ .design-canvas {margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+.nsb::-webkit-scrollbar{display:none}
+image-slot{background:#eaebee}
+image-slot::part(empty){display:none !important}
+
+/* pick */
+
+ .design-canvas {margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+.nsb::-webkit-scrollbar{display:none}
+
+/* note */
+
+ .design-canvas {margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+.nsb::-webkit-scrollbar{display:none}
+
+/* my */
+
+ .design-canvas {margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+.nsb::-webkit-scrollbar{display:none}
+image-slot{background:#eaebee}
+image-slot::part(empty){display:none !important}
+
+/* common */
+
+ .design-canvas {margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+.nsb::-webkit-scrollbar{display:none}
+@keyframes wpSpin{to{transform:rotate(360deg)}}
+@keyframes wpOrbit{to{transform:rotate(360deg)}}
+@keyframes wpSwap5{0%,14%{opacity:1}20%,100%{opacity:0}}
+@keyframes wpSwap6{0%,11.6%{opacity:1}16.6%,100%{opacity:0}}
+@keyframes wpSwap7{0%,10%{opacity:1}14.2%,100%{opacity:0}}
+@keyframes wpSwap8{0%,8.7%{opacity:1}12.5%,100%{opacity:0}}
+@keyframes wpSwap9{0%,7.7%{opacity:1}11.1%,100%{opacity:0}}
+@keyframes wpSwap10{0%,7%{opacity:1}10%,100%{opacity:0}}
+@keyframes wpSwap11{0%,6.3%{opacity:1}9%,100%{opacity:0}}
+@keyframes wpSwap12{0%,5.8%{opacity:1}8.3%,100%{opacity:0}}
+@keyframes wpSk{0%,100%{opacity:1}50%{opacity:.45}}
+
+/* components */
+
+ .design-canvas {margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--wp-accent,#ff6f61);text-decoration:none}
+a:hover{color:#e2564a}
+.nsb::-webkit-scrollbar{display:none}
+image-slot{background:#eaebee}
+image-slot::part(empty){display:none !important}
+
+/* devices */
+
+ .design-canvas {margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+.nsb::-webkit-scrollbar{display:none}
