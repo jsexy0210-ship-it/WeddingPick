@@ -23,6 +23,7 @@ import {
   ActionButton,
   Border,
   DonutChart,
+  FontSize,
   Layout,
   LetterSpacing,
   ProductSymbol,
@@ -997,7 +998,7 @@ const styles = StyleSheet.create({
   },
   /* D-day 카드 위 줄 — 날짜 · D-N 양끝 정렬. */
   ddayTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: Layout.inlineGap },
-  ddayValue: { fontSize: 19 },
+  ddayValue: { fontSize: FontSize.noteDday },
   /* «예약현황 N곳» — 선 위 · 양끝 정렬. */
   decidedLinkRow: {
     marginTop: Spacing.three,

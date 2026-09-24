@@ -9,6 +9,7 @@ import { StepList, type Step } from './step-list';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 import { Layout, MaxContentWidth, Motion, Spacing } from './theme';
+import { FontSize, LineHeight } from './typography';
 import type { ActionButtonProps } from './action-button';
 import { useTheme } from './use-theme';
 
@@ -459,7 +460,7 @@ const styles = StyleSheet.create({
   processing: { alignItems: 'center', gap: Spacing.five },
   processingText: { alignItems: 'center', gap: Spacing.two },
   sectionTitle: { fontWeight: '700' },
-  sectionBody: { lineHeight: 20, fontWeight: '400' },
+  sectionBody: { lineHeight: LineHeight.lh20, fontWeight: '400' },
   sectionAction: {
     marginTop: 12,
     height: 44,
@@ -468,5 +469,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sectionActionText: { fontSize: 15, fontWeight: '700' },
+  sectionActionText: { fontSize: FontSize.f15, fontWeight: '700' },
 });
