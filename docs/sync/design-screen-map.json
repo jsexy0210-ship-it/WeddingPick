@@ -1471,7 +1471,7 @@
           "evidence": "screen-id-reference"
         },
         {
-          "file": "apps/mobile/src/features/search/sort-sheet.tsx",
+          "file": "apps/mobile/src/features/search/sort-panel.tsx",
           "kind": "component-source",
           "evidence": "screen-id-reference"
         }

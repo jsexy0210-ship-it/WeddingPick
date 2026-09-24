@@ -1,10 +1,11 @@
-import { VENDOR_CATEGORY_LABEL, type VendorCategory } from '@weddingpick/domain';
+import { withParticle } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   Layout,
+  LineHeight,
   MaxContentWidth,
   ProductSymbol,
   Radius,
@@ -15,96 +16,110 @@ import {
 } from '@weddingpick/ui';
 
 /**
- * 상담 예약 완료 · WP-PICK-010.
+ * 상담 예약 완료 · WP-DONE-VEND.
  *
- * v3.29 정본 `docs/design/html/대메뉴_Pick.dc.html` 1-2번 화면(vtag 「상담 예약 완료」)이
- * 근거다 — tagDesc: 「상담 예약 신청 후 뜹니다. 결정 상태 대신 연락을 기다려달라는
- * 안내로 바꿨습니다.」 이 화면이 `search/[vendorId]/consult.tsx`(WP-PICK-009 상담 예약
- * 폼) 제출 성공 뒤 이어진다 — 예전에는 제출 즉시 `/wedding`으로 바로 넘어가 이 확인
- * 화면이 아예 없었다(2026-09-23 v3.29 대조로 발견 · 추가).
+ * 정본은 RN `docs/design/React_Native/common.js` `esc({ code: 'WP-DONE-VEND' })`(472행) ·
+ * 보드 `common.jsx` `s.done` 구역이다(2026-09-25 MASTER 후속 — 「업데이트된 앱 화면에 다
+ * 맞추라」). 앞 PR에서 DESIGN_UNRESOLVED로 남긴 WP-PICK-010(pick.jsx, 「상담 예약을
+ * 요청했어요」)과의 충돌을 common 쪽 확정 시각형으로 정리했다. `search/[vendorId]/consult.tsx`
+ * (WP-PICK-009) 제출 성공 뒤 이어진다.
  *
- *   머리(56)  없음 — 정본에 뒤로가기·X가 없다. 나가는 길은 하단 CTA 하나뿐이다.
- *   마크      72 coral 원 + 체크 36 white(정본 icoCheckBig — Pick Mark 하트가 아니라
- *             일반 체크다. 하트+체크는 «최종 결정»(WeddingMark)에만 쓴다).
- *   제목      26/700 가운데 «상담 예약을\n요청했어요»(정본 문구 그대로)
- *   부제      15/400 가운데 «{업체명} · {날짜 시간}» — 정본 예시는 «블루밍 스튜디오 ·
- *             9월 20일 오후 2시», 여기서는 방금 고른 실제 값을 쓴다.
- *   요약 카드 정본 doneRows(웨딩노트/예산/배우자)는 «결정 완료» 화면 데이터를 그대로
- *             재사용한 목업이라 이 화면(예약)에는 안 맞는다 — 서버가 주지 않는 예산 값을
- *             지어 넣지 않는다. 실제로 있는 사실만 두 줄로 줄였다: 웨딩노트 반영 · 배우자
- *             알림(연동돼 있을 때만).
- *   안내 상자  «연락을 기다려주세요» + «영업일 기준 1~2일 안에 업체가 연락드려요»(정본 문구 그대로)
- *   CTA       56(tokens Layout.ctaSheet — 정본 dockSingle 92 안의 ctaFull 56과 같은 값)
- *             «웨딩노트에서 확인하기»(정본 문구 그대로) → `/wedding`
+ *   머리      없음 — `back: false` · `nav` 없음. 나가는 길은 dock 두 단추뿐이다.
+ *   마크      64 원 · 면 #fff5f2(tintSurface) · 코랄 체크(`eCHK(64, '#fff5f2', coral)`, 글리프 31).
+ *   제목      26/35 700 가운데 · 위 6 — «{시각}로 잡았어요». 시각은 방금 웨딩노트 일정으로
+ *             저장한 값(`addConsultationEvent` `startsAt`)이다.
+ *   부제      15/23 보조색 가운데 — «{업체명}». 정본 «· 김소연 작가»의 담당자 이름은 서버에
+ *             없어 붙이지 않는다(BACKEND_PENDING).
+ *   반영 목록 `itemBox` 위 12 · r12 · #f7f8fa · 안쪽 18 · 사이 14. 줄마다 코랄 체크 20 +
+ *             키 13 보조색 / 값 15 700.
+ *               웨딩노트 «일정에 들어갔어요» — 저장 성공 뒤라 사실이다.
+ *               {배우자}님 «이 일정이 보여요» — 연결된 배우자가 있을 때만(같은 웨딩 일정).
+ *             정본 «알림 · 하루 전과 두 시간 전에 알려드려요»는 **BACKEND_PENDING** — 일정의
+ *             `notify_enabled`를 읽어 알림을 보내는 작업이 서버에 없다. 없는 약속을 적지 않는다.
+ *   다음 카드 `nextCard`(«다음» + 정본 문구)는 **두지 않았다 — DESIGN_UNRESOLVED.** 정본 문구의
+ *             «좋아요»를 카피 린트(`spec/glossary.json` 금지어 «좋아요» → «Pick»)가 막는다.
+ *             문구를 바꾸지도, 린트 규칙을 고치지도 않고 대표님 판단으로 올린다.
+ *   dock      92 · 안쪽 12 20 · 사이 8 · 위 선 1. «홈으로»(flex 1 · 56 · r6 · #f2f3f6 ·
+ *             17/700) + «웨딩노트 보기»(flex 1.4 · 코랄 · 흰 글자).
  */
 export default function ConsultDoneScreen() {
   const theme = useTheme();
-  const { vendorName, category, when, partnerLinked } = useLocalSearchParams<{
+  const { vendorName, when, partnerName } = useLocalSearchParams<{
     vendorName?: string;
-    category?: string;
     when?: string;
-    partnerLinked?: string;
+    partnerName?: string;
   }>();
 
-  const name = vendorName ?? '';
-  const categoryLabel = category ? (VENDOR_CATEGORY_LABEL[category as VendorCategory] ?? category) : '';
-  const sub = [name, when].filter(Boolean).join(' · ');
-  const hasPartner = partnerLinked === '1';
-
-  const rows = [
-    { k: '웨딩노트', v: `${categoryLabel ? `${categoryLabel} ` : ''}상담 일정에 반영됐어요` },
-    ...(hasPartner ? [{ k: '배우자', v: '알림 보냄' }] : []),
+  const title = when ? `${withParticle(when, '으로로')} 잡았어요` : '';
+  const items = [
+    { k: '웨딩노트', v: '일정에 들어갔어요' },
+    ...(partnerName ? [{ k: `${partnerName}님`, v: '이 일정이 보여요' }] : []),
   ];
-
-  function goWedding() {
-    router.replace('/wedding');
-  }
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <View style={styles.head}>
-            <View style={[styles.mark, { backgroundColor: theme.tint }]}>
-              <ProductSymbol name="check" size={MARK_ICON} color={theme.onTint} />
-            </View>
-            <ThemedText type="t2" style={styles.center}>상담 예약을{'\n'}요청했어요</ThemedText>
-            {sub ? (
-              <ThemedText type="body" themeColor="textSecondary" style={styles.center}>
-                {sub}
-              </ThemedText>
-            ) : null}
+          <View style={[styles.mark, { backgroundColor: theme.tintSurface }]}>
+            <ProductSymbol name="check" size={MARK_ICON} color={theme.tint} />
           </View>
+          {title ? (
+            <ThemedText type="t2" style={[styles.center, styles.title]}>
+              {title}
+            </ThemedText>
+          ) : null}
+          {vendorName ? (
+            <ThemedText type="f15" themeColor="textSecondary" style={[styles.center, styles.sub]}>
+              {vendorName}
+            </ThemedText>
+          ) : null}
 
-          <View style={[styles.cards, { backgroundColor: theme.backgroundElement }]}>
-            {rows.map((row, i) => (
-              <View
-                key={row.k}
-                style={[
-                  styles.row,
-                  i < rows.length - 1 ? { borderBottomWidth: 1, borderBottomColor: theme.border } : null,
-                ]}>
-                <ThemedText type="t7" themeColor="textAssistive" style={styles.rowKey}>{row.k}</ThemedText>
-                <ThemedText type="t7" style={styles.bold}>{row.v}</ThemedText>
+          <View style={[styles.itemBox, { backgroundColor: theme.backgroundElement }]}>
+            {items.map((item) => (
+              <View key={item.k} style={styles.itemRow}>
+                <View style={[styles.itemMark, { backgroundColor: theme.tint }]}>
+                  <ProductSymbol name="check" size={ITEM_ICON} color={theme.onTint} />
+                </View>
+                <View style={styles.itemCol}>
+                  <ThemedText type="f13" themeColor="textSecondary">
+                    {item.k}
+                  </ThemedText>
+                  <ThemedText type="f15" style={styles.bold}>
+                    {item.v}
+                  </ThemedText>
+                </View>
               </View>
             ))}
           </View>
 
-          <View style={[styles.nextBox, { backgroundColor: theme.tintSurface, borderColor: theme.tintBorder }]}>
-            <ThemedText type="t5" style={styles.bold}>연락을 기다려주세요</ThemedText>
-            <ThemedText type="t7" themeColor="textSecondary">
-              영업일 기준 1~2일 안에 업체가 연락드려요
-            </ThemedText>
-          </View>
         </ScrollView>
 
-        <ThemedView style={[styles.dock, { borderTopColor: theme.border }]}>
+        <ThemedView style={[styles.dock, { borderTopColor: theme.line }]}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="웨딩노트에서 확인하기"
-            onPress={goWedding}
-            style={({ pressed }) => [styles.cta, { backgroundColor: theme.tint, opacity: pressed ? 0.8 : 1 }]}>
-            <ThemedText type="t5" themeColor="onTint">웨딩노트에서 확인하기</ThemedText>
+            accessibilityLabel="홈으로"
+            onPress={() => router.replace('/(tabs)')}
+            style={({ pressed }) => [
+              styles.button,
+              styles.ghost,
+              { backgroundColor: theme.backgroundSelected, opacity: pressed ? 0.8 : 1 },
+            ]}>
+            <ThemedText type="f17" themeColor="textStrong" style={styles.bold}>
+              홈으로
+            </ThemedText>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="웨딩노트 보기"
+            onPress={() => router.replace('/wedding')}
+            style={({ pressed }) => [
+              styles.button,
+              styles.primary,
+              { backgroundColor: theme.tint, opacity: pressed ? 0.8 : 1 },
+            ]}>
+            <ThemedText type="f17" themeColor="onTint" style={styles.bold}>
+              웨딩노트 보기
+            </ThemedText>
           </Pressable>
         </ThemedView>
       </SafeAreaView>
@@ -112,28 +127,39 @@ export default function ConsultDoneScreen() {
   );
 }
 
-/** 정본 doneMark 72 · 안의 체크 36(icoCheckBig) — Layout에 없는 값, done.tsx MARK_ICON과 같은 관례. */
-const MARK_SIZE = 72;
-const MARK_ICON = 36;
-/** 정본 doneScroll «padding:56px 24px 24px» — 머리 위쪽 56. Layout 사다리에 없는 값. */
-const HEAD_PAD_TOP = 56;
-/** 정본 doneRow «min-height:52px» — Layout.rowMinHeightCompact(48)과 다른 값이라 대신하지 않는다. */
-const ROW_MIN_HEIGHT = 52;
+/** 정본 `markStyle` eCHK(64) · 글리프 64 × .48 = 31. Layout에 없는 값. */
+const MARK_SIZE = 64;
+const MARK_ICON = 31;
+/** 정본 `itemMark` eCHK(20) · 글리프 20 × .48 = 10. */
+const ITEM_MARK = 20;
+const ITEM_ICON = 10;
+/** 정본 `doneWrap` «padding:72px 24px 24px» — 위쪽 72. */
+const WRAP_PAD_TOP = 72;
+/** 정본 `itemBox` · `nextCard` radius 12 · 안쪽 18 · `itemBox` 사이 14. 사다리 밖의 값이다. */
+const BOX_RADIUS = 12;
+const BOX_PADDING = 18;
+const ITEM_GAP = 14;
+/** 정본 `doneTitle` padding-top 6. */
+const TITLE_PAD_TOP = 6;
+/** 정본 dock «padding:12px 20px» — 좌우 20(거터 24와 다르다). */
+const DOCK_PAD_X = 20;
+/** 정본 dock 두 단추 비율 1 : 1.4. */
+const PRIMARY_FLEX = 1.4;
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1, alignSelf: 'center', maxWidth: MaxContentWidth, width: '100%' },
-  scroll: { flexGrow: 1, paddingBottom: Spacing.five },
   bold: { fontWeight: 700 },
   center: { textAlign: 'center' },
 
-  /* 정본 doneScroll padding 56 24 24 · gap 12 · 가운데. */
-  head: {
-    paddingTop: HEAD_PAD_TOP,
+  /* 정본 doneWrap padding 72 24 24 · gap 12 · 가운데. */
+  scroll: {
+    flexGrow: 1,
+    paddingTop: WRAP_PAD_TOP,
     paddingHorizontal: Layout.gutter,
-    paddingBottom: Layout.rowPaddingY,
+    paddingBottom: Layout.gutter,
     alignItems: 'center',
-    gap: Spacing.two,
+    gap: Layout.rowPaddingY,
   },
   mark: {
     width: MARK_SIZE,
@@ -141,49 +167,43 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Spacing.one,
   },
+  title: { paddingTop: TITLE_PAD_TOP },
+  sub: { lineHeight: LineHeight.lh23 },
 
-  /* 정본 doneCards radius 10 · overflow hidden(테두리 없음) · 행 min-height 52 · padding 0 16. */
-  cards: {
+  itemBox: {
+    alignSelf: 'stretch',
     marginTop: Layout.rowPaddingY,
-    marginHorizontal: Layout.gutter,
-    borderRadius: Radius.medium,
-    overflow: 'hidden',
+    borderRadius: BOX_RADIUS,
+    padding: BOX_PADDING,
+    gap: ITEM_GAP,
   },
-  row: {
-    minHeight: ROW_MIN_HEIGHT,
-    paddingHorizontal: Spacing.three,
-    flexDirection: 'row',
+  itemRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two + Spacing.half },
+  itemMark: {
+    width: ITEM_MARK,
+    height: ITEM_MARK,
+    borderRadius: Radius.pill,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Layout.rowPaddingY,
+    justifyContent: 'center',
   },
-  rowKey: { flex: 1, minWidth: 0 },
+  itemCol: { flex: 1, minWidth: 0, gap: Spacing.half },
 
-  /* 정본 nextBox padding 16 · radius 10 · gap 4(tint 면 — 테두리는 done.tsx nextBox 관례를 따른다). */
-  nextBox: {
-    marginTop: Layout.rowPaddingY,
-    marginHorizontal: Layout.gutter,
-    padding: Spacing.three,
-    borderRadius: Radius.medium,
-    borderWidth: 1,
-    gap: Spacing.half,
-  },
 
-  /* 정본 dockSingle 92 · padding 12 20 — Layout.dock과 같은 값. */
+  /* 정본 dock 92 · padding 12 20 · gap 8 · 위 선 1. */
   dock: {
     minHeight: Layout.dock,
     borderTopWidth: 1,
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: DOCK_PAD_X,
     paddingVertical: Layout.rowPaddingY,
-    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: Spacing.two,
   },
-  /* 정본 ctaFull height 56 — Layout.ctaSheet와 같은 값. */
-  cta: {
+  button: {
     height: Layout.ctaSheet,
     borderRadius: Radius.input,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  ghost: { flex: 1 },
+  primary: { flex: PRIMARY_FLEX },
 });
