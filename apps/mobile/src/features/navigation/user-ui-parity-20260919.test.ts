@@ -16,15 +16,14 @@ const readApp = (path: string) => readFileSync(join(APP, path), 'utf8');
 const readFeature = (path: string) => readFileSync(join(FEATURES, path), 'utf8');
 
 describe('2026-09-19 사용자 화면 검수 회귀', () => {
-  it('온보딩 완료 카피와 단일 3초 로더를 유지한다', () => {
+  it('온보딩 완료 카피와 홈 스켈레톤 전환을 유지한다', () => {
     const flow = readFeature('onboarding/flow.ts');
     const setup = readApp('setup.tsx');
 
     /* v3.28(2026-09-22) WP-AUTH-007 «이대로 시작할까요?»가 9/19의 «선택한 정보로 준비할게요»를 덮는다. */
     expect(flow).toContain("DONE_TITLE_LINES = ['이대로', '시작할까요?']");
-    expect(setup).toContain('return <DelayedRecommendingView />');
-    expect(setup).toContain('remainingLoadingMs = 3000 -');
-    expect(setup).toContain('takeFullScreenLoading()');
+    expect(setup).toContain('if (sending) return <HomeSkeleton />');
+    expect(setup).not.toContain('remainingLoadingMs = 3000 -');
   });
 
   it('홈의 웨딩피드 자세히는 라운지 웨딩피드 탭을 실제로 연다', () => {

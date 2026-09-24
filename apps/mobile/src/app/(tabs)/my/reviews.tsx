@@ -7,7 +7,7 @@ import { listMyReports } from '@/api/client';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { EmptyBox, Row, Rows, Section, SubScreen } from '@/features/settings/my-kit';
 
-/** 시안 `docs/design/html/대메뉴_MY.dc.html` 6 «내가 쓴 후기 · WP-MY-006»의 renderVals. */
+/** 정본 `docs/design/React_Native/my.jsx` 프레임 6 «내가 쓴 후기 · WP-MY-006». */
 const S = {
   title: '내가 쓴 후기',
   written: '쓴 후기',
@@ -37,7 +37,7 @@ function monthDay(iso: string): string {
 }
 
 /**
- * 내가 쓴 후기 · WP-MY-006 · `docs/design/html/대메뉴_MY.dc.html` 6.
+ * 내가 쓴 후기 · WP-MY-006 · `docs/design/React_Native/my.jsx` 프레임 6.
  *
  *   «쓴 후기 N개»(업체명 · 작성 시기) → «쓸 수 있는 곳 N개»(Pick 인증 완료 + «쓰기» 배지)
  *

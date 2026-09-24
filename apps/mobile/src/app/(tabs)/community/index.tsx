@@ -52,7 +52,7 @@ type Loaded<T> = { status: 'loading' } | { status: 'error' } | { status: 'ready'
 type LoungeReview = LoungeReviewListResponse['reviews'][number];
 
 /**
- * 라운지 — docs/design/html/대메뉴_MY.dc.html 8 · 9 · 10(리얼후기 · 웨딩정보 · 박람회).
+ * 라운지 — docs/design/React_Native/my.jsx 프레임 8 · 9 · 10(리얼후기 · 웨딩정보 · 박람회).
  *
  * Root 탭이 아니다. 홈/MY에서 들어오는 하위 화면이고, 헤더 Back은 진입한 화면으로 돌아간다.
  *

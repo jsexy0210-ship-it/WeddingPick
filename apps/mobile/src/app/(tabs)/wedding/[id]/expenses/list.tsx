@@ -11,7 +11,7 @@ import { ActionButton, ErrorView, Layout, SkeletonView, Spacing } from '@wedding
 import { Badge, ListRow, NavBar, RowValue, Screen, Section } from '@/features/wedding/screen-kit';
 
 /**
- * 지출 목록. WP-OUR-014b · `docs/design/html/대메뉴_웨딩노트.dc.html`.
+ * 지출 목록. WP-OUR-014b · `docs/design/React_Native/note.jsx` frame-007.
  *
  *   nav    «지출내역» · 좌측 X 닫기(공통 풀팝업) · 오른쪽은 빈 칸(navPad) — 등록은
  *          헤더에 하나만 두는 규칙이라 예산현황 헤더의 «예산 추가»가 그 자리다

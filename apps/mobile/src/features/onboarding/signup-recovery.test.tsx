@@ -22,7 +22,7 @@ jest.mock('./wedding-draft', () => ({
   clearOnboardingAnswers: jest.fn(), clearWeddingDraft: jest.fn(), loadOnboardingAnswers: jest.fn(),
   saveOnboardingAnswers: jest.fn(), saveWeddingDraft: jest.fn(),
 }));
-jest.mock('@/features/loading/delayed-loader', () => ({ DelayedRecommendingView: 'Loading' }));
+jest.mock('@/features/home/home-skeleton', () => ({ HomeSkeleton: 'HomeSkeleton' }));
 jest.mock('./budget-amount', () => ({ BudgetAmount: 'BudgetAmount' }));
 jest.mock('./date-picker-sheet', () => ({ DatePickerSheet: 'DatePickerSheet' }));
 jest.mock('./inline-toast', () => ({ InlineToast: 'InlineToast', useInlineToast: () => ({ toast: null, show: jest.fn(), hide: jest.fn() }) }));
@@ -112,11 +112,6 @@ it('첫 가입 상태 조회가 늦어도 완료 시 재확인하고 가입 저�
     expect(completeSetup).not.toHaveBeenCalled();
     await act(async () => signup.resolve(activeSignup));
     expect(completeSetup).toHaveBeenCalledTimes(1);
-    expect(router.replace).not.toHaveBeenCalledWith('/');
-    await act(async () => {
-      jest.advanceTimersByTime(3000);
-      await Promise.resolve();
-    });
     expect(router.replace).toHaveBeenCalledWith('/');
     await act(async () => first.resolve(pendingSignup));
   } finally {
@@ -162,6 +157,18 @@ it('이미 활성화된 계정은 가입 동의를 다시 저장하지 않고 �
   expect(getSignupState).toHaveBeenCalledTimes(2);
   expect(completeSignup).not.toHaveBeenCalled();
   expect(completeSetup).toHaveBeenCalledTimes(1);
+});
+
+it('초기 설정 저장 중 홈 스켈레톤을 보여주고 저장 직후 홈으로 이동한다', async () => {
+  const pending = deferred<Awaited<ReturnType<typeof completeSetup>>>();
+  jest.mocked(getSignupState).mockResolvedValue(activeSignup);
+  jest.mocked(completeSetup).mockReturnValue(pending.promise);
+  await mount();
+  await finish();
+  expect(tree.root.findAllByType('HomeSkeleton' as never)).toHaveLength(1);
+  expect(router.replace).not.toHaveBeenCalledWith('/');
+  await act(async () => pending.resolve({} as never));
+  expect(router.replace).toHaveBeenCalledWith('/');
 });
 
 it('가입 미완료 계정의 스타일 복원은 보호된 내 정보 API를 호출하지 않는다', async () => {

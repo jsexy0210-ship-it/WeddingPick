@@ -82,6 +82,7 @@ function parseArgs(argv) {
     /** 토큰을 심지 않는다 — 로그인 화면(`/login`)처럼 로그인 전 화면을 찍을 때. */
     guest: false,
     expand: false,
+    homeLoading: false,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -96,6 +97,7 @@ function parseArgs(argv) {
     else if (arg === '--tap') opts.taps.push(argv[++i]);
     else if (arg === '--edges') opts.edges = true;
     else if (arg === '--guest') opts.guest = true;
+    else if (arg === '--home-loading') opts.homeLoading = true;
     else if (arg === '--viewport') {
       const [width, height] = argv[++i].split('x').map(Number);
 
@@ -198,7 +200,7 @@ function startStaticServer(root) {
  * `/v1/**`는 fixtures로 답하고, 나머지 외부 주소는 막는다 — 캡처 한 장 찍자고
  * 운영 서버나 CDN을 부르지 않는다. 무엇을 부르려 했는지는 적어 둔다.
  */
-async function installFixtures(page, missing, blocked) {
+async function installFixtures(page, missing, blocked, opts) {
   await page.route('**/*', async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -221,6 +223,12 @@ async function installFixtures(page, missing, blocked) {
 
       const { value, params } = matched;
       const body = typeof value === 'function' ? value({ url, method, params }) : value;
+
+      // 홈 첫 진입 스켈레톤을 찍을 때만 데이터 응답을 늦춘다. 인증 응답은 그대로 둔다.
+      if (opts.homeLoading && method === 'GET'
+        && (url.pathname === '/v1/app/bootstrap' || url.pathname === '/v1/wedding-feed')) {
+        await new Promise((resolve) => setTimeout(resolve, 5_000));
+      }
 
       await route.fulfill({
         status: 200,
@@ -285,7 +293,7 @@ async function captureRoute(context, origin, route, opts) {
     errors.push(text.slice(0, 400));
   });
 
-  await installFixtures(page, missing, blocked);
+  await installFixtures(page, missing, blocked, opts);
 
   /*
    * 토큰을 먼저 심는다. 로그인 가드(`_layout.tsx`)는 그대로 둔다 — 제품 코드에
@@ -305,7 +313,9 @@ async function captureRoute(context, origin, route, opts) {
     }
   }, 'weddingpick.sessionToken.v1');
 
-  const response = await page.goto(`${origin}${route}`, { waitUntil: 'networkidle' });
+  const response = await page.goto(`${origin}${route}`, {
+    waitUntil: opts.homeLoading ? 'domcontentloaded' : 'networkidle',
+  });
 
   if (!response?.ok()) {
     throw new Error(`캡처 경로가 HTTP ${response?.status() ?? '응답 없음'}를 돌려줬다: ${route}`);
@@ -512,6 +522,7 @@ const HELP = `화면을 실제로 렌더해 PNG로 찍는다.
   --tap <이름>     찍기 전에 누른다. 여러 번 줄 수 있고 준 순서대로 누른다.
   --guest          토큰을 심지 않는다 — 로그인 전 화면(/login)을 찍을 때.
                    눌러야 나오는 화면(바텀시트 · 펼침)을 찍을 때 쓴다. 못 찾으면 멈춘다.
+  --home-loading   홈 데이터 응답을 5초 늦춰 첫 진입 스켈레톤을 찍는다.
   --viewport WxH   창 크기. 기본은 경로를 보고 정한다 — /admin은 1920x1080, 나머지 390x844.
   --edges          좌우 끝선을 재서 같이 적는다. 한 화면 안에서 제목 · 본문 · 카드 ·
                    버튼의 시작선과 끝선이 갈라지는 자리를 숫자로 잡는다.

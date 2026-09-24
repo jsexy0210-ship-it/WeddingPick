@@ -890,15 +890,11 @@ const routes = {
     current: 1440,
   },
   'GET /v1/admin/briefing': {
-    date: '2026-09-15',
-    autoProcessed: 312,
-    successRate: 0.982,
-    autoRecovered: 2,
-    unresolvedRisks: [],
-    aiCostToday: '12,400원',
-    revenueToday: '0원',
-    anomalies: [],
-    summary: '오늘 처리한 312건 중 사람이 볼 것은 없어요.',
+    briefing: [
+      { workflow: '결제인증', decider: 'rule', decisions: 312, failed: 0, costUsd: 0.28 },
+      { workflow: '후기 검토', decider: 'model', decisions: 48, failed: 2, costUsd: 0.34 },
+    ],
+    budgetStatus: [],
   },
   'GET /v1/admin/ad-tiers': {
     tiers: [

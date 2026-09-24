@@ -18,7 +18,7 @@ import WeddingScreen from '../../index';
 const DEFAULT_TIME = '14:00';
 
 /**
- * 일정 추가 시트 — WP-NOTE-002 · `docs/design/html/대메뉴_웨딩노트.dc.html`.
+ * 일정 추가 시트 — WP-NOTE-002 · `docs/design/React_Native/note.jsx` frame-002.
  *
  *   formHead   타이틀 「일정 추가」 + 우측 36px 회색 원형 X 닫기(서브 문구 없음)
  *   fieldWrap  날짜(FieldButton, coral 강조 + 캘린더 아이콘) → 제목 → 시간

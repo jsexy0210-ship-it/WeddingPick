@@ -6,7 +6,7 @@ const { readFileSync } = require('fs') as {
 };
 const { join } = require('path') as { join: (...parts: string[]) => string };
 
-const source = readFileSync(join(__dirname, 'wedding-feed.tsx'), 'utf8');
+const source = readFileSync(join(__dirname, '../../app/admin/wedding-feed.tsx'), 'utf8');
 
 describe('관리자 웨딩피드 비동기 폼 회귀', () => {
   it('카테고리 변경 뒤 늦게 온 Gemini 초안을 버린다', () => {
