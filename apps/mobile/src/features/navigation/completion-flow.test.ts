@@ -9,8 +9,9 @@
 declare const require: (id: string) => unknown;
 declare const __dirname: string;
 
-const { readFileSync } = require('fs') as {
+const { readFileSync, existsSync } = require('fs') as {
   readFileSync: (path: string, encoding: 'utf8') => string;
+  existsSync: (path: string) => boolean;
 };
 const { join } = require('path') as { join: (...parts: string[]) => string };
 
@@ -27,22 +28,15 @@ describe('transient completion flow navigation', () => {
     expect(layout).toContain("popToTopOnBlur: name === 'capture'");
   });
 
-  it('Pick 완료 스택은 /pick/done에서 떠날 때만 초기화한다', () => {
-    const layout = screen('(tabs)', '_layout.tsx');
+  it('Pick 결정 성공은 완료 라우트를 쌓지 않고 Pick으로 돌아간다', () => {
+    const layout = screen('_layout.tsx');
+    const confirm = screen('(tabs)', 'pick', 'confirm.tsx');
 
-    expect(layout).toContain("popToTopOnBlur: tab.name === 'pick' && onPickDone");
-  });
-
-  it('Pick 완료 → 지출 추가는 완료 화면 위에 다음 화면을 push하지 않는다', () => {
-    const source = screen('(tabs)', 'pick', 'done.tsx');
-    const start = source.indexOf('async function goAddExpense()');
-    const end = source.indexOf('/* 완료 화면은 뒤로 갈 화면이 아니다.', start);
-    const flow = source.slice(start, end);
-
-    expect(start).toBeGreaterThanOrEqual(0);
-    expect(end).toBeGreaterThan(start);
-    expect(flow).toContain('router.replace({');
-    expect(flow).not.toContain('router.push({');
+    expect(existsSync(join(APP, '(tabs)', 'pick', 'done.tsx'))).toBe(false);
+    expect(layout).toContain('<ResultToastHost />');
+    expect(confirm).toContain('showResultToast(`${withInstrument(vendorName)} 결정했어요`)');
+    expect(confirm).toContain("dismissToOrReplace('/pick')");
+    expect(confirm).not.toContain('/pick/done');
   });
 
   it('자료 확인 접수 완료 → 진행 상황은 완료 페이지를 history에 남기지 않는다', () => {

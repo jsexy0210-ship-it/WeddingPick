@@ -1,23 +1,8 @@
 /**
- * 웨딩노트 — WP-OUR-001.
- *
- * 피그마 `OurWedding.tsx`(2026-09-14 정본 · 최상위 규칙 1)대로 그린다. 제목 → 세 칸 탭
- * (캘린더 · 상담기록 · 예산현황) → 탭마다 패널 하나(radius 26 · 테두리 · 안쪽 20).
- * 추가 동작은 정본대로 헤더 우측 텍스트 액션에 둔다. 우하단 FAB는 쓰지 않는다. 그 앞에는 루트 시안의 D-Day 히어로 · 다음 일정 · 지출 상자 · 우리둘 카드가
- * 있었다 — 피그마가 그 자리를 이긴다. 예식 뒤 화면(`WeddingCompleteView`)은 피그마에
- * 없으므로 기존 정본 그대로다(최상위 규칙 3).
- *
- * **피그마를 그대로 옮기지 않은 것.**
- * - 영문 eyebrow(«OUR CALENDAR» 등)는 걷어낸다(인수인계 C-9).
- * - 일정의 완료 표시는 누르지 않는다 — `status`는 서버가 시각으로 계산한다
- *   (`weddingEventStatusSchema` 주석). 지난 일정이 «완료»다.
- * - 일정 · 지출의 추가와 일정 수정은 정본대로 **BottomSheet**에서 처리한다.
- *   딥링크 route는 유지하지만 부모 목록/상세를 배경으로 남기고 시트만 연다.
- * - 예산현황의 항목별 «집행 / 예산»은 서버가 항목별 예산을 주지 않는다(`buckets`는 집행
- *   금액과 비율뿐). 막대는 전체 지출 중 비율이고 오른쪽 수는 집행 금액이다. 항목별
- *   수정 · 삭제 단추도 그래서 없다.
- * - 상담기록은 목록만 여기 있고, 올리기 · 확인 · 저장은 기존 상담기록 화면이 한다.
- *   «AI 분석 중» 같은 말은 쓰지 않는다(용어 규칙).
+ * 웨딩노트 — v3.29 `docs/design/html/대메뉴_웨딩노트.dc.html` WP-NOTE-001/004/006.
+ * 일정 · 상담 · 예산 세 탭과 헤더 추가 액션을 둔다.
+ * 항목별 예산은 API buckets에 없으므로 항목별 수정·삭제는 연결하지 않는다.
+ * 예식 뒤 화면은 별도 WeddingCompleteView가 맡는다.
  */
 import { FullScreenError } from '@/features/errors/full-screen-error';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
@@ -38,6 +23,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ActionButton,
   Border,
+  DonutChart,
   Layout,
   LetterSpacing,
   ProductSymbol,
@@ -70,7 +56,7 @@ import { buildUpcomingTimelineGroups, type TimelineItem } from '@/features/weddi
 
 type Tab = 'calendar' | 'consult' | 'budget';
 
-/* 문구 — spec/strings.ko.json `ourWedding`. 피그마 `OurWedding.tsx`에서 왔다. */
+/* v3.29 웨딩노트 탭. */
 const TABS: readonly { key: Tab; label: string }[] = [
   { key: 'calendar', label: '웨딩일정' },
   { key: 'consult', label: '상담기록' },
@@ -88,20 +74,13 @@ const CONSULT_SAVED = '저장됨';
 const CONSULT_PENDING = '확인 필요';
 /* 헤더 우측 «추가» 텍스트 — v3.28 `대메뉴_웨딩노트.dc.html` headAdd «일정 추가 · 상담 추가 · 예산 추가». 우하단 FAB는 없다. */
 const ADD_LABEL: Record<Tab, string> = { calendar: '일정 추가', budget: '예산 추가', consult: '상담 추가' };
-/*
- * 등록 버튼은 헤더 영역에 있는 것만 쓴다(2026-09-23 대표 지시 — 전체 UX 통일).
- * 할 일 추가는 원래 본문 「할 일」 카드 안 별도 버튼이었는데, 캘린더 탭 헤더의
- * 「일정 추가」 옆 둘째 액션으로 옮겼다 — 화면 안에 등록 진입점이 하나 더 있던 것을
- * 헤더로 합친 것이다.
- */
 const TASKS_ADD_HEADER = '할 일 추가';
 const DECIDED_LINK = '예약현황';
 const PAST_EVENTS_SHOW = '보기';
 const PAST_EVENTS_HIDE = '접기';
 const TASKS_TITLE = '할 일';
 
-/** 진행바 높이 — v3.28 웨딩노트 대조표 「예산 그래프」: 도넛이 아니라 가로 진행바 8(`track: height:8px`). */
-const BAR_HEIGHT = 8;
+const BAR_HEIGHT = 6;
 
 function parseTab(value: string | undefined): Tab | null {
   return value === 'calendar' || value === 'consult' || value === 'budget' ? value : null;
@@ -198,6 +177,7 @@ export default function WeddingScreen({
   const stage = lifecycle(me?.weddingDate ?? null);
   const weddingOver =
     weddingId !== null && me?.weddingDate != null && !isBeforeWedding(stage.stage) && stage.stage !== 'wedding_day';
+  const headerAddLabel = tab === 'calendar' ? '추가' : ADD_LABEL[tab];
 
   const header = (
     <View style={styles.header}>
@@ -206,26 +186,14 @@ export default function WeddingScreen({
       </ThemedText>
       {!weddingOver && weddingId ? (
         <View style={styles.headerActions}>
-          {tab === 'calendar' ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={TASKS_ADD_HEADER}
-              onPress={() => setTaskSheetOpen(true)}
-              hitSlop={Spacing.two}
-              style={({ pressed }) => (pressed ? styles.pressed : null)}>
-              <ThemedText type="f15" themeColor="tint" style={styles.bold}>
-                {TASKS_ADD_HEADER}
-              </ThemedText>
-            </Pressable>
-          ) : null}
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={ADD_LABEL[tab]}
+            accessibilityLabel={headerAddLabel}
             onPress={onAddAction}
             hitSlop={Spacing.two}
             style={({ pressed }) => (pressed ? styles.pressed : null)}>
             <ThemedText type="f15" themeColor="tint" style={styles.bold}>
-              {ADD_LABEL[tab]}
+              {headerAddLabel}
             </ThemedText>
           </Pressable>
         </View>
@@ -246,8 +214,13 @@ export default function WeddingScreen({
 
   function onAddAction() {
     if (!weddingId) return;
-    if (tab === 'calendar') router.push(`/wedding/${weddingId}/events/new` as never);
-    else if (tab === 'budget') router.push(`/wedding/${weddingId}/expenses/add` as never);
+    if (tab === 'calendar') {
+      confirmAlert('무엇을 추가할까요?', '추가할 항목을 골라주세요.', [
+        { text: '일정 추가', onPress: () => router.push(`/wedding/${weddingId}/events/new` as never) },
+        { text: TASKS_ADD_HEADER, onPress: () => setTaskSheetOpen(true) },
+        { text: '취소', style: 'cancel' },
+      ]);
+    } else if (tab === 'budget') router.push(`/wedding/${weddingId}/expenses/add` as never);
     else router.push(`/wedding/${weddingId}/consultations/upload` as never);
   }
 
@@ -305,6 +278,7 @@ export default function WeddingScreen({
     try {
       await removeWeddingEvent(weddingId, event.id);
       setEvents((prev) => (prev ? prev.filter((item) => item.id !== event.id) : prev));
+      setToast('일정을 지웠어요');
     } catch {
       setToast('일정을 지우지 못했어요. 잠시 후 다시 시도해주세요.');
     }
@@ -320,6 +294,7 @@ export default function WeddingScreen({
     try {
       await updateWeddingTask(weddingId, task.id, { state: task.state === 'done' ? null : 'done' });
       void listWeddingTasks(weddingId).then((r) => setTasks(r.tasks)).catch(() => undefined);
+      setToast(task.state === 'done' ? '할 일을 다시 열었어요' : '할 일을 완료했어요');
     } catch {
       setToast('할 일을 바꾸지 못했어요. 잠시 후 다시 시도해주세요.');
     }
@@ -329,6 +304,7 @@ export default function WeddingScreen({
     if (!weddingId) return;
     await addWeddingTask(weddingId, { label });
     void listWeddingTasks(weddingId).then((r) => setTasks(r.tasks)).catch(() => undefined);
+    setToast('할 일을 추가했어요');
   }
 
   return (
@@ -479,7 +455,6 @@ function CalendarPanel({
   onOpenDecided: () => void;
   onToggleTask: (task: WeddingTask) => void;
   onAddTask: (label: string) => Promise<void>;
-  /* 할 일 추가 진입점은 이제 헤더에만 있다(TASKS_ADD_HEADER) — 시트 열림 상태는 부모(WeddingScreen)가 갖는다. */
   taskSheetOpen: boolean;
   onCloseTaskSheet: () => void;
 }) {
@@ -519,7 +494,7 @@ function CalendarPanel({
   return (
     <View style={styles.calendarStack}>
       {weddingDate !== null ? (
-        <View style={[styles.panel, { backgroundColor: theme.background, borderColor: theme.border }]}>
+        <View style={[styles.ddayCard, { backgroundColor: theme.backgroundElement }]}>
           <View style={styles.ddayTop}>
             {/* 규격서 19/700 — 사다리에 없는 값이라 가장 가까운 f18을 쓴다. */}
             <ThemedText type="f18" numeric style={styles.bold}>
@@ -554,7 +529,7 @@ function CalendarPanel({
           accessibilityRole="button"
           accessibilityLabel={showPast ? PAST_EVENTS_HIDE : PAST_EVENTS_SHOW}
           onPress={() => setShowPast((prev) => !prev)}
-          style={styles.pastRow}>
+          style={[styles.pastRow, { borderBottomColor: theme.border }]}>
           <ThemedText type="f14" themeColor="textAssistive" numeric>
             {`지난 일정 ${past.length}건`}
           </ThemedText>
@@ -570,11 +545,8 @@ function CalendarPanel({
         <TimelineGroupView key={group.title} {...group} onEdit={onEdit} onDelete={onDelete} />
       ))}
 
-      <View style={[styles.panel, { backgroundColor: theme.background, borderColor: theme.border }]}>
-        {/* 등록 버튼은 헤더 영역에 있는 것만 쓴다 — 「할 일 추가」는 화면 헤더로 옮겼다(2026-09-23). */}
-        <ThemedText type="t6" style={[styles.bold, styles.clHead]}>
-          {TASKS_TITLE}
-        </ThemedText>
+      <View style={styles.checklistSection}>
+        <ThemedText type="f15" style={[styles.bold, styles.clHead]}>{TASKS_TITLE}</ThemedText>
         {(tasks ?? []).map((task) => {
           const done = task.state === 'done';
           return (
@@ -585,7 +557,7 @@ function CalendarPanel({
               accessibilityLabel={task.label}
               onPress={() => onToggleTask(task)}
               style={[styles.taskRow, { borderBottomColor: theme.border }]}>
-              <CheckBox checked={done} />
+              <CheckBox checked={done} round size={22} />
               <ThemedText
                 type="f15"
                 numberOfLines={1}
@@ -709,8 +681,7 @@ function TimelineGroupView({
 }
 
 /* ────────────────────────────────────────────
-   예산현황 패널 — 총 사용액 · 총 예산 · 가로 진행바 8 · 잔여/사용률 · 항목별 막대
-   04-wedding-note 정본은 원형 그래프를 쓰지 않는다.
+   예산현황 패널 — 총 사용률은 도넛, 항목별 진행은 막대.
 ──────────────────────────────────────────── */
 function BudgetPanel({
   expenses,
@@ -755,43 +726,39 @@ function BudgetPanel({
 
   return (
     <View style={[styles.panel, { backgroundColor: theme.background, borderColor: theme.border }]}>
-      <View style={styles.budgetPanelHead}>
-        <ThemedText type="t6" style={[styles.bold, styles.grow]}>
-          {TABS[2].label}
-        </ThemedText>
-        {set ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="총예산 수정"
-            onPress={onEditBudget}
-            hitSlop={Spacing.two}
-            style={({ pressed }) => (pressed ? styles.pressed : null)}>
-            <ThemedText type="f13" themeColor="tint" style={styles.bold}>
-              총예산 수정
-            </ThemedText>
-          </Pressable>
-        ) : null}
-      </View>
-
       {set ? (
         <View style={styles.budgetSummary}>
           <View style={styles.budgetSummaryRow}>
-            <ThemedText type="amount" numeric style={styles.bold}>
-              {manwon(spent)}
-            </ThemedText>
-            <ThemedText type="t7" themeColor="textAssistive" numeric>
-              {`예산 ${manwon(total)}`}
-            </ThemedText>
+            <DonutChart
+              size={88}
+              holeSize={64}
+              slices={[
+                { key: 'used', value: progress, color: theme.tint },
+                { key: 'remaining', value: 100 - progress, color: theme.chartMuted },
+              ]}>
+              <ThemedText type="f16" numeric style={styles.bold}>{`${percentage}%`}</ThemedText>
+            </DonutChart>
+            <View style={styles.budgetSummaryCol}>
+              <ThemedText type="amount" numeric style={styles.bold}>
+                {manwon(spent)}
+              </ThemedText>
+              <Pressable accessibilityRole="button" accessibilityLabel="총예산 수정" onPress={onEditBudget}>
+                <View style={styles.budgetEditRow}>
+                  <ThemedText type="f14" themeColor="textAssistive" numeric>
+                    {`예산 ${manwon(total)}`}
+                  </ThemedText>
+                  <ProductSymbol name="edit" size={14} color={theme.textAssistive} />
+                </View>
+              </Pressable>
+              <ThemedText type="f13" themeColor="textAssistive" numeric style={styles.budgetSummaryNote}>
+                {`${manwon(Math.max(set.remaining, 0))} 남았어요`}
+              </ThemedText>
+            </View>
           </View>
-          <View style={[styles.bar, { backgroundColor: theme.backgroundElement }]}>
-            <View style={[styles.barFill, { width: `${progress}%`, backgroundColor: theme.tint }]} />
-          </View>
-          <ThemedText type="t7" themeColor="textAssistive" numeric style={styles.budgetSummaryNote}>
-            {`${manwon(Math.max(set.remaining, 0))} 남았어요 · ${percentage}% 썼어요`}
-          </ThemedText>
         </View>
       ) : (
         <View style={styles.budgetSummary}>
+          <ThemedText type="t6" style={styles.bold}>{TABS[2].label}</ThemedText>
           <ThemedText type="t6" style={styles.bold}>
             {budget?.set === false ? budget.note : '예산을 아직 정하지 않았어요'}
           </ThemedText>
@@ -841,29 +808,6 @@ function BudgetPanel({
         <ProductSymbol name="chevronRight" size={Layout.iconField} color={theme.textAssistive} />
       </Pressable>
 
-      <View style={[styles.proofInvite, { borderTopColor: theme.border }]}>
-        <View style={styles.grow}>
-          <ThemedText type="f14" style={styles.bold}>
-            등록한 지출을 Pick 인증해볼까요?
-          </ThemedText>
-          <ThemedText type="f12" themeColor="textAssistive">
-            인증되면 실 제보에 반영돼요
-          </ThemedText>
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Pick 인증"
-          onPress={() => router.push('/capture/payment/consent?from=budget' as never)}
-          style={({ pressed }) => [
-            styles.proofButton,
-            { backgroundColor: theme.tint },
-            pressed ? styles.pressed : null,
-          ]}>
-          <ThemedText type="f13" style={[styles.bold, { color: theme.onTint }]}>
-            Pick 인증
-          </ThemedText>
-        </Pressable>
-      </View>
     </View>
   );
 }
@@ -885,7 +829,7 @@ function ConsultPanel({
   return (
     <View style={[styles.panel, { backgroundColor: theme.background, borderColor: theme.border }]}>
       <View style={styles.consultHead}>
-        <ThemedText type="t6" style={styles.bold}>
+        <ThemedText type="f20" style={styles.bold}>
           {records.length > 0 ? `상담 ${records.length}건` : TABS[1].label}
         </ThemedText>
         <ThemedText type="micro" themeColor="textAssistive" style={styles.regular}>
@@ -930,7 +874,7 @@ function ConsultPanel({
         </View>
       ) : null}
 
-      <Pressable
+      {records.length === 0 ? <Pressable
         accessibilityRole="button"
         accessibilityLabel={CONSULT_EMPTY_TITLE}
         onPress={onUpload}
@@ -942,7 +886,7 @@ function ConsultPanel({
         <ThemedText type="micro" themeColor="textAssistive" style={styles.regular}>
           {CONSULT_EMPTY_BODY}
         </ThemedText>
-      </Pressable>
+      </Pressable> : null}
     </View>
   );
 }
@@ -990,7 +934,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: Layout.inlineGap,
   },
-  /* 등록 버튼은 헤더 영역에 있는 것만 쓴다 — 캘린더 탭은 「할 일 추가」·「일정 추가」 둘. */
+  /* 헤더에는 현재 탭의 추가 행동 하나만 둔다. */
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: Layout.inlineGap },
   scroll: { flex: 1 },
   /* 우하단 FAB가 없으므로 탭바 앞의 일반 문서 여백만 둔다. */
@@ -1014,7 +958,7 @@ const styles = StyleSheet.create({
    * 예전 규격서의 회색 필 세그먼트(둥근 흰 활성 칸)는 정본에 없다 — 지웠다.
    */
   tabs: {
-    paddingHorizontal: Layout.cardPadding,
+    paddingHorizontal: Layout.gutter,
     marginBottom: Spacing.three,
     borderBottomWidth: Border.hairline,
     flexDirection: 'row',
@@ -1030,17 +974,25 @@ const styles = StyleSheet.create({
     marginBottom: -Border.hairline,
   },
 
-  /* 패널 `mx-5 mt-4 rounded-[26px] border p-5`. */
+  /* WP-NOTE-004/006 카드: 좌우 24 · 안쪽 20 · radius 10. */
   panel: {
     marginHorizontal: Layout.pageX,
-    marginTop: Spacing.three,
-    borderRadius: Radius.panel,
+    borderRadius: Radius.medium,
     borderWidth: Border.hairline,
     padding: Layout.cardPadding,
   },
 
   // ── 캘린더 — v3.29 주 단위 흐름 ──
   calendarStack: { gap: 0 },
+  /* WP-NOTE-001 D-day: margin 4px 24px 0 · padding 18px 20px · radius 12. */
+  ddayCard: {
+    marginHorizontal: Layout.pageX,
+    marginTop: Spacing.one,
+    paddingVertical: Layout.cardPaddingCompactY,
+    paddingHorizontal: Layout.cardPadding,
+    borderRadius: 12,
+    gap: 5,
+  },
   /* D-day 카드 위 줄 — 날짜 · D-N 양끝 정렬. */
   ddayTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: Layout.inlineGap },
   /* «예약현황 N곳» — 선 위 · 양끝 정렬. */
@@ -1053,11 +1005,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     minHeight: Layout.touchTarget,
   },
-  /* «지난 일정 N건 · 보기» — 선 없이 한 줄. */
+  /* WP-NOTE-001 지난 일정: 좌우 24 · 최소 46 · 아래 구분선. */
   pastRow: {
     marginHorizontal: Layout.pageX,
-    marginTop: Spacing.three,
-    minHeight: Layout.rowMinHeightCompact,
+    minHeight: 46,
+    borderBottomWidth: Border.hairline,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -1086,15 +1038,17 @@ const styles = StyleSheet.create({
   },
 
   // ── 할 일 ──
-  /* 「할 일」 섹션 라벨 — 옆의 등록 버튼은 헤더로 옮겨서 이제 라벨 하나뿐이다. */
-  clHead: { marginBottom: Spacing.three },
+  checklistSection: { marginHorizontal: Layout.pageX, paddingBottom: Layout.listGap },
+  clHead: {
+    paddingHorizontal: Spacing.one,
+    marginBottom: Layout.inlineGap,
+  },
   taskRow: {
-    marginTop: Spacing.three,
-    paddingBottom: Spacing.three,
+    paddingVertical: 10,
     borderBottomWidth: Border.hairline,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Layout.inlineGap,
+    gap: 10,
   },
   taskInput: {
     height: Layout.field,
@@ -1104,29 +1058,23 @@ const styles = StyleSheet.create({
   },
 
   // ── 예산현황 ──
-  /* 정본 sumRow + track + sumNote. 원형 그래프를 쓰지 않는다. */
-  budgetSummary: { marginTop: Spacing.three },
-  budgetPanelHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Layout.inlineGap,
-  },
+  budgetSummary: {},
   budgetSummaryRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    gap: Layout.inlineGap,
-    marginBottom: Spacing.three,
+    alignItems: 'center',
+    gap: Spacing.three,
   },
+  budgetSummaryCol: { flex: 1, minWidth: 0, gap: Spacing.one },
+  budgetEditRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   budgetSummaryNote: { marginTop: Spacing.two },
   /* 항목 `mt-6 space-y-5 border-t pt-5`. */
   bucketList: {
-    marginTop: Spacing.four,
+    marginTop: Layout.listGap,
     paddingTop: Layout.listGap,
     borderTopWidth: Border.hairline,
-    gap: Layout.listGap,
+    gap: Spacing.three,
   },
-  bucketHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one, marginBottom: Spacing.two },
+  bucketHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one, marginBottom: Layout.menuGroupGap },
   /* 막대 `h-2 rounded-full`. */
   bar: { height: BAR_HEIGHT, borderRadius: Radius.pill, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: Radius.pill },
@@ -1143,25 +1091,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: Layout.inlineGap,
   },
-  proofInvite: {
-    marginTop: Layout.listGap,
-    paddingTop: Layout.listGap,
-    borderTopWidth: Border.hairline,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Layout.inlineGap,
-  },
-  proofButton: {
-    height: 36,
-    paddingHorizontal: Layout.chipPaddingX,
-    borderRadius: Radius.input,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
 
   // ── 상담기록 ──
-  consultHead: { gap: Spacing.half },
+  consultHead: { gap: 3 },
   /* 업로드 `mt-5 rounded-2xl border-dashed py-8 gap-2`. 기록이 있어도 정본대로 마지막에 둔다. */
   consultEmpty: {
     marginTop: Layout.listGap,
@@ -1173,12 +1105,13 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   /* 목록 `mt-1 border-t`, 행 `py-4 gap-3`. */
-  consultList: { marginTop: Spacing.one, borderTopWidth: Border.hairline },
+  consultList: { marginTop: Layout.listGap, borderTopWidth: Border.hairline },
   consultRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Layout.inlineGap,
-    paddingVertical: Spacing.three,
+    minHeight: 60,
+    paddingVertical: 14,
   },
-  consultMeta: { marginTop: Spacing.half },
+  consultMeta: { marginTop: 3 },
 });

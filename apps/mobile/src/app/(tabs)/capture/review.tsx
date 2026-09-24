@@ -12,6 +12,7 @@ import { useCaptureDraft } from '@/features/capture/capture-draft';
 import type { CapturedPage } from '@/features/capture/types';
 import { uploadForAnalysis } from '@/features/capture/upload';
 import { useDocumentStore } from '@/features/documents/document-store';
+import { showResultToast } from '@/features/navigation/result-toast';
 import { Dock, DockButton, Hero, ListRow, NavBar, NoteCard, Screen, Section } from '@/features/wedding/screen-kit';
 
 const SOURCE_LABEL: Record<CapturedPage['source'], string> = {
@@ -71,6 +72,7 @@ export default function ReviewScreen() {
       const saved = await saveDraft(pages);
 
       clearDraft();
+      showResultToast('문서를 기기에 저장했어요');
       router.replace(`/wedding/${saved.id}`);
     } catch {
       confirmAlert('저장하지 못했어요', '다시 시도해주세요.');

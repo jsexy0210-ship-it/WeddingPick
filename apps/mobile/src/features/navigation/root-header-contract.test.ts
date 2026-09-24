@@ -34,7 +34,6 @@ describe('Root 1Depth 제목 헤더', () => {
   });
 
   it.each([
-    ['index.tsx', 'header'],
     ['pick/index.tsx', 'titleRow'],
     ['wedding/index.tsx', 'header'],
     ['my/index.tsx', 'header'],
@@ -45,9 +44,14 @@ describe('Root 1Depth 제목 헤더', () => {
     expect(header).toContain('paddingHorizontal: Layout.gutter');
   });
 
+  it('홈 브랜드 헤더는 화면 원본 높이 66과 공통 거터 24를 쓴다', () => {
+    const header = styleBlock(source('index.tsx'), 'header');
+    expect(header).toContain('minHeight: 66');
+    expect(header).toContain('paddingHorizontal: Layout.gutter');
+  });
+
   it.each([
     ['index.tsx', '웨딩픽', 'styles.brand'],
-    ['pick/index.tsx', '{TERMS.pick}', 'styles.bold'],
     ['wedding/index.tsx', '{TERMS.ourWedding}', 'styles.bold'],
     ['my/index.tsx', '{S.title}', 'styles.bold'],
   ])('%s 제목은 f26/700을 쓴다', (path, title, weightStyle) => {
@@ -62,7 +66,14 @@ describe('Root 1Depth 제목 헤더', () => {
     expect(tag).toContain(weightStyle);
   });
 
-  it('검색 Root는 Back만 빼고 20px 제목·20px 여백을 유지한다', () => {
+  it('Pick Root 제목은 화면 원본의 28px을 쓴다', () => {
+    const text = source('pick/index.tsx');
+    const titleAt = text.indexOf('{TERMS.pick}');
+    const opening = text.lastIndexOf('<ThemedText', titleAt);
+    expect(text.slice(opening, titleAt)).toContain('type="f28"');
+  });
+
+  it('검색 Root는 Back 없이 22px 제목·24px 여백을 쓴다', () => {
     const text = source('search/index.tsx');
     const header = styleBlock(text, 'header');
     const titleAt = text.indexOf('{TITLE}');
@@ -71,6 +82,7 @@ describe('Root 1Depth 제목 헤더', () => {
 
     expect(header).toContain('paddingHorizontal: Layout.pageX');
     expect(tag).toContain('type="f20"');
+    expect(styleBlock(text, 'title')).toContain('fontSize: 22');
   });
 
   /*

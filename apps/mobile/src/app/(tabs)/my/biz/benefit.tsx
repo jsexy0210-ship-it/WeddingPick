@@ -18,6 +18,7 @@ import { isServerConfigured } from '@/api/config';
 import { formatDateDot } from '@/features/common/format-date';
 import { BackBar } from '@/components/back-bar';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { showResultToast } from '@/features/navigation/result-toast';
 
 /**
  * WP-BIZ-004: 업체 혜택 등록 화면.
@@ -63,6 +64,7 @@ export default function BizBenefitScreen() {
         ...(contact.trim() && { contact: contact.trim() }),
       });
       setAcknowledgement(received.acknowledgement);
+      showResultToast('혜택 등록을 요청했어요');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '제출하지 못했어요.');
     } finally {

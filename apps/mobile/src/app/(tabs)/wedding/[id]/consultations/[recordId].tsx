@@ -8,6 +8,7 @@ import { confirmConsultation, listConsultations } from '@/api/client';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 import { formatDateDot } from '@/features/common/format-date';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
+import { showResultToast } from '@/features/navigation/result-toast';
 import { ActionButton, Spacing, ThemedText } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 
@@ -76,6 +77,7 @@ export default function ConsultationDetailRoute() {
     setError(null);
     try {
       await confirmConsultation(record.id);
+      showResultToast('상담 기록을 저장했어요');
       dismissToOrReplace('/wedding?tab=consult');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '저장하지 못했어요.');

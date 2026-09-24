@@ -528,7 +528,8 @@ async function main() {
 
   if (opts.build || !existsSync(DIST)) {
     process.stderr.write('· dist를 만든다 (몇 분 걸린다)\n');
-    execSync('npm run export:web --workspace @weddingpick/mobile', {
+    /* 주소가 바뀌어도 이전 Metro 번들을 재사용하지 않게 한다. */
+    execSync('npm run export:web --workspace @weddingpick/mobile -- --clear', {
       cwd: REPO,
       stdio: 'inherit',
       /*

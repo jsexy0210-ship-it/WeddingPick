@@ -2092,8 +2092,8 @@
           "priorReview": "source-actions-and-states-reviewed"
         },
         {
-          "route": "/pick/done",
-          "file": "apps/mobile/src/app/(tabs)/pick/done.tsx",
+          "route": "/pick",
+          "file": "apps/mobile/src/app/(tabs)/pick/index.tsx",
           "priorReview": "source-actions-and-states-reviewed"
         },
         {
@@ -2120,7 +2120,7 @@
           "evidence": "screen-id-reference"
         },
         {
-          "file": "apps/mobile/src/app/(tabs)/pick/done.tsx",
+          "file": "apps/mobile/src/app/(tabs)/pick/index.tsx",
           "kind": "route-source",
           "evidence": "screen-id-reference"
         },
@@ -2720,8 +2720,8 @@
           "priorReview": "source-actions-and-states-reviewed"
         },
         {
-          "route": "/pick/done",
-          "file": "apps/mobile/src/app/(tabs)/pick/done.tsx",
+          "route": "/pick",
+          "file": "apps/mobile/src/app/(tabs)/pick/index.tsx",
           "priorReview": "source-actions-and-states-reviewed"
         },
         {
@@ -2761,7 +2761,7 @@
       "visualVerification": "pending-390x844-side-by-side",
       "sourceReferences": [
         {
-          "file": "apps/mobile/src/app/(tabs)/pick/done.tsx",
+          "file": "apps/mobile/src/app/(tabs)/pick/index.tsx",
           "kind": "route-source",
           "evidence": "screen-id-reference"
         },

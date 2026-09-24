@@ -117,7 +117,7 @@ const AC_CLEAR_ALL = '전체 삭제';
 /** 결과 없음 카드. spec/strings.ko.json search.empty.* */
 const EMPTY_TITLE = '조건에 맞는 곳이\n없어요';
 /** 조건 하나를 풀면 나오는 곳 — 시안은 세 줄이다(06-search #16f). */
-const EMPTY_SIMILAR_TITLE = '비슷한 곳';
+const EMPTY_SIMILAR_TITLE = '조건이 비슷한 곳';
 const SIMILAR_LIMIT = 3;
 const EMPTY_REPORT_TITLE = '찾는 곳이 없나요?';
 const EMPTY_REPORT_BODY = '업체를 알려주시면 등록하고 알려드릴게요.';
@@ -1406,9 +1406,9 @@ const styles = StyleSheet.create({
   tracked: {
     letterSpacing: LetterSpacing.p05,
   },
-  /* Root 1Depth 제목 — MY와 같은 26/700 · ls -0.65px. */
+  /* WP-SRCH-001 `headTitleRoot`는 22px. 공통 사다리에 없어 화면 값으로 지정한다. */
   title: {
-    letterSpacing: LetterSpacing.n065,
+    fontSize: 22,
   },
   /* `micro`는 기본이 700이다. 피그마에서 regular인 작은 글자(부제 · 지역 · 결과 수 · 꼬리)는 400으로 되돌린다. */
   regular: {
@@ -1530,7 +1530,7 @@ const styles = StyleSheet.create({
   dropChevronOpen: {
     transform: [{ rotate: '180deg' }],
   },
-  /* 정본 `countRow`: padding 12px 20px(우리 값은 Layout.pageX=24) · 결과 수 왼쪽 · 정렬 칩 오른쪽. */
+  /* 전역 24px 좌우 거터 · 결과 수 왼쪽 · 정렬 칩 오른쪽. */
   countRow: {
     minHeight: Layout.chip,
     flexDirection: 'row',

@@ -85,20 +85,17 @@ describe('공개 법적 문서', () => {
     expect(html).toContain('href="https://privacy.kisa.or.kr"');
   });
 
-  /**
-   * **시행일은 판에 붙어 있다**(0422).
-   *
-   * 전까지는 배포 환경변수 `LEGAL_TERMS_EFFECTIVE_ON` 하나였다 — 판마다 다른 값인데
-   * 배포 전체에 하나뿐이라, 옛 판이 언제부터 언제까지 효력이었는지를 말할 수 없었다.
-   * 보이는 꼴은 그대로 둔다. 글자가 바뀌면 그것은 문서가 바뀐 것이다.
-   */
-  it('제목 아래에 그 판의 시행일을 적는다', () => {
-    const html = renderTermsPage({
+  it('이용자에게 시행일과 버전을 표시하지 않는다', () => {
+    const terms = renderTermsPage({
       version: 'v2.0',
       effectiveOn: '2026-10-01',
       sections: [listSection('제1조 목적', ['내용'])],
     });
+    const privacy = renderPrivacyPage(doc([listSection('수집 항목', ['내용'])]));
 
-    expect(html).toContain('시행일 2026년 10월 1일');
+    for (const html of [terms, privacy]) {
+      expect(html).not.toContain('시행일 2026년 10월 1일');
+      expect(html).not.toContain('v2.0');
+    }
   });
 });

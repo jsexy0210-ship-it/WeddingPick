@@ -12,9 +12,8 @@
  *   홈에서만 들어오는 별도 화면이라 `/pick?section=recommendations` 딥링크만 받아 그린다
  *   (홈의 `(home)/recommendations.tsx`가 그리로 보낸다).
  * - Pick = 후보 담기 · 최종 결정은 별도(v3.29 diffs «Pick 의미»). 최종 결정은 확인 시트
- *   (`/pick/confirm`) → 완료 화면(`/pick/done`)이고 상담 예약은 완료 화면에서만 이어진다 —
- *   후보 담기만으로 예약할 수 없다(v3.29 diffs «상담 진입» · CLAUDE.md 「최종 Pick의 서버
- *   저장 성공 뒤에만 상담 예약을 연결한다」).
+ *   (`/pick/confirm`)에서 저장하고, 서버가 결정 상태로 돌려준 후보에서만 상담 예약으로 이어진다.
+ *   후보 담기만으로 예약할 수 없다(v3.29 diffs «상담 진입»).
  * - 카드 CTA는 Primary 1개(«결정하기»)이고 비교는 텍스트 링크(«비교에 담기»)다(v3.29 diffs
  *   «카드 CTA» — 화면당 Primary 1개).
  * - 삭제(WP-PICK-008)는 확인 시트 없이 «빼기»로 즉시 지우고 «되돌리기» 토스트만 띄운다.
@@ -70,6 +69,7 @@ import {
 } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
 import { DialogToast } from '@/components/confirm-alert-toast';
+import { showResultToast } from '@/features/navigation/result-toast';
 import {
   PICK_COMPARE_ADD_LABEL,
   PICK_COMPARE_BANNER_HINT,
@@ -90,6 +90,7 @@ const ACTION_COMPARE = PICK_COMPARE_ADD_LABEL;
 const ACTION_COMPARING = PICK_COMPARE_REMOVE_LABEL;
 const ACTION_DECIDE = '결정하기';
 const ACTION_UNDECIDE = '결정 취소';
+const ACTION_CONSULT = '상담 예약하기';
 const BADGE_SHARED = '함께';
 const EMPTY_TITLE = '아직 Pick한 업체가 없어요';
 const EMPTY_BODY = '검색에서 마음에 드는 업체를 Pick해보세요';
@@ -180,16 +181,23 @@ export default function PickScreen() {
   const weddingId = me?.weddingId ?? null;
 
   function showToast(message: string, undo: UndoCandidate | null = null) {
+    if (!undo) {
+      showResultToast(message);
+      return;
+    }
     setUndoCandidate(undo);
     setToast(message);
   }
 
   function toggleCompare(vendorId: string) {
+    if (!compare.has(vendorId) && compare.size >= PICK_COMPARE_MAX) {
+      showToast(`한 번에 ${PICK_COMPARE_MAX}곳까지 비교할 수 있어요`);
+      return;
+    }
     setCompare((prev) => {
       const next = new Set(prev);
       if (next.has(vendorId)) next.delete(vendorId);
       else if (next.size < PICK_COMPARE_MAX) next.add(vendorId);
-      else showToast(`한 번에 ${PICK_COMPARE_MAX}곳까지 비교할 수 있어요`);
       return next;
     });
   }
@@ -420,7 +428,7 @@ export default function PickScreen() {
 function Header() {
   return (
     <View style={styles.titleRow}>
-      <ThemedText type="f26" style={[styles.bold, styles.title]}>
+      <ThemedText type="f28" style={[styles.bold, styles.title]}>
         {TERMS.pick}
       </ThemedText>
     </View>
@@ -545,7 +553,7 @@ function CandidateCard({
               {candidate.region}
             </ThemedText>
           </View>
-          {/* 정본 「평가 지표」(screen-inventory.md) — 확인된 후기가 모자라면 null이라 줄을 안 그린다. */}
+          {/* 후기 별점은 최신 CLAUDE.md의 미해결 예외에 따라 유지한다. */}
           {candidate.rating ? (
             <RatingStars value={candidate.rating.average} count={candidate.rating.count} />
           ) : null}
@@ -561,31 +569,31 @@ function CandidateCard({
       <View style={[styles.ctaStrip, { borderTopColor: theme.border }]}>
         <Pressable
           accessibilityRole="button"
-          accessibilityState={{ selected: comparing, disabled: compareDisabled }}
-          accessibilityLabel={`${candidate.vendorName} ${comparing ? ACTION_COMPARING : ACTION_COMPARE}`}
-          disabled={compareDisabled}
-          onPress={onCompare}
+          accessibilityState={isDecided ? undefined : { selected: comparing, disabled: compareDisabled }}
+          accessibilityLabel={`${candidate.vendorName} ${isDecided ? ACTION_UNDECIDE : comparing ? ACTION_COMPARING : ACTION_COMPARE}`}
+          disabled={isDecided ? busy : compareDisabled}
+          onPress={isDecided ? onUndecide : onCompare}
           style={({ pressed }) => [
             styles.compareLink,
-            compareDisabled ? styles.disabled : null,
+            !isDecided && compareDisabled ? styles.disabled : null,
             pressed ? styles.pressed : null,
           ]}>
           <ThemedText
             type="f12"
             style={[
               styles.bold,
-              { color: comparing ? theme.tint : compareDisabled ? theme.textDisabled : theme.textAssistive },
+              { color: isDecided ? theme.textAssistive : comparing ? theme.tint : compareDisabled ? theme.textDisabled : theme.textAssistive },
             ]}>
-            {comparing ? ACTION_COMPARING : ACTION_COMPARE}
+            {isDecided ? ACTION_UNDECIDE : comparing ? ACTION_COMPARING : ACTION_COMPARE}
           </ThemedText>
         </Pressable>
 
         {isDecided ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`${candidate.vendorName} ${ACTION_UNDECIDE}`}
+            accessibilityLabel={`${candidate.vendorName} ${ACTION_CONSULT}`}
             disabled={busy}
-            onPress={onUndecide}
+            onPress={() => router.push({ pathname: '/search/[vendorId]/consult', params: { vendorId: candidate.vendorId } })}
             style={({ pressed }) => [
               styles.decisionCta,
               { backgroundColor: theme.tint, borderColor: theme.tint },
@@ -593,7 +601,7 @@ function CandidateCard({
               busy ? styles.busy : null,
             ]}>
             <ThemedText type="f12" style={[styles.bold, { color: theme.onTint }]}>
-              {ACTION_UNDECIDE}
+              {ACTION_CONSULT}
             </ThemedText>
           </Pressable>
         ) : !groupDecided ? (
@@ -697,14 +705,14 @@ const styles = StyleSheet.create({
   regular: { fontWeight: 400 },
   /* 규격서 «ls 0.5px» — 업종 라벨. */
   tracked: { letterSpacing: LetterSpacing.p05 },
-  /* Root 제목행은 홈·MY와 같은 26/700 · 56 · 좌우 24. */
+  /* WP-PICK-001 Root 제목은 28/700, 전역 좌우 거터는 24. */
   title: { letterSpacing: LetterSpacing.n065 },
   pressed: { transform: [{ scale: 0.97 }] },
   busy: { opacity: 0.6 },
   /* 비교함이 찼을 때의 «비교하기» `opacity-40`. */
   disabled: { opacity: 0.4 },
 
-  /* Root 제목행: Back 없음 · 56 · 좌우 24. 정본 headBlock은 제목 아래 24 여백. */
+  /* Root 제목행: Back 없음 · 56 · 좌우 24. */
   titleRow: {
     height: Layout.navBar,
     paddingHorizontal: Layout.gutter,
@@ -722,7 +730,7 @@ const styles = StyleSheet.create({
     gap: Layout.inlineGap,
   },
 
-  // ── 03-pick 비교 배너: mx 24 · mb 16 · radius 10 · px 16 · py 14 ──
+  // ── WP-PICK-001 비교 배너: mx 24 · mb 16 · radius 10 · px 16 · py 14 ──
   compareBanner: {
     marginHorizontal: Layout.gutter,
     borderWidth: Border.hairline,

@@ -432,7 +432,7 @@ function CandidateCard({
             <ThemedText type="t7" themeColor="textAssistive" numberOfLines={1}>
               {candidate.region}
             </ThemedText>
-            {/* 정본 「평가 지표」(screen-inventory.md) — 확인된 후기가 모자라면 null이라 줄을 안 그린다. */}
+            {/* 후기 별점은 최신 CLAUDE.md의 미해결 예외에 따라 유지한다. */}
             {candidate.rating ? (
               <RatingStars value={candidate.rating.average} count={candidate.rating.count} showValue={false} />
             ) : null}
@@ -474,6 +474,14 @@ function CandidateCard({
               <ThemedText type="t7" themeColor="textSecondary" style={styles.bold}>{DECIDE}</ThemedText>
             </Pressable>
           )
+        ) : isDecidedVendor ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${candidate.vendorName} 상담 예약하기`}
+            hitSlop={Spacing.two}
+            onPress={() => router.push({ pathname: '/search/[vendorId]/consult', params: { vendorId: candidate.vendorId } })}>
+            <ThemedText type="t7" themeColor="tint" style={styles.bold}>상담 예약하기</ThemedText>
+          </Pressable>
         ) : null}
       </View>
     </View>

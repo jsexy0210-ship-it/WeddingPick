@@ -29,6 +29,7 @@ import { pickFromLibrary } from '@/features/capture/pickers';
 import { uploadBusinessDocument } from '@/features/capture/upload';
 import { BackBar } from '@/components/back-bar';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { showResultToast } from '@/features/navigation/result-toast';
 
 /**
  * 업체 관계자 인증 신청. 최종통합정책 v2.0 26번.
@@ -98,6 +99,7 @@ export default function VendorClaimScreen() {
 
     try {
       await createVendorClaim({ vendorId, claimedRole: claimedRole.trim(), evidence });
+      showResultToast('업체 인증을 신청했어요');
       router.replace('/my/vendor-claims');
     } catch (caught) {
       setMessage(caught instanceof Error ? caught.message : '신청하지 못했어요.');

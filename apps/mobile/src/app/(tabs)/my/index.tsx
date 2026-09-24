@@ -10,7 +10,7 @@
  *
  * **메뉴 4글자는 붙여 쓴다** — 연결관리 · 인증내역 · 웨딩설정(새 패키지 · 전체 공통).
  * 루트 메뉴는 정본의 내 활동 / 함께 준비하기 / 라운지 / 고객지원 / 약관만 둔다.
- * 스크랩은 저장 계약이 없어 빈 상태 화면까지만 제공하고 가짜 저장 데이터는 만들지 않는다.
+ * 정본 WP-MY-001의 내 활동은 Pick 인증내역과 내가 쓴 후기 두 줄이다.
  *
  * 모양은 시안, 수치는 `spec/tokens.json`(카드 radius 10 · 행 56 · 아바타 56 ·
  * 아이콘 18 · 좌우 24). 문구는 `spec/strings.ko.json` `my`.
@@ -162,7 +162,6 @@ export default function MyScreen() {
       rows: [
         { key: 'certLog', label: S['item.certLog'], icon: 'checkCircle', tail: count(totalProofs), onPress: () => guestPush('/my/reports') },
         { key: 'myReview', label: S['item.myReview'], icon: 'edit', tail: count(totalReviews), onPress: () => guestPush('/my/reviews') },
-        { key: 'scrap', label: S['item.scrap'], icon: 'file', onPress: () => guestPush('/my/scraps') },
       ],
     },
     {
@@ -214,17 +213,15 @@ export default function MyScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <View style={styles.header}>
+          <ThemedText type="f26" style={[styles.bold, styles.title]}>
+            {S.title}
+          </ThemedText>
+        </View>
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}>
-          {/* 시안 head: 56 · 좌우 여백 · «MY» 26/700. */}
-          <View style={styles.header}>
-            <ThemedText type="f26" style={[styles.bold, styles.title]}>
-              {S.title}
-            </ThemedText>
-          </View>
-
           {/* 프로필 카드 — 아바타 + 이름 18/700 + Pick 인증 배지 + 예식일 · D-day 13 muted + 꺾쇠 → 프로필. 선. «내 웨딩설정» 행. */}
           {isSignedIn && me ? (
             <View style={styles.block}>
@@ -372,7 +369,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   scroll: { flex: 1 },
-  scrollContent: { paddingBottom: Spacing.four },
+  scrollContent: { paddingTop: Spacing.three, paddingBottom: Spacing.four },
   bold: { fontWeight: 700 },
   /* `micro`는 기본이 700 — 시안에서 regular인 작은 글자는 400. */
   regular: { fontWeight: 400 },
@@ -383,13 +380,13 @@ const styles = StyleSheet.create({
   shrink: { flexShrink: 1, minWidth: 0 },
   pressed: { opacity: 0.6 },
 
-  /* head `flex:0 0 56px` · 좌우 24. */
+  /* Root 바깥 여백은 공통 24px. */
   header: {
     height: Layout.navBar,
     justifyContent: 'center',
     paddingHorizontal: Layout.gutter,
   },
-  /* sec `padding:0 20px 20px;gap:12px` — 좌우 24 · 아래 20 · 제목↔카드 12. */
+  /* WP-MY-001 sec: 공통 좌우 24 · 아래 20 · 제목↔카드 12. */
   block: {
     paddingHorizontal: Layout.gutter,
     paddingBottom: Layout.listGap,
@@ -409,33 +406,33 @@ const styles = StyleSheet.create({
     padding: Layout.cardPaddingCompactY,
   },
   profileCol: { flex: 1, minWidth: 0, gap: Spacing.one },
-  /* profNameRow `gap:7px` → 8(Spacing.two). */
-  profileNameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  /* profRow `gap:12px;min-height:52px;padding:0 18px` — 행 높이는 handoff 56. */
+  /* WP-MY-001 profNameRow: 이름과 배지 사이 7. */
+  profileNameRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  /* WP-MY-001 profRow: gap 12 · 최소 높이 52 · 좌우 18. */
   profileRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Layout.inlineGap,
-    minHeight: Layout.rowMinHeight,
+    minHeight: 52,
     borderTopWidth: Border.hairline,
     paddingHorizontal: Layout.cardPaddingCompactY,
   },
   /* secLabel 13/700 muted. */
   sectionTitle: { marginBottom: Layout.inlineGap },
-  /* ROW `gap:12px;min-height:52px;padding:0 16px` — 행 높이는 handoff 56. */
+  /* WP-MY-001 메뉴 행: gap 12 · 최소 높이 52 · 좌우 16. */
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Layout.inlineGap,
-    minHeight: Layout.rowMinHeight,
+    minHeight: 52,
     paddingHorizontal: Spacing.three,
   },
-  /* secFoot `padding:4px 20px 0;gap:14px` 가운데. 아래 사업자 정보는 8 띄운다. */
+  /* WP-MY-001 secFoot: 위 4 · 공통 좌우 24 · gap 14. */
   footer: {
     paddingTop: Spacing.one,
     paddingHorizontal: Layout.gutter,
     alignItems: 'center',
-    gap: Spacing.two,
+    gap: 14,
   },
   businessNotice: { gap: Spacing.half, opacity: 0.5 },
 });

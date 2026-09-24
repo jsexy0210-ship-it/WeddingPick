@@ -11,6 +11,7 @@ import {
   ActionButton,
   FilterChip,
   Layout,
+  ProductSymbol,
   Spacing,
   ThemedText,
   ThemedView,
@@ -50,7 +51,7 @@ import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 /** spec/strings.ko.json search.filter.* */
 const S = {
   title: '필터',
-  reset: '초기화',
+  reset: '전체 해제',
   /** «{n}곳 보기». */
   apply: (count: number) => `${count}곳 보기`,
   groupCategory: '카테고리',
@@ -98,19 +99,24 @@ export function FilterSheet({
       <SheetPanel style={styles.panel}>
         <View style={styles.head}>
           <ThemedText type="t3">{S.title}</ThemedText>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={S.reset}
-            hitSlop={Spacing.three}
-            onPress={() => onChange({ category: null, region: null, budget: null })}>
-            {/*
-              v3.28 WP-SRCH-002 — 「상단 우측에 초기화가 primary 색 텍스트로 있습니다」.
-              시안의 `resetBtn`도 `color: P`(#ff6f61 코랄)다. 옛 정본의 #4D5159 회색에서 되돌렸다.
-            */}
-            <ThemedText type="t6" style={[styles.bold, { color: theme.tint }]}>
-              {S.reset}
-            </ThemedText>
-          </Pressable>
+          <View style={styles.headActions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={S.reset}
+              hitSlop={Spacing.three}
+              onPress={() => onChange({ category: null, region: null, budget: null })}>
+              <ThemedText type="t6" style={[styles.bold, { color: theme.tint }]}>
+                {S.reset}
+              </ThemedText>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="필터 닫기"
+              onPress={onDismiss}
+              style={styles.closeButton}>
+              <ProductSymbol name="close" size={16} color={theme.text} />
+            </Pressable>
+          </View>
         </View>
 
         <ScrollView
@@ -211,6 +217,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  headActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  closeButton: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   /* 시안: 조건 묶음은 440까지만 늘고 그 안에서 스크롤한다 — dock이 밀려 내려가지 않게. */
   body: { maxHeight: BODY_MAX_HEIGHT },
   bodyContent: { gap: Layout.sectionGap, paddingBottom: Spacing.one },

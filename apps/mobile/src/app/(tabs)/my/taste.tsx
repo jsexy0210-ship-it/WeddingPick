@@ -11,12 +11,12 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ApiError, completeSetup, getCurrentUser } from '@/api/client';
-import { confirmAlert } from '@/components/confirm-alert';
 import { STEP_DESCRIPTION, STEP_TITLE_LINES, STYLE_DESCRIPTION } from '@/features/onboarding/flow';
 import { InlineToast, useInlineToast } from '@/features/onboarding/inline-toast';
 import { OptionRow } from '@/features/onboarding/option-row';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { showResultToast } from '@/features/navigation/result-toast';
 import { Dock, Hero, NoteBox, Section, SubScreen } from '@/features/settings/my-kit';
 import { ErrorView, Layout } from '@weddingpick/ui';
 
@@ -26,8 +26,6 @@ const S = {
   save: '저장하기',
   saving: '저장 중…',
   savedTitle: '스타일을 저장했어요',
-  savedBody: '고른 스타일로 홈 추천이 새로 만들어져요.',
-  ok: 'MY로 돌아가기',
   loadError: '지금 고른 스타일을 불러오지 못했어요.',
   saveError: '스타일을 저장하지 못했어요',
 } as const;
@@ -77,7 +75,8 @@ export default function StyleScreen() {
         region: loaded.region,
         styleTags: [...loaded.chosen],
       });
-      confirmAlert(S.savedTitle, S.savedBody, [{ text: S.ok, onPress: depthBack }]);
+      showResultToast(S.savedTitle);
+      depthBack();
     } catch (caught) {
       if (caught instanceof ApiError && caught.status === 401) {
         router.replace('/login');

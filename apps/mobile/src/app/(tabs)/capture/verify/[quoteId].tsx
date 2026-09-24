@@ -18,6 +18,7 @@ import { formatMonthDayDot } from '@/features/common/format-date';
 import { ErrorView, FilterChip, Layout, Radius, Spacing, ThemedText, VerificationBadge, useTheme } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { showResultToast } from '@/features/navigation/result-toast';
 import {
   Dock,
   DockButton,
@@ -83,6 +84,7 @@ export default function VerifyRequestScreen() {
       const result = await createVerificationRequest(quote.id, { targetLevel, evidence: items });
 
       setReceived({ at: result.receivedAt, requestId: result.requestId });
+      showResultToast('자료 확인을 신청했어요');
     } catch (caught) {
       setError((caught as Error).message);
     } finally {

@@ -281,7 +281,7 @@ export default function JoinScreen() {
 const styles = StyleSheet.create({
   content: { paddingBottom: Spacing.four },
   fields: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four },
-  error: { paddingHorizontal: Layout.cardPadding, paddingBottom: Spacing.three },
+  error: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.three },
 
   /* 정본 navBar(56) — WP-CPL-002는 좌우 모두 navPad(36)뿐, back·close가 없다. */
   plainHeader: {
@@ -296,16 +296,16 @@ const styles = StyleSheet.create({
   textCenter: { textAlign: 'center' },
   bold: { fontWeight: 700 },
 
-  /* avatarSec — padding 24 20 20 · gap 12 · 아바타 88. */
+  /* avatarSec — 바깥 좌우 24px · gap 12 · 아바타 88. */
   avatarSec: {
-    paddingHorizontal: Layout.cardPadding,
+    paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.four,
     paddingBottom: Spacing.four,
     alignItems: 'center',
     gap: Layout.rowPaddingY,
   },
   avatarBig: { width: 88, height: 88, borderRadius: Radius.pill, alignItems: 'center', justifyContent: 'center' },
-  sec: { paddingHorizontal: Layout.cardPadding, paddingBottom: Spacing.four, gap: Layout.rowPaddingY },
+  sec: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four, gap: Layout.rowPaddingY },
 
   listCard: { borderRadius: Radius.medium, borderWidth: Border.hairline, overflow: 'hidden' },
   scopeRow: { flexDirection: 'row', alignItems: 'center', gap: Layout.rowPaddingY, minHeight: 52, paddingHorizontal: Layout.rowPaddingY + 4 },
@@ -313,9 +313,9 @@ const styles = StyleSheet.create({
   scopeLabel: { flex: 1, minWidth: 0 },
   infoRow: { justifyContent: 'center', gap: 3, minHeight: 64, paddingHorizontal: Layout.rowPaddingY + 4 },
 
-  /* WP-CPL-003 doneHero — padding 60 20 28 · gap 14. */
+  /* WP-CPL-003 doneHero — 바깥 좌우 24px · gap 14. */
   doneHero: {
-    paddingHorizontal: Layout.cardPadding,
+    paddingHorizontal: Layout.gutter,
     paddingTop: Layout.tabBar - 12,
     paddingBottom: Spacing.four + Spacing.one,
     gap: Layout.sectionHeadGap,

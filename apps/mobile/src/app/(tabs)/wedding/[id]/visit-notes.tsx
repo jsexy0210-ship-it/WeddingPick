@@ -9,6 +9,7 @@ import { confirmAlert } from '@/components/confirm-alert';
 import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
 import { formatDateDot } from '@/features/common/format-date';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { showResultToast } from '@/features/navigation/result-toast';
 import {
   ActionButton,
   ErrorView,
@@ -80,6 +81,7 @@ export default function VisitNotesScreen() {
         ...(memo.trim() ? { memo: memo.trim() } : {}),
       });
 
+      showResultToast('방문 기록을 추가했어요');
       setFormOpen(false);
       setVendor('');
       setVisitedOn(null);
@@ -101,7 +103,10 @@ export default function VisitNotesScreen() {
         style: 'destructive',
         onPress: () =>
           removeVisitNote(id, noteId)
-            .then(load)
+            .then(() => {
+              showResultToast('방문 기록을 삭제했어요');
+              load();
+            })
             .catch((caught: Error) => setError(caught.message ?? '삭제하지 못했어요.')),
       },
     ]);

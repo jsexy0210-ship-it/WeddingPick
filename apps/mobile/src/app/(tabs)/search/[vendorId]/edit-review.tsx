@@ -6,6 +6,7 @@ import { updateReview } from '@/api/client';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
+import { showResultToast } from '@/features/navigation/result-toast';
 import {
   ActionButton,
   Radius,
@@ -85,7 +86,7 @@ export default function EditReviewRoute() {
         ...(pros.trim() ? { pros: pros.trim() } : {}),
         ...(cons.trim() ? { cons: cons.trim() } : {}),
       });
-      // 시트를 닫고 갱신된 후기 목록으로 돌아간다. 별도 성공 alert는 띄우지 않는다.
+      showResultToast('후기를 수정했어요');
       closeSheet();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '고치지 못했어요.');

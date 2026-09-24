@@ -24,6 +24,7 @@ import { Layout, ProductSymbol, Spacing, ThemedText, Toast, useTheme } from '@we
 import { getWithdrawalNotice, withdraw } from '@/api/client';
 import { wipeDevice } from '@/api/session';
 import { ConfirmSheet } from '@/features/common/confirm-sheet';
+import { showResultToast } from '@/features/navigation/result-toast';
 import {
   CheckDot,
   Dock,
@@ -83,6 +84,7 @@ export default function WithdrawalScreen() {
         await wipeDevice();
         setConfirming(false);
         setDone(result.done);
+        showResultToast('탈퇴를 마쳤어요');
       })
       .catch(() => setToast(S.fail))
       .finally(() => setSending(false));

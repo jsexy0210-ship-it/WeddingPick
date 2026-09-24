@@ -14,6 +14,7 @@ import { addExpense } from '@/api/client';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
+import { showResultToast } from '@/features/navigation/result-toast';
 import { dayToTimestamp, isDay, todayDay } from '@/features/wedding/expense-day';
 import {
   CheckBox,
@@ -30,7 +31,7 @@ const PROOF_KINDS = ['영수증', '문자', '앱 화면 1장'] as const;
 
 /**
  * `DESIGN_UNRESOLVED` — 정본(WP-NOTE-007)은 항목/예산/낸 금액을 한 화면에 묻고 사진을
- * 올리면 필드가 바로 채워지는 모델이다. 이 화면은 pick/done.tsx · complete-view.tsx가
+ * 올리면 필드가 바로 채워지는 모델이다. 이 화면은 complete-view.tsx가
  * 같이 쓰는 «지출 하나 기록하기» 화면이라(업체 · 금액 · 낸 날짜 · 항목 카테고리) 정본과
  * 데이터 모델이 다르다 — 정본대로 필드를 바꾸면 그 두 화면의 흐름이 깨진다. 사진→필드
  * 자동 채움도 실제로 동기적으로 값을 돌려주는 서버 경로가 없어(Pick 인증은 별도 여러
@@ -102,6 +103,7 @@ export default function AddExpenseRoute() {
 
     try {
       await addExpense(id, body);
+      showResultToast('지출을 추가했어요');
       return true;
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '넣지 못했어요. 다시 시도해주세요.');

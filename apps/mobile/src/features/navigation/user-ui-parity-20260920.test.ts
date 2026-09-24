@@ -180,16 +180,13 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(pickCategory).toContain("pathname: '/pick/confirm'");
     const pickIndex = mobile('app/(tabs)/pick/index.tsx');
     expect(pickIndex).toContain("pathname: '/pick/confirm'");
-    const pickDone = mobile('app/(tabs)/pick/done.tsx');
-    expect(pickDone).toContain('router.replace(`/search/${decidedVendorId}/consult`)');
+    const pickConfirm = mobile('app/(tabs)/pick/confirm.tsx');
+    expect(pickConfirm).toContain('showResultToast(`${withInstrument(vendorName)} 결정했어요`)');
+    expect(pickConfirm).toContain("dismissToOrReplace('/pick')");
 
     const review = mobile('app/(tabs)/search/[vendorId]/review/[reviewId].tsx');
     expect(review).not.toContain("router.push(\`/search/\${vendorId}/consult\`)");
     expect(review).toContain("router.push(\`/search/\${vendorId}\`)");
-
-    const done = mobile('app/(tabs)/pick/done.tsx');
-    expect(done).toContain('상담 예약하기');
-    expect(done).toContain('vendorId: string');
 
     const consult = mobile('app/(tabs)/search/[vendorId]/consult.tsx');
     expect(consult).toContain("listCandidates(me.weddingId, { force: true })");

@@ -54,7 +54,7 @@ const S = {
   none: '아직 안 골랐어요',
   preparedCount: (n: number) => `${formatCount(n)}개 정함`,
   saved: '설정을 바꿨어요',
-  noteTitle: '바꾸면 추천이 다시 계산돼요',
+  noteTitle: '내 웨딩설정은 언제든 바꿀 수 있어요',
   noteBody: '지금까지 고른 곳과 지출 기록은 그대로 남아요.',
   loadError: '지금 설정을 불러오지 못했어요',
   saveError: '바꾸지 못했어요',

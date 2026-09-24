@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 20,
   },
-  title: { fontWeight: 700, lineHeight: LineHeight.t1, letterSpacing: LetterSpacing.n064 },
+  title: { fontWeight: 700, lineHeight: 44, letterSpacing: LetterSpacing.n064 },
   benefitWrap: {
     flexShrink: 0,
     paddingTop: 24,
@@ -257,9 +257,9 @@ const styles = StyleSheet.create({
   benefitText: { flex: 1, lineHeight: LineHeight.lh23 },
   authBlock: {
     flexShrink: 0,
-    paddingTop: Spacing.four + Spacing.four,
+    paddingTop: 0,
     paddingHorizontal: Layout.gutter,
-    paddingBottom: Spacing.four + Spacing.four,
+    paddingBottom: Spacing.four + Spacing.two,
     gap: 10,
   },
   card: { borderRadius: Radius.medium, padding: Spacing.three, gap: Spacing.one },
