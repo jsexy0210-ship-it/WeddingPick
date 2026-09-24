@@ -1651,8 +1651,8 @@ const styles = StyleSheet.create({
     gap: Layout.inlineGap,
     paddingTop: Layout.sectionGap,
     paddingBottom: Layout.sectionGap,
-    /* 좌우 40 — 사다리에 없어 32 + 8로 만든다. */
-    paddingHorizontal: Spacing.five + Spacing.two,
+    /* 정본 좌우 40 — 목록(`resultList`)이 이미 24를 주므로 16만 더한다. */
+    paddingHorizontal: Spacing.three,
   },
   emptyTitle: {
     lineHeight: LineHeight.lh22,
@@ -1672,8 +1672,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   /* 정본 `nearWrap` 아래 24 · 사이 10 · `nearRow` 행 60 · 아래 선 1 · `nearCol` 사이 3. */
+  /* 좌우는 목록(`resultList`)의 24가 이미 준다. */
   nearWrap: {
-    paddingHorizontal: Layout.pageX,
     paddingBottom: Layout.gutter,
     gap: Layout.cardGap,
   },
