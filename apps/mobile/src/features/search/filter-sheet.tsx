@@ -125,8 +125,8 @@ export function FilterSheet({
           showsVerticalScrollIndicator={false}>
           {/*
             카테고리 — 피그마 `Search.tsx` 필터 시트의 첫 그룹(«전체 · 웨딩홀 · 스튜디오 …»).
-            결과 위 «카테고리 ▾» 칩이 이 시트를 연다. 업종은 열셋 전부 두고 이름은
-            VENDOR_CATEGORY_LABEL 하나만 본다(본식스냅 · 헤어변형 · 결정사 — CLAUDE.md).
+            결과 위 «카테고리 ▾» 칩이 이 시트를 연다. 업종은 고를 수 있는 열둘 전부 두고
+            (결정사는 2026-09-24에 뺐다) 이름은 VENDOR_CATEGORY_LABEL 하나만 본다.
           */}
           <View style={styles.group}>
             <ThemedText type="t6" style={styles.bold}>

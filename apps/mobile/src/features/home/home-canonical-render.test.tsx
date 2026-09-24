@@ -54,7 +54,7 @@ describe('WP-HOME-001 정본 구조(v3.29)', () => {
   });
 
   it('내 웨딩 준비 4칸은 완료해도 사라지지 않는다', () => {
-    const statuses = ['wedding_info_company', 'hall', 'studio', 'dress', 'makeup', 'hair', 'snap', 'bouquet', 'invitation', 'goods', 'dowry', 'honeymoon']
+    const statuses = ['hall', 'studio', 'dress', 'makeup', 'hair', 'snap', 'bouquet', 'invitation', 'goods', 'dowry', 'honeymoon']
       .map((category) => status(category as never, category, category === 'hall' ? 'decided' : 'before', category === 'studio' ? 2 : 0));
     const cards = homePrepCards({ statuses, venueName: null });
 

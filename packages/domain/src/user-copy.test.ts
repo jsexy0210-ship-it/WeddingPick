@@ -1,4 +1,3 @@
-import { AGENCY_CONDITION_LABEL, AGENCY_PRICE_SOURCE_LABEL } from './agency-price';
 import { findBannedPhrases, findVaguePhrases } from './copy-rules';
 import { DISCLOSURE_LIMIT_LABEL } from './policy-engine';
 import { PRICE_JUDGEMENT_LABEL } from './pricing';
@@ -39,8 +38,6 @@ const USER_COPY: [string, string][] = [
   ...Object.entries(REPORT_STATE_LABEL),
   ...Object.entries(PRICE_JUDGEMENT_LABEL),
   ...Object.entries(DISCLOSURE_LIMIT_LABEL),
-  ...Object.entries(AGENCY_CONDITION_LABEL),
-  ...Object.entries(AGENCY_PRICE_SOURCE_LABEL),
   ...VENDOR_DETAIL_SECTIONS.map((section): [string, string] => [section.key, section.label]),
   ['top3:empty', TOP3_EMPTY],
   ['top3:partial', TOP3_PARTIAL_NOTE],

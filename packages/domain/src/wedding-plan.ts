@@ -4,7 +4,7 @@ import type { VendorCategory } from './vendor';
 /**
  * 웨딩 스케줄. 디자인 핸드오프 15번.
  *
- * 준비할 일을 하나하나 적게 하지 않는다 — 열네 개를 미리 깔아준다. 처음 결혼을
+ * 준비할 일을 하나하나 적게 하지 않는다 — 열세 개를 미리 깔아준다. 처음 결혼을
  * 준비하는 사람은 **무엇을 해야 하는지부터 모른다.** 빈 목록을 주고 채우라고 하면
  * 그 목록은 영영 비어 있다.
  */
@@ -23,14 +23,14 @@ export const TASK_STATE_LABEL: Record<TaskState, string> = {
 export type TaskPreset = { key: string; label: string; category: VendorCategory | null };
 
 /**
- * 기본 열네 개. 핸드오프가 순서까지 정했다.
+ * 기본 열세 개. 핸드오프가 순서까지 정했다. 「결정사 가입」은 2026-09-24 대표 지시로
+ * 뺐다 — 웨딩픽은 플래너 없이 누구나 예약하는 서비스라 결정사가 준비 단계가 아니다.
  *
  * 순서는 대개 이 차례로 하기 때문이지 반드시 이래야 해서가 아니다 — 사용자가
  * 날짜를 넣으면 그 날짜순으로 다시 선다.
  */
 export const TASK_PRESETS: readonly TaskPreset[] = [
   { key: 'hall_contract', label: '웨딩홀 계약', category: 'hall' },
-  { key: 'agency_join', label: '결정사 가입', category: 'wedding_info_company' },
   { key: 'studio_shoot', label: '스튜디오 촬영일', category: 'studio' },
   { key: 'dress_tour', label: '드레스 투어', category: 'dress' },
   { key: 'makeup_trial', label: '메이크업 시연', category: 'makeup' },

@@ -106,6 +106,8 @@ test('수집 결과가 비면 업종별 건수도 모두 0이다', async () => {
 
   const report = JSON.parse(await readFile(join(dir, 'sbiz-report.json'), 'utf8'));
   expect(report.accepted).toBe(0);
-  expect(Object.keys(report.categoryCounts)).toHaveLength(13);
+  // 수집하는 업종 12종(결정사는 2026-09-24에 뺐다).
+  expect(Object.keys(report.categoryCounts)).toHaveLength(12);
+  expect(report.categoryCounts).not.toHaveProperty('wedding_info_company');
   expect(Object.values(report.categoryCounts).every((count) => count === 0)).toBe(true);
 });

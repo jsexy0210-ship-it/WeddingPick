@@ -2,7 +2,7 @@
  * 상담기록의 분류와 통과 판정.
  *
  * **분류는 추출 스키마를 고르는 값이지 업종이 아니다**(2026-09-14 대표 결정 P-1).
- * `VENDOR_CATEGORIES`는 13종 그대로 두고 여기만 14종을 센다 — 업종을 늘리면 홈 ·
+ * `VENDOR_CATEGORIES`는 그대로 두고 여기만 따로 센다 — 업종을 늘리면 홈 ·
  * Pick · 검색 · 온보딩이 전부 따라 바뀌는데, 상담 녹음을 읽는 일에 그만한 값을
  * 치를 이유가 없다.
  *
@@ -11,16 +11,17 @@
  */
 
 /**
- * 상담을 읽어낼 수 있는 분류 14종.
+ * 상담을 읽어낼 수 있는 분류 13종.
  *
- * `iphone_snap` · `wedding_video` · `suit` 셋은 **여기에만 있다.** 나머지 열하나는
+ * `iphone_snap` · `wedding_video` · `suit` 셋은 **여기에만 있다.** 나머지 열은
  * 업종과 이름이 같지만, 같은 목록이 아니라 우연히 겹치는 것이다.
  *
- * **플래너는 `wedding_info_company`로 들어간다**(2026-09-14 대표 결정 P-3).
- * CLAUDE.md 2026-09-11 지시가 「플래너」를 업종에서 뺐고 그 규칙을 그대로 지킨다.
+ * **결정사 · 플래너 상담은 읽지 않는다**(2026-09-24 대표 지시 — 「웨딩픽은 플래너 없이
+ * 누구나 예약 가능한 웨딩 플랫폼이다. 고로 결정사 따윈 필요없다」). 2026-09-14 P-3의
+ * 「플래너는 `wedding_info_company`로」를 뒤집었다 — 이제 미지원 상담이다
+ * (`UNSUPPORTED_CONSULTATION_LABELS`).
  */
 export const CONSULTATION_CATEGORIES = [
-  'wedding_info_company',
   'hall',
   'studio',
   'dress',
@@ -39,12 +40,20 @@ export const CONSULTATION_CATEGORIES = [
 export type ConsultationCategory = (typeof CONSULTATION_CATEGORIES)[number];
 
 /**
+ * 저장된 기록이 가질 수 있는 분류 — 읽어낼 수 있는 열셋 + 2026-09-24 전에 저장된
+ * `wedding_info_company`. 응답을 읽을 때만 쓴다. 새로 분류하는 자리는 위 목록을 본다.
+ */
+export const STORED_CONSULTATION_CATEGORIES = ['wedding_info_company', ...CONSULTATION_CATEGORIES] as const;
+
+export type StoredConsultationCategory = (typeof STORED_CONSULTATION_CATEGORIES)[number];
+
+/**
  * 화면에 쓰는 이름.
  *
- * 업종과 겹치는 열하나는 `VENDOR_CATEGORY_LABEL`과 **글자까지 같아야 한다** —
+ * 업종과 겹치는 열은 `VENDOR_CATEGORY_LABEL`과 **글자까지 같아야 한다** —
  * 같은 것을 두 이름으로 부르지 않는다(2026-09-11 대표 지시). 시험이 지킨다.
  */
-export const CONSULTATION_CATEGORY_LABEL: Record<ConsultationCategory, string> = {
+export const CONSULTATION_CATEGORY_LABEL: Record<StoredConsultationCategory, string> = {
   wedding_info_company: '결정사',
   hall: '웨딩홀',
   studio: '스튜디오',
@@ -69,7 +78,7 @@ export const CONSULTATION_CATEGORY_LABEL: Record<ConsultationCategory, string> =
  *
  * 한복은 업종에서도 뺀 것이라(A-15) 여기에도 없다.
  */
-export const UNSUPPORTED_CONSULTATION_LABELS = ['청첩장', '한복', '답례품'] as const;
+export const UNSUPPORTED_CONSULTATION_LABELS = ['청첩장', '한복', '답례품', '결정사', '플래너'] as const;
 
 /** 사전 판정 셋. 요청 §5. */
 export const CONSULTATION_STATUSES = [

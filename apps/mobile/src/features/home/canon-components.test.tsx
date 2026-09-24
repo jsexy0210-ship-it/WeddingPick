@@ -125,7 +125,7 @@ describe('최신 홈·추천 연결', () => {
   });
 
   it('「내 웨딩 준비」는 완료해도 사라지지 않고 항상 4칸이다', () => {
-    const statuses = ['wedding_info_company', 'hall', 'studio', 'dress', 'makeup', 'hair', 'snap', 'bouquet', 'invitation', 'goods', 'dowry', 'honeymoon']
+    const statuses = ['hall', 'studio', 'dress', 'makeup', 'hair', 'snap', 'bouquet', 'invitation', 'goods', 'dowry', 'honeymoon']
       .map((category) => ({ category: category as never, label: category, state: 'before' as const, pickCount: 0, decidedName: null }));
     const cards = homePrepCards({
       statuses: statuses.map((row) => row.category === 'hall' ? { ...row, state: 'decided' as const } : row),
