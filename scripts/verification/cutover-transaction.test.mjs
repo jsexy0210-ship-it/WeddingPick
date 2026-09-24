@@ -63,6 +63,14 @@ function writeExecutable(file, content) {
   chmodSync(file, 0o755);
 }
 
+function writeWebRelease(root, releaseSha) {
+  const releaseWeb = path.join(root, 'static-releases', releaseSha, 'web');
+  mkdirSync(releaseWeb, { recursive: true });
+  for (const page of ['index', 'terms', 'privacy']) {
+    writeFileSync(path.join(releaseWeb, `${page}.html`), `<html>${page}</html>`, 'utf8');
+  }
+}
+
 function readCount(file) {
   try {
     return Number(readFileSync(file, 'utf8'));
@@ -96,6 +104,7 @@ function makeHarness({ includeLogin = true, adminMarkerInBundle = false } = {}) 
   writeFileSync(conf, baseline, 'utf8');
   writeFileSync(path.join(releaseApp, 'index.html'), '<html>app</html>', 'utf8');
   writeFileSync(path.join(releaseAdmin, 'login.html'), adminHtml('admin', !adminMarkerInBundle), 'utf8');
+  writeWebRelease(root, releaseSha);
   if (adminMarkerInBundle) {
     writeFileSync(
       path.join(releaseAdminBundle, 'entry.js'),
@@ -424,6 +433,7 @@ shellTest('failed release update restores the immediately previous live release 
     writeFileSync(path.join(sourceB, 'index.html'), '<html>b</html>', 'utf8');
     writeFileSync(path.join(sourceB, 'login.html'), '<html>b-login</html>', 'utf8');
     writeFileSync(path.join(adminB, 'login.html'), adminHtml('b-admin'), 'utf8');
+    writeWebRelease(h.root, releaseB);
 
     const second = run(h.installPath, [releaseB], {
       ...h.env,
@@ -454,6 +464,7 @@ shellTest('explicit update rollback restores the previous app and verifies login
     writeFileSync(path.join(sourceB, 'index.html'), '<html>b</html>', 'utf8');
     writeFileSync(path.join(sourceB, 'login.html'), '<html>b-login</html>', 'utf8');
     writeFileSync(path.join(adminB, 'login.html'), adminHtml('b-admin'), 'utf8');
+    writeWebRelease(h.root, releaseB);
     assert.equal(run(h.installPath, [releaseB], {
       ...h.env,
       MOCK_ADMIN_HTML: path.join(adminB, 'login.html'),
@@ -484,6 +495,7 @@ shellTest('update rollback fails closed before changing Nginx when the recorded 
     writeFileSync(path.join(sourceB, 'index.html'), '<html>b</html>', 'utf8');
     writeFileSync(path.join(sourceB, 'login.html'), '<html>b-login</html>', 'utf8');
     writeFileSync(path.join(adminB, 'login.html'), adminHtml('b-admin'), 'utf8');
+    writeWebRelease(h.root, releaseB);
     assert.equal(run(h.installPath, [releaseB], {
       ...h.env,
       MOCK_ADMIN_HTML: path.join(adminB, 'login.html'),

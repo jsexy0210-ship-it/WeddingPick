@@ -27,7 +27,7 @@ import * as faqAdmin from '../faq-admin';
 import * as weddingFeed from '../wedding-feed';
 import * as feedTaxonomy from '../wedding-feed-taxonomy';
 import { createGeminiFeedWriter } from '../analysis/wedding-feed-writer';
-import { feedImageRequestSchema, generateWeddingFeedImage } from '../analysis/wedding-feed-image';
+import { feedImageRequestSchema, generateWeddingFeedImage, WeddingFeedImageError } from '../analysis/wedding-feed-image';
 import { NotAnOperator } from '../decisions';
 import { ApiError, forbidden, notFound } from '../errors';
 import * as inquiryAdmin from '../inquiry-admin';
@@ -1184,6 +1184,14 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
       bytes = await generateWeddingFeedImage(apiKey, parsed.data);
     } catch (error) {
       request.log.error({ err: error }, '웨딩피드 이미지 생성 실패');
+      if (error instanceof WeddingFeedImageError) {
+        if (error.reason === 'provider') {
+          const detail = `${error.providerStatus}${error.providerCode ? ` ${error.providerCode}` : ''}`;
+          throw new ApiError(error.providerStatus === 429 ? 'rate_limited' : 'internal', `Gemini 이미지 요청이 거절됐어요 (${detail}).`);
+        }
+        if (error.reason === 'incomplete') throw new ApiError('internal', 'Gemini 이미지 생성이 완료되지 않았어요.');
+        throw new ApiError('internal', 'Gemini가 쓸 수 있는 PNG 이미지를 보내지 않았어요.');
+      }
       throw new ApiError('internal', '이미지를 만들지 못했어요. 잠시 후 다시 시도해주세요.');
     }
 

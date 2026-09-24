@@ -37,5 +37,16 @@ it('이미지 없는 응답을 저장할 바이트로 취급하지 않는다', a
   } as Response);
   await expect(generateWeddingFeedImage('test-key', {
     kind: 'body', title: '제목', summary: '', body: '',
-  })).rejects.toThrow('PNG가 없다');
+  })).rejects.toThrow('missing_image');
+});
+
+it('제공자 오류의 상태 코드만 읽고 응답 본문은 노출하지 않는다', async () => {
+  jest.spyOn(global, 'fetch').mockResolvedValue({
+    ok: false,
+    status: 404,
+    json: async () => ({ error: { status: 'NOT_FOUND', message: '프롬프트와 비밀 값' } }),
+  } as Response);
+  await expect(generateWeddingFeedImage('test-key', {
+    kind: 'thumbnail', title: '제목', summary: '', body: '',
+  })).rejects.toThrow('Gemini 이미지 요청 실패 (404 NOT_FOUND)');
 });

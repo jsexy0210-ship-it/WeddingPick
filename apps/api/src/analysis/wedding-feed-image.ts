@@ -26,6 +26,13 @@ const imageResponseSchema = z.object({
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
+export class WeddingFeedImageError extends Error {
+  constructor(readonly reason: 'provider' | 'incomplete' | 'missing_image' | 'invalid_image', readonly providerStatus?: number, readonly providerCode?: string) {
+    super(reason === 'provider' ? `Gemini 이미지 요청 실패 (${providerStatus}${providerCode ? ` ${providerCode}` : ''})` : `Gemini 이미지 응답 오류 (${reason})`);
+    this.name = 'WeddingFeedImageError';
+  }
+}
+
 export async function generateWeddingFeedImage(apiKey: string, input: FeedImageRequest): Promise<Buffer> {
   const prompt = [
     '한국의 결혼 준비 정보 글에 사용할 삽화 한 장을 만들어라.',
@@ -54,22 +61,28 @@ export async function generateWeddingFeedImage(apiKey: string, input: FeedImageR
   });
 
   // 오류 본문에는 프롬프트가 되비칠 수 있으므로 응답 내용을 로그나 오류에 넣지 않는다.
-  if (!response.ok) throw new Error(`웨딩피드 이미지 생성 요청 실패 (${response.status})`);
+  if (!response.ok) {
+    const body: unknown = await response.json().catch(() => null);
+    const candidate = body && typeof body === 'object' && 'error' in body ? (body as { error?: unknown }).error : null;
+    const code = candidate && typeof candidate === 'object' && 'status' in candidate ? (candidate as { status?: unknown }).status : null;
+    const providerCode = typeof code === 'string' && /^[A-Z_]{1,50}$/.test(code) ? code : undefined;
+    throw new WeddingFeedImageError('provider', response.status, providerCode);
+  }
   const parsed = imageResponseSchema.safeParse(await response.json());
   if (!parsed.success || parsed.data.status !== 'completed') {
-    throw new Error('웨딩피드 이미지 생성 응답이 완료되지 않았다.');
+    throw new WeddingFeedImageError('incomplete');
   }
 
   const image = parsed.data.steps
     ?.filter((step) => step.type === 'model_output')
     .flatMap((step) => step.content ?? [])
     .find((part) => part.type === 'image' && part.mime_type === 'image/png' && part.data);
-  if (!image?.data) throw new Error('웨딩피드 이미지 생성 응답에 PNG가 없다.');
+  if (!image?.data) throw new WeddingFeedImageError('missing_image');
 
   const bytes = Buffer.from(image.data, 'base64');
   if (!bytes.length || bytes.length > MAX_IMAGE_BYTES ||
       !bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) {
-    throw new Error('웨딩피드 이미지 생성 응답의 크기 또는 형식이 올바르지 않다.');
+    throw new WeddingFeedImageError('invalid_image');
   }
   return bytes;
 }
