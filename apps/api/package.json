@@ -10,6 +10,7 @@
     "worker": "tsx src/worker.ts",
     "worker:dev": "tsx watch src/worker.ts",
     "vendors:import": "tsx src/vendors-import.ts",
+    "vendors:purge-category": "tsx src/vendor-category-purge.ts",
     "analysis:eval": "tsx src/analysis-eval.ts",
     "public-data:import": "tsx src/public-data-import.ts",
     "public-stats:import": "tsx src/public-stats-import.ts",

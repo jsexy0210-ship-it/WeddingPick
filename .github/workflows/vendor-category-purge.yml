@@ -1,0 +1,61 @@
+# 한 업종의 업체를 운영 DB에서 지운다(2026-09-24 대표 지시 — 결정사 삭제).
+# 먼저 몇 곳이 지워지는지 세고(읽기 전용), apply가 켜져 있으면 production 승인 뒤에
+# 지운다. 되돌릴 수 없다.
+name: 업종 업체 삭제
+
+on:
+  workflow_dispatch:
+    inputs:
+      category:
+        description: 지울 업종 키
+        type: string
+        default: wedding_info_company
+      apply:
+        description: 센 뒤 실제로 지운다
+        type: boolean
+        default: false
+      include_used:
+        description: 사용자 기록(Pick 후보·후기·제보 금액·Pick 결정)이 달린 업체도 지운다
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  count:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 지워질 업체 세기
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          CATEGORY: ${{ inputs.category }}
+          INCLUDE_USED: ${{ inputs.include_used && '--include-used' || '' }}
+        run: npm run vendors:purge-category --workspace @weddingpick/api -- --category "$CATEGORY" $INCLUDE_USED
+
+  apply:
+    needs: count
+    if: ${{ inputs.apply }}
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 운영 DB에서 삭제
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          CATEGORY: ${{ inputs.category }}
+          INCLUDE_USED: ${{ inputs.include_used && '--include-used' || '' }}
+        run: npm run vendors:purge-category --workspace @weddingpick/api -- --category "$CATEGORY" $INCLUDE_USED --apply
