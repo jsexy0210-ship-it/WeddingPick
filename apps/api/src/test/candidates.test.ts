@@ -386,8 +386,9 @@ describeWithDb('후보 저장', () => {
         groups: unknown[];
       }>();
 
-      expect(body.progress.decided).toBe(2);
-      expect(body.progress.total).toBe(12);
+      // 결정사(2026-09-24 제거)는 예전에 저장된 값이라도 세지 않는다 — 웨딩홀 하나만 센다.
+      expect(body.progress.decided).toBe(1);
+      expect(body.progress.total).toBe(11);
       expect(body.nextCategory).toBe('studio');
       // 후보가 없으니 묶음도 없다 — 준비 현황은 후보가 아니다.
       expect(body.groups).toEqual([]);
