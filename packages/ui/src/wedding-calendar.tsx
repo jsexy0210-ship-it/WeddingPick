@@ -9,8 +9,12 @@ import { useTheme } from './use-theme';
 /**
  * 예식일 캘린더. 디자인 핸드오프 3번.
  *
- * **오늘 포함 과거는 고를 수 없다** — 결혼식은 미래이기 때문이다. 일요일은 붉게,
- * 토요일은 파랗게. 오늘은 테두리로 표시하되 고를 수는 없다.
+ * **오늘 포함 과거는 고를 수 없다** — 결혼식은 미래이기 때문이다. 오늘은 테두리로
+ * 표시하되 고를 수는 없다.
+ *
+ * **요일로 색을 나누지 않는다**(2026-09-24 대표 지시 「달력 일요일 색도 정본대로 고쳐」).
+ * 정본 `대메뉴_웨딩노트.dc.html`의 `day()`는 요일과 무관하게 한 색이고 선택한 날만
+ * 코랄 배경이다 — 일요일 빨강 · 토요일 코랄은 정본에 없던 값이었다.
  *
  * `allowPast=true`이면 제한을 뒤집는다 — 방문노트처럼 지난 날을 골라야 할 때 쓴다.
  */
@@ -113,12 +117,12 @@ export function WeddingCalendar({
       </ThemedView>
 
       <View style={styles.week}>
-        {WEEKDAYS.map((label, index) => (
+        {WEEKDAYS.map((label) => (
           <ThemedText
             key={label}
             type="t7"
             style={styles.cell}
-            themeColor={index === 0 ? 'negative' : index === 6 ? 'tint' : 'textAssistive'}>
+            themeColor="textAssistive">
             {label}
           </ThemedText>
         ))}
@@ -137,7 +141,6 @@ export function WeddingCalendar({
             : asDate.getTime() > startOfToday.getTime();
           const isToday = asDate.getTime() === startOfToday.getTime();
           const selected = value === date;
-          const weekday = index % 7;
 
           return (
             <Pressable
@@ -163,11 +166,7 @@ export function WeddingCalendar({
                       ? undefined
                       : !selectable
                         ? 'track'
-                        : weekday === 0
-                          ? 'negative'
-                          : weekday === 6
-                            ? 'tint'
-                            : 'text'
+                        : 'text'
                   }>
                   {day}
                 </ThemedText>
