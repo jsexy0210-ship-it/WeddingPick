@@ -5,6 +5,7 @@ import {
   ActionButton,
   Border,
   CategoryIcon,
+  DonutChart,
   Layout,
   Radius,
   SeedIcon,
@@ -99,10 +100,17 @@ export function HomeBudget({ budget, onOpen }: {
 }) {
   const theme = useTheme();
   const progress = budgetProgress(budget);
+  const budgetSub = budget && progress !== null
+    ? budget.spent > budget.total ? '예산을 넘었어요' : `예산의 ${progress}%를 썼어요`
+    : null;
 
   return (
     <View style={styles.section}>
-      <SummaryHeading title={S['section.budget']} sub={null} onMore={onOpen} />
+      <SummaryHeading
+        title={S['section.budget']}
+        sub={budgetSub}
+        onMore={onOpen}
+      />
       {budget === null || progress === null ? (
         <View style={styles.empty}>
           <ThemedText type="f13" themeColor="textAssistive">{S['budget.empty']}</ThemedText>
@@ -115,21 +123,32 @@ export function HomeBudget({ budget, onOpen }: {
           onPress={onOpen}
           style={({ pressed }) => [
             styles.budget,
-            { backgroundColor: theme.backgroundSelected },
+            { backgroundColor: theme.background, borderColor: theme.border },
             pressed && styles.pressed,
           ]}>
-          <View style={styles.budgetTop}>
-            <ThemedText type="f26" numeric style={styles.bold}>{manwon(budget.spent)}</ThemedText>
-            <ThemedText type="f13" numeric themeColor="textAssistive">
-              {S['budget.total'].replace('{amount}', manwon(budget.total))}
-            </ThemedText>
-          </View>
           <View
             accessibilityRole="progressbar"
             accessibilityLabel={S['budget.progress'].replace('{n}', String(progress))}
             accessibilityValue={{ min: 0, max: 100, now: progress }}
-            style={[styles.track, { backgroundColor: theme.track }]}>
-            <View style={[styles.fill, { width: `${progress}%`, backgroundColor: theme.tint }]} />
+            style={styles.budgetTop}>
+            <DonutChart
+              size={72}
+              holeSize={52}
+              holeColor={theme.background}
+              slices={[
+                { key: 'used', value: progress, color: theme.tint },
+                { key: 'remaining', value: 100 - progress, color: theme.chartMuted },
+              ]}>
+              <ThemedText type="f14" numeric style={styles.bold}>
+                {budget.spent > budget.total ? '100%+' : `${progress}%`}
+              </ThemedText>
+            </DonutChart>
+            <View style={styles.budgetCol}>
+              <ThemedText type="f26" numeric style={styles.bold}>{manwon(budget.spent)}</ThemedText>
+              <ThemedText type="f13" numeric themeColor="textAssistive">
+                {S['budget.total'].replace('{amount}', manwon(budget.total))}
+              </ThemedText>
+            </View>
           </View>
           <ThemedText
             type="f12"
@@ -176,7 +195,7 @@ const styles = StyleSheet.create({
    */
   section: {
     paddingHorizontal: Layout.gutter,
-    marginBottom: Layout.sectionGap,
+    marginBottom: 24,
   },
   heading: {
     flexDirection: 'row',
@@ -220,19 +239,16 @@ const styles = StyleSheet.create({
   bold: { fontWeight: 700 },
   pressed: { opacity: 0.8 },
   budget: {
-    paddingHorizontal: Layout.cardPadding,
-    paddingVertical: Layout.cardPaddingCompactY,
-    borderRadius: Radius.medium,
+    padding: 18,
+    borderRadius: 12,
+    borderWidth: 1,
     gap: Layout.cardGap,
   },
   budgetTop: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    gap: Spacing.two,
+    alignItems: 'center',
+    gap: 14,
   },
-  track: { height: Spacing.two, borderRadius: Radius.pill, overflow: 'hidden' },
-  fill: { height: '100%', borderRadius: Radius.pill },
+  budgetCol: { flex: 1, minWidth: 0, gap: Spacing.half },
   empty: { gap: Layout.inlineGap },
 });

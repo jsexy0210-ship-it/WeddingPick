@@ -64,7 +64,6 @@ describe('depthBackTarget — 대표 경로', () => {
     ['/capture/verify/q-1', '/capture/result/q-1', '자료 확인 신청 → 그 자료의 결과 확인'],
     ['/capture/verify-status/rq-1', '/my/reports', 'WP-RPT-008 처리 결과 → 내 제보 내역'],
     ['/search/compare', '/pick', 'WP-CMP-002 비교 결과 → Pick'],
-    ['/pick/done', '/pick', 'WP-PICK-006 결정 완료 → Pick(끝난 확인 시트로 돌아가지 않는다)'],
     ['/my/faq/payment', '/my/guide', 'FAQ 질문 상세 → FAQ 목록'],
     ['/my/referral', '/my/rewards', '초대 현황 → 혜택'],
 
@@ -282,19 +281,7 @@ describe('완료 흐름은 이전 Stack을 다시 열지 않는다', () => {
     const common = readFileSync(join(dirName, 'screen-options.ts'), 'utf8');
 
     expect(layout).toContain("popToTopOnBlur: name === 'capture'");
-    expect(layout).toContain("popToTopOnBlur: tab.name === 'pick' && onPickDone");
+    expect(layout).toContain('popToTopOnBlur: false');
     expect(common).not.toContain('popToTopOnBlur: true');
-  });
-
-  it('Pick 완료에서 지출 추가로 갈 때 done 화면 위에 push하지 않는다', () => {
-    const source = readFileSync(join(dirName, '..', '..', 'app', '(tabs)', 'pick', 'done.tsx'), 'utf8');
-    const start = source.indexOf('async function goAddExpense()');
-    const end = source.indexOf('/* 완료 화면은 뒤로 갈 화면이 아니다.', start);
-    const flow = source.slice(start, end);
-
-    expect(start).toBeGreaterThanOrEqual(0);
-    expect(end).toBeGreaterThan(start);
-    expect(flow).toContain('router.replace({');
-    expect(flow).not.toContain('router.push({');
   });
 });

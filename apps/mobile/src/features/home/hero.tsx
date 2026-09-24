@@ -7,8 +7,8 @@ import { Layout, Radius, SeedIcon, Spacing, ThemedText, useTheme } from '@weddin
 /**
  * 홈 코랄 D-day 히어로.
  *
- * 화면 모양은 docs/design/figma-export/01-home.dc.html, 수치와 토큰은
- * docs/design/handoff를 따른다. 홈에서 예산은 별도 「예산현황」으로 내려갔기 때문에
+ * 화면 모양과 수치는 docs/design/html/대메뉴_홈(로그인, 온보딩).dc.html의
+ * WP-HOME-001을 따른다. 홈에서 예산은 별도 「예산현황」으로 내려갔기 때문에
  * 이 카드에는 D-day · 예식 정보 · 함께 준비하는 사람만 남긴다.
  */
 export type HeroProps = {
@@ -138,10 +138,9 @@ export function partnerLine(me: CurrentUser | null, invitePending: boolean): str
 const styles = StyleSheet.create({
   hero: {
     marginHorizontal: Layout.gutter,
-    marginBottom: Layout.sectionGap,
-    borderRadius: Radius.medium,
-    paddingHorizontal: Layout.cardPadding,
-    paddingVertical: Layout.cardPaddingCompactY,
+    marginBottom: 24,
+    borderRadius: 14,
+    padding: 18,
     overflow: 'hidden',
   },
   decor: {

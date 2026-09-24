@@ -7,6 +7,7 @@ import { getExpo, toggleExpoNotify, type ExpoDetail, type ExpoStatus } from '@/a
 import { BackBar } from '@/components/back-bar';
 import { openExternal } from '@/features/open-external';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { showResultToast } from '@/features/navigation/result-toast';
 import {
   ActionButton,
   ErrorView,
@@ -89,8 +90,9 @@ export default function ExpoDetailScreen() {
     try {
       await toggleExpoNotify(expoId!, newEnabled);
       setExpo((prev) => prev ? { ...prev, notifyEnabled: newEnabled } : prev);
+      showResultToast(newEnabled ? '박람회 알림을 켰어요' : '박람회 알림을 껐어요');
     } catch {
-      // 실패 시 기존 상태 유지 — 조용히 넘어간다
+      showResultToast('박람회 알림을 바꾸지 못했어요');
     } finally {
       setNotifyLoading(false);
     }

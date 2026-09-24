@@ -17,6 +17,7 @@ import { createInquiry } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { BackBar } from '@/components/back-bar';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { showResultToast } from '@/features/navigation/result-toast';
 
 /**
  * WP-BIZ-003: 업체 자료 제공 화면.
@@ -48,6 +49,7 @@ export default function BizDataScreen() {
         ...(contact.trim() && { contact: contact.trim() }),
       });
       setAcknowledgement(received.acknowledgement);
+      showResultToast('자료 수정 요청을 보냈어요');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '제출하지 못했어요.');
     } finally {

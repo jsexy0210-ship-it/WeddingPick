@@ -20,6 +20,7 @@ import {
   updateWeddingTask,
 } from '@/api/client';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { showResultToast } from '@/features/navigation/result-toast';
 import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
 import { confirmAlert } from '@/components/confirm-alert';
 import { BackBar } from '@/components/back-bar';
@@ -116,6 +117,7 @@ export default function WeddingTasksScreen() {
         ...(draftVendor.trim() === '' ? {} : { vendorLabel: draftVendor.trim() }),
       });
 
+      showResultToast('할 일을 추가했어요');
       closeSheet();
       load();
     } catch (caught) {
@@ -138,6 +140,7 @@ export default function WeddingTasksScreen() {
         ...(state ? { state: state === 'auto' ? null : state } : {}),
       });
 
+      showResultToast('할 일을 수정했어요');
       closeSheet();
       load();
     } catch (caught) {
@@ -155,7 +158,10 @@ export default function WeddingTasksScreen() {
         style: 'destructive',
         onPress: () =>
           removeWeddingTask(id, taskId)
-            .then(load)
+            .then(() => {
+              showResultToast('할 일을 삭제했어요');
+              load();
+            })
             .catch((caught: Error) =>
               setError(caught.message ?? '지우지 못했어요.')
             ),

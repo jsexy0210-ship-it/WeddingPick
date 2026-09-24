@@ -13,6 +13,7 @@ import {
 import { pickConsultationAudio } from '@/features/capture/pickers';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
+import { showResultToast } from '@/features/navigation/result-toast';
 import { ActionButton, Spacing, ThemedText } from '@weddingpick/ui';
 
 import WeddingScreen from '../../index';
@@ -61,6 +62,7 @@ export default function ConsultationUploadRoute() {
       if (!put.ok) throw new Error(`올리지 못했어요 (${put.status})`);
 
       await completeConsultationUpload(target.consultationId);
+      showResultToast('녹음을 올렸어요');
       dismissToOrReplace('/wedding?tab=consult');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '녹음을 올리지 못했어요.');

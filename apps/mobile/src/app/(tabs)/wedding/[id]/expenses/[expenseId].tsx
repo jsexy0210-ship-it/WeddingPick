@@ -8,6 +8,7 @@ import { getExpenseDetail, removeExpense } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
 import { formatDateDot, formatMonthDayDot } from '@/features/common/format-date';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { showResultToast } from '@/features/navigation/result-toast';
 import { ErrorView, Layout, Spacing, ThemedText } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import {
@@ -73,7 +74,10 @@ export default function ExpenseDetailScreen() {
         style: 'destructive',
         onPress: () =>
           removeExpense(id, expenseId)
-            .then(() => router.back())
+            .then(() => {
+              showResultToast('지출을 삭제했어요');
+              router.back();
+            })
             .catch((caught: unknown) =>
               setError(caught instanceof Error && caught.message ? caught.message : '삭제하지 못했어요.')
             ),

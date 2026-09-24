@@ -96,7 +96,7 @@ export function UpcomingSchedule({
 
 const styles = StyleSheet.create({
   /* .dc.html `hsec` — 헤더→본문 gap 12px 하나뿐(heading.marginBottom에 둔다). */
-  section: { paddingHorizontal: Layout.gutter, marginBottom: Layout.sectionGap },
+  section: { paddingHorizontal: Layout.gutter, marginBottom: 24 },
   heading: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   wrap: { borderRadius: 12, borderWidth: 1, overflow: 'hidden' },
   /* .dc.html `row`/`row2` — min-height 64 · padding 0 14px. 그대로 옮겼다. */
   row: { flexDirection: 'row', alignItems: 'center', gap: Layout.inlineGap, minHeight: 64, paddingHorizontal: 14 },
-  dateCol: { width: 44, flex: 0, alignItems: 'center', justifyContent: 'center', gap: 1 },
+  dateCol: { width: 44, flexShrink: 0, alignItems: 'center', justifyContent: 'center', gap: 1 },
   /* .dc.html `numStyle` — 24×24 원. 기존 토큰 중 정확히 24인 값이 없어 그대로 적었다. */
   numBadge: { width: 24, height: 24, borderRadius: Radius.pill, alignItems: 'center', justifyContent: 'center' },
   titleCol: { flex: 1, minWidth: 0, gap: Spacing.half },

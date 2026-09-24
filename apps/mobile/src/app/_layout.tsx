@@ -12,6 +12,7 @@ import { Platform } from 'react-native';
 import { useTheme } from '@weddingpick/ui';
 import { useStackScreenOptions } from '@/features/navigation/screen-options';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
+import { ResultToastHost } from '@/features/navigation/result-toast-host';
 
 import { entryAfterSignIn, rememberSignedIn } from '@/features/auth/finish-sign-in';
 import { completeAuthPopup, isAuthPopup } from '@/features/auth/is-auth-popup';
@@ -211,7 +212,7 @@ function RootLayoutContent({ browserReady }: { browserReady: boolean }) {
      * 그런데 화면을 넘긴 단추(Pressable)는 그 순간까지도 DOM 포커스를 쥐고 있다 —
      * `aria-hidden`이 걸린 조상 안에 포커스가 그대로 남은 상태가 되고, Chrome이
      * 「Blocked aria-hidden on an element because its descendant retained focus」를
-     * 찍는다. `/pick` · `/pick/done` · `/search` · `/wedding/<id>/events/new` ·
+     * 찍는다. `/pick` · `/search` · `/wedding/<id>/events/new` ·
      * `/my/reports` 등 여러 화면에서 났던 이유가 이것이다 — 화면 하나의 문제가
      * 아니라 모든 push·replace가 지나는 Stack 자체의 문제다.
      *
@@ -386,6 +387,7 @@ function RootLayoutContent({ browserReady }: { browserReady: boolean }) {
             <Stack.Screen name="login" options={{ gestureEnabled: false }} />
             <Stack.Screen name="admin" options={{ headerShown: false }} />
           </Stack>
+          <ResultToastHost />
         </CaptureDraftProvider>
       </DocumentStoreProvider>
     </ThemeProvider>

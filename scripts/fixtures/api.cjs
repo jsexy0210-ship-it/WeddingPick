@@ -503,6 +503,7 @@ const routes = {
       ],
     };
   })(),
+  'GET /v1/weddings/:weddingId/decisions': { decisions: [] },
   /*
    * 웨딩일정(홈 「웨딩일정」 · 웨딩노트 체크리스트) — GET /v1/weddings/:id/tasks.
    * 날짜 셋을 **오늘 기준 상대값**으로 둔다 — 고정 과거 날짜면 홈의 `scheduleRows`가

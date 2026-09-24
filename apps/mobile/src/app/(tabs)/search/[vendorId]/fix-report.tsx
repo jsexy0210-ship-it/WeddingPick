@@ -5,6 +5,7 @@ import { Layout, TextField, Toast } from '@weddingpick/ui';
 import { createInquiry } from '@/api/client';
 import { CheckCircle } from '@/features/onboarding/check-circle';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { showResultToast } from '@/features/navigation/result-toast';
 import { Dock, Hero, NoteBox, Row, Rows, Section, SubScreen } from '@/features/settings/my-kit';
 
 /**
@@ -104,6 +105,7 @@ export default function FixReportScreen() {
       });
 
       setDone(received.acknowledgement);
+      showResultToast('정보 수정 요청을 보냈어요');
     } catch (caught) {
       setToast(caught instanceof Error ? caught.message : S.failed);
     } finally {

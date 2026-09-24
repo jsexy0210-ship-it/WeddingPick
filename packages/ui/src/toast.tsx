@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Animated, Easing, StyleSheet } from 'react-native';
+import { Animated, Easing, Platform, StyleSheet, ToastAndroid } from 'react-native';
 
 import { Layout, Radius, Spacing, USE_NATIVE_DRIVER } from './theme';
 import { FontSize, LineHeight } from './typography';
@@ -19,11 +19,9 @@ export const TOAST_MS = 2200;
 /**
  * 잠깐 뜨는 안내. 디자인 핸드오프 인터랙션 규칙.
  *
- * **막은 이유를 말하는 자리다.** 다른 업종을 담으려 할 때처럼, 눌렀는데 아무 일도
- * 일어나지 않는 순간이 있으면 사용자는 앱이 고장난 줄 안다.
- *
- * 다이얼로그가 아니다 — 확인을 누르게 하지 않는다. 되돌릴 것이 있는 일에는
- * 토스트가 아니라 컨펌을 쓴다.
+ * 저장·수정·삭제 결과와 막힌 이유를 짧게 알린다. Android에서는 OS 토스트를,
+ * iOS·웹에서는 같은 문구의 앱 토스트를 쓴다. 되돌리기 동작이 필요한 삭제는
+ * 별도의 액션 토스트가 맡는다.
  */
 export function Toast({ message, onHidden }: ToastProps) {
   const theme = useTheme();
@@ -33,6 +31,12 @@ export function Toast({ message, onHidden }: ToastProps) {
 
   useEffect(() => {
     if (message === null) return;
+
+    if (Platform.OS === 'android') {
+      ToastAndroid.show(message, ToastAndroid.SHORT);
+      onHidden?.();
+      return;
+    }
 
     setShown(message);
 
@@ -63,7 +67,7 @@ export function Toast({ message, onHidden }: ToastProps) {
     // onHidden이 매 렌더 새로 만들어져도 토스트가 다시 뜨지 않게, 글자만 본다.
   }, [message, opacity]);
 
-  if (shown === null) return null;
+  if (Platform.OS === 'android' || shown === null) return null;
 
   return (
     <Animated.Text

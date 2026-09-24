@@ -1044,13 +1044,13 @@ const styles = StyleSheet.create({
   },
   /*
    * 하단 고정 CTA — v3.29 WP-VEND-001~004 `dockSingle`: 위 테두리 1 · 배경 화면색
-   * (스크롤에 비쳐도 CTA가 또렷하다) · 안쪽 세로 12(`Layout.inlineGap`) · 가로 20
-   * (`Layout.cardPadding`). 2026-09-23 재검증에서 잡은 값 — 전에는 규격서 vendor-1.txt의
+   * (스크롤에 비쳐도 CTA가 또렷하다) · 안쪽 세로 12(`Layout.inlineGap`) · 가로 24
+   * (`Layout.gutter`). 2026-09-23 재검증에서 잡은 값 — 전에는 규격서 vendor-1.txt의
    * 균등 16(`Spacing.three`)을 썼다.
    */
   footer: {
     borderTopWidth: Border.hairline,
-    paddingHorizontal: Layout.cardPadding,
+    paddingHorizontal: Layout.gutter,
     paddingVertical: Layout.inlineGap,
   },
   bold: {

@@ -8,6 +8,7 @@ import { ApiError, addConsultationEvent, getCurrentUser, getVendor, listCandidat
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
+import { showResultToast } from '@/features/navigation/result-toast';
 import { CategoryImage } from '@/features/home/category-image';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
@@ -171,6 +172,7 @@ export default function ConsultRoute() {
         memo: note.trim() || undefined,
         notifyEnabled: true,
       });
+      showResultToast('상담 예약을 요청했어요');
       /* 제출 성공 뒤 WP-PICK-010(상담 예약 완료)으로 넘긴다 — 예전에는 곧장
          /wedding으로 가서 이 확인 화면이 없었다(2026-09-23 v3.29 대조로 추가). */
       router.replace({

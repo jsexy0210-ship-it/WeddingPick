@@ -409,13 +409,13 @@ export default function PartnerScreen() {
 
 const styles = StyleSheet.create({
   content: { paddingBottom: Spacing.four },
-  error: { paddingHorizontal: Layout.cardPadding, paddingBottom: Spacing.three },
+  error: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.three },
   bold: { fontWeight: 700 },
   noteWrap: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionGap },
 
-  /* qBlock — padding 16 20 20. */
-  qBlock: { paddingHorizontal: Layout.cardPadding, paddingTop: Layout.rowPaddingY + 4, paddingBottom: Spacing.four },
-  sec: { paddingHorizontal: Layout.cardPadding, paddingBottom: Spacing.four, gap: Layout.rowPaddingY },
+  /* qBlock — 바깥 좌우 24px. */
+  qBlock: { paddingHorizontal: Layout.gutter, paddingTop: Layout.rowPaddingY + 4, paddingBottom: Spacing.four },
+  sec: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four, gap: Layout.rowPaddingY },
 
   /* codeCard — radius 10 · 배경 회색(코랄 아님) · padding 20 · gap 6 · 가운데 정렬. */
   codeCard: { borderRadius: Radius.medium, padding: Layout.cardPadding, alignItems: 'center', gap: Spacing.two },
@@ -428,5 +428,5 @@ const styles = StyleSheet.create({
   scopeLabel: { flex: 1, minWidth: 0 },
   infoRow: { justifyContent: 'center', gap: 3, minHeight: 64, paddingHorizontal: Layout.rowPaddingY + 4 },
 
-  haveCodeLink: { paddingHorizontal: Layout.cardPadding, textDecorationLine: 'underline' },
+  haveCodeLink: { paddingHorizontal: Layout.gutter, textDecorationLine: 'underline' },
 });

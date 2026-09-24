@@ -275,22 +275,6 @@ export function renderSupportPage(): string {
     `<div class="sp-editorial"><section><h2>${esc(COPY.contact)}</h2>${contact}<p class="sp-support-note">${esc(COPY.supportPrivacy)}</p></section><section id="vendor"><h2>${esc(COPY.supportVendorTitle)}</h2><p>${esc(COPY.supportVendorBody)}</p>${contact}<p class="sp-support-note">${esc(COPY.supportVendorNote)}</p></section><section><h2>${esc(COPY.supportFaq)}</h2><a class="sp-link" href="/faq.html">${esc(COPY.nav[1]!.label)}</a></section></div>`});
 }
 
-/**
- * 제목 아래 한 줄.
- *
- * **시행일은 판에 붙어 있다**(0422). 전까지는 배포 환경변수
- * `LEGAL_TERMS_EFFECTIVE_ON`에 있었는데, 판마다 다른 값인데 배포 전체에 하나뿐이라
- * 옛 판이 언제부터 언제까지 효력이었는지를 말할 수 없었다.
- *
- * 꼴은 그대로 둔다 — 「시행일 2026년 10월 1일」. 보이는 글자가 바뀌면 그것은
- * 문서가 바뀐 것이다.
- */
-function effectiveDateLine(doc: LegalDocument): string {
-  const [year, month, day] = doc.effectiveOn.split('-');
-
-  return `시행일 ${year}년 ${Number(month)}월 ${Number(day)}일`;
-}
-
 /*
  * 표 모양 절. 방침의 세 절이 이 모양이다 — 목적·항목·보유기간 · 수탁자 · 국외 이전.
  *
@@ -346,7 +330,7 @@ export function renderTermsPage(doc: LegalDocument): string {
     title: '이용약관',
     description: '웨딩픽 서비스 이용약관을 확인하세요.',
     activePath: null,
-    titleBand: titleBand('홈 · 이용약관', '웨딩픽 서비스 이용약관', effectiveDateLine(doc)),
+    titleBand: titleBand('홈 · 이용약관', '웨딩픽 서비스 이용약관'),
     body: legalDocument(doc.sections),
   });
 }
@@ -388,7 +372,7 @@ export function renderPrivacyPage(doc: LegalDocument): string {
     title: '개인정보처리방침',
     description: '웨딩픽 개인정보처리방침을 확인하세요.',
     activePath: null,
-    titleBand: titleBand('홈 · 개인정보처리방침', '웨딩픽 개인정보처리방침', effectiveDateLine(doc)),
+    titleBand: titleBand('홈 · 개인정보처리방침', '웨딩픽 개인정보처리방침'),
     body: privacyDocument(doc.sections),
   });
 }

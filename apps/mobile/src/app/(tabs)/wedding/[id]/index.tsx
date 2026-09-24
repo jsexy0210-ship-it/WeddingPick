@@ -12,6 +12,7 @@ import { useDocumentStore } from '@/features/documents/document-store';
 import { BackBar } from '@/components/back-bar';
 import { confirmAlert } from '@/components/confirm-alert';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { showResultToast } from '@/features/navigation/result-toast';
 
 
 /** A-12 견적 상세. 저장된 묶음을 다시 열어보고, 인증 신청과 삭제로 이어진다. */
@@ -41,6 +42,7 @@ export default function DocumentSetScreen() {
         style: 'destructive',
         onPress: async () => {
           await removeSet(set!.id);
+          showResultToast('문서를 삭제했어요');
           router.back();
         },
       },

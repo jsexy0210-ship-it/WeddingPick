@@ -669,21 +669,21 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.8 },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: Spacing.four },
-  /* 정본(WP-LNG-001~003) — sec·chipBar·revCard·guideRow 모두 좌우 20px(Layout.cardPadding)다. */
-  segment: { paddingHorizontal: Layout.cardPadding, paddingBottom: Layout.inlineGap },
+  /* 화면 바깥 여백은 공통 24px. */
+  segment: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.inlineGap },
   chipScroll: { flexGrow: 0 },
-  chipBar: { gap: Layout.chipGap, paddingHorizontal: Layout.cardPadding, paddingBottom: Layout.sectionHeadGap },
+  chipBar: { gap: Layout.chipGap, paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionHeadGap },
 
-  /* revCard: padding 18px 20px — 위아래 대칭 18(cardPaddingCompactY), 좌우 20(cardPadding). */
+  /* revCard: 위아래 18px, 바깥 좌우 24px. */
   reviewCard: {
-    paddingHorizontal: Layout.cardPadding,
+    paddingHorizontal: Layout.gutter,
     paddingTop: Layout.cardPaddingCompactY,
     paddingBottom: Layout.cardPaddingCompactY,
     borderBottomWidth: Border.hairline,
     gap: Layout.inlineGap,
   },
   reviewTap: { gap: Layout.inlineGap },
-  /* revImg: height 240 — 카드 폭(정본 phone 430 − 좌우 20*2 = 390)/240 ≈ 1.625. */
+  /* revImg: 전달된 이미지 비율을 유지한다. */
   reviewImage: {
     width: '100%',
     aspectRatio: 1.625,
@@ -712,19 +712,19 @@ const styles = StyleSheet.create({
   reviewChip: { height: 26, borderRadius: Radius.pill, paddingHorizontal: 10, justifyContent: 'center' },
   reviewBody: { lineHeight: LineHeight.lh22 },
   rebuttal: { borderRadius: Radius.medium, padding: Spacing.three, gap: Spacing.one },
-  caveat: { paddingHorizontal: Layout.cardPadding, paddingTop: Spacing.three },
+  caveat: { paddingHorizontal: Layout.gutter, paddingTop: Spacing.three },
 
-  /* guideRow: padding 16px 20px. */
+  /* guideRow: 세로 16px, 바깥 좌우 24px. */
   guideRow: {
     flexDirection: 'row',
     gap: Layout.sectionHeadGap,
-    paddingHorizontal: Layout.cardPadding,
+    paddingHorizontal: Layout.gutter,
     paddingVertical: Spacing.three,
     borderBottomWidth: Border.hairline,
   },
   guideThumb: { width: Layout.avatarLarge, height: Layout.avatarLarge, borderRadius: Radius.medium, overflow: 'hidden' },
   guideCol: { flex: 1, minWidth: 0, justifyContent: 'center', gap: Spacing.one },
-  section: { paddingHorizontal: Layout.cardPadding, paddingBottom: Layout.listGap, gap: Layout.inlineGap },
+  section: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.listGap, gap: Layout.inlineGap },
   /* expoCard(card): radius 10 · padding 16px 20px · gap 12. */
   expoCard: {
     borderRadius: Radius.medium,
@@ -734,6 +734,6 @@ const styles = StyleSheet.create({
   },
   expoHead: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Layout.inlineGap },
   expoCol: { flex: 1, minWidth: 0, gap: Spacing.one },
-  empty: { paddingHorizontal: Layout.cardPadding, paddingTop: Layout.sectionGap, gap: Spacing.two, alignItems: 'center' },
+  empty: { paddingHorizontal: Layout.gutter, paddingTop: Layout.sectionGap, gap: Spacing.two, alignItems: 'center' },
   emptyAction: { marginTop: Spacing.two, alignSelf: 'stretch' },
 });

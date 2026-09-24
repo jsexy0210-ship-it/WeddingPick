@@ -15,6 +15,7 @@ import {
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 import { confirmAlert } from '@/components/confirm-alert';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { showResultToast } from '@/features/navigation/result-toast';
 import {
   ActionButton,
   ErrorView,
@@ -167,6 +168,7 @@ export default function WeddingNotesScreen() {
     try {
       if (editing) {
         await updateWeddingNote(id, editing.id, { body, version: editing.version });
+        showResultToast('메모를 수정했어요');
       } else {
         const vendorLabel = draftVendorLabel.trim();
 
@@ -175,6 +177,7 @@ export default function WeddingNotesScreen() {
           ...(vendorLabel ? { vendorLabel } : {}),
           body,
         });
+        showResultToast('메모를 추가했어요');
       }
 
       closeSheet();
@@ -204,6 +207,7 @@ export default function WeddingNotesScreen() {
         onPress: () =>
           removeWeddingNote(id, note.id)
             .then(() => {
+              showResultToast('메모를 삭제했어요');
               closeSheet();
               load();
             })

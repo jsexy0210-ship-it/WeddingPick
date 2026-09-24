@@ -336,7 +336,7 @@ export default function HomeScreen() {
 
           <View style={styles.block}>
             <View style={styles.sectionHead}>
-              <ThemedText type="f20" style={styles.bold}>웨딩 준비 팁</ThemedText>
+              <ThemedText type="f14" style={styles.bold}>웨딩 준비 팁</ThemedText>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="웨딩 준비 팁 자세히"
@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   header: {
-    minHeight: Layout.navBar,
+    minHeight: 66,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: Layout.sectionHeadGapCompact,
+    marginBottom: 12,
     gap: Spacing.two,
   },
   bold: { fontWeight: 700 },

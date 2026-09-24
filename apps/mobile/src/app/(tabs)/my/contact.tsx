@@ -16,6 +16,7 @@ import { createInquiry, listMyInquiries } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { formatDateDot } from '@/features/common/format-date';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { showResultToast } from '@/features/navigation/result-toast';
 import { OptionRow } from '@/features/onboarding/option-row';
 import { Row, Rows } from '@/features/settings/my-kit';
 import { BackBar } from '@/components/back-bar';
@@ -108,6 +109,7 @@ export default function ContactScreen() {
 
       setAcknowledgement(received.acknowledgement);
       setBody('');
+      showResultToast('문의를 보냈어요');
     } catch (caught) {
       setError((caught as Error).message);
     } finally {

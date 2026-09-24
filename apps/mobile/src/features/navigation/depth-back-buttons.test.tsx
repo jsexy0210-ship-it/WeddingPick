@@ -3,7 +3,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { router } from 'expo-router';
 
 import { getCurrentUser, completeSetup, createInquiry, listFaq, listMyInquiries } from '@/api/client';
-import { confirmAlert } from '@/components/confirm-alert';
+import { showResultToast } from '@/features/navigation/result-toast';
 import ContactScreen from '@/app/(tabs)/my/contact';
 import StyleScreen from '@/app/(tabs)/my/taste';
 
@@ -50,7 +50,7 @@ jest.mock('@/api/client', () => ({
 }));
 jest.mock('@/api/config', () => ({ isServerConfigured: true }));
 jest.mock('@/components/back-bar', () => ({ BackBar: 'BackBar' }));
-jest.mock('@/components/confirm-alert', () => ({ confirmAlert: jest.fn() }));
+jest.mock('@/features/navigation/result-toast', () => ({ showResultToast: jest.fn() }));
 jest.mock('@/features/loading/delayed-loader', () => ({ DelayedLoadingView: 'Loading' }));
 jest.mock('@/features/onboarding/inline-toast', () => ({
   InlineToast: 'InlineToast',
@@ -147,7 +147,7 @@ describe('/my/contact — 문의 완료·목록 하단', () => {
 describe('/my/taste — 저장 완료·불러오기 실패', () => {
   const me = { weddingDate: '2026-10-10', region: '서울', styleTags: ['URBAN'] };
 
-  it('정상 진입: 저장 완료 알림의 「확인」이 MY로 올라간다', async () => {
+  it('정상 진입: 저장 성공 토스트를 띄우고 MY로 올라간다', async () => {
     mockPathname = '/my/taste';
     jest.mocked(getCurrentUser).mockResolvedValue(me as never);
     jest.mocked(completeSetup).mockResolvedValue({} as never);
@@ -157,9 +157,7 @@ describe('/my/taste — 저장 완료·불러오기 실패', () => {
       await tree.root.findByType('SubScreen' as never).props.dock.props.primary.onPress();
     });
 
-    const [, , buttons] = jest.mocked(confirmAlert).mock.calls[0]!;
-
-    await act(async () => buttons![0]!.onPress!());
+    expect(showResultToast).toHaveBeenCalledWith('스타일을 저장했어요');
     expect(landedOn()).toBe('/my');
   });
 

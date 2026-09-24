@@ -31,6 +31,7 @@ import {
 } from '@weddingpick/ui';
 import { DepthHeader } from '@/components/depth-header';
 import { formatDateDot } from '@/features/common/format-date';
+import { showResultToast } from '@/features/navigation/result-toast';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { useSession } from '@/features/auth/use-session';
 import { Badge } from '@/features/wedding/screen-kit';
@@ -112,6 +113,7 @@ export default function ReviewDetailScreen() {
     try {
       const helpful = await setReviewHelpful(reviewId, !review.helpful.mine);
       setReview((current) => (current ? { ...current, helpful } : current));
+      showResultToast(helpful.mine ? '도움돼요를 눌렀어요' : '도움돼요를 취소했어요');
     } catch (caught) {
       setInteractionNotice(caught instanceof Error ? caught.message : '도움돼요를 반영하지 못했어요.');
     }
@@ -141,6 +143,7 @@ export default function ReviewDetailScreen() {
           : current
       );
       setCommentText('');
+      showResultToast('댓글을 남겼어요');
     } catch (caught) {
       setInteractionNotice(caught instanceof Error ? caught.message : '댓글을 남기지 못했어요.');
     } finally {
@@ -165,6 +168,7 @@ export default function ReviewDetailScreen() {
             }
           : current
       );
+      showResultToast('댓글을 삭제했어요');
     } catch (caught) {
       setInteractionNotice(caught instanceof Error ? caught.message : '댓글을 지우지 못했어요.');
     }
@@ -175,6 +179,7 @@ export default function ReviewDetailScreen() {
       const received = await reportReviewComment(commentId, { reason });
       setReportingComment(null);
       setInteractionNotice(received.acknowledgement);
+      showResultToast('신고를 접수했어요');
     } catch (caught) {
       setInteractionNotice(caught instanceof Error ? caught.message : '신고하지 못했어요.');
     }

@@ -55,7 +55,9 @@ const S = {
   save: '저장',
   saving: '저장하는 중…',
   saveFail: '이름을 바꾸지 못했어요',
+  saveDone: '닉네임을 바꿨어요',
   settingsFail: '알림 설정을 바꾸지 못했어요',
+  settingsDone: '알림 설정을 바꿨어요',
 } as const;
 
 /**
@@ -137,6 +139,7 @@ export default function ProfileScreen() {
       const saved = await setDisplayName(next);
       setMe({ ...me, displayName: saved.displayName });
       setNameOpen(false);
+      setToast(S.saveDone);
     } catch {
       setToast(S.saveFail);
     } finally {
@@ -172,7 +175,10 @@ export default function ProfileScreen() {
       : { [key]: value };
     setSettings({ ...settings, ...patch });
     await updateSettings(patch)
-      .then(setSettings)
+      .then((saved) => {
+        setSettings(saved);
+        setToast(S.settingsDone);
+      })
       .catch(() => {
         setSettings(previous);
         setToast(S.settingsFail);

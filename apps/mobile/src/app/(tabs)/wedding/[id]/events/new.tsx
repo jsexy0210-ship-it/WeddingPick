@@ -8,6 +8,7 @@ import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
 import { formatDateDot } from '@/features/common/format-date';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
+import { showResultToast } from '@/features/navigation/result-toast';
 import { combineDayTime, TIME_PATTERN } from '@/features/wedding/event-form';
 import { CheckBox, Field, FieldButton, ListRow } from '@/features/wedding/screen-kit';
 import { ActionButton, ProductSymbol, Radius, Spacing, ThemedText, WeddingCalendar, useTheme } from '@weddingpick/ui';
@@ -74,6 +75,7 @@ export default function AddWeddingEventRoute() {
 
     try {
       await addWeddingEvent(id, { title: title.trim(), startsAt, notifyEnabled });
+      showResultToast('일정을 추가했어요');
       closeSheet();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '넣지 못했어요. 다시 시도해주세요.');
