@@ -1,0 +1,59 @@
+# 박람회 후보 파일(data/expos/*.json)을 운영 DB에 넣는다.
+#
+# 서버 자동 수집기가 없는 동안(Gemini 웹 검색 수집기 제거 · 2026-09-23) 공식 페이지에서
+# 확인해 적은 후보를 같은 수집 경로(runExpoCollection)로 넣는 통로다 — 중복 판정 ·
+# 공개 기준 · 검수 대기열이 그대로 적용된다. apply가 꺼져 있으면 파일 검증만 한다.
+name: 박람회 후보 반영
+
+on:
+  workflow_dispatch:
+    inputs:
+      file:
+        description: 후보 파일 경로(저장소 루트 기준)
+        type: string
+        required: true
+      apply:
+        description: 검증 후 운영 DB에 반영
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 후보 파일 검증
+        env:
+          FILE: ${{ inputs.file }}
+        run: npm run expo-import --workspace @weddingpick/api -- --file "$FILE"
+
+  apply:
+    needs: validate
+    if: ${{ inputs.apply }}
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: weddingpick-expo-import
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 운영 DB 반영
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          FILE: ${{ inputs.file }}
+        run: npm run expo-import --workspace @weddingpick/api -- --file "$FILE" --apply
