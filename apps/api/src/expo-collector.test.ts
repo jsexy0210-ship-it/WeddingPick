@@ -175,6 +175,7 @@ describeWithDb('박람회 지속 수집', () => {
           reservationUrl: 'https://example.com/sample/apply',
           officialWebsiteUrl: 'https://example.com/sample',
           sourceNote: 'wedding-tabs-sample-v1',
+          venueName: '샘플 컨벤션',
         }),
       ],
       model: 'test-gemini',
