@@ -42,8 +42,11 @@ const S = {
   social: '카카오',
   connected: '연결됨',
   logout: '로그아웃',
-  /* 정본 my.jsx frame-002 계정 마지막 행 「회원 탈퇴」(myLabelDim) 그대로. 탈퇴 화면 헤더(frame-014)는 「회원탈퇴」다. */
-  withdraw: '회원 탈퇴',
+  /*
+   * 메뉴 4글자는 붙여 쓴다(my.jsx frame-001 설명) — 탈퇴 화면 헤더(frame-014)도 「회원탈퇴」다.
+   * frame-002 행만 「회원 탈퇴」로 띄어 적어 정본 안에서 갈린다(`DESIGN_UNRESOLVED`).
+   */
+  withdraw: '회원탈퇴',
   logoutTitle: '로그아웃할까요',
   logoutBody: '기기에 저장된 문서는 그대로 남아요',
   stay: '계속 이용하기',
