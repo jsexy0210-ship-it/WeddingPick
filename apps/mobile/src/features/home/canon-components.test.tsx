@@ -41,8 +41,10 @@ const groupWithVendor: CategoryRecommendation = {
 };
 
 describe('최신 홈·추천 연결', () => {
-  it('예식 날짜는 handoff의 유일한 표기 YYYY.MM.DD(요일)를 쓴다', () => {
-    expect(ceremonyLine('2027-04-17', '테스트 웨딩홀')).toBe('2027.04.17(토) · 테스트 웨딩홀');
+  it('히어로 예식 정보 줄은 RN 정본 home.jsx WP-HOME-001~003 세 상태를 따른다', () => {
+    expect(ceremonyLine('2027-04-17', '테스트 웨딩홀')).toBe('2027년 4월 17일 (토) · 테스트 웨딩홀');
+    expect(ceremonyLine('2027-01-15', null)).toBe('2027년 1월 15일 (금) · 장소는 아직이에요');
+    expect(ceremonyLine('2027-01-15', null, true)).toBe('예식일만 정했어요 · 장소는 아직이에요');
     expect(ceremonyLine(null, null)).toBe('예식일 · 예식장 미정');
   });
 

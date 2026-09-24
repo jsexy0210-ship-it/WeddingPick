@@ -20,7 +20,7 @@ import type { HomePrepCard } from './prep-groups';
 const S = strings.home;
 
 /**
- * 홈 「내 웨딩 준비」 — 항상 4칸(웨딩홀 · 스드메 · 본식 · 예물 · 신혼). .dc.html
+ * 홈 「내 웨딩 준비」 — 항상 4칸(웨딩홀 · 스드메 · 본식 · 예물 · 신혼). home.jsx
  * WP-HOME-001~003. 옛 구현(«남은 스케줄»)은 12업종 중 미완료만 최대 4개 승격해
  * 보여줬고, 완료해도 카드가 사라지지 않는 정본과 달랐다 — `prep-groups.ts`의
  * `homePrepCards`가 만든 4장을 그대로 그린다.
@@ -162,7 +162,7 @@ export function HomeBudget({ budget, onOpen }: {
 }
 
 /**
- * 섹션 제목 줄 — .dc.html `secHeadPad`/`secHead`(타이틀 14/20/700 + 서브 12/17/뮤트,
+ * 섹션 제목 줄 — home.jsx `secHeadPad`/`secHead`(타이틀 14/20/700 + 서브 12/17/뮤트,
  * 우측 「자세히」). `sub`가 null이면(예산현황) 서브카피 없이 제목만 쓴다.
  */
 function SummaryHeading({ title, sub, onMore }: { title: string; sub: string | null; onMore: () => void }) {
@@ -190,7 +190,7 @@ function SummaryHeading({ title, sub, onMore }: { title: string; sub: string | n
 
 const styles = StyleSheet.create({
   /*
-   * .dc.html `secNoPad`/`hsec` — 헤더→본문 gap은 12px 하나뿐이다(그 값을
+   * home.jsx `secNoPad`/`hsec` — 헤더→본문 gap은 12px 하나뿐이다(그 값을
    * `heading.marginBottom`에 둔다). `section` 자체는 더 안 벌리므로 gap 없음.
    */
   section: {
@@ -206,11 +206,14 @@ const styles = StyleSheet.create({
   },
   more: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   headingCol: { flex: 1, minWidth: 0, gap: Spacing.half },
-  /* .dc.html `prepGridPad` — grid gap:8px, 가로·세로 둘 다. */
-  grid: { gap: Spacing.two },
+  /*
+   * home.jsx frame-012 `prepGridPad` — grid gap 8(가로·세로) · 아래 14. 섹션(`secNoPad`)의
+   * 아래 24와 더해져 다음 섹션까지 38이 벌어진다.
+   */
+  grid: { gap: Spacing.two, paddingBottom: 14 },
   row: { flexDirection: 'row', gap: Spacing.two },
   /*
-   * .dc.html `prepCard(kind)` — 세 상태 모두 `padding:14px;...gap:2px`다(스크립트로
+   * home.jsx `prepCard(kind)` — 세 상태 모두 `padding:14px;...gap:2px`다(스크립트로
    * 뽑아 확인: scripts/canon/extract-style.mjs --key prepTop/prepLabel). 기존
    * Layout.cardPadding(20)·cardPaddingCompactY(18)·Spacing.one(4)을 그대로 물려받았던
    * 옛 카드 스타일을 재사용했었는데, 실제 prepCard 값과 달라 다시 맞췄다.

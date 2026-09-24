@@ -267,6 +267,7 @@ export default function HomeScreen() {
             me={data.me}
             daysLeft={daysLeft}
             venueName={venueName(data.candidates, data.me)}
+            nothingDecided={prepCards.every((card) => card.state === 'todo')}
             showBudget={false}
             budget={data.budget}
             bracketAnswered={data.bracketAnswered}
@@ -318,9 +319,13 @@ export default function HomeScreen() {
             )}
           />
 
-          <View style={styles.block}>
+          <View style={[styles.block, styles.lastBlock]}>
+            {/* home.jsx frame-012 `secLast` — 제목 14/20 · 서브 12/17(`secSub`) · 우측 「자세히」. */}
             <View style={styles.sectionHead}>
-              <ThemedText type="f14" style={styles.bold}>웨딩 준비 팁</ThemedText>
+              <View style={styles.sectionHeadCol}>
+                <ThemedText type="f14" style={styles.bold}>웨딩 준비 팁</ThemedText>
+                <ThemedText type="f12" themeColor="textAssistive">{S['section.tipsSub']}</ThemedText>
+              </View>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="웨딩 준비 팁 자세히"
@@ -432,6 +437,8 @@ const styles = StyleSheet.create({
   content: { paddingBottom: Spacing.three },
 
   block: { paddingHorizontal: Layout.gutter, marginBottom: Layout.sectionGap },
+  /* `secLast` — 마지막 섹션은 아래 여백이 없고 스크롤 끝 16(`hscroll`)만 남는다. */
+  lastBlock: { marginBottom: 0 },
   sectionHead: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -439,6 +446,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     gap: Spacing.two,
   },
+  sectionHeadCol: { flex: 1, minWidth: 0, gap: Spacing.half },
   bold: { fontWeight: 700 },
   feedMore: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   pressed: { opacity: 0.8 },

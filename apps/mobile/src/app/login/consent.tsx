@@ -17,6 +17,7 @@ import {
   ActionButton,
   ErrorView,
   Layout,
+  LineHeight,
   MaxContentWidth,
   ProductSymbol,
   ProductSymbolName,
@@ -35,7 +36,7 @@ import { dismissToOrReplace } from '@/features/navigation/depth-back';
 /**
  * 약관 동의 · 권한 안내 — WP-AUTH-010. v3.29 신규 화면.
  *
- * `docs/design/html/대메뉴_홈(로그인, 온보딩).dc.html` 4번 화면. 카카오 로그인 직후,
+ * `docs/design/React_Native/home.jsx` 4번 화면. 카카오 로그인 직후,
  * 초기 설정(`/setup`) 전에 한 번 뜬다(README.md 「진입 흐름」). 필수 5개를 모두 체크해야
  * 하단 CTA가 켜진다. 필수 · 선택 · 앱 접근 권한 3구획, 권한은 아이콘 4칸으로만 보여준다.
  *
@@ -142,7 +143,8 @@ export default function ConsentScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <View style={styles.head}>
-            <ThemedText type="t2">
+            {/* home.js `permTitle` 24/33/700 — 줄높이 33 토큰이 없어 t3(24/32)를 쓴다. */}
+            <ThemedText type="t3">
               웨딩픽 이용을 위해{'\n'}동의가 필요해요
             </ThemedText>
           </View>
@@ -171,9 +173,7 @@ export default function ConsentScreen() {
                 <PermissionCell key={item.key} item={item} />
               ))}
             </View>
-            <ThemedText type="f13" themeColor="textAssistive">
-              {APP_PERMISSION_NOTE}
-            </ThemedText>
+            <PermissionNote />
           </View>
 
           {error ? (
@@ -271,6 +271,25 @@ function ProductSymbolChevron() {
   return <ProductSymbol name="chevronRight" size={16} color={theme.textAssistive} />;
 }
 
+/** home.jsx frame-004 `permNoteT` — 13/19 · 「설정 > 웨딩픽」만 700. */
+const PERMISSION_NOTE_BOLD = '설정 > 웨딩픽';
+
+function PermissionNote() {
+  const [before, after] = APP_PERMISSION_NOTE.split(PERMISSION_NOTE_BOLD);
+
+  return (
+    <ThemedText type="f13" themeColor="textAssistive" style={styles.permNote}>
+      {after === undefined ? APP_PERMISSION_NOTE : (
+        <>
+          {before}
+          <ThemedText type="f13" themeColor="textAssistive" style={styles.bold}>{PERMISSION_NOTE_BOLD}</ThemedText>
+          {after}
+        </>
+      )}
+    </ThemedText>
+  );
+}
+
 const PERMISSION_ICON: Record<AppPermissionItem['key'], ProductSymbolName> = {
   notification: 'bell',
   camera: 'camera',
@@ -299,18 +318,20 @@ const styles = StyleSheet.create({
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: { paddingHorizontal: Layout.gutter, paddingTop: 40, paddingBottom: Spacing.four, gap: 28 },
   head: { gap: 8 },
+  /* home.js `agAllRow` — min-height 60 · 좌우 16 · radius 8 · gap 12. */
   allRow: {
     minHeight: 60,
-    borderRadius: Radius.medium,
+    borderRadius: Radius.picker,
     paddingHorizontal: Spacing.three,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
+    gap: Layout.inlineGap,
   },
   bold: { fontWeight: 700 },
   section: { gap: 2 },
   sectionTitle: { fontWeight: 700, paddingBottom: 6 },
-  agreementRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: Spacing.two, paddingHorizontal: Spacing.half },
+  /* `agItem.row` — min-height 44 · gap 12 · 좌우 4. */
+  agreementRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: Layout.inlineGap, paddingHorizontal: Spacing.one },
   agreementLabel: { flex: 1, minWidth: 0 },
   mark: {
     width: 24,
@@ -320,10 +341,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexShrink: 0,
   },
-  permSection: { gap: 4, paddingTop: 20 },
-  permSectionTitle: { fontWeight: 700, paddingBottom: 8 },
-  permGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, paddingBottom: 12 },
-  permCell: { width: '22%', alignItems: 'center', gap: 6 },
+  /* 권한 구획도 `agSec`(gap 2 · 제목 아래 6)이고, 격자는 `permGrid`(4열 · gap 8 · 위 6 아래 12). */
+  permSection: { gap: 2 },
+  permSectionTitle: { fontWeight: 700, paddingBottom: 6 },
+  permGrid: { flexDirection: 'row', gap: Spacing.two, paddingTop: 6, paddingBottom: 12 },
+  permCell: { flex: 1, minWidth: 0, alignItems: 'center', gap: 6 },
+  permNote: { lineHeight: LineHeight.lh19 },
   permIconWrap: {
     width: 44,
     height: 44,

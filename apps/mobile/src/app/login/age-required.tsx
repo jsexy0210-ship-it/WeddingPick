@@ -6,12 +6,12 @@ import { ActionButton, Layout, MaxContentWidth, ThemedText, ThemedView, useTheme
 
 /**
  * WP-AUTH-009 만 14세 이용 불가. v3.29 정본
- * `docs/design/html/대메뉴_홈(로그인, 온보딩).dc.html` 3번 화면(`agesStage` ·
+ * `docs/design/React_Native/home.jsx` 3번 화면(`agesStage` ·
  * `agesTitle` · `agesNote` · `dockSingleH`).
  *
  * 로그인 화면(WP-AUTH-001)의 «만 14세 이상이에요»를 누르지 않고 카카오를 누르면 온다.
  *
- * **v3.29 dc.html 3번 화면에는 상단 뒤로가기도, 아이콘도, 안내 박스도 없다** —
+ * **RN 정본 home.jsx 3번 화면에는 상단 뒤로가기도, 아이콘도, 안내 박스도 없다** —
  * `hbar`(상태바) 바로 아래 `agesStage`(flex:1 · 중앙 정렬 · gap 14 · 좌우 32 ·
  * text-align center) 하나뿐이고 그 안에 제목 한 줄과 안내 한 줄만 있다. 옛
  * `27-login.dc.html`(v3.25) 시안의 상단 뒤로가기 · 회색 아이콘 원 · 안내 박스는
@@ -21,7 +21,7 @@ import { ActionButton, Layout, MaxContentWidth, ThemedText, ThemedView, useTheme
  *
  * 시안의 둘째 줄은 «출생 연도는 삭제했어요»인데 **«연령대»로 적는다** — 나이 판정을
  * 연령대로 확정했고(2026-09-10 사용자 지시) 출생 연도는 아예 받지 않는다. 받지도
- * 않은 것을 지웠다고 말할 수는 없다. (dc.html 문구 그대로 두 문장을 한 줄로 잇는다 —
+ * 않은 것을 지웠다고 말할 수는 없다. (home.js 문구 그대로 두 문장을 한 줄로 잇는다 —
  * `agesNote`가 한 span이다.)
  *
  * **거부 화면이 아니라 안내 화면이다.** CTA를 coral로 두지 않는다 — `dockSingleH`
@@ -55,14 +55,14 @@ export default function AgeRequiredScreen() {
   );
 }
 
-/* dc.html 고정값 — agesStage gap14·좌우32, dockSingleH flex 0 0 92·좌우24·위12. */
+/* home.js 고정값 — agesStage gap14·좌우32, dockSingleH flex 0 0 92·좌우24·위12. */
 const STAGE_PADDING_X = 32;
 const DOCK_HEIGHT = 92;
 
 const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
-  /* dc.html agesStage — flex:1 · 중앙 정렬 · gap 14 · 좌우 32 · text-align center. */
+  /* home.js agesStage — flex:1 · 중앙 정렬 · gap 14 · 좌우 32 · text-align center. */
   stage: {
     flex: 1,
     alignItems: 'center',
@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: STAGE_PADDING_X,
   },
   center: { textAlign: 'center' },
-  /* dc.html dockSingleH — flex 0 0 92 · 위 1px 선 · 위아래 12 · 좌우 24. */
+  /* home.js dockSingleH — flex 0 0 92 · 위 1px 선 · 위아래 12 · 좌우 24. */
   dock: {
     minHeight: DOCK_HEIGHT,
     justifyContent: 'center',
