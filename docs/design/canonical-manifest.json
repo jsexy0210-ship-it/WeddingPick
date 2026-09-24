@@ -145,6 +145,12 @@
         "normalizedSha256": "AD10F5934A2BFD34E456A2621CD4FA87A0B176015200607DDE4F209E6C17D31F",
         "sizeBytes": 1057511,
         "note": "20개 전달 ZIP 밖의 파일 — 2026-09-23에 대표님이 GitHub 웹 UI로 main에 직접 올렸다(같은 날 시행착오 커밋 「Create react-native」·「Create ddd」·「Create React_Native」·「Create gd」는 지워지고 이 경로만 남았다). 내용은 대메뉴 5개(홈·검색·Pick·웨딩노트·MY) + 공통 dc.html을 한 파일로 합친 React 미리보기 번들이다 — 새 화면·문구가 아니라 이미 20개 안에 있는 같은 대메뉴 5개 시안의 합본 미리보기라서 화면·값·문구의 근거는 여전히 대메뉴 dc.html 5개 쪽이다. 이 파일이 등록 전엔 verify-design-canonical.mjs의 파일-집합 검사가 『docs/design에 정본 밖 파일』로 실패해 이 시점 이후 main에 얹힌 PR 전부의 CI가 막혔다 — 대표님이 직접 올린 내용을 지우지 않고 해시로 등록해 그 CI 게이트만 다시 통과시켰다."
+      },
+      {
+        "path": "React_Native/WeddingPick_App_React_v3.29_Icons.zip",
+        "normalizedSha256": "F5B7C81A8AA251E826B013174404830EE8FC7A6B91FB88F12D75C453C79937CB",
+        "sizeBytes": 929822,
+        "note": "20개 전달 ZIP 밖의 파일 — 2026-09-24 09:11 KST(원본 커밋 UTC 01:11)에 대표님이 GitHub 웹 UI로 main에 직접 올렸다(같은 폴더의 WeddingPick_App_Preview.html과 같은 자리). 같은 이유로 미등록 상태면 verify-design-canonical.mjs의 파일-집합 검사를 막는다 — 내용을 열어보지 않고(압축 파일이라 정본 근거로 바로 쓸 수 없다) 해시로만 등록해 그 게이트를 통과시킨다. 이 파일 자체를 화면·값·문구의 근거로 쓰지 않는다 — 계속 대메뉴 dc.html 16개가 정본이다."
       }
     ]
   },
