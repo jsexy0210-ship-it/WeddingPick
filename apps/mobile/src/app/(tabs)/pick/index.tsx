@@ -11,8 +11,10 @@
  *   홈에서만 들어오는 별도 화면이라 `/pick?section=recommendations` 딥링크만 받아 그린다
  *   (홈의 `(home)/recommendations.tsx`가 그리로 보낸다).
  * - Pick = 후보 담기 · 최종 결정은 별도(v3.29 diffs «Pick 의미»). 최종 결정은 확인 시트
- *   (`/pick/confirm`)에서 저장하고, 서버가 결정 상태로 돌려준 후보에서만 상담 예약으로 이어진다.
- *   후보 담기만으로 예약할 수 없다(v3.29 diffs «상담 진입»).
+ *   (`/pick/confirm`)에서 저장한다.
+ * - 카드를 누르면 그 업체의 상담 예약(`/search/[vendorId]/consult`)으로 바로 간다 — 정본
+ *   frame-001 tagDesc «카드를 누르면 상담 예약으로 바로 이어집니다»(2026-09-25 MASTER 지시로
+ *   diffs «상담 진입»보다 이 동선을 따른다). 상담 예약 화면 자체는 검색 화면군 소유다.
  * - 카드 CTA는 Primary 1개(«결정하기»)이고 비교는 텍스트 링크(«비교에 담기»)다(v3.29 diffs
  *   «카드 CTA» — 화면당 Primary 1개).
  * - 삭제(WP-PICK-008)는 확인 시트 없이 «빼기»로 즉시 지우고 «되돌리기» 토스트만 띄운다.
@@ -592,6 +594,7 @@ function CandidateCard({
   const theme = useTheme();
   const { candidate, groupDecided, isDecided } = row;
   const compareDisabled = !comparing && compareFull;
+  const openConsult = () => router.push({ pathname: '/search/[vendorId]/consult', params: { vendorId: candidate.vendorId } });
 
   return (
     <View
@@ -605,8 +608,8 @@ function CandidateCard({
       ]}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${candidate.vendorName} 자세히 보기`}
-        onPress={() => router.push(`/search/${candidate.vendorId}`)}
+        accessibilityLabel={`${candidate.vendorName} ${ACTION_CONSULT}`}
+        onPress={openConsult}
         style={styles.cardBody}>
         <View style={styles.thumbCol}>
           <VendorImage
@@ -694,23 +697,9 @@ function CandidateCard({
           </ThemedText>
         </Pressable>
 
-        {isDecided ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${candidate.vendorName} ${ACTION_CONSULT}`}
-            disabled={busy}
-            onPress={() => router.push({ pathname: '/search/[vendorId]/consult', params: { vendorId: candidate.vendorId } })}
-            style={({ pressed }) => [
-              styles.decisionCta,
-              { backgroundColor: theme.tint, borderColor: theme.tint },
-              pressed ? styles.pressed : null,
-              busy ? styles.busy : null,
-            ]}>
-            <ThemedText type="f13" style={[styles.bold, { color: theme.onTint }]}>
-              {ACTION_CONSULT}
-            </ThemedText>
-          </Pressable>
-        ) : !groupDecided ? (
+        {/* 정본 btnB «상담 예약» — 결정한 카드는 코랄, 나머지는 흰 바탕 + 1px 선.
+            업종을 아직 안 정한 카드만 그 자리에 «결정하기»를 둔다(DESIGN_UNRESOLVED — 정본 카드에는 결정 진입이 없다). */}
+        {!isDecided && !groupDecided ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`${candidate.vendorName} ${ACTION_DECIDE}`}
@@ -724,7 +713,25 @@ function CandidateCard({
               {ACTION_DECIDE}
             </ThemedText>
           </Pressable>
-        ) : null}
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${candidate.vendorName} ${ACTION_CONSULT}`}
+            disabled={busy}
+            onPress={openConsult}
+            style={({ pressed }) => [
+              styles.decisionCta,
+              isDecided
+                ? { backgroundColor: theme.tint, borderColor: theme.tint }
+                : { backgroundColor: theme.background, borderColor: theme.border },
+              pressed ? styles.pressed : null,
+              busy ? styles.busy : null,
+            ]}>
+            <ThemedText type="f13" style={[styles.bold, { color: isDecided ? theme.onTint : theme.text }]}>
+              {ACTION_CONSULT}
+            </ThemedText>
+          </Pressable>
+        )}
       </View>
     </View>
   );
