@@ -75,11 +75,31 @@ describe('검색 문구는 spec과 같다', () => {
     expect(panel).toContain('export function SortPanel');
   });
 
-  it('예산은 구간 칩이다 — 만원 숫자 입력 칸을 두지 않는다', () => {
+  it('예산은 정본 구간 칩이다 — 만원 숫자 입력 칸을 두지 않는다', () => {
     const sheet = read('filter-sheet.tsx');
 
-    expect(sheet).toContain('BUDGET_BANDS');
+    for (const label of ['500만원 이하', '500~1,000만원', '1,000~2,000만원', '2,000만원 이상']) {
+      expect(sheet).toContain(`'${label}'`);
+    }
     expect(sheet).not.toContain('TextInput');
+  });
+
+  it('필터 카테고리는 정본 묶음이고 결정사를 되살리지 않는다(WP-SRCH-002)', () => {
+    const sheet = read('filter-sheet.tsx');
+
+    for (const label of ['스드메', '본식', '예물 · 신혼']) {
+      expect(sheet).toContain(`label: '${label}'`);
+    }
+    expect(sheet).not.toContain('VENDOR_CATEGORIES.map');
+    expect(sheet).not.toContain('결정사');
+  });
+
+  it('서버에 없는 정렬은 보이되 잠근다 — 다른 정렬 값을 보내지 않는다', () => {
+    const panel = read('sort-panel.tsx');
+
+    expect(panel).toContain(`label: '${strings.search['sort.mostVerified']}', sort: null`);
+    expect(panel).toContain(`label: '${strings.search['sort.recent']}', sort: null`);
+    expect(panel).toContain('disabled={disabled}');
   });
 });
 

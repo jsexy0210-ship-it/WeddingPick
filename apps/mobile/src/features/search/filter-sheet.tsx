@@ -1,10 +1,10 @@
 import type { VendorSort } from '@weddingpick/api-contract';
 import {
-  BUDGET_BANDS,
   type BudgetBandKey,
-  VENDOR_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
   type VendorCategory,
+  WEDDING_STYLE_LABEL,
+  WEDDING_STYLES,
 } from '@weddingpick/domain';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
@@ -19,13 +19,25 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
-import { SELECTABLE_SORTS, SORT_LABEL } from '@/features/search/sort-panel';
+import { SHEET_SORTS } from '@/features/search/sort-panel';
 
 /**
  * 필터 — WP-SRCH-002(`docs/design/React_Native/search.jsx` frame-002 · `search.js` `groups` ·
  * `sorts`). tagDesc 「5그룹 단일 선택 · 정렬 4종 · CTA에 결과 수. 상단 우측에 초기화가 primary
  * 색 텍스트로 있습니다」. 제목 18/25 · «전체 해제» 12/17 코랄 · 묶음 제목 14/20 · 정렬 제목
  * 12/17 · CTA «{n}개 업체 보기».
+ *
+ * **2026-09-25 묶음 값을 정본 `groups` 그대로 바꿨다**(MASTER 후속 — 「업데이트된 앱 화면에 다
+ * 맞추라」). 서버 질의(`vendorSearchQuerySchema`)는 건드리지 않았다. 서버가 거를 수 없는 칸은
+ * 정본대로 보이되 잠근다(BACKEND_PENDING) — 눌러도 아무것도 안 걸리는 칩을 켜 두지 않는다.
+ *   - 카테고리: 전체 · 웨딩홀 · 스드메 · 본식 · 예물 · 신혼. 서버 `category`는 한 업종만
+ *     받아 여러 업종 묶음(스드메 · 본식 · 예물 · 신혼)은 BACKEND_PENDING. 정본 묶음 밖 업종(#522로 뺀 것 포함)은 되살리지 않는다.
+ *   - 지역: 서버 지역 목록(시/도 짧은 꼴, `WEDDING_REGIONS`)을 정본 표기 «서울 전체» 꼴로
+ *     보인다. 질의값은 그대로 «서울»이다. 정본의 구 단위(강남구 …)는 서버 질의가 시/도까지라
+ *     BACKEND_PENDING — 구 목록을 지어내 그리지 않는다.
+ *   - 예산: 정본은 총예산 구간(500만원 이하 …)이고 서버 `budget`은 업체 금액 구간
+ *     (`BUDGET_BANDS`)이라 뜻이 다르다. «전체»만 살리고 나머지 넷은 BACKEND_PENDING.
+ *   - 스타일: 네 이름(`WEDDING_STYLE_LABEL`). 서버 질의 칸이 없어 BACKEND_PENDING.
  *
  * 2026-09-24 RN 정본 대조로 정렬 묶음(`sortSec`)을 시트 맨 아래에 되살렸다 — 결과 위 정렬
  * 칩의 인라인 패널(WP-SRCH-003)과 같은 값을 본다. 예산 묶음 첫 칸 «전체»도 정본대로 둔다.
@@ -46,14 +58,9 @@ import { SELECTABLE_SORTS, SORT_LABEL } from '@/features/search/sort-panel';
  * 촬영 가능일도 상품 구성도 아직 어디에도 모아둔 것이 없다 — 눌러도 아무것도 걸리지
  * 않는 칩을 두는 것이 빠뜨리는 것보다 나쁘다.
  *
- * **DESIGN_UNRESOLVED — 「스타일」 그룹(2026-09-23 v3.29 재대조).** v3.29 정본
- * (`대메뉴_검색.dc.html` WP-SRCH-002)은 카테고리 · 지역 · 예산 다음에 스타일(도시적인 ·
- * 자연스러운 · 로맨틱한 · 화려한, 단일 선택) 넷째 묶음을 그린다. 여기서는 만들지
- * 않았다 — `vendorSearchQuerySchema`(packages/api-contract)에 `style` 질의 칸이
- * 없고 서버도 이 조건으로 거르지 않는다. 바로 위 문단의 원칙과 같다: 화면에서만
- * 칩을 만들면 눌러도 아무것도 안 걸린다. 서버 질의·저장(`vendorSummarySchema.styleTags`는
- * 있지만 검색 필터로는 안 쓰인다)까지 잇는 것은 이 화면군(검색 목록·필터) 범위를
- * 넘는 API 작업이라 여기서 만들지 않는다.
+ * 「스타일」 묶음(v3.29 · RN 정본 `groups[3]`)은 2026-09-25에 정본대로 그렸다. 서버 질의에
+ * `style` 칸이 없어(`vendorSummarySchema.styleTags`는 있지만 검색 필터로는 안 쓰인다) 칩을
+ * 잠가 둔다 — BACKEND_PENDING. 서버가 붙으면 `SearchFilterValue`에 칸을 더하고 잠금을 푼다.
  */
 
 /** spec/strings.ko.json search.filter.* */
@@ -67,8 +74,22 @@ const S = {
   groupRegion: '지역',
   groupBudget: '예산',
   allBudgets: '전체',
+  groupStyle: '스타일',
   groupSort: '정렬',
+  /** 정본 «서울 전체». 질의값은 시/도 짧은 꼴 그대로다. */
+  regionAll: (region: string) => `${region} 전체`,
 };
+
+/** 정본 `groups[0]` — 카테고리. `category`가 null이면 서버에 없는 묶음(BACKEND_PENDING). */
+const CATEGORY_OPTIONS: readonly { label: string; category: VendorCategory | null }[] = [
+  { label: VENDOR_CATEGORY_LABEL.hall, category: 'hall' },
+  { label: '스드메', category: null },
+  { label: '본식', category: null },
+  { label: '예물 · 신혼', category: null },
+];
+
+/** 정본 `groups[2]` — 예산(총예산 구간). 서버 `budget`과 뜻이 달라 전부 BACKEND_PENDING. */
+const BUDGET_OPTIONS = ['500만원 이하', '500~1,000만원', '1,000~2,000만원', '2,000만원 이상'] as const;
 
 export type SearchFilterValue = {
   /** 업종 한 칸. 피그마 `Search.tsx` 필터 시트의 첫 그룹(2026-09-14 정본). 고르지 않았으면 null = 전체. */
@@ -135,11 +156,7 @@ export function FilterSheet({
           style={styles.body}
           contentContainerStyle={styles.bodyContent}
           showsVerticalScrollIndicator={false}>
-          {/*
-            카테고리 — 피그마 `Search.tsx` 필터 시트의 첫 그룹(«전체 · 웨딩홀 · 스튜디오 …»).
-            결과 위 «카테고리 ▾» 칩이 이 시트를 연다. 업종은 열셋 전부 두고 이름은
-            VENDOR_CATEGORY_LABEL 하나만 본다(본식스냅 · 헤어변형 · 결정사 — CLAUDE.md).
-          */}
+          {/* 카테고리 — 정본 `groups[0]`. 결과 위 «카테고리 ▾» 칩이 이 시트를 연다. */}
           <View style={styles.group}>
             <ThemedText type="f14" style={styles.bold}>
               {S.groupCategory}
@@ -153,15 +170,18 @@ export function FilterSheet({
                 selected={value.category === null}
                 onPress={() => set({ category: null })}
               />
-              {VENDOR_CATEGORIES.map((category) => (
+              {CATEGORY_OPTIONS.map(({ label, category }) => (
                 <FilterChip
-                  key={category}
-                  label={VENDOR_CATEGORY_LABEL[category]}
+                  key={label}
+                  label={label}
                   size="sheet"
                   accent="tint"
                   role="radio"
-                  selected={value.category === category}
-                  onPress={() => set({ category: value.category === category ? null : category })}
+                  disabled={category === null}
+                  selected={category !== null && value.category === category}
+                  onPress={() =>
+                    category === null ? undefined : set({ category: value.category === category ? null : category })
+                  }
                 />
               ))}
             </View>
@@ -176,7 +196,7 @@ export function FilterSheet({
               {regions.map((region) => (
                 <FilterChip
                   key={region}
-                  label={region}
+                  label={S.regionAll(region)}
                   size="sheet"
                   accent="tint"
                   role="radio"
@@ -187,7 +207,7 @@ export function FilterSheet({
             </View>
           </View>
 
-          {/* 예산 — 구간 칩 넷(BUDGET_BANDS). 만원 숫자 입력이 아니다. */}
+          {/* 예산 — 정본 `groups[2]`. «전체» 외 넷은 BACKEND_PENDING. */}
           <View style={styles.group}>
             <ThemedText type="f14" style={styles.bold}>
               {S.groupBudget}
@@ -201,15 +221,28 @@ export function FilterSheet({
                 selected={value.budget === null}
                 onPress={() => set({ budget: null })}
               />
-              {BUDGET_BANDS.map((band) => (
+              {BUDGET_OPTIONS.map((label) => (
+                <FilterChip key={label} label={label} size="sheet" accent="tint" role="radio" disabled selected={false} onPress={() => undefined} />
+              ))}
+            </View>
+          </View>
+
+          {/* 스타일 — 정본 `groups[3]`. 서버 질의 칸이 없어 BACKEND_PENDING. */}
+          <View style={styles.group}>
+            <ThemedText type="f14" style={styles.bold}>
+              {S.groupStyle}
+            </ThemedText>
+            <View style={styles.chips}>
+              {WEDDING_STYLES.map((style) => (
                 <FilterChip
-                  key={band.key}
-                  label={band.label}
+                  key={style}
+                  label={WEDDING_STYLE_LABEL[style]}
                   size="sheet"
                   accent="tint"
                   role="radio"
-                  selected={value.budget === band.key}
-                  onPress={() => set({ budget: value.budget === band.key ? null : band.key })}
+                  disabled
+                  selected={false}
+                  onPress={() => undefined}
                 />
               ))}
             </View>
@@ -221,14 +254,15 @@ export function FilterSheet({
               {S.groupSort}
             </ThemedText>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-              {SELECTABLE_SORTS.map((sort) => (
+              {SHEET_SORTS.map(({ label, sort }) => (
                 <FilterChip
-                  key={sort}
-                  label={SORT_LABEL[sort]}
+                  key={label}
+                  label={label}
                   size="sheet"
                   role="radio"
-                  selected={value.sort === sort}
-                  onPress={() => set({ sort })}
+                  disabled={sort === null}
+                  selected={sort !== null && value.sort === sort}
+                  onPress={() => (sort === null ? undefined : set({ sort }))}
                 />
               ))}
             </ScrollView>
