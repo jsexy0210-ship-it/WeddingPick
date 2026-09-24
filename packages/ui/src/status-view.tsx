@@ -3,8 +3,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { error as errorCopy } from '../../../spec/strings.ko.json';
 
 import { ActionButton } from './action-button';
-import { CircleLoader } from './circle-loader';
 import { ListSkeleton } from './list-skeleton';
+import { LoaderSkeleton } from './loader-skeleton';
 import { StepList, type Step } from './step-list';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
@@ -113,9 +113,8 @@ export function LoadingView({ title, label }: LoadingViewProps) {
 
   return (
     <StatusFrame>
-      <View style={styles.centerRow}>
-        <CircleLoader size={40} />
-      </View>
+      {/* 2026-09-25 대표 결정 「스켈레톤으로 해」 — 원형 로더 대신 목록 뼈대 3줄. */}
+      <LoaderSkeleton size={40} />
       {text ? (
         <ThemedText type="t6" themeColor="textSecondary" style={styles.centered}>
           {text}
@@ -191,7 +190,8 @@ export function RecommendingBody({
 }: RecommendingBodyProps) {
   return (
     <View style={styles.processing} accessibilityLabel={estimatedLabel}>
-      <CircleLoader size={40} />
+      {/* 처리 중 단계 화면은 뼈대가 맞지 않는다 — 돌지 않는 원형 블록(2026-09-25). */}
+      <LoaderSkeleton size={40} shape="mark" />
       <View style={styles.processingText}>
         <ThemedText type="t3" style={styles.centered}>
           {title ?? recommendingTitle(nickname)}
@@ -385,7 +385,8 @@ export function ProcessingView({
   return (
     <StatusFrame>
       <View style={styles.processing}>
-        <CircleLoader size={40} />
+        {/* 처리 중 단계 화면은 뼈대가 맞지 않는다 — 돌지 않는 원형 블록(2026-09-25). */}
+        <LoaderSkeleton size={40} shape="mark" />
         <View style={styles.processingText}>
           <ThemedText type="t3" style={styles.centered}>
             {title}
@@ -451,7 +452,6 @@ const styles = StyleSheet.create({
   /** 버튼은 글보다 조금 떨어져(8 + 4) 서고, 글 폭에 맞춰 늘어나지 않는다. */
   actions: { alignSelf: 'stretch', paddingTop: Spacing.one },
   centered: { textAlign: 'center' },
-  centerRow: { alignItems: 'center' },
   skeletonContent: {
     flex: 1,
     paddingHorizontal: Layout.gutter,

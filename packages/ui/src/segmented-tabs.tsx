@@ -74,8 +74,8 @@ export function SegmentedTabs({ items, value, onChange, accessibilityLabel }: Se
 }
 
 /*
- * v3.29 정본 — `docs/design/html/대메뉴_MY.dc.html` `segWrap` · `seg()`(WP-LNG-001~003,
- * «리얼후기 · 웨딩정보 · 박람회» 세 칸 탭): 겉 `margin:0 20px 12px;padding:4px;
+ * RN 정본 — `docs/design/React_Native/my.js:26` `seg()` · `:176` `segWrap`
+ * («후기 · 웨딩정보 · 박람회» 세 칸 탭): 겉 `margin:0 20px 12px;padding:4px;
  * border-radius:10px;background:#f2f3f6;gap:2px`, 칸 `flex:1;height:40px;
  * border-radius:8px;font-size:14px;font-weight:700`, 켠 칸은 흰 면 +
  * `box-shadow:0 1px 3px rgba(0,27,55,.10)`.

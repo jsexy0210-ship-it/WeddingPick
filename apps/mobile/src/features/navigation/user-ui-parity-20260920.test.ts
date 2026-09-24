@@ -34,7 +34,7 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
 
   it('Kakao 복귀는 기본 로더와 진행 문구를 같이 둔다', () => {
     const s = mobile('features/auth/signing-in-view.tsx');
-    expect(s).toContain('<DelayedLoader size={40} />');
+    expect(s).toContain('<DelayedLoader size={40} shape="mark" />');
     expect(s).toContain('{SIGNING_IN_MESSAGE}');
   });
   it('Android Back도 화면 계층을 따르고 홈에서만 2회 앱 종료를 쓴다', () => {

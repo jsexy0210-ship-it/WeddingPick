@@ -41,7 +41,7 @@ export const FontSize = {
    * 세 단계로 뭉개져 「멀어질수록 흐려진다」가 눈에 덜 든다.
    */
   dateWheel: 17,
-  /** 검색 Root 제목. v3.29 `대메뉴_검색.dc.html`의 headTitleRoot 22px. */
+  /** 검색 Root 제목. RN 정본 `docs/design/React_Native/search.js:533` headTitleRoot 22px. */
   searchRootTitle: 22,
   /** micro 13/18 — 정보 단계 배지 · 스타일 칩(28) · 이미지 위 순위 pill. */
   micro: 13,
@@ -120,7 +120,7 @@ export const LineHeight = {
   dateWheel: 23,
   /** 날짜 휠 결과 줄 D-day. component.dateWheel.pickedDday 15/22. */
   dateWheelDday: 22,
-  /** 로그인 제목. v3.29 `대메뉴_홈(로그인, 온보딩).dc.html`의 loginTitle 32/44. */
+  /** 로그인 제목. RN 정본 `docs/design/React_Native/home.js:650` loginTitle 32/44. */
   loginTitle: 44,
   /** caption 14의 여러 줄 변형 — 안내문 2줄. */
   t7Loose: 21,
