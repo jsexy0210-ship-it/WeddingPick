@@ -74,7 +74,10 @@ export const ROUTES: readonly string[] = [
   '/admin/vendors',
   '/admin/wedding-feed',
   '/community',
+  '/community/expo',
+  '/community/feed',
   '/community/feed/[id]',
+  '/community/review',
   '/community/review/write',
   '/capture',
   '/capture/analysis/[id]',
@@ -103,6 +106,7 @@ export const ROUTES: readonly string[] = [
   '/my/membership',
   '/my/notifications',
   '/my/privacy',
+  '/my/privacy-policy',
   '/my/profile',
   '/my/rebuttals',
   '/my/rebuttals/[reviewId]',
@@ -117,6 +121,7 @@ export const ROUTES: readonly string[] = [
   '/my/rewards/npay',
   '/my/rewards/promotion',
   '/my/taste',
+  '/my/terms',
   '/my/vendor-claims',
   '/my/vendor-claims/[vendorId]',
   '/my/wedding-settings',
@@ -243,7 +248,10 @@ export const NO_BACK_ROUTES: readonly string[] = [
  * | `/wedding/[id]/complete`           | `/wedding`       | WP-OUR-013 예식 완료 → 서버 웨딩일정 탭. `[id]` 문서 상세와 식별자가 다르다.        |
  */
 export const DEPTH_BACK_EXCEPTIONS: Readonly<Record<string, string>> = {
-  '/community/feed/[id]': '/community?tab=feed',
+  '/community/expo': '/',
+  '/community/feed': '/',
+  '/community/feed/[id]': '/community/feed',
+  '/community/review': '/',
   '/capture': '/my/reports',
   '/capture/analysis/[id]': '/wedding',
   '/capture/payment/consent': '/my/reports',
@@ -280,6 +288,9 @@ export const DEPTH_BACK_EXCEPTIONS: Readonly<Record<string, string>> = {
 /** SPEC §14.5에서 진입 출처를 `from`으로 넘기라고 정한 공유 화면. */
 const ORIGIN_AWARE_ROUTES: readonly string[] = [
   '/community',
+  '/community/expo',
+  '/community/feed',
+  '/community/review',
   '/search/[vendorId]',
   '/search/[vendorId]/write-review',
   '/search/[vendorId]/review/[reviewId]',
@@ -393,7 +404,7 @@ function originTarget(route: string, pathname: string): string | null {
     pick: '/pick',
     wedding: '/wedding',
     budget: '/wedding?tab=budget',
-    community: '/community',
+    community: '/community/review',
     reports: '/my/reports',
     recommendations: '/recommendations',
   };

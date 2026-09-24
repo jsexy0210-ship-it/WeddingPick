@@ -10,7 +10,7 @@ function app(...parts: string[]): string {
   return readFileSync(join(__dirname, '..', '..', 'app', ...parts), 'utf8');
 }
 
-const lounge = app('(tabs)', 'community', 'index.tsx');
+const lounge = readFileSync(join(__dirname, 'lounge-screen.tsx'), 'utf8');
 const detail = app('(tabs)', 'search', '[vendorId]', 'review', '[reviewId].tsx');
 const write = app('(tabs)', 'search', '[vendorId]', 'write-review.tsx');
 

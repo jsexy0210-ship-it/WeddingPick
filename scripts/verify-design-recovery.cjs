@@ -40,7 +40,7 @@ const native = { Platform: { OS: 'web' }, View: 'View', ScrollView: 'ScrollView'
   Pressable: 'Pressable', StyleSheet: { create: x => x } };
 const strings = {
   weddingFeed: { 'detail.error': '글을 불러오지 못했어요', 'detail.back': '돌아가기', 'detail.emptyBody': '본문이 아직 없어요' },
-  community: { title: '라운지', 'tab.review': '후기', 'tab.feed': '웨딩정보', 'tab.expo': '박람회',
+  community: { title: '라운지', 'tab.review': '리얼후기', 'tab.feed': '웨딩정보', 'tab.expo': '박람회',
     write: '글쓰기', 'review.empty.title': '후기', 'review.empty.body': '아직 없어요', 'review.empty.cta': 'Pick 인증하기',
     'feed.empty.title': '웨딩정보', 'feed.empty.body': '아직 없어요', 'expo.empty.title': '박람회',
     'expo.empty.body': '아직 없어요', 'expo.note': '출처 안내', 'expo.closedDate': '{date} 종료',
@@ -88,13 +88,13 @@ function detailHarness(initialId='a') {
   return { h,calls,render:()=>h.render(screen),setId:value=>{id=value;},get backs(){return backs;} };
 }
 const post = (id, body='body') => ({ id, title:`title-${id}`, categoryLabel:'예산', summary:'summary', body, imageUri:null,publishedAt:null });
-function loungeHarness() {
+function loungeHarness(kind='review') {
   const h=hooks();const pushed=[];const replaced=[];
   const loungeReviewHelpers=load('apps/mobile/src/features/community/lounge-reviews.ts');
   const items=[{id:'post/a?b',title:'첫 글',summary:'summary',imageUrl:null,categoryLabel:'예산'},
     {id:'second',title:'둘째 글',summary:'summary',imageUrl:null,categoryLabel:'체크리스트'}];
   const feed={tabs:[{key:'all',label:'전체',categories:[]},{key:'budget',label:'예산',categories:['예산']}],items};
-  const screen=load('apps/mobile/src/app/(tabs)/community/index.tsx',{
+  const {LoungeScreen}=load('apps/mobile/src/features/community/lounge-screen.tsx',{
     '@weddingpick/domain':{daysUntil:()=>2,VENDOR_CATEGORY_LABEL:{}},'expo-router':{Redirect:'Redirect',router:{push:x=>pushed.push(x),replace:x=>replaced.push(x)},
       useFocusEffect:fn=>h.api.useEffect(fn,[fn]),useLocalSearchParams:()=>({})},react:h.api,'react-native':native,
     'react-native-safe-area-context':{SafeAreaView:'SafeAreaView'},'@weddingpick/ui':ui,
@@ -105,11 +105,11 @@ function loungeHarness() {
     '@/features/home/category-image':{CategoryImage:'CategoryImage'},
     '@/features/community/lounge-reviews':loungeReviewHelpers,
     '@/features/loading/delayed-loader':{DelayedLoader:'Loader',DelayedLoadingView:'Loading'},
-    '@/features/wedding/screen-kit':{NavBar:'NavBar'},'../../../../../../spec/strings.ko.json':strings,
-    '../search/[vendorId]/write-review':{ReviewWriteSheet:'ReviewWriteSheet'},
-    './review/write':{LoungeReviewVendorSheet:'LoungeReviewVendorSheet'},
-  }).default;
-  return{h,pushed,replaced,render:()=>h.render(screen)};
+    '@/features/wedding/screen-kit':{NavBar:'NavBar'},'../../../../../spec/strings.ko.json':strings,
+    '@/app/(tabs)/search/[vendorId]/write-review':{ReviewWriteSheet:'ReviewWriteSheet'},
+    '@/app/(tabs)/community/review/write':{LoungeReviewVendorSheet:'LoungeReviewVendorSheet'},
+  });
+  return{h,pushed,replaced,render:()=>h.render(()=>LoungeScreen({kind}))};
 }
 function splitFixture(script,role,missingAdmin=false) {
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'wp-design-test-'));
@@ -180,21 +180,20 @@ function splitFixture(script,role,missingAdmin=false) {
     d.calls[1].resolve(post('a'));await flush();assert.ok(text(d.render()).includes('title-a'));
   });
   await check('lounge feed row opens matching detail with escaped id',async()=>{
-    const l=loungeHarness();l.render();l.h.commit();await flush();
-    find(l.render(),'SegmentedTabs')[0].props.onChange('feed');
+    const l=loungeHarness('feed');l.render();l.h.commit();await flush();
     const tree=l.render(),buttons=find(tree,'Pressable');assert.equal(buttons.length,2);
     assert.equal(buttons[0].props.accessibilityLabel,'첫 글');buttons[0].props.onPress();
     assert.equal(l.pushed[0],'/community/feed/post%2Fa%3Fb');
     assert.equal(find(tree,'NavBar')[0].props.right,undefined);
   });
   await check('lounge category filters preserve clickable detail',async()=>{
-    const l=loungeHarness();l.render();l.h.commit();await flush();find(l.render(),'SegmentedTabs')[0].props.onChange('feed');
+    const l=loungeHarness('feed');l.render();l.h.commit();await flush();
     find(l.render(),'FilterChip').find(chip=>chip.props.label==='예산').props.onPress();const buttons=find(l.render(),'Pressable');
     assert.equal(buttons.length,1);assert.equal(buttons[0].props.accessibilityLabel,'첫 글');
   });
   await check('lounge verified review action is restricted to review tab',async()=>{
     const l=loungeHarness();l.render();l.h.commit();await flush();const action=find(l.render(),'NavBar')[0].props.right;
-    assert.equal(action.label,'글쓰기');action.onPress();assert.equal(l.pushed[0],'/community?tab=review&write=review');
+    assert.equal(action.label,'글쓰기');action.onPress();assert.equal(l.pushed[0],'/community/review?write=review');
   });
   await check('lounge back defaults to home',async()=>{
     const l=loungeHarness();l.render();l.h.commit();await flush();

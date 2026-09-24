@@ -6,7 +6,7 @@ import {
   WITHDRAWAL_DONE_BODY,
   WITHDRAWAL_DONE_GROUP,
   WITHDRAWAL_DONE_TITLE,
-  WITHDRAWAL_HEADLINE,
+  WITHDRAWAL_HEADLINE_LINES,
   WITHDRAWAL_IRREVERSIBLE,
   WITHDRAWAL_SEPARATED_EMPTY,
   WITHDRAWAL_SEPARATED_GROUP,
@@ -136,7 +136,7 @@ export default function WithdrawalScreen() {
           }}
         />
       }>
-      <Hero lines={[WITHDRAWAL_HEADLINE]} sub={notice?.lead} />
+      <Hero lines={[...WITHDRAWAL_HEADLINE_LINES]} sub={notice?.lead} />
 
       <Section title={WITHDRAWAL_DELETED_GROUP}>
         <Rows>

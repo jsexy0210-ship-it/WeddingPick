@@ -18,9 +18,9 @@ function screen(...parts: string[]): string {
 
 describe('라운지 후기 작성 복귀', () => {
   it('글쓰기는 숨은 하위 탭으로 이동하지 않고 라운지 후기 URL에서 직접 연다', () => {
-    const lounge = screen('community', 'index.tsx');
+    const lounge = readFileSync(join(__dirname, 'lounge-screen.tsx'), 'utf8');
 
-    expect(lounge).toContain('const communityWriteHref = `${communityReviewHref}&write=review`');
+    expect(lounge).toContain("const communityWriteHref = `${communityReviewHref}${from === 'my' ? '&' : '?'}write=review`");
     expect(lounge).toContain('router.push(communityWriteHref as never)');
     expect(lounge).toContain('<LoungeReviewVendorSheet');
     expect(lounge).toContain('<ReviewWriteSheet');
@@ -31,14 +31,14 @@ describe('라운지 후기 작성 복귀', () => {
   it('예전 글쓰기 주소도 HOME 배경을 그리지 않고 라운지 후기 URL로 보낸다', () => {
     const legacyWrite = screen('community', 'review', 'write.tsx');
 
-    expect(legacyWrite).toContain("const href = `/community?tab=review&write=review${from === 'my' ? '&from=my' : ''}`");
+    expect(legacyWrite).toContain("const href = `/community/review?write=review${from === 'my' ? '&from=my' : ''}`");
     expect(legacyWrite).toContain('<Redirect href={href as never} />');
     expect(legacyWrite).not.toContain('<CommunityScreen');
     expect(legacyWrite).not.toContain('<VendorDetailScreen');
   });
 
   it('업체 선택과 폼 닫기 뒤에도 라운지 후기 URL을 복원한다', () => {
-    const lounge = screen('community', 'index.tsx');
+    const lounge = readFileSync(join(__dirname, 'lounge-screen.tsx'), 'utf8');
 
     expect(lounge).toContain("router.replace(communityReviewHref as never)");
     expect(lounge).toContain(

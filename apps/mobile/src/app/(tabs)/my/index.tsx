@@ -17,7 +17,7 @@
  */
 import { FullScreenError } from '@/features/errors/full-screen-error';
 import type { CurrentUser, MyReportListResponse } from '@weddingpick/api-contract';
-import { BUSINESS_NOTICE_LINES, POLICY_DOCUMENTS, daysUntil, formatCount } from '@weddingpick/domain';
+import { BUSINESS_NOTICE_LINES, daysUntil, formatCount } from '@weddingpick/domain';
 import { Redirect, router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -49,14 +49,8 @@ import { DelayedLoader, DelayedLoadingView } from '@/features/loading/delayed-lo
 import { AVATAR_MY, Avatar } from '@/features/settings/my-kit';
 import strings from '../../../../../../spec/strings.ko.json';
 import { APP_VERSION } from '@/features/settings/version';
-import { openExternal } from '@/features/open-external';
 
 const S = strings.my;
-
-function openPolicy(id: 'terms' | 'privacy') {
-  const policy = POLICY_DOCUMENTS.find((document) => document.id === id);
-  if (policy?.url) void openExternal(policy.url, { title: policy.title });
-}
 
 type CoupleState = 'unlinked' | 'invited' | 'linked';
 
@@ -174,26 +168,23 @@ export default function MyScreen() {
     /*
      * **라운지로 들어오는 두 자리 중 하나다.** 2026-09-17 대표 지시로 라운지가 Root 탭에서
      * 내려왔다 — 화면을 없앤 것이 아니라 진입을 옮긴 것이므로 **이 줄이 없으면 라운지에
-     * 들어갈 길이 사라진다.** 나머지 한 자리는 홈 「웨딩 소식」 섹션 우측이다. 주소는
-     * `/community` 그대로다(저장된 링크 · 공유 주소).
+     * 들어갈 길이 사라진다.** 나머지 한 자리는 홈 「웨딩 소식」 섹션 우측이다. 옛 주소
+     * `/community`는 리다이렉트로 보존한다(저장된 링크 · 공유 주소).
      *
-     * **v3.28에서 한 줄이 세 줄이 됐다**(시안 1 `mySections` — 「라운지」 섹션에
-     * 리얼후기 · 웨딩정보 · 박람회). 라운지는 한 화면 세 탭이므로 각 줄이 그 탭으로
-     * 바로 들어간다 — 들어가서 탭을 한 번 더 고르게 하지 않는다.
+     * 정본 my.jsx frame-001 `mySections` — 「라운지」 섹션에 리얼후기 · 웨딩정보 · 박람회.
+     * 셋은 세그먼트 없는 독립 화면이라(frame-008 · 010 · 012) 각 줄이 자기 화면을 연다.
      */
     {
       title: S['group.lounge'],
       rows: [
-        { key: 'realReview', label: S['item.realReview'], icon: 'chatting', onPress: () => guestPush('/community?from=my&tab=review') },
-        { key: 'weddingInfo', label: S['item.weddingInfo'], icon: 'photo', onPress: () => guestPush('/community?from=my&tab=feed') },
-        { key: 'expo', label: S['item.expo'], icon: 'calendar', onPress: () => guestPush('/community?from=my&tab=expo') },
+        { key: 'realReview', label: S['item.realReview'], icon: 'chatting', onPress: () => guestPush('/community/review?from=my') },
+        { key: 'weddingInfo', label: S['item.weddingInfo'], icon: 'photo', onPress: () => guestPush('/community/feed?from=my') },
+        { key: 'expo', label: S['item.expo'], icon: 'calendar', onPress: () => guestPush('/community/expo?from=my') },
       ],
     },
     /*
-     * **「FAQ」는 아직 바꾸지 않았다 — 판단 필요.** v3.28 대조표는 「자주 묻는 질문 → FAQ」
-     * (시안 12 WP-MY-013의 헤더도 «FAQ»)인데, 2026-09-15 대표 지시 「사용자 화면에 영문을
-     * 쓰지 않는다 · 남는 것은 Pick · Npay 둘뿐」과 부딪힌다. 둘 중 어느 쪽이 이기는지는
-     * 대표님·MASTER가 정한다 — 그때 `spec/strings.ko.json` `my.item.faq` 한 칸만 바꾸면 된다.
+     * 「FAQ」 — 정본 my.jsx frame-001 `mySections` · frame-015 navTitle. 2026-09-25 MASTER
+     * 후속 지시(대표님 「업데이트된 앱 화면에 다 맞추라는뜻」)로 RN 정본 표기를 따른다.
      */
     {
       title: S['group.support'],
@@ -204,9 +195,10 @@ export default function MyScreen() {
     },
     {
       title: S['group.terms'],
+      /* 정본 my.jsx frame-021 · 022 — 목록 없이 바로 원문 화면(WP-MY-015 · 015b)이 뜬다. */
       rows: [
-        { key: 'terms', label: S['item.terms'], icon: 'bookmark', onPress: () => openPolicy('terms') },
-        { key: 'privacy', label: S['item.privacy'], icon: 'bookmark', onPress: () => openPolicy('privacy') },
+        { key: 'terms', label: S['item.terms'], icon: 'bookmark', onPress: () => router.push('/my/terms' as never) },
+        { key: 'privacy', label: S['item.privacy'], icon: 'bookmark', onPress: () => router.push('/my/privacy-policy' as never) },
       ],
     },
   ];

@@ -324,7 +324,7 @@ export default function HomeScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="웨딩 준비 팁 자세히"
-                onPress={() => router.push('/community?tab=feed' as never)}
+                onPress={() => router.push('/community/feed' as never)}
                 style={({ pressed }) => [styles.feedMore, pressed && styles.pressed]}>
                 <ThemedText type="f13" themeColor="textAssistive">{S.more}</ThemedText>
                 <SeedIcon name="chevronRightRegular" size={Layout.iconField} color={theme.textAssistive} />
