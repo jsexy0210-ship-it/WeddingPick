@@ -10,10 +10,16 @@
  */
 
 const KEYWORD = /웨딩|wedding|결혼|혼수|허니문/i;
-const MAX_LINES_PER_PAGE = 120;
+const MAX_LINES_PER_PAGE = Number(process.env.PROBE_MAX_LINES ?? 120);
+// 네이버 행사 카드처럼 「기간 | 날짜」 뒤에 장소·주최가 몇 줄 이어지는 곳은 넓게 본다.
+const WIDE = /기간|일시|장소|D-\d+/;
 
 function textLines(html) {
   return html
+    // 공식 페이지 주소를 확인하려고 링크 주소를 글자로 남긴다.
+    .replace(/<a\s[^>]*href="(https?:\/\/[^"]+)"[^>]*>/gi, (_, href) =>
+      /naver\.com|pstatic\.net|duckduckgo/.test(href) ? ' ' : ` [${href}] `
+    )
     .replace(/<script[\s\S]*?<\/script>/gi, ' ')
     .replace(/<style[\s\S]*?<\/style>/gi, ' ')
     .replace(/<br\s*\/?>|<\/(p|div|li|tr|td|th|h\d|dd|dt|a|span)>/gi, '\n')
@@ -42,8 +48,9 @@ async function probe(url) {
     for (let i = 0; i < lines.length && printed < MAX_LINES_PER_PAGE; i += 1) {
       if (!KEYWORD.test(lines[i])) continue;
       // 제목 줄 앞뒤에 날짜·장소가 붙어 있는 경우가 많아 두 줄씩 같이 본다.
-      const context = lines.slice(Math.max(0, i - 2), i + 3).join(' | ');
-      console.log(`- ${context.slice(0, 400)}`);
+      const wide = lines.slice(i, i + 12).some((line) => WIDE.test(line));
+      const context = lines.slice(Math.max(0, i - 2), i + (wide ? 14 : 3)).join(' | ');
+      console.log(`- ${context.slice(0, wide ? 900 : 400)}`);
       printed += 1;
     }
     if (printed === 0) console.log('(웨딩 관련 줄 없음 — 화면이 스크립트로 그려지는 페이지일 수 있다)');
