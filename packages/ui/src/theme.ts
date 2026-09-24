@@ -240,6 +240,27 @@ export const NpayColors = {
 } as const;
 
 /**
+ * 결과 · 되돌리기 토스트(WP-DLG-F). spec/tokens.json `color.overlay.toast` ·
+ * `component.resultToast` — RN 정본 `common.js:199` toastStyle · `:579` toastAct.
+ */
+export const ToastColors = {
+  background: 'rgba(23,25,28,.92)',
+  text: '#ffffff',
+  action: '#ffb3ab',
+} as const;
+
+/**
+ * RN 정본 팔레트의 회색 3단 — spec/tokens.json `color.canonGray`(`components.js:43 · 47 · 48`).
+ * 앱 팔레트의 gray는 SEED 램프라 값이 다르다(#f3f4f5 · #eeeff1 · #555d6d). 정본 값이
+ * 필요한 자리만 이 이름으로 가져다 쓴다.
+ */
+export const CanonGray = {
+  gray100: '#f2f3f6',
+  gray200: '#eaebee',
+  gray700: '#4d5159',
+} as const;
+
+/**
  * 스킨 6종 — spec/tokens.json `color.skin`. 사용자가 MY · 화면 설정에서 고른다.
  * CTA · Pick · 선택 상태에만 적용되고, 의미색(status) · 앱 아이콘 · 스플래시 · 차트 계열색은
  * 스킨과 무관하게 고정이다.
@@ -913,10 +934,13 @@ export const Layout = {
    */
   headTopLogin: 99,
   headTopOnboarding: 111,
-  /** 바텀시트 패널 — padding 12 24 28(+ safeBottom) · 요소 간격 20 · 제목과 본문 사이 6. component.sheet. */
-  sheetPaddingTop: 12,
+  /**
+   * 바텀시트 패널 — padding 14 24 28(+ safeBottom) · 요소 간격 12 · 제목과 본문 사이 6. component.sheet.
+   * RN 정본 `common.js:156` SHEET(WP-DLG-D). 2026-09-25 v3.28판 12 · 20에서 교체 — 좌우 24는 그대로.
+   */
+  sheetPaddingTop: 14,
   sheetPaddingBottom: 28,
-  sheetGap: 20,
+  sheetGap: 12,
   sheetHeadGap: 6,
   /**
    * 시트 머리의 닫기 단추. component.sheet.close — 루트 시안 `WP-APP-020`의
@@ -1042,6 +1066,14 @@ export const Elevation = {
     shadowRadius: 2,
     shadowOffset: { width: 0, height: 1 },
     elevation: 1,
+  },
+  /** 결과 · 되돌리기 토스트 — 정본 `common.js:199` «box-shadow:0 4px 16px rgba(0,0,0,.24)». */
+  toast: {
+    shadowColor: '#000000',
+    shadowOpacity: 0.24,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
   floatingCard: {
     shadowColor: '#000000',

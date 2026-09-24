@@ -1,7 +1,13 @@
 import tokens from '../../../../spec/tokens.json';
 import strings from '../../../../spec/strings.ko.json';
 
-import { createConfirmationQueue, type AlertButton, type Confirmation } from './confirmation-queue';
+import {
+  createConfirmationQueue,
+  type AlertButton,
+  type ConfirmAlertOptions,
+  type Confirmation,
+} from './confirmation-queue';
+import { DIALOG_ICON, DIALOG_ICON_GLYPH, DIALOG_ICON_SIZE, DIALOG_ICON_STROKE } from './dialog-icon';
 
 /*
  * 값의 정본은 RN 정본 `docs/design/React_Native/common.js:156~199`(common frame-001~005 ·
@@ -142,6 +148,21 @@ function renderDialog(request: Confirmation, choose: (index: number | null) => v
     grabber.setAttribute('aria-hidden', 'true');
     panel.append(grabber);
   }
+  if (request.icon) {
+    // 정본 iconStyle — 원 48 · 글리프 24 · stroke 2.6(`common.js:151 · 186`). 값은 고정 표에서만 온다.
+    const spec = DIALOG_ICON[request.icon];
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='${spec.stroke}' `
+      + `stroke-width='${DIALOG_ICON_STROKE}' stroke-linecap='round' stroke-linejoin='round'>`
+      + spec.paths.map((d) => `<path d='${d}'/>`).join('') + '</svg>';
+    const icon = document.createElement('span');
+    icon.className = 'wp-dialog-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.style.cssText = `width:${px(DIALOG_ICON_SIZE)};height:${px(DIALOG_ICON_SIZE)};flex:0 0 ${px(DIALOG_ICON_SIZE)};`
+      + `align-self:${kind === 'E' ? 'flex-start' : 'center'};border-radius:${px(CANON.radius.pill)};`
+      + `background-color:${spec.background};background-image:url("data:image/svg+xml,${encodeURIComponent(svg)}");`
+      + `background-size:${px(DIALOG_ICON_GLYPH)};background-position:center;background-repeat:no-repeat`;
+    panel.append(icon);
+  }
   const title = document.createElement('h2');
   title.id = `wp-dialog-title-${request.id}`;
   title.textContent = request.title;
@@ -276,7 +297,12 @@ const queue = createConfirmationQueue({
   },
 });
 
-export function confirmAlert(title: string, message?: string, buttons?: AlertButton[]): void {
+export function confirmAlert(
+  title: string,
+  message?: string,
+  buttons?: AlertButton[],
+  options?: ConfirmAlertOptions
+): void {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
-  queue.enqueue(title, message ?? '', buttons ?? []);
+  queue.enqueue(title, message ?? '', buttons ?? [], options?.icon);
 }

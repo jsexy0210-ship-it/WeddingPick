@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Animated, Easing, Platform, StyleSheet, ToastAndroid, View } from 'react-native';
 
-import { Layout, Radius, USE_NATIVE_DRIVER } from './theme';
+import { Elevation, Layout, Radius, ToastColors, USE_NATIVE_DRIVER } from './theme';
 import { FontSize, LineHeight } from './typography';
-import { useTheme } from './use-theme';
 
 export type ToastProps = {
   /** 보여줄 말. null이면 아무것도 그리지 않는다. */
@@ -28,7 +27,6 @@ const FADE_MS = 175;
  * 별도의 액션 토스트가 맡는다.
  */
 export function Toast({ message, onHidden }: ToastProps) {
-  const theme = useTheme();
   const [opacity] = useState(() => new Animated.Value(0));
   /** 사라지는 동안에도 그려야 해서, 글자는 따로 붙잡아 둔다. */
   const [shown, setShown] = useState<string | null>(null);
@@ -77,14 +75,14 @@ export function Toast({ message, onHidden }: ToastProps) {
     <View pointerEvents="none" style={styles.wrap}>
       <Animated.Text
         accessibilityRole="alert"
-        style={[styles.toast, { backgroundColor: theme.backgroundInk, color: theme.onInk, opacity }]}>
+        style={[styles.toast, { opacity }]}>
         {shown}
       </Animated.Text>
     </View>
   );
 }
 
-/* 정본 toastStyle — 내용 폭 · padding 14 18 · radius 10 · 15/22 · 700(`common.js:199`). */
+/* 정본 toastStyle — 내용 폭 · padding 14 18 · radius 10 · 15/22 · 700 · 배경 · 그림자(`common.js:199`). */
 const styles = StyleSheet.create({
   wrap: {
     position: 'absolute',
@@ -104,6 +102,10 @@ const styles = StyleSheet.create({
     fontSize: FontSize.f15,
     lineHeight: LineHeight.lh22,
     fontWeight: '700',
+    color: ToastColors.text,
+    backgroundColor: ToastColors.background,
+    ...Elevation.toast,
+    // 글자 상자의 둥근 모서리를 자른다(iOS). 웹의 box-shadow는 이것에 잘리지 않는다.
     overflow: 'hidden',
   },
 });

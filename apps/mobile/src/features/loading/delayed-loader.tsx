@@ -1,6 +1,8 @@
 import {
-  CircleLoader,
-  type CircleLoaderSize,
+  Layout,
+  LoaderSkeleton,
+  type LoaderSkeletonShape,
+  type LoaderSkeletonSize,
   LoadingView,
   type LoadingViewProps,
   RecommendingBody,
@@ -20,6 +22,15 @@ import { useCurrentUserSnapshot } from './current-user-snapshot';
  * 0~700ms      아무것도 띄우지 않음
  * 700ms 초과   로더 노출
  * ```
+ *
+ * ## 2026-09-25 — 로더는 스켈레톤이다
+ *
+ * 대표 결정 「스켈레톤으로 해」. 아래 「원형 하나뿐」(2026-09-15)과 v3.29 재대조의
+ * `DESIGN_UNRESOLVED`(원형 vs 업종 순회)는 이 결정으로 **둘 다 닫혔다** — 원형도
+ * 순회도 쓰지 않는다. 호출처 props(`active` · `size` · `style`)는 그대로 두고 이
+ * 파일 안에서 `LoaderSkeleton`으로 바꿨다. 40은 목록 뼈대 3줄, 28은 2줄, 20은 바
+ * 한 줄이다. 뼈대가 맞지 않는 자리(로그인 진행)는 `shape="mark"` — 돌지 않고 숨쉬는
+ * 원형 블록이다. 아래는 그 전의 기록이다.
  *
  * **로더는 원형 하나뿐이다**(2026-09-15 대표 지시 — 「모든 화면 로딩 발생 시
  * 기본로더로 돌려라. **기존 정책 파기** 기본로더만 사용할것」).
@@ -65,20 +76,27 @@ type DelayedLoaderProps = {
   /** 기다리는 중인가. 기본 true — 로딩 분기 안에서 마운트되는 자리는 안 넘겨도 된다. */
   active?: boolean;
   /** 20 버튼·행 · 28 카드·시트 · 40 화면 전체. */
-  size: CircleLoaderSize;
+  size: LoaderSkeletonSize;
   /** 로더를 감싸는 View의 스타일. 로더가 보일 때만 그린다. */
   style?: StyleProp<ViewStyle>;
+  /** 기본 `content`(목록 뼈대). 뼈대가 맞지 않는 자리는 `mark`(숨쉬는 원형 블록). */
+  shape?: LoaderSkeletonShape;
 };
 
 /** 화면 안 한 자리(버튼·행·카드·시트·본문)에 놓는 로더. 700ms 전에는 아무것도 없다. */
-export function DelayedLoader({ active = true, size, style }: DelayedLoaderProps) {
+export function DelayedLoader({ active = true, size, style, shape = 'content' }: DelayedLoaderProps) {
   const visible = useDelayedVisible(active);
 
   if (!visible) return null;
 
+  /*
+   * 뼈대는 가운데가 아니라 위에서부터 채운다 — 실제 내용이 위에서부터 그려진다.
+   * 좌우는 화면 여백 24(`Layout.gutter`)를 기본으로 두고, 호출처 `style`의 padding이
+   * 있으면 그것이 이긴다. 호출처의 `centered`(flex · padding)는 살리고 정렬만 덮는다.
+   */
   return (
-    <View style={[styles.center, style]}>
-      <CircleLoader size={size} />
+    <View style={shape === 'mark' ? [styles.center, style] : [styles.gutter, style, styles.top]}>
+      <LoaderSkeleton size={size} shape={shape} />
     </View>
   );
 }
@@ -133,5 +151,7 @@ export function DelayedRecommendingBody({ active = true, ...props }: DelayedReco
 
 const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center' },
+  top: { alignItems: 'stretch', justifyContent: 'flex-start' },
+  gutter: { paddingHorizontal: Layout.gutter },
   blank: { flex: 1 },
 });

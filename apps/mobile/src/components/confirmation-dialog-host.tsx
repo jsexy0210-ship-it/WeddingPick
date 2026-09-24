@@ -1,12 +1,20 @@
 import { usePathname } from 'expo-router';
 import { useEffect, useSyncExternalStore } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 
-import { Layout, LineHeight, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { CanonGray, Layout, LineHeight, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import strings from '../../../../spec/strings.ko.json';
 
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 import { updateNativeConfirmationScope } from './confirm-alert';
+import {
+  DIALOG_ICON,
+  DIALOG_ICON_GLYPH,
+  DIALOG_ICON_SIZE,
+  DIALOG_ICON_STROKE,
+  type DialogIcon,
+} from './dialog-icon';
 import {
   getNativeConfirmation,
   subscribeNativeConfirmation,
@@ -53,6 +61,7 @@ function NativeConfirmation({ active }: { active: ActiveNativeConfirmation }) {
     return (
       <BottomSheet visible onRequestClose={cancel} testID="confirmation-action-sheet">
         <SheetPanel>
+          {request.icon ? <DialogIconCircle icon={request.icon} /> : null}
           <View style={styles.sheetHead}>
             <ThemedText type="t4">{request.title}</ThemedText>
             {/* WP-DLG bodyStyle — 14/22 · MUTED(`common.js:192`). */}
@@ -119,6 +128,7 @@ function NativeConfirmation({ active }: { active: ActiveNativeConfirmation }) {
         <View
           accessibilityRole={danger ? 'alert' : undefined}
           style={[styles.dialogPanel, { backgroundColor: theme.background }]}>
+          {request.icon ? <DialogIconCircle icon={request.icon} centered /> : null}
           <ThemedText type="f20" style={[styles.dialogTitle, styles.centerText]}>
             {request.title}
           </ThemedText>
@@ -183,11 +193,12 @@ function DialogButton({
   const theme = useTheme();
   const backgroundColor =
     tone === 'cancel'
-      ? theme.backgroundSelected
+      ? CanonGray.gray100
       : tone === 'danger'
         ? theme.negativeAction
         : theme.tint;
-  const color = tone === 'cancel' ? theme.textSecondary : theme.onTint;
+  /* 정본 ghost — 배경 SEC #f2f3f6 · 글자 SUB #4d5159(`common.js:160`) — `CanonGray`. */
+  const color = tone === 'cancel' ? CanonGray.gray700 : theme.onTint;
 
   return (
     <Pressable
@@ -202,6 +213,32 @@ function DialogButton({
         {label}
       </ThemedText>
     </Pressable>
+  );
+}
+
+/** 정본 iconStyle — 원 48 · 글리프 24 · stroke 2.6(`common.js:151 · 186`). */
+function DialogIconCircle({ icon, centered = false }: { icon: DialogIcon; centered?: boolean }) {
+  const spec = DIALOG_ICON[icon];
+
+  return (
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={[styles.icon, { backgroundColor: spec.background }, centered && styles.iconCentered]}>
+      <Svg
+        width={DIALOG_ICON_GLYPH}
+        height={DIALOG_ICON_GLYPH}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke={spec.stroke}
+        strokeWidth={DIALOG_ICON_STROKE}
+        strokeLinecap="round"
+        strokeLinejoin="round">
+        {spec.paths.map((d) => (
+          <Path key={d} d={d} />
+        ))}
+      </Svg>
+    </View>
   );
 }
 
@@ -276,4 +313,12 @@ const styles = StyleSheet.create({
   },
   actionLabel: { fontWeight: '700' },
   pressed: { opacity: 0.7 },
+  icon: {
+    width: DIALOG_ICON_SIZE,
+    height: DIALOG_ICON_SIZE,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconCentered: { alignSelf: 'center' },
 });
