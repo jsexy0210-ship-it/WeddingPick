@@ -73,7 +73,7 @@ export function TermsDetailModal({
                   accessibilityState={{ selected: active }}
                   onPress={() => setKey(tab.key)}
                   style={[styles.tab, active && { borderBottomColor: theme.text, borderBottomWidth: 2 }]}>
-                  <ThemedText type="f15" themeColor={active ? 'text' : 'textAssistive'} style={active ? styles.tabActiveLabel : undefined}>
+                  <ThemedText type="f15" themeColor={active ? 'text' : 'textAssistive'} style={styles.tabLabel}>
                     {tab.tab}
                   </ThemedText>
                 </Pressable>
@@ -83,7 +83,8 @@ export function TermsDetailModal({
 
           <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
             <View style={styles.head}>
-              <ThemedText type="t2">{doc.title}</ThemedText>
+              {/* home.js `tdTitle` 22/30/700 — 22 타입이 없어 가장 가까운 t3(24/32)를 쓴다. */}
+              <ThemedText type="t3">{doc.title}</ThemedText>
               <ThemedText type="f13" themeColor="textAssistive">
                 {doc.meta}
               </ThemedText>
@@ -120,6 +121,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
+    gap: Spacing.two,
     borderBottomWidth: 1,
   },
   navClose: {
@@ -134,7 +136,8 @@ const styles = StyleSheet.create({
   tabs: { flexGrow: 0, flexShrink: 0, borderBottomWidth: 1 },
   tabsContent: { paddingHorizontal: 20, gap: 20 },
   tab: { height: 44, alignItems: 'center', justifyContent: 'center' },
-  tabActiveLabel: { fontWeight: 700 },
+  /* home.js `termTabs` — 선택 여부와 관계없이 15/700, 색만 다르다. */
+  tabLabel: { fontWeight: 700 },
   body: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: Spacing.five, gap: 22 },
   head: { gap: 6 },
   article: { gap: 6 },

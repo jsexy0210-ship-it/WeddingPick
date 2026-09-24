@@ -6,7 +6,7 @@ import { Border, FontSize, Layout, LineHeight, Radius, ThemedText, useTheme } fr
 import { BUDGET_NOTE, BUDGET_QUICK_CHIPS, BUDGET_UNIT, formatManWonDigits } from './flow';
 
 /**
- * 예산(4/5) — v3.29 정본 `docs/design/html/대메뉴_홈(로그인, 온보딩).dc.html`
+ * 예산(4/5) — v3.29 정본 `docs/design/React_Native/home.jsx`
  * WP-AUTH-005. 구간을 고르지 않고 **금액을 만원 단위로 직접 적는다.** 시안
  * `amtField`(64 · radius 6 · 좌우 18 · 코랄 1.5 테두리 · 32/700 금액 +
  * 17/700 «만원» · 오른쪽 정렬) + `amtQuick` 칩 넷(38 · 좌우 14 · pill · 14/700) +

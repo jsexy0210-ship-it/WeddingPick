@@ -4,6 +4,7 @@ import {
   Border,
   Layout,
   LetterSpacing,
+  LineHeight,
   Radius,
   SeedIcon,
   Spacing,
@@ -16,19 +17,12 @@ import { CategoryImage } from './category-image';
 import type { WeddingContentItem } from './content';
 
 /**
- * 웨딩피드 — 규격서 docs/design/figma-export/01-home.dc.html(2026-09-15 대표 지시 「규격서의 수를 그대로」).
+ * 홈 「웨딩 준비 팁」 카드 — 정본 `docs/design/React_Native/home.jsx` frame-012
+ * WP-HOME-001 `feedCard`(gap 12 · padding 12 · radius 16 · 선 1) · `feedThumb`(80 · r10) ·
+ * `feedCat` · `feedTitle` · `feedChev`.
  *
- *   div 390×224
- *     article 390×106  flex · gap 12 · pad 12 12 12 12 · mar 0 0 12 0 · bg #FFFFFF · r16 · border 1 #000000 6%
- *       img 80×80  bg #F7F8F9 · r18
- *       div 244×80  flex/column · justify center
- *         p "예산" · 10/700 #868B94 · lh 15 · ls 0.25px
- *         p "예산을 넘기지 않는 스드메 조합 3가지" · 14/600 #1A1C20 · lh 20 · mar 4 0 0 0
- *         p "웨딩픽 에디터 · 5분" · 11/400 #868B94 · lh 17 · mar 4 0 0 0
- *       svg 16×16  mar 32 0 32 0 (`my-auto` — 세로 가운데)  IconChevronRightRegular
- *
- * **규격서와 다르게 둔 것.** 셋째 줄(«웨딩픽 에디터 · 5분»)은 우리 `WeddingContentItem`에 그 값이
- * 없어 그리지 않는다 — 없는 값을 지어내지 않는다. 콘텐츠 API가 오면 그 자리에 넣는다.
+ * **정본과 다르게 둔 것.** 셋째 줄 `feedMeta`(«웨딩픽 에디터 · 5분»)는 `WeddingContentItem`에
+ * 그 값이 없어 그리지 않는다 — 없는 값을 지어내지 않는다. 콘텐츠 API가 오면 그 자리에 넣는다.
  */
 
 export type WeddingContentProps = {
@@ -63,7 +57,8 @@ export function WeddingContent({ items, onPressItem }: WeddingContentProps) {
             </ThemedText>
           </View>
           <View style={styles.chevron}>
-            <SeedIcon name="chevronRightRegular" size={Layout.iconField} color={theme.textAssistive} />
+            {/* `feedChev` — 16 · #adb1ba(가장 가까운 토큰 textDisabled #b0b3ba). */}
+            <SeedIcon name="chevronRightRegular" size={Layout.iconField} color={theme.textDisabled} />
           </View>
         </Pressable>
       ))}
@@ -82,19 +77,19 @@ const styles = StyleSheet.create({
     borderRadius: Radius.cardLarge,
     borderWidth: Border.hairline,
   },
-  /* «img 80×80 · r18». */
+  /* home.jsx frame-012 `feedThumb` — 80×80 · radius 10. */
   image: {
     width: Layout.thumbFeed,
     height: Layout.thumbFeed,
-    borderRadius: Radius.thumb,
+    borderRadius: Radius.medium,
     overflow: 'hidden',
   },
   /* «flex/column · justify center». */
   body: { flex: 1, minWidth: 0, justifyContent: 'center' },
-  /* «10/700 · ls 0.25px». */
-  category: { fontWeight: 700, letterSpacing: LetterSpacing.p025 },
-  /* «14/600 · mar 4 0 0 0». */
-  title: { fontWeight: 600, marginTop: Spacing.one },
+  /* `feedCat` — 10/14 · 700 · 자간 .04em(0.4 — 토큰이 없어 가장 가까운 0.25를 쓴다). */
+  category: { fontWeight: 700, lineHeight: LineHeight.lh14, letterSpacing: LetterSpacing.p025 },
+  /* `feedTitle` — 14/20 · 700 · 위 4 · 두 줄. */
+  title: { fontWeight: 700, marginTop: Spacing.one },
   /* 「svg 16×16 · mar 32 0 32 0」 — `my-auto`라 세로 가운데. */
   chevron: { alignSelf: 'center' },
   pressed: { opacity: 0.8 },

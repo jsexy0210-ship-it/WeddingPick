@@ -524,6 +524,7 @@ export default function SetupScreen() {
               <OptionRow
                 key={card.key}
                 role="checkbox"
+                variant="prep"
                 label={card.name}
                 description={card.description}
                 selected={isPrepCardSelected(card, preparedCategories)}
