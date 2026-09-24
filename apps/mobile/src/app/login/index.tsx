@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 20,
   },
-  title: { fontWeight: 700, lineHeight: 44, letterSpacing: LetterSpacing.n064 },
+  title: { fontWeight: 700, lineHeight: LineHeight.loginTitle, letterSpacing: LetterSpacing.n064 },
   benefitWrap: {
     flexShrink: 0,
     paddingTop: 24,

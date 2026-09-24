@@ -82,7 +82,7 @@ describe('Root 1Depth 제목 헤더', () => {
 
     expect(header).toContain('paddingHorizontal: Layout.pageX');
     expect(tag).toContain('type="f20"');
-    expect(styleBlock(text, 'title')).toContain('fontSize: 22');
+    expect(styleBlock(text, 'title')).toContain('fontSize: FontSize.searchRootTitle');
   });
 
   /*

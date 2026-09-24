@@ -1408,7 +1408,7 @@ const styles = StyleSheet.create({
   },
   /* WP-SRCH-001 `headTitleRoot`는 22px. 공통 사다리에 없어 화면 값으로 지정한다. */
   title: {
-    fontSize: 22,
+    fontSize: FontSize.searchRootTitle,
   },
   /* `micro`는 기본이 700이다. 피그마에서 regular인 작은 글자(부제 · 지역 · 결과 수 · 꼬리)는 400으로 되돌린다. */
   regular: {
