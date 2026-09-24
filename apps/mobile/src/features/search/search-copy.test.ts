@@ -1,7 +1,7 @@
 /**
- * 검색 화면의 문구는 `spec/strings.ko.json`이 정한다 — WP-SRCH-004 · 005.
+ * 검색 화면의 문구는 `spec/strings.ko.json`이 정한다 — WP-SRCH-002 · 003.
  *
- * 화면 소스를 직접 읽는다. `sort-sheet.tsx` · `filter-sheet.tsx`를 import 하면
+ * 화면 소스를 직접 읽는다. `sort-panel.tsx` · `filter-sheet.tsx`를 import 하면
  * react-native와 시트 껍데기까지 끌고 오는데, 여기서 묻는 것은 **적힌 말**뿐이다.
  */
 
@@ -38,18 +38,21 @@ const read = (name: string) =>
 describe('검색 문구는 spec과 같다', () => {
   it('기본 정렬 라벨은 «추천순»이다', () => {
     /*
-     * 시안 06-search #16c의 결과 머리가 «추천순»이다. 재는 것은 그대로 실 제보
-     * 수지만, 고르는 자리에서는 「무엇을 먼저 보여주는가」가 이름이다.
+     * RN 정본 `search.js` `sortRows[0]` · `sorts[0]`이 «추천순»이다(v3.29 「추천」 삭제와
+     * 겹쳐 DESIGN_UNRESOLVED — 정본 값을 그대로 둔다). 금액 두 줄은 붙여 쓴다.
      */
     expect(strings.search['sort.recommended']).toBe('추천순');
-    expect(read('sort-sheet.tsx')).toContain(`data: '${strings.search['sort.recommended']}'`);
+    const panel = read('sort-panel.tsx');
+    expect(panel).toContain(`data: '${strings.search['sort.recommended']}'`);
+    expect(panel).toContain(`price_low: '${strings.search['sort.lowPrice']}'`);
+    expect(panel).toContain(`price_high: '${strings.search['sort.highPrice']}'`);
   });
 
-  it('필터 CTA는 «{n}곳 보기»다 — «필터 적용»이 아니다', () => {
-    expect(strings.search['filter.apply']).toBe('{n}곳 보기');
+  it('필터 CTA는 «{n}개 업체 보기»다 — «필터 적용»이 아니다', () => {
+    expect(strings.search['filter.apply']).toBe('{n}개 업체 보기');
 
     const sheet = read('filter-sheet.tsx');
-    expect(sheet).toContain('`${count}곳 보기`');
+    expect(sheet).toContain('`${count}개 업체 보기`');
     expect(sheet).not.toContain('필터 적용');
   });
 
@@ -63,6 +66,13 @@ describe('검색 문구는 spec과 같다', () => {
 
     expect(sheet).not.toContain('실 제보가 있는 곳만');
     expect(strings.search['filter.onlyVerified']).toBeUndefined();
+  });
+
+  it('정렬은 바텀시트가 아니라 칩 아래 인라인 패널이다(WP-SRCH-003)', () => {
+    const panel = read('sort-panel.tsx');
+
+    expect(panel).not.toContain('BottomSheet');
+    expect(panel).toContain('export function SortPanel');
   });
 
   it('예산은 구간 칩이다 — 만원 숫자 입력 칸을 두지 않는다', () => {

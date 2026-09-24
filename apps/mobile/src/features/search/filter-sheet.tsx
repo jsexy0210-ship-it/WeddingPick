@@ -1,3 +1,4 @@
+import type { VendorSort } from '@weddingpick/api-contract';
 import {
   BUDGET_BANDS,
   type BudgetBandKey,
@@ -18,9 +19,16 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
+import { SELECTABLE_SORTS, SORT_LABEL } from '@/features/search/sort-panel';
 
 /**
- * 필터 — WP-SRCH-005. 시안 06-search #16d.
+ * 필터 — WP-SRCH-002(`docs/design/React_Native/search.jsx` frame-002 · `search.js` `groups` ·
+ * `sorts`). tagDesc 「5그룹 단일 선택 · 정렬 4종 · CTA에 결과 수. 상단 우측에 초기화가 primary
+ * 색 텍스트로 있습니다」. 제목 18/25 · «전체 해제» 12/17 코랄 · 묶음 제목 14/20 · 정렬 제목
+ * 12/17 · CTA «{n}개 업체 보기».
+ *
+ * 2026-09-24 RN 정본 대조로 정렬 묶음(`sortSec`)을 시트 맨 아래에 되살렸다 — 결과 위 정렬
+ * 칩의 인라인 패널(WP-SRCH-003)과 같은 값을 본다. 예산 묶음 첫 칸 «전체»도 정본대로 둔다.
  *
  * **바텀시트다.** 그래버 → 제목 24/32 ↔ «초기화» 16/700 #4D5159 → 조건 묶음(제목 16/22 700 ·
  * 칩 38/16) → «실 제보가 있는 곳만» 토글 → 아래 붙은 dock의 CTA «{n}곳 보기». 전체 화면이
@@ -52,12 +60,14 @@ import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 const S = {
   title: '필터',
   reset: '전체 해제',
-  /** «{n}곳 보기». */
-  apply: (count: number) => `${count}곳 보기`,
+  /** «{n}개 업체 보기» — 정본 `sheetCta` «7개 업체 보기». */
+  apply: (count: number) => `${count}개 업체 보기`,
   groupCategory: '카테고리',
   allCategories: '전체',
   groupRegion: '지역',
   groupBudget: '예산',
+  allBudgets: '전체',
+  groupSort: '정렬',
 };
 
 export type SearchFilterValue = {
@@ -65,6 +75,8 @@ export type SearchFilterValue = {
   category: VendorCategory | null;
   region: string | null;
   budget: BudgetBandKey | null;
+  /** 정렬 — 시트 맨 아래 «정렬» 묶음(정본 `sortSec`). 결과 위 정렬 패널과 같은 값이다. */
+  sort: VendorSort;
 };
 
 export function FilterSheet({
@@ -98,14 +110,14 @@ export function FilterSheet({
     <BottomSheet visible={visible} onRequestClose={onDismiss}>
       <SheetPanel style={styles.panel}>
         <View style={styles.head}>
-          <ThemedText type="t3">{S.title}</ThemedText>
+          <ThemedText type="f18" style={styles.bold}>{S.title}</ThemedText>
           <View style={styles.headActions}>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={S.reset}
               hitSlop={Spacing.three}
-              onPress={() => onChange({ category: null, region: null, budget: null })}>
-              <ThemedText type="t6" style={[styles.bold, { color: theme.tint }]}>
+              onPress={() => onChange({ ...value, category: null, region: null, budget: null })}>
+              <ThemedText type="f12" style={[styles.bold, { color: theme.tint }]}>
                 {S.reset}
               </ThemedText>
             </Pressable>
@@ -129,7 +141,7 @@ export function FilterSheet({
             VENDOR_CATEGORY_LABEL 하나만 본다(본식스냅 · 헤어변형 · 결정사 — CLAUDE.md).
           */}
           <View style={styles.group}>
-            <ThemedText type="t6" style={styles.bold}>
+            <ThemedText type="f14" style={styles.bold}>
               {S.groupCategory}
             </ThemedText>
             <View style={styles.chips}>
@@ -157,7 +169,7 @@ export function FilterSheet({
 
           {/* 지역 */}
           <View style={styles.group}>
-            <ThemedText type="t6" style={styles.bold}>
+            <ThemedText type="f14" style={styles.bold}>
               {S.groupRegion}
             </ThemedText>
             <View style={styles.chips}>
@@ -177,10 +189,18 @@ export function FilterSheet({
 
           {/* 예산 — 구간 칩 넷(BUDGET_BANDS). 만원 숫자 입력이 아니다. */}
           <View style={styles.group}>
-            <ThemedText type="t6" style={styles.bold}>
+            <ThemedText type="f14" style={styles.bold}>
               {S.groupBudget}
             </ThemedText>
             <View style={styles.chips}>
+              <FilterChip
+                label={S.allBudgets}
+                size="sheet"
+                accent="tint"
+                role="radio"
+                selected={value.budget === null}
+                onPress={() => set({ budget: null })}
+              />
               {BUDGET_BANDS.map((band) => (
                 <FilterChip
                   key={band.key}
@@ -195,6 +215,24 @@ export function FilterSheet({
             </View>
           </View>
 
+          {/* 정렬 — 정본 `sortSec` · `sorts`: 한 줄 가로 스크롤, 켠 칸은 잉크 면(`sortPill`). */}
+          <View style={styles.sortGroup}>
+            <ThemedText type="f12" style={styles.bold}>
+              {S.groupSort}
+            </ThemedText>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+              {SELECTABLE_SORTS.map((sort) => (
+                <FilterChip
+                  key={sort}
+                  label={SORT_LABEL[sort]}
+                  size="sheet"
+                  role="radio"
+                  selected={value.sort === sort}
+                  onPress={() => set({ sort })}
+                />
+              ))}
+            </ScrollView>
+          </View>
         </ScrollView>
 
         {/* dock — 화면당 Primary CTA 하나. 고른 조건으로 몇 곳인지 그대로 적는다. */}
@@ -223,6 +261,8 @@ const styles = StyleSheet.create({
   body: { maxHeight: BODY_MAX_HEIGHT },
   bodyContent: { gap: Layout.sectionGap, paddingBottom: Spacing.one },
   group: { gap: Layout.cardGap },
+  /* 정본 `sortSec` 사이 8. */
+  sortGroup: { gap: Spacing.two },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Layout.chipGap },
   dock: {
     borderTopWidth: 1,

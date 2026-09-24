@@ -40,7 +40,7 @@ import {
   removeRecentSearch,
 } from '@/features/search/recent-searches';
 import { FilterSheet, type SearchFilterValue } from '@/features/search/filter-sheet';
-import { SORT_LABEL, SortSheet } from '@/features/search/sort-sheet';
+import { SORT_LABEL, SortPanel } from '@/features/search/sort-panel';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import {
   ActionButton,
@@ -100,7 +100,7 @@ const TITLE = '검색';
 const PLACEHOLDER = '업체 이름, 지역, 카테고리 검색';
 const CLEAR_LABEL = '검색어 지우기';
 
-/** 자동완성은 결과보다 빨리 따라와야 한다(시안 WP-SRCH-002). */
+/** 자동완성은 결과보다 빨리 따라와야 한다(RN 정본 WP-SRCH-004 · search.jsx frame-008). */
 const AUTOCOMPLETE_DEBOUNCE_MS = 200;
 /** 자동완성 «업체» 행 수 · «지역» 행 수. 시안은 3줄이다. */
 const AUTOCOMPLETE_VENDORS = 3;
@@ -114,9 +114,9 @@ const AC_GROUP_KEYWORD = '이 말로 검색';
 const AC_GROUP_RECENT = '최근 검색';
 const AC_CLEAR_ALL = '전체 삭제';
 
-/** 결과 없음 카드. spec/strings.ko.json search.empty.* */
-const EMPTY_TITLE = '조건에 맞는 곳이\n없어요';
-/** 조건 하나를 풀면 나오는 곳 — 시안은 세 줄이다(06-search #16f). */
+/** 결과 없음 — RN 정본 WP-SRCH-003 `emptyTitle` · `nearLabel`(search.jsx frame-003). */
+const EMPTY_TITLE = '조건에 맞는 곳이 없어요';
+/** 조건 하나를 풀면 나오는 곳. 정본 `nearby`는 두 줄이지만 결과 수에 따라 세 줄까지 둔다. */
 const EMPTY_SIMILAR_TITLE = '조건이 비슷한 곳';
 const SIMILAR_LIMIT = 3;
 const EMPTY_REPORT_TITLE = '찾는 곳이 없나요?';
@@ -135,7 +135,7 @@ type Filters = {
   q: string;
   category: VendorCategory | null;
   region: string | null;
-  /** 예산 구간 한 칸(WP-SRCH-005). 고르지 않았으면 null. */
+  /** 예산 구간 한 칸(필터 시트 WP-SRCH-002). 고르지 않았으면 null. */
   budget: BudgetBandKey | null;
   sort: VendorSort;
 };
@@ -199,7 +199,7 @@ export default function SearchScreen() {
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
   /**
-   * 결과 0건일 때 조건 하나를 풀면 몇 곳이 나오는지(WP-SRCH-008). 어느 조건에서 잰 값인지 키를
+   * 결과 0건일 때 조건 하나를 풀면 몇 곳이 나오는지(WP-SRCH-003 결과 없음). 어느 조건에서 잰 값인지 키를
    * 함께 들고 있어 조건이 바뀌면 옛 값을 읽지 않는다.
    */
   const [relaxed, setRelaxed] = useState<{
@@ -209,16 +209,15 @@ export default function SearchScreen() {
     similar: VendorSummary[];
   } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  /** 정렬 시트(WP-SRCH-006)가 떠 있는가. */
+  /** 정렬 패널(WP-SRCH-003 `sortPanel`)이 칩 아래 떠 있는가. */
   const [sortOpen, setSortOpen] = useState(false);
   /**
-   * 필터 시트(WP-SRCH-005)가 떠 있는가.
+   * 필터 시트(WP-SRCH-002)가 떠 있는가.
    *
    * **화면을 옮기지 않는다.** 시안이 바텀시트라서이기도 하지만, 조건을 바꿀 때마다 결과
    * 수가 따라 바뀌려면 결과를 들고 있는 이 화면 위에 떠 있어야 한다.
    */
   const [filterOpen, setFilterOpen] = useState(false);
-  /** 금액 옆 ⓘ가 연 설명 시트(WP-SHT-014). null이면 닫혀 있다. */
   /** 최근 검색. 자동완성 화면과 같은 저장소(`features/search/recent-searches`)를 본다. */
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
@@ -242,7 +241,7 @@ export default function SearchScreen() {
   const displayedQuery = useRef<string | null>(null);
   const acRequestId = useRef(0);
 
-  /** 필터 시트에 넘길 지역 이름만. 시트는 수를 적지 않는다(시안 06-search #16d). */
+  /** 필터 시트에 넘길 지역 이름만. 시트는 수를 적지 않는다(WP-SRCH-002 `groups` 지역). */
   const regionNames = regions.map((region) => region.name);
 
   const trimmedQ = filters.q.trim();
@@ -361,7 +360,7 @@ export default function SearchScreen() {
 
   /*
    * 자동완성. 검색어가 있을 때만 서버를 부른다 — 업체명 행은 결과를 건너뛰고 상세로 가고,
-   * «이 말로 검색» 행은 결과 수를 미리 보여준다(시안 WP-SRCH-002).
+   * «이 말로 검색» 행은 결과 수를 미리 보여준다(WP-SRCH-004).
    */
   useEffect(() => {
     if (!isServerConfigured || !showAutocomplete || !trimmedQ) return;
@@ -382,10 +381,10 @@ export default function SearchScreen() {
   }, [showAutocomplete, trimmedQ]);
 
   /*
-   * 결과가 0건이고 조건이 걸려 있으면, 그 조건 하나를 풀면 몇 곳인지 재본다(WP-SRCH-008).
+   * 결과가 0건이고 조건이 걸려 있으면, 그 조건 하나를 풀면 몇 곳인지 재본다(WP-SRCH-003 결과 없음).
    * 같은 질의가 «비슷한 곳» 세 줄도 함께 들고 온다 — 조건 하나를 푼 목록이 곧 비슷한 곳이다.
    *
-   * 푸는 순서는 **예산이 먼저다**(시안 «예산 조건을 풀면 6곳이 나와요»). 예산은 사용자가
+   * 푸는 순서는 **예산이 먼저다**(RN 정본 `emptySub` «예산을 풀면 11곳을 볼 수 있어요»). 예산은 사용자가
    * 방금 고른 숫자라 되돌리기 쉽고, 지역·업종을 먼저 풀면 찾던 것과 다른 곳이 나온다.
    */
   const relaxKey: 'budget' | 'region' | 'category' | null = filters.budget
@@ -571,10 +570,10 @@ export default function SearchScreen() {
   // 세션들이 계속 없어질 화면 위에 쌓았다. 루트 시안 쪽으로 맞춘다.
 
 
-  // ─── 자동완성 · WP-SRCH-002 ───────────────────────────────────────────────
+  // ─── 자동완성 · WP-SRCH-004 ───────────────────────────────────────────────
 
   /**
-   * v3.29 정본 WP-SRCH-004. 검색어가 없으면 «최근 검색»(각 줄 X · «전체 삭제»)만 보여준다
+   * RN 정본 WP-SRCH-004(`search.jsx` frame-008). 검색어가 없으면 «최근 검색»(각 줄 X · «전체 삭제»)만 보여준다
    * (`acSec`/`acRecent`/`acClearAll`). 검색어가 생기면 «업체 · 바로 상세로»(이름 18 ·
    * «지역 · 업종» 14 · 꼬리 «실 제보 N건») · «지역»(지역명 · «N곳») · «이 말로 검색»
    * (검색어 · «결과 N곳») 순으로 뜬다. 행 56 · padding 12 0 · 아래 선 1. 그룹 제목
@@ -751,7 +750,12 @@ export default function SearchScreen() {
     );
   }
 
-  /** 결과 0건 · WP-SRCH-008. 막다른 길로 두지 않는다 — 조건을 하나 풀어주는 버튼과 업체 제보. */
+  /**
+   * 결과 0건 — RN 정본 WP-SRCH-003(`search.jsx` frame-003 `emptyWrap` · `nearWrap`).
+   * 가운데 정렬 제목 16/22 · 안내 14/20 · CTA «예산 조건 풀기»(48 · 좌우 20 · radius 8 · 15/700)
+   * → «조건이 비슷한 곳»(행 60 · 이름 15/700 · «실 제보 N건 · 지역» 12 · 오른쪽 금액 15/700).
+   * 업체 제보 상자는 정본 비교표(`diffs` «결과 없음»: 조건 풀기 CTA + 비슷한 곳 + 업체 제보)를 따른다.
+   */
   function renderEmpty() {
     const relaxLabel =
       relaxKey === 'budget'
@@ -767,22 +771,19 @@ export default function SearchScreen() {
         ? error
         : relaxLabel
           ? relaxedTotal !== null && relaxedTotal > 0
-            ? `${relaxLabel} 조건을 풀면 ${relaxedTotal}곳이 나와요`
+            ? `${relaxLabel}을 풀면 ${formatCount(relaxedTotal)}곳을 볼 수 있어요`
             : `${relaxLabel} 조건을 풀어보세요`
           : '찾으시는 업체가 아직 등록되지 않았어요.';
 
     return (
       <View>
-        <View style={styles.emptyHero}>
-          <ThemedText type="t2">{EMPTY_TITLE}</ThemedText>
-          <ThemedText type="body" themeColor="textSecondary">{body}</ThemedText>
-        </View>
-        {relaxLabel ? (
-          <View style={styles.emptyCta}>
-            <ActionButton
-              variant="primary"
-              size="xlarge"
-              label={`${relaxLabel} 조건 풀기`}
+        <View style={styles.emptyWrap}>
+          <ThemedText type="f16" style={[styles.bold, styles.emptyTitle]}>{EMPTY_TITLE}</ThemedText>
+          <ThemedText type="f14" themeColor="textAssistive" style={styles.emptySub}>{body}</ThemedText>
+          {relaxLabel ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${relaxLabel} 조건 풀기`}
               onPress={() =>
                 setFilters((current) =>
                   relaxKey === 'budget'
@@ -792,65 +793,55 @@ export default function SearchScreen() {
                       : { ...current, category: null }
                 )
               }
-            />
-          </View>
-        ) : null}
-        {/*
-          비슷한 곳 — 조건 하나를 푼 목록의 앞 세 곳(시안 06-search #16f). 썸네일 52 ·
-          이름 18 · 금액 16 · 건수 14. 막다른 길에 놓아둔 다음 걸음이라 없으면 그리지 않는다.
-        */}
+              style={({ pressed }) => [
+                styles.emptyCta,
+                { backgroundColor: theme.tint },
+                pressed ? styles.pressed : null,
+              ]}>
+              <ThemedText type="f15" style={[styles.bold, { color: theme.onTint }]}>
+                {`${relaxLabel} 조건 풀기`}
+              </ThemedText>
+            </Pressable>
+          ) : null}
+        </View>
         {similar.length > 0 ? (
-          <>
-            <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />
-            <View style={[styles.section, styles.sectionAfterBand]}>
-              <ThemedText type="t4">{EMPTY_SIMILAR_TITLE}</ThemedText>
-              <View style={styles.trendList}>
-                {similar.map((item) => {
-                  const line = priceLine(item.paidPrice, item.guidePrice);
-                  return (
-                    <View key={item.id}>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={`${item.name} 자세히 보기`}
-                        onPress={() =>
-                          router.push({
-                            pathname: '/search/[vendorId]',
-                            params: { vendorId: item.id },
-                          })
-                        }
-                        style={styles.trendRow}>
-                        <VendorImage
-                          source={item.imageUrl ? { uri: item.imageUrl } : undefined}
-                          category={vendorImageCategory(item.category)}
-                          width={Layout.thumbList}
-                          height={Layout.thumbList}
-                          radius={Radius.small}
-                        />
-                        <View style={styles.trendBody}>
-                          <ThemedText type="t5" numberOfLines={1}>
-                            {item.name}
-                          </ThemedText>
-                          <View style={styles.trendMeta}>
-                            <ThemedText
-                              type="t6"
-                              numeric
-                              themeColor={line.dim ? 'textAssistive' : undefined}
-                              style={styles.bold}>
-                              {line.text}
-                            </ThemedText>
-                            <ThemedText type="t7" themeColor="textAssistive" numberOfLines={1}>
-                              {countTail(item)}
-                            </ThemedText>
-                          </View>
-                        </View>
-                      </Pressable>
-                      <View style={[styles.divider, { backgroundColor: theme.border }]} />
+          <View style={styles.nearWrap}>
+            <ThemedText type="f13" themeColor="textAssistive" style={styles.bold}>{EMPTY_SIMILAR_TITLE}</ThemedText>
+            <View>
+              {similar.map((item) => {
+                const line = priceLine(item.paidPrice, item.guidePrice);
+                return (
+                  <Pressable
+                    key={item.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${item.name} 자세히 보기`}
+                    onPress={() =>
+                      router.push({
+                        pathname: '/search/[vendorId]',
+                        params: { vendorId: item.id },
+                      })
+                    }
+                    style={[styles.nearRow, { borderBottomColor: theme.border }]}>
+                    <View style={styles.nearCol}>
+                      <ThemedText type="f15" numberOfLines={1} style={styles.bold}>
+                        {item.name}
+                      </ThemedText>
+                      <ThemedText type="f12" themeColor="textAssistive" numeric numberOfLines={1}>
+                        {`${countTail(item)} · ${regionLabel(item.region)}`}
+                      </ThemedText>
                     </View>
-                  );
-                })}
-              </View>
+                    <ThemedText
+                      type="f15"
+                      numeric
+                      themeColor={line.dim ? 'textAssistive' : undefined}
+                      style={[styles.bold, styles.nearPrice]}>
+                      {line.text}
+                    </ThemedText>
+                  </Pressable>
+                );
+              })}
             </View>
-          </>
+          </View>
         ) : null}
         <View style={[styles.emptyNote, { backgroundColor: theme.backgroundElement }]}>
           <ThemedText type="t5">{EMPTY_REPORT_TITLE}</ThemedText>
@@ -894,8 +885,10 @@ export default function SearchScreen() {
           v3.29 재대조로 뺐다(2026-09-23).
 
           정렬 칩은 열림 상태를 캐럿 방향으로 보여준다(WP-SRCH-003 `sortChipOn`
-          `caretUp` vs 기본 `caretDim`) — 시트가 열려 있으면 위, 닫혀 있으면 아래.
+          `caretUp` vs 기본 `caretDim`) — 패널이 열려 있으면 위, 닫혀 있으면 아래.
+          누르면 칩 바로 아래 인라인 패널(`sortPanel`)이 뜬다. 바텀시트가 아니다.
         */}
+        <View style={styles.countBar}>
         <View style={[styles.countRow, { backgroundColor: theme.background }]}>
           <View style={styles.countText}>
             <ThemedText type="f14" numeric style={styles.bold}>
@@ -909,10 +902,30 @@ export default function SearchScreen() {
               active={false}
               open={sortOpen}
               accessibilityLabel={`정렬: ${SORT_LABEL[filters.sort]}`}
-              onPress={() => setSortOpen(true)}
+              onPress={() => setSortOpen((open) => !open)}
             />
           </View>
         </View>
+        {sortOpen ? (
+          <View style={styles.sortPanel}>
+            <SortPanel
+              value={filters.sort}
+              onSelect={(sort) => {
+                setFilters((current) => ({ ...current, sort }));
+                setSortOpen(false);
+              }}
+            />
+          </View>
+        ) : null}
+        </View>
+        {/* 패널 바깥을 누르면 닫는다 — 목록 위에 깔리는 투명 막. */}
+        {sortOpen ? (
+          <Pressable
+            accessibilityLabel="정렬 닫기"
+            onPress={() => setSortOpen(false)}
+            style={styles.sortDismiss}
+          />
+        ) : null}
 
         {/* 결과 목록 */}
         {vendors === null ? (
@@ -973,7 +986,7 @@ export default function SearchScreen() {
         {/*
           검색은 Root 5탭의 1Depth라 뒤로가기를 두지 않는다.
 
-          v3.29 정본(`대메뉴_검색.dc.html` WP-SRCH-001) `stickyHead`: `headTop`은
+          RN 정본 WP-SRCH-001(`search.jsx` frame-001) `stickyHead`: `headTop`은
           `headTitleRoot`(«검색» 22/700) 하나뿐이고 옆에 결과 수를 적지 않는다 — 결과
           수는 검색창 아래 별도 `countRow`에 있다(2026-09-23 v3.29 재대조로 여기 있던
           중복 «N곳» 표시를 뺐다). 검색 Root에는 Back을 두지 않는다.
@@ -1004,20 +1017,9 @@ export default function SearchScreen() {
 
         <Toast message={toast} onHidden={() => setToast(null)} />
 
-        {/* 결과 머리 ⓘ가 여는 설명 시트 — WP-SHT-014. */}
-
-        <SortSheet
-          visible={sortOpen}
-          value={filters.sort}
-          onSelect={(sort) => {
-            setFilters((current) => ({ ...current, sort }));
-            setSortOpen(false);
-          }}
-          onDismiss={() => setSortOpen(false)}
-        />
         {/*
-          필터 시트 — WP-SRCH-005. 고르는 즉시 조건이 걸려 결과와 CTA의 수가 함께 바뀐다.
-          «{n}곳 보기»를 누르면 시트만 닫힌다 — 이미 그 조건으로 보고 있다.
+          필터 시트 — WP-SRCH-002. 고르는 즉시 조건이 걸려 결과와 CTA의 수가 함께 바뀐다.
+          «{n}개 업체 보기»를 누르면 시트만 닫힌다 — 이미 그 조건으로 보고 있다.
         */}
         <FilterSheet
           visible={filterOpen}
@@ -1025,6 +1027,7 @@ export default function SearchScreen() {
             category: filters.category,
             region: filters.region,
             budget: filters.budget,
+            sort: filters.sort,
           }}
           regions={regionNames}
           count={total}
@@ -1088,7 +1091,7 @@ function PickHeartIcon({ color, filled }: { color: string; filled: boolean }) {
 /**
  * 결과 카드 한 장 — 피그마 `Search.tsx` 업체 목록의 카드(2026-09-14 정본 · 최상위
  * 규칙 1). 테두리 1 · radius 16(`rounded-2xl`) · 왼쪽 열 120(썸네일 104×116 ·
- * radius 18 · 안쪽 8) · 오른쪽 정보 안쪽 14(`p-3.5`). 위 줄은 업종 라벨 + 이름(14/700)과
+ * radius 8 — RN 정본 `vThumb` · 안쪽 8) · 오른쪽 정보 안쪽 14(`p-3.5`). 위 줄은 업종 라벨 + 이름(14/700)과
  * 오른쪽 Pick 원 28, 다음 줄은 핀 12 + 지역, 아래 줄은 금액(왼쪽)과 꼬리(오른쪽).
  *
  * **피그마의 해시태그 · 별점 · 저장 수는 그리지 않는다** — 서버가 주지 않는다
@@ -1132,7 +1135,8 @@ function ResultCard({
           category={vendorImageCategory(category)}
           width={Layout.thumbSearchWidth}
           height={Layout.thumbSearchHeight}
-          radius={Radius.thumb}
+          /* RN 정본 `vThumb` radius 8(전에는 피그마 18). */
+          radius={Radius.picker}
         />
         {badge ? (
           /* 피그마 badge: 열 기준 left/top 14 · pill · 잉크 채움 · 흰 글자 · padding 8/2. */
@@ -1213,8 +1217,7 @@ function ResultCard({
  * 결과 위 정렬 칩 «추천순 ▾» — v3.29 정본 WP-SRCH-001 `sortChip` / WP-SRCH-003
  * `sortChipOn`. 36 · 좌우 14 · radius 999 · 테두리 1 #eaebee · 배경 흰색 · 14/700 ·
  * 꺾쇠 14(반투명 .5). 열려 있으면 꺾쇠가 위를 본다(`caretUp`), 닫혀 있으면 아래
- * (`caretDim`). 누르면 정렬 시트가 열린다 — 정본의 인라인 드롭다운 패널 대신 기존
- * 바텀시트를 그대로 쓴다(정렬 시트는 v3.29 이전부터 있던 공용 컴포넌트).
+ * (`caretDim`). 누르면 칩 아래 인라인 정렬 패널(`SortPanel`, WP-SRCH-003)이 열린다.
  */
 function DropdownChip({
   label,
@@ -1225,7 +1228,7 @@ function DropdownChip({
 }: {
   label: string;
   active: boolean;
-  /** 이 칩이 여는 시트가 지금 열려 있는가 — 꺾쇠 방향만 바꾼다. */
+  /** 이 칩이 여는 패널이 지금 열려 있는가 — 꺾쇠 방향만 바꾼다. */
   open?: boolean;
   onPress: () => void;
   accessibilityLabel?: string;
@@ -1256,6 +1259,9 @@ function DropdownChip({
   );
 }
 
+
+/** 정본 `nearRow` 최소 높이 60 — 사다리 밖의 행 높이라 여기 적는다. */
+const NEAR_ROW_HEIGHT = 60;
 
 const styles = StyleSheet.create({
   container: {
@@ -1541,6 +1547,20 @@ const styles = StyleSheet.create({
     marginBottom: Layout.inlineGap,
   },
   countText: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  /* 결과 수 줄 + 정렬 패널의 기준 틀. 패널이 목록 위로 겹쳐 뜨게 z를 올린다. */
+  countBar: {
+    zIndex: 30,
+  },
+  /* 정본 `sortPanel` right 20 · top 52 — 칩 오른쪽 끝(pageX)에 맞추고 칩 바로 아래 4. */
+  sortPanel: {
+    position: 'absolute',
+    right: Layout.pageX,
+    top: Layout.inlineGap + Layout.chip + Spacing.one,
+  },
+  sortDismiss: {
+    ...StyleSheet.absoluteFill,
+    zIndex: 20,
+  },
   /* 목록 `px-5 space-y-3` + 바깥 `pb-4` — 카드 사이 12 · 아래 16. */
   resultList: {
     paddingHorizontal: Layout.pageX,
@@ -1625,14 +1645,53 @@ const styles = StyleSheet.create({
     marginBottom: Layout.inlineGap,
   },
 
-  // 결과 없음 · 시안 #16f: hero padding 36 24 28 · gap 10 → CTA → 제보 카드(bg gray50 · radius 10 · padding 20 · gap 8)
-  emptyHero: {
-    paddingTop: Layout.sectionGap + Spacing.two,
+  // 결과 없음 · RN 정본 WP-SRCH-003 `emptyWrap`: 가운데 · 사이 12 · 좌우 40 · 제목 16/22 · 안내 14/20.
+  emptyWrap: {
+    alignItems: 'center',
+    gap: Layout.inlineGap,
+    paddingTop: Layout.sectionGap,
     paddingBottom: Layout.sectionGap,
+    /* 좌우 40 — 사다리에 없어 32 + 8로 만든다. */
+    paddingHorizontal: Spacing.five + Spacing.two,
+  },
+  emptyTitle: {
+    lineHeight: LineHeight.lh22,
+    textAlign: 'center',
+  },
+  emptySub: {
+    lineHeight: LineHeight.lh20,
+    textAlign: 'center',
+  },
+  /* 정본 `emptyCta`: 위 14 · 높이 48 · 좌우 20 · radius 8 · 코랄 면 · 15/700 흰 글자. */
+  emptyCta: {
+    marginTop: Layout.sectionHeadGap - Layout.inlineGap,
+    height: Layout.searchField,
+    paddingHorizontal: Layout.cardPadding,
+    borderRadius: Radius.picker,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  /* 정본 `nearWrap` 아래 24 · 사이 10 · `nearRow` 행 60 · 아래 선 1 · `nearCol` 사이 3. */
+  nearWrap: {
+    paddingHorizontal: Layout.pageX,
+    paddingBottom: Layout.gutter,
     gap: Layout.cardGap,
   },
-  emptyCta: {
-    paddingBottom: Layout.sectionGap,
+  nearRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Layout.inlineGap,
+    minHeight: NEAR_ROW_HEIGHT,
+    borderBottomWidth: Border.hairline,
+  },
+  nearCol: {
+    flex: 1,
+    minWidth: 0,
+    gap: Layout.cardNameGap,
+  },
+  nearPrice: {
+    flexShrink: 0,
   },
   emptyNote: {
     borderRadius: Radius.medium,
