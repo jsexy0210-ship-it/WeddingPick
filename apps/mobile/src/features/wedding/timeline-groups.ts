@@ -2,7 +2,7 @@ import type { WeddingEvent } from '@weddingpick/api-contract';
 import { daysUntil } from '@weddingpick/domain';
 
 /**
- * 웨딩노트 캘린더의 주 단위 흐름 — v3.29 `대메뉴_웨딩노트.dc.html` WP-NOTE-001.
+ * 웨딩노트 캘린더의 주 단위 흐름 — `docs/design/React_Native/note.jsx` frame-001 WP-NOTE-001.
  *
  * 「월 격자를 폐기하고 예식일까지 주 단위 흐름으로 바꿨다」는 정본 문구를 그대로
  * 옮긴다. 지난 일정은 이 모듈이 아니라 화면이 따로 접어 보여준다 — 여기는 **오늘

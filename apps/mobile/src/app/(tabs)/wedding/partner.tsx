@@ -23,7 +23,7 @@ import { Badge, Dock, Hero, ListRow, NavBar, NoteCard, Screen, Section } from '@
 /**
  * `spec/strings.ko.json` `couple.*` · 정본 `docs/design/React_Native/my.jsx`
  * WP-CPL-001(배우자 초대) · WP-CPL-006(연결 해제). 「연결됨」(이미 연결된 사람이 보는 관리
- * 화면)은 WP-MY-014(연결관리)에 속해 이번 작업 범위 밖이라 그대로 둔다.
+ * 화면)은 WP-MY-005(연결관리 · `docs/design/React_Native/my.jsx`)에 속해 이번 작업 범위 밖이라 그대로 둔다.
  */
 const S = {
   inviteNav: '배우자 초대',
@@ -286,7 +286,7 @@ export default function PartnerScreen() {
     );
   }
 
-  /* ---------------------------------------------------------- 연결됨 · WP-MY-014(이번 작업 범위 밖 — 그대로 둔다) */
+  /* ---------------------------------------------------------- 연결됨 · WP-MY-005(이번 작업 범위 밖 — 그대로 둔다) */
   if (me.spouseLinked) {
     return (
       <Screen>

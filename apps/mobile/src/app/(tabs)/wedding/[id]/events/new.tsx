@@ -171,7 +171,7 @@ export default function AddWeddingEventRoute() {
                 divider={false}
               />
               {partner ? (
-                <ListRow left={<CheckBox checked />} title={`${partner}님에게도 알려줘요`} divider={false} />
+                <ListRow left={<CheckBox checked />} title={`${partner}님에게도 알려주기`} divider={false} />
               ) : null}
             </View>
 
@@ -206,9 +206,11 @@ const styles = StyleSheet.create({
   formHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
   formClose: { width: 36, height: 36, borderRadius: Radius.pill, alignItems: 'center', justifyContent: 'center' },
   scroll: { flexShrink: 1 },
-  content: { paddingBottom: Spacing.two, gap: Spacing.three },
-  fields: { gap: Spacing.three },
-  divider: { height: 1 },
+  content: { paddingBottom: Spacing.two, gap: 12 },
+  /* note.js `sheetForm` — 칸 사이 `gap:12px`. */
+  fields: { gap: 12 },
+  /* note.js `divider` — `margin:20px 0`이 시트 `gap:12px` 위에 더해진다. */
+  divider: { height: 1, marginVertical: 20 },
   alarms: { gap: Spacing.half },
   pressed: { opacity: 0.8 },
 });
