@@ -12,6 +12,7 @@
     "vendors:import": "tsx src/vendors-import.ts",
     "analysis:eval": "tsx src/analysis-eval.ts",
     "public-data:import": "tsx src/public-data-import.ts",
+    "public-stats:import": "tsx src/public-stats-import.ts",
     "inquiries": "tsx src/inquiry-admin.ts",
     "rebuttals": "tsx src/rebuttal-admin.ts",
     "objections": "tsx src/objection-admin.ts",
