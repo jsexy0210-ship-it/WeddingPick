@@ -202,6 +202,45 @@ async function main(): Promise<void> {
     `SELECT count(*) AS 건수 FROM structured.vendor_source_records WHERE source_key = 'sample'`,
   );
 
+  console.log('\n샘플 정리 전 의존성 — 세기만 한다');
+  await count(
+    '샘플 업체의 후기 작성자',
+    `SELECT count(*) AS 전체,
+            count(*) FILTER (WHERE r.author_user_id IS NULL) AS 작성자없음,
+            count(*) FILTER (WHERE EXISTS (
+              SELECT 1 FROM identity.identities i WHERE i.user_id = r.author_user_id)) AS 실제로그인
+       FROM structured.reviews r
+      WHERE EXISTS (SELECT 1 FROM structured.vendor_source_records s
+                     WHERE s.vendor_id = r.vendor_id AND s.source_key = 'sample')`,
+  );
+  await count(
+    '샘플 업체의 Pick',
+    `SELECT count(*) AS 전체,
+            count(*) FILTER (WHERE note = 'wedding-tabs-sample-v1') AS 시드표시
+       FROM structured.vendor_candidates c
+      WHERE EXISTS (SELECT 1 FROM structured.vendor_source_records s
+                     WHERE s.vendor_id = c.vendor_id AND s.source_key = 'sample')`,
+  );
+  await count(
+    '샘플 업체 이미지',
+    `SELECT count(*) AS 전체, count(storage_key) AS 저장본
+       FROM structured.vendor_images i
+      WHERE EXISTS (SELECT 1 FROM structured.vendor_source_records s
+                     WHERE s.vendor_id = i.vendor_id AND s.source_key = 'sample')`,
+  );
+  await count('샘플 박람회',
+    `SELECT count(*) AS 전체 FROM structured.expos
+      WHERE source_note LIKE 'wedding-tabs-sample-%' OR title LIKE '[샘플]%'`);
+  await count('샘플 웨딩 일정',
+    `SELECT count(*) AS 전체 FROM structured.wedding_events WHERE title LIKE '[샘플]%'`);
+  await count('샘플 상담 기록',
+    `SELECT count(*) AS 전체 FROM structured.consultation_records
+      WHERE common ->> '_seedTag' = 'wedding-tabs-sample-v1'`);
+  await count('샘플 지출',
+    `SELECT count(*) AS 전체 FROM structured.expenses WHERE label LIKE '[샘플]%'`);
+  await count('샘플 Pick',
+    `SELECT count(*) AS 전체 FROM structured.vendor_candidates WHERE note = 'wedding-tabs-sample-v1'`);
+
   /*
    * 보존 3건 규칙(docs/retention-policy.md)이 겨누는 표들이다. 운영 데이터가 아니라
    * **수집·사용량 이력**이고, 오래된 것을 지우는 계획이 여기 숫자를 근거로 선다.

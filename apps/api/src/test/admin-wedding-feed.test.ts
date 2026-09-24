@@ -345,6 +345,19 @@ describe('웨딩피드 관리자 라우트', () => {
     expect(generate).not.toHaveBeenCalled();
   });
 
+  it('이미지 모델 거절 원인을 관리자 화면에 안전한 코드로 알린다', async () => {
+    process.env.GEMINI_API_KEY = 'test-key';
+    jest.spyOn(weddingFeedImage, 'generateWeddingFeedImage').mockRejectedValue(
+      new weddingFeedImage.WeddingFeedImageError('provider', 404, 'NOT_FOUND')
+    );
+    const response = await app().inject({
+      method: 'POST', url: '/v1/admin/wedding-feed/image/generate',
+      payload: { kind: 'thumbnail', title: '제목' },
+    });
+    expect(response.statusCode).toBe(500);
+    expect(response.json().error.message).toBe('Gemini 이미지 요청이 거절됐어요 (404 NOT_FOUND).');
+  });
+
   /*
    * 2026-09-15에 이 자리가 두 번 뒤집혔다 — 제미나이 → 클로드 → 제미나이.
    * 마지막이 「클로드 API는 싹다 전면 폐기하고 제미나이로 명시해」다. 모델은
