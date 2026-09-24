@@ -33,17 +33,14 @@ export type HomeTier = 'start' | 'going' | 'finishing';
 export const FINISHING_FROM = 9;
 
 /**
- * 홈이 세는 업종. 12개다.
+ * 홈이 세는 업종. 11개다 — `PREPARATION_CATEGORIES` 그대로.
  *
- * `PREPARATION_CATEGORIES`와 같은 집합이되 **순서만 다르다** — 핸드오프(SPEC §13.8 ·
- * 시안 1)는 시작 전 사용자에게 «웨딩홀부터 정해볼까요?»라 말하고 격자도 웨딩홀 ·
- * 스튜디오 · 드레스 · 메이크업으로 연다. 결정사는 결혼을 정하기 전의 일이라 준비
- * 순서의 맨 뒤로 보낸다. 개수는 그대로 12다.
+ * 핸드오프(SPEC §13.8 · 시안 1)는 시작 전 사용자에게 «웨딩홀부터 정해볼까요?»라
+ * 말하고 격자도 웨딩홀 · 스튜디오 · 드레스 · 메이크업으로 연다. 준비 순서가 이미
+ * 웨딩홀부터다. 2026-09-24 전에는 결정사를 맨 뒤로 보내 12개를 셌는데, 대표 지시
+ * (「결정사 따윈 필요없다」)로 결정사를 업종에서 뺐다.
  */
-export const HOME_CATEGORIES: readonly VendorCategory[] = [
-  ...PREPARATION_CATEGORIES.filter((category) => category !== 'wedding_info_company'),
-  ...PREPARATION_CATEGORIES.filter((category) => category === 'wedding_info_company'),
-];
+export const HOME_CATEGORIES: readonly VendorCategory[] = PREPARATION_CATEGORIES;
 
 export const HOME_TOTAL = HOME_CATEGORIES.length;
 
@@ -116,8 +113,8 @@ export function currentCategory(
   const open = statuses.filter((row) => row.state !== 'decided');
   /*
    * 아직 아무 데도 담아둔 곳이 없으면(0개 구간) 홈 순서의 첫 업종이다 — SPEC §13.8
-   * «웨딩홀부터 정해볼까요?». 서버의 다음 업종은 준비 순서(결정사부터)라 여기서 쓰면
-   * 히어로와 준비 현황 4칸이 서로 다른 업종을 가리킨다.
+   * «웨딩홀부터 정해볼까요?». 서버의 다음 업종을 여기서 쓰면 히어로와 준비 현황
+   * 4칸이 서로 다른 업종을 가리킬 수 있다.
    */
   const picking = statuses.some((row) => row.pickCount > 0);
 

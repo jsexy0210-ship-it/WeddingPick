@@ -1,6 +1,7 @@
 import {
   CONSULTATION_CATEGORIES,
   CONSULTATION_STATUSES,
+  STORED_CONSULTATION_CATEGORIES,
   VISIT_NOTE_AUDIO_TYPES,
 } from '@weddingpick/domain';
 import { z } from 'zod';
@@ -18,6 +19,8 @@ import { idSchema, timestampSchema } from './common';
  */
 
 export const consultationCategorySchema = z.enum(CONSULTATION_CATEGORIES);
+/** 응답이 읽는 분류 — 2026-09-24 전에 저장된 결정사 기록까지 받는다. */
+export const storedConsultationCategorySchema = z.enum(STORED_CONSULTATION_CATEGORIES);
 export const consultationStatusSchema = z.enum(CONSULTATION_STATUSES);
 
 /**
@@ -77,7 +80,7 @@ export const consultationRecordSchema = z.object({
   vendorLabel: z.string().nullable(),
 
   status: consultationStatusSchema,
-  category: consultationCategorySchema.nullable(),
+  category: storedConsultationCategorySchema.nullable(),
   confidence: z.number().min(0).max(1).nullable(),
 
   common: z.record(z.string(), z.unknown()),

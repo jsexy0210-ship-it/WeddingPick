@@ -25,7 +25,7 @@
  * - 결정 취소는 되돌릴 수 있는 조작이라 한 번 더 묻는다(위험한 조작).
  * - **별점은 다르다**(v3.28 2026-09-23 「후기 별점 UI를 되살린다」) — `vendorCandidateSchema`에
  *   추가됐다. 검색·상세와 같은 관문(`scored_reviews`)에서 오고, 확인된 후기가 모자라거나
- *   체크리스트 업종(결정사)이면 null이라 그때 카드는 별점 줄을 안 그린다.
+ *   체크리스트 업종(과거 결정사)이면 null이라 그때 카드는 별점 줄을 안 그린다.
  */
 import type { CandidateListResponse, CurrentUser, VendorCandidate } from '@weddingpick/api-contract';
 import {

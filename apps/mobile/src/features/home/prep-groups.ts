@@ -18,13 +18,8 @@ const S = strings.home;
  * .dc.html 문구 그대로 다시 단다(온보딩은 「시작 준비」, 홈은 「웨딩홀」 — 화면마다
  * 다른 문구를 쓰는 것이지 지어낸 것이 아니다).
  *
- * DESIGN_UNRESOLVED → 확인 후 반영: 「웨딩홀」 카드의 업종 구성만은 `PREPARATION_GROUPS.start`
- * (결정사+웨딩홀)를 그대로 쓰지 않고 **hall 하나**로 좁혔다. 그대로 두면 결정사를
- * 고르지 않는 한(v3.29 PROJECT_RULES.md — 「결정사·플래너 대행 개념을 업종이나
- * 기능으로 넣지 않는다」라 실제로 거의 안 고른다) 웨딩홀 카드가 «계약 완료» 상태에
- * 영원히 못 이르는 버그가 된다. `대메뉴_Pick.dc.html`의 `cat-웨딩홀` 그룹 예시
- * 데이터도 hall 업체만 담고 있어(결정사 없음) 같은 결론을 가리킨다. 근거 둘이 같은
- * 방향이라 hall 단독으로 구현했다 — 대표님이 결정사를 포함하라고 하시면 되돌린다.
+ * 「웨딩홀」 카드는 hall 하나만 센다 — `PREPARATION_GROUPS.start`가 2026-09-24부터
+ * hall 하나다(대표 지시로 결정사를 업종에서 뺐다). 그 전에는 여기서 결정사를 걸러냈다.
  */
 export type HomePrepGroupKey = PreparationGroupKey;
 
@@ -36,19 +31,12 @@ export const HOME_PREP_GROUP_LABEL: Record<HomePrepGroupKey, string> = {
   goods: '예물 · 신혼',
 };
 
-/**
- * 그룹당 실제로 세는 업종. `PREPARATION_GROUPS`에서 그대로 가져오되 `start`만
- * `wedding_info_company`(결정사)를 뺀다 — 위 DESIGN_UNRESOLVED 참고.
- */
+/** 그룹당 실제로 세는 업종. `PREPARATION_GROUPS` 그대로. */
 const HOME_PREP_GROUP_CATEGORIES: Record<HomePrepGroupKey, readonly VendorCategory[]> =
-  Object.fromEntries(
-    PREPARATION_GROUPS.map((group) => [
-      group.key,
-      group.key === 'start'
-        ? group.categories.filter((category) => category !== 'wedding_info_company')
-        : group.categories,
-    ])
-  ) as Record<HomePrepGroupKey, readonly VendorCategory[]>;
+  Object.fromEntries(PREPARATION_GROUPS.map((group) => [group.key, group.categories])) as Record<
+    HomePrepGroupKey,
+    readonly VendorCategory[]
+  >;
 
 /**
  * .dc.html은 Material Symbols Outlined(`storefront`·`face_retouching_natural`·

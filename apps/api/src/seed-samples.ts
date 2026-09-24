@@ -37,8 +37,8 @@ import { createPool, withTransaction } from './db';
 
 const SOURCE_KEY = 'sample';
 const PER_CATEGORY = 20;
-/** 샘플을 넣는 업종 — «기타»만 빠진다. */
-type SampleCategory = Exclude<VendorCategory, 'etc'>;
+/** 샘플을 넣는 업종 — «기타»와 2026-09-24에 뺀 결정사가 빠진다. */
+type SampleCategory = Exclude<VendorCategory, 'etc' | 'wedding_info_company'>;
 const SAMPLE_CATEGORIES = PREPARATION_CATEGORIES as readonly SampleCategory[];
 const REPORTER_COUNT = 40;
 /** display_name은 5자까지(users_display_name_check). 진짜 계정과는 identities가 없다는 것으로 가른다. */
@@ -173,12 +173,6 @@ const RECIPES: Record<SampleCategory, Recipe> = {
     suffixes: ['청첩장', '카드', '인비테이션', '페이퍼', '레터프레스'],
     keywords: 'wedding,invitation,card',
     amount: [50_000, 400_000],
-  },
-  wedding_info_company: {
-    prefixes: ['듀오', '가연', '노블', '레드힐', '선우', '바로', '천생', '인연', '커플', '연리지', '결', '만남', '하나', '온리', '베스트', '프리미엄', '로얄', '엘리트', '퍼스트', '스마트', '행복', '좋은', '참', '진', '설렘', '두근', '정담', '연분', '동행', '평생'],
-    suffixes: ['결혼정보', '매칭', '커플매니저', '결정사', '메리지'],
-    keywords: 'couple,wedding',
-    amount: [1_500_000, 6_000_000],
   },
 };
 
@@ -418,21 +412,10 @@ const REVIEW_TEXTS: Record<SampleCategory, { title: string; body: string }[]> = 
     { title: '모바일 청첩장까지 편했어요', body: '종이 청첩장과 모바일 청첩장을 한 번에 맡겼는데 사진 배치와 지도 안내가 깔끔했어요. 수정 요청도 바로 반영됐어요.' },
     { title: '무난했어요', body: '큰 아쉬움 없이 무난했어요. 성수기라 제작 기간이 조금 길었지만 안내받은 일정 안에는 들어왔어요. 응대가 친절했어요.' },
   ],
-  wedding_info_company: [
-    { title: '설명이 솔직했어요', body: '회원권 가격과 만남 횟수를 처음부터 정확히 설명해 주셨어요. 계약서 내용과 상담 내용이 같았어요.' },
-    { title: '매칭이 약속대로였어요', body: '계약 때 안내받은 횟수만큼 만남이 진행됐어요. 매니저가 취향을 잘 파악해 주셨어요. 준비 과정에서 물어본 것마다 답이 빨라서 마음이 놓였어요.' },
-    { title: '강요가 없었어요', body: '상담 때 바로 결정하라고 재촉하지 않아서 편했어요. 며칠 생각한 뒤 연락드렸는데 조건이 그대로였어요.' },
-    { title: '담당 매니저가 꾸준했어요', body: '담당자가 바뀌지 않고 끝까지 연락해 주셨어요. 만남 후 피드백도 자세히 전달해 주셨어요. 준비 과정에서 물어본 것마다 답이 빨라서 마음이 놓였어요.' },
-    { title: '환불 규정이 명확했어요', body: '중도 해지 시 환불 기준을 계약 전에 문서로 받았어요. 실제로 문의했을 때도 같은 기준으로 안내받았어요.' },
-    { title: '만남 주기가 일정했어요', body: '한 달에 안내받은 횟수대로 만남이 잡혔어요. 프로필 관리도 세심했어요. 준비 과정에서 물어본 것마다 답이 빨라서 마음이 놓였어요.' },
-    { title: '조건 설명이 명확했어요', body: '추가 비용이 생기는 경우를 미리 알려 주셔서 예상 밖 지출이 없었어요. 상담 분위기도 편안했어요.' },
-    { title: '무난했어요', body: '전체적으로 안내받은 대로 진행됐어요. 첫 상담 시간이 길었지만 그만큼 설명이 충분했어요. 준비 과정에서 물어본 것마다 답이 빨라서 마음이 놓였어요.' },
-  ],
 };
 
 /** 업체 안내에 보일 상품 이름 — 업종당 하나. */
 const PRODUCT_NAME: Record<SampleCategory, string> = {
-  wedding_info_company: '기본 회원권',
   hall: '그랜드홀 대관 + 식대',
   studio: '스튜디오 촬영 기본',
   dress: '드레스 대여 + 피팅',
@@ -761,7 +744,7 @@ async function seedCategory(
       insertedReviews.rows.map((row) => [`${row.vendor_id}|${row.author_user_id}`, row.id])
     );
 
-    /* 항목 평가(웨딩홀·스튜디오·드레스·메이크업·헤어변형·본식스냅·부케·혼수·청첩장) 또는 체크리스트(결정사) — 한 후기에 둘 중 하나만(DB 트리거). */
+    /* 항목 평가(웨딩홀·스튜디오·드레스·메이크업·헤어변형·본식스냅·부케·혼수·청첩장) — 체크리스트(과거 결정사)와는 한 후기에 둘 중 하나만(DB 트리거). */
     const aspectRows = reviews.flatMap((review) => {
       const reviewId = reviewIdOf.get(`${review.vendorId}|${review.author}`);
 

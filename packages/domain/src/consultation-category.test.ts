@@ -65,10 +65,11 @@ describe('상담 분류', () => {
     expect(UNSUPPORTED_CONSULTATION_LABELS).toContain('청첩장');
   });
 
-  it('플래너를 따로 세우지 않는다', () => {
-    // CLAUDE.md 2026-09-11 — 「플래너」는 업종이 아니다. 결정사로 들어간다(P-3).
-    expect(CONSULTATION_CATEGORIES).toContain('wedding_info_company');
+  it('결정사 · 플래너 상담은 읽지 않는다', () => {
+    // 2026-09-24 대표 지시 — 결정사 불필요. P-3(플래너 → 결정사)을 뒤집었다.
+    expect(CONSULTATION_CATEGORIES).not.toContain('wedding_info_company');
     expect(CONSULTATION_CATEGORIES).not.toContain('planner');
+    expect(UNSUPPORTED_CONSULTATION_LABELS).toEqual(expect.arrayContaining(['결정사', '플래너']));
   });
 });
 

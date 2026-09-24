@@ -1,7 +1,7 @@
 /**
  * 업종. 디자인 핸드오프 v3.22 §13.6 «준비 현황 · 그룹 분류 · 12개 업종»(2026-09-08).
  *
- *   결정사 → 웨딩홀 → 스튜디오 → 드레스 → 메이크업 → 헤어변형 → 본식스냅 → 부케
+ *   웨딩홀 → 스튜디오 → 드레스 → 메이크업 → 헤어변형 → 본식스냅 → 부케
  *   → 청첩장 → 예물 → 혼수 → 허니문
  *
  * 순서가 곧 준비 순서라 임의로 섞지 않는다(PREPARATION_CATEGORIES · 순회 로딩 ·
@@ -20,8 +20,14 @@
  *   마찬가지로 남아 있고, 0083이 새 값을 더한 뒤 0084가 남은 `sdm` 업체를 `studio`로
  *   옮겼다. 패키지 견적 안의 역할(PACKAGE_ROLES)은 다른 개념이라 그대로다. 지출
  *   묶음(EXPENSE_BUCKETS)의 `sdm`도 묶음 이름이라 그대로다.
+ * - 2026-09-24: `wedding_info_company`(결정사)를 뺐다 — 대표 지시 「웨딩픽은 플래너
+ *   없이 누구나 예약 가능한 웨딩 플랫폼이다. 고로 결정사 따윈 필요없다」. DB enum 값은
+ *   남는다(과거 지출·상담 기록이 가리킬 수 있다). 그래서 **타입에는 남기고
+ *   (`STORED_VENDOR_CATEGORIES`) 고르는 목록(`VENDOR_CATEGORIES`)에서만 뺐다.**
+ *   새로 만들거나 고르는 자리는 전부 `VENDOR_CATEGORIES`를 본다.
  */
-export const VENDOR_CATEGORIES = [
+/** 저장된 값이 가질 수 있는 업종 전부 — DB enum과 같은 값. 읽기 전용 자리에서만 쓴다. */
+export const STORED_VENDOR_CATEGORIES = [
   'wedding_info_company',
   'hall',
   'studio',
@@ -37,11 +43,19 @@ export const VENDOR_CATEGORIES = [
   'etc',
 ] as const;
 
-export type VendorCategory = (typeof VENDOR_CATEGORIES)[number];
+export type VendorCategory = (typeof STORED_VENDOR_CATEGORIES)[number];
+
+/** 더는 고르거나 새로 만들지 않는 업종. 2026-09-24 대표 지시로 결정사를 뺐다. */
+export const RETIRED_VENDOR_CATEGORIES: readonly VendorCategory[] = ['wedding_info_company'];
+
+/** 고를 수 있는 업종. 검색 · 필터 · 지출 추가 · 공공데이터 수집이 전부 이 목록을 본다. */
+export const VENDOR_CATEGORIES: readonly VendorCategory[] = STORED_VENDOR_CATEGORIES.filter(
+  (category) => !RETIRED_VENDOR_CATEGORIES.includes(category)
+);
 
 /**
  * 준비 순서에 놓는 업종. «기타»는 준비 단계가 아니라 분류가 안 되는 업체를 담는
- * 칸이라 빠진다 — 핸드오프 순회 로딩(결정사 → 웨딩홀 → 스튜디오 → 드레스 →
+ * 칸이라 빠진다 — 핸드오프 순회 로딩(웨딩홀 → 스튜디오 → 드레스 →
  * 메이크업)이 «준비 순서와 같게 둔다»고 못박은 그 순서다. 홈의 다음 준비 · Pick 탭 ·
  * 웨딩일정 준비현황 · 검색 업종 격자가 전부 이 목록을 쓴다. 사용자 화면 어디에도
  * «기타»를 업종으로 내놓지 않는다.
@@ -52,7 +66,7 @@ export const PREPARATION_CATEGORIES: readonly VendorCategory[] = VENDOR_CATEGORI
 
 /** 화면에 쓰는 이름. 코드를 그대로 보여주지 않는다. 핸드오프 v3.18 §1.3. */
 export const VENDOR_CATEGORY_LABEL: Record<VendorCategory, string> = {
-  /** 결혼정보회사. 사용자가 부르는 이름은 «결정사»다(2026-09-08 오더). */
+  /** 더는 고르지 않는 업종(2026-09-24). 과거 기록을 읽을 때만 쓰인다. */
   wedding_info_company: '결정사',
   hall: '웨딩홀',
   studio: '스튜디오',
@@ -71,7 +85,7 @@ export const VENDOR_CATEGORY_LABEL: Record<VendorCategory, string> = {
 /**
  * 준비 현황(온보딩 3/5 · WP-APP-020)의 그룹. 핸드오프 v3.22 §13.6.
  *
- *   시작 준비     결정사 · 웨딩홀
+ *   시작 준비     웨딩홀
  *   스드메        스튜디오 · 드레스 · 메이크업 · 헤어변형
  *   본식 준비     본식스냅 · 부케 · 청첩장
  *   예물 · 신혼   예물 · 혼수 · 허니문
@@ -90,7 +104,7 @@ export type PreparationGroup = {
 };
 
 export const PREPARATION_GROUPS: readonly PreparationGroup[] = [
-  { key: 'start', title: '시작 준비', categories: ['wedding_info_company', 'hall'] },
+  { key: 'start', title: '시작 준비', categories: ['hall'] },
   { key: 'sdm', title: '스드메', categories: ['studio', 'dress', 'makeup', 'hair'] },
   { key: 'ceremony', title: '본식 준비', categories: ['snap', 'bouquet', 'invitation'] },
   { key: 'goods', title: '예물 · 신혼', categories: ['goods', 'dowry', 'honeymoon'] },
@@ -112,7 +126,7 @@ export function skippedPreparationCategories(selected: readonly VendorCategory[]
     .flatMap((group) => [...group.categories]);
 }
 
-/** 토스트 «앞 단계도 확인해주세요 · 결정사 · 웨딩홀» — 비운 앞 그룹의 업종을 이어 적는다. */
+/** 토스트 «앞 단계도 확인해주세요 · 웨딩홀» — 비운 앞 그룹의 업종을 이어 적는다. */
 export const PREPARATION_SKIPPED_TOAST_PREFIX = '앞 단계도 확인해주세요';
 
 export function preparationSkippedToast(skipped: readonly VendorCategory[]): string {

@@ -72,9 +72,11 @@ describe('상태 자동 판정', () => {
   });
 });
 
-describe('기본 열넷', () => {
-  it('열네 개다', () => {
-    expect(TASK_PRESETS).toHaveLength(14);
+describe('기본 열셋', () => {
+  it('열세 개다 — 「결정사 가입」은 2026-09-24에 뺐다', () => {
+    expect(TASK_PRESETS).toHaveLength(13);
+    expect(TASK_PRESETS.map((preset) => preset.key)).not.toContain('agency_join');
+    expect(TASK_PRESETS.map((preset) => preset.category)).not.toContain('wedding_info_company');
   });
 
   it('키가 겹치지 않는다', () => {

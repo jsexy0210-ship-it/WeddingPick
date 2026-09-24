@@ -10,10 +10,12 @@ import {
   summarizeExpenses,
 } from './expense';
 
-describe('네 갈래로 묶는다', () => {
+describe('세 갈래로 묶는다', () => {
   it('업종을 갈래로 옮긴다', () => {
+    expect(EXPENSE_BUCKETS).toEqual(['hall', 'sdm', 'etc']);
     expect(bucketFor('hall')).toBe('hall');
-    expect(bucketFor('wedding_info_company')).toBe('agency');
+    // 2026-09-24 결정사 갈래를 뺐다 — 과거 결정사 지출은 기타로 센다.
+    expect(bucketFor('wedding_info_company')).toBe('etc');
     expect(bucketFor('studio')).toBe('sdm');
     expect(bucketFor('dress')).toBe('sdm');
     expect(bucketFor('makeup')).toBe('sdm');
