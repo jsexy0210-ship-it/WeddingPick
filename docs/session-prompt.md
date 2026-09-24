@@ -15,7 +15,13 @@
 착수:
 - 최신 main SHA·Open PR·관련 Issue·Actions를 확인한다.
 - AGENTS.md와 CLAUDE.md의 현재 규칙을 읽는다.
-- 디자인은 v3.29가 기준이고 docs/design/ 하나만 본다(2026-09-23 대표 지시 —
+- **디자인 정본은 경로로 고정이다(2026-09-24 대표 절대 지침 — CLAUDE.md 맨 앞 ⛔).**
+  **앱(RN) 화면 = `docs/design/React_Native/`**(React 변환본 84개 — 먼저 폴더 안 HANDOFF.md · README.md를 읽는다. 경로는 한 층으로 풀려 있다) ·
+  **관리자 · 랜딩 = `docs/design/html/`**(웨딩픽 관리자 · 관리자 운영 · 약관 방침 · 랜딩 v4 · 랜딩
+  하위페이지). 앱 화면에 대해 html/의 대메뉴 시안과 README · PROJECT_RULES · CHANGELOG는
+  React_Native와 어긋나면 진다. 두 곳 어디에도 없는 화면은 DESIGN_SOURCE_NOT_VERIFIED로 보고한다.
+- (이하 v3.29 설명은 관리자 · 랜딩과, React_Native에 없는 규칙을 볼 때만 참고한다.)
+  디자인은 v3.29가 기준이고 docs/design/ 하나만 본다(2026-09-23 대표 지시 —
   「최신파일로 다 덮어씌워」). docs/design/README.md → PROJECT_RULES.md → CHANGELOG.md →
   html/의 해당 대메뉴 시안 순서로 읽는다. **screen-inventory.md는 지금 없다** — v3.28
   6개 파일 전제로 짠 생성 스크립트가 v3.29의 16개(화면 카탈로그가 아닌 전체 IA·

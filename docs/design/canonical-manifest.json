@@ -141,16 +141,508 @@
     "note": "전달본 20개 밖에서 저장소가 만들어 붙이는 분석 문서 자리다. v3.28의 screen-inventory.md는 6개 .dc.html 전제로 짠 스크립트(scripts/build-screen-inventory.mjs)가 만들었는데, v3.29는 html이 16개로 늘고 화면 카탈로그가 아닌 파일(전체 IA·컴포넌트 시트·사용자 흐름·디바이스 대응·스토어 이미지)이 섞여 있어 스크립트를 그대로 돌리면 안 맞을 수 있다 — 재작업 전까지 이 자리를 비워 둔다.",
     "files": [
       {
+        "path": "React_Native/App.jsx",
+        "normalizedSha256": "23E50DAEFC7B3E69931FB21E5DC8D88A4953C260A12BF2BD4FDDA96DC0F3E2F9",
+        "sizeBytes": 7925,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/CONVERSION_REPORT.md",
+        "normalizedSha256": "46F418C166408CA9FD19D344C77585BA208EB3A32C738C91442568D266A0B470",
+        "sizeBytes": 5998,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/HANDOFF.md",
+        "normalizedSha256": "4A10C65161D03AFA247B9C2212187D7F770BD94EA3B0D80C764F2BB46FC6EDD4",
+        "sizeBytes": 1815,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/LICENSE-Icons-Apache-2.0.txt",
+        "normalizedSha256": "CFC7749B96F63BD31C3C42B5C471BF756814053E847C10F3EB003417BC523D30",
+        "sizeBytes": 11358,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/LICENSE-React.txt",
+        "normalizedSha256": "57448C1020E946AC069450F0250413594267AC69C24314E0B1817FB6D45411AB",
+        "sizeBytes": 3309,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/NOTICE-Icons.md",
+        "normalizedSha256": "A062B991753FDBF926517ABB664DADD1EB2E7944C2D71C6AE03C059890CFC4A9",
+        "sizeBytes": 1047,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/README (1).md",
+        "normalizedSha256": "76B8D9634569AD15C2E53B771474BF1FDD0B50923E4FDF5FB86FEE8CA6CD639F",
+        "sizeBytes": 977,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/README (2).md",
+        "normalizedSha256": "CC96BC1FFC161A694C47D1109B02CA562155D8CC0F796E4CF09FBDAC73952F31",
+        "sizeBytes": 480,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/README.md",
+        "normalizedSha256": "6BC7E05D983F6C7A5D4CA96A519DF84C9B53C89CCB58B59D79880047AA306D2C",
+        "sizeBytes": 6274,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
         "path": "React_Native/WeddingPick_App_Preview.html",
         "normalizedSha256": "AD10F5934A2BFD34E456A2621CD4FA87A0B176015200607DDE4F209E6C17D31F",
         "sizeBytes": 1057511,
-        "note": "20개 전달 ZIP 밖의 파일 — 2026-09-23에 대표님이 GitHub 웹 UI로 main에 직접 올렸다(같은 날 시행착오 커밋 「Create react-native」·「Create ddd」·「Create React_Native」·「Create gd」는 지워지고 이 경로만 남았다). 내용은 대메뉴 5개(홈·검색·Pick·웨딩노트·MY) + 공통 dc.html을 한 파일로 합친 React 미리보기 번들이다 — 새 화면·문구가 아니라 이미 20개 안에 있는 같은 대메뉴 5개 시안의 합본 미리보기라서 화면·값·문구의 근거는 여전히 대메뉴 dc.html 5개 쪽이다. 이 파일이 등록 전엔 verify-design-canonical.mjs의 파일-집합 검사가 『docs/design에 정본 밖 파일』로 실패해 이 시점 이후 main에 얹힌 PR 전부의 CI가 막혔다 — 대표님이 직접 올린 내용을 지우지 않고 해시로 등록해 그 CI 게이트만 다시 통과시켰다."
+        "note": "20개 전달 ZIP 밖의 파일 — 2026-09-23에 대표님이 GitHub 웹 UI로 main에 직접 올렸다(같은 날 시행착오 커밋 「Create react-native」·「Create ddd」·「Create React_Native」·「Create gd」는 지워지고 이 경로만 남았다). 내용은 대메뉴 5개(홈·검색·Pick·웨딩노트·MY) + 공통 dc.html을 한 파일로 합친 React 미리보기 번들이다 — 새 화면·문구가 아니라 이미 20개 안에 있는 같은 대메뉴 5개 시안의 합본 미리보기라서 화면·값·문구의 근거는 여전히 대메뉴 dc.html 5개 쪽이다. 이 파일이 등록 전엔 verify-design-canonical.mjs의 파일-집합 검사가 『docs/design에 정본 밖 파일』로 실패해 이 시점 이후 main에 얹힌 PR 전부의 CI가 막혔다 — 대표님이 직접 올린 내용을 지우지 않고 해시로 등록해 그 CI 게이트만 다시 통과시켰다. **2026-09-24 대표 절대 지침으로 앱(RN) 화면의 디자인 정본이 됐다** — 「절대적 지침. 디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」. 앞 문장의 「근거로 쓰지 않는다」류 표현은 이 지침으로 무효다(CLAUDE.md 맨 앞 ⛔)."
       },
       {
-        "path": "React_Native/WeddingPick_App_React_v3.29_Icons.zip",
-        "normalizedSha256": "F5B7C81A8AA251E826B013174404830EE8FC7A6B91FB88F12D75C453C79937CB",
-        "sizeBytes": 929822,
-        "note": "20개 전달 ZIP 밖의 파일 — 2026-09-24 09:11 KST(원본 커밋 UTC 01:11)에 대표님이 GitHub 웹 UI로 main에 직접 올렸다(같은 폴더의 WeddingPick_App_Preview.html과 같은 자리). 같은 이유로 미등록 상태면 verify-design-canonical.mjs의 파일-집합 검사를 막는다 — 내용을 열어보지 않고(압축 파일이라 정본 근거로 바로 쓸 수 없다) 해시로만 등록해 그 게이트를 통과시킨다. 이 파일 자체를 화면·값·문구의 근거로 쓰지 않는다 — 계속 대메뉴 dc.html 16개가 정본이다."
+        "path": "React_Native/assetOverrides.js",
+        "normalizedSha256": "A430373B053529753A9EC260A8B0408A16005EBC6680E7BDA6F38817B6CB7270",
+        "sizeBytes": 580,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/bookmark.svg",
+        "normalizedSha256": "2CB1F9936CAD19AB88CF9D96CA0EF3122468A63BCBC35C1EF98C47690E62B365",
+        "sizeBytes": 678,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/build-icons.cjs",
+        "normalizedSha256": "0A8B93F00C7207B5CA2953BA919460912A88312FE82B9985F2BACCC71F5023EB",
+        "sizeBytes": 1660,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/build-preview.cjs",
+        "normalizedSha256": "6245FCD2111E3917C2EB35EBA71A6D17874B09A56CE7127FC61A27BB5E7F7996",
+        "sizeBytes": 3077,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/calendar.svg",
+        "normalizedSha256": "7D7459DB5A16DD171B65E263261BE8F451CF5DDB0D209F846D090E960029A9AE",
+        "sizeBytes": 1303,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/camera.svg",
+        "normalizedSha256": "0DC59AD82D016CC2395DF10A08D66D7F78F3D50ED354E8EB0BCB296C8C1D9A5D",
+        "sizeBytes": 2017,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/chatting.svg",
+        "normalizedSha256": "DAEDE2173C6779D83F66E5039F5E8B4A970E4439E57BC9C8AF6D33F2D6EC4DFF",
+        "sizeBytes": 2144,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/check-fill.svg",
+        "normalizedSha256": "6D53C39348EE705FC4F6008C1F0F167D56C40EEA7B468342B14A7C4CFD536133",
+        "sizeBytes": 588,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/chevron-left.svg",
+        "normalizedSha256": "B921285AE092B6DBA03A0A510AE63BE7B437A12180341790773F96C983187508",
+        "sizeBytes": 524,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/chevron-right.svg",
+        "normalizedSha256": "FD14C360AB76B58ABC69F53E3F259D1F79E6EB1CCF2A7D41B04F7BB9A45B4581",
+        "sizeBytes": 548,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/clock.svg",
+        "normalizedSha256": "49E8EED35D274676AD8D3D036B57B549DA667299773F99770F3F063C5E39DFB7",
+        "sizeBytes": 884,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/close-fill.svg",
+        "normalizedSha256": "CCF115B14D21AB56847A64225A002875BA57268975C35F5687CE60E00CFE7A3A",
+        "sizeBytes": 736,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/common.js",
+        "normalizedSha256": "4E04AF2D4CC0A99B1A02B6197DD46827A8C005FD2B8A374293B6F33437404531",
+        "sizeBytes": 58290,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/common.jsx",
+        "normalizedSha256": "5EF3CB71C3EE340E4794681A4626D63243715BC73B8A31DA0D45A442CDD42E2D",
+        "sizeBytes": 21862,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/community.svg",
+        "normalizedSha256": "3E5866BFE77B890A5F6C4CB5570B143A7A581F11DFA500F339305DBD1554E9B9",
+        "sizeBytes": 1254,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/components.js",
+        "normalizedSha256": "56EB85A098E47769D3D48564A0263A412EC52D3EB48BB588981C310FBC5F8180",
+        "sizeBytes": 14369,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/components.jsx",
+        "normalizedSha256": "F57226B85F58C0335E0EECD1DBC2A3B4724400F04FA6E8D8FBE93F5D8B402B94",
+        "sizeBytes": 43708,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/designMetadata.js",
+        "normalizedSha256": "DEBAB64E8E23C8CA700CAD943B796FA27B640062667E3D0006255C2F1EAD1632",
+        "sizeBytes": 3149,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/designRuntime.js",
+        "normalizedSha256": "A04A8D914E16702CAC4B61299C3082A3CC74F68CC2C0CC173CAAD25FE407F8C9",
+        "sizeBytes": 4464,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/devices.js",
+        "normalizedSha256": "51117D82773A0B739780C2C299E54B7FE81B5E6444112CB42CD2142F32863600",
+        "sizeBytes": 13433,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/devices.jsx",
+        "normalizedSha256": "1739A022A52EBEA42329721468D02647767043B36229A0667BD5ABDE0D7F7037",
+        "sizeBytes": 8307,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/diamond.svg",
+        "normalizedSha256": "0115B299F7CECE79158122BAB75FE9E8214F578FD86FFE7BE61B2D933D7A84CF",
+        "sizeBytes": 314,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/download",
+        "normalizedSha256": "3A3BCF768C25D0483B1E4B81F5A2879DEF4F8160C994929AE3A997511DBD84AE",
+        "sizeBytes": 30,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/dry_cleaning.svg",
+        "normalizedSha256": "D08EA568CA6701160D71A738796EF0C4330977F503FA4FE4C4AB391CD174AAAE",
+        "sizeBytes": 576,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/edit.svg",
+        "normalizedSha256": "0545BCC83148E6B9E72F8E6717504D781B92F4ACE2AF291CE3DFBB5A268C5804",
+        "sizeBytes": 765,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/face_retouching_natural.svg",
+        "normalizedSha256": "BFFB017BD154ED9F643241F90FBAF6075DA62285D8AF331B72C2DC1E39C13B17",
+        "sizeBytes": 1161,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/file-checksums.json",
+        "normalizedSha256": "BA00C5634339AE286DF94B44EF6069D2835E7B0E5D056D583152EB9EEA5B8792",
+        "sizeBytes": 8346,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/heart-fill.svg",
+        "normalizedSha256": "3437AFF58D5A4E1535F7B64DE60FA7ECAB3C2CFBEAA51E1F42B9000C0E10BACA",
+        "sizeBytes": 1038,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/heart.svg",
+        "normalizedSha256": "8C01F611478ACFB8DE7D326BDE1C25EF44663FCE4D012E88ED1343BD1BFD5603",
+        "sizeBytes": 1832,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/history.svg",
+        "normalizedSha256": "3478B9A6EC830121E396D35E1A26E652B901F351C320862E0AC05BA44BC78634",
+        "sizeBytes": 446,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/home-fill.svg",
+        "normalizedSha256": "EEFA0EC81FB6114CB18CB6392FDAC9FD538635889BADAE79FDACF00F337887B7",
+        "sizeBytes": 646,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/home-frame-004-icons.png",
+        "normalizedSha256": "4FC33B252ADFBEF20DD3BA67E67278D8A02A8096B97A8FD6CE55368CADEC7507",
+        "sizeBytes": 126929,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/home-frame-012-icons.png",
+        "normalizedSha256": "B4587F1E2A2360F26F1802624DF0A62D71B02911AEB167EADD9383FC216B4EA5",
+        "sizeBytes": 134476,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/home.js",
+        "normalizedSha256": "5824566D3AB6AFF9C5B686B9FED4ADEF60C0E5DD295CC0BC5761966A90EF6C58",
+        "sizeBytes": 75302,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/home.jsx",
+        "normalizedSha256": "85276C8A7BA49F5AD9A73390C67295ACFFDFFF321BD33142D97713E9D461BD0C",
+        "sizeBytes": 43111,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/home.svg",
+        "normalizedSha256": "3EFA92B66CEC28BA463E046814939C8A30232B258B4104EA2C5A6CDB63503B04",
+        "sizeBytes": 899,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/icon-gallery-check.png",
+        "normalizedSha256": "AACEC3FD489CE5C066490A1B0F146D01C83C3D11377F5EB7A7E6441A435BC4D6",
+        "sizeBytes": 129787,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/icon-gallery.html",
+        "normalizedSha256": "3422AE037B5FF91950A701406A2B7264267A36123517FFAC31124E1F32E0576D",
+        "sizeBytes": 99596,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/icon-geometry-check.json",
+        "normalizedSha256": "3F73F2A87C79FD93E099879292A85F475F5A4C96F3ED4FA768B493B8D73C1CD9",
+        "sizeBytes": 4421,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/icon-sources.json",
+        "normalizedSha256": "47576841C7AA925C6E039E00D77A1AC16CEC1692D0A5337A3D89E84B79F1E607",
+        "sizeBytes": 17853,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/iconAssets.js",
+        "normalizedSha256": "71E5C6234F2E28E2190EAA104E5C8C6FC7864F9A6F1780A41C2FBB9E33F2152B",
+        "sizeBytes": 33271,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/index.html",
+        "normalizedSha256": "DA3FCE1245772F4B6CE57BE165CF157E5136D5E6F291D6F37ABB7FF4C8C70A24",
+        "sizeBytes": 327,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/location.svg",
+        "normalizedSha256": "DEBF477A67DF608E0A005A7C895C8A7FD323E2F84BF7B09A40A5DF5402E9B663",
+        "sizeBytes": 1741,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/main.jsx",
+        "normalizedSha256": "5780B5FED71723C058568E7B92D875817E43AF1BEC33C9530BE0F100C0DCEF9D",
+        "sizeBytes": 217,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/mic.svg",
+        "normalizedSha256": "BC27741A5071E0C44492AD763045C9AFA76092278999B9E2B034E0FF2BF57A84",
+        "sizeBytes": 1173,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/missing-assets.json",
+        "normalizedSha256": "8FC4BDC5E577FC173F6E0629312EBB2FC541A54E44C85955643568CEB09583E4",
+        "sizeBytes": 20259,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/more-horiz.svg",
+        "normalizedSha256": "06BD4C1D77EE4CAA006F3AE1BC40C1C0497BE2C8F1DE2CDE20D6C9F16953916B",
+        "sizeBytes": 985,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/my-frame-001-icons.png",
+        "normalizedSha256": "720667078B738613C3F3E19EC9096C0798CB5D969A2FED4F30A8E33002F0F4FF",
+        "sizeBytes": 111016,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/my.js",
+        "normalizedSha256": "3693D26AB70E4698E3CE76A2482E9161EB7E7D9DE3FA94EB79DA1B089E8C843B",
+        "sizeBytes": 47272,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/my.jsx",
+        "normalizedSha256": "726AED8DCBF0BCBCC81463CE215585130E617AC3CCF608635FD1FF7F311B8C84",
+        "sizeBytes": 46919,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/note.js",
+        "normalizedSha256": "6100F4F83D4296DCD3A5DCEEFB9BE784E424E7BECCE85CCC53CEA12C11348E55",
+        "sizeBytes": 39672,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/note.jsx",
+        "normalizedSha256": "75EFA7AD5194278CD05D497E459CF5D6075F6EC7210212BDFA49FEBF044319C4",
+        "sizeBytes": 23460,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/notification.svg",
+        "normalizedSha256": "ACADA7965DCBAADD7F92D1846B7AA12BBBF1F03D2E435249CC0B65B84FDFBFBD",
+        "sizeBytes": 1096,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/package-manifest.json",
+        "normalizedSha256": "24954F9DB874E54448C349C9121815CC95DACEEBAE0CE4440AF956FD6136B66F",
+        "sizeBytes": 1389,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/package.json",
+        "normalizedSha256": "B3CD9101B7BAEA1E09C9CE02E6251D568D2C69288C209F93018A0900841B718C",
+        "sizeBytes": 563,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/photo.svg",
+        "normalizedSha256": "20A2146533E97D724095D64AE80DF78F5369A5E449A0E62FB3BD7B4A23E24346",
+        "sizeBytes": 1684,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/pick.js",
+        "normalizedSha256": "1BCB80E5906772B3D54BFA33F7C48663FB73D4571631015CD6BC3B20DCBCED0D",
+        "sizeBytes": 42740,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/pick.jsx",
+        "normalizedSha256": "996770BA385951AB4CA087DC38887924DAEDC27BD229522C080AF19F4F4B361D",
+        "sizeBytes": 15408,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/preview.css",
+        "normalizedSha256": "9C2242E90B5EA58A54A932AF5B7E4B012B7AFBDE874FCF07C8B36869C1F9082B",
+        "sizeBytes": 5549,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/preview.html",
+        "normalizedSha256": "90D6D150B43E4B2C579152B68A022F95F96E28006C6C639D629A91BA6A2B7420",
+        "sizeBytes": 1090101,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/profile-fill.svg",
+        "normalizedSha256": "B7FA2EB5FF11D376DA88AA3C4C845431AC5DB89A916D918F9465D87306C95360",
+        "sizeBytes": 630,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/profile.svg",
+        "normalizedSha256": "E653EFD1617CFE031BA846F3FD4E21F15BDC5583F9848E0E970FC5AFCCAFEE57",
+        "sizeBytes": 1150,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/react18-runtime.js",
+        "normalizedSha256": "3EB2F77034B545A060F113AEB18B3295A00E3EAFB754239228A0E8A85D98F226",
+        "sizeBytes": 142233,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/runtime-check.json",
+        "normalizedSha256": "A89C5BE34D3C04EA1194156F5FF388179AD62AAEF6C747FCA9A0817A1CC7BAF0",
+        "sizeBytes": 52627,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/search-fill.svg",
+        "normalizedSha256": "3DF193E681FBAF729083102D88F1EB1999C8B5780A991EEECD208ADF726A707E",
+        "sizeBytes": 645,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/search.js",
+        "normalizedSha256": "021BF872EF97CE7ED134EF5E8FA38B5333067FCACDBAA79A296C964422AFED3C",
+        "sizeBytes": 50662,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/search.jsx",
+        "normalizedSha256": "D1734B223F80778BF17626B127D4E0C87C8621FD36F43BA60EA11684B9E48BBF",
+        "sizeBytes": 31349,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/search.svg",
+        "normalizedSha256": "315017365EE0C54306F25D2D9332340412511659885782F459D8DC32BF71F7F9",
+        "sizeBytes": 781,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/source-map.json",
+        "normalizedSha256": "6DE8A0CE3192C565E876E7AA79B07855D4E0A986D318CAD6BCD40615D7FE7255",
+        "sizeBytes": 3573,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/source-styles.css",
+        "normalizedSha256": "2F54C53B76770DD1153793E4C651F1729B25FA7636F85114D9FBD7BD616757AD",
+        "sizeBytes": 3426,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/storefront.svg",
+        "normalizedSha256": "6FF5AA54BEE59C682695C5E8E681A28CE19404977D307E628B4071081538CAB0",
+        "sizeBytes": 770,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/syntax-check.json",
+        "normalizedSha256": "F798502B56A1B8118A60CFCA32897C3D14BBBC2CBDBFA8BB7438EB9CFE562E6F",
+        "sizeBytes": 782,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/trash.svg",
+        "normalizedSha256": "B08A6EB20C30D2B09A5138509404CB5B6D3D117C3FB90097AE2D3449E679A03B",
+        "sizeBytes": 2064,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/vite.config.js",
+        "normalizedSha256": "F4671D5BAE889912A66A6562316A115F6E4E5ED8D831D24AB817B1AFEEC0A599",
+        "sizeBytes": 77,
+        "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
       }
     ]
   },

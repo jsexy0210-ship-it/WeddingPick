@@ -1,6 +1,42 @@
 # 웨딩픽 — 구현 규칙
 
-## 현재 디자인 기준 — v3.29 (2026-09-23, 대표 지시 — 이 파일의 맨 앞)
+## ⛔ 디자인 정본 — 절대 지침 (2026-09-24 대표 지시, 이 파일의 최우선)
+
+대표님 원문(2026-09-24) — 「**절대적 지침. 디자인 원본은 위 경로로 고정한다**」 · 「**디자인 정본**」 ·
+「**RN=…/docs/design/React_Native · 관리자, 랜딩=…/docs/design/html**」.
+
+| 대상 | 정본(이 경로 하나뿐) |
+| --- | --- |
+| **앱(RN)** — 홈 · 검색 · Pick · 웨딩노트 · MY · 로그인·약관 동의 · 온보딩 · 로더 등 | `docs/design/React_Native/` |
+| **관리자 · 랜딩** | `docs/design/html/` |
+
+```
+docs/design/React_Native/   React 변환본 v3.29.1(아이콘 보완판) 84개 파일 — 하위 폴더 없이 한 층으로 올라와 있다
+  README.md · HANDOFF.md · CONVERSION_REPORT.md   범위 · 읽는 순서 · 결손 — 먼저 읽는다
+  WeddingPick_App_Preview.html · preview.html     앱 화면 · 상태 프레임 80개 미리보기
+  home · search · pick · note · my · common · components · devices  각각 .jsx(보드) + .js(모델: 화면별 값 · 스타일)
+  *.svg · iconAssets.js · assetOverrides.js       아이콘 · 이미지 매핑
+  runtime-check.json · source-map.json            화면 ID ↔ 원본 행 번호
+docs/design/html/웨딩픽 관리자.dc.html · 웨딩픽 관리자 운영.dc.html · 웨딩픽 약관 방침.dc.html
+docs/design/html/웨딩픽 랜딩 v4.dc.html · 웨딩픽 랜딩 하위페이지.dc.html
+```
+
+- **앱 화면은 `React_Native`만 근거로 쓴다.** `html/`의 앱 대메뉴 시안(홈 · 검색 · Pick · 웨딩노트 ·
+  MY · 공통 다이얼로그)과 `README.md` · `PROJECT_RULES.md` · `CHANGELOG.md`는 앱에 대해서는
+  `React_Native`와 어긋나면 진다. 어긋남을 발견하면 `React_Native` 기준으로 보고 무엇이 달랐는지 남긴다.
+- **관리자 · 랜딩은 `html/`만 근거로 쓴다.** 해당 `.dc.html`의 화면 ID 구역을 연다.
+- 두 곳 어디에도 없는 화면은 추측으로 만들지 않고 `DESIGN_SOURCE_NOT_VERIFIED`로 보고해 대표님께 받는다.
+- 읽는 순서는 폴더 안 `HANDOFF.md`를 따른다 — 다만 거기 적힌 `src/boards/…` · `src/models/…` ·
+  `reports/…` 경로는 **이 저장소에서는 한 층으로 풀려 있다**(`src/boards/home.jsx` → `home.jsx`,
+  `src/models/home.js` → `home.js`, `reports/runtime-check.json` → `runtime-check.json`).
+- 값은 `*.js` 모델과 `*.jsx` 보드에서 읽고, 필요하면 `preview.html`을 띄워 실제로 본다.
+  `scripts/canon/extract-style.mjs`는 `.dc.html` 전용이라 앱 화면에는 그대로 맞지 않는다 — 손으로 추측하지 않는다.
+- `HANDOFF.md` 자신의 경고를 그대로 지킨다: 이 폴더는 **React DOM 디자인 레퍼런스**이지 RN 완료본이 아니다.
+  사이드바 · 상단 도구 · 휴대전화 바깥 번호 · 캔버스 설명은 탐색기이지 제품 UI가 아니다.
+- 이 폴더의 파일을 바꾸거나 새로 올리면 `canonical-manifest.json`의 해시를 함께 갱신한다
+  (`npm run test:design-canonical`이 센다).
+
+## 현재 디자인 기준 — v3.29 (2026-09-23, 대표 지시 — 위 ⛔ 절대 지침이 이긴다)
 
 대표님 원문(2026-09-23) — 「**최신파일이다 깃 저장소 디자인 유일 경로에 올려주고 작업진행해**」 ·
 「**최신파일로 다 덮어씌워**」. v3.28(2026-09-22)을 잇는 같은 패턴의 지시다 — 새 전달본이
@@ -97,9 +133,10 @@ v3.29가 바꾼 것(근거: `docs/design/CHANGELOG.md`) — 별점 항목만 위
 1순위는 「정본과 구현을 화면·컴포넌트 단위로 1:1 대조하고, 차이가 확인된 것만 고치는 것」이다.
 추측·기존 구현 관성·임의 UX 개선을 금지한다.
 
-**Source of Truth — 정본은 `docs/design/` 하나뿐이다.** 위 「현재 디자인 기준」이 가리키는
-`docs/design/README.md` · `PROJECT_RULES.md` · `CHANGELOG.md` · `html/*.dc.html`(16개)만 근거로
-쓴다. **`docs/design/handoff/`·`docs/design/figma-export/`는 2026-09-22에 이미 파기됐고 이
+**Source of Truth — 앱은 `docs/design/React_Native`, 관리자 · 랜딩은 `docs/design/html`이다**
+(2026-09-24 대표 절대 지침 — 이 파일 맨 앞 ⛔). 앱 화면에 대해 `html/`의 대메뉴 시안과
+`README.md` · `PROJECT_RULES.md` · `CHANGELOG.md`는 `React_Native`와 어긋나면 진다. 두 곳 어디에도
+없는 화면은 `DESIGN_SOURCE_NOT_VERIFIED`다. **`docs/design/handoff/`·`docs/design/figma-export/`는 2026-09-22에 이미 파기됐고 이
 저장소에 없다** — 다른 세션에 지시를 넘길 때 그 경로를 정본으로 적지 않는다. `.dc.html`은
 **파일 이름만 보고 판단하지 않는다.** 해당 화면 ID(`WP-XXX-000`) 구역을 실제로 연다.
 
