@@ -357,10 +357,11 @@ export type KpiItem = {
 
 /** KPI 한 줄. 칸 수는 항목 수를 따르고 폭은 고르게 나눈다. */
 export function KpiRow({ items }: { items: KpiItem[] }) {
+  const compact = useAdminCompact();
   return (
-    <View style={styles.kpiRow}>
+    <View style={[styles.kpiRow, compact && styles.kpiRowCompact]}>
       {items.map((k) => (
-        <Wrap key={k.label} onPress={k.onPress} style={styles.kpiCard}>
+        <Wrap key={k.label} onPress={k.onPress} style={[styles.kpiCard, compact && styles.kpiCardCompact]}>
           <View style={styles.kpiHead}>
             <Text style={styles.kpiLabel} numberOfLines={1}>{k.label}</Text>
             {k.badge ? <Badge label={k.badge} kind={k.badgeKind ?? 'none'} /> : null}
@@ -934,6 +935,7 @@ const styles = StyleSheet.create({
   formModalBody: { padding: A.cardPadding, gap: A.cardGap },
 
   kpiRow: { flexDirection: 'row', gap: A.gridGap },
+  kpiRowCompact: { flexWrap: 'wrap' },
   kpiCard: {
     flex: 1,
     minWidth: 0,
@@ -942,6 +944,7 @@ const styles = StyleSheet.create({
     padding: A.cardPadding,
     gap: A.kpiGap,
   },
+  kpiCardCompact: { flexBasis: '45%', minWidth: 140 },
   kpiHead: { flexDirection: 'row', alignItems: 'center', gap: A.stackGap },
   kpiLabel: { flex: 1, minWidth: 0, fontSize: FontSize.micro, lineHeight: LineHeight.micro, color: C.textAssistive },
   kpiValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: A.stackGap },
