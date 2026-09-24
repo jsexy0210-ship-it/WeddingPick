@@ -76,7 +76,9 @@ export function classifyWeddingIndustry(industry: string, name: string): VendorC
  */
 export function resolveSbizCategory(industry: string, name: string): VendorCategory | null {
   if (/예식장/.test(industry)) return 'hall';
-  if (/결혼.*중개|결혼.*상담|결혼정보/.test(industry)) return 'wedding_info_company';
+  // 결정사(결혼 중개·상담)는 모으지 않는다(2026-09-24 대표 지시 「결정사는 필요없다」 —
+  // v3.29 「결정사 개념 삭제」). 상호에 웨딩이 있어도 etc로 남기지 않고 버린다.
+  if (/결혼.*중개|결혼.*상담|결혼정보/.test(industry)) return null;
   return classifyWeddingIndustry(industry, name) ?? (WEDDING_NAME.test(name) ? 'etc' : null);
 }
 
@@ -347,12 +349,14 @@ export type SbizUpjongQuery = { divId: string; codes: string[] };
  * 실 키로 불러 1,255개 중에서 골라낸 것이다 — 추측이 아니라 조회 결과다.
  *
  *   S21101  예식장업            → hall
- *   S21105  결혼 상담 서비스업   → wedding_info_company
  *   M11301  사진촬영업          → studio · snap (상호에 웨딩·본식·스냅이 있어야 받는다)
  *   S20701  미용실              → makeup (상호에 웨딩·브라이덜이 있어야 받는다)
  *   N11004  의류 대여업          → dress (상호에 웨딩·브라이덜이 있어야 받는다)
  *
- * 업종 이름만으로 받는 것은 앞의 둘뿐이다. 사진관·미용실·임대업 전체를 웨딩
+ * 결정사(S21105 결혼 상담 서비스업)는 뺐다 — 2026-09-24 대표 지시 「결정사는
+ * 필요없다」. 서울 한 곳에서만 834건 중 480건이 결정사였다.
+ *
+ * 업종 이름만으로 받는 것은 예식장업뿐이다. 사진관·미용실·임대업 전체를 웨딩
  * 업체로 들이지 않는다 — 상호를 함께 본다(`classifyWeddingIndustry`).
  *
  * 한복 소매업(G20904) · 뷔페(I20702 · I20801)는 웨딩 전용이 아니고 우리 업종
@@ -363,7 +367,7 @@ export type SbizUpjongQuery = { divId: string; codes: string[] };
  * 이제 실제 코드를 확인했으므로 확인한 값을 적어 둔다. 바꿔야 하면
  * `SBIZ_UPJONG_CODES` · `SBIZ_UPJONG_DIV_ID`가 이긴다.
  */
-export const WEDDING_UPJONG_CODES = ['S21101', 'S21105', 'M11301', 'S20701', 'N11004'] as const;
+export const WEDDING_UPJONG_CODES = ['S21101', 'M11301', 'S20701', 'N11004'] as const;
 
 /** 조회할 업종 자리와 코드. 확인된 소분류 코드가 기본이고 환경변수가 이긴다. */
 export function resolveUpjongQuery(override?: SbizUpjongQuery): SbizUpjongQuery {
