@@ -5,6 +5,7 @@ import { addCandidate, ensureWedding, getCurrentUser, listCandidates, removeCand
 import { isServerConfigured } from '@/api/config';
 import { loadToken } from '@/api/session';
 import { readCurrentUserSnapshot } from '@/features/loading/current-user-snapshot';
+import { PICK_COMPARE_MIN } from '@/features/pick/canonical-rules';
 
 /**
  * 내 Pick 후보 — 검색 결과 카드 · 업체 상세 · 비교 dock이 같은 것을 본다.
@@ -107,7 +108,25 @@ export function useMyCandidates() {
       setBusyVendorId(candidate.vendorId);
       try {
         await removeCandidate(weddingId, candidate.id);
-        await reload();
+        if (alive.current) {
+          setPage((current) => current && ({
+            ...current,
+            total: Math.max(0, current.total - 1),
+            groups: current.groups.map((group) => {
+              if (group.category !== candidate.category) return group;
+              const remaining = group.candidates.filter((item) => item.id !== candidate.id);
+              return {
+                ...group,
+                candidates: remaining,
+                comparable: remaining.length >= PICK_COMPARE_MIN,
+                ...(group.decidedVendorId === candidate.vendorId
+                  ? { state: 'picking' as const, decidedVendorId: null }
+                  : {}),
+              };
+            }),
+          }));
+        }
+        void reload().catch(() => undefined);
         return true;
       } catch {
         return false;

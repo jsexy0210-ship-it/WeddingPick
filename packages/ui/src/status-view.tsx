@@ -1,4 +1,4 @@
-import { Linking, Platform, StyleSheet, View } from 'react-native';
+import { Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { error as errorCopy } from '../../../spec/strings.ko.json';
 
@@ -8,7 +8,7 @@ import { ListSkeleton } from './list-skeleton';
 import { StepList, type Step } from './step-list';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
-import { Layout, MaxContentWidth, Spacing } from './theme';
+import { Layout, MaxContentWidth, Motion, Spacing } from './theme';
 import type { ActionButtonProps } from './action-button';
 import { useTheme } from './use-theme';
 
@@ -33,11 +33,9 @@ type StatusFrameProps = {
  * 행동 버튼 하나(48). 삽화는 없다.
  */
 function StatusFrame({ children, scope = 'page' }: StatusFrameProps) {
-  const theme = useTheme();
-
   if (scope === 'section') {
     return (
-      <ThemedView style={[styles.sectionContent, { backgroundColor: theme.backgroundElement }]}>
+      <ThemedView style={styles.sectionContent}>
         {children}
       </ThemedView>
     );
@@ -52,34 +50,22 @@ function StatusFrame({ children, scope = 'page' }: StatusFrameProps) {
   );
 }
 
-/**
- * 화면 전체(`page`)는 18/700(t5) 그대로 — 옛 핸드오프(17-sheets-states, 이 저장소에는
- * 이미 없다) 참고값이라 v3.29에서 재확인은 못 했지만 바꿀 근거도 없다
- * (`DESIGN_SOURCE_NOT_VERIFIED`).
- *
- * 섹션(`section`)은 `emptyCard`(WP-EMPTY-*) 정본값 16/700(t6) — `docs/design/html/공통_다이얼로그
- * 빈상태 로더.dc.html` `emptyT`.
- */
+/** 섹션 제목은 React_Native/common.js `emptyT`의 16/700이다. */
 function StatusTitle({ children, scope }: { children: string; scope: 'page' | 'section' }) {
   return (
-    <ThemedText type={scope === 'section' ? 't6' : 't5'} style={styles.centered}>
+    <ThemedText type={scope === 'section' ? 't6' : 't5'} style={[styles.centered, scope === 'section' && styles.sectionTitle]}>
       {children}
     </ThemedText>
   );
 }
 
-/**
- * 섹션 설명은 정본 `emptyS` 13/20 · `#868B94`(MUTED) — 정확한 줄높이 토큰이 없어
- * `micro`(13/18)로 가장 가깝게 맞춘다(2px 차이, `DESIGN_UNRESOLVED`: 정본 20에 맞는
- * 전용 줄높이 토큰이 없다). 화면 전체 설명은 옛 참고값 16/24 · `#4D5159` 그대로 둔다
- * (근거 미확인 — 위 제목과 같은 이유).
- */
+/** 섹션 설명은 React_Native/common.js `emptyS`의 13/20/400이다. */
 function StatusBody({ children, scope }: { children: string; scope: 'page' | 'section' }) {
   return (
     <ThemedText
       type={scope === 'section' ? 'micro' : 'body'}
-      themeColor="textSecondary"
-      style={styles.centered}>
+      themeColor={scope === 'section' ? 'textAssistive' : 'textSecondary'}
+      style={[styles.centered, scope === 'section' && styles.sectionBody]}>
       {children}
     </ThemedText>
   );
@@ -247,11 +233,22 @@ export type EmptyViewProps = {
 };
 
 export function EmptyView({ title, scope = 'page', description, actionLabel, onAction }: EmptyViewProps) {
+  const theme = useTheme();
   return (
     <StatusFrame scope={scope}>
       <StatusTitle scope={scope}>{title}</StatusTitle>
       {description ? <StatusBody scope={scope}>{description}</StatusBody> : null}
-      {actionLabel && onAction ? (
+      {actionLabel && onAction ? scope === 'section' ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={onAction}
+          style={({ pressed }) => [
+            styles.sectionAction,
+            { backgroundColor: theme.tint, transform: [{ scale: pressed ? Motion.pressButton.scale : 1 }] },
+          ]}>
+          <ThemedText style={[styles.sectionActionText, { color: theme.onTint }]}>{actionLabel}</ThemedText>
+        </Pressable>
+      ) : (
         <StatusAction variant="primary" label={actionLabel} onPress={onAction} />
       ) : null}
     </StatusFrame>
@@ -437,21 +434,15 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   /*
-   * WP-EMPTY-* `emptyCard`(`docs/design/html/공통_다이얼로그 빈상태 로더.dc.html` ·
-   * WP-EMPTY-HOME · PICK · NOTE · LNG · REC 공통) — 옅은 회색 카드 안에 제목 ·
-   * 설명 · CTA를 담는다. 예전에는 배경·둥글기 없이 맨 텍스트만 가운데 놓아서
-   * 정본의 카드 모양이 아예 없었다 — 오늘 웨딩노트에서 잡힌 것과 같은 패턴(정본에
-   * 있는 「카드」를 구현이 통째로 빠뜨림)이라 여기서 맞춘다. `theme.backgroundElement`
-   * (gray50 #F7F8F9)는 정본 `#F7F8FA`와 마지막 자리(파랑 채널)만 다른데, 팔레트에
-   * 그 값을 담는 역할이 없어 가장 가까운 기존 역할을 쓴다 — 새 팔레트 값을 지어내지
-   * 않는다. radius 12 · padding 32/20은 8배수 사다리 밖이라 `Radius`·`Spacing`에
-   * 이름이 없다(이 파일이 이미 그렇게 쓰는 자리와 같은 이유).
+   * React_Native/common.js `emptyCard`: radius 12 · 내부 좌우 20 · 상하 32.
+   * 앱은 라이트 고정이며, 시안의 면색 #F7F8FA를 그대로 쓴다.
    */
   sectionContent: {
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 12,
+    backgroundColor: '#f7f8fa',
     paddingHorizontal: 20,
     paddingVertical: 32,
     gap: 6,
@@ -463,8 +454,19 @@ const styles = StyleSheet.create({
   skeletonContent: {
     flex: 1,
     paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.three,
+    paddingTop: 12,
   },
   processing: { alignItems: 'center', gap: Spacing.five },
   processingText: { alignItems: 'center', gap: Spacing.two },
+  sectionTitle: { fontWeight: '700' },
+  sectionBody: { lineHeight: 20, fontWeight: '400' },
+  sectionAction: {
+    marginTop: 12,
+    height: 44,
+    paddingHorizontal: 18,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionActionText: { fontSize: 15, fontWeight: '700' },
 });

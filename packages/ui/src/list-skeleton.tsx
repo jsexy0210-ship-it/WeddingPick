@@ -2,7 +2,6 @@ import { StyleSheet, View } from 'react-native';
 
 import { Border, Layout, Radius, Spacing } from './theme';
 import { Skeleton } from './skeleton';
-import { useTheme } from './use-theme';
 
 export type ListSkeletonProps = {
   /** 그릴 행 수. 목록은 3줄까지만 뼈대를 그린다 — 4줄 이상은 실제 내용보다 뼈대가 기억된다. */
@@ -25,7 +24,6 @@ const HERO = 168;
  * (2026-09-23) — 3줄 · 72%/46% · 58%/38% · 66%/42% · 썸네일 52 전부 일치(PASS).
  */
 export function ListSkeleton({ rows = 3, hero = false, variant = 'default' }: ListSkeletonProps) {
-  const theme = useTheme();
   const widths = [
     ['72%', '46%'],
     ['58%', '38%'],
@@ -38,7 +36,7 @@ export function ListSkeleton({ rows = 3, hero = false, variant = 'default' }: Li
         {Array.from({ length: rows }, (_, i) => {
           const [w1, w2] = widths[i % 3]!;
           return (
-            <View key={i} style={[styles.searchCard, { borderColor: theme.border }]}>
+            <View key={i} style={styles.searchCard}>
               <View style={styles.searchImageCol}>
                 <Skeleton
                   width={Layout.thumbSearchWidth}
@@ -49,10 +47,10 @@ export function ListSkeleton({ rows = 3, hero = false, variant = 'default' }: Li
               <View style={styles.searchInfo}>
                 <Skeleton width="28%" height={10} />
                 <Skeleton width={w1} height={16} />
-                <Skeleton width={w2} height={13} style={{ backgroundColor: theme.backgroundSelected }} />
+                <Skeleton width={w2} height={13} style={styles.secondaryBar} />
                 <View style={styles.searchFooter}>
                   <Skeleton width="42%" height={15} />
-                  <Skeleton width="25%" height={13} style={{ backgroundColor: theme.backgroundSelected }} />
+                  <Skeleton width="25%" height={13} style={styles.secondaryBar} />
                 </View>
               </View>
             </View>
@@ -68,8 +66,8 @@ export function ListSkeleton({ rows = 3, hero = false, variant = 'default' }: Li
         <>
           <Skeleton height={HERO} radius={Radius.medium} />
           <Skeleton width="62%" height={20} />
-          <Skeleton width="38%" height={15} style={{ backgroundColor: theme.backgroundSelected }} />
-          <View style={[styles.divider, { backgroundColor: theme.backgroundSelected }]} />
+          <Skeleton width="38%" height={15} style={styles.secondaryBar} />
+          <View style={styles.divider} />
         </>
       ) : null}
       {Array.from({ length: rows }, (_, i) => {
@@ -80,7 +78,7 @@ export function ListSkeleton({ rows = 3, hero = false, variant = 'default' }: Li
             <Skeleton width={THUMB} height={THUMB} radius={Radius.small} />
             <View style={styles.lines}>
               <Skeleton width={w1} height={16} />
-              <Skeleton width={w2} height={13} style={{ backgroundColor: theme.backgroundSelected }} />
+              <Skeleton width={w2} height={13} style={styles.secondaryBar} />
             </View>
           </View>
         );
@@ -94,12 +92,14 @@ const ROW_PADDING_Y = 6;
 
 const styles = StyleSheet.create({
   container: { gap: Layout.inlineGap },
-  divider: { height: 1, marginVertical: Spacing.one },
+  divider: { height: 1, marginVertical: Spacing.one, backgroundColor: '#f2f3f6' },
+  secondaryBar: { backgroundColor: '#f2f3f6' },
   row: { flexDirection: 'row', alignItems: 'center', gap: Layout.inlineGap, paddingVertical: ROW_PADDING_Y },
   lines: { flex: 1, gap: Spacing.two },
   searchCard: {
     flexDirection: 'row',
     borderWidth: Border.hairline,
+    borderColor: '#eaebee',
     borderRadius: Radius.cardLarge,
     overflow: 'hidden',
   },

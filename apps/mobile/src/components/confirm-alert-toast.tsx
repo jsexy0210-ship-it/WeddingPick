@@ -3,9 +3,9 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 
-/** 09-dialogs DLG-F: 일반 2초, 행동(되돌리기 등)이 있으면 4초. */
-export const DIALOG_TOAST_MS = 2000;
-export const DIALOG_TOAST_ACTION_MS = 4000;
+/** 사용자 설정: 결과와 되돌리기 토스트 모두 1초 뒤 사라진다. */
+export const DIALOG_TOAST_MS = 1000;
+export const DIALOG_TOAST_ACTION_MS = 1000;
 export const DIALOG_TOAST_DOCK_BOTTOM = 100;
 export const DIALOG_TOAST_FREE_BOTTOM = 32;
 

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Animated, Easing, StyleSheet, type ViewStyle } from 'react-native';
 
 import { Motion, Radius, USE_NATIVE_DRIVER } from './theme';
-import { useTheme } from './use-theme';
 
 export type SkeletonProps = {
   /**
@@ -33,7 +32,6 @@ export type SkeletonProps = {
  * 보조 바(#F2F3F6)는 `style`로 배경을 덮는다(`ListSkeleton` 참고). 이미지 자리는 `radius`를 10(medium)으로.
  */
 export function Skeleton({ width = '100%', height = 16, radius, style }: SkeletonProps) {
-  const theme = useTheme();
   const [pulse] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
@@ -71,7 +69,7 @@ export function Skeleton({ width = '100%', height = 16, radius, style }: Skeleto
           width,
           height,
           borderRadius: radius ?? Radius.badge,
-          backgroundColor: theme.imagePlaceholder,
+          backgroundColor: '#eaebee',
           opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, Motion.skeleton.minOpacity] }),
         },
         style,

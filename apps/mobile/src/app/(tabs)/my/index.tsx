@@ -1,5 +1,5 @@
 /**
- * MY — WP-MY-001 · `docs/design/html/대메뉴_MY.dc.html` 1.
+ * MY — WP-MY-001 · `docs/design/React_Native/my.jsx` frame-001.
  *
  * 제목 «MY»(26/700) → 프로필 카드(아바타 + 이름 + Pick 인증 배지 + 예식일 · D-day → 프로필,
  * 선, «내 웨딩설정» 행) → 섹션 다섯(작은 제목 + 테두리 카드 안에 아이콘 18 · 라벨 15 · 꼬리 ·
@@ -160,14 +160,14 @@ export default function MyScreen() {
     {
       title: S['group.activity'],
       rows: [
-        { key: 'certLog', label: S['item.certLog'], icon: 'checkCircle', tail: count(totalProofs), onPress: () => guestPush('/my/reports') },
+        { key: 'certLog', label: S['item.certLog'], icon: 'checkFill', tail: count(totalProofs), onPress: () => guestPush('/my/reports') },
         { key: 'myReview', label: S['item.myReview'], icon: 'edit', tail: count(totalReviews), onPress: () => guestPush('/my/reviews') },
       ],
     },
     {
       title: S['group.together'],
       rows: [
-        { key: 'partner', label: S['item.partner'], icon: 'twoPeople', tail: data.couple ? COUPLE_LABEL[data.couple] : undefined, onPress: () => guestPush('/wedding/partner') },
+        { key: 'partner', label: S['item.partner'], icon: 'community', tail: data.couple ? COUPLE_LABEL[data.couple] : undefined, onPress: () => guestPush('/wedding/partner') },
       ],
     },
     /*
@@ -183,8 +183,8 @@ export default function MyScreen() {
     {
       title: S['group.lounge'],
       rows: [
-        { key: 'realReview', label: S['item.realReview'], icon: 'edit', onPress: () => guestPush('/community?from=my&tab=review') },
-        { key: 'weddingInfo', label: S['item.weddingInfo'], icon: 'file', onPress: () => guestPush('/community?from=my&tab=feed') },
+        { key: 'realReview', label: S['item.realReview'], icon: 'chatting', onPress: () => guestPush('/community?from=my&tab=review') },
+        { key: 'weddingInfo', label: S['item.weddingInfo'], icon: 'photo', onPress: () => guestPush('/community?from=my&tab=feed') },
         { key: 'expo', label: S['item.expo'], icon: 'calendar', onPress: () => guestPush('/community?from=my&tab=expo') },
       ],
     },
@@ -197,15 +197,15 @@ export default function MyScreen() {
     {
       title: S['group.support'],
       rows: [
-        { key: 'faq', label: S['item.faq'], icon: 'info', onPress: () => router.push({ pathname: '/my/guide', params: { mode: 'faq' } } as never) },
-        { key: 'contact', label: S['item.contact'], icon: 'headset', tail: data.inquiries !== null ? count(data.inquiries) : undefined, onPress: () => guestPush('/my/contact') },
+        { key: 'faq', label: S['item.faq'], icon: 'chatting', onPress: () => router.push({ pathname: '/my/guide', params: { mode: 'faq' } } as never) },
+        { key: 'contact', label: S['item.contact'], icon: 'edit', tail: data.inquiries !== null ? count(data.inquiries) : undefined, onPress: () => guestPush('/my/contact') },
       ],
     },
     {
       title: S['group.terms'],
       rows: [
-        { key: 'terms', label: S['item.terms'], icon: 'file', onPress: () => openPolicy('terms') },
-        { key: 'privacy', label: S['item.privacy'], icon: 'file', onPress: () => openPolicy('privacy') },
+        { key: 'terms', label: S['item.terms'], icon: 'bookmark', onPress: () => openPolicy('terms') },
+        { key: 'privacy', label: S['item.privacy'], icon: 'bookmark', onPress: () => openPolicy('privacy') },
       ],
     },
   ];
@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Layout.inlineGap,
     minHeight: 52,
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: 20,
   },
   /* WP-MY-001 secFoot: 위 4 · 공통 좌우 24 · gap 14. */
   footer: {

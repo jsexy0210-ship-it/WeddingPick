@@ -1,12 +1,11 @@
 /**
- * 웨딩노트 — v3.29 `docs/design/html/대메뉴_웨딩노트.dc.html` WP-NOTE-001/004/006.
+ * 웨딩노트 — v3.29.1 `docs/design/React_Native/note.jsx` WP-NOTE-001/004/006.
  * 일정 · 상담 · 예산 세 탭과 헤더 추가 액션을 둔다.
  * 항목별 예산은 API buckets에 없으므로 항목별 수정·삭제는 연결하지 않는다.
  * 예식 뒤 화면은 별도 WeddingCompleteView가 맡는다.
  */
 import { FullScreenError } from '@/features/errors/full-screen-error';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
-import { confirmAlert } from '@/components/confirm-alert';
 import type {
   ConsultationRecord,
   CurrentUser,
@@ -14,7 +13,7 @@ import type {
   WeddingEvent,
   WeddingTask,
 } from '@weddingpick/api-contract';
-import { TERMS, budgetView, daysUntil, isBeforeWedding, lifecycle, manwon } from '@weddingpick/domain';
+import { TASK_STATE_LABEL, TERMS, budgetView, daysUntil, isBeforeWedding, lifecycle, manwon } from '@weddingpick/domain';
 import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
@@ -43,7 +42,6 @@ import {
   listDecisions,
   listWeddingEvents,
   listWeddingTasks,
-  removeWeddingEvent,
   setBudget,
   updateWeddingTask,
 } from '@/api/client';
@@ -62,9 +60,6 @@ const TABS: readonly { key: Tab; label: string }[] = [
   { key: 'consult', label: '상담기록' },
   { key: 'budget', label: '예산현황' },
 ];
-const EDIT = '수정';
-const DELETE = '삭제';
-const DELETE_TITLE = '삭제할까요?';
 const UNPAID = '미집행';
 /* v3.28 `spendGoRow` — 예산 카드 맨 아래에서 지출 목록(WP-OUR-014b)으로 간다. */
 const SPEND_LINK = '지출내역';
@@ -72,9 +67,8 @@ const CONSULT_EMPTY_TITLE = '녹음 파일을 올려주세요';
 const CONSULT_EMPTY_BODY = '휴대폰 녹음앱에서 저장한 파일이면 돼요';
 const CONSULT_SAVED = '저장됨';
 const CONSULT_PENDING = '확인 필요';
-/* 헤더 우측 «추가» 텍스트 — v3.28 `대메뉴_웨딩노트.dc.html` headAdd «일정 추가 · 상담 추가 · 예산 추가». 우하단 FAB는 없다. */
+/* 헤더 우측 액션 — React_Native/note.jsx headAdd «일정 추가 · 상담 추가 · 예산 추가». */
 const ADD_LABEL: Record<Tab, string> = { calendar: '일정 추가', budget: '예산 추가', consult: '상담 추가' };
-const TASKS_ADD_HEADER = '할 일 추가';
 const DECIDED_LINK = '예약현황';
 const PAST_EVENTS_SHOW = '보기';
 const PAST_EVENTS_HIDE = '접기';
@@ -109,6 +103,7 @@ export default function WeddingScreen({
   const [budgetDraft, setBudgetDraft] = useState('');
   const [budgetSaving, setBudgetSaving] = useState(false);
   const [taskSheetOpen, setTaskSheetOpen] = useState(false);
+  const pendingTaskSequence = useRef(0);
   const budgetPrompted = useRef(false);
 
   const isSignedIn = state.status === 'signedIn';
@@ -177,7 +172,7 @@ export default function WeddingScreen({
   const stage = lifecycle(me?.weddingDate ?? null);
   const weddingOver =
     weddingId !== null && me?.weddingDate != null && !isBeforeWedding(stage.stage) && stage.stage !== 'wedding_day';
-  const headerAddLabel = tab === 'calendar' ? '추가' : ADD_LABEL[tab];
+  const headerAddLabel = ADD_LABEL[tab];
 
   const header = (
     <View style={styles.header}>
@@ -215,11 +210,7 @@ export default function WeddingScreen({
   function onAddAction() {
     if (!weddingId) return;
     if (tab === 'calendar') {
-      confirmAlert('무엇을 추가할까요?', '추가할 항목을 골라주세요.', [
-        { text: '일정 추가', onPress: () => router.push(`/wedding/${weddingId}/events/new` as never) },
-        { text: TASKS_ADD_HEADER, onPress: () => setTaskSheetOpen(true) },
-        { text: '취소', style: 'cancel' },
-      ]);
+      router.push(`/wedding/${weddingId}/events/new` as never);
     } else if (tab === 'budget') router.push(`/wedding/${weddingId}/expenses/add` as never);
     else router.push(`/wedding/${weddingId}/consultations/upload` as never);
   }
@@ -273,24 +264,13 @@ export default function WeddingScreen({
     }
   }
 
-  async function deleteEvent(event: WeddingEvent) {
-    if (!weddingId) return;
-    try {
-      await removeWeddingEvent(weddingId, event.id);
-      setEvents((prev) => (prev ? prev.filter((item) => item.id !== event.id) : prev));
-      setToast('일정을 지웠어요');
-    } catch {
-      setToast('일정을 지우지 못했어요. 잠시 후 다시 시도해주세요.');
-    }
-  }
-
   /*
    * 체크는 «직접 지정 완료», 되돌리면 자동 판정(`state: null`)으로 돌아간다 — tasks.tsx와
    * 같은 규칙이다. 되돌린 뒤 실제 상태는 서버가 날짜로 다시 정하므로 미리 짐작하지 않고
    * 다시 읽어온다.
    */
   async function toggleTask(task: WeddingTask) {
-    if (!weddingId) return;
+    if (!weddingId || task.id.startsWith('pending-')) return;
     try {
       await updateWeddingTask(weddingId, task.id, { state: task.state === 'done' ? null : 'done' });
       void listWeddingTasks(weddingId).then((r) => setTasks(r.tasks)).catch(() => undefined);
@@ -302,9 +282,30 @@ export default function WeddingScreen({
 
   async function addTask(label: string) {
     if (!weddingId) return;
-    await addWeddingTask(weddingId, { label });
-    void listWeddingTasks(weddingId).then((r) => setTasks(r.tasks)).catch(() => undefined);
-    setToast('할 일을 추가했어요');
+    const pendingId = `pending-${Date.now()}-${++pendingTaskSequence.current}`;
+    // 화면에는 즉시 넣고, 서버가 확인한 ID로 바꾼다. 실패하면 행을 되돌린다.
+    setTasks((current) => [
+      ...(current ?? []),
+      {
+        id: pendingId,
+        label,
+        dueDate: null,
+        vendorId: null,
+        vendorLabel: null,
+        state: 'upcoming',
+        stateLabel: TASK_STATE_LABEL.upcoming,
+        manualState: false,
+      },
+    ]);
+    try {
+      const { taskId } = await addWeddingTask(weddingId, { label });
+      setTasks((current) => current?.map((task) => task.id === pendingId ? { ...task, id: taskId } : task) ?? null);
+      setToast('할 일을 추가했어요');
+    } catch (caught) {
+      setTasks((current) => current?.filter((task) => task.id !== pendingId) ?? null);
+      setToast('할 일을 추가하지 못했어요. 다시 시도해 주세요.');
+      throw caught;
+    }
   }
 
   return (
@@ -313,7 +314,7 @@ export default function WeddingScreen({
         {header}
 
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* 세 칸 탭 — v3.29 `대메뉴_웨딩노트.dc.html` tabNav/seg(WP-NOTE-001): 밑줄형, 배경 없음. */}
+          {/* 세 칸 탭 — React_Native/note.jsx tabNav/seg(WP-NOTE-001): 밑줄형, 배경 없음. */}
           <View accessibilityRole="tablist" style={[styles.tabs, { borderBottomColor: theme.border }]}>
             {TABS.map((item) => {
               const selected = item.key === tab;
@@ -340,15 +341,10 @@ export default function WeddingScreen({
               decidedCount={decidedCount}
               tasks={tasks}
               onEdit={(event) => (weddingId ? router.push(`/wedding/${weddingId}/events/${event.id}` as never) : null)}
-              onDelete={(event) =>
-                confirmAlert(DELETE_TITLE, `"${event.title}" 일정을 삭제합니다.`, [
-                  { text: '취소', style: 'cancel' },
-                  { text: '삭제하기', style: 'destructive', onPress: () => void deleteEvent(event) },
-                ])
-              }
               onOpenDecided={() => (weddingId ? router.push(`/wedding/${weddingId}/decided` as never) : null)}
               onToggleTask={(task) => void toggleTask(task)}
               onAddTask={addTask}
+              onOpenTaskSheet={() => setTaskSheetOpen(true)}
               taskSheetOpen={taskSheetOpen}
               onCloseTaskSheet={() => setTaskSheetOpen(false)}
             />
@@ -429,7 +425,7 @@ export default function WeddingScreen({
 }
 
 /* ────────────────────────────────────────────
-   캘린더 패널 — v3.29 `대메뉴_웨딩노트.dc.html` WP-NOTE-001.
+   캘린더 패널 — React_Native/note.jsx WP-NOTE-001.
    월 격자를 폐기하고 예식일까지 주 단위 흐름으로 바꿨다: D-day 카드 → 지난 일정
    접은 줄 → 이번 주 · 다음 주 · 달 단위 타임라인 → 할 일 체크리스트.
 ──────────────────────────────────────────── */
@@ -439,10 +435,10 @@ function CalendarPanel({
   decidedCount,
   tasks,
   onEdit,
-  onDelete,
   onOpenDecided,
   onToggleTask,
   onAddTask,
+  onOpenTaskSheet,
   taskSheetOpen,
   onCloseTaskSheet,
 }: {
@@ -451,10 +447,10 @@ function CalendarPanel({
   decidedCount: number | null;
   tasks: WeddingTask[] | null;
   onEdit: (event: WeddingEvent) => void;
-  onDelete: (event: WeddingEvent) => void;
   onOpenDecided: () => void;
   onToggleTask: (task: WeddingTask) => void;
   onAddTask: (label: string) => Promise<void>;
+  onOpenTaskSheet: () => void;
   taskSheetOpen: boolean;
   onCloseTaskSheet: () => void;
 }) {
@@ -482,10 +478,12 @@ function CalendarPanel({
     const label = taskDraft.trim();
     if (label.length === 0 || taskSaving) return;
     setTaskSaving(true);
+    onCloseTaskSheet();
     try {
       await onAddTask(label);
       setTaskDraft('');
-      onCloseTaskSheet();
+    } catch {
+      onOpenTaskSheet();
     } finally {
       setTaskSaving(false);
     }
@@ -496,11 +494,10 @@ function CalendarPanel({
       {weddingDate !== null ? (
         <View style={[styles.ddayCard, { backgroundColor: theme.backgroundElement }]}>
           <View style={styles.ddayTop}>
-            {/* 규격서 19/700 — 사다리에 없는 값이라 가장 가까운 f18을 쓴다. */}
-            <ThemedText type="f18" numeric style={styles.bold}>
+            <ThemedText type="f18" numeric style={[styles.bold, styles.ddayValue]}>
               {formatDateDot(weddingDate)}
             </ThemedText>
-            <ThemedText type="f18" themeColor="tint" numeric style={styles.bold}>
+            <ThemedText type="f18" themeColor="tint" numeric style={[styles.bold, styles.ddayValue]}>
               {ddayText}
             </ThemedText>
           </View>
@@ -539,14 +536,19 @@ function CalendarPanel({
         </Pressable>
       ) : null}
 
-      {showPast && past.length > 0 ? <TimelineGroupView title="지난 일정" range="" items={past.map((event) => ({ event, kind: 'event' as const }))} dimmed onEdit={onEdit} onDelete={onDelete} /> : null}
+      {showPast && past.length > 0 ? <TimelineGroupView title="지난 일정" range="" items={past.map((event) => ({ event, kind: 'event' as const }))} dimmed onEdit={onEdit} /> : null}
 
       {upcomingGroups.map((group) => (
-        <TimelineGroupView key={group.title} {...group} onEdit={onEdit} onDelete={onDelete} />
+        <TimelineGroupView key={group.title} {...group} onEdit={onEdit} />
       ))}
 
       <View style={styles.checklistSection}>
-        <ThemedText type="f15" style={[styles.bold, styles.clHead]}>{TASKS_TITLE}</ThemedText>
+        <View style={styles.clHead}>
+          <ThemedText type="f15" style={styles.bold}>{TASKS_TITLE}</ThemedText>
+          <Pressable accessibilityRole="button" accessibilityLabel="할 일 추가" onPress={onOpenTaskSheet}>
+            <ThemedText type="f14" themeColor="tint" style={styles.bold}>추가</ThemedText>
+          </Pressable>
+        </View>
         {(tasks ?? []).map((task) => {
           const done = task.state === 'done';
           return (
@@ -604,14 +606,12 @@ function TimelineGroupView({
   items,
   dimmed = false,
   onEdit,
-  onDelete,
 }: {
   title: string;
   range: string;
   items: TimelineItem[];
   dimmed?: boolean;
   onEdit: (event: WeddingEvent) => void;
-  onDelete: (event: WeddingEvent) => void;
 }) {
   const theme = useTheme();
   return (
@@ -629,13 +629,19 @@ function TimelineGroupView({
       {items.map((item) => {
         if (item.kind === 'wedding') {
           return (
-            <View key="wedding-day" style={[styles.eventRow, styles.weddingRow, { borderColor: theme.tint }]}>
-              <ThemedText type="f14" style={[styles.bold, styles.grow]}>
-                예식일
-              </ThemedText>
-              <ThemedText type="f12" themeColor="tint" numeric style={styles.bold}>
-                {formatDateDot(item.date)}
-              </ThemedText>
+            <View key="wedding-day" style={styles.timelineRow}>
+              <View style={styles.timelineRail}>
+                <View style={[styles.timelineDot, styles.weddingDot, { backgroundColor: theme.tint }]} />
+                <View style={[styles.timelineLine, { backgroundColor: theme.border }]} />
+              </View>
+              <View style={[styles.eventRow, styles.weddingRow, { borderColor: theme.tint, backgroundColor: theme.background }]}>
+                <ThemedText type="f12" themeColor="tint" numeric style={styles.bold}>
+                  {formatDateDot(item.date)}
+                </ThemedText>
+                <ThemedText type="f15" style={styles.bold}>
+                  예식일
+                </ThemedText>
+              </View>
             </View>
           );
         }
@@ -643,18 +649,24 @@ function TimelineGroupView({
         const event = item.event;
         const done = dimmed || event.status === 'done';
         return (
-          <View
-            key={event.id}
-            style={[styles.eventRow, { backgroundColor: done ? theme.backgroundSelected : theme.backgroundElement }]}>
-            <View style={styles.grow}>
-              <ThemedText type="f11" themeColor={done ? 'textAssistive' : 'tint'} numeric style={styles.bold}>
+          <View key={event.id} style={styles.timelineRow}>
+            <View style={styles.timelineRail}>
+              <View style={[styles.timelineDot, { backgroundColor: done ? theme.border : theme.tint }]} />
+              <View style={[styles.timelineLine, { backgroundColor: theme.border }]} />
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={event.title}
+              onPress={() => onEdit(event)}
+              style={[styles.eventRow, { backgroundColor: done ? theme.backgroundElement : theme.backgroundSelected }]}>
+              <ThemedText type="f12" themeColor="textAssistive" numeric style={styles.bold}>
                 {formatMonthDayTimeDot(event.startsAt)}
               </ThemedText>
               <ThemedText
                 type="f15"
                 numberOfLines={1}
                 themeColor={done ? 'textAssistive' : undefined}
-                style={[styles.semibold, done ? styles.strike : null]}>
+                style={[styles.bold, done ? styles.strike : null]}>
                 {event.title}
               </ThemedText>
               {event.memo ? (
@@ -662,17 +674,7 @@ function TimelineGroupView({
                   {event.memo}
                 </ThemedText>
               ) : null}
-            </View>
-            {!dimmed ? (
-              <View style={styles.rowActions}>
-                <Pressable accessibilityRole="button" accessibilityLabel={`${event.title} ${EDIT}`} onPress={() => onEdit(event)} style={styles.rowActionBtn}>
-                  <ProductSymbol name="edit" size={Layout.iconSmall} color={theme.textAssistive} />
-                </Pressable>
-                <Pressable accessibilityRole="button" accessibilityLabel={`${event.title} ${DELETE}`} onPress={() => onDelete(event)} style={styles.rowActionBtn}>
-                  <ProductSymbol name="trash" size={Layout.iconSmall} color={theme.textAssistive} />
-                </Pressable>
-              </View>
-            ) : null}
+            </Pressable>
           </View>
         );
       })}
@@ -951,7 +953,7 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.6 },
 
   /*
-   * v3.29 정본 `대메뉴_웨딩노트.dc.html` `tabNav`/`seg()`(WP-NOTE-001) —
+   * v3.29.1 정본 `React_Native/note.jsx` `tabNav`/`seg()`(WP-NOTE-001) —
    * `flex:0 0 auto;gap:0;padding:0 20px;box-shadow:inset 0 -1px 0 BORDER;margin-bottom:16px`,
    * 칸 `flex:1;height:48px;font:16/700`. 활성 칸은 배경이 아니라
    * `box-shadow:inset 0 -2px 0 INK`(하단 밑줄)로 표시하고 비활성은 회색 글자다.
@@ -995,6 +997,7 @@ const styles = StyleSheet.create({
   },
   /* D-day 카드 위 줄 — 날짜 · D-N 양끝 정렬. */
   ddayTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: Layout.inlineGap },
+  ddayValue: { fontSize: 19 },
   /* «예약현황 N곳» — 선 위 · 양끝 정렬. */
   decidedLinkRow: {
     marginTop: Spacing.three,
@@ -1014,34 +1017,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  timelineGroup: { marginHorizontal: Layout.pageX, marginTop: Spacing.four, gap: Spacing.two },
-  timelineGroupHead: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.two },
-  /* 행 `rounded-2xl px-3.5 py-3 gap-3` — 좌우 14(같은 값의 chipPaddingX) · 상하 12 · 사이 12. */
+  timelineGroup: { marginHorizontal: Layout.pageX },
+  timelineGroupHead: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.two, paddingTop: 18, paddingBottom: 10 },
+  timelineRow: { flexDirection: 'row', gap: Layout.inlineGap, paddingBottom: Spacing.one },
+  timelineRail: { width: 12, alignItems: 'center', gap: 6 },
+  timelineDot: { width: 9, height: 9, borderRadius: Radius.pill, marginTop: 16 },
+  weddingDot: { width: 12, height: 12 },
+  timelineLine: { flex: 1, width: 1, minHeight: 6 },
   eventRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Layout.inlineGap,
-    borderRadius: Radius.cardLarge,
-    paddingHorizontal: Layout.chipPaddingX,
-    paddingVertical: Layout.inlineGap,
+    flex: 1,
+    minWidth: 0,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 3,
   },
-  /* 예식일 줄 — 정본 `tlItem` 'wed' 스타일: 흰 면 + 코랄 테두리. */
   weddingRow: { borderWidth: Border.focus },
-  /* 수정 · 삭제 `h-8 w-8 rounded-xl`(32 · 같은 값의 avatarRow), 사이 2. */
-  rowActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.half },
-  rowActionBtn: {
-    width: Layout.avatarRow,
-    height: Layout.avatarRow,
-    borderRadius: Radius.hero,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 
   // ── 할 일 ──
   checklistSection: { marginHorizontal: Layout.pageX, paddingBottom: Layout.listGap },
   clHead: {
     paddingHorizontal: Spacing.one,
     marginBottom: Layout.inlineGap,
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: Layout.inlineGap,
   },
   taskRow: {
     paddingVertical: 10,

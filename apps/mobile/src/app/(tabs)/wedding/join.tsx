@@ -10,7 +10,7 @@ import { ActionButton, Border, Layout, Radius, Spacing, ThemedText, WeddingMark,
 import { Avatar, Dock, Field, Hero, NavBar, NoteCard, Screen } from '@/features/wedding/screen-kit';
 
 /**
- * `spec/strings.ko.json` `couple.*` · 정본 `docs/design/html/대메뉴_MY.dc.html`
+ * `spec/strings.ko.json` `couple.*` · 정본 `docs/design/React_Native/my.jsx`
  * WP-CPL-002(초대 수락) · WP-CPL-003(연결 완료).
  */
 const S = {
