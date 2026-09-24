@@ -6,6 +6,7 @@ import { ApiError } from '../errors';
 import { registerAdminRoutes } from '../routes/admin';
 import * as weddingFeed from '../wedding-feed';
 import * as weddingFeedWriter from '../analysis/wedding-feed-writer';
+import * as weddingFeedImage from '../analysis/wedding-feed-image';
 
 /**
  * 웨딩피드 관리자 라우트.
@@ -301,6 +302,47 @@ describe('웨딩피드 관리자 라우트', () => {
         mimeType: 'image/png',
       })
     );
+  });
+
+  it('관리자 이미지 생성은 웨딩피드 저장소에만 쓰고 글은 저장하지 않는다', async () => {
+    process.env.GEMINI_API_KEY = 'test-key';
+    const png = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 0]);
+    const generate = jest.spyOn(weddingFeedImage, 'generateWeddingFeedImage').mockResolvedValue(png);
+    const upload = jest.fn().mockResolvedValue(undefined);
+    const getPublicUrl = jest.fn().mockResolvedValue('https://image.example/preview');
+
+    const response = await app({
+      storage: { upload, getPublicUrl } as unknown as AppContext['storage'],
+    }).inject({
+      method: 'POST',
+      url: '/v1/admin/wedding-feed/image/generate',
+      payload: { kind: 'thumbnail', title: '계약서 확인', summary: '견적 항목' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(generate).toHaveBeenCalledWith('test-key', expect.objectContaining({
+      kind: 'thumbnail', title: '계약서 확인',
+    }));
+    expect(upload).toHaveBeenCalledWith(
+      expect.stringMatching(/^wedding-feed\/thumbnail\/.+\.png$/), png, 'image/png'
+    );
+    expect(response.json()).toMatchObject({ imageUrl: 'https://image.example/preview' });
+    expect(pool.query).not.toHaveBeenCalled();
+  });
+
+  it('제목이나 Gemini 연결이 없으면 이미지 생성 비용을 쓰지 않는다', async () => {
+    const generate = jest.spyOn(weddingFeedImage, 'generateWeddingFeedImage');
+    const invalid = await app().inject({
+      method: 'POST', url: '/v1/admin/wedding-feed/image/generate',
+      payload: { kind: 'thumbnail', title: '' },
+    });
+    const unconfigured = await app().inject({
+      method: 'POST', url: '/v1/admin/wedding-feed/image/generate',
+      payload: { kind: 'body', title: '제목' },
+    });
+    expect(invalid.statusCode).toBe(400);
+    expect(unconfigured.statusCode).toBe(500);
+    expect(generate).not.toHaveBeenCalled();
   });
 
   /*

@@ -45,7 +45,7 @@ on:
         type: string
         default: ''
       upjong_div_id:
-        description: '업종코드 자리. 비우면 저장소 Variables 또는 indsLclsCd'
+        description: '업종코드 자리. 비우면 저장소 Variables 또는 코드 길이에 따른 단계'
         type: choice
         options: ['', 'indsLclsCd', 'indsMclsCd', 'indsSclsCd']
         default: ''

@@ -34,7 +34,7 @@ const WEDDING_NAME = /웨딩|브라이덜|bridal|wedding/i;
 
 /**
  * 상권 소분류 + 상호로 업종을 고른다. 업종만으로는 절대 받지 않는다 —
- * 예식장·결혼중개를 뺀 나머지는 상호에 웨딩 표시(WEDDING_NAME)가 있어야 한다.
+ * 예식장을 뺀 나머지는 상호에 웨딩 표시(WEDDING_NAME)가 있어야 한다.
  *
  * v3.18부터 스튜디오·드레스·메이크업이 따로다(전에는 `sdm` 하나였다). 사진 업종은
  * 상호로 가른다 — «본식»·«스냅»이면 본식스냅, «스튜디오»면 스튜디오, 그 밖의
@@ -42,9 +42,9 @@ const WEDDING_NAME = /웨딩|브라이덜|bridal|wedding/i;
  *
  * v3.22 12종(packages/domain vendor.ts)에 맞춰 헤어변형·부케·청첩장·예물·혼수·
  * 허니문을 더했다. **이 여섯의 소분류명은 아직 실측하지 않았다** — README
- * «확인된 업종 소분류 코드»에 적힌 다섯(예식장·결혼상담·사진촬영·미용실·의류대여)만
- * 2026-09-10에 조회로 확인했다. 그래서 업종 이름은 넓게 잡고 상호 조건으로 좁힌다.
- * 기본 수집은 확인된 다섯 코드만 받으므로 나머지는 CSV 출처나 `SBIZ_UPJONG_CODES`로
+ * 2026-09-10에 확인한 다섯 코드 중 현재 허용하는 네 개는 예식장·사진촬영·
+ * 미용실·의류대여다. 그래서 업종 이름은 넓게 잡고 상호 조건으로 좁힌다.
+ * 기본 수집은 확인된 네 코드만 받으므로 나머지는 CSV 출처나 `SBIZ_UPJONG_CODES`로
  * 코드를 넓혔을 때 쓰인다.
  */
 export function classifyWeddingIndustry(industry: string, name: string): VendorCategory | null {
@@ -74,11 +74,10 @@ export function classifyWeddingIndustry(industry: string, name: string): VendorC
  * `needs_verification`이라 사람이 보고 업종을 정한다. 상호 표시도 없으면
  * 웨딩과 무관한 행이므로 버린다(전국 상권 자료 전체를 «기타»로 담지 않는다).
  */
-export function resolveSbizCategory(industry: string, name: string): VendorCategory | null {
+export function resolveSbizCategory(industry: string, name: string, code?: string): VendorCategory | null {
+  // 최신 디자인에서 결정사·플래너 대행 업종을 제외했다. 상호가 웨딩을 포함해도 etc로 우회하지 않는다.
+  if (code?.trim().toUpperCase() === 'S21105' || /(?:결혼|혼인).*(?:중개|상담)|결혼정보/.test(industry)) return null;
   if (/예식장/.test(industry)) return 'hall';
-  // 결정사(결혼 중개·상담)는 모으지 않는다(2026-09-24 대표 지시 「결정사는 필요없다」 —
-  // v3.29 「결정사 개념 삭제」). 상호에 웨딩이 있어도 etc로 남기지 않고 버린다.
-  if (/결혼.*중개|결혼.*상담|결혼정보/.test(industry)) return null;
   return classifyWeddingIndustry(industry, name) ?? (WEDDING_NAME.test(name) ? 'etc' : null);
 }
 
@@ -134,7 +133,8 @@ export function parsePublicCsv(bytes: Buffer, key: SourceKey, at = new Date()) {
     const region = toRegion(row['도로명주소']?.trim() ?? '');
     const category: VendorCategory | null = source.format === 'municipal'
       ? 'hall'
-      : resolveSbizCategory(row['상권업종소분류명']?.trim() ?? '', name);
+      : resolveSbizCategory(row['상권업종소분류명']?.trim() ?? '', name,
+        row['상권업종소분류코드']?.trim());
     const publishedOn = source.dateColumn ? isoDay(row[source.dateColumn] ?? '', at.toISOString().slice(0, 10)) : null;
     if (!name || name.length > 500 || !category || !isVendorRegion(region)
       || (source.dateColumn && !publishedOn)) { rejected++; continue; }
@@ -321,6 +321,7 @@ type SbizApiRecord = {
   bizesId?: string;
   bizesNm?: string;
   brchNm?: string;
+  indsSclsCd?: string;
   indsSclsNm?: string;
   ctprvnCd?: string;
   rdnmAdr?: string;
@@ -342,7 +343,7 @@ type SbizApiRecord = {
  * 수집 카테고리는 `resolveSbizCategory`(indsSclsNm + 상호) 하나로 정한다 —
  * CSV 경로와 같은 규칙이다. 업종을 못 고른 웨딩 상호는 'etc'로 남긴다.
  */
-export type SbizUpjongQuery = { divId: string; codes: string[] };
+export type SbizUpjongQuery = { divId?: string; codes: string[] };
 
 /**
  * 웨딩업체가 들어 있는 상권 **소분류** 코드. 2026-09-10에 `smallUpjongList`를
@@ -353,10 +354,7 @@ export type SbizUpjongQuery = { divId: string; codes: string[] };
  *   S20701  미용실              → makeup (상호에 웨딩·브라이덜이 있어야 받는다)
  *   N11004  의류 대여업          → dress (상호에 웨딩·브라이덜이 있어야 받는다)
  *
- * 결정사(S21105 결혼 상담 서비스업)는 뺐다 — 2026-09-24 대표 지시 「결정사는
- * 필요없다」. 서울 한 곳에서만 834건 중 480건이 결정사였다.
- *
- * 업종 이름만으로 받는 것은 예식장업뿐이다. 사진관·미용실·임대업 전체를 웨딩
+ * 업종 이름만으로 받는 것은 예식장뿐이다. 사진관·미용실·임대업 전체를 웨딩
  * 업체로 들이지 않는다 — 상호를 함께 본다(`classifyWeddingIndustry`).
  *
  * 한복 소매업(G20904) · 뷔페(I20702 · I20801)는 웨딩 전용이 아니고 우리 업종
@@ -364,30 +362,36 @@ export type SbizUpjongQuery = { divId: string; codes: string[] };
  *
  * 전에는 이 자리에 대분류 `'Q'`가 박혀 있었다 — 활용가이드에 없는 값이라 수집이
  * 조용히 0건이 됐다. 그래서 한동안 「코드는 코드에 박지 않는다」로 두었는데,
- * 이제 실제 코드를 확인했으므로 확인한 값을 적어 둔다. 바꿔야 하면
- * `SBIZ_UPJONG_CODES` · `SBIZ_UPJONG_DIV_ID`가 이긴다.
+ * 이제 실제 코드를 확인했으므로 확인한 값을 적어 둔다. 조회 범위는
+ * `SBIZ_UPJONG_CODES` · `SBIZ_UPJONG_DIV_ID`로 바꿀 수 있지만 S21105는 제외한다.
  */
 export const WEDDING_UPJONG_CODES = ['S21101', 'M11301', 'S20701', 'N11004'] as const;
 
-/** 조회할 업종 자리와 코드. 확인된 소분류 코드가 기본이고 환경변수가 이긴다. */
-export function resolveUpjongQuery(override?: SbizUpjongQuery): SbizUpjongQuery {
+/** 조회할 업종 자리와 코드. 확인된 소분류 코드가 기본이고 외부 설정에서도 결정사를 제외한다. */
+export function resolveUpjongQuery(override?: SbizUpjongQuery): Required<SbizUpjongQuery> {
   const fromEnv = (process.env.SBIZ_UPJONG_CODES ?? '').split(',').map((c) => c.trim()).filter(Boolean);
   /*
    * **빈 문자열은 «없음»이다.** GitHub Actions는 정의되지 않은 Variables를
    * 「지우고 부르기」가 아니라 **빈 값으로 넘긴다** — `??`만 쓰면 `''`가 값으로
    * 통과해 「셋 중 하나여야 한다」로 죽는다. 실제로 그렇게 죽었다(2026-09-10 run 150).
-   */
+  */
   const divIdEnv = process.env.SBIZ_UPJONG_DIV_ID?.trim() || undefined;
-  const divId = override?.divId
-    ?? divIdEnv
-    ?? (fromEnv.length ? 'indsLclsCd' : 'indsSclsCd');
   const codes = (override?.codes ?? (fromEnv.length ? fromEnv : [...WEDDING_UPJONG_CODES]))
-    .map((c) => c.trim()).filter(Boolean);
+    .map((c) => c.trim().toUpperCase()).filter((c) => c && c !== 'S21105');
   if (!codes.length)
     throw new Error(
-      'SBIZ_UPJONG_CODES가 비어 있습니다. --lookup-category로 실제 업종코드를 확인한 뒤 지정하세요.');
+      '허용된 SBIZ_UPJONG_CODES가 없습니다. 결정사 업종 S21105는 제외됩니다.');
+  const levels = new Set(codes.map((code) => /^[A-Z]\d$/.test(code) ? 'indsLclsCd'
+    : /^[A-Z]\d{3}$/.test(code) ? 'indsMclsCd'
+      : /^[A-Z]\d{5}$/.test(code) ? 'indsSclsCd' : null));
+  if (levels.size !== 1 || levels.has(null))
+    throw new Error('SBIZ_UPJONG_CODES는 같은 단계의 업종코드만 지정하세요.');
+  const inferredDivId = [...levels][0]!;
+  const divId = override?.divId?.trim() || divIdEnv || inferredDivId;
   if (divId !== 'indsLclsCd' && divId !== 'indsMclsCd' && divId !== 'indsSclsCd')
     throw new Error('SBIZ_UPJONG_DIV_ID는 indsLclsCd·indsMclsCd·indsSclsCd 중 하나여야 합니다.');
+  if (divId !== inferredDivId)
+    throw new Error(`SBIZ_UPJONG_DIV_ID=${divId}가 업종코드 단계(${inferredDivId})와 다릅니다.`);
   return { divId, codes };
 }
 
@@ -475,7 +479,7 @@ export async function downloadSbizApiVendors(
       const branch = r.brchNm?.trim() ?? '';
       const name = [r.bizesNm?.trim(), branch].filter(Boolean).join(' ');
       const region = toRegion(r.rdnmAdr?.trim() ?? '');
-      const category = resolveSbizCategory(r.indsSclsNm?.trim() ?? '', name);
+      const category = resolveSbizCategory(r.indsSclsNm?.trim() ?? '', name, r.indsSclsCd?.trim());
 
       // 업종 판정은 resolveSbizCategory 하나로 — CSV 경로와 같은 규칙이다(#135).
       // 거른 건수는 계속 센다(#133 계열) — 0건일 때 원인을 리포트로 가른다.
@@ -527,7 +531,7 @@ const UPJONG_NAME_FIELD = { large: 'indsLclsNm', middle: 'indsMclsNm', small: 'i
  * `SBIZ_UPJONG_CODES`에 넣을 코드를 확인한다.
  *
  * 2026-09-09 실키 호출로 확인한 웨딩 관련 소분류(`indsSclsCd`):
- *   S21101 예식장업 · S21105 결혼 상담 서비스업 · M11301 사진촬영업 ·
+ *   S21101 예식장업 · S21105 결혼 상담 서비스업(현재 수집 제외) · M11301 사진촬영업 ·
  *   N11004 의류 대여업 · S20701 미용실.
  * 대분류는 두 글자 열아홉 개이고 한 글자 'Q'는 없다 — 예전 하드코딩이 틀렸다.
  *

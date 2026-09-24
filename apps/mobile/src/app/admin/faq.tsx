@@ -264,7 +264,7 @@ function FaqPanel() {
       {/* 편집 모달 */}
       <Modal visible={editing !== null} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
+          <ScrollView style={styles.modalBox} contentContainerStyle={styles.modalBoxContent}>
             <Text style={styles.modalTitle}>{isNew ? '새 FAQ 추가' : 'FAQ 수정'}</Text>
             {editing && (
               <>
@@ -356,7 +356,7 @@ function FaqPanel() {
                 </View>
               </>
             )}
-          </View>
+          </ScrollView>
         </View>
       </Modal>
 
@@ -522,8 +522,9 @@ const styles = StyleSheet.create({
   categoryChipOn: { backgroundColor: Colors.light.tint, borderColor: Colors.light.tint },
   categoryChipText: { fontSize: FontSize.tab, color: Colors.light.textSecondary },
   categoryChipTextOn: { color: Colors.light.onTint, fontWeight: '700' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
-  modalBox: { backgroundColor: Colors.light.background, borderRadius: 14, padding: 24, width: 520, maxHeight: '85%' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
+  modalBox: { backgroundColor: Colors.light.background, borderRadius: 14, width: '100%', maxWidth: 520, maxHeight: '85%' },
+  modalBoxContent: { padding: 24 },
   modalTitle: { fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text, marginBottom: 16 },
   fieldLabel: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.textAssistive, marginBottom: 6, marginTop: 12 },
   fieldInput: {

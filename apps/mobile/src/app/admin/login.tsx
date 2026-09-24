@@ -9,7 +9,7 @@
  */
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { API_URL } from '@/api/config';
@@ -48,6 +48,7 @@ function PickMark() {
 }
 
 export default function AdminLoginScreen() {
+  const compact = useWindowDimensions().width < 900;
   const router = useRouter();
   const [id, setId] = useState('');
   const [password, setPassword] = useState('');
@@ -109,8 +110,8 @@ export default function AdminLoginScreen() {
   }
 
   return (
-    <View style={styles.root}>
-      <View style={styles.panel}>
+    <View style={[styles.root, compact && styles.rootCompact]}>
+      <View style={[styles.panel, compact && styles.panelCompact]}>
         <View style={styles.brand}>
           <PickMark />
           <Text style={styles.brandText}>웨딩픽 관리자</Text>
@@ -173,7 +174,7 @@ export default function AdminLoginScreen() {
         <Text style={styles.foot}>비밀번호를 잊었다면 운영 리드에게 문의해주세요.</Text>
       </View>
 
-      <View style={styles.side}>
+      <View style={[styles.side, compact && styles.sideCompact]}>
         <Text style={styles.sideLabel}>운영 콘솔</Text>
         <Text style={styles.sideTitle}>심사와 원본 열람은{'\n'}모두 기록돼요</Text>
         <Text style={styles.sideBody}>
@@ -191,8 +192,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.background,
     minHeight: '100vh' as unknown as number,
   },
+  rootCompact: { flexDirection: 'column' },
   /* 520 · 좌우 72 — 시안값. */
   panel: { width: 520, flexShrink: 0, justifyContent: 'center', paddingHorizontal: 72 },
+  panelCompact: { width: '100%', flex: 1, paddingHorizontal: 24 },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingBottom: 34 },
   brandText: { fontSize: FontSize.t6, fontWeight: '700', color: Colors.light.text },
   title: {
@@ -254,6 +257,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 72,
     gap: 26,
   },
+  sideCompact: { display: 'none' },
   sideLabel: {
     fontSize: FontSize.t7,
     fontWeight: '700',

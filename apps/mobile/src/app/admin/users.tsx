@@ -260,7 +260,7 @@ function UsersPanel() {
 
       <Modal visible={selected !== null} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
+          <ScrollView style={styles.modalBox} contentContainerStyle={styles.modalBoxContent}>
             <Text style={styles.modalTitle}>{selected?.displayName || '(이름 없음)'}</Text>
             <Text style={styles.modalSub}>{selected ? loginOf(selected) : ''}</Text>
             <Text style={styles.modalSub}>ID {selected?.id}</Text>
@@ -357,7 +357,7 @@ function UsersPanel() {
             >
               <Text style={styles.closeBtnText}>닫기</Text>
             </Pressable>
-          </View>
+          </ScrollView>
         </View>
       </Modal>
     </View>
@@ -504,8 +504,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   confirmGoText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
-  modalBox: { backgroundColor: Colors.light.background, borderRadius: 14, padding: 24, width: 440 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
+  modalBox: { backgroundColor: Colors.light.background, borderRadius: 14, width: '100%', maxWidth: 440, maxHeight: '85%' },
+  modalBoxContent: { padding: 24 },
   modalTitle: { fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text, marginBottom: 4 },
   modalSub: { fontSize: FontSize.t7, color: Colors.light.textAssistive, marginBottom: 2 },
   fieldLabel: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.textAssistive, marginTop: 18, marginBottom: 8 },

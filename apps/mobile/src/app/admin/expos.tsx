@@ -471,8 +471,8 @@ export function ExposPanel() {
                 collection?.enabled
                   ? collection.ready
                     ? '하루 1회 신규·변경 박람회를 확인해요'
-                    : 'Gemini 연결이 없어 수집이 멈춰 있어요'
-                  : '자동 수집이 꺼져 있어요'
+                    : 'Gemini 연결을 확인해야 수집할 수 있어요'
+                  : '자동 수집이 꺼져 있어 수동 실행도 할 수 없어요'
               }
               full
             >
@@ -496,11 +496,13 @@ export function ExposPanel() {
                   ) : null}
                 </View>
                 <Pressable
-                  style={[styles.collectBtn, (collecting || !collection?.ready) && styles.btnDisabled]}
+                  style={[styles.collectBtn, !collection?.ready && styles.collectBtnDisabled, collecting && styles.btnDisabled]}
                   disabled={collecting || !collection?.ready}
                   onPress={() => void collectNow()}
                 >
-                  <Text style={styles.collectBtnText}>{collecting ? '수집 중' : '지금 수집'}</Text>
+                  <Text style={[styles.collectBtnText, !collection?.ready && styles.collectBtnTextDisabled]}>
+                    {collecting ? '수집 중' : collection?.ready ? '지금 수집' : '수집 불가'}
+                  </Text>
                 </Pressable>
               </View>
             </Card>
@@ -702,12 +704,13 @@ function Field({
 
 const styles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
-  modalScroll: { paddingVertical: 40, alignItems: 'center' },
+  modalScroll: { paddingVertical: 40, paddingHorizontal: 16, alignItems: 'center' },
   modalBox: {
     backgroundColor: Colors.light.background,
     borderRadius: 14,
     padding: 24,
-    width: 520,
+    width: '100%',
+    maxWidth: 520,
   },
   modalTitle: { fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text, marginBottom: 12 },
   row2: { flexDirection: 'row', gap: 12 },
@@ -749,6 +752,8 @@ const styles = StyleSheet.create({
   collectionSub: { fontSize: FontSize.micro, color: Colors.light.textAssistive },
   collectBtn: { paddingHorizontal: 16, paddingVertical: 9, borderRadius: 6, backgroundColor: Colors.light.tint },
   collectBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
+  collectBtnDisabled: { backgroundColor: Colors.light.backgroundSelected, borderWidth: 1, borderColor: Colors.light.fieldBorder },
+  collectBtnTextDisabled: { color: Colors.light.textAssistive },
   thumbnailCandidate: { gap: 6, marginBottom: 8 },
   thumbnailPreview: { width: '100%', height: 180, borderRadius: 8, backgroundColor: Colors.light.backgroundSelected },
   thumbnailHint: { fontSize: FontSize.micro, color: Colors.light.textAssistive, marginTop: 6 },

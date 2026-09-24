@@ -27,6 +27,7 @@ import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { formatDateTimeDot } from '@/features/common/format-date';
 import { apiFetch } from './_api';
+import { compactSplit, useAdminCompact } from './_ui';
 
 type PendingInquiry = {
   id: string;
@@ -70,6 +71,7 @@ const STATUS_COLOR: Record<InquiryStatus, string> = {
 };
 
 export function InquiryPanel() {
+  const compact = useAdminCompact();
   const [items, setItems] = useState<PendingInquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -200,8 +202,8 @@ export function InquiryPanel() {
       )}
 
       {!loading && !error && (
-        <View style={styles.body}>
-          <View style={styles.listPanel}>
+        <View style={[styles.body, compact && compactSplit.body]}>
+          <View style={[styles.listPanel, compact && compactSplit.list]}>
             <ScrollView>
               {pending.length > 0 && (
                 <View style={styles.groupHeader}>
@@ -234,7 +236,7 @@ export function InquiryPanel() {
             </ScrollView>
           </View>
 
-          <View style={styles.detailPanel}>
+          <View style={[styles.detailPanel, compact && compactSplit.detail]}>
             {!selectedId ? (
               <View style={styles.detailEmpty}>
                 <Text style={styles.emptyText}>왼쪽에서 항목을 선택하세요</Text>
