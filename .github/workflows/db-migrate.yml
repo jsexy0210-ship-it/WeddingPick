@@ -1,4 +1,4 @@
-# Neon DB에 마이그레이션을 적용한다. 수동으로 한 번 돌린다.
+# Neon DB에 마이그레이션을 적용한다. 새 migration이 main에 오면 자동으로 뜨고(승인 필요), 수동 실행도 된다.
 #
 # DATABASE_URL GitHub Secret이 있어야 한다.
 # 멱등하다 — 이미 적용된 버전은 건너뛴다.
@@ -6,16 +6,20 @@ name: DB Migrate
 
 on:
   workflow_dispatch:
-  # 운영 코드가 참조하는 최근 스키마는 API/관리자 배포 전에 production DB에 반드시 필요하다.
-  # 범용 migrations/** 전체 자동 적용 대신, 검증된 현재 migration 파일과 이 workflow 자체에만 묶는다.
-  # workflow 자체 변경도 트리거에 넣어 새 migration을 추가하는 커밋에서 한 번은 반드시 실행되게 한다.
+  # 운영 코드가 참조하는 스키마는 API 배포 전에 production DB에 반드시 필요하다.
+  #
+  # **새 migration 파일이 main에 들어오면 자동으로 돈다**(2026-09-24 대표 지시 — 「자동으로
+  # 돌게 바꿔」). 전에는 파일 이름을 여기에 하나씩 적었는데, 0429·0430이 목록에 없어 돌지
+  # 않았고 API 배포 헬스체크(schema.pending == [])가 세 번 연속 실패했다. 목록은 사람이
+  # 잊는다 — 패턴으로 잡는다.
+  #
+  # 안전장치는 그대로다: `environment: production` 승인 뒤에만 실행되고, 러너는 이미
+  # 적용된 버전을 건너뛴다(멱등).
   push:
     branches: [main]
     paths:
       - .github/workflows/db-migrate.yml
-      - packages/db/migrations/0426_expo_collection_thumbnail.sql
-      - packages/db/migrations/0427_consultation_event_idempotency.sql
-      - packages/db/migrations/0428_wedding_feed_body_image.sql
+      - packages/db/migrations/*.sql
 
 permissions:
   contents: read

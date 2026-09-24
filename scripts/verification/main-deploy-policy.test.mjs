@@ -48,10 +48,10 @@ test('runtime inputs and database writes use the production deployment boundary'
   assert.match(dbWorkflow, /group: weddingpick-db-migrate/);
   assert.match(dbWorkflow, /cancel-in-progress: false/);
   assert.match(dbWorkflow, /- \.github\/workflows\/db-migrate\.yml/);
-  assert.match(dbWorkflow, /- packages\/db\/migrations\/0426_expo_collection_thumbnail\.sql/);
-  assert.match(dbWorkflow, /- packages\/db\/migrations\/0427_consultation_event_idempotency\.sql/);
-  assert.match(dbWorkflow, /- packages\/db\/migrations\/0428_wedding_feed_body_image\.sql/);
-  assert.doesNotMatch(dbWorkflow, /packages\/db\/migrations\/\*\*/);
+  // 새 migration 파일은 이름을 적지 않아도 자동으로 돈다(2026-09-24 — 0429·0430 누락 사고).
+  // 대신 production 승인 경계는 반드시 남아 있어야 한다.
+  assert.match(dbWorkflow, /- packages\/db\/migrations\/\*\.sql/);
+  assert.match(dbWorkflow, /environment: production/);
   assert.match(apiWorkflow, /group: weddingpick-kakao-vm-write-v2/);
   assert.match(apiWorkflow, /flock -n 9/);
 });
