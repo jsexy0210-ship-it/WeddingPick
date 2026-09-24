@@ -741,7 +741,7 @@ export default function SearchScreen() {
       <ResultCard
         name={item.name}
         category={item.category}
-        region={item.region}
+        region={regionLabel(item.region)}
         imageUrl={item.imageUrl}
         price={{ text: line.text, dim: line.dim }}
         tail={tail}

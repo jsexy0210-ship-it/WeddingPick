@@ -1,3 +1,4 @@
+import { regionLabel } from '@weddingpick/domain';
 import type { CandidateListResponse } from '@weddingpick/api-contract';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -107,7 +108,7 @@ export default function WeddingCandidatesScreen() {
                         ) : null}
                       </View>
                       <ThemedText type="t7" themeColor="textSecondary">
-                        {candidate.region}
+                        {regionLabel(candidate.region)}
                         {candidate.addedByPartner ? ' · 배우자가 Pick' : ''}
                       </ThemedText>
                       {candidate.note ? (

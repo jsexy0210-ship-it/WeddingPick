@@ -5,6 +5,7 @@ import {
   withInstrument,
   withParticle,
   type VendorCategory,
+  regionLabel,
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -430,7 +431,7 @@ function CandidateCard({
             <ThemedText type="t5" numberOfLines={1}>{candidate.vendorName}</ThemedText>
             {/* 후보 목록에는 실 제보 금액이 안 실린다(api-contract candidates.ts) — 지역만 적는다 */}
             <ThemedText type="t7" themeColor="textAssistive" numberOfLines={1}>
-              {candidate.region}
+              {regionLabel(candidate.region)}
             </ThemedText>
             {/* 후기 별점은 최신 CLAUDE.md의 미해결 예외에 따라 유지한다. */}
             {candidate.rating ? (

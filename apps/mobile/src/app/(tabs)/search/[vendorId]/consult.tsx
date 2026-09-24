@@ -1,5 +1,5 @@
 import type { VendorDetail } from '@weddingpick/api-contract';
-import { VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
+import { VENDOR_CATEGORY_LABEL, regionLabel } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
@@ -271,7 +271,7 @@ export default function ConsultRoute() {
                     {vendor.name}
                   </ThemedText>
                   <ThemedText type="f10" themeColor="textAssistive" numberOfLines={1}>
-                    {vendor.region}
+                    {regionLabel(vendor.region)}
                   </ThemedText>
                 </View>
               </View>

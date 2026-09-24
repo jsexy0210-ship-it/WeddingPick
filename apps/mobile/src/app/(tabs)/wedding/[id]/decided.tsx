@@ -1,5 +1,5 @@
 import type { DecisionListResponse } from '@weddingpick/api-contract';
-import { formatCount, TERMS, manwon } from '@weddingpick/domain';
+import { formatCount, TERMS, manwon, regionLabel } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -81,7 +81,7 @@ export default function DecidedVendorsScreen() {
                 <ListRow
                   title={decision.vendor.name}
                   titleBold
-                  sub={`${decision.vendor.region} · ${formatDateDot(decision.decidedAt)}${
+                  sub={`${regionLabel(decision.vendor.region)} · ${formatDateDot(decision.decidedAt)}${
                     decision.decidedByPartner ? ` · ${S.decidedByPartner}` : ''
                   }`}
                   subLines={1}

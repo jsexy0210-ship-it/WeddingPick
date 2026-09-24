@@ -34,6 +34,7 @@ import {
   VENDOR_CATEGORY_LABEL,
   withParticle,
   type VendorCategory,
+  regionLabel,
 } from '@weddingpick/domain';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -550,7 +551,7 @@ function CandidateCard({
             <ProductSymbol name="pin" size={Layout.iconMicro} color={theme.textAssistive} />
             {/* 규격서: 지역 «12/400 #868B94 · lh 16 · mar 6 0 0 0». */}
             <ThemedText type="f12" themeColor="textAssistive" numberOfLines={1}>
-              {candidate.region}
+              {regionLabel(candidate.region)}
             </ThemedText>
           </View>
           {/* 후기 별점은 최신 CLAUDE.md의 미해결 예외에 따라 유지한다. */}
