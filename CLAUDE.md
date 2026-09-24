@@ -21,9 +21,10 @@ docs/design/html/웨딩픽 관리자.dc.html · 웨딩픽 관리자 운영.dc.ht
 docs/design/html/웨딩픽 랜딩 v4.dc.html · 웨딩픽 랜딩 하위페이지.dc.html
 ```
 
-- **앱 화면은 `React_Native`만 근거로 쓴다.** `html/`의 앱 대메뉴 시안(홈 · 검색 · Pick · 웨딩노트 ·
-  MY · 공통 다이얼로그)과 `README.md` · `PROJECT_RULES.md` · `CHANGELOG.md`는 앱에 대해서는
-  `React_Native`와 어긋나면 진다. 어긋남을 발견하면 `React_Native` 기준으로 보고 무엇이 달랐는지 남긴다.
+- **앱 화면은 `React_Native`만 근거로 쓴다.** `html/`의 앱 대메뉴 시안 6개(홈 · 검색 · Pick · 웨딩노트 ·
+  MY · 공통 다이얼로그)는 **2026-09-24 대표님이 직접 지웠다** — git 이력에서 꺼내 근거로 쓰지 않는다
+  (`canonical-manifest.json` `supersededOn20260924`). `README.md` · `PROJECT_RULES.md` · `CHANGELOG.md`는
+  앱에 대해서는 `React_Native`와 어긋나면 진다. 어긋남을 발견하면 `React_Native` 기준으로 보고 무엇이 달랐는지 남긴다.
 - **관리자 · 랜딩은 `html/`만 근거로 쓴다.** 해당 `.dc.html`의 화면 ID 구역을 연다.
 - 두 곳 어디에도 없는 화면은 추측으로 만들지 않고 `DESIGN_SOURCE_NOT_VERIFIED`로 보고해 대표님께 받는다.
 - 읽는 순서는 폴더 안 `HANDOFF.md`를 따른다 — 다만 거기 적힌 `src/boards/…` · `src/models/…` ·

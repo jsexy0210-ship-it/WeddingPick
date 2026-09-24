@@ -57,36 +57,6 @@
       "sizeBytes": 18704
     },
     {
-      "path": "html/공통_다이얼로그 빈상태 로더.dc.html",
-      "normalizedSha256": "5AE87AB3925EBA1A258A07E94EC743D5A6CB1F5AF44DD368A590412D9D373535",
-      "sizeBytes": 81027
-    },
-    {
-      "path": "html/대메뉴_MY.dc.html",
-      "normalizedSha256": "AAF366FF4815828E6BB6B09425C0B117FE89CB72BFF6FBFDBAB01930749D6B85",
-      "sizeBytes": 94792
-    },
-    {
-      "path": "html/대메뉴_Pick.dc.html",
-      "normalizedSha256": "B76A7F570B1DF64502D2A5CB78DFCA07E82203BF2CD75CB6C7650FFD246FBD57",
-      "sizeBytes": 56839
-    },
-    {
-      "path": "html/대메뉴_검색.dc.html",
-      "normalizedSha256": "28B79100936663167A71403E35448552341F7C0CB59992635B90397F1CD384AE",
-      "sizeBytes": 81539
-    },
-    {
-      "path": "html/대메뉴_웨딩노트.dc.html",
-      "normalizedSha256": "4066BBE3A8E1D992BA4602FC587FD024764EE5A62BB6EBFF01F7D8083CA09A2F",
-      "sizeBytes": 60843
-    },
-    {
-      "path": "html/대메뉴_홈(로그인, 온보딩).dc.html",
-      "normalizedSha256": "4D256B03354EC309422380D799BA6A114F6AE0A0CB4248CE73DC35246A5CFBF1",
-      "sizeBytes": 117998
-    },
-    {
       "path": "html/웨딩픽 관리자 운영.dc.html",
       "normalizedSha256": "6D199C5B0BBEDD7B50BE5FD191C4DA4745643FE1C005BEBD08C56CE550DE34E3",
       "sizeBytes": 62345
@@ -651,5 +621,35 @@
     "apps/mobile/src/app/(tabs)/wedding/[id]/consultations.tsx",
     "apps/mobile/src/app/(tabs)/wedding/[id]/events/index.tsx",
     "apps/mobile/src/app/(tabs)/wedding/[id]/expenses/index.tsx"
-  ]
+  ],
+  "supersededOn20260924": {
+    "removedOn": "2026-09-24",
+    "reason": "대표 절대 지침 — 「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」. 앱 대메뉴 시안 6개를 대표님이 GitHub 웹 UI로 직접 지웠다(3296e41b~09586794). 앱 화면의 정본은 docs/design/React_Native다.",
+    "paths": [
+      {
+        "path": "docs/design/html/공통_다이얼로그 빈상태 로더.dc.html",
+        "normalizedSha256": "5AE87AB3925EBA1A258A07E94EC743D5A6CB1F5AF44DD368A590412D9D373535"
+      },
+      {
+        "path": "docs/design/html/대메뉴_MY.dc.html",
+        "normalizedSha256": "AAF366FF4815828E6BB6B09425C0B117FE89CB72BFF6FBFDBAB01930749D6B85"
+      },
+      {
+        "path": "docs/design/html/대메뉴_Pick.dc.html",
+        "normalizedSha256": "B76A7F570B1DF64502D2A5CB78DFCA07E82203BF2CD75CB6C7650FFD246FBD57"
+      },
+      {
+        "path": "docs/design/html/대메뉴_검색.dc.html",
+        "normalizedSha256": "28B79100936663167A71403E35448552341F7C0CB59992635B90397F1CD384AE"
+      },
+      {
+        "path": "docs/design/html/대메뉴_웨딩노트.dc.html",
+        "normalizedSha256": "4066BBE3A8E1D992BA4602FC587FD024764EE5A62BB6EBFF01F7D8083CA09A2F"
+      },
+      {
+        "path": "docs/design/html/대메뉴_홈(로그인, 온보딩).dc.html",
+        "normalizedSha256": "4D256B03354EC309422380D799BA6A114F6AE0A0CB4248CE73DC35246A5CFBF1"
+      }
+    ]
+  }
 }
