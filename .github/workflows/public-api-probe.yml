@@ -2,6 +2,7 @@
 #
 # 작업 세션 컨테이너는 data.go.kr이 막혀 있어 응답을 직접 못 본다(2026-09-24).
 # 모양을 모르고 수집기를 짜면 엉뚱한 칸을 읽으므로 러너에서 먼저 본다.
+# 파일데이터 페이지를 주면 키 없이 공식 다운로드 파일(CSV · XLSX) 앞부분을 찍는다.
 # 키는 로그에 찍지 않고, 전화 · 주소 · 좌표 칸은 값 대신 「값 있음」만 찍는다.
 name: 공공 API 응답 조회 (읽기 전용)
 
@@ -9,16 +10,19 @@ on:
   workflow_dispatch:
     inputs:
       endpoint:
-        description: 'End Point 주소 — 활용신청 상세의 요청주소 그대로 (apis.data.go.kr · api.data.go.kr만)'
+        description: 'OpenAPI End Point(apis.data.go.kr · api.data.go.kr) 또는 파일데이터 페이지(www.data.go.kr/data/번호/fileData.do — 키 불필요)'
         type: string
         required: true
       key_secret:
-        description: '인증키가 든 GitHub Secret 이름'
+        description: '인증키가 든 GitHub Secret 이름(파일데이터는 무시)'
         type: choice
         default: DATA_GO_KR_WEDDING_HALL_KEY
         options:
           - DATA_GO_KR_WEDDING_HALL_KEY
           - DATA_GO_KR_MARRIAGE_AGENCY_KEY
+          - DATA_GO_KR_SPECIAL_DAY_KEY
+          - DATA_GO_KR_LUNAR_KEY
+          - DATA_GO_KR_MID_FORECAST_KEY
       params:
         description: '추가 조회 조건(공백 구분 key=value). 기본값 pageNo=1 numOfRows=3 type=json'
         type: string

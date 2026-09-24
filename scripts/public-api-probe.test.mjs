@@ -1,7 +1,18 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { deflateRawSync } from 'node:zlib';
 
-import { buildUrl, findItems, redactUrl, summarize } from './public-api-probe.mjs';
+import {
+  buildUrl,
+  findDownload,
+  findItems,
+  isFilePage,
+  readCsv,
+  readXlsx,
+  redactUrl,
+  summarize,
+  tableLines,
+} from './public-api-probe.mjs';
 
 const ENDPOINT = 'https://api.data.go.kr/openapi/tn_pubr_public_sample_api';
 
@@ -59,4 +70,92 @@ test('XML 오류 응답도 결과 메시지를 찍는다', () => {
   assert.match(text, /형식: XML/);
   assert.match(text, /결과 코드: 30/);
   assert.match(text, /SERVICE_KEY_IS_NOT_REGISTERED_ERROR/);
+});
+
+/** 시험용 zip — 로컬 헤더와 중앙 디렉터리만 채운다(CRC는 읽는 쪽이 안 본다). */
+function makeZip(files) {
+  const locals = [];
+  const centrals = [];
+  let offset = 0;
+  for (const [name, text] of Object.entries(files)) {
+    const nameBuf = Buffer.from(name);
+    const data = deflateRawSync(Buffer.from(text));
+    const local = Buffer.alloc(30);
+    local.writeUInt32LE(0x04034b50, 0);
+    local.writeUInt16LE(8, 8);
+    local.writeUInt32LE(data.length, 18);
+    local.writeUInt16LE(nameBuf.length, 26);
+    const central = Buffer.alloc(46);
+    central.writeUInt32LE(0x02014b50, 0);
+    central.writeUInt16LE(8, 10);
+    central.writeUInt32LE(data.length, 20);
+    central.writeUInt16LE(nameBuf.length, 28);
+    central.writeUInt32LE(offset, 42);
+    locals.push(local, nameBuf, data);
+    centrals.push(central, nameBuf);
+    offset += local.length + nameBuf.length + data.length;
+  }
+  const dir = Buffer.concat(centrals);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0);
+  end.writeUInt16LE(Object.keys(files).length, 10);
+  end.writeUInt32LE(dir.length, 12);
+  end.writeUInt32LE(offset, 16);
+  return Buffer.concat([...locals, dir, end]);
+}
+
+test('파일데이터 페이지만 키 없이 받는다', () => {
+  assert.equal(isFilePage('https://www.data.go.kr/data/15155669/fileData.do'), true);
+  assert.equal(isFilePage('https://www.data.go.kr/data/15155669/standard.do'), false);
+  assert.equal(isFilePage('https://evil.example/data/1/fileData.do'), false);
+});
+
+test('ld+json에서 공식 다운로드 주소와 이용허락을 읽는다', () => {
+  const html =
+    '<p>이용허락범위 제한 없음</p><script type="application/ld+json">' +
+    JSON.stringify({
+      name: '서울특별시 혼인건수',
+      distribution: [{ contentUrl: 'https://www.data.go.kr/cmm/cmm/fileDownload.do?atchFileId=F1', encodingFormat: 'XLSX' }],
+    }) +
+    '</script>';
+  assert.deepEqual(findDownload(html), {
+    url: 'https://www.data.go.kr/cmm/cmm/fileDownload.do?atchFileId=F1',
+    license: '이용허락범위 제한 없음',
+    name: '서울특별시 혼인건수',
+    format: 'XLSX',
+  });
+  assert.equal(findDownload('<script type="application/ld+json">{"distribution":[{"contentUrl":"https://example.com/x"}]}</script>'), null);
+});
+
+test('XLSX 첫 시트를 공유 문자열·숫자·빈 칸까지 행으로 읽는다', () => {
+  const xlsx = makeZip({
+    'xl/sharedStrings.xml': '<sst><si><t>연도</t></si><si><t>혼인건수</t></si><si><r><t>합</t></r><r><t>계</t></r></si></sst>',
+    'xl/worksheets/sheet1.xml':
+      '<worksheet><sheetData>' +
+      '<row r="1"><c r="A1" t="s"><v>0</v></c><c r="B1" t="s"><v>1</v></c></row>' +
+      '<row r="2"><c r="A2"><v>2024</v></c><c r="C2" t="s"><v>2</v></c></row>' +
+      '</sheetData></worksheet>',
+  });
+  assert.deepEqual(readXlsx(xlsx), [
+    ['연도', '혼인건수'],
+    ['2024', '', '합계'],
+  ]);
+});
+
+test('CSV는 UTF-8이 깨지면 CP949로 읽는다', () => {
+  // 「연도,건수」를 CP949로 적은 바이트
+  const cp949 = Buffer.from([0xbf, 0xac, 0xb5, 0xb5, 0x2c, 0xb0, 0xc7, 0xbc, 0xf6, 0x0a, 0x32, 0x30, 0x32, 0x34, 0x2c, 0x31]);
+  assert.deepEqual(readCsv(cp949), [
+    ['연도', '건수'],
+    ['2024', '1'],
+  ]);
+});
+
+test('표를 찍을 때 머리글이 전화·주소인 칸의 값은 가린다', () => {
+  const text = tableLines([
+    ['상호명', '전화번호', '도로명주소'],
+    ['시험홀', '02-000-0000', '서울 어딘가'],
+  ]).join('\n');
+  assert.match(text, /시험홀 \| \(값 있음\) \| \(값 있음\)/);
+  assert.doesNotMatch(text, /02-000-0000|어딘가/);
 });

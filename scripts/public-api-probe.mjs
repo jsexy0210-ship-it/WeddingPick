@@ -6,16 +6,23 @@
  * DB에 붙지 않고 아무것도 쓰지 않는다.
  *
  *   PUBLIC_API_KEY=... node scripts/public-api-probe.mjs <endpoint> [key=value ...]
+ *   node scripts/public-api-probe.mjs https://www.data.go.kr/data/<번호>/fileData.do
  *
- * - 주소는 data.go.kr OpenAPI 호스트만 받는다. 다른 곳으로 키가 나가지 않게 한다.
+ * - OpenAPI 주소는 data.go.kr OpenAPI 호스트만 받는다. 다른 곳으로 키가 나가지 않게 한다.
+ * - 파일데이터 페이지(`www.data.go.kr/data/<번호>/fileData.do`)를 주면 키 없이 공식
+ *   다운로드 링크(ld+json `contentUrl`)로 파일을 받아 앞부분 표를 찍는다(CSV · XLSX).
  * - 키는 로그에 찍지 않는다. 요청 주소도 키를 가린 채로만 찍는다.
  * - 전화 · 주소 · 좌표 칸은 값 대신 「값 있음」만 찍는다(public-data/README.md —
  *   원본 전화번호 · 상세주소 · 좌표를 로그에 남기지 않는다).
  */
 
+import { inflateRawSync } from 'node:zlib';
+
 export const ALLOWED_HOSTS = new Set(['apis.data.go.kr', 'api.data.go.kr']);
 const SENSITIVE_FIELD = /전화|tel|phone|fax|주소|addr|위도|경도|lat|lon|lng|좌표|x좌표|y좌표/i;
 const PREVIEW_MAX = 40;
+const FILE_PAGE = /^https:\/\/www\.data\.go\.kr\/data\/\d+\/fileData\.do$/;
+const FILE_LIMIT = 8 * 1024 * 1024;
 
 /** 요청 주소를 만든다. 허용 호스트가 아니면 던진다. */
 export function buildUrl(endpoint, params, serviceKey) {
@@ -128,10 +135,149 @@ export function summarize(body, sampleCount = 2) {
   return lines;
 }
 
+/** 파일데이터 페이지인가 — 이것만 키 없이 받는다. */
+export function isFilePage(url) {
+  return FILE_PAGE.test(url.split('?')[0]);
+}
+
+/**
+ * 파일데이터 페이지에서 공식 다운로드 주소와 이용허락을 읽는다.
+ * `apps/api/src/public-data/collect.ts`의 `downloadPublicCsv`와 같은 자리(ld+json)를 본다.
+ */
+export function findDownload(html) {
+  const license = html.includes('이용허락범위 제한 없음') ? '이용허락범위 제한 없음' : '(확인 필요)';
+  for (const match of html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
+    let metadata;
+    try {
+      metadata = JSON.parse(match[1]);
+    } catch {
+      continue;
+    }
+    const distributions = Array.isArray(metadata.distribution) ? metadata.distribution : [metadata.distribution];
+    for (const item of distributions) {
+      if (!item?.contentUrl) continue;
+      const target = new URL(item.contentUrl, 'https://www.data.go.kr');
+      if (target.hostname.endsWith('data.go.kr') && target.pathname === '/cmm/cmm/fileDownload.do') {
+        return { url: target.href, license, name: metadata.name ?? '', format: item.encodingFormat ?? '' };
+      }
+    }
+  }
+  return null;
+}
+
+/** zip 안의 파일 하나를 꺼낸다(XLSX는 zip이다). 표준 라이브러리만 쓴다. */
+export function unzipEntry(buffer, wanted) {
+  let end = -1;
+  for (let i = buffer.length - 22; i >= Math.max(0, buffer.length - 65557); i -= 1) {
+    if (buffer.readUInt32LE(i) === 0x06054b50) {
+      end = i;
+      break;
+    }
+  }
+  if (end < 0) throw new Error('zip 끝 표시를 찾지 못했다');
+  const count = buffer.readUInt16LE(end + 10);
+  let offset = buffer.readUInt32LE(end + 16);
+  for (let n = 0; n < count; n += 1) {
+    const method = buffer.readUInt16LE(offset + 10);
+    const size = buffer.readUInt32LE(offset + 20);
+    const nameLength = buffer.readUInt16LE(offset + 28);
+    const extraLength = buffer.readUInt16LE(offset + 30);
+    const commentLength = buffer.readUInt16LE(offset + 32);
+    const local = buffer.readUInt32LE(offset + 42);
+    const name = buffer.toString('utf8', offset + 46, offset + 46 + nameLength);
+    if (name === wanted) {
+      const start = local + 30 + buffer.readUInt16LE(local + 26) + buffer.readUInt16LE(local + 28);
+      const data = buffer.subarray(start, start + size);
+      if (method === 0) return data;
+      if (method === 8) return inflateRawSync(data);
+      throw new Error(`지원하지 않는 압축 방식 ${method}`);
+    }
+    offset += 46 + nameLength + extraLength + commentLength;
+  }
+  return null;
+}
+
+const xmlText = (text) =>
+  text
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, '&');
+
+/** XLSX 첫 시트를 행 배열로 읽는다. */
+export function readXlsx(buffer) {
+  const shared = [];
+  const sharedXml = unzipEntry(buffer, 'xl/sharedStrings.xml');
+  if (sharedXml) {
+    for (const [, si] of sharedXml.toString('utf8').matchAll(/<si>([\s\S]*?)<\/si>/g)) {
+      shared.push(xmlText([...si.matchAll(/<t[^>]*>([\s\S]*?)<\/t>/g)].map((m) => m[1]).join('')));
+    }
+  }
+  const sheet = unzipEntry(buffer, 'xl/worksheets/sheet1.xml');
+  if (!sheet) throw new Error('첫 시트(sheet1.xml)가 없다');
+  const rows = [];
+  for (const [, rowXml] of sheet.toString('utf8').matchAll(/<row[^>]*>([\s\S]*?)<\/row>/g)) {
+    const row = [];
+    for (const [, attrs, inner] of rowXml.matchAll(/<c([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)) {
+      const ref = attrs.match(/r="([A-Z]+)\d+"/)?.[1] ?? '';
+      const column = [...ref].reduce((sum, ch) => sum * 26 + ch.charCodeAt(0) - 64, 0) - 1;
+      const type = attrs.match(/t="([^"]+)"/)?.[1];
+      const raw = inner?.match(/<v>([\s\S]*?)<\/v>/)?.[1];
+      let value = '';
+      if (type === 's' && raw !== undefined) value = shared[Number(raw)] ?? '';
+      else if (type === 'inlineStr') value = xmlText(inner?.match(/<t[^>]*>([\s\S]*?)<\/t>/)?.[1] ?? '');
+      else if (raw !== undefined) value = xmlText(raw);
+      if (column >= 0) row[column] = value;
+    }
+    rows.push(Array.from(row, (cell) => cell ?? ''));
+  }
+  return rows;
+}
+
+/** CSV를 행 배열로 읽는다. UTF-8이 깨지면 CP949(EUC-KR)로 다시 읽는다. */
+export function readCsv(buffer) {
+  let text = buffer.toString('utf8');
+  if (text.includes('�')) text = new TextDecoder('euc-kr').decode(buffer);
+  return text
+    .replace(/^﻿/, '')
+    .split(/\r?\n/)
+    .filter((line) => line.trim())
+    .map((line) => line.split(',').map((cell) => cell.replace(/^"|"$/g, '').trim()));
+}
+
+/** 표 앞부분을 찍을 줄로 바꾼다. 머리글이 전화·주소·좌표인 칸은 가린다. */
+export function tableLines(rows, maxRows = 40) {
+  const header = rows[0] ?? [];
+  const hidden = header.map((name) => SENSITIVE_FIELD.test(String(name)));
+  const lines = [`행 ${rows.length}개 · 열 ${header.length}개`];
+  rows.slice(0, maxRows).forEach((row, index) => {
+    const cells = row.map((cell, column) => (index > 0 && hidden[column] && cell ? '(값 있음)' : cell));
+    lines.push(`${String(index + 1).padStart(3)}: ${cells.join(' | ')}`);
+  });
+  return lines;
+}
+
+async function probeFile(pageUrl) {
+  const page = await fetch(pageUrl, { signal: AbortSignal.timeout(20000) });
+  const html = await page.text();
+  console.log(`페이지: ${pageUrl} · 상태 ${page.status}`);
+  const download = findDownload(html);
+  if (!download) throw new Error('공식 다운로드 링크(ld+json contentUrl)를 찾지 못했다');
+  console.log(`이름: ${download.name} · 형식: ${download.format} · 이용허락: ${download.license}`);
+  const response = await fetch(download.url, { signal: AbortSignal.timeout(30000) });
+  const buffer = Buffer.from(await response.arrayBuffer());
+  if (buffer.length > FILE_LIMIT) throw new Error(`파일이 너무 크다: ${buffer.length} bytes`);
+  const isZip = buffer.readUInt32LE(0) === 0x04034b50;
+  console.log(`파일: 상태 ${response.status} · ${buffer.length} bytes · ${isZip ? 'XLSX(zip)' : 'CSV로 읽음'}`);
+  for (const line of tableLines(isZip ? readXlsx(buffer) : readCsv(buffer))) console.log(line);
+}
+
 async function main() {
   const [endpoint, ...pairs] = process.argv.slice(2);
   const serviceKey = process.env.PUBLIC_API_KEY ?? '';
   if (!endpoint) throw new Error('조회할 End Point 주소가 필요하다.');
+  if (isFilePage(endpoint)) return probeFile(endpoint);
   if (!serviceKey) throw new Error('PUBLIC_API_KEY가 비어 있다. 고른 GitHub Secret이 등록돼 있는지 확인한다.');
 
   const params = { pageNo: '1', numOfRows: '3', type: 'json' };
