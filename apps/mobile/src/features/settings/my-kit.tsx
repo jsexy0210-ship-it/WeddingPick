@@ -474,19 +474,21 @@ export function CardList({ children }: { children: ReactNode }) {
   return <View style={styles.cardList}>{children}</View>;
 }
 
-/** 아바타 원 — 이니셜 한 글자. Layout.avatarProfile(56 · MY 홈) · avatarRow(32) · avatarLarge(88). */
-export function Avatar({ initial, size = Layout.avatarProfile }: { initial: string; size?: number }) {
+/**
+ * 아바타 원 — 이니셜 한 글자. 두 자리뿐이다.
+ *
+ *   MY 프로필 카드 `profAvatar`  52 · #fff5f2 · 코랄 20/700  (my.jsx frame-001)
+ *   프로필 `avatarBig`           88 · #fff5f2 · 코랄 32/700  (my.jsx frame-002)
+ */
+export const AVATAR_MY = 52;
+
+export function Avatar({ initial, size = AVATAR_MY }: { initial: string; size?: number }) {
   const theme = useTheme();
-  const big = size >= Layout.avatarProfile;
+  const large = size >= Layout.avatarLarge;
 
   return (
-    <View
-      style={[
-        styles.avatar,
-        { width: size, height: size, backgroundColor: big ? theme.tintSubtle : theme.backgroundSelected },
-      ]}>
-      {/* 시안 13-my-sub.dc.html L235 — 88 아바타는 코랄틴트 바탕에 코랄 32/700이다. 작은 아바타는 회색 그대로. */}
-      <ThemedText type={big ? 't1' : 't7'} themeColor={big ? 'tint' : 'textAssistive'}>
+    <View style={[styles.avatar, { width: size, height: size, backgroundColor: theme.tintSurface }]}>
+      <ThemedText type={large ? 'f32' : 'f20'} themeColor="tint" style={styles.avatarText}>
         {initial}
       </ThemedText>
     </View>
@@ -617,4 +619,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexShrink: 0,
   },
+  avatarText: { fontWeight: 700 },
 });

@@ -12,7 +12,7 @@
  * 루트 메뉴는 정본의 내 활동 / 함께 준비하기 / 라운지 / 고객지원 / 약관만 둔다.
  * 정본 WP-MY-001의 내 활동은 Pick 인증내역과 내가 쓴 후기 두 줄이다.
  *
- * 모양은 시안, 수치는 `spec/tokens.json`(카드 radius 10 · 행 56 · 아바타 56 ·
+ * 모양은 정본, 수치는 `spec/tokens.json`(카드 radius 10 · 행 52 · 아바타 52 ·
  * 아이콘 18 · 좌우 24). 문구는 `spec/strings.ko.json` `my`.
  */
 import { FullScreenError } from '@/features/errors/full-screen-error';
@@ -46,7 +46,7 @@ import {
 } from '@/api/client';
 import { useSession } from '@/features/auth/use-session';
 import { DelayedLoader, DelayedLoadingView } from '@/features/loading/delayed-loader';
-import { Avatar } from '@/features/settings/my-kit';
+import { AVATAR_MY, Avatar } from '@/features/settings/my-kit';
 import strings from '../../../../../../spec/strings.ko.json';
 import { APP_VERSION } from '@/features/settings/version';
 import { openExternal } from '@/features/open-external';
@@ -153,7 +153,8 @@ export default function MyScreen() {
   if (state.status === 'loading') return <DelayedLoadingView />;
   if (state.status === 'signedOut') return <Redirect href="/login" />;
 
-  const count = (n: number) => (n > 0 ? S.count.replace('{n}', formatCount(n)) : undefined);
+  /* 정본 `myCount`는 숫자만 적는다(「4」 · 「2」 · 「1」) — 「건」을 붙이지 않는다. */
+  const count = (n: number) => (n > 0 ? formatCount(n) : undefined);
 
   /* 순서와 묶음은 시안 `mySections` 그대로다. 남긴 줄 · 뺀 줄의 사유는 파일 머리에 있다. */
   const sections: { title: string; rows: MenuRow[] }[] = [
@@ -231,7 +232,7 @@ export default function MyScreen() {
                   accessibilityLabel="프로필"
                   onPress={() => router.push('/my/profile' as never)}
                   style={({ pressed }) => [styles.profile, pressed ? styles.pressed : null]}>
-                  <Avatar initial={me.displayName?.slice(0, 1) ?? '나'} size={Layout.avatarProfile} />
+                  <Avatar initial={me.displayName?.slice(0, 1) ?? '나'} size={AVATAR_MY} />
                   <View style={styles.profileCol}>
                     <View style={styles.profileNameRow}>
                       <ThemedText type="f18" numberOfLines={1} style={[styles.bold, styles.shrink]}>
@@ -355,7 +356,7 @@ function weddingLine(iso: string): string {
 
 const WEEKDAY = ['일', '월', '화', '수', '목', '금', '토'] as const;
 
-// ─── Styles — 모양은 대메뉴_MY.dc.html 1, 수치는 spec/tokens.json ───
+// ─── Styles — 모양은 docs/design/React_Native/my.jsx frame-001, 수치는 spec/tokens.json ───
 
 const styles = StyleSheet.create({
   container: {
@@ -419,7 +420,7 @@ const styles = StyleSheet.create({
   },
   /* secLabel 13/700 muted. */
   sectionTitle: { marginBottom: Layout.inlineGap },
-  /* WP-MY-001 메뉴 행: gap 12 · 최소 높이 52 · 좌우 16. */
+  /* WP-MY-001 메뉴 행(my.js `ROW`): gap 12 · 최소 높이 52 · 좌우 20. */
   row: {
     flexDirection: 'row',
     alignItems: 'center',
