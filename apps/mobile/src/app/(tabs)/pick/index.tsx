@@ -1,8 +1,7 @@
 /**
  * Pick — Pick한 업체 목록. WP-PICK-001.
  *
- * v3.29 정본 `docs/design/html/대메뉴_Pick.dc.html` 1번 화면대로 그린다(screen-inventory.md는
- * v3.29 16개 파일 기준으로 아직 없어 html을 직접 대조한다). 헤더(«Pick») → 업종 칩 →
+ * v3.29.1 정본 `docs/design/React_Native/pick.jsx` frame-001을 따른다. 헤더(«Pick») → 업종 칩 →
  * 비교 배너(2곳 이상 담으면 «N곳 담았어요 · 비교하기») → 카드 목록.
  * 카드는 검색 결과와 같은 틀(썸네일 104×116 · 정보 안쪽 14)이고 아래에 CTA 띠가 붙는다.
  *
@@ -40,14 +39,12 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
 
 import {
   Border,
   Layout,
   LetterSpacing,
   LineHeight,
-  MARK_HEART_PATH,
   MaxContentWidth,
   ProductSymbol,
   Radius,
@@ -93,9 +90,9 @@ const ACTION_DECIDE = '결정하기';
 const ACTION_UNDECIDE = '결정 취소';
 const ACTION_CONSULT = '상담 예약하기';
 const BADGE_SHARED = '함께';
-const EMPTY_TITLE = '아직 Pick한 업체가 없어요';
-const EMPTY_BODY = '검색에서 마음에 드는 업체를 Pick해보세요';
-const EMPTY_CTA = `업체 ${TERMS.search}하기`;
+const EMPTY_TITLE = '아직 담은 곳이 없어요';
+const EMPTY_BODY = '담아두면 여기서 비교할 수 있어요';
+const EMPTY_CTA = '추천 보기';
 const UNDECIDE_TITLE = '결정을 취소할까요?';
 const UNDECIDE_BODY = '웨딩노트의 결정 상태가 풀려요. 언제든 다시 결정할 수 있어요.';
 const MIN_COMPARE = 2;
@@ -233,6 +230,12 @@ export default function PickScreen() {
     setBusy(true);
     try {
       await removeDecision(weddingId, category);
+      setPage((current) => current && ({
+        ...current,
+        groups: current.groups.map((group) => group.category === category
+          ? { ...group, state: 'picking' as const, decidedVendorId: null }
+          : group),
+      }));
       showToast('결정을 취소했어요');
       load();
     } catch {
@@ -249,6 +252,23 @@ export default function PickScreen() {
     setBusy(true);
     try {
       await removeCandidate(weddingId, candidate.id);
+      setPage((current) => current && ({
+        ...current,
+        total: Math.max(0, current.total - 1),
+        groups: current.groups.map((group) => {
+          if (group.category !== candidate.category) return group;
+          const remaining = group.candidates.filter((item) => item.id !== candidate.id);
+          return {
+            ...group,
+            candidates: remaining,
+            comparable: remaining.length >= MIN_COMPARE,
+            ...(wasDecided ? { state: 'picking' as const, decidedVendorId: null } : {}),
+          };
+        }),
+      }));
+      if (filter === candidate.category && page?.groups.find((group) => group.category === filter)?.candidates.length === 1) {
+        setFilter('all');
+      }
       setCompare((prev) => {
         const next = new Set(prev);
         next.delete(candidate.vendorId);
@@ -269,13 +289,30 @@ export default function PickScreen() {
     let candidateRestored = false;
     setBusy(true);
     try {
-      await addCandidate(weddingId, candidate.vendorId, candidate.note ?? undefined);
+      const { candidateId } = await addCandidate(weddingId, candidate.vendorId, candidate.note ?? undefined);
       candidateRestored = true;
+      setPage((current) => current && ({
+        ...current,
+        total: current.total + 1,
+        groups: current.groups.map((group) => group.category === candidate.category
+          ? {
+              ...group,
+              candidates: [{ ...candidate, id: candidateId, addedAt: new Date().toISOString(), addedByPartner: false }, ...group.candidates],
+              comparable: group.candidates.length + 1 >= MIN_COMPARE,
+            }
+          : group),
+      }));
       if (wasDecided) {
         await decideCategory(weddingId, {
           category: candidate.category,
           vendorId: candidate.vendorId,
         });
+        setPage((current) => current && ({
+          ...current,
+          groups: current.groups.map((group) => group.category === candidate.category
+            ? { ...group, state: 'decided' as const, decidedVendorId: candidate.vendorId }
+            : group),
+        }));
       }
       showToast(wasDecided ? 'Pick과 결정을 되돌렸어요' : '다시 Pick했어요');
     } catch {
@@ -452,8 +489,8 @@ function CategoryChip({ label, active, onPress }: { label: string; active: boole
         { backgroundColor: active ? theme.text : theme.backgroundElement },
         pressed ? styles.pressed : null,
       ]}>
-      {/* 규격서: 칩 «14/600 · lh 20 · pad 10 16». */}
-      <ThemedText type="f14" numberOfLines={1} style={[styles.semibold, { color: active ? theme.onInk : theme.textAssistive }]}>
+      {/* WP-PICK-001 업종 칩: 14/700 · 높이 36 · 좌우 14. */}
+      <ThemedText type="f14" numberOfLines={1} style={[styles.bold, { color: active ? theme.onInk : theme.textAssistive }]}>
         {label}
       </ThemedText>
     </Pressable>
@@ -625,37 +662,27 @@ function CandidateCard({
   );
 }
 
-/* ────────────────────────────────────────────
-   비어 있음 — 피그마 `py-20 gap-4`: 회색 원 64 + 하트 32 · 제목 · 부제 · 잉크 pill 단추
-──────────────────────────────────────────── */
+/* WP-EMPTY-PICK — 아이콘 없는 회색 카드와 다음 행동. */
 function Empty() {
   const theme = useTheme();
   return (
     <View style={styles.empty}>
-      <View style={[styles.emptyMark, { backgroundColor: theme.backgroundElement }]}>
-        <View style={styles.emptyHeart}>
-          <Svg width={Layout.iconEmpty} height={Layout.iconEmpty} viewBox="0 0 24 24" fill="none">
-            <Path d={MARK_HEART_PATH} stroke={theme.textAssistive} strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" />
-          </Svg>
-        </View>
-      </View>
-      <View style={styles.emptyText}>
-        <ThemedText type="t6" style={styles.bold}>
+      <ThemedText type="f18" style={styles.bold}>담은 곳</ThemedText>
+      <View style={styles.emptyCard}>
+        <ThemedText type="f16" style={[styles.bold, styles.emptyText]}>
           {EMPTY_TITLE}
         </ThemedText>
-        <ThemedText type="t7" themeColor="textAssistive" style={styles.emptyBody}>
+        <ThemedText type="f13" themeColor="textAssistive" style={styles.emptyText}>
           {EMPTY_BODY}
         </ThemedText>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={EMPTY_CTA}
+          onPress={() => router.push({ pathname: '/pick', params: { section: 'recommendations' } })}
+          style={({ pressed }) => [styles.emptyCta, { backgroundColor: theme.tint }, pressed ? styles.pressed : null]}>
+          <ThemedText type="f15" style={[styles.bold, { color: theme.onTint }]}>{EMPTY_CTA}</ThemedText>
+        </Pressable>
       </View>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={EMPTY_CTA}
-        onPress={() => router.push('/search')}
-        style={({ pressed }) => [styles.emptyCta, { backgroundColor: theme.text }, pressed ? styles.pressed : null]}>
-        <ThemedText type="t7" style={[styles.bold, { color: theme.onInk }]}>
-          {EMPTY_CTA}
-        </ThemedText>
-      </Pressable>
     </View>
   );
 }
@@ -767,10 +794,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: Layout.pageX,
     paddingBottom: Spacing.three,
   },
-  /* `px-4 py-2.5 text-sm` — 40(같은 값의 controlMedium) · 좌우 16. */
+  /* WP-PICK-001 업종 칩: 높이 36 · 좌우 14. */
   chip: {
-    height: Layout.controlMedium,
-    paddingHorizontal: Spacing.three,
+    height: Layout.chip,
+    paddingHorizontal: Layout.chipPaddingX,
     borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
@@ -869,29 +896,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // ── 비어 있음 `py-20 gap-4` ──
+  // WP-EMPTY-PICK: 페이지 바깥 24px · 제목과 카드 간 12, 카드 안쪽 32/20.
   empty: {
-    alignItems: 'center',
-    paddingVertical: Layout.pickEmptyPaddingY,
     paddingHorizontal: Layout.gutter,
-    gap: Spacing.three,
+    paddingBottom: Layout.gutter,
+    gap: Layout.inlineGap,
   },
-  emptyMark: {
-    width: Layout.emptyMark,
-    height: Layout.emptyMark,
-    borderRadius: Radius.pill,
+  emptyCard: {
+    backgroundColor: '#F7F8FA',
+    borderRadius: 12,
+    paddingVertical: 32,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    gap: 6,
+  },
+  emptyText: { textAlign: 'center' },
+  emptyCta: {
+    marginTop: Layout.inlineGap,
+    height: 44,
+    paddingHorizontal: 18,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  /* 하트 `text-muted-foreground/30`. */
-  emptyHeart: { opacity: 0.3 },
-  emptyText: { alignItems: 'center' },
-  emptyBody: { marginTop: Spacing.one },
-  /* `mt-1 rounded-full px-6 py-3`. */
-  emptyCta: {
-    marginTop: Spacing.one,
-    borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Layout.inlineGap,
   },
 });

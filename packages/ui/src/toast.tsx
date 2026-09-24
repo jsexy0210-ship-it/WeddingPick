@@ -13,8 +13,9 @@ export type ToastProps = {
 
 /** 화면 하단에서 이만큼 띄운다. 핸드오프 — 96px. */
 const BOTTOM = 96;
-/** 이만큼 뒤에 사라진다. 핸드오프 — 2.2초. */
-export const TOAST_MS = 2200;
+/** 사용자 설정: 결과 알림은 1초 뒤 사라진다. */
+export const TOAST_MS = 1000;
+const FADE_MS = 175;
 
 /**
  * 잠깐 뜨는 안내. 디자인 핸드오프 인터랙션 규칙.
@@ -43,14 +44,14 @@ export function Toast({ message, onHidden }: ToastProps) {
     const animation = Animated.sequence([
       Animated.timing(opacity, {
         toValue: 1,
-        duration: 175,
+        duration: FADE_MS,
         easing: Easing.out(Easing.quad),
         useNativeDriver: USE_NATIVE_DRIVER,
       }),
-      Animated.delay(TOAST_MS),
+      Animated.delay(TOAST_MS - FADE_MS * 2),
       Animated.timing(opacity, {
         toValue: 0,
-        duration: 175,
+        duration: FADE_MS,
         easing: Easing.in(Easing.quad),
         useNativeDriver: USE_NATIVE_DRIVER,
       }),

@@ -86,6 +86,8 @@ export const FontSize = {
   /** 로그인 카카오 CTA. 06-onboarding-login.dc.html `17/700 · lh 23`. */
   f17: 17,
   f18: 18,
+  /** 웨딩노트 D-day 날짜와 숫자. React_Native/note.js `ddayDate` · `ddayNum` 19px. */
+  noteDday: 19,
   f20: 20,
   f24: 24,
   f26: 26,

@@ -21,7 +21,7 @@ import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { Badge, Dock, Hero, ListRow, NavBar, NoteCard, Screen, Section } from '@/features/wedding/screen-kit';
 
 /**
- * `spec/strings.ko.json` `couple.*` · 정본 `docs/design/html/대메뉴_MY.dc.html`
+ * `spec/strings.ko.json` `couple.*` · 정본 `docs/design/React_Native/my.jsx`
  * WP-CPL-001(배우자 초대) · WP-CPL-006(연결 해제). 「연결됨」(이미 연결된 사람이 보는 관리
  * 화면)은 WP-MY-014(연결관리)에 속해 이번 작업 범위 밖이라 그대로 둔다.
  */
@@ -151,7 +151,7 @@ export default function PartnerScreen() {
     }, [load])
   );
 
-  async function makeInvite() {
+  const makeInvite = useCallback(async () => {
     if (busy || !weddingId) return;
     setBusy(true);
     setError(null);
@@ -166,7 +166,7 @@ export default function PartnerScreen() {
     } finally {
       setBusy(false);
     }
-  }
+  }, [busy, weddingId]);
 
   // 정본(WP-CPL-001)은 코드 카드가 항상 채워져 있다 — 초대를 아직 만든 적이 없으면 화면
   // 진입과 함께 한 번 만들어 그 모양에 맞춘다. 이미 보낸 초대가 있으면(코드는 몰라도)
@@ -175,8 +175,7 @@ export default function PartnerScreen() {
     if (autoTried.current || !weddingId || !me || me.spouseLinked || invite || code) return;
     autoTried.current = true;
     void makeInvite();
-    /* makeInvite는 매 렌더 새로 만들어지지만 autoTried ref가 한 번만 돌게 막는다. */
-  }, [weddingId, me, invite, code]);
+  }, [weddingId, me, invite, code, makeInvite]);
 
   async function copyCode() {
     if (!code) return;

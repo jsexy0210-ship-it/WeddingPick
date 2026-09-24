@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.t7,
     fontWeight: '700',
     letterSpacing: 0.4,
-    color: Colors.light.textSecondary,
+    color: Colors.light.adminSidebarLabel,
   },
   sideTitle: {
     fontSize: FontSize.t3,
@@ -270,5 +270,5 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.light.background,
   },
-  sideBody: { fontSize: FontSize.tab, lineHeight: LineHeight.t7, color: Colors.light.textStrong },
+  sideBody: { fontSize: FontSize.tab, lineHeight: LineHeight.t7, color: Colors.light.adminSidebarLabel },
 });

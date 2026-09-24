@@ -24,7 +24,7 @@ import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { Avatar, Row, Rows, Section, SubScreen } from '@/features/settings/my-kit';
 
-/** 시안 `docs/design/html/대메뉴_MY.dc.html` 2 · WP-MY-002. */
+/** 정본 `docs/design/React_Native/my.jsx` 프로필 프레임 · WP-MY-002. */
 const S = {
   title: '프로필',
   basic: '기본',
@@ -61,7 +61,7 @@ const S = {
 } as const;
 
 /**
- * 프로필 · WP-MY-002 · 시안 2. MY 상단 프로필 카드를 누르면 들어온다.
+ * 프로필 · WP-MY-002 · React_Native/my.jsx 프레임 2. MY 상단 프로필 카드를 누르면 들어온다.
  *
  * **MY의 설정 섹션을 흡수했다**(시안 「설정 섹션을 흡수해 이름 · 알림 · 계정을 한 화면에서
  * 다룹니다. 로그아웃과 탈퇴가 맨 아래입니다」).
@@ -132,15 +132,18 @@ export default function ProfileScreen() {
   const nameReady = nameDraft.trim() === '' || nameCheck.ok;
 
   async function saveName() {
-    if (!nameReady || !me) return;
+    if (!nameReady || !me || saving) return;
     setSaving(true);
+    const previous = me;
+    const next = nameDraft.trim() === '' ? null : nameDraft.trim();
+    setMe({ ...me, displayName: next });
+    setNameOpen(false);
     try {
-      const next = nameDraft.trim() === '' ? null : nameDraft.trim();
       const saved = await setDisplayName(next);
-      setMe({ ...me, displayName: saved.displayName });
-      setNameOpen(false);
+      setMe((current) => current === null ? current : { ...current, displayName: saved.displayName });
       setToast(S.saveDone);
     } catch {
+      setMe((current) => current === null ? current : { ...current, displayName: previous.displayName });
       setToast(S.saveFail);
     } finally {
       setSaving(false);

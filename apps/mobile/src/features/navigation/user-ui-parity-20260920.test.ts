@@ -73,9 +73,10 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(setup).toContain('STYLE_PICK_LIMIT_TOAST');
     expect(taste).toContain('STYLE_PICK_LIMIT_TOAST');
   });
-  it('setup 완료 뒤 Home 두 번째 로더를 생략한다', () => {
-    expect(mobile('app/setup.tsx')).toContain('markNextHomeLoadingCoveredBySetup()');
-    expect(mobile('app/(tabs)/index.tsx')).toContain('setupCoveredLoading ? null');
+  it('setup 저장 중과 홈 첫 진입에 같은 홈 스켈레톤을 쓴다', () => {
+    expect(mobile('app/setup.tsx')).toContain('if (sending) return <HomeSkeleton />');
+    expect(mobile('app/(tabs)/index.tsx')).toContain('return <HomeSkeleton />');
+    expect(mobile('app/setup.tsx')).not.toContain('remainingLoadingMs = 3000 -');
   });
   /*
    * 「홈 추천 비교는 표시한 업체 id를 compare route에 넘긴다」는 2026-09-23 v3.29 홈
