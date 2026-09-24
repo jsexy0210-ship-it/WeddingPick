@@ -34,6 +34,8 @@
 
 - `/login`이 사용자 앱 HTML을 반환한다.
 - `/admin/login`이 관리자 export와 같은 HTML을 반환하고 `/_expo/static/js/web/` 번들을 포함한다.
+- `/website.html`, `/terms.html`, `/privacy.html`이 웹사이트 문서를 반환하고 앱 로그인 fallback과 구별된다.
+- 삭제한 `/pick/done` 경로는 404를 반환한다. 완료 안내는 화면 내 결과 토스트로 표시한다.
 - 관리자 응답에 별도 포트나 이전 주소 안내문이 없다.
 - `/health`의 `ok`와 `database`가 정상이고 `/v1/auth/providers`가 JSON을 반환한다.
 - 외부 검증 실패 시 직전 Nginx 설정과 release marker로 자동 복구한다.

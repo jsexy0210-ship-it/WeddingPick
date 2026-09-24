@@ -34,7 +34,7 @@ const REGION_CHIP_COUNT = 3;
  * 없는 화면으로 보내는 것보다 낫다.
  */
 function search(): string {
-  return `<form class="search" role="search" method="get" action="/">
+  return `<form class="search" role="search" method="get" action="/search.html">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="color:var(--text-3)" aria-hidden="true" focusable="false">
         <circle cx="11" cy="11" r="6.9"></circle>
         <path d="M16.2 16.2 20.8 20.8"></path>
@@ -60,7 +60,7 @@ function chips(regions: readonly string[]): string {
    */
   const categories = PREPARATION_CATEGORIES.map(
     (category) =>
-      `<li><a class="chip" href="/?category=${escapeHtml(category)}">${escapeHtml(
+      `<li><a class="chip" href="/search.html?category=${escapeHtml(category)}">${escapeHtml(
         VENDOR_CATEGORY_LABEL[category]
       )}</a></li>`
   );
@@ -69,7 +69,7 @@ function chips(regions: readonly string[]): string {
     .slice(0, REGION_CHIP_COUNT)
     .map(
       (region) =>
-        `<li><a class="chip" href="/?region=${encodeURIComponent(region)}">${escapeHtml(
+        `<li><a class="chip" href="/search.html?region=${encodeURIComponent(region)}">${escapeHtml(
           region
         )}</a></li>`
     );

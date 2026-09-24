@@ -60,11 +60,11 @@ function subGnb(activePath: string | null): string {
     return `<a class="sp-nav-link" href="${esc(n.href)}"${on ? ' aria-current="page"' : ''}${on ? ` style="color:${INK};font-weight:700"` : ''}>${esc(n.label)}</a>`;
   }).join('');
   return `<header class="sp-gnb">
-    <a class="sp-brand" href="/">${pickMark(24, C)}<span>${esc(COPY.brand)}</span></a>
+    <a class="sp-brand" href="/website.html">${pickMark(24, C)}<span>${esc(COPY.brand)}</span></a>
     <input class="sp-ham-cb" type="checkbox" id="sp-nav-toggle" tabindex="-1" aria-hidden="true">
     <label class="sp-ham-btn" for="sp-nav-toggle" aria-label="${esc(COPY.navLabel)}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${INK}" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></label>
     <nav class="sp-nav" aria-label="${esc(COPY.navLabel)}">${links}</nav>
-    <a class="sp-cta-btn" href="/#download">${esc(COPY.launchLink)}</a>
+    <a class="sp-cta-btn" href="/website.html#download">${esc(COPY.launchLink)}</a>
   </header>`;
 }
 
@@ -79,7 +79,7 @@ function subFooter(): string {
   const legal = COPY.legal.map(l => `<a href="${esc(l.href)}">${esc(l.label)}</a>`).join('');
   return `<footer class="sp-foot">
     <div class="sp-foot-top">
-      <a class="sp-foot-brand" href="/">${pickMark(20, C)}<span>${esc(COPY.brand)}</span></a>
+      <a class="sp-foot-brand" href="/website.html">${pickMark(20, C)}<span>${esc(COPY.brand)}</span></a>
       <nav class="sp-foot-nav" aria-label="${esc(COPY.footerLabel)}">${nav}</nav>
       ${CONTACT_EMAIL ? `<a class="sp-foot-mail" href="mailto:${esc(CONTACT_EMAIL)}">${esc(CONTACT_EMAIL)}</a>` : ''}
     </div>
@@ -254,7 +254,7 @@ export function renderIntroPage(): string {
     `<div class="sp-editorial">${COPY.steps.map(s => `<section><span class="sp-number">${esc(s.n)}</span><h2>${esc(s.title)}</h2><p>${esc(s.body)}</p></section>`).join('')}
     <section><h2>${esc(COPY.pickTitle).replace(/\n/g,' ')}</h2><p>${esc(COPY.pickBody)}</p></section>
     <section><h2>${esc(COPY.trustTitle).replace(/\n/g,' ')}</h2><p>${esc(COPY.trustBody)}</p><p>${esc(COPY.trustNote)}</p></section>
-    <a class="sp-link" href="/">${esc(COPY.introLink)}</a></div>`});
+    <a class="sp-link" href="/website.html">${esc(COPY.introLink)}</a></div>`});
 }
 
 export function renderFaqPage(): string {

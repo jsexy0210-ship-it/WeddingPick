@@ -51,7 +51,7 @@ describe('서비스 웹 — 랜딩', () => {
 
   it('모든 공개 소개 페이지가 동일한 출시 동선을 쓰고 가짜 제출 폼을 노출하지 않는다', () => {
     for (const html of [renderIntroPage(), renderFaqPage(), renderSupportPage()]) {
-      expect(html).toContain('href="/#download"');
+      expect(html).toContain('href="/website.html#download"');
       expect(html).not.toContain('앱 다운로드');
       expect(html).not.toContain('action="mailto:');
       expect(html).not.toContain('27개');

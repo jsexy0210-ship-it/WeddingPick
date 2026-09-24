@@ -26,6 +26,7 @@ fi
 release_root="$ROOT/static-releases/$release_sha"
 source_dir="$release_root/app"
 admin_source_dir="$release_root/admin"
+web_source_dir="$release_root/web"
 test -f "$source_dir/index.html"
 if [ ! -f "$source_dir/login.html" ] && [ ! -f "$source_dir/login/index.html" ]; then
   echo "App login export was not found in release: $release_sha" >&2
@@ -33,7 +34,10 @@ if [ ! -f "$source_dir/login.html" ] && [ ! -f "$source_dir/login/index.html" ];
   exit 1
 fi
 test -f "$admin_source_dir/admin/login.html"
-echo "Using staged app/admin release: $release_sha"
+test -f "$web_source_dir/index.html"
+test -f "$web_source_dir/terms.html"
+test -f "$web_source_dir/privacy.html"
+echo "Using staged app/admin/web release: $release_sha"
 
 if [ -e "$TX_BACKUP_MARKER" ] || [ -e "$TX_LIVE_MARKER" ] || [ -e "$TX_TARGET_MARKER" ]; then
   echo 'An app-web update transaction is still pending; refusing to overwrite rollback state.' >&2
@@ -42,6 +46,7 @@ fi
 
 target="/var/www/weddingpick/releases/$release_sha/app"
 admin_target="/var/www/weddingpick/releases/$release_sha/admin"
+web_target="/var/www/weddingpick/releases/$release_sha/web"
 
 # 이미 app-web이 443을 소유하는 상태에서 보존 marker가 깨졌다면 새 설정을 쓰기 전에
 # 중단한다. 현재 app config를 API-only backup으로 덮어쓰면 rollback 경로가 사라진다.
@@ -108,6 +113,12 @@ if [ -f "$admin_target/admin/login.html" ]; then
 else
   sudo -n rm -rf "$admin_target"
   sudo -n cp -a "$admin_source_dir" "$admin_target"
+fi
+if [ -f "$web_target/index.html" ]; then
+  echo "Website release $release_sha is already prepared; preserving served files."
+else
+  sudo -n rm -rf "$web_target"
+  sudo -n cp -a "$web_source_dir" "$web_target"
 fi
 sudo -n chmod -R a+rX /var/www/weddingpick
 
@@ -217,6 +228,24 @@ server {
         try_files \$uri \$uri.html \$uri/index.html =404;
         add_header X-Robots-Tag "noindex, nofollow" always;
     }
+
+    location = /website.html {
+        alias $web_target/index.html;
+    }
+
+    location ~ ^/(about|faq|intro|privacy|search|support|terms)\.html$ {
+        root $web_target;
+        try_files \$uri =404;
+    }
+
+    location ^~ /v/ {
+        root $web_target;
+        try_files \$uri =404;
+    }
+
+    location = /pick/done { return 404; }
+    location = /pick/done/ { return 404; }
+    location = /pick/done.html { return 404; }
 
     location / {
         try_files \$uri \$uri.html \$uri/index.html /index.html;

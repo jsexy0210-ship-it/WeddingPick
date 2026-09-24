@@ -26,6 +26,8 @@ function requirePath(path, label) {
 
 requirePath(join(MOBILE_DIST, 'index.html'), '앱 웹 export');
 requirePath(join(WEB_DIST, 'index.html'), '웹사이트 build');
+requirePath(join(WEB_DIST, 'terms.html'), '이용약관 build');
+requirePath(join(WEB_DIST, 'privacy.html'), '개인정보처리방침 build');
 
 rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
@@ -41,6 +43,10 @@ for (const role of ['app', 'admin']) {
 }
 
 cpSync(WEB_DIST, join(OUT, 'web'), { recursive: true });
+// 같은 443의 /assets/는 앱 root에서 제공한다. 웹 전용 파일만 합치고 이름 충돌은 중단한다.
+cpSync(join(WEB_DIST, 'assets'), join(OUT, 'app', 'assets'), {
+  recursive: true, force: false, errorOnExist: true,
+});
 
 /*
  * 정적 origin이 분리되어도 절대경로 /favicon.png가 각 origin에서 같은 바이트를

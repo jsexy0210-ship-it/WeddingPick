@@ -46,7 +46,7 @@ export const SITE = {
  * 둔다 — 눌러도 아무 일이 없는 링크는 고장으로 보이지 않아서 아무도 안 고친다.
  */
 export const GNB_MENU: readonly { label: string; href?: string }[] = [
-  { label: `업체 ${TERMS.search}`, href: '/' },
+  { label: `업체 ${TERMS.search}`, href: '/search.html' },
   { label: TERMS.verifiedData },
   { label: '웨딩 정보' },
   { label: '웨딩박람회' },

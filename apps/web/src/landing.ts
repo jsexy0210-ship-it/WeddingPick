@@ -17,7 +17,7 @@ function mark(): string {
 
 export function marketingHeader(): string {
   return `<header class="wp-header"><div class="wp-shell wp-header-inner">
-    <a class="wp-brand" href="/">${mark()}<span>${esc(S.brand)}</span></a>
+    <a class="wp-brand" href="/website.html">${mark()}<span>${esc(S.brand)}</span></a>
     <nav aria-label="${esc(S.navLabel)}">${S.nav.map(n => `<a href="${esc(n.href)}">${esc(n.label)}</a>`).join('')}</nav>
     <a class="wp-header-cta" href="#download">${esc(S.launchLink)}</a>
   </div></header>`;
@@ -25,7 +25,7 @@ export function marketingHeader(): string {
 
 export function marketingFooter(): string {
   return `<footer class="wp-footer"><div class="wp-shell">
-    <div class="wp-footer-top"><a href="/" class="wp-brand">${mark()}<span>${esc(S.brand)}</span></a>
+    <div class="wp-footer-top"><a href="/website.html" class="wp-brand">${mark()}<span>${esc(S.brand)}</span></a>
     <nav aria-label="${esc(S.footerLabel)}">${S.nav.map(n => `<a href="${esc(n.href)}">${esc(n.label)}</a>`).join('')}</nav>
     ${CONTACT_EMAIL ? `<a class="wp-footer-mail" href="mailto:${esc(CONTACT_EMAIL)}">${esc(CONTACT_EMAIL)}</a>` : ''}</div>
     <div class="wp-footer-biz">${BUSINESS_NOTICE_LINES.map(l => `<p>${esc(l)}</p>`).join('')}</div>

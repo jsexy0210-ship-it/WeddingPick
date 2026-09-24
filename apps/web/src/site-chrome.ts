@@ -60,7 +60,7 @@ function gnb(current: string | null): string {
 
   return `<header class="gnb">
       <div class="wrap">
-        <a class="logo" href="/">
+        <a class="logo" href="/search.html">
           <span style="color:var(--tint);display:flex">${mark(26)}</span>
           <b>${escapeHtml(SITE.name)}</b>
         </a>
@@ -111,7 +111,7 @@ function footer(): string {
           <li>
             <h2>서비스</h2>
             <ul>
-              <li><a href="/">업체 ${escapeHtml(TERMS.search)}</a></li>
+              <li><a href="/search.html">업체 ${escapeHtml(TERMS.search)}</a></li>
               <li>${escapeHtml(TERMS.verifiedData)}</li>
               <li>웨딩 정보</li>
             </ul>
