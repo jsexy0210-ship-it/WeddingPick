@@ -18,7 +18,8 @@ import {
  * 있으면 정본 `docs/design/React_Native/home.jsx`의 카드 둘 중 하나로 그린다.
  *
  * - `variant="style"`(기본) — frame-010 WP-AUTH-006 `styleBtn`: min-height 72 ·
- *   padding 16 18 · radius 10 · 이름 17/700 · 보조문구 13/19 · 이름↔보조 3 · 표시 24.
+ *   padding 16 18 · radius 10 · 이름 17/700(줄높이는 정본 렌더 실측 23) · 보조문구 13/19 ·
+ *   이름↔보조 3 · 표시 24. 카드 높이 77.
  * - `variant="prep"` — frame-008 WP-AUTH-004 `PREP`: padding 16 · radius 10 · gap 12 ·
  *   이름 17/23/700 · 보조문구 13/19 · 이름↔보조 2(`prepCol`) · 표시 22. 높이는 글자가
  *   정한다(76) — 스타일 카드의 min-height 72를 쓰지 않는다.
@@ -112,10 +113,14 @@ const styles = StyleSheet.create({
   label: { fontWeight: 700, lineHeight: LineHeight.lh23, flexShrink: 1 },
   checkSlot: { width: Layout.iconRow, height: Layout.iconRow },
 
+  /*
+   * home.jsx frame-010 `styleBtn` — 정본 카드 77(16 + 이름 23 + 3 + 보조 19 + 16). 선택 테두리가
+   * inset 그림자라 크기에 안 들어가므로 늘 두는 1.5 테두리를 padding에서 뺀다(prepRow와 같은 방식).
+   */
   detailRow: {
     minHeight: 72,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
+    paddingVertical: 16 - Border.selected,
+    paddingHorizontal: 18 - Border.selected,
     borderRadius: Radius.medium,
     flexDirection: 'row',
     alignItems: 'center',
@@ -138,6 +143,7 @@ const styles = StyleSheet.create({
   detailText: { flex: 1, minWidth: 0, gap: 3 },
   detailLabel: {
     fontSize: FontSize.dateWheel,
+    lineHeight: LineHeight.lh23,
     fontWeight: 700,
   },
   detailDescription: { lineHeight: LineHeight.lh19 },

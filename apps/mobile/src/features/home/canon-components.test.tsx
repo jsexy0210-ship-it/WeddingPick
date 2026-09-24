@@ -153,6 +153,13 @@ describe('최신 홈·추천 연결', () => {
     expect(view.root.findAllByProps({ accessibilityRole: 'progressbar' })).toHaveLength(0);
   });
 
+  it('예산만 있고 쓴 돈이 없으면 WP-HOME-002 문구를 보여 준다', () => {
+    const view = mount(<HomeBudget budget={{ total: 17_500_000, spent: 0, remaining: 17_500_000 }} onOpen={jest.fn()} />);
+    expect(text(view)).toContain('온보딩에서 등록한 예산이에요');
+    expect(text(view)).toContain('아직 예산 정보가 없어요');
+    expect(text(view)).toContain('0%');
+  });
+
   it('예산 초과는 100%로 제한한 진행 막대와 초과 안내를 표시한다', () => {
     const view = mount(<HomeBudget budget={{ total: 100, spent: 150, remaining: -50 }} onOpen={jest.fn()} />);
     expect(text(view)).toContain('예산을 넘었어요');

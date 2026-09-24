@@ -2,7 +2,6 @@ import type { AppBootstrapResponse } from '@weddingpick/api-contract';
 import { manwon } from '@weddingpick/domain';
 import { Pressable, StyleSheet, View } from 'react-native';
 import {
-  ActionButton,
   Border,
   CategoryIcon,
   DonutChart,
@@ -100,8 +99,12 @@ export function HomeBudget({ budget, onOpen }: {
 }) {
   const theme = useTheme();
   const progress = budgetProgress(budget);
+  /* WP-HOME-002 — 아직 쓴 돈이 없으면 서브 「온보딩에서 등록한 예산이에요」 · 비고 「아직 예산 정보가 없어요」. */
+  const noSpend = budget !== null && budget.spent === 0;
   const budgetSub = budget && progress !== null
-    ? budget.spent > budget.total ? '예산을 넘었어요' : `예산의 ${progress}%를 썼어요`
+    ? budget.spent > budget.total
+      ? '예산을 넘었어요'
+      : noSpend ? S['budget.subOnboarding'] : `예산의 ${progress}%를 썼어요`
     : null;
 
   return (
@@ -112,9 +115,17 @@ export function HomeBudget({ budget, onOpen }: {
         onMore={onOpen}
       />
       {budget === null || progress === null ? (
-        <View style={styles.empty}>
-          <ThemedText type="f13" themeColor="textAssistive">{S['budget.empty']}</ThemedText>
-          <ActionButton variant="secondary" label={S['budget.set']} onPress={onOpen} />
+        /* common.jsx WP-EMPTY-HOME 「예산현황」 `emptyCard` r12 · #f7f8fa(가장 가까운 backgroundElement #f7f8f9) · 32/20 · gap 6 ·
+           `emptyT` 16/700 · `emptyS` 13/20 · CTA 44 · 좌우 18 · r8 · 코랄 · 15/700 · 위 12. */
+        <View style={[styles.empty, { backgroundColor: theme.backgroundElement }]}>
+          <ThemedText type="f16" style={[styles.bold, styles.center]}>{S['budget.empty']}</ThemedText>
+          <ThemedText type="f13" themeColor="textAssistive" style={styles.center}>{S['budget.emptySub']}</ThemedText>
+          <Pressable
+            accessibilityRole="button"
+            onPress={onOpen}
+            style={({ pressed }) => [styles.emptyCta, { backgroundColor: theme.tint }, pressed && styles.pressed]}>
+            <ThemedText type="f15" style={[styles.bold, { color: theme.onTint }]}>{S['budget.set']}</ThemedText>
+          </Pressable>
         </View>
       ) : (
         <Pressable
@@ -153,7 +164,7 @@ export function HomeBudget({ budget, onOpen }: {
           <ThemedText
             type="f12"
             themeColor={budget.spent > budget.total ? 'negative' : 'textAssistive'}>
-            {budget.spent > budget.total ? S['budget.exceeded'] : S['budget.note']}
+            {budget.spent > budget.total ? S['budget.exceeded'] : noSpend ? S['budget.noSpend'] : S['budget.note']}
           </ThemedText>
         </Pressable>
       )}
@@ -253,5 +264,19 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   budgetCol: { flex: 1, minWidth: 0, gap: Spacing.half },
-  empty: { gap: Layout.inlineGap },
+  empty: {
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 32,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+  },
+  center: { textAlign: 'center' },
+  emptyCta: {
+    marginTop: 12,
+    height: 44,
+    paddingHorizontal: 18,
+    borderRadius: 8,
+    justifyContent: 'center',
+  },
 });
