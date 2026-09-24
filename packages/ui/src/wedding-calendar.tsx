@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from './themed-text';
@@ -22,6 +22,8 @@ export type WeddingCalendarProps = {
   today?: Date;
   /** true이면 과거 날짜도 고를 수 있다. 기본값은 false(미래만). */
   allowPast?: boolean;
+  /** 보고 있는 달이 바뀔 때(처음 그릴 때 포함). month는 0부터. 공휴일 한 줄처럼 달에 딸린 것을 읽을 때 쓴다. */
+  onMonthChange?: (year: number, month: number) => void;
 };
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
@@ -39,7 +41,13 @@ function monthShape(year: number, month: number) {
   };
 }
 
-export function WeddingCalendar({ value, onChange, today = new Date(), allowPast = false }: WeddingCalendarProps) {
+export function WeddingCalendar({
+  value,
+  onChange,
+  today = new Date(),
+  allowPast = false,
+  onMonthChange,
+}: WeddingCalendarProps) {
   const theme = useTheme();
   const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
@@ -52,6 +60,10 @@ export function WeddingCalendar({ value, onChange, today = new Date(), allowPast
 
     return { year: today.getFullYear(), month: today.getMonth() };
   });
+
+  useEffect(() => {
+    onMonthChange?.(cursor.year, cursor.month);
+  }, [cursor.year, cursor.month, onMonthChange]);
 
   const { firstWeekday, dayCount } = monthShape(cursor.year, cursor.month);
   /** 42칸. 앞의 빈 칸은 null. 달마다 높이가 달라지면 시트가 들썩인다. */

@@ -36,3 +36,4 @@ export * from './wedding-plan';
 export * from './weddings';
 export * from './marketing';
 export * from './wedding-feed';
+export * from './public-calendar';

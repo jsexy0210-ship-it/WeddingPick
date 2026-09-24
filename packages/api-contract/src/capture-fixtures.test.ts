@@ -18,6 +18,7 @@ import { faqListResponseSchema } from './faq';
 import { consultationListResponseSchema } from './consultations';
 import { inquiryListResponseSchema } from './inquiries';
 import { myReportListResponseSchema } from './my-reports';
+import { publicHolidayListResponseSchema, weddingForecastResponseSchema } from './public-calendar';
 import { categoryRecommendationsResponseSchema } from './recommendations';
 import { myMonthlyDrawResponseSchema, myRewardPayoutResponseSchema, myRewardsResponseSchema } from './rewards';
 import { loungeReviewListResponseSchema, reportReasonListResponseSchema, reviewCommentListResponseSchema, reviewListResponseSchema } from './reviews';
@@ -78,6 +79,8 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/weddings/:weddingId/invites', weddingInviteListResponseSchema],
   ['GET /v1/weddings/:weddingId/consultations', consultationListResponseSchema],
   ['GET /v1/weddings/:weddingId/events', weddingEventListResponseSchema],
+  ['GET /v1/weddings/:weddingId/forecast', weddingForecastResponseSchema],
+  ['GET /v1/public-holidays', publicHolidayListResponseSchema],
   ['GET /v1/weddings/:weddingId/expenses', expenseSummaryResponseSchema],
   ['GET /v1/weddings/:weddingId/tasks', weddingTaskListResponseSchema],
   ['GET /v1/vendors/regions', vendorRegionsResponseSchema],
