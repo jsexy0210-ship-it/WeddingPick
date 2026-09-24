@@ -60,7 +60,11 @@ const ALLOWED = [
  * 짚었던 근거 문서(그 네 화면)가 이 변경으로 하나 줄어든다 — 대표님 확인 필요.
  */
 const LEGAL_SCREENS = [
-  'apps/mobile/src/app/(tabs)/my/index.tsx',
+  /*
+   * MY 「약관」 두 행은 이제 앱 화면(WP-MY-015 · 015b, docs/design/React_Native/my.jsx:894 · 914)을
+   * 연다. 그 화면이 원문을 WebView/iframe으로 담고, 우리 사이트 밖 링크만 `openExternal`로 넘긴다.
+   */
+  'apps/mobile/src/features/settings/policy-document-screen.tsx',
   'apps/mobile/src/app/(tabs)/my/privacy.tsx',
 ];
 
