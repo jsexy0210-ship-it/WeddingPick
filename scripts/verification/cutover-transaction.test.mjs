@@ -82,11 +82,13 @@ function makeHarness({ includeLogin = true, adminMarkerInBundle = false } = {}) 
   const releaseApp = path.join(root, 'static-releases', releaseSha, 'app');
   const releaseAdmin = path.join(root, 'static-releases', releaseSha, 'admin', 'admin');
   const releaseAdminBundle = path.join(root, 'static-releases', releaseSha, 'admin', '_expo', 'static', 'js', 'web');
+  const releaseWeb = path.join(root, 'static-releases', releaseSha, 'web');
   const servedApp = path.join(root, 'var', 'www', 'weddingpick', 'releases', releaseSha, 'app');
 
   mkdirSync(path.dirname(conf), { recursive: true });
   mkdirSync(releaseApp, { recursive: true });
   mkdirSync(releaseAdmin, { recursive: true });
+  mkdirSync(releaseWeb, { recursive: true });
   if (adminMarkerInBundle) mkdirSync(releaseAdminBundle, { recursive: true });
   mkdirSync(scripts, { recursive: true });
   mkdirSync(bin, { recursive: true });
@@ -96,6 +98,9 @@ function makeHarness({ includeLogin = true, adminMarkerInBundle = false } = {}) 
   writeFileSync(conf, baseline, 'utf8');
   writeFileSync(path.join(releaseApp, 'index.html'), '<html>app</html>', 'utf8');
   writeFileSync(path.join(releaseAdmin, 'login.html'), adminHtml('admin', !adminMarkerInBundle), 'utf8');
+  for (const page of ['index', 'terms', 'privacy']) {
+    writeFileSync(path.join(releaseWeb, `${page}.html`), `<html>${page}</html>`, 'utf8');
+  }
   if (adminMarkerInBundle) {
     writeFileSync(
       path.join(releaseAdminBundle, 'entry.js'),
