@@ -22,8 +22,9 @@ import { Badge, Dock, Hero, ListRow, NavBar, NoteCard, Screen, Section } from '@
 
 /**
  * `spec/strings.ko.json` `couple.*` · 정본 `docs/design/React_Native/my.jsx`
- * WP-CPL-001(배우자 초대) · WP-CPL-006(연결 해제). 「연결됨」(이미 연결된 사람이 보는 관리
- * 화면)은 WP-MY-014(연결관리)에 속해 이번 작업 범위 밖이라 그대로 둔다.
+ * WP-CPL-001(배우자 초대 · frame-017) · WP-CPL-006(연결 해제 · frame-020). 「연결됨」(이미
+ * 연결된 사람이 보는 관리 화면)은 WP-MY-005(연결관리 · frame-005)다 — 정본의 공유 토글은
+ * 서버에 공유 범위 설정이 없어 아직 그리지 않는다(`DESIGN_UNRESOLVED`).
  */
 const S = {
   inviteNav: '배우자 초대',
@@ -47,13 +48,13 @@ const S = {
 } as const;
 
 /** WP-CPL-001 scopeRows(연결하면 같이 봐요) — 4행, 코랄 점 + 라벨만(배지 없음). */
-const SHARE_SCOPE = [`${TERMS.picked} · Pick`, '일정', '지출', '메모'];
+const SHARE_SCOPE = ['고른 곳 · Pick', '일정', '지출', '메모'];
 
 /** WP-CPL-006 cutRows(끝나요) — 3행, 회색 점 + 라벨만. */
-const CUT_ROWS = ['일정 · 지출 공유', `${TERMS.picked} 비교 같이 보기`, '변경 알림'];
+const CUT_ROWS = ['일정 · 지출 공유', 'Pick 비교 같이 보기', '변경 알림'];
 
 /** WP-CPL-006 keepRows(그대로예요) — 3행, 라벨 + 「그대로 남아요」. */
-const KEEP_ROWS = ['내가 쓴 일정 · 지출', `내 ${TERMS.picked}`, `${TERMS.picked} 인증내역`];
+const KEEP_ROWS = ['내가 쓴 일정 · 지출', '내 Pick', 'Pick 인증내역'];
 
 /** 정본 listCard 행 — 코랄/회색 점 + 라벨. WP-CPL-001·002·006이 함께 쓰는 모양이다. */
 function DotList({ items, tone }: { items: string[]; tone: 'brand' | 'muted' }) {
@@ -286,7 +287,7 @@ export default function PartnerScreen() {
     );
   }
 
-  /* ---------------------------------------------------------- 연결됨 · WP-MY-014(이번 작업 범위 밖 — 그대로 둔다) */
+  /* ---------------------------------------------------------- 연결됨 · WP-MY-005(my.jsx frame-005) — 토글은 서버 없음, DESIGN_UNRESOLVED */
   if (me.spouseLinked) {
     return (
       <Screen>
