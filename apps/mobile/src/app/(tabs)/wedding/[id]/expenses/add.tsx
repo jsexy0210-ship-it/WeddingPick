@@ -19,17 +19,23 @@ import WeddingScreen from '../../index';
  * 예산 추가 시트 — WP-NOTE-007 · `docs/design/React_Native/note.jsx` frame-006.
  *
  *   formHead  타이틀 «예산 추가» + 우측 36px 회색 원형 X
- *   칸        정본은 항목 · 예산 · 낸 금액 셋이다. 서버가 받는 것(`createExpenseRequest`)에
- *             맞춰 항목(업종 → 줄 이름) · 낸 금액만 받고, 날짜는 오늘로 넣는다.
+ *   칸        정본 `budgetFields` 순서대로 항목 · 예산 · 낸 금액 셋을 그린다. 서버가 받는 것
+ *             (`createExpenseRequest`)은 항목(업종 → 줄 이름) · 낸 금액뿐이라 그 둘만 보내고,
+ *             날짜는 오늘로 넣는다.
  *
  * 정본에 없는 «업체» · «낸 날짜» 칸, «자료를 올리면 실 제보가 돼요» 목록과 «원본은 24시간
  * 안에 지워요» 안내는 지웠다. `DESIGN_UNRESOLVED`로 남긴 것:
- *   - «예산» 칸 — 항목별 예산을 담을 서버 값이 없다(buckets에 budget 없음)
+ *   - «예산» 칸 — 항목별 예산을 담을 서버 값이 없다(buckets에 budget 없음). 칸은 그리되
+ *     `BUDGET_BACKEND_PENDING` 동안 잠가 둔다(2026-09-25 대표 결정). 서버가 붙으면 이 스위치와
+ *     잠금을 함께 걷는다
  *   - «사진으로 채우기» 칸과 «읽었어요 · 확인 필요» 딱지 — 사진을 읽어 바로 돌려주는
  *     서버 경로가 없다(Pick 인증은 여러 단계 흐름). 채워 준다고 적고 안 채우는 칸을 만들지 않는다
  *   - 아래 두 단추 «직접입력 · 자동입력» — 자동입력이 위 사진 칸과 한 기능이라 함께 미뤘다.
  *     지금은 «지출만 넣기 · 지출 넣고 인증하기»(Pick 인증 흐름으로)를 그대로 둔다
  */
+
+/** 항목별 예산 저장 경로가 서버에 없다 — 붙으면 false로 바꾸고 `save()`에 예산을 싣는다. */
+const BUDGET_BACKEND_PENDING = true;
 
 function isVendorCategory(value: string | undefined): value is VendorCategory {
   return value !== undefined && (VENDOR_CATEGORIES as readonly string[]).includes(value);
@@ -156,6 +162,14 @@ export default function AddExpenseRoute() {
                   ))}
                 </View>
               </View>
+              <Field
+                label="예산"
+                value=""
+                placeholder="예: 4,000,000"
+                keyboardType="number-pad"
+                editable={!BUDGET_BACKEND_PENDING}
+                testID="expense-add-budget"
+              />
               <Field
                 label="낸 금액"
                 value={amountText}
