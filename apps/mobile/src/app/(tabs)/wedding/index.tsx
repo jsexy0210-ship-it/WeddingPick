@@ -13,7 +13,16 @@ import type {
   WeddingEvent,
   WeddingTask,
 } from '@weddingpick/api-contract';
-import { TASK_STATE_LABEL, TERMS, budgetView, daysUntil, isBeforeWedding, lifecycle, manwon } from '@weddingpick/domain';
+import {
+  PREPARATION_CATEGORIES,
+  TASK_STATE_LABEL,
+  TERMS,
+  budgetView,
+  daysUntil,
+  isBeforeWedding,
+  lifecycle,
+  manwon,
+} from '@weddingpick/domain';
 import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
@@ -26,6 +35,7 @@ import {
   FontSize,
   Layout,
   LetterSpacing,
+  LineHeight,
   ProductSymbol,
   Radius,
   Spacing,
@@ -61,13 +71,15 @@ const TABS: readonly { key: Tab; label: string }[] = [
   { key: 'consult', label: '상담기록' },
   { key: 'budget', label: '예산현황' },
 ];
-const UNPAID = '미집행';
-/* v3.28 `spendGoRow` — 예산 카드 맨 아래에서 지출 목록(WP-OUR-014b)으로 간다. */
+/* note.js `bd()` — 항목별 막대 아래 왼쪽 줄. */
+const UNPAID = '아직 안 냈어요';
+/* note.js `spendGoRow` — 예산 카드 맨 아래에서 지출 목록(WP-OUR-014b)으로 간다. */
 const SPEND_LINK = '지출내역';
 const CONSULT_EMPTY_TITLE = '녹음 파일을 올려주세요';
 const CONSULT_EMPTY_BODY = '휴대폰 녹음앱에서 저장한 파일이면 돼요';
 const CONSULT_SAVED = '저장됨';
-const CONSULT_PENDING = '확인 필요';
+/* note.js `consults` — 정리가 끝났고 아직 저장하지 않은 기록. */
+const CONSULT_DONE = '정리 완료';
 /* 헤더 우측 액션 — React_Native/note.jsx headAdd «일정 추가 · 상담 추가 · 예산 추가». */
 const ADD_LABEL: Record<Tab, string> = { calendar: '일정 추가', budget: '예산 추가', consult: '상담 추가' };
 const DECIDED_LINK = '예약현황';
@@ -204,6 +216,32 @@ export default function WeddingScreen({
           {header}
           <WeddingCompleteView weddingId={weddingId} />
         </SafeAreaView>
+      </ThemedView>
+    );
+  }
+
+  /*
+   * WP-EMPTY-NOTE(`common.js` escreens) — 일정 · 예산 · 상담기록이 모두 비어 있고 예식일도
+   * 아직 없을 때. 세 탭을 나열하지 않고 «예식일 확인하기» 하나만 크게 둔다. 예식일을
+   * 정하면 이 조건이 풀려 평소 화면으로 돌아온다.
+   */
+  const firstVisit =
+    weddingId !== null &&
+    me?.weddingDate == null &&
+    events !== null &&
+    events.length === 0 &&
+    consults !== null &&
+    consults.length === 0 &&
+    expenses !== null &&
+    expenses.expenses.length === 0;
+
+  if (firstVisit && expenses) {
+    return (
+      <ThemedView style={styles.container}>
+        <SafeAreaView style={styles.safeArea} edges={['top']}>
+          <EmptyNoteView expenses={expenses} onConfirmDate={() => router.push('/my/wedding-settings' as never)} />
+        </SafeAreaView>
+        <Toast message={toast} onHidden={() => setToast(null)} />
       </ThemedView>
     );
   }
@@ -362,9 +400,6 @@ export default function WeddingScreen({
           ) : (
             <ConsultPanel
               records={consults ?? []}
-              onUpload={() =>
-                weddingId ? router.push(`/wedding/${weddingId}/consultations/upload` as never) : null
-              }
               onOpen={(record) =>
                 weddingId
                   ? router.push(`/wedding/${weddingId}/consultations/${record.id}` as never)
@@ -422,6 +457,68 @@ export default function WeddingScreen({
 
       <Toast message={toast} onHidden={() => setToast(null)} />
     </ThemedView>
+  );
+}
+
+/* ────────────────────────────────────────────
+   웨딩노트 · 처음 — `docs/design/React_Native/common.jsx` frame-011 WP-EMPTY-NOTE
+   (`common.js` escreens). nav 56 · 제목 26/700 왼쪽 · 탭 없음.
+   섹션 `padding:0 20px 24px;gap:12px`, 머리 18/700.
+──────────────────────────────────────────── */
+function EmptyNoteView({
+  expenses,
+  onConfirmDate,
+}: {
+  expenses: ExpenseSummaryResponse;
+  onConfirmDate: () => void;
+}) {
+  const theme = useTheme();
+  const rows = [
+    ...(expenses.budget.set ? [{ k: '총예산', v: manwon(expenses.budget.budget) }] : []),
+    { k: '쓴 금액', v: manwon(expenses.paidTotal) },
+  ];
+
+  return (
+    <>
+      <View style={[styles.emptyNav, { borderBottomColor: theme.border }]}>
+        <ThemedText type="f26" style={[styles.bold, styles.grow]}>
+          {TERMS.ourWedding}
+        </ThemedText>
+      </View>
+      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+        <View style={styles.emptySection}>
+          <ThemedText type="f18" style={styles.bold}>일정</ThemedText>
+          <View style={[styles.emptyCard, { backgroundColor: theme.backgroundElement }]}>
+            <ThemedText type="f16" style={[styles.bold, styles.center]}>
+              예식일만 넣어두면 나머지는 알려드려요
+            </ThemedText>
+            <ThemedText type="f13" themeColor="textAssistive" style={styles.center}>
+              준비 순서를 차례대로 챙겨드려요
+            </ThemedText>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="예식일 확인하기"
+              onPress={onConfirmDate}
+              style={({ pressed }) => [styles.emptyCta, { backgroundColor: theme.tint }, pressed ? styles.pressed : null]}>
+              <ThemedText type="f15" themeColor="onTint" style={styles.bold}>
+                예식일 확인하기
+              </ThemedText>
+            </Pressable>
+          </View>
+        </View>
+        <View style={styles.emptySection}>
+          <ThemedText type="f18" style={styles.bold}>예산</ThemedText>
+          <View>
+            {rows.map((row) => (
+              <View key={row.k} style={[styles.emptyDataRow, { borderBottomColor: theme.border }]}>
+                <ThemedText type="f15" themeColor="textSecondary">{row.k}</ThemedText>
+                <ThemedText type="f15" numeric style={styles.bold}>{row.v}</ThemedText>
+              </View>
+            ))}
+          </View>
+        </View>
+      </ScrollView>
+    </>
   );
 }
 
@@ -512,9 +609,10 @@ function CalendarPanel({
               accessibilityRole="button"
               accessibilityLabel={DECIDED_LINK}
               onPress={onOpenDecided}
+              hitSlop={Spacing.two}
               style={[styles.decidedLinkRow, { borderTopColor: theme.border }]}>
-              <ThemedText type="f14" style={styles.bold}>
-                {`${DECIDED_LINK} ${decidedCount}곳`}
+              <ThemedText type="f14" numeric style={styles.bold}>
+                {`${DECIDED_LINK} ${decidedCount}/${PREPARATION_CATEGORIES.length}`}
               </ThemedText>
               <ProductSymbol name="chevronRight" size={Layout.iconInline} color={theme.textAssistive} />
             </Pressable>
@@ -652,7 +750,7 @@ function TimelineGroupView({
         return (
           <View key={event.id} style={styles.timelineRow}>
             <View style={styles.timelineRail}>
-              <View style={[styles.timelineDot, { backgroundColor: done ? theme.border : theme.tint }]} />
+              <View style={[styles.timelineDot, { backgroundColor: done ? theme.track : theme.tint }]} />
               <View style={[styles.timelineLine, { backgroundColor: theme.border }]} />
             </View>
             <Pressable
@@ -737,12 +835,12 @@ function BudgetPanel({
               holeSize={64}
               slices={[
                 { key: 'used', value: progress, color: theme.tint },
-                { key: 'remaining', value: 100 - progress, color: theme.chartMuted },
+                { key: 'remaining', value: 100 - progress, color: theme.backgroundSelected },
               ]}>
               <ThemedText type="f16" numeric style={styles.bold}>{`${percentage}%`}</ThemedText>
             </DonutChart>
             <View style={styles.budgetSummaryCol}>
-              <ThemedText type="amount" numeric style={styles.bold}>
+              <ThemedText type="f30" numeric style={[styles.bold, styles.sumBig]}>
                 {manwon(spent)}
               </ThemedText>
               <Pressable accessibilityRole="button" accessibilityLabel="총예산 수정" onPress={onEditBudget}>
@@ -771,44 +869,45 @@ function BudgetPanel({
         </View>
       )}
 
-      <View style={[styles.bucketList, { borderTopColor: theme.border }]}>
-        {buckets.map((bucket) => {
-          const pct = Math.min(100, Math.round(bucket.ratio * 100));
-          return (
-            <View key={bucket.bucket}>
-              <View style={styles.bucketHead}>
-                <ThemedText type="t7" numberOfLines={1} style={[styles.bold, styles.grow]}>
-                  {bucket.label}
-                </ThemedText>
-                <ThemedText type="micro" themeColor="textAssistive" numeric style={styles.regular}>
-                  {manwon(bucket.amount)}
-                </ThemedText>
-              </View>
-              <View style={[styles.bar, { backgroundColor: theme.backgroundElement }]}>
-                <View style={[styles.barFill, { width: `${pct}%`, backgroundColor: theme.text }]} />
-              </View>
-              <View style={styles.bucketFoot}>
-                <ThemedText type="micro" themeColor="textAssistive" numeric style={styles.regular}>
-                  {bucket.amount > 0 ? `${manwon(bucket.amount)} 집행` : UNPAID}
-                </ThemedText>
-                <ThemedText type="micro" numeric style={styles.bold}>
-                  {`${pct}%`}
-                </ThemedText>
-              </View>
+      <View style={[styles.divider, { backgroundColor: theme.border }]} />
+      {buckets.map((bucket) => {
+        const pct = Math.min(100, Math.round(bucket.ratio * 100));
+        const full = pct >= 100;
+        return (
+          <View key={bucket.bucket} style={styles.bucketRow}>
+            <View style={styles.bucketHead}>
+              <ThemedText type="f15" numberOfLines={1} style={[styles.bold, styles.grow]}>
+                {bucket.label}
+              </ThemedText>
+              <ThemedText type="f13" themeColor="textAssistive" numeric>
+                {manwon(bucket.amount)}
+              </ThemedText>
             </View>
-          );
-        })}
-      </View>
+            <View style={[styles.bar, { backgroundColor: theme.backgroundSelected }]}>
+              <View style={[styles.barFill, { width: `${pct}%`, backgroundColor: theme.text }]} />
+            </View>
+            <View style={styles.bucketFoot}>
+              <ThemedText type="f12" themeColor="textAssistive" numeric>
+                {bucket.amount > 0 ? `${manwon(bucket.amount)} 냈어요` : UNPAID}
+              </ThemedText>
+              <ThemedText type="f12" themeColor={full ? 'tint' : 'textAssistive'} numeric style={styles.bold}>
+                {`${pct}%`}
+              </ThemedText>
+            </View>
+          </View>
+        );
+      })}
 
+      <View style={[styles.divider, { backgroundColor: theme.border }]} />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={SPEND_LINK}
         onPress={onOpenSpend}
-        style={({ pressed }) => [styles.spendLink, { borderTopColor: theme.border }, pressed ? styles.pressed : null]}>
+        style={({ pressed }) => [styles.spendLink, pressed ? styles.pressed : null]}>
         <ThemedText type="f14" style={styles.bold}>
           {SPEND_LINK}
         </ThemedText>
-        <ProductSymbol name="chevronRight" size={Layout.iconField} color={theme.textAssistive} />
+        <ProductSymbol name="chevronRight" size={Layout.iconInline} color={theme.textAssistive} />
       </Pressable>
 
     </View>
@@ -820,11 +919,9 @@ function BudgetPanel({
 ──────────────────────────────────────────── */
 function ConsultPanel({
   records,
-  onUpload,
   onOpen,
 }: {
   records: ConsultationRecord[];
-  onUpload: () => void;
   onOpen: (record: ConsultationRecord) => void;
 }) {
   const theme = useTheme();
@@ -835,14 +932,16 @@ function ConsultPanel({
         <ThemedText type="f20" style={styles.bold}>
           {records.length > 0 ? `상담 ${records.length}건` : TABS[1].label}
         </ThemedText>
-        <ThemedText type="micro" themeColor="textAssistive" style={styles.regular}>
+        <ThemedText type="f13" themeColor="textAssistive">
           정리된 내용은 예산에 반영해요
         </ThemedText>
       </View>
 
+      <View style={[styles.divider, { backgroundColor: theme.border }]} />
+
       {records.length > 0 ? (
-        <View style={[styles.consultList, { borderTopColor: theme.border }]}>
-          {records.map((record, index) => {
+        <View>
+          {records.map((record) => {
             const amount = consultAmount(record);
             const date = new Date(record.createdAt);
             const meta = `${date.getMonth() + 1}월 ${date.getDate()}일${amount !== null ? ` · ${manwon(amount)}` : ''}`;
@@ -853,43 +952,40 @@ function ConsultPanel({
                 accessibilityRole="button"
                 accessibilityLabel={`${record.vendorLabel ?? '업체 미확인'} 상담기록`}
                 onPress={() => onOpen(record)}
-                style={[
-                  styles.consultRow,
-                  index < records.length - 1 ? { borderBottomWidth: Border.hairline, borderBottomColor: theme.border } : null,
-                ]}>
+                style={[styles.consultRow, { borderBottomColor: theme.backgroundSelected }]}>
                 <View style={styles.grow}>
-                  <ThemedText type="t7" numberOfLines={1} style={styles.bold}>
+                  <ThemedText type="f15" numberOfLines={1} style={styles.bold}>
                     {record.vendorLabel ?? '업체 미확인'}
                   </ThemedText>
-                  <ThemedText type="micro" themeColor="textAssistive" numeric style={[styles.regular, styles.consultMeta]}>
+                  <ThemedText type="f12" themeColor="textAssistive" numeric style={styles.consultMeta}>
                     {meta}
                   </ThemedText>
                 </View>
                 <ThemedText
-                  type="micro"
+                  type="f13"
                   themeColor={saved ? undefined : 'textAssistive'}
-                  style={saved ? styles.bold : styles.regular}>
-                  {saved ? CONSULT_SAVED : CONSULT_PENDING}
+                  style={saved ? styles.bold : null}>
+                  {saved ? CONSULT_SAVED : CONSULT_DONE}
                 </ThemedText>
+                <ProductSymbol name="chevronRight" size={Layout.iconField} color={theme.textDisabled} />
               </Pressable>
             );
           })}
         </View>
       ) : null}
 
-      {records.length === 0 ? <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={CONSULT_EMPTY_TITLE}
-        onPress={onUpload}
-        style={[styles.consultEmpty, { borderColor: theme.border }]}>
-        <ProductSymbol name="mic" size={Layout.iconRow} color={theme.textAssistive} />
-        <ThemedText type="t7" themeColor="textAssistive">
-          {CONSULT_EMPTY_TITLE}
-        </ThemedText>
-        <ThemedText type="micro" themeColor="textAssistive" style={styles.regular}>
-          {CONSULT_EMPTY_BODY}
-        </ThemedText>
-      </Pressable> : null}
+      {/* 빈 상태 — note.js `uploadBox`. 등록 진입점은 헤더 «상담 추가» 하나뿐이라 누를 수 없는 안내다. */}
+      {records.length === 0 ? (
+        <View style={[styles.consultEmpty, { borderColor: theme.track }]}>
+          <ProductSymbol name="mic" size={22} color={theme.textAssistive} />
+          <ThemedText type="f15" style={styles.bold}>
+            {CONSULT_EMPTY_TITLE}
+          </ThemedText>
+          <ThemedText type="f13" themeColor="textAssistive" style={styles.center}>
+            {CONSULT_EMPTY_BODY}
+          </ThemedText>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -906,7 +1002,7 @@ function consultAmount(record: ConsultationRecord): number | null {
 }
 
 /* ────────────────────────────────────────────
-   스타일 — 값은 피그마 `OurWedding.tsx`(2026-09-14 정본). 12 · 14 · 20 · 36 · 40처럼
+   스타일 — 값은 `docs/design/React_Native/note.js`(2026-09-24 정본). 12 · 14 · 20 · 36 · 40처럼
    사다리에 없는 값은 같은 값의 기존 토큰을 주석과 함께 쓴다(저장소 관례).
 ──────────────────────────────────────────── */
 const styles = StyleSheet.create({
@@ -928,7 +1024,11 @@ const styles = StyleSheet.create({
   },
   container: { flex: 1 },
   safeArea: { flex: 1 },
-  /* Root 1Depth 제목 — 홈 · 검색 · Pick · MY와 같은 56 · 좌우 24 · 26/700. */
+  /*
+   * Root 1Depth 제목 — 홈 · 검색 · Pick · MY와 같은 56 · 좌우 24 · 26/700
+   * (`root-header-contract.test.ts`). DESIGN_UNRESOLVED: note.js `head`는
+   * `padding:20px 24px 16px;align-items:baseline`(높이 71)이라 공통 계약과 다르다.
+   */
   header: {
     height: Layout.navBar,
     paddingHorizontal: Layout.gutter,
@@ -940,11 +1040,12 @@ const styles = StyleSheet.create({
   /* 헤더에는 현재 탭의 추가 행동 하나만 둔다. */
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: Layout.inlineGap },
   scroll: { flex: 1 },
-  /* 우하단 FAB가 없으므로 탭바 앞의 일반 문서 여백만 둔다. */
-  scrollContent: { paddingBottom: Spacing.four },
+  /* note.jsx 세 탭 프레임 끝의 `height:40px` 빈 칸. 40은 같은 값의 `LineHeight.lh40`. */
+  scrollContent: { paddingBottom: LineHeight.lh40 },
 
   bold: { fontWeight: 700 },
-  rootTitle: { letterSpacing: LetterSpacing.n065 },
+  /* note.js `h1` — 26/35/700. 35는 같은 값의 `LineHeight.t2`. */
+  rootTitle: { lineHeight: LineHeight.t2, letterSpacing: LetterSpacing.n065 },
   regular: { fontWeight: 400 },
   /* 규격서의 굵기 600 · 500 — spec/tokens.json typography.$weights의 피그마 예외. */
   semibold: { fontWeight: 600 },
@@ -961,7 +1062,7 @@ const styles = StyleSheet.create({
    * 예전 규격서의 회색 필 세그먼트(둥근 흰 활성 칸)는 정본에 없다 — 지웠다.
    */
   tabs: {
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.cardPadding,
     marginBottom: Spacing.three,
     borderBottomWidth: Border.hairline,
     flexDirection: 'row',
@@ -985,6 +1086,44 @@ const styles = StyleSheet.create({
     padding: Layout.cardPadding,
   },
 
+  // ── 웨딩노트 · 처음(WP-EMPTY-NOTE) ──
+  /* common.js `navBar` — `flex:0 0 56px;padding:0 16px;box-shadow:inset 0 -1px 0 BORDER`, back 없는 루트라 제목 왼쪽 26/700. */
+  emptyNav: {
+    height: Layout.navBar,
+    paddingHorizontal: Spacing.three,
+    borderBottomWidth: Border.hairline,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  /* `wrapStyle` — `padding:0 20px 24px;gap:12px`. */
+  emptySection: { paddingHorizontal: Layout.cardPadding, paddingBottom: Spacing.four, gap: Layout.inlineGap },
+  /* `emptyCard` — `border-radius:12px;background:REC;padding:32px 20px;gap:6px`, 가운데 정렬. */
+  emptyCard: {
+    borderRadius: 12,
+    paddingVertical: Spacing.five,
+    paddingHorizontal: Layout.cardPadding,
+    alignItems: 'center',
+    gap: Layout.menuGroupGap,
+  },
+  /* `empt().ctaStyle` — `margin-top:12px;height:44px;padding:0 18px;border-radius:8px;background:P`. */
+  emptyCta: {
+    marginTop: Layout.inlineGap,
+    height: Layout.touchTarget,
+    paddingHorizontal: 18,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  /* `dataRow` — `min-height:52px;box-shadow:inset 0 -1px 0 BORDER`, 양끝 정렬. */
+  emptyDataRow: {
+    minHeight: Layout.field,
+    borderBottomWidth: Border.hairline,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Layout.inlineGap,
+  },
+
   // ── 캘린더 — v3.29 주 단위 흐름 ──
   calendarStack: { gap: 0 },
   /* WP-NOTE-001 D-day: margin 4px 24px 0 · padding 18px 20px · radius 12. */
@@ -999,15 +1138,14 @@ const styles = StyleSheet.create({
   /* D-day 카드 위 줄 — 날짜 · D-N 양끝 정렬. */
   ddayTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: Layout.inlineGap },
   ddayValue: { fontSize: FontSize.noteDday },
-  /* «예약현황 N곳» — 선 위 · 양끝 정렬. */
+  /* note.js `decidedLinkRow` «예약현황 4/12» — `margin-top:10px;padding-top:10px`, 선 위 · 양끝 정렬. */
   decidedLinkRow: {
-    marginTop: Spacing.three,
-    paddingTop: Spacing.three,
+    marginTop: 10,
+    paddingTop: 10,
     borderTopWidth: Border.hairline,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: Layout.touchTarget,
   },
   /* WP-NOTE-001 지난 일정: 좌우 24 · 최소 46 · 아래 구분선. */
   pastRow: {
@@ -1020,7 +1158,8 @@ const styles = StyleSheet.create({
   },
   timelineGroup: { marginHorizontal: Layout.pageX },
   timelineGroupHead: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.two, paddingTop: 18, paddingBottom: 10 },
-  timelineRow: { flexDirection: 'row', gap: Layout.inlineGap, paddingBottom: Spacing.one },
+  /* note.js `tlRow` — `gap:12px;padding-bottom:8px`. */
+  timelineRow: { flexDirection: 'row', gap: Layout.inlineGap, paddingBottom: Spacing.two },
   timelineRail: { width: 12, alignItems: 'center', gap: 6 },
   timelineDot: { width: 9, height: 9, borderRadius: Radius.pill, marginTop: 16 },
   weddingDot: { width: 12, height: 12 },
@@ -1033,13 +1172,14 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     gap: 3,
   },
-  weddingRow: { borderWidth: Border.focus },
+  /* note.js `tlItem(…'wed')` — `box-shadow:inset 0 0 0 1.5px P`. */
+  weddingRow: { borderWidth: 1.5 },
 
   // ── 할 일 ──
-  checklistSection: { marginHorizontal: Layout.pageX, paddingBottom: Layout.listGap },
+  /* note.js `sec` — `padding:0 24px 20px;gap:12px`(머리와 행, 행과 행 사이 모두 12). */
+  checklistSection: { marginHorizontal: Layout.pageX, paddingBottom: Layout.listGap, gap: Layout.inlineGap },
   clHead: {
     paddingHorizontal: Spacing.one,
-    marginBottom: Layout.inlineGap,
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'space-between',
@@ -1067,26 +1207,24 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   budgetSummaryCol: { flex: 1, minWidth: 0, gap: Spacing.one },
-  budgetEditRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  /* note.js `sumBig` 30/40/700. 40은 같은 값의 `LineHeight.lh40`. */
+  sumBig: { lineHeight: LineHeight.lh40 },
+  /* note.js `sumRightBtn` — `gap:5px`. */
+  budgetEditRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   budgetSummaryNote: { marginTop: Spacing.two },
-  /* 항목 `mt-6 space-y-5 border-t pt-5`. */
-  bucketList: {
-    marginTop: Layout.listGap,
-    paddingTop: Layout.listGap,
-    borderTopWidth: Border.hairline,
-    gap: Spacing.three,
-  },
-  bucketHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one, marginBottom: Layout.menuGroupGap },
-  /* 막대 `h-2 rounded-full`. */
+  /* note.js `divider` — `margin:20px 0;height:1px;background:BORDER`. */
+  divider: { marginVertical: Layout.listGap, height: Border.hairline },
+  /* note.js `bRow` — `flex-direction:column;gap:6px;padding-bottom:16px`. */
+  bucketRow: { gap: Layout.menuGroupGap, paddingBottom: Spacing.three },
+  /* note.js `bTop` — `gap:8px`. */
+  bucketHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  /* note.js `trackSm` — 6px · pill · SEC. */
   bar: { height: BAR_HEIGHT, borderRadius: Radius.pill, overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: Radius.pill },
-  /* `mt-1.5 flex justify-between`. */
-  bucketFoot: { marginTop: Layout.menuGroupGap, flexDirection: 'row', justifyContent: 'space-between' },
-  /* v3.28 `spendGoRow` — 선 위 · 최소 높이 44 · 양끝 정렬 · 14/700. */
+  /* note.js `bFoot` — `align-items:baseline;justify-content:space-between`. */
+  bucketFoot: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
+  /* note.js `spendGoRow` — 최소 높이 44 · 양끝 정렬 · 14/700. 선은 위 `divider`. */
   spendLink: {
-    marginTop: Layout.listGap,
-    paddingTop: Spacing.one,
-    borderTopWidth: Border.hairline,
     minHeight: Layout.touchTarget,
     flexDirection: 'row',
     alignItems: 'center',
@@ -1095,25 +1233,28 @@ const styles = StyleSheet.create({
   },
 
   // ── 상담기록 ──
+  /* note.js `cListHead` — `gap:3px`. */
   consultHead: { gap: 3 },
-  /* 업로드 `mt-5 rounded-2xl border-dashed py-8 gap-2`. 기록이 있어도 정본대로 마지막에 둔다. */
+  center: { textAlign: 'center' },
+  /* note.js `uploadBox` — `margin-top:8px;padding:28px 20px;border-radius:10px;border:1px dashed #dcdee3;gap:6px`. */
   consultEmpty: {
-    marginTop: Layout.listGap,
-    borderRadius: Radius.cardLarge,
+    marginTop: Spacing.two,
+    borderRadius: Radius.medium,
     borderWidth: Border.hairline,
     borderStyle: 'dashed',
-    paddingVertical: Spacing.five,
+    paddingVertical: 28,
+    paddingHorizontal: Layout.cardPadding,
     alignItems: 'center',
-    gap: Spacing.two,
+    gap: Layout.menuGroupGap,
   },
-  /* 목록 `mt-1 border-t`, 행 `py-4 gap-3`. */
-  consultList: { marginTop: Layout.listGap, borderTopWidth: Border.hairline },
+  /* note.js `cRow` — `gap:12px;min-height:60px;padding:14px 0;border-bottom:1px solid SEC`(마지막 행 포함). */
   consultRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Layout.inlineGap,
     minHeight: 60,
     paddingVertical: 14,
+    borderBottomWidth: Border.hairline,
   },
   consultMeta: { marginTop: 3 },
 });

@@ -2,14 +2,13 @@ import type { ConsultationRecord } from '@weddingpick/api-contract';
 import { manwon } from '@weddingpick/domain';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { confirmConsultation, listConsultations } from '@/api/client';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
-import { formatDateDot } from '@/features/common/format-date';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { showResultToast } from '@/features/navigation/result-toast';
-import { ActionButton, Spacing, ThemedText } from '@weddingpick/ui';
+import { ActionButton, ProductSymbol, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 
 import WeddingScreen from '../../index';
@@ -36,8 +35,22 @@ function str(data: Record<string, unknown>, key: string): string | null {
   return typeof raw === 'string' && raw.length > 0 ? raw : null;
 }
 
+/**
+ * 상담 정리 결과 시트 — WP-NOTE-005 · `docs/design/React_Native/note.jsx` frame-004.
+ *
+ *   formHead   업체명 20/700 + 우측 36px 회색 원형 X
+ *   sheetSub   «9월 14일 · 180만원» 14 · MUTED
+ *   블록        `ab()` — 제목 12/700(확인 필요만 amber) + 상자 `padding:14px 16px;radius 10;SEC`
+ *              (확인 필요는 `#fff8ee`), 줄 14/20
+ *   sheetDock  «저장» 하나. 저장한 기록은 단추 없이 닫기만 한다
+ *
+ * `DESIGN_UNRESOLVED`: 정본 dock의 «수정»(ghost)은 고칠 칸을 보여줄 화면이 정본에 없어
+ * 넣지 않았다. 정본 5블록 밖의 «혜택» · «주의할 점» · «상담 내용»은 실제로 읽어 낸 값이라
+ * 대표님 확인 전까지 같은 블록 모양으로 남긴다.
+ */
 export default function ConsultationDetailRoute() {
   const { id, recordId } = useLocalSearchParams<{ id: string; recordId: string }>();
+  const theme = useTheme();
   const { height } = useWindowDimensions();
   const requestKey = `${id}:${recordId}`;
   const [record, setRecord] = useState<ConsultationRecord | null>(null);
@@ -87,6 +100,10 @@ export default function ConsultationDetailRoute() {
   }
 
   const final = record ? money(record.common, 'finalAmount') ?? money(record.common, 'quotedTotal') : null;
+  const created = record ? new Date(record.createdAt) : null;
+  const sub = created
+    ? `${created.getMonth() + 1}월 ${created.getDate()}일${final?.value != null ? ` · ${manwon(final.value)}` : ''}`
+    : '';
 
   return (
     <View style={styles.host}>
@@ -103,29 +120,32 @@ export default function ConsultationDetailRoute() {
             </>
           ) : (
             <>
-              <View style={styles.head}>
-                <ThemedText type="t4">{record.vendorLabel ?? '업체 미확인'}</ThemedText>
-                <ThemedText type="t7" themeColor="textSecondary">
-                  {record.confirmedAt ? `${formatDateDot(record.confirmedAt)} · 저장됨` : '확인 필요'}
+              <View style={styles.formHead}>
+                <ThemedText type="t4" numberOfLines={1} style={styles.grow}>
+                  {record.vendorLabel ?? '업체 미확인'}
                 </ThemedText>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="닫기"
+                  onPress={close}
+                  hitSlop={4}
+                  style={({ pressed }) => [
+                    styles.formClose,
+                    { backgroundColor: theme.backgroundSelected },
+                    pressed && styles.pressed,
+                  ]}>
+                  <ProductSymbol name="close" size={16} color={theme.text} />
+                </Pressable>
               </View>
+              <ThemedText type="f14" themeColor="textAssistive" numeric>
+                {sub}
+              </ThemedText>
 
               <ScrollView
                 style={{ maxHeight: Math.max(260, height * 0.58) }}
                 nestedScrollEnabled
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.content}>
-                {final?.value != null ? (
-                  <View style={styles.group}>
-                    <ThemedText type="t2">{manwon(final.value)}</ThemedText>
-                    {final.evidence ? (
-                      <ThemedText type="t7" themeColor="textSecondary">
-                        들은 말: {final.evidence}
-                      </ThemedText>
-                    ) : null}
-                  </View>
-                ) : null}
-
                 {/* WP-NOTE-005 정본 analysis 5블록 — 라벨은 정본 문구 그대로(대조표 「분석 라벨」). */}
                 <Lines label="포함" items={list(record.common, 'included')} />
                 <Lines label="별도로 확인할 비용" items={list(record.after, 'additionalCosts')} />
@@ -148,10 +168,7 @@ export default function ConsultationDetailRoute() {
                 <Lines label="주의할 점" items={list(record.after, 'warnings')} />
 
                 {typeof record.after.summary === 'string' ? (
-                  <View style={styles.group}>
-                    <ThemedText type="t7" themeColor="textSecondary">상담 내용</ThemedText>
-                    <ThemedText type="body">{record.after.summary}</ThemedText>
-                  </View>
+                  <Lines label="상담 내용" items={[record.after.summary]} />
                 ) : null}
 
                 {error ? (
@@ -164,12 +181,11 @@ export default function ConsultationDetailRoute() {
               {!record.confirmedAt ? (
                 <ActionButton
                   variant="primary"
-                  label={saving ? '저장하는 중…' : '확인했어요. 저장할게요'}
+                  label={saving ? '저장하는 중…' : '저장'}
                   disabled={saving}
                   onPress={() => void save()}
                 />
               ) : null}
-              <ActionButton label="닫기" disabled={saving} onPress={close} />
             </>
           )}
         </SheetPanel>
@@ -180,11 +196,22 @@ export default function ConsultationDetailRoute() {
 
 /** 정본 `ab()` — 5블록 중 「확인 필요」만 `warn`(amber #805217 · `theme.cautionary`)로 그린다. */
 function Lines({ label, items, warn = false }: { label: string; items: string[]; warn?: boolean }) {
+  const theme = useTheme();
   if (items.length === 0) return null;
   return (
     <View style={styles.group}>
-      <ThemedText type="t7" themeColor={warn ? 'cautionary' : 'textSecondary'}>{label}</ThemedText>
-      {items.map((item) => <ThemedText key={item} type="body">· {item}</ThemedText>)}
+      <ThemedText type="f12" themeColor={warn ? 'cautionary' : 'textAssistive'} style={styles.bold}>
+        {label}
+      </ThemedText>
+      {/* 「확인 필요」 상자의 정본 `#fff8ee`는 맞는 토큰이 없다(`cautionaryBackground`는 #ffe3ba) —
+          DESIGN_UNRESOLVED. 토큰이 생길 때까지 다른 블록과 같은 SEC로 둔다. */}
+      <View style={[styles.box, { backgroundColor: theme.backgroundSelected }]}>
+        {items.map((item) => (
+          <ThemedText key={item} type="f14">
+            {item}
+          </ThemedText>
+        ))}
+      </View>
     </View>
   );
 }
@@ -193,7 +220,15 @@ const styles = StyleSheet.create({
   host: { flex: 1 },
   sheetHost: { flexShrink: 1 },
   sheet: { flexShrink: 1 },
-  head: { gap: Spacing.one },
+  formHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  formClose: { width: 36, height: 36, borderRadius: Radius.pill, alignItems: 'center', justifyContent: 'center' },
+  pressed: { opacity: 0.8 },
+  grow: { flex: 1, minWidth: 0 },
+  bold: { fontWeight: 700 },
+  /* note.js `sheetBody` — 블록 사이 `gap:16px`. */
   content: { gap: Spacing.three, paddingBottom: Spacing.two },
-  group: { gap: Spacing.one },
+  /* `aBlock` — `gap:8px`. */
+  group: { gap: Spacing.two },
+  /* `ab().boxStyle` — `gap:8px;padding:14px 16px;border-radius:10px`. */
+  box: { gap: Spacing.two, paddingVertical: 14, paddingHorizontal: Spacing.three, borderRadius: Radius.medium },
 });

@@ -1509,4 +1509,73 @@ function matchRoute(method, pathname) {
   return null;
 }
 
+/*
+ * 웨딩노트 캡처 전용 스위치(2026-09-24 RN 정본 note 대조). 기본 fixture는 건드리지 않고
+ * 켤 때만 덮는다 — 계약 시험(capture-fixtures)은 스위치 없이 돈다.
+ *
+ *   FIXTURE_NOTE_EMPTY=true  WP-EMPTY-NOTE(웨딩노트 · 처음): 예식일 없음 + 일정 · 상담 · 지출 0
+ *   FIXTURE_NOTE_DATA=true   WP-OUR-003 예약현황 · WP-CPL-005 변경내역에 줄이 보이게 채운다
+ */
+if (process.env.FIXTURE_NOTE_EMPTY === 'true') {
+  const me = routes['GET /v1/me'];
+  routes['GET /v1/me'] = () => ({ ...me(), weddingDate: null });
+  routes['GET /v1/weddings/:weddingId/events'] = { events: [] };
+  routes['GET /v1/weddings/:weddingId/consultations'] = { records: [] };
+  routes['GET /v1/weddings/:weddingId/expenses'] = {
+    ...routes['GET /v1/weddings/:weddingId/expenses'],
+    paidTotal: 0,
+    buckets: [],
+    budget: { set: true, budget: 17500000, spent: 0, remaining: 17500000, over: false },
+    expenses: [],
+  };
+}
+
+if (process.env.FIXTURE_NOTE_DATA === 'true') {
+  const hall = '11111111-1111-4111-8111-111111111111';
+  const studio = '12121212-1212-4212-8212-121212121212';
+  const expenses = { paidTotal: 0, paidCount: 0, scheduledTotal: 0, scheduledCount: 0 };
+  routes['GET /v1/weddings/:weddingId/decisions'] = {
+    decisions: [
+      {
+        category: 'hall',
+        categoryLabel: '웨딩홀',
+        vendor: { id: hall, name: '청담 E 웨딩홀', region: '서울 강남구' },
+        decidedAt: '2026-08-20T05:00:00.000Z',
+        decidedByPartner: false,
+        events: [],
+        expenses: { bucket: 'hall', bucketLabel: '웨딩홀', ...expenses },
+      },
+      {
+        category: 'studio',
+        categoryLabel: '스튜디오',
+        vendor: { id: studio, name: '강남 A 스튜디오', region: '서울 강남구' },
+        decidedAt: '2026-09-08T05:00:00.000Z',
+        decidedByPartner: true,
+        events: [],
+        expenses: { bucket: 'sdm', bucketLabel: '스드메', ...expenses },
+      },
+    ],
+  };
+  const note = (id, vendorId, vendorLabel, body, updatedAt) => ({
+    id, vendorId, vendorLabel, body, authoredByPartner: false, edited: false, editedByPartner: null,
+    createdAt: updatedAt, updatedAt, version: 1,
+  });
+  routes['GET /v1/weddings/:weddingId/notes'] = {
+    notes: [
+      note('51111111-1111-4111-8111-111111111111', hall, '청담 E 웨딩홀', '주차는 발렛만 가능. 하객 100명 넘으면 추가요금 있음 — 계약서 3조 확인.', '2026-09-05T03:00:00.000Z'),
+    ],
+  };
+  const notice = (id, title, createdAt) => ({
+    id, kind: 'verification', kindLabel: '자료 확인', title, body: title, targetId: null, createdAt, readAt: null,
+  });
+  routes['GET /v1/me/notifications'] = {
+    notifications: [
+      notice('61111111-1111-4111-8111-111111111111', '웨딩홀을 청담 E 웨딩홀로 결정', '2026-09-20T05:02:00.000Z'),
+      notice('62222222-2222-4222-8222-222222222222', '예산을 1,750만원으로 수정', '2026-09-18T00:40:00.000Z'),
+    ],
+    unread: 2,
+    total: 2,
+  };
+}
+
 module.exports = { routes, matchRoute, VENDORS, SPONSORED, ME };
