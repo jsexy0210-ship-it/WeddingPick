@@ -16,13 +16,12 @@ on:
       key_secret:
         description: '인증키가 든 GitHub Secret 이름(파일데이터는 무시)'
         type: choice
-        default: DATA_GO_KR_WEDDING_HALL_KEY
+        default: DATA_GO_KR_MY_KEY
         options:
+          # 포털 인증키는 계정당 하나다 — 대표님이 이 이름 하나로 등록했다(2026-09-24).
+          - DATA_GO_KR_MY_KEY
           - DATA_GO_KR_WEDDING_HALL_KEY
           - DATA_GO_KR_MARRIAGE_AGENCY_KEY
-          - DATA_GO_KR_SPECIAL_DAY_KEY
-          - DATA_GO_KR_LUNAR_KEY
-          - DATA_GO_KR_MID_FORECAST_KEY
       params:
         description: '추가 조회 조건(공백 구분 key=value). 기본값 pageNo=1 numOfRows=3 type=json'
         type: string
