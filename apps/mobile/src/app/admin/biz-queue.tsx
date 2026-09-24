@@ -20,6 +20,7 @@ import { CLAIM_METHOD_RULES, type ClaimMethod } from '@weddingpick/domain';
 import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { compactSplit, useAdminCompact } from './_ui';
 
 type BizStatus = 'pending' | 'approved' | 'rejected';
 type BizItem = {
@@ -56,6 +57,7 @@ const STATUS_COLOR: Record<BizStatus, string> = {
 };
 
 export function BizQueuePanel() {
+  const compact = useAdminCompact();
   const [data, setData] = useState<BizData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -129,8 +131,8 @@ export function BizQueuePanel() {
       )}
 
       {!loading && !error && data && (
-        <View style={styles.body}>
-          <View style={styles.listPanel}>
+        <View style={[styles.body, compact && compactSplit.body]}>
+          <View style={[styles.listPanel, compact && compactSplit.list]}>
             <ScrollView>
               {needsReview.length > 0 && (
                 <View style={styles.groupHeader}>
@@ -166,7 +168,7 @@ export function BizQueuePanel() {
             </ScrollView>
           </View>
 
-          <View style={styles.detailPanel}>
+          <View style={[styles.detailPanel, compact && compactSplit.detail]}>
             {!selected ? (
               <View style={styles.detailEmpty}>
                 <Text style={styles.emptyText}>왼쪽에서 항목을 선택하세요</Text>

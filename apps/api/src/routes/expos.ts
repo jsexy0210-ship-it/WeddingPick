@@ -73,6 +73,9 @@ export function registerExpoRoutes(app: FastifyInstance, context: AppContext): v
       'admin_review_required = false',
       'manual_status IS NULL',
       'ends_at >= CURRENT_DATE',
+      // 관리용 샘플은 운영 DB에 남아 있어도 앱 목록에는 내보내지 않는다.
+      "title NOT LIKE '[샘플]%'",
+      "COALESCE(source_note, '') NOT LIKE 'wedding-tabs-sample-%'",
     ];
     const params: unknown[] = [];
     let idx = 1;
@@ -147,7 +150,9 @@ export function registerExpoRoutes(app: FastifyInstance, context: AppContext): v
        WHERE id = $1
          AND admin_review_required = false
          AND manual_status IS NULL
-         AND ends_at >= CURRENT_DATE`,
+         AND ends_at >= CURRENT_DATE
+         AND title NOT LIKE '[샘플]%'
+         AND COALESCE(source_note, '') NOT LIKE 'wedding-tabs-sample-%'`,
       [expoId]
     );
 
@@ -210,7 +215,10 @@ export function registerExpoRoutes(app: FastifyInstance, context: AppContext): v
 
       // 박람회가 존재하는지 먼저 확인한다.
       const { rows } = await context.pool.query<{ id: string }>(
-        'SELECT id FROM structured.expos WHERE id = $1',
+        `SELECT id FROM structured.expos
+         WHERE id = $1 AND admin_review_required = false AND manual_status IS NULL
+           AND ends_at >= CURRENT_DATE AND title NOT LIKE '[샘플]%'
+           AND COALESCE(source_note, '') NOT LIKE 'wedding-tabs-sample-%'`,
         [expoId]
       );
       if (!rows[0]) throw notFound('박람회');

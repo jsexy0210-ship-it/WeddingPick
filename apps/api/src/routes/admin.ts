@@ -27,6 +27,7 @@ import * as faqAdmin from '../faq-admin';
 import * as weddingFeed from '../wedding-feed';
 import * as feedTaxonomy from '../wedding-feed-taxonomy';
 import { createGeminiFeedWriter } from '../analysis/wedding-feed-writer';
+import { feedImageRequestSchema, generateWeddingFeedImage } from '../analysis/wedding-feed-image';
 import { NotAnOperator } from '../decisions';
 import { ApiError, forbidden, notFound } from '../errors';
 import * as inquiryAdmin from '../inquiry-admin';
@@ -1166,6 +1167,33 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
       });
     }
   );
+
+  /** 관리자가 명시적으로 요청한 웨딩피드 이미지만 생성해 기존 이미지 저장소에 둔다. */
+  app.post<{ Body: unknown }>('/v1/admin/wedding-feed/image/generate', auth, async (request) => {
+    const parsed = feedImageRequestSchema.safeParse(request.body);
+    if (!parsed.success) {
+      throw new ApiError('invalid_request', '이미지를 만들 제목과 종류를 확인해주세요.');
+    }
+    const apiKey = process.env.GEMINI_API_KEY ?? '';
+    if (!apiKey) {
+      throw new ApiError('internal', 'Gemini 연결을 확인해주세요.');
+    }
+
+    let bytes: Buffer;
+    try {
+      bytes = await generateWeddingFeedImage(apiKey, parsed.data);
+    } catch (error) {
+      request.log.error({ err: error }, '웨딩피드 이미지 생성 실패');
+      throw new ApiError('internal', '이미지를 만들지 못했어요. 잠시 후 다시 시도해주세요.');
+    }
+
+    const storageKey = `wedding-feed/${parsed.data.kind}/${randomUUID()}.png`;
+    await context.storage.upload(storageKey, bytes, 'image/png');
+    return {
+      storageKey,
+      imageUrl: await context.storage.getPublicUrl(storageKey, 3600),
+    };
+  });
 
   app.put<{ Params: { id: string }; Body: unknown }>(
     '/v1/admin/wedding-feed/:id',

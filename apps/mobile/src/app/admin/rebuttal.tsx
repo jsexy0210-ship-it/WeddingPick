@@ -5,7 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
-import { AdminTabShell, type AdminTabDef } from './_ui';
+import { AdminTabShell, compactSplit, useAdminCompact, type AdminTabDef } from './_ui';
 import { ObjectionsPanel } from './objections';
 import { ReportPanel } from './report';
 import { ConfirmDecision } from '@/features/admin/confirm-decision';
@@ -41,6 +41,7 @@ type RebuttalDetail = {
 };
 
 function RebuttalPanel() {
+  const compact = useAdminCompact();
   const [items, setItems] = useState<PendingRebuttal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -176,8 +177,8 @@ function RebuttalPanel() {
         </Pressable>
       </View>
 
-      <View style={styles.body}>
-        <View style={styles.list}>
+      <View style={[styles.body, compact && compactSplit.body]}>
+        <View style={[styles.list, compact && compactSplit.list]}>
           <DelayedLoader active={loading} size={40} style={styles.centered} />
           {!loading && error && <Text style={styles.errorText}>{error}</Text>}
           {!loading && !error && (
@@ -222,7 +223,7 @@ function RebuttalPanel() {
           )}
         </View>
 
-        <View style={styles.detail}>
+        <View style={[styles.detail, compact && compactSplit.detail]}>
           {!selected ? (
             <View style={styles.detailEmpty}>
               <Text style={styles.emptyText}>왼쪽에서 항목을 선택하세요</Text>

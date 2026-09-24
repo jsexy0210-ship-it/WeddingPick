@@ -249,6 +249,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
   const [draftGenerating, setDraftGenerating] = useState(false);
   const [draftError, setDraftError] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState<'thumbnail' | 'body' | null>(null);
+  const [generatingImage, setGeneratingImage] = useState<'thumbnail' | 'body' | null>(null);
   const [previewing, setPreviewing] = useState(false);
   /** 늦게 끝난 Gemini/업로드가 새로 연 다른 폼을 덮지 못하게 편집 세션을 구분한다. */
   const formRevision = useRef(0);
@@ -436,6 +437,37 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
       }
     } finally {
       setUploadingImage(null);
+    }
+  }
+
+  async function generateFeedImage(kind: 'thumbnail' | 'body') {
+    setDraftError(null);
+    if (!form.title.trim()) {
+      setDraftError('이미지를 만들 제목을 먼저 입력해주세요.');
+      return;
+    }
+    if (!data?.automation.manualReady) {
+      setDraftError('Gemini 연결을 확인해주세요. 지금은 이미지를 만들 수 없어요.');
+      return;
+    }
+
+    const revision = formRevision.current;
+    setGeneratingImage(kind);
+    try {
+      const result = (await apiFetch('/v1/admin/wedding-feed/image/generate', {
+        method: 'POST',
+        body: JSON.stringify({ kind, title: form.title, summary: form.summary, body: form.body }),
+      })) as { storageKey: string; imageUrl: string };
+      if (formRevision.current !== revision) return;
+      setForm((current) => kind === 'thumbnail'
+        ? { ...current, imageKey: result.storageKey, imageUrl: result.imageUrl }
+        : { ...current, bodyImageKey: result.storageKey, bodyImageUrl: result.imageUrl });
+    } catch (e) {
+      if (formRevision.current === revision) {
+        setDraftError(e instanceof Error ? e.message : '이미지를 만들지 못했어요.');
+      }
+    } finally {
+      setGeneratingImage(null);
     }
   }
 
@@ -1000,7 +1032,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                   같이 사라진다. 대신 **저장하려면 골라야 한다**(아래 `needsPick`) —
                   보여주기만 하고 통과시키면 잘못된 값이 그대로 다시 저장된다.
                 */}
-                {needsPick ? (
+                {needsPick && editing !== 'new' ? (
                   <Text style={styles.hint}>
                     지금 값 「{form.categoryLabel.trim() === '' ? '(비어 있음)' : form.categoryLabel}
                     」은 목록에 없어요. 위에서 하나 골라 주세요.
@@ -1052,7 +1084,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                     <Pressable
                       style={styles.btnGhost}
                       onPress={() => void uploadFeedImage('thumbnail')}
-                      disabled={uploadingImage !== null}
+                      disabled={uploadingImage !== null || generatingImage !== null}
                     >
                       {uploadingImage === 'thumbnail' ? (
                         <ActivityIndicator />
@@ -1060,8 +1092,16 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                         <Text style={styles.btnGhostLabel}>{form.imageKey ? '썸네일 교체' : '썸네일 올리기'}</Text>
                       )}
                     </Pressable>
+                    <Pressable
+                      style={styles.btnGhost}
+                      onPress={() => void generateFeedImage('thumbnail')}
+                      disabled={uploadingImage !== null || generatingImage !== null}
+                    >
+                      {generatingImage === 'thumbnail' ? <ActivityIndicator /> :
+                        <Text style={styles.btnGhostLabel}>이미지 생성</Text>}
+                    </Pressable>
                     {form.imageKey ? (
-                      <Pressable style={styles.btnGhost} onPress={() => clearFeedImage('thumbnail')} disabled={uploadingImage !== null}>
+                      <Pressable style={styles.btnGhost} onPress={() => clearFeedImage('thumbnail')} disabled={uploadingImage !== null || generatingImage !== null}>
                         <Text style={styles.btnGhostLabel}>삭제</Text>
                       </Pressable>
                     ) : null}
@@ -1092,7 +1132,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                     <Pressable
                       style={styles.btnGhost}
                       onPress={() => void uploadFeedImage('body')}
-                      disabled={uploadingImage !== null}
+                      disabled={uploadingImage !== null || generatingImage !== null}
                     >
                       {uploadingImage === 'body' ? (
                         <ActivityIndicator />
@@ -1100,8 +1140,16 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                         <Text style={styles.btnGhostLabel}>{form.bodyImageKey ? '본문 이미지 교체' : '본문 이미지 올리기'}</Text>
                       )}
                     </Pressable>
+                    <Pressable
+                      style={styles.btnGhost}
+                      onPress={() => void generateFeedImage('body')}
+                      disabled={uploadingImage !== null || generatingImage !== null}
+                    >
+                      {generatingImage === 'body' ? <ActivityIndicator /> :
+                        <Text style={styles.btnGhostLabel}>이미지 생성</Text>}
+                    </Pressable>
                     {form.bodyImageKey ? (
-                      <Pressable style={styles.btnGhost} onPress={() => clearFeedImage('body')} disabled={uploadingImage !== null}>
+                      <Pressable style={styles.btnGhost} onPress={() => clearFeedImage('body')} disabled={uploadingImage !== null || generatingImage !== null}>
                         <Text style={styles.btnGhostLabel}>삭제</Text>
                       </Pressable>
                     ) : null}
