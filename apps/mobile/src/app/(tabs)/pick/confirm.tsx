@@ -30,9 +30,9 @@ import { showResultToast } from '@/features/navigation/result-toast';
 /**
  * 최종 결정 확인 시트 · WP-SHT-005.
  *
- * v3.29 정본 `docs/design/html/대메뉴_Pick.dc.html`의 최종 결정 확인 시트다.
- * 그 파일 자체에는 이 시트가 별도 화면 카드(WP-PICK-XXX)로 안 실려 있다 —
- * 옛 07-pick·09-core-loop 시안(삭제됨)의 화면 ID를 더는 참조하지 않는다.
+ * 앱 정본 `docs/design/React_Native/pick.jsx`에는 이 시트가 화면 프레임으로 없다 — 모델
+ * `pick.js`에 `confirmSheet` · `confirmRows` 값만 남아 있다(보드가 그리지 않는다). 옛
+ * `html/대메뉴_Pick.dc.html`(2026-09-24 삭제)과 07-pick·09-core-loop 시안을 근거로 쓰지 않는다.
  *
  *   시트   공용 SheetPanel(그래버 40×4 · padding 12 24 28 · gap 20)
  *   머리   썸네일 64 radius 10 · 업체명 24 · «제보 금액 152~184만원» 16
