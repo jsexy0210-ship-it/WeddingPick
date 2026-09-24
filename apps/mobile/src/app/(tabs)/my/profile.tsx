@@ -42,8 +42,8 @@ const S = {
   social: '카카오',
   connected: '연결됨',
   logout: '로그아웃',
-  /* 메뉴 4글자는 붙여 쓴다(전체 공통 규칙) — WP-MY-012 navTitle과 같은 표기. */
-  withdraw: '회원탈퇴',
+  /* 정본 my.jsx frame-002 계정 마지막 행 「회원 탈퇴」(myLabelDim) 그대로. 탈퇴 화면 헤더(frame-014)는 「회원탈퇴」다. */
+  withdraw: '회원 탈퇴',
   logoutTitle: '로그아웃할까요',
   logoutBody: '기기에 저장된 문서는 그대로 남아요',
   stay: '계속 이용하기',
@@ -72,7 +72,7 @@ const S = {
  * API의 displayName이 그 한 칸이고 배우자·후기·다른 사용자에게 모두 이 값으로 보인다.
  * 사진 바꾸기는 저장 계약이 없어 두지 않는다(v3.29 시안에도 있지만 업로드 계약이 아직 없다).
  *
- * **v3.29(대메뉴_MY.dc.html 2) 대조 — 미룬 것 셋.** 시안의 계정 섹션은 카카오 행에 마스킹
+ * **정본(docs/design/React_Native/my.jsx frame-002) 대조 — 미룬 것 셋.** 시안의 계정 섹션은 카카오 행에 마스킹
  * 이메일 · 「가입일」 · 「로그인 유지」 토글까지 5행인데 `currentUserSchema`에 이메일 · 가입일이
  * 없고 「로그인 유지」는 이 화면의 토글이 아니라 로그인 화면의 계정 기억 기능(WP-AUTH-008,
  * `features/auth/remembered-account.ts`)이다 — 값을 지어내지 않고 지금 세 행(카카오 연결 ·

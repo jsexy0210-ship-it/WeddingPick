@@ -92,7 +92,8 @@ export type InquiryStatus = (typeof INQUIRY_STATUSES)[number];
 export const INQUIRY_STATUS_LABEL: Record<InquiryStatus, string> = {
   received: '확인 중',
   in_review: '확인 중',
-  answered: '확인 완료',
+  /* 정본 my.jsx frame-007 `pastInquiries` 「답변 완료」 — 관리자 화면과 같은 말이다. */
+  answered: '답변 완료',
   closed: '종료됨',
 };
 

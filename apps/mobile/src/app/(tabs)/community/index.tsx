@@ -42,7 +42,7 @@ const R = strings.review;
 type Tab = 'review' | 'feed' | 'expo';
 const TABS: { value: Tab; label: string }[] = [
   { value: 'review', label: S['tab.review'] },
-  /* 시안 9 «웨딩정보» — 「웨딩피드」는 관리자·서버 쪽 이름이고 사용자 화면에는 쓰지 않는다. */
+  /* 정본 my.jsx frame-010 «웨딩정보» — 「웨딩피드」는 관리자·서버 쪽 이름이고 사용자 화면에는 쓰지 않는다. */
   { value: 'feed', label: S['tab.feed'] },
   { value: 'expo', label: S['tab.expo'] },
 ];
@@ -52,12 +52,16 @@ type Loaded<T> = { status: 'loading' } | { status: 'error' } | { status: 'ready'
 type LoungeReview = LoungeReviewListResponse['reviews'][number];
 
 /**
- * 라운지 — docs/design/React_Native/my.jsx 프레임 8 · 9 · 10(리얼후기 · 웨딩정보 · 박람회).
+ * 라운지 — docs/design/React_Native/my.jsx frame-008 · 010 · 012(리얼후기 · 웨딩정보 · 박람회).
+ *
+ * **정본은 세그먼트 없이 하위 화면 셋이다**(각자 back 헤더 + 자기 제목). 이 파일은 한 화면
+ * 세 탭으로 그린다 — 홈 「웨딩 소식」 진입과 저장된 `/community` 주소가 걸려 있어
+ * 구조 변경은 `DESIGN_UNRESOLVED`로 올려 두었다.
  *
  * Root 탭이 아니다. 홈/MY에서 들어오는 하위 화면이고, 헤더 Back은 진입한 화면으로 돌아간다.
  *
  * **별점은 그린다. 숫자만 뺀다**(v3.28 2026-09-23 「후기 별점 UI를 되살린다」 ·
- * screen-inventory.md WP-LNG-001 「숫자 4.9만 뺀다」). `review.overall`(1~5)을
+ * my.jsx frame-008 설명 「4.9 같은 평균 숫자 … 걷어냈고, 별점 5개는 3축 답변과 함께 남겼습니다」). `review.overall`(1~5)을
  * `<RatingStars showValue={false}>`로 그리고, 3축 답변 칩은 서버의 과거 후기 계약에
  * 정본 3축 값이 아직 전부 없으므로 실제로 의미가 대응되는 축만 정본 답변 칩으로
  * 바꿔 보여준다 — 이 둘은 서로 다른 값(overall vs. aspects)이라 함께 둔다.
@@ -74,7 +78,7 @@ export default function CommunityScreen() {
   const requestedTab = Array.isArray(params.tab) ? params.tab[0] : params.tab;
   const write = Array.isArray(params.write) ? params.write[0] : params.write;
   const writeVendorId = Array.isArray(params.vendorId) ? params.vendorId[0] : params.vendorId;
-  /* MY 「라운지」 세 줄이 각각 자기 탭으로 들어온다(시안 1 `mySections`). */
+  /* MY 「라운지」 세 줄이 각각 자기 탭으로 들어온다(my.jsx frame-001 `mySections`). */
   const [tab, setTab] = useState<Tab>(
     requestedTab === 'feed' || requestedTab === 'expo' ? requestedTab : 'review'
   );
@@ -384,7 +388,7 @@ function ReviewList({
               </View>
             </View>
 
-            {/* 정본(screen-inventory.md WP-LNG-001) — 별 5개 + 3축 답변 칩을 함께 둔다. */}
+            {/* 정본 my.jsx frame-008 — 별 5개 + 3축 답변 칩을 함께 둔다. */}
             <RatingStars value={review.overall} showValue={false} />
 
             {answers.length > 0 ? (
@@ -471,15 +475,12 @@ function reviewAnswers(review: LoungeReview): string[] {
   const cost = review.aspects.find((aspect) => aspect.key === 'extra_cost');
   const answers: string[] = [];
 
-  if (progress) answers.push(`${shortAxis(R['axis.progress'])} · ${progressAnswer(progress.rating)}`);
-  if (result) answers.push(`${shortAxis(R['axis.result'])} · ${resultAnswer(result.rating)}`);
-  if (cost) answers.push(`${shortAxis(R['axis.cost'])} · ${costAnswer(cost.rating)}`);
+  /* 정본 frame-008 `rev(...)` 답변 칩은 답만 적는다(「빨랐어요」 · 「기대 이상」 · 「명확했어요」) — 축 이름을 붙이지 않는다. */
+  if (progress) answers.push(progressAnswer(progress.rating));
+  if (result) answers.push(resultAnswer(result.rating));
+  if (cost) answers.push(costAnswer(cost.rating));
 
   return answers;
-}
-
-function shortAxis(label: string): string {
-  return label.replace('은 어땠나요', '').replace('는 어땠나요', '').replace(' 안내는요', '');
 }
 
 function progressAnswer(rating: number): string {
