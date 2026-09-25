@@ -31,7 +31,7 @@ import { AdminsPanel } from './admins';
 import { formatCount } from '@weddingpick/domain';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
-import { WritePressable } from './_role';
+import { useAdminRole, WritePressable } from './_role';
 import { formatDateDot } from '@/features/common/format-date';
 
 type WithdrawalStatus = 'hold' | 'failed' | 'pending' | 'deletion_pending';
@@ -378,10 +378,18 @@ export default function UsersShell() {
   const { tab } = useLocalSearchParams<{ tab?: string }>();
   const initial = TABS.some((t) => t.key === tab) ? (tab as string) : 'users';
   const [active, setActive] = useState(initial);
+  /*
+   * 뷰어에게는 관리자 계정 탭을 보이지 않는다(2026-09-25 대표 지시 — 「뷰어에게 관리자
+   * 계정 목록은 열지 마」 · 「메뉴에서도 빼」). 목록 조회는 서버가 슈퍼 전용으로 막고,
+   * 화면은 탭을 숨기고 주소로 들어와도 앱 회원만 그린다.
+   */
+  const viewer = useAdminRole() === 'viewer';
+  const tabs = viewer ? TABS.map((t) => (t.key === 'admins' ? { ...t, hidden: true } : t)) : TABS;
+  const shown = viewer ? 'users' : active;
 
   return (
-    <AdminTabShell tabs={TABS} active={active} onChange={setActive}>
-      {active === 'users' ? <UsersPanel /> : <AdminsPanel />}
+    <AdminTabShell tabs={tabs} active={shown} onChange={setActive}>
+      {shown === 'users' ? <UsersPanel /> : <AdminsPanel />}
     </AdminTabShell>
   );
 }

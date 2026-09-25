@@ -5,7 +5,7 @@ import { Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimen
 import { AdminSpacing as A, Colors, FontSize, LineHeight, Radius, Spacing, WeddingMark } from '@weddingpick/ui';
 
 import { apiFetch } from './_api';
-import { AdminRoleProvider, type AdminRole } from './_role';
+import { AdminRoleProvider, useAdminRole, type AdminRole } from './_role';
 import { loadAdminToken, readAdminTokenSync, subscribeAdminToken } from './_session';
 
 /**
@@ -71,7 +71,11 @@ const NAV: NavEntry[] = [
 const LOGIN_PATH = '/admin/login';
 const COMPACT_WIDTH = 900;
 
+/** 뷰어에게는 관리자 계정이 메뉴에 없다(`users.tsx` UsersShell) — 줄 이름도 그에 맞춘다. */
+const VIEWER_LABEL: Record<string, string> = { users: '앱 회원' };
+
 function Sidebar({ pathname, compact }: { pathname: string; compact: boolean }) {
+  const viewer = useAdminRole() === 'viewer';
   return (
     <View style={[styles.sidebar, compact && styles.sidebarCompact]}>
       <View style={[styles.sidebarLogo, compact && styles.sidebarLogoCompact]}>
@@ -110,7 +114,7 @@ function Sidebar({ pathname, compact }: { pathname: string; compact: boolean }) 
                   style={[styles.navLabel, compact && styles.navLabelCompact, active && styles.navLabelActive]}
                   numberOfLines={1}
                 >
-                  {item.label}
+                  {(viewer && VIEWER_LABEL[item.key]) || item.label}
                 </Text>
               </Pressable>
             </Link>
