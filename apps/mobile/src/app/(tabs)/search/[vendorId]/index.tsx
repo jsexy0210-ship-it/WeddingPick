@@ -15,7 +15,6 @@ import {
   TERMS,
   countsTowardScore,
   formatCount,
-  needsPickProof,
   priceLine,
   rangeLabel,
   styleMatchReason,
@@ -48,7 +47,6 @@ import { vendorBenefit } from '@/features/search/vendor-benefit';
 import { VendorLocationSection } from '@/features/search/vendor-location';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import {
-  ActionButton,
   Badge,
   Border,
   ErrorView,
@@ -92,7 +90,6 @@ const OFFICIAL_LAST_CHECK = '마지막 확인';
 const REPORT_ERROR = '정보가 틀렸나요? 제보하기';
 const GUIDE_PROVIDED = '업체가 제공한 정보예요';
 const EXPERIENCE_COUNT = (n: number) => `${n}명이 답했어요`;
-const REVIEW_VIEW_ALL = (n: number) => `${formatCount(n)}개 전체 보기`;
 /** 기준금액 ⓘ 설명 — SPEC §2 고정 문장. */
 const BASE_AMOUNT_NOTE = `${TERMS.baseAmount}은 실 제보의 중앙값이에요`;
 
@@ -316,7 +313,6 @@ export default function VendorDetailScreen() {
   /* 금액 한 줄 — 0층 «업체 안내 150만원~» · 1층 «수집 중» · 3건+ 구간. 검색·비교와 같은 규칙. */
   const line = priceLine(paidPrice, vendor.guidePrice);
   /* 실 제보도 업체 안내도 없다 — «수집 중» + Pick 인증 CTA로 채운다(빈 섹션 처리). */
-  const wantsPickProof = needsPickProof(paidPrice, vendor.guidePrice);
   /* ⑦ 현재 혜택. 서버에 혜택 자료가 없어 지금은 늘 null이고, null이면 섹션을 그리지 않는다. */
   const benefit = vendorBenefit(vendor);
 
@@ -653,14 +649,7 @@ export default function VendorDetailScreen() {
               <ThemedText type="t7" themeColor="textAssistive">{conditions.note}</ThemedText>
             ) : null}
 
-            {/* 실 제보도 업체 안내도 없다 — Pick 인증 CTA로 채운다(SPEC §2 빈 섹션 처리). */}
-            {wantsPickProof ? (
-              <ActionButton
-                label="Pick 인증"
-                hint="낸 금액이 보이는 사진 한 장이면 업체와 금액을 자동으로 읽어요"
-                onPress={() => router.push(`/capture/payment/consent?from=vendor/${encodeURIComponent(vendorId)}`)}
-              />
-            ) : null}
+            {/* 정본의 «수집 중 + Pick 인증 CTA»는 Pick 인증 촬영 삭제(2026-09-25)로 뺐다. */}
           </View>
 
           {/* ⑥ 업체 안내 — 업체가 말한 것. 실 제보와 섞지 않는다. 자료가 없으면 섹션째 없다. */}
@@ -785,17 +774,7 @@ export default function VendorDetailScreen() {
           <View style={styles.section}>
             <View style={styles.sectionRow}>
               <ThemedText type="t4">{TERMS.review}</ThemedText>
-              {reviews.length > 0 ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`후기 ${REVIEW_VIEW_ALL(reviews.length)}`}
-                  hitSlop={Spacing.two}
-                  onPress={() => router.push(`/search/${vendor.id}/reviews`)}>
-                  <ThemedText type="t7" themeColor="textAssistive" numeric style={styles.bold}>
-                    {REVIEW_VIEW_ALL(reviews.length)}
-                  </ThemedText>
-                </Pressable>
-              ) : null}
+              {/* «N개 전체 보기»는 후기 목록 화면 삭제(2026-09-25)로 뺐다. */}
             </View>
 
             {previewReviews.length > 0 ? (

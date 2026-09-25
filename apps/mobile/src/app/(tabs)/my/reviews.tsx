@@ -103,7 +103,7 @@ export default function MyReviewsScreen() {
                 onPress={
                   report.vendorId === null
                     ? undefined
-                    : () => router.push(`/search/${report.vendorId}/reviews`)
+                    : () => router.push(`/search/${report.vendorId}`)
                 }
               />
             ))}

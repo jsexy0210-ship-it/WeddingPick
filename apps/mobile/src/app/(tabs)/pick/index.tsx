@@ -39,7 +39,7 @@ import {
   regionLabel,
 } from '@weddingpick/domain';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -171,9 +171,12 @@ export default function PickScreen() {
   const [page, setPage] = useState<CandidateListResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>(requestedGroup ?? 'all');
-  useEffect(() => {
+  /* 탭에 머문 채 홈에서 다른 묶음으로 다시 들어오면 그 칩으로 바꾼다(렌더 중 조정 — 이펙트 불필요). */
+  const [seenGroup, setSeenGroup] = useState(requestedGroup);
+  if (seenGroup !== requestedGroup) {
+    setSeenGroup(requestedGroup);
     if (requestedGroup) setFilter(requestedGroup);
-  }, [requestedGroup]);
+  }
   /** 비교함에 담은 업체(vendorId). 최대 PICK_COMPARE_MAX. */
   const [compare, setCompare] = useState<ReadonlySet<string>>(new Set());
   const [busy, setBusy] = useState(false);
@@ -691,9 +694,8 @@ function CandidateCard({
   );
 }
 
-/* WP-EMPTY-PICK — 아이콘 없는 회색 카드와 다음 행동. */
+/* WP-EMPTY-PICK — 아이콘 없는 회색 카드. 정본 CTA «추천 보기»는 추천 화면 삭제(2026-09-25)로 뺐다. */
 function Empty() {
-  const theme = useTheme();
   return (
     <View style={styles.empty}>
       <ThemedText type="f18" style={styles.bold}>담은 곳</ThemedText>
@@ -944,12 +946,4 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   emptyText: { textAlign: 'center' },
-  emptyCta: {
-    marginTop: Layout.inlineGap,
-    height: 44,
-    paddingHorizontal: 18,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 });

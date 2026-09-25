@@ -20,7 +20,6 @@
  *
  *   1. 현재 경로가 예외표(`DEPTH_BACK_EXCEPTIONS`)에 있으면 거기 적힌 곳으로 간다.
  *   2. 아니면 마지막 조각을 하나씩 떼며 **실재하는 라우트**를 만날 때까지 올라간다.
- *      `/capture/result/[quoteId]` → 예외표의 웨딩노트로 간다.
  *   3. 끝까지 없으면 홈(`/`).
  *
  * 2번이 `ROUTES`를 필요로 한다 — 폴더가 있다고 화면이 있는 것은 아니기 때문이다.
@@ -79,99 +78,44 @@ export const ROUTES: readonly string[] = [
   '/community/feed/[id]',
   '/community/review',
   '/community/review/write',
-  '/capture',
-  '/capture/analysis/[id]',
-  '/capture/camera',
-  '/capture/payment/consent',
-  '/capture/payment/register',
-  '/capture/quote/consent',
-  '/capture/result/[quoteId]',
-  '/capture/review',
-  '/capture/sample',
-  '/capture/verify-status/[requestId]',
-  '/capture/verify/[quoteId]',
-  '/feed',
   '/feed/[id]',
   '/login',
   '/login/age-required',
   '/login/consent',
   '/my',
-  '/my/biz',
-  '/my/biz/benefit',
-  '/my/biz/claim',
-  '/my/biz/data',
   '/my/contact',
-  '/my/faq/[faqKey]',
   '/my/guide',
-  '/my/membership',
-  '/my/notifications',
-  '/my/privacy',
   '/my/privacy-policy',
   '/my/profile',
-  '/my/rebuttals',
-  '/my/rebuttals/[reviewId]',
-  '/my/referral',
   '/my/reports',
   '/my/reviews',
-  '/my/scraps',
-  '/my/rewards',
-  '/my/rewards/fund',
-  '/my/rewards/history',
-  '/my/rewards/missions',
-  '/my/rewards/npay',
-  '/my/rewards/promotion',
   '/my/taste',
   '/my/terms',
-  '/my/vendor-claims',
-  '/my/vendor-claims/[vendorId]',
   '/my/wedding-settings',
   '/my/withdrawal',
   '/pick',
-  '/pick/[category]',
-  '/pick/confirm',
-  '/progress',
-  '/recommendations',
   '/search',
   '/search/[vendorId]',
   '/search/[vendorId]/booking',
   '/search/[vendorId]/consult',
   '/search/[vendorId]/consult-done',
-  '/search/[vendorId]/edit-review',
   '/search/[vendorId]/fix-report',
   '/search/[vendorId]/images',
   '/search/[vendorId]/price',
-  '/search/[vendorId]/price-report',
-  '/search/[vendorId]/review/[reviewId]',
-  '/search/[vendorId]/reviews',
   '/search/[vendorId]/write-review',
   '/search/compare',
-  '/search/expo',
   '/search/expo/[expoId]',
   '/search/expo/[expoId]/calendar',
-  '/search/wedding-info',
-  '/search/wedding-info/[infoId]',
   '/setup',
   '/wedding',
-  '/wedding/[id]',
-  '/wedding/[id]/candidates',
   '/wedding/[id]/changelog',
-  '/wedding/[id]/complete',
-  '/wedding/[id]/conflict',
   '/wedding/[id]/decided',
-  '/wedding/[id]/events/[eventId]',
   '/wedding/[id]/events/new',
-  '/wedding/[id]/expenses/[expenseId]',
   '/wedding/[id]/expenses/add',
   '/wedding/[id]/expenses/list',
   '/wedding/[id]/map',
-  '/wedding/[id]/notes',
-  '/wedding/[id]/quotes',
-  '/wedding/[id]/tasks',
-  '/wedding/[id]/timeline',
-  '/wedding/[id]/verify',
   '/wedding/[id]/consultations/[recordId]',
   '/wedding/[id]/consultations/upload',
-  '/wedding/[id]/visit-notes',
   '/wedding/join',
   '/wedding/partner',
 ];
@@ -188,16 +132,12 @@ export const TAB_ROOTS: readonly string[] = ['/', '/search', '/pick', '/wedding'
  * SPEC §14.5가 허용한 History Back 예외.
  *
  * - 피드 상세 둘은 목록의 탭·스크롤 위치를 복원한다.
- * - 비교 후보 선택과 최종 결정 확인은 화면이 아니라 기존 화면 위에 열린 시트라 연 자리만 닫는다.
- * - 문서 확인은 촬영·선택 직후의 확인 단계라 직전 업로드 화면으로 돌아간다.
  *
  * 직접 진입처럼 history가 없으면 `depthBackTarget`의 논리 부모를 쓴다.
  */
 export const HISTORY_BACK_ROUTES: readonly string[] = [
   '/feed/[id]',
   '/community/feed/[id]',
-  '/pick/confirm',
-  '/capture/review',
 ];
 
 /**
@@ -210,23 +150,13 @@ export const HISTORY_BACK_ROUTES: readonly string[] = [
  *   `/login`            WP-AUTH-001. 앞이 스플래시라 돌아갈 곳이 없다.
  *   `/login/age-required`  WP-AUTH-009. 계정을 만들지 않고 로그인으로만 되돌린다 —
  *                          화면이 직접 `replace('/login')`를 넘긴다.
- *   `/my/membership`    화면이 아니라 `Redirect` 한 줄이다(v3.22가 미션으로 옮겼다).
  *   `/admin/**`         관리자 콘솔은 좌측 사이드바가 이동을 맡는다.
- *   `/capture/camera`   전체 화면 카메라. 자체 닫기를 쓴다.
  */
 export const NO_BACK_ROUTES: readonly string[] = [
   ...TAB_ROOTS,
   '/setup',
   '/login',
   '/login/age-required',
-  '/my/membership',
-  '/capture/camera',
-  /*
-   * Pick 확정은 화면이 아니라 **바텀시트**다. 나가는 길은 시트가 이미
-   * 셋을 들고 있다(딤 탭 · 안드로이드 뒤로가기 · 시트 안 버튼) — 여기에 뒤로가기 줄을
-   * 얹으면 시트 위에 화면 헤더가 떠서 무엇을 닫는 버튼인지 알 수 없게 된다.
-   */
-  '/pick/confirm',
 ];
 
 /**
@@ -235,55 +165,25 @@ export const NO_BACK_ROUTES: readonly string[] = [
  *
  * | 라우트                              | 간다              | 근거                                                                     |
  * | ---------------------------------- | ---------------- | ------------------------------------------------------------------------ |
- * | `/capture`                         | `/my/reports`    | 독립 제보 홈은 삭제되었고 예전 링크는 Pick 인증으로 전환된다.       |
- * | `/capture/payment/*`               | `/my/reports`    | 진입 출처가 없는 직접 링크에서는 내 제보내역이 논리 부모다.              |
- * | `/capture/analysis·result/*`     | `/wedding`       | 견적서 분석과 결과는 웨딩노트 문서 여정에서 열린다.                    |
- * | `/capture/sample`                  | `/my/guide`      | 샘플은 MY 사용법에서만 열린다.                                      |
- * | `/capture/verify/[quoteId]`        | `/capture/result/[quoteId]` | 자료 확인 신청은 WP-RPT-004 결과 확인에서만 들어간다. 폴더만 갈라져 있다.  |
- * | `/capture/verify-status/[requestId]` | `/my/reports`  | WP-RPT-008 처리 결과. entry «알림 · 내 제보 내역».                          |
  * | `/search/compare`                  | `/pick`          | WP-CMP-002 비교 결과. 후보를 고른 곳이 Pick이다(WP-PICK-003). 검색 폴더에    |
  * |                                    |                  | 있을 뿐이고, 홈·Pick 어디서 들어와도 Pick으로 나간다.                       |
  * |                                    |                  | 계층 계산과 값이 같지만, 이 화면은 History Back을 쓰면 안 된다는 근거를 남긴다. |
- * | `/my/faq/[faqKey]`                 | `/my/guide`      | 질문 상세는 FAQ 목록에서 연다. 폴더상 `/my`로 바로 보내면 목록을 건너뛴다.   |
- * | `/my/referral`                     | `/my/rewards`    | 초대 현황은 혜택(WP-EVT) 아래다. 폴더가 `my/` 바로 아래라 계층 계산이 틀린다. |
- * | `/wedding/[id]/complete`           | `/wedding`       | WP-OUR-013 예식 완료 → 서버 웨딩일정 탭. `[id]` 문서 상세와 식별자가 다르다.        |
  */
 export const DEPTH_BACK_EXCEPTIONS: Readonly<Record<string, string>> = {
   '/community/expo': '/',
   '/community/feed': '/',
   '/community/feed/[id]': '/community/feed',
   '/community/review': '/',
-  '/capture': '/my/reports',
-  '/capture/analysis/[id]': '/wedding',
-  '/capture/payment/consent': '/my/reports',
-  '/capture/payment/register': '/my/reports',
-  '/capture/quote/consent': '/wedding',
-  '/capture/result/[quoteId]': '/wedding',
-  '/capture/sample': '/my/guide',
-  '/capture/verify/[quoteId]': '/capture/result/[quoteId]',
-  '/capture/verify-status/[requestId]': '/my/reports',
   '/search/compare': '/pick',
-  '/my/faq/[faqKey]': '/my/guide',
-  '/my/referral': '/my/rewards',
   // 이 경로의 id는 서버 weddingId다. /wedding/[id]는 로컬 문서 상세이므로 그곳으로 보내지 않는다.
-  '/wedding/[id]/candidates': '/wedding',
   '/wedding/[id]/changelog': '/wedding',
-  '/wedding/[id]/complete': '/wedding',
-  '/wedding/[id]/conflict': '/wedding',
   '/wedding/[id]/decided': '/wedding',
-  '/wedding/[id]/events/[eventId]': '/wedding',
   '/wedding/[id]/events/new': '/wedding',
-  '/wedding/[id]/expenses/[expenseId]': '/wedding',
   '/wedding/[id]/expenses/add': '/wedding',
   '/wedding/[id]/expenses/list': '/wedding',
   '/wedding/[id]/consultations/[recordId]': '/wedding',
   '/wedding/[id]/consultations/upload': '/wedding',
   '/wedding/[id]/map': '/wedding',
-  '/wedding/[id]/notes': '/wedding',
-  '/wedding/[id]/quotes': '/wedding',
-  '/wedding/[id]/tasks': '/wedding',
-  '/wedding/[id]/timeline': '/wedding',
-  '/wedding/[id]/visit-notes': '/wedding',
 };
 
 /** SPEC §14.5에서 진입 출처를 `from`으로 넘기라고 정한 공유 화면. */
@@ -294,9 +194,6 @@ const ORIGIN_AWARE_ROUTES: readonly string[] = [
   '/community/review',
   '/search/[vendorId]',
   '/search/[vendorId]/write-review',
-  '/search/[vendorId]/review/[reviewId]',
-  '/capture/payment/consent',
-  '/capture/payment/register',
 ];
 
 /** `/a/b/?x=1#y` → `['a','b']`. 쿼리·해시·끝 슬래시를 떨군다. */
@@ -407,7 +304,6 @@ function originTarget(route: string, pathname: string): string | null {
     budget: '/wedding?tab=budget',
     community: '/community/review',
     reports: '/my/reports',
-    recommendations: '/recommendations',
   };
   const vendor = from.match(/^vendor\/([^/?#]+)$/);
   const target = aliases[from] ?? (vendor ? `/search/${vendor[1]}` : null);
