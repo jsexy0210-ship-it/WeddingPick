@@ -1,0 +1,26 @@
+# 관리자 계정 로그인 상태 점검(읽기 전용) — 2026-09-25 대표님 「신규로 추가한 관리자 계정
+# 왜 로그인 승인이 안나니?」. 계정마다 로그인·권한 확인이 거치는 조건을 찍는다.
+# 비밀번호 해시·토큰 원문은 찍지 않고, DB에 아무것도 쓰지 않는다(READ ONLY 트랜잭션).
+name: 관리자 계정 점검
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 관리자 계정 점검
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: node scripts/admin-accounts-audit.mjs
