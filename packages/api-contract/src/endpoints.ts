@@ -117,7 +117,10 @@ import {
   vendorRegionsResponseSchema,
   vendorSearchResponseSchema,
 } from './vendors';
-import { categoryRecommendationsResponseSchema } from './recommendations';
+import {
+  categoryRecommendationsResponseSchema,
+  pickRecommendationsResponseSchema,
+} from './recommendations';
 import {
   createVerificationRequestSchema,
   createVerificationResponseSchema,
@@ -243,6 +246,16 @@ export const ENDPOINTS = {
     method: 'GET',
     path: '/v1/me/recommendations',
     response: categoryRecommendationsResponseSchema,
+  },
+
+  /**
+   * Pick 화면 준비 묶음마다 «내 조건에 맞는 곳» 5곳(2026-09-25 대표 지시). 온보딩 값으로
+   * 고르고 담아둔 후보는 뺀다. 업체 고르는 규칙은 `recommendVendors()` 하나다.
+   */
+  getPickRecommendations: {
+    method: 'GET',
+    path: '/v1/me/pick-recommendations',
+    response: pickRecommendationsResponseSchema,
   },
 
   createWedding: {

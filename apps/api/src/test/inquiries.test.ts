@@ -180,6 +180,6 @@ describeWithDb('문의 창구', () => {
       headers,
     });
 
-    expect(response.json()).toMatchObject({ status: 'answered', resolution: '고쳤습니다' });
+    expect(response.json()).toMatchObject({ status: 'answered', resolution: '고쳤습니다', evidenceUrl: null });
   });
 });

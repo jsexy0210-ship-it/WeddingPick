@@ -30,12 +30,25 @@
  * - **별점은 다르다**(v3.28 2026-09-23 「후기 별점 UI를 되살린다」) — `vendorCandidateSchema`에
  *   추가됐다. 검색·상세와 같은 관문(`scored_reviews`)에서 오고, 확인된 후기가 모자라거나
  *   체크리스트 업종(과거 결정사)이면 null이라 그때 카드는 별점 줄을 안 그린다.
+ *
+ * **묶음마다 «내 조건에 맞는 곳» 5곳**(2026-09-25 대표 지시 — 「Pick 메뉴 카테고리별로 각각 5개씩
+ * 배치한다. 이것이 추천이다. 온보딩에서 사용자가 선택한 값에 따라 그에 맞는 결과를 Pick에 5개씩
+ * 보여준다」). 정본 pick.jsx에 없는 줄이다 — 대표 지시가 정본보다 우선한다(DESIGN_SOURCE_NOT_VERIFIED,
+ * PR 본문). 담은 곳 아래 가로 줄로 두고 카드마다 «Pick»으로 바로 담는다. 고르는 규칙은 서버
+ * `GET /v1/me/pick-recommendations`(온보딩 지역 · 예산 · 스타일 · 준비 현황)가 정한다.
  */
-import type { CandidateListResponse, CurrentUser, VendorCandidate } from '@weddingpick/api-contract';
+import type {
+  CandidateListResponse,
+  CurrentUser,
+  PickRecommendationsResponse,
+  VendorCandidate,
+  VendorSummary,
+} from '@weddingpick/api-contract';
 import {
   PREPARATION_GROUPS,
   TERMS,
   VENDOR_CATEGORY_LABEL,
+  priceLine,
   withParticle,
   type PreparationGroupKey,
   type VendorCategory,
@@ -69,6 +82,7 @@ import {
   addCandidate,
   decideCategory,
   getCurrentUser,
+  getPickRecommendations,
   listCandidates,
   removeCandidate,
   removeDecision,
@@ -112,6 +126,12 @@ const THUMB_RADIUS = Radius.picker;
 function groupMetaLabel(count: number): string {
   return `${count}개 · 최신순`;
 }
+/* 묶음별 추천 줄 — 2026-09-25 대표 지시. 이름은 대표님 확인 대기(PR 본문). */
+const RECOMMEND_TITLE = '내 조건에 맞는 곳';
+const RECOMMEND_PICK = TERMS.pick;
+/** 추천 카드 폭 · 사진 높이. 정본 값이 없어 검색 썸네일 높이(116)에 폭을 맞췄다(DESIGN_SOURCE_NOT_VERIFIED). */
+const RECOMMEND_CARD_WIDTH = 148;
+const RECOMMEND_THUMB_HEIGHT = Layout.thumbSearchHeight;
 /** 정본 frame-001 tagDesc «곧 3개씩 제공하고» — 묶음마다 먼저 보이는 카드 수. */
 const GROUP_PREVIEW = 3;
 
@@ -173,6 +193,8 @@ export default function PickScreen() {
   const theme = useTheme();
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [page, setPage] = useState<CandidateListResponse | null>(null);
+  /** 묶음별 «내 조건에 맞는 곳». 못 받아도 담은 목록은 그대로 보인다(null). */
+  const [recs, setRecs] = useState<PickRecommendationsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>(requestedGroup ?? 'all');
   /* 탭에 머문 채 홈에서 다른 묶음으로 다시 들어오면 그 칩으로 바꾼다(렌더 중 조정 — 이펙트 불필요). */
@@ -198,7 +220,13 @@ export default function PickScreen() {
       .then(async (current) => {
         setError(null);
         setMe(current);
-        setPage(current.weddingId ? await listCandidates(current.weddingId) : null);
+        const [candidates, recommendations] = await Promise.all([
+          current.weddingId ? listCandidates(current.weddingId) : Promise.resolve(null),
+          // 추천을 못 받아도 담은 목록은 보여준다 — 추천 줄만 비운다.
+          getPickRecommendations().catch(() => null),
+        ]);
+        setPage(candidates);
+        setRecs(recommendations);
       })
       .catch((caught: Error) => setError(caught.message));
   }, []);
@@ -221,6 +249,9 @@ export default function PickScreen() {
   const sections = pickSections(rows);
   const visibleSections = filter === 'all' ? sections : sections.filter((section) => section.key === filter);
   const weddingId = me?.weddingId ?? null;
+  const recsFor = (key: string): readonly VendorSummary[] =>
+    recs?.groups.find((group) => group.key === key)?.vendors ?? [];
+  const hasRecs = (recs?.groups ?? []).some((group) => group.vendors.length > 0);
 
   function toggleExpanded(key: string) {
     setExpanded((prev) => {
@@ -320,6 +351,21 @@ export default function PickScreen() {
     }
   }
 
+  /** 추천 카드의 «Pick» — 후보로 담는다. 담은 곳은 다음 읽기에서 추천 줄에서 빠지고 위 목록에 선다. */
+  async function pickRecommended(vendor: VendorSummary) {
+    if (!weddingId || busy) return;
+    setBusy(true);
+    try {
+      await addCandidate(weddingId, vendor.id);
+      showToast(`${withParticle(vendor.name, '을를')} Pick했어요`);
+      load();
+    } catch {
+      showToast('Pick하지 못했어요. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function undoUnpick(target: UndoCandidate) {
     if (!weddingId) return;
     const { candidate, wasDecided } = target;
@@ -386,9 +432,8 @@ export default function PickScreen() {
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
               <Header />
 
-              {rows.length === 0 ? (
-                <Empty />
-              ) : (
+              {rows.length === 0 ? <Empty /> : null}
+              {rows.length > 0 || hasRecs ? (
                 <>
                   {/* 정본 chipBarSticky: 위 4 · 아래 16 · 칩 사이 8. 칩은 준비 묶음 넷(위 `Filter`). */}
                   <ScrollView
@@ -483,13 +528,19 @@ export default function PickScreen() {
                                 </ThemedText>
                               </Pressable>
                             ) : null}
+                            <RecommendRow
+                              vendors={recsFor(section.key)}
+                              canPick={weddingId !== null}
+                              busy={busy}
+                              onPick={(vendor) => void pickRecommended(vendor)}
+                            />
                           </View>
                         );
                       })}
                     </View>
                   </View>
                 </>
-              )}
+              ) : null}
               <View style={styles.bottomSpacer} />
             </ScrollView>
           )}
@@ -702,6 +753,81 @@ function CandidateCard({
 }
 
 /* WP-EMPTY-PICK — 아이콘 없는 회색 카드와 다음 행동. */
+/* ────────────────────────────────────────────
+   «내 조건에 맞는 곳» — 묶음마다 최대 5곳, 가로 줄(2026-09-25 대표 지시 · 정본 없음).
+   카드: 사진 148×116 radius 8 · 업종 10/700 · 이름 14/700 · 금액 한 줄(priceLine) · «Pick» 36.
+   사진 · 이름을 누르면 업체 상세, «Pick»은 바로 후보로 담는다.
+──────────────────────────────────────────── */
+function RecommendRow({
+  vendors,
+  canPick,
+  busy,
+  onPick,
+}: {
+  vendors: readonly VendorSummary[];
+  canPick: boolean;
+  busy: boolean;
+  onPick: (vendor: VendorSummary) => void;
+}) {
+  const theme = useTheme();
+  if (vendors.length === 0) return null;
+
+  return (
+    <View style={styles.recommend}>
+      <ThemedText type="f15" style={[styles.bold, styles.recommendTitle]}>
+        {RECOMMEND_TITLE}
+      </ThemedText>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recommendRow}>
+        {vendors.map((vendor) => {
+          const line = priceLine(vendor.paidPrice, vendor.guidePrice);
+          return (
+            <View key={vendor.id} style={styles.recommendCard}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`${vendor.name} 자세히 보기`}
+                onPress={() => router.push({ pathname: '/search/[vendorId]', params: { vendorId: vendor.id } })}
+                style={({ pressed }) => [styles.recommendBody, pressed ? styles.pressed : null]}>
+                <VendorImage
+                  source={vendor.imageUrl ? { uri: vendor.imageUrl } : undefined}
+                  category={vendorImageCategory(vendor.category)}
+                  width={RECOMMEND_CARD_WIDTH}
+                  height={RECOMMEND_THUMB_HEIGHT}
+                  radius={THUMB_RADIUS}
+                />
+                <ThemedText type="f10" themeColor="textAssistive" style={[styles.bold, styles.tracked]}>
+                  {VENDOR_CATEGORY_LABEL[vendor.category]}
+                </ThemedText>
+                <ThemedText type="f14" numberOfLines={1} style={styles.bold}>
+                  {vendor.name}
+                </ThemedText>
+                <ThemedText type="f12" numberOfLines={1} numeric themeColor={line.dim ? 'textAssistive' : 'text'}>
+                  {line.text}
+                </ThemedText>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`${vendor.name} ${RECOMMEND_PICK}하기`}
+                accessibilityState={{ disabled: !canPick || busy }}
+                disabled={!canPick || busy}
+                onPress={() => onPick(vendor)}
+                style={({ pressed }) => [
+                  styles.recommendPick,
+                  { borderColor: theme.tint },
+                  pressed ? styles.pressed : null,
+                  !canPick || busy ? styles.disabled : null,
+                ]}>
+                <ThemedText type="f13" style={[styles.bold, { color: theme.tint }]}>
+                  {RECOMMEND_PICK}
+                </ThemedText>
+              </Pressable>
+            </View>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
+}
+
 function Empty() {
   const theme = useTheme();
   return (
@@ -850,6 +976,21 @@ const styles = StyleSheet.create({
     height: Layout.chip,
     paddingHorizontal: Layout.chipPaddingX,
     borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // ── «내 조건에 맞는 곳»(정본 없음 — 대표 지시 2026-09-25): 제목 · 가로 줄 사이 12 · 카드 사이 12 ──
+  recommend: { gap: Layout.inlineGap, paddingTop: Spacing.two },
+  recommendTitle: { paddingHorizontal: Layout.pageX },
+  recommendRow: { paddingHorizontal: Layout.pageX, gap: Layout.inlineGap },
+  recommendCard: { width: RECOMMEND_CARD_WIDTH, gap: Spacing.two },
+  recommendBody: { gap: Spacing.half },
+  /* Pick 단추 — 칩 높이 36 · radius 6 · 코랄 1px 선(화면 Primary는 상담 예약이라 채우지 않는다). */
+  recommendPick: {
+    height: Layout.chip,
+    borderWidth: Border.hairline,
+    borderRadius: Radius.small,
     alignItems: 'center',
     justifyContent: 'center',
   },

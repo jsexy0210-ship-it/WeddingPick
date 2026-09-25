@@ -112,6 +112,12 @@ export const HOME_RECOMMEND_CATEGORIES = 3;
 /** 업종 하나에 보여주는 추천 업체 수(사양 §6 · §12). */
 export const RECOMMEND_VENDORS_PER_CATEGORY = 3;
 
+/**
+ * Pick 화면 준비 묶음 하나에 보여주는 «내 조건에 맞는 곳» 수(2026-09-25 대표 지시 — 「Pick 메뉴
+ * 카테고리별로 각각 5개씩 배치한다」). 담아둔 후보와는 따로 센다.
+ */
+export const PICK_RECOMMEND_VENDORS_PER_GROUP = 5;
+
 /** 「다음 준비」 요약에 이름을 늘어놓는 최대 개수. 넘으면 「외 N개」로 접는다. */
 export const NEXT_STEPS_NAMED = 4;
 

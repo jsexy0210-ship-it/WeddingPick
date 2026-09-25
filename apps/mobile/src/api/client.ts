@@ -13,6 +13,8 @@ import {
   errorResponseSchema,
   createInquiryResponseSchema,
   inquiryListResponseSchema,
+  inquirySchema,
+  pickRecommendationsResponseSchema,
   registerDeviceResponseSchema,
   settingsSchema,
   signupStateSchema,
@@ -82,7 +84,9 @@ import {
   type ReviewListResponse,
   type LoungeReviewListResponse,
   type CreateInquiryResponse,
+  type Inquiry,
   type InquiryListResponse,
+  type PickRecommendationsResponse,
   type PlannerDetail,
   type PlannerRegionsResponse,
   type PlannerSearchResponse,
@@ -834,6 +838,11 @@ export async function listCandidates(
   });
 }
 
+/** Pick 준비 묶음마다 «내 조건에 맞는 곳» 5곳. 온보딩 값으로 고르고 담아둔 후보는 빠져 온다. */
+export async function getPickRecommendations(): Promise<PickRecommendationsResponse> {
+  return request('/v1/me/pick-recommendations', pickRecommendationsResponseSchema);
+}
+
 export async function addCandidate(
   weddingId: string,
   vendorId: string,
@@ -997,6 +1006,11 @@ export async function listMyInquiries(): Promise<InquiryListResponse> {
   return request('/v1/inquiries', inquiryListResponseSchema);
 }
 
+/** 지난 문의 하나. 서버가 본인 것만 준다(남의 문의는 403). */
+export async function getInquiry(inquiryId: string): Promise<Inquiry> {
+  return request(`/v1/inquiries/${inquiryId}`, inquirySchema);
+}
+
 /** A-18 배우자 초대. 코드는 이 응답에서 한 번만 내려온다 — 서버가 다시 보여줄 수 없다. */
 export async function createWeddingInvite(weddingId: string): Promise<CreateInviteResponse> {
   return request(`/v1/weddings/${weddingId}/invites`, createInviteResponseSchema, {
@@ -1061,6 +1075,22 @@ export async function listNotifications(): Promise<NotificationListResponse> {
 /** 홈의 벨. 목록 전체를 받지 않고 개수만 묻는다. */
 export async function getNotificationSummary(): Promise<NotificationSummaryResponse> {
   return request('/v1/me/notifications/summary', notificationSummaryResponseSchema);
+}
+
+export async function readNotification(
+  notificationId: string
+): Promise<NotificationSummaryResponse> {
+  return request(
+    `/v1/me/notifications/${notificationId}/read`,
+    notificationSummaryResponseSchema,
+    { method: 'POST' }
+  );
+}
+
+export async function readAllNotifications(): Promise<NotificationSummaryResponse> {
+  return request('/v1/me/notifications/read-all', notificationSummaryResponseSchema, {
+    method: 'POST',
+  });
 }
 
 /** 내가 낸 자료. 결제인증·가격제보·후기가 종류를 달고 한 목록에 선다. */

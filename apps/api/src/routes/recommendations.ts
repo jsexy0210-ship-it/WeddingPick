@@ -2,7 +2,9 @@ import type { VendorSummary } from '@weddingpick/api-contract';
 import {
   DEFAULT_PERIOD_LABEL,
   DEFAULT_PERIOD_MONTHS,
+  PICK_RECOMMEND_VENDORS_PER_GROUP,
   PREPARATION_CATEGORIES,
+  PREPARATION_GROUPS,
   RECOMMEND_VENDORS_PER_CATEGORY,
   RECENT_PERIOD_MONTHS,
   TOP3_LIMIT,
@@ -24,6 +26,7 @@ import {
   showsInRecommend,
   styleOverlap,
   type CategoryPickState,
+  type PreparationGroupKey,
   type PreparationState,
   type Top3Reason,
   type VendorCategory,
@@ -435,6 +438,114 @@ async function vendorsFor(
 }
 
 /**
+ * Pick 화면 준비 묶음마다 «내 조건에 맞는 곳» 5곳. GET /v1/me/pick-recommendations.
+ *
+ * 2026-09-25 대표 지시 — 「Pick 메뉴 카테고리별로 각각 5개씩 배치한다. 이것이 추천이다.
+ * 온보딩에서 사용자가 선택한 값에 따라 그에 맞는 결과를 Pick에 5개씩 보여준다」.
+ *
+ * 업체를 고르는 규칙은 새로 만들지 않는다 — 업종마다 `recommendVendors`(지역 · 예산 구간 ·
+ * 스타일 가중치 · 실 제보 · 업체 안내 가격)를 부르고, 묶음 안에서는 업종을 번갈아 한 곳씩
+ * 뽑는다(웨딩홀 한 업종인 묶음은 웨딩홀만, 스드메는 스튜디오 → 드레스 → 메이크업 → 헤어변형 …).
+ * 모델 호출은 없다.
+ *
+ *   준비 현황   온보딩에서 «이미 정했다»고 고른 업종은 뺀다 — 정한 업종을 또 권하지 않는다.
+ *   담은 곳     이미 Pick에 담은 업체는 뺀다 — 후보 줄에 이미 있다.
+ *   모자라면    자격(이유)이 붙는 곳이 5곳이 안 되면 같은 업종에서 지역이 맞는 곳 → 실 제보
+ *               많은 곳 → 이름순으로 채운다. 온보딩 값이 비어 있으면 전부 이 기본 정렬이다.
+ */
+export async function pickRecommendations(
+  context: AppContext,
+  input: { userId: string }
+): Promise<{ groups: { key: PreparationGroupKey; vendors: VendorSummary[] }[] }> {
+  const wedding = (
+    await context.pool.query<{ id: string; region: string | null; prepared_categories: VendorCategory[] }>(
+      `SELECT id, region, prepared_categories::text[] AS prepared_categories
+       FROM structured.weddings
+       WHERE owner_user_id = $1 OR partner_user_id = $1
+       ORDER BY created_at LIMIT 1`,
+      [input.userId]
+    )
+  ).rows[0];
+
+  const prepared = new Set(wedding?.prepared_categories ?? []);
+  const picked = wedding
+    ? (
+        await context.pool.query<{ vendor_id: string }>(
+          `SELECT vendor_id FROM structured.vendor_candidates WHERE wedding_id = $1`,
+          [wedding.id]
+        )
+      ).rows.map((row) => row.vendor_id)
+    : [];
+  const pickedSet = new Set(picked);
+  const region = regionFilter(wedding?.region ?? null);
+  const want = PICK_RECOMMEND_VENDORS_PER_GROUP;
+
+  const groups = await Promise.all(
+    PREPARATION_GROUPS.map(async (group) => {
+      const categories = group.categories.filter((category) => !prepared.has(category));
+      if (categories.length === 0) return { key: group.key, vendors: [] as VendorSummary[] };
+
+      /* 업종마다 추천 순서. 담은 곳을 빼고도 5곳이 남도록 담은 수만큼 더 읽는다. */
+      const perCategory = await Promise.all(
+        categories.map(async (category) => {
+          const { items } = await recommendVendors(context, {
+            userId: input.userId,
+            category,
+            limit: want + picked.length,
+          });
+          return items.map((item) => item.id).filter((id) => !pickedSet.has(id));
+        })
+      );
+
+      /* 업종을 번갈아 한 곳씩 — 한 업종이 다섯 자리를 다 차지하지 않게. */
+      const ids: string[] = [];
+      for (let round = 0; ids.length < want && perCategory.some((list) => round < list.length); round += 1) {
+        for (const list of perCategory) {
+          const id = list[round];
+          if (id !== undefined && ids.length < want && !ids.includes(id)) ids.push(id);
+        }
+      }
+
+      if (ids.length < want) {
+        const { rows } = await context.pool.query<{ id: string }>(
+          /* 채울 때도 업종을 번갈아 — 업종 안 순위(rn)가 같은 곳끼리 준비 순서로 선다. */
+          `SELECT ranked.id
+           FROM (
+             SELECT v.id, v.category,
+                    row_number() OVER (
+                      PARTITION BY v.category
+                      ORDER BY ($3::text IS NOT NULL AND v.region LIKE $3) DESC,
+                               (SELECT count(*) FROM structured.usable_payment_proofs p
+                                WHERE p.vendor_id = v.id
+                                  AND p.paid_at >= now() - ($4 || ' months')::interval) DESC,
+                               (v.guide_price_from IS NOT NULL) DESC, v.name, v.id
+                    ) AS rn
+             FROM structured.vendors v
+             WHERE v.category = ANY ($1::vendor_category[])
+               AND coalesce(v.is_active, true)
+               AND NOT (v.id = ANY ($2::uuid[]))
+           ) ranked
+           ORDER BY ranked.rn, array_position($1::vendor_category[], ranked.category)
+           LIMIT $5`,
+          [
+            categories,
+            [...ids, ...picked],
+            region === null ? null : regionLikePattern(region),
+            DEFAULT_PERIOD_MONTHS,
+            want - ids.length,
+          ]
+        );
+        ids.push(...rows.map((row) => row.id));
+      }
+
+      return { key: group.key, vendors: await loadVendorSummaries(context.pool, ids) };
+    })
+  );
+
+  return { groups };
+}
+
+/**
  * 추천. 통합정책 v3.10 §2.
  *
  * **광고를 읽지 않는다.** 이 파일에 `ads.` 라는 글자가 없다는 것이 정책이다 —
@@ -463,5 +574,10 @@ export function registerRecommendationRoutes(app: FastifyInstance, context: AppC
         limit: Number.isFinite(limit) && limit > 0 ? limit : undefined,
       });
     }
+  );
+
+  /** Pick 화면 준비 묶음별 «내 조건에 맞는 곳» 5곳(위 `pickRecommendations`). 로그인한 사람만. */
+  app.get('/v1/me/pick-recommendations', { preHandler: requireUser(context) }, async (request) =>
+    pickRecommendations(context, { userId: currentUserId(request) })
   );
 }
