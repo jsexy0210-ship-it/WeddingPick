@@ -330,7 +330,7 @@ export function AdminsPanel() {
     setActionError(null);
   }
 
-  const canSubmitNew = loginId.trim().length >= 3 && password.length >= 12;
+  const canSubmitNew = loginId.trim().length >= 3 && password.length >= 4;
 
   return (
     <Page
@@ -367,7 +367,7 @@ export function AdminsPanel() {
           body="아이디와 첫 비밀번호를 정해 주세요. 비밀번호는 해시만 저장해서 나중에 다시 볼 수 없어요."
           items={[
             '아이디는 영문 소문자 · 숫자 · . _ - 만 쓸 수 있어요',
-            '비밀번호는 12자 이상이어야 해요',
+            '비밀번호는 4자 이상이어야 해요',
             `지금 고른 등급은 ${ROLE_LABEL[role]} — ${ROLE_NOTE[role]}`,
           ]}
           cta="다음"
@@ -391,7 +391,7 @@ export function AdminsPanel() {
             />
             <TextInput
               style={styles.input}
-              placeholder="비밀번호 (12자 이상)"
+              placeholder="비밀번호 (4자 이상)"
               value={password}
               onChangeText={setPassword}
               secureTextEntry

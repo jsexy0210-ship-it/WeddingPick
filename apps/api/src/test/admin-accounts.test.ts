@@ -8,7 +8,7 @@ const describeWithDb = process.env.DATABASE_URL ? describe : describe.skip;
 /* 시험이 끝나면 되돌린다 — 전역을 건드리므로 다음 파일에 새어 나가면 안 된다. */
 const savedEnv = { id: process.env.ADMIN_LOGIN_ID, hash: process.env.ADMIN_PASSWORD_HASH };
 
-/** 12자 이상이어야 한다(라우트 규칙). 시험용 값이고 어디에도 저장되지 않는다. */
+/** 4자 이상이어야 한다(라우트 규칙). 시험용 값이고 어디에도 저장되지 않는다. */
 const PASSWORD = 'test-password-1';
 
 /**
@@ -118,7 +118,7 @@ describeWithDb('관리자 계정 관리', () => {
 
       const response = await create(boss.headers, {
         loginId: 'too-easy',
-        password: 'short',
+        password: 'abc',
         role: 'viewer',
       });
 

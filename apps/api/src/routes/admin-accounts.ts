@@ -51,10 +51,12 @@ const LOGIN_ID = z
 /**
  * 비밀번호 길이.
  *
- * 최소 12자. 관리자 콘솔은 인터넷에 열려 있고, 여기 뚫리면 콘솔 전체가 넘어간다.
- * 상한은 scrypt에 아주 긴 값을 밀어 넣어 서버를 늦추는 것을 막는다.
+ * 최소 4자(2026-09-25 대표 지시 — 「관리자 비밀번호 12자리 말고 4자리로 변경해」).
+ * 관리자 콘솔은 인터넷에 열려 있어 짧을수록 추측에 약하다 — 로그인 실패 지연
+ * (admin-login.ts)이 유일한 완충이다. 상한은 scrypt에 아주 긴 값을 밀어 넣어 서버를
+ * 늦추는 것을 막는다.
  */
-const PASSWORD = z.string().min(12).max(200);
+const PASSWORD = z.string().min(4).max(200);
 
 const ROLE = z.enum(['super', 'operator', 'viewer']);
 
