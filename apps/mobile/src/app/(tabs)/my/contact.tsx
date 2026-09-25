@@ -23,6 +23,7 @@ import {
   type BadgeKind,
   Border,
   FontSize,
+  LineHeight,
   ProductSymbol,
   Layout,
   MaxContentWidth,
@@ -159,6 +160,7 @@ export default function ContactScreen() {
   return (
     <SubScreen
       title="문의하기"
+      onBack={depthBack}
       dock={
         <Dock
           primary={{
@@ -369,7 +371,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.control,
     padding: Layout.fieldPaddingX,
     fontSize: FontSize.f15,
-    lineHeight: 23,
+    lineHeight: LineHeight.lh23,
     textAlignVertical: 'top',
   },
 });

@@ -1,11 +1,13 @@
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
-import { Switch } from 'react-native';
 import { router } from 'expo-router';
 import { listNotifications, readNotification, readAllNotifications, getCurrentUser, getSettings, setDisplayName, updateSettings } from '@/api/client';
 import NotificationsScreen from '@/app/(tabs)/my/notifications';
 import ProfileScreen from '@/app/(tabs)/my/profile';
 import PriceReportScreen from '@/app/(tabs)/search/[vendorId]/price-report';
+
+/** 프로필 알림은 정본 토글(my-kit `Toggle`)이다 — value · onValueChange · disabled는 Switch와 같다. */
+const TOGGLE = 'Toggle' as never;
 
 jest.mock('react-native', () => Object.setPrototypeOf({ Switch: 'Switch' }, jest.requireActual('react-native')));
 jest.mock('expo-router', () => ({
@@ -34,7 +36,7 @@ jest.mock('@/features/wedding/screen-kit', () => ({ NavBar: 'NavBar' }));
 jest.mock('@/features/loading/delayed-loader', () => ({ DelayedLoadingView: 'Loading' }));
 jest.mock('@/features/settings/my-kit', () => ({
   Avatar: 'Avatar', EmptyBox: 'EmptyBox', NavAction: 'NavAction', Section: 'Section', SubScreen: 'SubScreen',
-  NoteBox: 'NoteBox', Row: (props: { right?: React.ReactNode }) =>
+  NoteBox: 'NoteBox', Toggle: 'Toggle', Row: (props: { right?: React.ReactNode }) =>
     jest.requireActual('react').createElement('Row', props, props.right), Rows: 'Rows',
 }));
 jest.mock('@weddingpick/ui', () => ({
@@ -109,19 +111,19 @@ describe('프로필 알림 저장 경합', () => {
     const pending = deferred();
     jest.mocked(updateSettings).mockReturnValue(pending.promise as never);
     await mount(<ProfileScreen />);
-    const switches = tree.root.findAllByType(Switch);
+    const switches = tree.root.findAllByType(TOGGLE);
     await act(async () => { switches[0]!.props.onValueChange(false); switches[1]!.props.onValueChange(false); });
     expect(updateSettings).toHaveBeenCalledTimes(1);
-    expect(tree.root.findAllByType(Switch).every((node) => node.props.disabled)).toBe(true);
+    expect(tree.root.findAllByType(TOGGLE).every((node) => node.props.disabled)).toBe(true);
     await act(async () => pending.resolve({ ...settings, pushEnabled: false }));
-    expect(tree.root.findAllByType(Switch).every((node) => !node.props.disabled)).toBe(true);
+    expect(tree.root.findAllByType(TOGGLE).every((node) => !node.props.disabled)).toBe(true);
   });
 
   it('저장 실패 시 원래 값으로 되돌리고 다시 시도할 수 있다', async () => {
     jest.mocked(updateSettings).mockRejectedValue(new Error('offline'));
     await mount(<ProfileScreen />);
-    await act(async () => tree.root.findAllByType(Switch)[0]!.props.onValueChange(false));
-    const toggle = tree.root.findAllByType(Switch)[0]!;
+    await act(async () => tree.root.findAllByType(TOGGLE)[0]!.props.onValueChange(false));
+    const toggle = tree.root.findAllByType(TOGGLE)[0]!;
     expect(toggle.props.value).toBe(true);
     expect(toggle.props.disabled).toBe(false);
   });
@@ -136,13 +138,13 @@ describe('정본 알림 설정', () => {
     } as never);
 
     await mount(<ProfileScreen />);
-    await act(async () => tree.root.findAllByType(Switch)[0]!.props.onValueChange(false));
+    await act(async () => tree.root.findAllByType(TOGGLE)[0]!.props.onValueChange(false));
 
     expect(updateSettings).toHaveBeenCalledWith({
       pushEnabled: false,
       priceChangeEnabled: false,
     });
-    expect(tree.root.findAllByType(Switch)).toHaveLength(3);
+    expect(tree.root.findAllByType(TOGGLE)).toHaveLength(3);
   });
 
   it('서비스 알림은 실제 마스터 게이트인 전체 푸시 값을 표시한다', async () => {
@@ -158,7 +160,7 @@ describe('정본 알림 설정', () => {
     } as never);
 
     await mount(<ProfileScreen />);
-    const service = tree.root.findAllByType(Switch)[0]!;
+    const service = tree.root.findAllByType(TOGGLE)[0]!;
     expect(service.props.value).toBe(false);
     await act(async () => service.props.onValueChange(true));
     expect(updateSettings).toHaveBeenCalledWith({

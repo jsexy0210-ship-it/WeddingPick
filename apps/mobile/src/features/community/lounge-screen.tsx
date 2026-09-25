@@ -16,6 +16,7 @@ import {
   Border,
   CanonGray,
   Layout,
+  LineHeight,
   MaxContentWidth,
   ProductSymbol,
   Radius,
@@ -739,7 +740,7 @@ const styles = StyleSheet.create({
   /* revChip: height 26 · padding 0 10px. */
   reviewChip: { height: 26, borderRadius: Radius.pill, paddingHorizontal: 10, justifyContent: 'center' },
   /* revText 15/24. */
-  reviewBody: { lineHeight: 24 },
+  reviewBody: { lineHeight: LineHeight.lh24 },
   rebuttal: { borderRadius: Radius.medium, padding: Spacing.three, gap: Spacing.one },
 
   /* guideRow: 세로 16px, 바깥 좌우 24px. */

@@ -9,6 +9,7 @@ import {
   Border,
   CanonGray,
   Layout,
+  LineHeight,
   MaxContentWidth,
   ProductSymbol,
   Radius,
@@ -270,9 +271,9 @@ const styles = StyleSheet.create({
   faqWrap: { padding: Spacing.three, gap: Layout.cardGap },
   faqHead: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Layout.inlineGap },
   /* faqQ 15/700 · lh 22. */
-  faqQ: { flex: 1, fontWeight: 700, lineHeight: 22 },
+  faqQ: { flex: 1, fontWeight: 700, lineHeight: LineHeight.lh22 },
   /* faqA 14/22 #4d5159. */
-  faqA: { lineHeight: 22 },
+  faqA: { lineHeight: LineHeight.lh22 },
   chevronOpen: { transform: [{ rotate: '90deg' }] },
   content: {
     paddingHorizontal: Layout.gutter,

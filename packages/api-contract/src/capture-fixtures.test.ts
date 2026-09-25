@@ -13,7 +13,7 @@ import { z, type ZodType } from 'zod';
 import { appBootstrapResponseSchema } from './app';
 import { authProvidersResponseSchema } from './auth';
 import { candidateListResponseSchema, decisionListResponseSchema } from './candidates';
-import { expoListResponseSchema } from './expos';
+import { expoDetailSchema, expoListResponseSchema } from './expos';
 import { faqListResponseSchema } from './faq';
 import { consultationListResponseSchema } from './consultations';
 import { inquiryListResponseSchema } from './inquiries';
@@ -69,6 +69,7 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/reviews', loungeReviewListResponseSchema],
   ['GET /v1/reviews/:reviewId/comments', reviewCommentListResponseSchema],
   ['GET /v1/expos', expoListResponseSchema],
+  ['GET /v1/expos/:expoId', expoDetailSchema],
   ['GET /v1/me/reports', myReportListResponseSchema],
   ['GET /v1/inquiries', inquiryListResponseSchema],
   ['GET /v1/me/rewards', myRewardsResponseSchema],

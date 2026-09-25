@@ -17,7 +17,7 @@ import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { useDepthBack } from '@/features/navigation/depth-back';
 import { showResultToast } from '@/features/navigation/result-toast';
 import { Dock, Hero, NoteBox, Section, SubScreen } from '@/features/settings/my-kit';
-import { ErrorView, Layout, ProductSymbol, Radius, ThemedText, useTheme } from '@weddingpick/ui';
+import { ErrorView, Layout, LineHeight, ProductSymbol, Radius, ThemedText, useTheme } from '@weddingpick/ui';
 
 /** `spec/strings.ko.json` `my.item.taste` · 정본 WP-MY-014(docs/design/React_Native/my.jsx frame-016). */
 const S = {
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   },
   col: { flex: 1, minWidth: 0, gap: Layout.cardNameGap },
   bold: { fontWeight: 700 },
-  desc: { lineHeight: 19 },
+  desc: { lineHeight: LineHeight.lh19 },
   mark: {
     width: 24,
     height: 24,
