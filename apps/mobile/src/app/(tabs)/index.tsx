@@ -17,6 +17,7 @@ import {
   ErrorView,
   Layout,
   LetterSpacing,
+  LineHeight,
   MaxContentWidth,
   Motion,
   Radius,
@@ -31,7 +32,7 @@ import { BenefitSheet } from '@/features/home/benefit-sheet';
 import { hasSeenBenefitSheet, markBenefitSheetSeen } from '@/features/home/benefit-sheet-seen';
 import { listWeddingContent, type WeddingContentItem } from '@/features/home/content';
 import { Hero } from '@/features/home/hero';
-import { HomeBudget, MyWeddingPrep } from '@/features/home/home-summary';
+import { HomeBudget, MORE_CHEVRON, MyWeddingPrep } from '@/features/home/home-summary';
 import { HomeSkeleton } from '@/features/home/home-skeleton';
 import { homePrepCards, homePrepSectionSub } from '@/features/home/prep-groups';
 import { scheduleRows } from '@/features/home/schedule-view';
@@ -324,15 +325,15 @@ export default function HomeScreen() {
             <View style={styles.sectionHead}>
               <View style={styles.sectionHeadCol}>
                 <ThemedText type="f14" style={styles.bold}>웨딩 준비 팁</ThemedText>
-                <ThemedText type="f12" themeColor="textAssistive">{S['section.tipsSub']}</ThemedText>
+                <ThemedText type="f12" themeColor="textAssistive" style={styles.sub}>{S['section.tipsSub']}</ThemedText>
               </View>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="웨딩 준비 팁 자세히"
                 onPress={() => router.push('/community/feed' as never)}
                 style={({ pressed }) => [styles.feedMore, pressed && styles.pressed]}>
-                <ThemedText type="f13" themeColor="textAssistive">{S.more}</ThemedText>
-                <SeedIcon name="chevronRightRegular" size={Layout.iconField} color={theme.textAssistive} />
+                <ThemedText type="f13" themeColor="textAssistive" style={styles.bold}>{S.more}</ThemedText>
+                <SeedIcon name="chevronRightRegular" size={MORE_CHEVRON} color={theme.textAssistive} />
               </Pressable>
             </View>
             {contentStatus === 'error' ? (
@@ -448,6 +449,8 @@ const styles = StyleSheet.create({
   },
   sectionHeadCol: { flex: 1, minWidth: 0, gap: Spacing.half },
   bold: { fontWeight: 700 },
-  feedMore: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  /* home.js `moreRow` — 13/700 · gap 2 · 꺾쇠 14. */
+  feedMore: { flexDirection: 'row', alignItems: 'center', gap: Spacing.half },
+  sub: { lineHeight: LineHeight.lh17 },
   pressed: { opacity: 0.8 },
 });
