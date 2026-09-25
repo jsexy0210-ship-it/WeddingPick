@@ -265,6 +265,64 @@ export function registerAdminAccountRoutes(app: FastifyInstance, context: AppCon
   });
 
   /**
+   * 관리자 계정을 지운다(2026-09-25 대표 지시 — 「관리자도 삭제 가능하도록 한다」).
+   *
+   * 지우는 것은 `admin_accounts` 줄 하나다. **사용자 줄은 남긴다** — 그 사람이 남긴
+   * 감사기록(`structured.decisions`의 행위자)이 사용자 id를 가리키고 있어서, 사용자까지
+   * 지우면 기록의 행위자가 끊긴다(0102가 「지우지 않고 끈다」고 적은 이유). 줄이
+   * 사라지면 그 아이디로는 더 로그인할 수 없고, 열려 있던 세션도 여기서 닫는다.
+   *
+   * 끄기와 같은 규칙을 따른다: 다른 슈퍼는 못 지우고, 마지막 슈퍼는 못 지운다.
+   * 자기 자신도 못 지운다 — 누르는 순간 이 화면에서 쫓겨난다.
+   */
+  app.delete('/v1/admin/accounts/:id', auth, async (request) => {
+    const { id } = request.params as { id: string };
+
+    if (!z.string().uuid().safeParse(id).success) {
+      throw notFound('관리자 계정');
+    }
+
+    const client = await context.pool.connect();
+
+    try {
+      await client.query('BEGIN');
+
+      const { rows } = await client.query<AccountRow & { user_id: string }>(
+        `SELECT a.id, a.user_id, a.login_id, a.role, a.disabled_at, a.created_at,
+                null::text AS created_by_login_id
+         FROM structured.admin_accounts a WHERE a.id = $1 FOR UPDATE`,
+        [id]
+      );
+      const target = rows[0];
+
+      if (!target) {
+        throw notFound('관리자 계정');
+      }
+
+      if (target.user_id === currentUserId(request)) {
+        throw new ApiError('forbidden', '지금 로그인한 자기 계정은 지울 수 없어요.');
+      }
+
+      if (target.role === 'super') {
+        throw new ApiError('forbidden', '슈퍼 관리자 계정은 지울 수 없어요. 먼저 등급을 내리세요.');
+      }
+
+      await recordAccountDecision(client, request, id, 'delete', target.role);
+      await client.query('DELETE FROM structured.admin_accounts WHERE id = $1', [id]);
+      await client.query('DELETE FROM identity.sessions WHERE user_id = $1', [target.user_id]);
+
+      await client.query('COMMIT');
+
+      return { deleted: target.login_id };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  });
+
+  /**
    * 나머지 전체를 뷰어로 내린다(2026-09-15 대표 지시 — 「나머지 계정은 싹다
    * 테스트(조회만 가능)으로 변경해」).
    *
@@ -461,7 +519,7 @@ async function recordAccountDecision(
   client: Parameters<typeof recordDecision>[0],
   request: { userId?: string },
   accountId: string,
-  step: 'create' | 'grade' | 'disable' | 'enable',
+  step: 'create' | 'grade' | 'disable' | 'enable' | 'delete',
   role: AdminRole
 ): Promise<void> {
   await recordDecision(client, {

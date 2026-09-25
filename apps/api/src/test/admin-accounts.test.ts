@@ -630,4 +630,57 @@ describeWithDb('관리자 계정 관리', () => {
       expect(response.json<{ error: { message: string } }>().error.message).toContain('관리자 추가');
     });
   });
+
+  describe('계정 지우기', () => {
+    async function remove(headers: Record<string, string>, id: string) {
+      return await test.app.inject({ method: 'DELETE', url: `/v1/admin/accounts/${id}`, headers });
+    }
+
+    it('슈퍼 관리자가 뷰어 계정을 지우면 그 아이디로 더는 로그인되지 않는다', async () => {
+      const boss = await adminSession(test, 'super');
+      await create(boss.headers, { loginId: 'to-remove', role: 'viewer' });
+
+      const response = await remove(boss.headers, await accountId('to-remove'));
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toEqual({ deleted: 'to-remove' });
+
+      const login = await test.app.inject({
+        method: 'POST',
+        url: '/v1/admin/login',
+        payload: { id: 'to-remove', password: PASSWORD },
+      });
+      expect(login.statusCode).not.toBe(201);
+
+      const { rows } = await test.pool.query<{ step: string }>(
+        `SELECT step FROM structured.decisions WHERE workflow = 'admin_account' AND step = 'delete'`
+      );
+      expect(rows).toHaveLength(1);
+    });
+
+    it('슈퍼 관리자 계정은 지울 수 없다', async () => {
+      const boss = await adminSession(test, 'super');
+      await create(boss.headers, { loginId: 'other-boss', role: 'super' });
+
+      const response = await remove(boss.headers, await accountId('other-boss'));
+
+      expect(response.statusCode).toBe(403);
+    });
+
+    it('표에 저장된 슈퍼가 없어도(부트스트랩) 뷰어 계정은 지울 수 있다 — 0434', async () => {
+      process.env.ADMIN_LOGIN_ID = 'bootstrap-id';
+      process.env.ADMIN_PASSWORD_HASH = hashAdminPassword(PASSWORD);
+      const login = await test.app.inject({
+        method: 'POST',
+        url: '/v1/admin/login',
+        payload: { id: 'bootstrap-id', password: PASSWORD },
+      });
+      const headers = { authorization: `Bearer ${login.json<{ token: string }>().token}` };
+      await create(headers, { loginId: 'old-viewer', role: 'viewer' });
+
+      const response = await remove(headers, await accountId('old-viewer'));
+
+      expect(response.statusCode).toBe(200);
+    });
+  });
 });

@@ -117,12 +117,14 @@ type Pending =
   | { kind: 'create'; loginId: string; password: string; role: Role }
   | { kind: 'role'; account: AdminAccount; role: Role }
   | { kind: 'disabled'; account: AdminAccount; disabled: boolean }
+  | { kind: 'delete'; account: AdminAccount }
   | { kind: 'demote-others'; targets: AdminAccount[] };
 
 function confirmTitle(pending: Pending): string {
   if (pending.kind === 'create') return '관리자를 만들어요';
   if (pending.kind === 'role') return '등급을 바꿔요';
   if (pending.kind === 'demote-others') return '나머지를 전부 뷰어로 내려요';
+  if (pending.kind === 'delete') return '계정을 지워요';
 
   return pending.disabled ? '계정을 꺼요' : '계정을 다시 켜요';
 }
@@ -157,6 +159,16 @@ function confirmItems(pending: Pending): string[] {
     return [
       ...pending.targets.map((a) => `${a.loginId} — ${ROLE_LABEL[a.role]} → 뷰어`),
       '관리자 쓰기 · 계정 관리는 지금 이 계정에만 남아요',
+    ];
+  }
+
+  if (pending.kind === 'delete') {
+    return [
+      `아이디 ${pending.account.loginId}`,
+      `등급 ${ROLE_LABEL[pending.account.role]} → 계정 없음`,
+      '로그인 가능 → 막힘 · 열려 있던 로그인도 닫혀요',
+      '이 계정이 남긴 처리 기록은 그대로 남아요',
+      '되돌릴 수 없어요 — 같은 아이디가 필요하면 새로 만들어야 해요',
     ];
   }
 
@@ -248,6 +260,9 @@ export function AdminsPanel() {
         setSelected(null);
       } else if (pending.kind === 'demote-others') {
         await apiFetch('/v1/admin/accounts/demote-others', { method: 'POST' });
+      } else if (pending.kind === 'delete') {
+        await apiFetch(`/v1/admin/accounts/${pending.account.id}`, { method: 'DELETE' });
+        setSelected(null);
       } else {
         await apiFetch(`/v1/admin/accounts/${pending.account.id}/disabled`, {
           method: 'PATCH',
@@ -449,6 +464,15 @@ export function AdminsPanel() {
                 </Pressable>
               ))}
             </View>
+            {selected.role !== 'super' ? (
+              <Pressable
+                style={styles.roleBtn}
+                onPress={() => setPending({ kind: 'delete', account: selected })}
+                accessibilityLabel="계정 지우기"
+              >
+                <Text style={[styles.roleBtnText, styles.error]}>계정 지우기</Text>
+              </Pressable>
+            ) : null}
           </View>
         </ConfirmCard>
       )}
@@ -459,7 +483,7 @@ export function AdminsPanel() {
           body={acting ? '바꾸는 중이에요…' : '이렇게 바뀌어요.'}
           items={confirmItems(pending)}
           cta={acting ? '바꾸는 중…' : '진행'}
-          danger={(pending.kind === 'disabled' && pending.disabled) || pending.kind === 'demote-others'}
+          danger={(pending.kind === 'disabled' && pending.disabled) || pending.kind === 'demote-others' || pending.kind === 'delete'}
           onCancel={() => {
             setPending(null);
             setActionError(null);
