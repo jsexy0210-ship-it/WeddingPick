@@ -1578,4 +1578,44 @@ if (process.env.FIXTURE_NOTE_DATA === 'true') {
   };
 }
 
-module.exports = { routes, matchRoute, VENDORS, SPONSORED, ME };
+/*
+ * Pick 캡처 전용 스위치(2026-09-25 RN 정본 pick 픽셀 대조). 정본 pick.js `catGroups`와
+ * 같은 이름·지역·결정 상태로 채운다 — 이름이 다르면 없는 차이가 픽셀로 잡힌다.
+ *
+ *   FIXTURE_PICK_CANON=true  WP-PICK-001 · 008: 웨딩홀 2(더채플 결정) · 스드메 3(블루밍 결정) · 본식 1
+ */
+if (process.env.FIXTURE_PICK_CANON === 'true') {
+  const cand = (n, vendorName, category, region, addedAt) => ({
+    id: `c${n.repeat(7)}-${n.repeat(4)}-4${n.repeat(3)}-8${n.repeat(3)}-${n.repeat(12)}`,
+    vendorId: `${n.repeat(8)}-${n.repeat(4)}-4${n.repeat(3)}-8${n.repeat(3)}-${n.repeat(12)}`,
+    vendorName, category, region, imageUrl: null, note: null, addedAt, addedByPartner: false, rating: null,
+  });
+  const hall = [
+    cand('1', '더채플 청담', 'hall', '서울 강남구', '2026-09-02T00:00:00.000Z'),
+    cand('2', '루이비스스퀘어', 'hall', '서울 송파구', '2026-09-01T00:00:00.000Z'),
+  ];
+  const studio = [
+    cand('3', '블루밍 스튜디오', 'studio', '서울 강남구', '2026-09-05T00:00:00.000Z'),
+    cand('4', '스튜디오 온', 'studio', '서울 마포구', '2026-09-04T00:00:00.000Z'),
+    cand('5', '포레스트 스튜디오', 'studio', '서울 성수동', '2026-09-03T00:00:00.000Z'),
+  ];
+  const snap = [cand('6', '오드 메이크업', 'snap', '서울 청담동', '2026-09-06T00:00:00.000Z')];
+  const group = (category, categoryLabel, candidates, decidedVendorId) => ({
+    category, categoryLabel, candidates,
+    comparable: candidates.length >= 2,
+    state: decidedVendorId ? 'decided' : 'picking',
+    stateLabel: decidedVendorId ? '결정 완료' : '후보 Pick 중',
+    decidedVendorId,
+  });
+  routes['GET /v1/weddings/:weddingId/candidates'] = {
+    ...routes['GET /v1/weddings/:weddingId/candidates'],
+    groups: [
+      group('hall', '웨딩홀', hall, hall[0].vendorId),
+      group('studio', '스튜디오', studio, studio[0].vendorId),
+      group('snap', '본식스냅', snap, null),
+    ],
+    total: 6,
+  };
+}
+
+module.exports ={ routes, matchRoute, VENDORS, SPONSORED, ME };

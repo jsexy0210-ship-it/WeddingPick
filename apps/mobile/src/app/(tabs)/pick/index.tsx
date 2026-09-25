@@ -54,6 +54,7 @@ import {
   ProductSymbol,
   Radius,
   RatingStars,
+  SeedIcon,
   Spacing,
   ThemedText,
   ThemedView,
@@ -463,7 +464,7 @@ export default function PickScreen() {
                           <View key={section.key} style={styles.group}>
                             {/* 정본 catGroupHead: 제목 18/700 · «N개 · 최신순» 13 회색, 글줄 맞춤. */}
                             <View style={styles.groupHead}>
-                              <ThemedText type="f18" style={styles.bold}>
+                              <ThemedText type="f18" style={[styles.bold, styles.groupTitle]}>
                                 {section.title}
                               </ThemedText>
                               <ThemedText type="f13" numeric themeColor="textAssistive">
@@ -495,7 +496,7 @@ export default function PickScreen() {
                                 onPress={() => toggleExpanded(section.key)}
                                 style={({ pressed }) => [
                                   styles.moreBtn,
-                                  { backgroundColor: theme.backgroundElement },
+                                  { backgroundColor: theme.backgroundSelected },
                                   pressed ? styles.pressed : null,
                                 ]}>
                                 <ThemedText type="f14" themeColor="textSecondary" style={styles.bold}>
@@ -558,7 +559,8 @@ function CategoryChip({ label, active, onPress }: { label: string; active: boole
       onPress={onPress}
       style={({ pressed }) => [
         styles.chip,
-        { backgroundColor: active ? theme.text : theme.backgroundElement },
+        /* 정본 chip() 끔 면 SEC #f2f3f6 — 칩 배경 토큰 backgroundSelected(SEED gray-100 #f3f4f5). */
+        { backgroundColor: active ? theme.text : theme.backgroundSelected },
         pressed ? styles.pressed : null,
       ]}>
       {/* WP-PICK-001 칩: 14/700 · 높이 36 · 좌우 14. 끔 글자 #4d5159는 테마 키가 없어 보조색(PR 본문). */}
@@ -656,7 +658,8 @@ function CandidateCard({
             </Pressable>
           </View>
           <View style={styles.location}>
-            <ProductSymbol name="pin" size={Layout.iconMicro} color={theme.textAssistive} />
+            {/* 정본 icoPin: SEED location 12 · #868b94 — 같은 패스의 SeedIcon locationRegular. */}
+            <SeedIcon name="locationRegular" size={Layout.iconMicro} color={theme.textAssistive} />
             {/* 규격서: 지역 «12/400 #868B94 · lh 16 · mar 6 0 0 0». */}
             <ThemedText type="f12" themeColor="textAssistive" numberOfLines={1} style={styles.locText}>
               {regionLabel(candidate.region)}
@@ -823,16 +826,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  /* 정본 mypickSec: 위 1px 선 · 위아래 20 · 안쪽 사이 10. */
+  /*
+   * 정본 mypickSec: 위 1px 선 · 위아래 20 · 안쪽 사이 10. 정본 선은 inset box-shadow라 자리를 안
+   * 먹는다 — 여기 선은 border라 1을 먹으므로 위 여백에서 1을 뺀다(비교 배너 y 156 맞춤).
+   */
   mypickSec: {
     borderTopWidth: Border.hairline,
-    paddingVertical: Layout.listGap,
+    paddingTop: Layout.listGap - Border.hairline,
+    paddingBottom: Layout.listGap,
     gap: Layout.iconTextGap,
   },
   /* 정본 catGroupWrap: 위 16 · 묶음 사이 28. */
   groupWrap: { paddingTop: Spacing.three, gap: Layout.sectionGap },
   /* 정본 catGroupSec: 머리 · 카드 목록 · 더 보기 사이 12. */
   group: { gap: Layout.inlineGap },
+  /* 정본 catGroupTitle 18/700 · 줄높이 지정 없음 — 미리보기에서 렌더된 높이 24(f18 기본 28이면 묶음마다 4씩 밀린다). */
+  groupTitle: { lineHeight: LineHeight.lh24 },
   groupHead: {
     paddingHorizontal: Layout.pageX,
     flexDirection: 'row',
