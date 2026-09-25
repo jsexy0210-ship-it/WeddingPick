@@ -1,6 +1,11 @@
 /**
  * WP-ADM-014 데이터 · 업체 관리
- * 업체 병합·분리 · 상호 변경 · 영업상태 · 재귀속 이력
+ * 업체 병합·분리 · 상호 변경 · 영업상태 · 재귀속 이력 · 정보 수정 · 삭제
+ *
+ * **행마다 「수정」「삭제」가 있다**(2026-09-25 대표 지시 — 「업체 관리도 수정, 삭제
+ * 버튼을 추가한다」). 모양은 FAQ 관리의 행 단추(`faq.tsx` editBtn · deleteBtn)를 그대로
+ * 가져왔다 — 정본(`웨딩픽 관리자.dc.html`)에 업체 행 단추가 따로 그려져 있지 않다.
+ * 삭제는 사용자 기록이 달린 업체면 서버가 거절한다(`vendor-admin.ts` DELETE_BLOCKERS).
  *
  * **2026-09-15 대표 확정 — 「업체·행사」 화면의 탭 하나(업체 관리 자신)다**(업체
  * 관리 · 이미지 관리 · 업체 문의 · 이메일 회신 · 박람회 관리 — 다섯 다 업체 관련
@@ -26,12 +31,13 @@ import {
 import { Colors, FontSize, Spacing } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
-import { AdminTabShell, type AdminTabDef } from './_ui';
+import { WritePressable } from './_role';
+import { AdminTabShell, ConfirmCard, type AdminTabDef } from './_ui';
 import { ImagesPanel } from './images';
 import { BizQueuePanel } from './biz-queue';
 import { EmailMatchingPanel } from './email-matching';
 import { ExposPanel } from './expos';
-import { formatCount, VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
+import { formatCount, VENDOR_CATEGORIES, VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
 
 type VendorStatus = 'active' | 'closed' | 'suspended' | 'merged';
 type HistoryItem = { at: string; action: string; note: string };
@@ -40,6 +46,8 @@ type Vendor = {
   id: string;
   name: string;
   category: string;
+  region: string;
+  address: string | null;
   status: VendorStatus;
   dataCount: number;
   mergedInto: string | null;
@@ -76,6 +84,14 @@ type MergePreview = {
   categoryDiffers: boolean;
 };
 
+/**
+ * 수정에서 고를 수 있는 업종. 결정사는 뺀다 — 2026-09-24 대표 지시(「결정사 따윈
+ * 필요없다」). 서버도 같은 목록만 받는다(`EDITABLE_VENDOR_CATEGORIES`).
+ */
+const EDIT_CATEGORIES = VENDOR_CATEGORIES.filter((c) => c !== 'wedding_info_company');
+
+type VendorForm = { id: string; name: string; category: string; region: string; address: string };
+
 /** 「제보」·「후기」·「Pick」·「이미지」가 같은 선에서 시작하도록 잡아 두는 폭. */
 const MERGE_LABEL_WIDTH = 64;
 
@@ -106,6 +122,10 @@ function VendorsPanel() {
   // 병합 확인 단계. 미리보기를 받아 두기 전에는 병합을 부르지 않는다.
   const [mergePreview, setMergePreview] = useState<MergePreview | null>(null);
   const [mergeReason, setMergeReason] = useState('');
+  // 행의 「수정」 · 「삭제」.
+  const [form, setForm] = useState<VendorForm | null>(null);
+  const [deleting, setDeleting] = useState<Vendor | null>(null);
+  const [listError, setListError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -212,6 +232,48 @@ function VendorsPanel() {
     }
   }
 
+  function openEdit(v: Vendor) {
+    setActionError(null);
+    setForm({ id: v.id, name: v.name, category: v.category, region: v.region, address: v.address ?? '' });
+  }
+
+  async function saveEdit() {
+    if (!form || !form.name.trim() || !form.region.trim()) return;
+    setActing(true);
+    setActionError(null);
+    try {
+      await apiFetch(`/v1/admin/vendors/${form.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          name: form.name.trim(),
+          category: form.category,
+          region: form.region.trim(),
+          address: form.address.trim() || null,
+        }),
+      });
+      setForm(null);
+      setRev((r) => r + 1);
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : '처리 실패');
+    } finally {
+      setActing(false);
+    }
+  }
+
+  async function confirmDelete() {
+    if (!deleting) return;
+    const target = deleting;
+    setDeleting(null);
+    setListError(null);
+    try {
+      await apiFetch(`/v1/admin/vendors/${target.id}`, { method: 'DELETE' });
+      setRev((r) => r + 1);
+    } catch (e) {
+      // 사용자 기록이 달린 업체는 서버가 무엇이 몇 건인지 적어 거절한다 — 그 말을 그대로 보여준다.
+      setListError(e instanceof Error ? e.message : '삭제 실패');
+    }
+  }
+
   const filtered = data?.vendors.filter(
     (v) => !search || v.name.includes(search) || v.id.includes(search)
   ) ?? [];
@@ -246,12 +308,14 @@ function VendorsPanel() {
             />
             <Text style={styles.totalText}>총 {formatCount(data.total)}개</Text>
           </View>
+          {listError && <Text style={styles.listError}>{listError}</Text>}
           <ScrollView>
             <View style={styles.tableHead}>
               <Text style={[styles.th, styles.colName]}>업체명</Text>
               <Text style={[styles.th, styles.colCategory]}>카테고리</Text>
               <Text style={[styles.th, styles.colStatus]}>상태</Text>
               <Text style={[styles.th, styles.colCount]}>제보</Text>
+              <Text style={[styles.th, styles.colActions]}>관리</Text>
             </View>
             {filtered.map((v, i) => (
               <Pressable
@@ -265,6 +329,17 @@ function VendorsPanel() {
                   {STATUS_LABEL[v.status]}
                 </Text>
                 <Text style={[styles.td, styles.colCount]}>{formatCount(v.dataCount)}</Text>
+                <View style={[styles.colActions, styles.rowActions]}>
+                  {/* 병합된 업체는 흡수된 껍데기라 고칠 것이 없다 — 서버도 거절한다. 삭제는 된다. */}
+                  {v.status !== 'merged' && (
+                    <WritePressable style={styles.editBtn} onPress={() => openEdit(v)}>
+                      <Text style={styles.editBtnText}>수정</Text>
+                    </WritePressable>
+                  )}
+                  <WritePressable style={styles.deleteBtn} onPress={() => { setListError(null); setDeleting(v); }}>
+                    <Text style={styles.deleteBtnText}>삭제</Text>
+                  </WritePressable>
+                </View>
               </Pressable>
             ))}
           </ScrollView>
@@ -284,18 +359,18 @@ function VendorsPanel() {
               value={nameEdit}
               onChangeText={setNameEdit}
             />
-            <Pressable
+            <WritePressable
               style={[styles.primaryBtn, (acting) && styles.btnDisabled]}
               onPress={() => void updateName()}
               disabled={acting}
             >
               <Text style={styles.primaryBtnText}>상호 저장</Text>
-            </Pressable>
+            </WritePressable>
 
             <Text style={styles.fieldLabel}>영업 상태 변경</Text>
             <View style={styles.statusRow}>
               {(['active', 'closed', 'suspended'] as VendorStatus[]).map((s) => (
-                <Pressable
+                <WritePressable
                   key={s}
                   style={[styles.statusBtn, selected?.status === s && { borderColor: STATUS_COLOR[s] }]}
                   onPress={() => void updateStatus(s)}
@@ -304,7 +379,7 @@ function VendorsPanel() {
                   <Text style={[styles.statusBtnText, selected?.status === s && { color: STATUS_COLOR[s] }]}>
                     {STATUS_LABEL[s]}
                   </Text>
-                </Pressable>
+                </WritePressable>
               ))}
             </View>
 
@@ -315,13 +390,13 @@ function VendorsPanel() {
               onChangeText={setMergeTarget}
               placeholder="병합할 대상 업체 ID"
             />
-            <Pressable
+            <WritePressable
               style={[styles.dangerBtn, (acting) && styles.btnDisabled]}
               onPress={() => void previewMerge()}
               disabled={acting || !mergeTarget.trim()}
             >
               <Text style={styles.dangerBtnText}>병합할 내용 확인</Text>
-            </Pressable>
+            </WritePressable>
 
             {actionError && <Text style={styles.actionError}>{actionError}</Text>}
 
@@ -345,6 +420,82 @@ function VendorsPanel() {
           </ScrollView>
         </View>
       </Modal>
+
+      {/* 정보 수정 — 표에 있는 상호 · 업종에 지역 · 주소를 더한 네 칸. */}
+      <Modal visible={form !== null} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>업체 정보 수정</Text>
+            <Text style={styles.modalSub}>{form?.id}</Text>
+
+            <Text style={styles.fieldLabel}>상호</Text>
+            <TextInput
+              style={styles.fieldInput}
+              value={form?.name ?? ''}
+              onChangeText={(name) => setForm((f) => f && { ...f, name })}
+            />
+
+            <Text style={styles.fieldLabel}>업종</Text>
+            <View style={styles.categoryRow}>
+              {EDIT_CATEGORIES.map((c) => (
+                <Pressable
+                  key={c}
+                  style={[styles.statusBtn, form?.category === c && styles.categoryBtnOn]}
+                  onPress={() => setForm((f) => f && { ...f, category: c })}
+                >
+                  <Text style={[styles.statusBtnText, form?.category === c && styles.categoryBtnTextOn]}>
+                    {formatCat(c)}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <Text style={styles.fieldLabel}>지역</Text>
+            <TextInput
+              style={styles.fieldInput}
+              value={form?.region ?? ''}
+              onChangeText={(region) => setForm((f) => f && { ...f, region })}
+            />
+
+            <Text style={styles.fieldLabel}>주소</Text>
+            <TextInput
+              style={styles.fieldInput}
+              value={form?.address ?? ''}
+              onChangeText={(address) => setForm((f) => f && { ...f, address })}
+              placeholder="비우면 주소를 지워요"
+            />
+
+            {actionError && <Text style={styles.actionError}>{actionError}</Text>}
+
+            <WritePressable
+              style={[styles.primaryBtn, styles.saveGap, (acting || !form?.name.trim() || !form?.region.trim()) && styles.btnDisabled]}
+              onPress={() => void saveEdit()}
+              disabled={acting || !form?.name.trim() || !form?.region.trim()}
+            >
+              <Text style={styles.primaryBtnText}>{acting ? '저장 중…' : '저장'}</Text>
+            </WritePressable>
+            <Pressable style={styles.closeBtn} onPress={() => setForm(null)}>
+              <Text style={styles.closeBtnText}>닫기</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      {deleting && (
+        <ConfirmCard
+          title="업체를 지울까요?"
+          body="지운 업체는 되돌릴 수 없어요."
+          items={[
+            `${deleting.name} · ${formatCat(deleting.category)} · ${deleting.region}`,
+            '업체 정보 · 이미지 · 가격 통계 · 변경 이력이 함께 지워져요',
+            'Pick 후보 · 후기 · 제보 금액 · Pick 결정이 달린 업체는 지우지 않고 알려드려요',
+          ]}
+          cta="삭제"
+          danger
+          onConfirm={() => void confirmDelete()}
+          onCancel={() => setDeleting(null)}
+        />
+      )}
 
       {/*
         병합 확인. 되돌릴 수 없는 조작이므로 무엇이 몇 건 옮겨 가는지 항목으로
@@ -387,13 +538,13 @@ function VendorsPanel() {
 
             {actionError && <Text style={styles.actionError}>{actionError}</Text>}
 
-            <Pressable
+            <WritePressable
               style={[styles.dangerBtn, (acting || !mergeReason.trim()) && styles.btnDisabled]}
               onPress={() => void confirmMerge()}
               disabled={acting || !mergeReason.trim()}
             >
               <Text style={styles.dangerBtnText}>합치기</Text>
-            </Pressable>
+            </WritePressable>
 
             <Pressable style={styles.closeBtn} onPress={() => setMergePreview(null)}>
               <Text style={styles.closeBtnText}>그만두기</Text>
@@ -529,6 +680,33 @@ const styles = StyleSheet.create({
   colCategory: { flex: 2 },
   colStatus: { width: 60 },
   colCount: { width: 50, textAlign: 'right' as const },
+  /* 수정 · 삭제 두 단추가 한 줄에 들어가는 폭. */
+  colActions: { width: 120, marginLeft: 16 },
+  rowActions: { flexDirection: 'row', gap: 6, justifyContent: 'flex-end' },
+  /* 행 단추 — `faq.tsx`의 editBtn · deleteBtn과 같은 값이다. */
+  editBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 4,
+    backgroundColor: Colors.light.backgroundSelected,
+    borderWidth: 1,
+    borderColor: Colors.light.fieldBorder,
+  },
+  editBtnText: { fontSize: FontSize.tab, color: Colors.light.textStrong },
+  deleteBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 4,
+    backgroundColor: Colors.light.negativeBoxBackground,
+    borderWidth: 1,
+    borderColor: Colors.light.negativeBorder,
+  },
+  deleteBtnText: { fontSize: FontSize.tab, color: Colors.light.negative, fontWeight: '700' },
+  listError: { fontSize: FontSize.t7, color: Colors.light.negative, paddingHorizontal: 16, paddingVertical: 8 },
+  categoryRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
+  categoryBtnOn: { borderColor: Colors.light.tint },
+  categoryBtnTextOn: { color: Colors.light.tint, fontWeight: '700' },
+  saveGap: { marginTop: 16 },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',

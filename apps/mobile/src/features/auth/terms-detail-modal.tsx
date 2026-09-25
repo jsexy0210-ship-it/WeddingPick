@@ -1,9 +1,9 @@
 import { type ConsentAgreementKey, TERM_DOCUMENTS, termDocumentFor } from '@weddingpick/domain';
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ActionButton, Layout, LineHeight, MaxContentWidth, ProductSymbol, Radius, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+import { ActionButton, CanonGray, FontSize, Layout, LineHeight, MaxContentWidth, ProductSymbol, Radius, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
 
 /**
  * 약관 상세 — WP-AUTH-011. 공통 풀팝업.
@@ -32,6 +32,7 @@ export function TermsDetailModal({
   onClose: () => void;
 }) {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const [key, setKey] = useState(initialKey);
   const doc = termDocumentFor(key) ?? TERM_DOCUMENTS[0]!;
 
@@ -43,13 +44,14 @@ export function TermsDetailModal({
       onRequestClose={onClose}
       onShow={() => setKey(initialKey)}>
       <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-          <View style={[styles.nav, { borderBottomColor: theme.border }]}>
+        {/* 동의 도크가 있으면 도크가 아래 inset을 직접 챙긴다(정본 CTA y 828). */}
+        <SafeAreaView style={styles.safeArea} edges={onAgree ? ['top'] : ['top', 'bottom']}>
+          <View style={[styles.nav, { borderBottomColor: CanonGray.gray200 }]}>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="닫기"
               onPress={onClose}
-              style={({ pressed }) => [styles.navClose, { backgroundColor: theme.backgroundSelected }, pressed && styles.pressed]}>
+              style={({ pressed }) => [styles.navClose, { backgroundColor: CanonGray.gray100 }, pressed && styles.pressed]}>
               <ProductSymbol name="close" size={16} color={theme.text} />
             </Pressable>
             <ThemedText type="f16" style={styles.navTitle}>
@@ -61,7 +63,7 @@ export function TermsDetailModal({
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={[styles.tabs, { borderBottomColor: theme.border }]}
+            style={[styles.tabs, { borderBottomColor: CanonGray.gray200 }]}
             contentContainerStyle={styles.tabsContent}>
             {TERM_DOCUMENTS.map((tab) => {
               const active = tab.key === key;
@@ -83,9 +85,12 @@ export function TermsDetailModal({
 
           <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
             <View style={styles.head}>
-              {/* home.js `tdTitle` 22/30/700 — 22 타입이 없어 가장 가까운 t3(24/32)를 쓴다. */}
-              <ThemedText type="t3">{doc.title}</ThemedText>
-              <ThemedText type="f13" themeColor="textAssistive">
+              {/*
+                home.js `tdTitle` 22/30/700 — 22는 같은 값의 FontSize.searchRootTitle을 쓴다. 줄 높이
+                30 토큰이 없어 lh28 글자를 30 상자에 둔다(공용 토큰은 common 담당 — PR에 요청).
+              */}
+              <ThemedText type="t3" style={styles.title}>{doc.title}</ThemedText>
+              <ThemedText type="f13" themeColor="textAssistive" style={styles.meta}>
                 {doc.meta}
               </ThemedText>
             </View>
@@ -95,7 +100,7 @@ export function TermsDetailModal({
                 <ThemedText type="f15" style={styles.articleTitle}>
                   {article.title}
                 </ThemedText>
-                <ThemedText type="f14" themeColor="textSecondary" style={styles.articleBody}>
+                <ThemedText type="f14" style={styles.articleBody}>
                   {article.body}
                 </ThemedText>
               </View>
@@ -103,8 +108,8 @@ export function TermsDetailModal({
           </ScrollView>
 
           {onAgree ? (
-            <ThemedView style={[styles.dock, { borderTopColor: theme.border }]}>
-              <ActionButton variant="primary" size="xlarge" label="동의하기" onPress={onAgree} />
+            <ThemedView style={[styles.dock, { borderTopColor: CanonGray.gray200, paddingBottom: Math.max(DOCK_BOTTOM, Layout.gutter + insets.bottom) }]}>
+              <ActionButton variant="primary" size="sheet" label="동의하기" onPress={onAgree} />
             </ThemedView>
           ) : null}
         </SafeAreaView>
@@ -140,9 +145,18 @@ const styles = StyleSheet.create({
   tabLabel: { fontWeight: 700 },
   body: { paddingHorizontal: 24, paddingTop: 24, paddingBottom: Spacing.five, gap: 22 },
   head: { gap: 6 },
+  title: { fontSize: FontSize.searchRootTitle, lineHeight: LineHeight.lh28, minHeight: 30 },
+  /* `tdMeta` 13 · 줄 높이 normal(18). */
+  meta: { lineHeight: LineHeight.micro },
   article: { gap: 6 },
-  articleTitle: { fontWeight: 700 },
-  articleBody: { lineHeight: LineHeight.lh22 },
+  /* `tdArtT` 15/700 · 줄 높이 normal(19). */
+  articleTitle: { fontWeight: 700, lineHeight: LineHeight.lh19 },
+  /* `tdArtB` 14/22 · #4d5159. */
+  articleBody: { lineHeight: LineHeight.lh22, color: CanonGray.gray700 },
+  /* 도크 — 위 선 1 · 위 12 · CTA 56 · 아래 48 또는 24 + inset(정본 그림 CTA y 828). */
   dock: { paddingHorizontal: Layout.gutter, paddingTop: 12, borderTopWidth: 1 },
   pressed: { opacity: 0.8 },
 });
+
+/* 도크 아래 여백 — 정본 그림의 CTA y 828(아래 48). 홈 인디케이터 기기는 24 + inset이 더 크면 그것. */
+const DOCK_BOTTOM = 48;

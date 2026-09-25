@@ -59,11 +59,13 @@ jest.mock('@/features/onboarding/inline-toast', () => ({
 jest.mock('@/features/onboarding/option-row', () => ({ OptionRow: 'OptionRow' }));
 jest.mock('@/features/settings/my-kit', () => ({
   Hero: 'Hero', NavAction: 'NavAction', NoteBox: 'NoteBox', Section: 'Section', SubScreen: 'SubScreen',
+  Dock: 'Dock',
 }));
 jest.mock('@weddingpick/ui', () => ({
   Accordion: 'Accordion', ActionButton: 'ActionButton', ErrorView: 'ErrorView', FilterChip: 'FilterChip',
   ListSkeleton: 'ListSkeleton', ThemedText: 'ThemedText', ThemedView: 'ThemedView', WeddingMark: 'WeddingMark',
-  FontSize: {}, Layout: {}, MaxContentWidth: 390, Radius: {}, Spacing: {}, useTheme: () => ({}),
+  Border: { hairline: 1 }, FontSize: {}, Layout: {}, LineHeight: {}, MaxContentWidth: 390, ProductSymbol: 'ProductSymbol',
+  Radius: {}, Spacing: {}, useTheme: () => ({}),
 }));
 
 let tree: ReactTestRenderer;
@@ -91,9 +93,12 @@ function landedOn(): string {
   return (dismiss ?? replaced) as string;
 }
 
-/** 문의 화면 헤더 Back. 현재 화면은 BackBar가 기본 출구다. */
+/** 문의 화면 헤더 Back. 입력 화면은 SubScreen 헤더, 완료 화면은 BackBar가 출구다. */
 function contactBack() {
-  return tree.root.findByType('BackBar' as never).props.onBack as () => void;
+  const header = tree.root.findAll(
+    (node) => (node.type as unknown) === 'SubScreen' || (node.type as unknown) === 'BackBar'
+  )[0]!;
+  return header.props.onBack as () => void;
 }
 
 describe('/my/contact — 문의 완료·목록 하단', () => {
@@ -115,11 +120,11 @@ describe('/my/contact — 문의 완료·목록 하단', () => {
     mockPathname = '/my/contact';
     jest.mocked(createInquiry).mockResolvedValue({ acknowledgement: '확인 후 알려드려요' } as never);
     await mount(<ContactScreen />);
-    const send = tree.root
-      .findAllByType('ActionButton' as never)
-      .find((node) => node.props.label === '문의 보내기')!;
+    /* 정본(WP-MY-008) dockSingle — «문의 보내기»는 SubScreen dock의 primary다. */
+    const send = tree.root.findByType('SubScreen' as never).props.dock.props.primary;
+    expect(send.label).toBe('문의 보내기');
 
-    await act(async () => { await send.props.onPress(); });
+    await act(async () => { await send.onPress(); });
     await act(async () => contactBack()());
     expect(landedOn()).toBe('/my');
   });

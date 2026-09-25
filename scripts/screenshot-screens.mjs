@@ -83,6 +83,8 @@ function parseArgs(argv) {
     guest: false,
     expand: false,
     homeLoading: false,
+    /** 이 경로로 시작하는 GET 응답을 붙잡아 둔다 — 로딩 뼈대(WP-LOAD-004)를 찍는다. 여러 번 줄 수 있다. */
+    slow: [],
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -98,6 +100,7 @@ function parseArgs(argv) {
     else if (arg === '--edges') opts.edges = true;
     else if (arg === '--guest') opts.guest = true;
     else if (arg === '--home-loading') opts.homeLoading = true;
+    else if (arg === '--slow') opts.slow.push(argv[++i]);
     else if (arg === '--viewport') {
       const [width, height] = argv[++i].split('x').map(Number);
 
@@ -230,6 +233,10 @@ async function installFixtures(page, missing, blocked, opts) {
         await new Promise((resolve) => setTimeout(resolve, 5_000));
       }
 
+      if (method === 'GET' && opts.slow.some((prefix) => url.pathname.startsWith(prefix))) {
+        await new Promise((resolve) => setTimeout(resolve, 30_000));
+      }
+
       await route.fulfill({
         status: 200,
         contentType: 'application/json; charset=utf-8',
@@ -314,7 +321,7 @@ async function captureRoute(context, origin, route, opts) {
   }, 'weddingpick.sessionToken.v1');
 
   const response = await page.goto(`${origin}${route}`, {
-    waitUntil: opts.homeLoading ? 'domcontentloaded' : 'networkidle',
+    waitUntil: opts.homeLoading || opts.slow.length ? 'domcontentloaded' : 'networkidle',
   });
 
   if (!response?.ok()) {

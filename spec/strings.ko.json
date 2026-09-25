@@ -699,6 +699,15 @@
     "disconnectDesc": "지금까지 쌓인 기록은 각자 남아요"
   },
 
+  "inviteShare": {
+    "metaTitle": "웨딩픽에서 같이 준비해요",
+    "metaDescription": "초대한 분께 받은 코드 6자리를 넣으면 Pick한 곳 · 일정 · 지출을 함께 봐요",
+    "imageAlt": "웨딩픽 — 같이 준비할 사람을 초대해요",
+    "pageTitle": "초대를 받으셨나요?",
+    "pageBody": "초대한 분께 받은 코드 6자리를 넣으면 연결돼요",
+    "pageCta": "코드 넣기"
+  },
+
   "community": {
     "title": "라운지",
     "tab.review": "리얼후기",

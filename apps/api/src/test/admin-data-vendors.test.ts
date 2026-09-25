@@ -1,4 +1,4 @@
-import { createTestApp, resetDatabase, signInAs, type TestApp } from './helpers';
+import { adminSession, createTestApp, resetDatabase, signInAs, type TestApp } from './helpers';
 
 let test: TestApp;
 
@@ -38,6 +38,8 @@ describeWithDb('관리자 — 데이터 · 업체 조작', () => {
     test.app.inject({ method: 'POST', url, headers, payload });
   const patch = (url: string, headers: Record<string, string>, payload?: Record<string, unknown>) =>
     test.app.inject({ method: 'PATCH', url, headers, payload });
+  const del = (url: string, headers: Record<string, string>) =>
+    test.app.inject({ method: 'DELETE', url, headers });
 
   async function makeVendor(name: string, category = 'studio') {
     const { rows } = await test.pool.query<{ id: string }>(
@@ -582,6 +584,118 @@ describeWithDb('관리자 — 데이터 · 업체 조작', () => {
       );
       // 예전에는 0건을 고치고도 204였다. 운영자에게는 「승인됐다」로 보였다.
       expect(res.statusCode).toBe(404);
+    });
+  });
+
+  // ── 업체 정보 수정 · 삭제(2026-09-25 대표 지시) ─────────────────
+
+  describe('업체 정보 수정', () => {
+    it('상호 · 업종 · 지역 · 주소가 바뀌고 바뀐 칸마다 이력이 남는다', async () => {
+      const op = await operator();
+      const id = await makeVendor('옛 스튜디오');
+
+      const res = await patch(`/v1/admin/vendors/${id}`, op.headers, {
+        name: '새 드레스',
+        category: 'dress',
+        region: '경기',
+        address: '경기 성남시 분당구 1',
+      });
+      expect(res.statusCode).toBe(200);
+
+      const { rows } = await test.pool.query<{ name: string; category: string; region: string; address: string }>(
+        'SELECT name, category::text AS category, region, address FROM structured.vendors WHERE id = $1',
+        [id]
+      );
+      expect(rows[0]).toEqual({ name: '새 드레스', category: 'dress', region: '경기', address: '경기 성남시 분당구 1' });
+
+      const log = await test.pool.query<{ field_name: string }>(
+        'SELECT field_name FROM structured.vendor_change_log WHERE vendor_id = $1 ORDER BY field_name',
+        [id]
+      );
+      expect(log.rows.map((r) => r.field_name)).toEqual(['address', 'category', 'name', 'region']);
+
+      const list = (await get('/v1/admin/vendors', op.headers)).json() as {
+        vendors: { id: string; region: string; address: string | null }[];
+      };
+      expect(list.vendors.find((v) => v.id === id)).toMatchObject({ region: '경기', address: '경기 성남시 분당구 1' });
+    });
+
+    it('결정사 업종으로는 옮기지 않는다', async () => {
+      const op = await operator();
+      const id = await makeVendor('그대로');
+      const res = await patch(`/v1/admin/vendors/${id}`, op.headers, {
+        name: '그대로',
+        category: 'wedding_info_company',
+        region: '서울',
+      });
+      expect(res.statusCode).toBe(400);
+    });
+  });
+
+  describe('업체 삭제', () => {
+    it('사용자 기록이 없는 업체는 지워지고 결정 기록이 남는다', async () => {
+      const op = await operator();
+      const id = await makeVendor('지울 업체');
+      const other = await makeVendor('이 업체로 병합된 업체');
+      await test.pool.query('UPDATE structured.vendors SET merged_into_vendor_id = $1, is_active = false WHERE id = $2', [id, other]);
+      await test.pool.query(
+        `INSERT INTO structured.vendor_source_records
+           (source_key, record_key, vendor_id, source_url, collected_at, content_hash)
+         VALUES ('test', $1::text, $1::uuid, 'https://example.com', now(), 'h')`,
+        [id]
+      );
+
+      const res = await del(`/v1/admin/vendors/${id}`, op.headers);
+      expect(res.statusCode).toBe(204);
+
+      expect((await test.pool.query('SELECT 1 FROM structured.vendors WHERE id = $1', [id])).rowCount).toBe(0);
+      // 이 업체로 병합돼 있던 껍데기는 남되 연결이 끊기고 폐업으로 남는다.
+      const shell = await test.pool.query<{ merged: string | null; closed: boolean }>(
+        'SELECT merged_into_vendor_id AS merged, closed_at IS NOT NULL AS closed FROM structured.vendors WHERE id = $1',
+        [other]
+      );
+      expect(shell.rows[0]).toEqual({ merged: null, closed: true });
+      const decision = await test.pool.query<{ decision: string; actor_user_id: string }>(
+        `SELECT decision, actor_user_id FROM structured.decisions
+          WHERE subject_kind = 'vendor' AND subject_id = $1`,
+        [id]
+      );
+      expect(decision.rows[0]).toEqual({ decision: 'deleted', actor_user_id: op.userId });
+    });
+
+    it('후기가 달린 업체는 지우지 않고 무엇이 달렸는지 알려준다', async () => {
+      const op = await operator();
+      const id = await makeVendor('후기 있는 업체');
+      const userId = await makeUser();
+      await test.pool.query(
+        `INSERT INTO structured.reviews
+           (vendor_id, author_user_id, role, overall, title, body)
+         VALUES ($1, $2, 'couple', 5, '좋았어요', $3)`,
+        [id, userId, '후기 본문을 쉰 자 이상 적어야 통과하므로 길게 적는다. '.repeat(2)]
+      );
+
+      const res = await del(`/v1/admin/vendors/${id}`, op.headers);
+      expect(res.statusCode).toBe(409);
+      expect(res.body).toContain('후기 1건');
+
+      expect((await test.pool.query('SELECT 1 FROM structured.vendors WHERE id = $1', [id])).rowCount).toBe(1);
+      expect((await test.pool.query('SELECT 1 FROM structured.reviews WHERE vendor_id = $1', [id])).rowCount).toBe(1);
+    });
+
+    it('뷰어는 수정도 삭제도 못 한다 — 읽기와 등급 조회는 된다', async () => {
+      const viewer = await adminSession(test, 'viewer');
+      const id = await makeVendor('뷰어가 본 업체');
+
+      expect((await patch(`/v1/admin/vendors/${id}`, viewer.headers, {
+        name: '바뀌면 안 됨', category: 'studio', region: '서울',
+      })).statusCode).toBe(403);
+      expect((await del(`/v1/admin/vendors/${id}`, viewer.headers)).statusCode).toBe(403);
+      expect((await test.pool.query('SELECT name FROM structured.vendors WHERE id = $1', [id])).rows[0]).toEqual({
+        name: '뷰어가 본 업체',
+      });
+
+      expect((await get('/v1/admin/vendors', viewer.headers)).statusCode).toBe(200);
+      expect((await get('/v1/admin/me', viewer.headers)).json()).toEqual({ role: 'viewer' });
     });
   });
 

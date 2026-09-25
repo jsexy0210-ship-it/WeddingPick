@@ -94,7 +94,7 @@ export function homePrepCards(input: {
     const openRow = rows.find((row) => row.state !== 'decided') ?? rows[0];
     const targetCategory = openRow?.category ?? categories[0]!;
     /*
-     * 카드를 눌렀을 때 `/pick/{category}` vs `/pick?section=recommendations&category=`
+     * 카드를 눌렀을 때 `/pick/{category}` vs `/search?category=`
      * 를 가르는 값 — 그룹 합계가 아니라 **실제로 열릴 업종**(targetCategory)의 담아둔
      * 수다. 합계를 쓰면 그룹 안 다른 업종에 후보가 있다는 이유로 target에 후보가
      * 있는 것처럼 잘못 안내한다.

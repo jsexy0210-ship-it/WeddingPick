@@ -7,9 +7,9 @@
  *
  * **v3.29 대조로 정한 것.**
  * - Pick 탭 안에 «추천 · 내 Pick»(Figma 원본) 같은 상단 탭을 두지 않는다 — v3.29 diffs
- *   «탭 구성»이 명시한다. 추천 → 비교 → 결정이 한 화면에서 끝난다. 준비 현황(웨딩픽 추천)은
- *   홈에서만 들어오는 별도 화면이라 `/pick?section=recommendations` 딥링크만 받아 그린다
- *   (홈의 `(home)/recommendations.tsx`가 그리로 보낸다).
+ *   «탭 구성»이 명시한다. 비교 → 결정이 한 화면에서 끝난다.
+ * - `/pick?section=recommendations` 분기는 없앴다(2026-09-25 대표 지시). 옛 링크로 들어와도
+ *   `section`을 보지 않으므로 이 기본 화면이 뜬다.
  * - Pick = 후보 담기 · 최종 결정은 별도(v3.29 diffs «Pick 의미»). 최종 결정은 확인 시트
  *   (`/pick/confirm`)에서 저장한다.
  * - 카드를 누르면 그 업체의 상담 예약(`/search/[vendorId]/consult`)으로 바로 간다 — 정본
@@ -32,14 +32,13 @@ import type { CandidateListResponse, CurrentUser, VendorCandidate } from '@weddi
 import {
   PREPARATION_GROUPS,
   TERMS,
-  VENDOR_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
   withParticle,
   type PreparationGroupKey,
   type VendorCategory,
   regionLabel,
 } from '@weddingpick/domain';
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -54,6 +53,7 @@ import {
   ProductSymbol,
   Radius,
   RatingStars,
+  SeedIcon,
   Spacing,
   ThemedText,
   ThemedView,
@@ -84,7 +84,6 @@ import {
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import { isWebShellScreen } from '@/features/webshell/config';
 import { WebShellView } from '@/features/webshell/WebShellView';
-import { RecommendationsContent } from '../(home)/recommendations';
 
 /* 문구 — spec/strings.ko.json `pick` · features/pick/canonical-rules. */
 const COMPARE_HINT = PICK_COMPARE_BANNER_HINT;
@@ -101,7 +100,7 @@ const GROUP_MORE = '더 보기';
 const BADGE_SHARED = '함께';
 const EMPTY_TITLE = '아직 담은 곳이 없어요';
 const EMPTY_BODY = '담아두면 여기서 비교할 수 있어요';
-const EMPTY_CTA = '추천 보기';
+const EMPTY_CTA = '업체 검색하기';
 const UNDECIDE_TITLE = '결정을 취소할까요?';
 const UNDECIDE_BODY = '웨딩노트의 결정 상태가 풀려요. 언제든 다시 결정할 수 있어요.';
 const MIN_COMPARE = 2;
@@ -167,18 +166,6 @@ function pickSections(rows: readonly Row[]): Section[] {
 }
 
 export default function PickScreen() {
-  const { section: sectionParam, category: categoryParam } = useLocalSearchParams<{
-    section?: string | string[];
-    category?: string | string[];
-  }>();
-  const requestedSection = Array.isArray(sectionParam) ? sectionParam[0] : sectionParam;
-  const rawCategory = Array.isArray(categoryParam) ? categoryParam[0] : categoryParam;
-  const requestedCategory =
-    rawCategory && VENDOR_CATEGORIES.includes(rawCategory as VendorCategory)
-      ? (rawCategory as VendorCategory)
-      : null;
-  /* 홈의 «웨딩픽 추천» 딥링크만 받는다. Pick 탭 자체에는 상단 탭이 없다(v3.29 diffs «탭 구성»). */
-  const showRecommendations = requestedSection === 'recommendations';
   const theme = useTheme();
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [page, setPage] = useState<CandidateListResponse | null>(null);
@@ -385,9 +372,7 @@ export default function PickScreen() {
     <ThemedView style={styles.root}>
       <SafeAreaView style={styles.safeArea}>
         <View style={[styles.wrapper, { maxWidth: MaxContentWidth }]}>
-          {showRecommendations ? (
-            <RecommendationsContent requestedCategory={requestedCategory} />
-          ) : error ? (
+          {error ? (
             <ScrollView contentContainerStyle={styles.scroll}>
               <View style={styles.errorBox}>
                 <ThemedText type="t2">불러오지 못했어요</ThemedText>
@@ -463,7 +448,7 @@ export default function PickScreen() {
                           <View key={section.key} style={styles.group}>
                             {/* 정본 catGroupHead: 제목 18/700 · «N개 · 최신순» 13 회색, 글줄 맞춤. */}
                             <View style={styles.groupHead}>
-                              <ThemedText type="f18" style={styles.bold}>
+                              <ThemedText type="f18" style={[styles.bold, styles.groupTitle]}>
                                 {section.title}
                               </ThemedText>
                               <ThemedText type="f13" numeric themeColor="textAssistive">
@@ -495,7 +480,7 @@ export default function PickScreen() {
                                 onPress={() => toggleExpanded(section.key)}
                                 style={({ pressed }) => [
                                   styles.moreBtn,
-                                  { backgroundColor: theme.backgroundElement },
+                                  { backgroundColor: theme.backgroundSelected },
                                   pressed ? styles.pressed : null,
                                 ]}>
                                 <ThemedText type="f14" themeColor="textSecondary" style={styles.bold}>
@@ -558,7 +543,8 @@ function CategoryChip({ label, active, onPress }: { label: string; active: boole
       onPress={onPress}
       style={({ pressed }) => [
         styles.chip,
-        { backgroundColor: active ? theme.text : theme.backgroundElement },
+        /* 정본 chip() 끔 면 SEC #f2f3f6 — 칩 배경 토큰 backgroundSelected(SEED gray-100 #f3f4f5). */
+        { backgroundColor: active ? theme.text : theme.backgroundSelected },
         pressed ? styles.pressed : null,
       ]}>
       {/* WP-PICK-001 칩: 14/700 · 높이 36 · 좌우 14. 끔 글자 #4d5159는 테마 키가 없어 보조색(PR 본문). */}
@@ -656,7 +642,8 @@ function CandidateCard({
             </Pressable>
           </View>
           <View style={styles.location}>
-            <ProductSymbol name="pin" size={Layout.iconMicro} color={theme.textAssistive} />
+            {/* 정본 icoPin: SEED location 12 · #868b94 — 같은 패스의 SeedIcon locationRegular. */}
+            <SeedIcon name="locationRegular" size={Layout.iconMicro} color={theme.textAssistive} />
             {/* 규격서: 지역 «12/400 #868B94 · lh 16 · mar 6 0 0 0». */}
             <ThemedText type="f12" themeColor="textAssistive" numberOfLines={1} style={styles.locText}>
               {regionLabel(candidate.region)}
@@ -753,7 +740,7 @@ function Empty() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={EMPTY_CTA}
-          onPress={() => router.push({ pathname: '/pick', params: { section: 'recommendations' } })}
+          onPress={() => router.push('/search')}
           style={({ pressed }) => [styles.emptyCta, { backgroundColor: theme.tint }, pressed ? styles.pressed : null]}>
           <ThemedText type="f15" style={[styles.bold, { color: theme.onTint }]}>{EMPTY_CTA}</ThemedText>
         </Pressable>
@@ -823,16 +810,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  /* 정본 mypickSec: 위 1px 선 · 위아래 20 · 안쪽 사이 10. */
+  /*
+   * 정본 mypickSec: 위 1px 선 · 위아래 20 · 안쪽 사이 10. 정본 선은 inset box-shadow라 자리를 안
+   * 먹는다 — 여기 선은 border라 1을 먹으므로 위 여백에서 1을 뺀다(비교 배너 y 156 맞춤).
+   */
   mypickSec: {
     borderTopWidth: Border.hairline,
-    paddingVertical: Layout.listGap,
+    paddingTop: Layout.listGap - Border.hairline,
+    paddingBottom: Layout.listGap,
     gap: Layout.iconTextGap,
   },
   /* 정본 catGroupWrap: 위 16 · 묶음 사이 28. */
   groupWrap: { paddingTop: Spacing.three, gap: Layout.sectionGap },
   /* 정본 catGroupSec: 머리 · 카드 목록 · 더 보기 사이 12. */
   group: { gap: Layout.inlineGap },
+  /* 정본 catGroupTitle 18/700 · 줄높이 지정 없음 — 미리보기에서 렌더된 높이 24(f18 기본 28이면 묶음마다 4씩 밀린다). */
+  groupTitle: { lineHeight: LineHeight.lh24 },
   groupHead: {
     paddingHorizontal: Layout.pageX,
     flexDirection: 'row',

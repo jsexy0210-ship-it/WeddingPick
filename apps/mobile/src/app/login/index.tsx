@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   Border,
+  CanonGray,
   Layout,
   LetterSpacing,
   LineHeight,
@@ -107,7 +108,7 @@ export default function LoginScreen() {
               {BENEFITS.map((benefit) => (
                 <View key={benefit} style={styles.benefitRow}>
                   <View style={[styles.benefitDot, { backgroundColor: theme.tint }]} />
-                  <ThemedText type="f15" themeColor="textSecondary" style={styles.benefitText}>
+                  <ThemedText type="f15" style={[styles.benefitText, { color: CanonGray.gray700 }]}>
                     {benefit}
                   </ThemedText>
                 </View>

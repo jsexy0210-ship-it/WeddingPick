@@ -4,6 +4,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import {
   Border,
+  CanonGray,
   Layout,
   MaxContentWidth,
   Motion,
@@ -77,9 +78,8 @@ export function StepFrame({
           style={[
             styles.dock,
             {
-              borderTopColor: theme.border,
-              paddingBottom: Layout.gutter + Math.max(insets.bottom, 0),
-              minHeight: DOCK_HEIGHT + Math.max(insets.bottom, 0),
+              borderTopColor: CanonGray.gray200,
+              paddingBottom: Math.max(DOCK_BOTTOM, Layout.gutter + Math.max(insets.bottom, 0)),
             },
           ]}>
           {paired ? (
@@ -88,10 +88,10 @@ export function StepFrame({
               onPress={onPrev}
               style={({ pressed }) => [
                 styles.previous,
-                { backgroundColor: theme.backgroundSelected },
+                { backgroundColor: CanonGray.gray100 },
                 pressed && styles.pressed,
               ]}>
-              <ThemedText type="f18" themeColor="textSecondary" style={styles.buttonLabel}>
+              <ThemedText type="f18" style={[styles.buttonLabel, { color: CanonGray.gray700 }]}>
                 {prevLabel}
               </ThemedText>
             </Pressable>
@@ -143,7 +143,11 @@ function Rise({ children }: { children: ReactNode }) {
 }
 
 const ENTER_BEZIER = [0.16, 1, 0.3, 1] as const;
-const DOCK_HEIGHT = 92;
+/*
+ * 도크 아래 여백. 정본 그림(home.jsx 5~10번 화면)에서 CTA는 프레임 아래 끝에서 104 위(y 828)에
+ * 앉는다 — 위 12 · CTA 56 · 아래 48. 홈 인디케이터가 있는 기기는 24 + inset이 더 크면 그것을 쓴다.
+ */
+const DOCK_BOTTOM = 48;
 
 const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },

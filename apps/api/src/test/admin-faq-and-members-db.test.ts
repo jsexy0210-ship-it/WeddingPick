@@ -338,6 +338,71 @@ describeWithDb('관리자 — FAQ · 회원 추이', () => {
     expect(cleared.json()).toMatchObject({ ogImageSource: 'default' });
   });
 
+  /* 2026-09-25 대표 지시 — 링크 미리보기 세 벌(app · invite · website)은 서로 섞이지 않는다. */
+  it('미리보기 세 벌은 각자 저장되고 서로의 값을 쓰지 않는다', async () => {
+    const { headers } = await operator();
+    const titles = { app: '앱 카드 제목', invite: '초대 카드 제목', website: '웹사이트 카드 제목' } as const;
+
+    for (const [kind, ogTitle] of Object.entries(titles)) {
+      const saved = await test.app.inject({
+        method: 'PUT',
+        url: `/v1/admin/site-meta?kind=${kind}`,
+        headers,
+        payload: { ogTitle },
+      });
+      expect(saved.statusCode).toBe(200);
+      expect(saved.json()).toMatchObject({ kind, effective: { ogTitle } });
+    }
+
+    for (const [kind, ogTitle] of Object.entries(titles)) {
+      const read = await test.app.inject({ method: 'GET', url: `/v1/site-meta?kind=${kind}` });
+      expect(read.json()).toMatchObject({ ogTitle });
+    }
+
+    /* 벌 이름이 없으면 웹사이트 벌이다 — 웹사이트 빌드 · 옛 번들의 호출과 같다. */
+    expect((await test.app.inject({ method: 'GET', url: '/v1/site-meta' })).json()).toMatchObject({
+      ogTitle: titles.website,
+    });
+
+    /* 초대용 그림을 올려도 다른 벌의 그림은 기본 그대로다. */
+    const target = await test.app.inject({
+      method: 'POST',
+      url: '/v1/admin/site-meta/og-image/upload-target?kind=invite',
+      headers,
+      payload: { mimeType: 'image/png' },
+    });
+    const { storageKey } = target.json() as { storageKey: string };
+    expect(storageKey).toMatch(/^site-meta\/og-invite-\d+\.png$/);
+    (test.context.storage as LocalStorage).put(storageKey, Buffer.from('89504e470d0a1a0a', 'hex'));
+
+    const committed = await test.app.inject({
+      method: 'PUT',
+      url: '/v1/admin/site-meta/og-image?kind=invite',
+      headers,
+      payload: { storageKey },
+    });
+    expect(committed.json()).toMatchObject({ kind: 'invite', ogImageSource: 'upload' });
+    expect((committed.json() as { effective: { ogImageUrl: string } }).effective.ogImageUrl).toMatch(
+      /\/v1\/site-meta\/og-image\?kind=invite&v=\d+$/
+    );
+
+    for (const kind of ['app', 'website']) {
+      const view = await test.app.inject({ method: 'GET', url: `/v1/admin/site-meta?kind=${kind}`, headers });
+      expect(view.json()).toMatchObject({ ogImageSource: 'default', effective: { ogImageUrl: null } });
+    }
+    expect((await test.app.inject({ method: 'GET', url: '/v1/site-meta/og-image?kind=invite' })).statusCode).toBe(200);
+    expect((await test.app.inject({ method: 'GET', url: '/v1/site-meta/og-image?kind=app' })).statusCode).toBe(404);
+
+    /* 모르는 벌 이름은 받지 않는다 — 조용히 웹사이트 벌을 덮어쓰지 않는다. */
+    const unknown = await test.app.inject({
+      method: 'PUT',
+      url: '/v1/admin/site-meta?kind=landing',
+      headers,
+      payload: { ogTitle: '엉뚱한 제목' },
+    });
+    expect(unknown.statusCode).toBe(400);
+  });
+
   it('구간 이름이 아니면 거부한다', async () => {
     const { headers } = await operator();
     const response = await test.app.inject({

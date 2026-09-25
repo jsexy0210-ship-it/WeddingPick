@@ -14,6 +14,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Colors, FontSize, Layout, Spacing } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { WritePressable } from './_role';
 import { AdminTabShell, type AdminTabDef } from './_ui';
 import { AdsGatePanel } from './ads-gate';
 import { CampaignsPanel } from './campaigns';
@@ -160,7 +161,7 @@ function AdsPanel() {
               <Text style={[styles.td, styles.colFee]}>{item.monthlyFee}</Text>
               <View style={styles.colAction}>
                 {(item.status === 'active' || item.status === 'paused') && (
-                  <Pressable
+                  <WritePressable
                     style={[styles.inlineBtn, (acting === item.id) && styles.btnDisabled]}
                     onPress={() => void toggleStatus(item.id, item.status)}
                     disabled={acting !== null}
@@ -168,7 +169,7 @@ function AdsPanel() {
                     <Text style={styles.inlineBtnText}>
                       {acting === item.id ? '…' : item.status === 'active' ? '정지' : '재개'}
                     </Text>
-                  </Pressable>
+                  </WritePressable>
                 )}
               </View>
             </View>

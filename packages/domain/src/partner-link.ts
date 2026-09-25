@@ -64,38 +64,37 @@ export function inviteState(input: {
 }
 
 /**
- * 초대 링크.
+ * 초대 코드 — 6자리 숫자(2026-09-25 대표 지시 「초대 코드는 6자리 난수로만 생성한다」).
  *
- * 코드를 손으로 옮겨 적게 하면 한 글자만 틀려도 막힌다. 링크로 열면 그 자리가
- * 사라진다.
- *
- * 앱 스킴(`weddingpick://`)을 쓴다. 도메인이 정해지면 유니버설 링크를 더할 수
- * 있지만, 그때까지 기다릴 이유가 없다 — 앱이 깔린 사람에게는 스킴만으로 열린다.
- * 도메인이 없어 못 하는 것은 **앱이 없는 사람이 링크를 눌렀을 때 스토어로
- * 보내주는 것** 하나다. 그래서 공유 문구에 코드를 함께 적어, 링크가 열리지 않는
- * 사람도 손으로 넣을 수 있게 남겨둔다.
+ * 서버가 `crypto.randomInt`로 뽑고 앞자리 0을 채운다. 입력칸은 숫자 키패드로 받는다.
+ * 100만 가지뿐이라 맞혀 보기 쉬우므로 서버가 입력 실패 횟수를 센다
+ * (`apps/api/src/routes/wedding-invites.ts`).
  */
-export const INVITE_LINK_SCHEME = 'weddingpick';
+export const INVITE_CODE_LENGTH = 6;
 
-export function inviteLink(code: string): string {
-  // 코드는 우리가 만든 것이라 URL에서 위험한 글자가 없지만, 만드는 규칙이 바뀌어도
-  // 링크가 깨지지 않도록 감싼다.
-  return `${INVITE_LINK_SCHEME}://join?code=${encodeURIComponent(code)}`;
+export const INVITE_CODE_PATTERN = /^\d{6}$/;
+
+export function isInviteCode(value: string): boolean {
+  return INVITE_CODE_PATTERN.test(value);
+}
+
+/** 붙여 넣은 글에서 숫자만 남긴다(「123 456」·「123-456」). 6자리를 넘는 뒷부분은 버린다. */
+export function normalizeInviteCode(value: string): string {
+  return value.replace(/\D/g, '').slice(0, INVITE_CODE_LENGTH);
 }
 
 /**
- * 공유 문구.
+ * 초대 안내 주소 — 카카오로 초대하기가 보내는 것은 이 주소 하나다.
  *
- * 링크와 코드를 함께 담는다. 링크는 앱이 깔린 사람에게 한 번에 열리고, 코드는
- * 그렇지 않은 사람이 손으로 넣을 수 있는 길이다. 둘 중 하나만 담으면 한쪽이
- * 막힌다.
+ * **초대 코드를 담지 않는다**(2026-09-25 대표 지시 「카카오로 초대하기 시 OG카드로 보낸다.
+ * 초대코드 내용은 담지 않는다」). 링크는 카톡방에 남고 누구에게나 다시 전달될 수 있다 —
+ * 코드는 초대한 사람이 따로 알려준다. 받은 사람은 이 주소로 들어와 코드를 넣는다.
+ * 이 주소의 카드(OG)는 관리자 「링크 미리보기 · 초대용」 값이다.
  */
-export function inviteShareMessage(code: string): string {
-  return [
-    '웨딩픽에서 함께 금액을 봐요.',
-    inviteLink(code),
-    `앱이 열리지 않으면 이 코드를 넣어주세요: ${code}`,
-  ].join('\n');
+export const INVITE_PAGE_PATH = '/invite';
+
+export function inviteShareUrl(origin: string): string {
+  return `${origin.replace(/\/+$/, '')}${INVITE_PAGE_PATH}`;
 }
 
 /**

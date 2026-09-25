@@ -224,5 +224,6 @@ export function vendorIdsToBuild(): readonly string[] {
  * 못 읽었다고 빌드를 세우지 않는다.
  */
 export async function loadSiteMeta(): Promise<SiteMetaOverride | null> {
-  return read('/v1/site-meta', (value) => siteMetaSchema.parse(value));
+  // 웹사이트 벌만 읽는다(0436) — 앱웹 · 초대용 카드는 앱웹 export가 따로 싣는다.
+  return read('/v1/site-meta?kind=website', (value) => siteMetaSchema.parse(value));
 }

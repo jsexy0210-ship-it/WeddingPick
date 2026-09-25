@@ -92,6 +92,8 @@ export const ROUTES: readonly string[] = [
   '/capture/verify/[quoteId]',
   '/feed',
   '/feed/[id]',
+  /* 배우자 초대 안내 주소 — 화면 없이 /wedding/join으로 보낸다(2026-09-25). */
+  '/invite',
   '/login',
   '/login/age-required',
   '/login/consent',

@@ -1,5 +1,12 @@
 import type { InvitePreviewResponse } from '@weddingpick/api-contract';
-import { TERMS, formatDateDot, inviteCodeFromLink } from '@weddingpick/domain';
+import {
+  INVITE_CODE_LENGTH,
+  TERMS,
+  formatDateDot,
+  inviteCodeFromLink,
+  isInviteCode,
+  normalizeInviteCode,
+} from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -16,7 +23,7 @@ import { Avatar, Dock, Field, Hero, NavBar, NoteCard, Screen } from '@/features/
 const S = {
   nav: '초대 받음',
   codeTitle: '초대 코드를 넣어주세요',
-  codeSub: '배우자에게 받은 코드나 링크를 그대로 붙여도 돼요',
+  codeSub: '배우자에게 받은 숫자 6자리를 넣어주세요',
   codeField: '초대 코드',
   check: '확인하기',
   /* WP-CPL-002 avatarSec — 초대자 이름 · 예식일은 서버가 안 준다(개인정보). 아래 참고. */
@@ -58,14 +65,15 @@ export default function JoinScreen() {
   const theme = useTheme();
   const params = useLocalSearchParams<{ code?: string }>();
   const [typed, setTyped] = useState<string | null>(null);
-  const code = typed ?? params.code?.trim() ?? '';
+  /* 초대 코드는 숫자 6자리다(2026-09-25 대표 지시). 숫자 밖의 글자는 입력칸에 남기지 않는다. */
+  const code = typed ?? normalizeInviteCode(params.code?.trim() ?? '');
   const [preview, setPreview] = useState<InvitePreviewResponse | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [joined, setJoined] = useState(false);
 
   async function check() {
-    if (busy || code.trim().length === 0) return;
+    if (busy || !isInviteCode(code)) return;
     setBusy(true);
     setError(null);
 
@@ -246,13 +254,17 @@ export default function JoinScreen() {
             label={S.codeField}
             value={code}
             onChangeText={(text) => {
-              // 링크를 통째로 붙여넣는 사람이 많다. 코드가 아니라고 되돌려주는 대신 코드를 꺼내 쓴다.
-              setTyped(inviteCodeFromLink(text.trim()) ?? text);
+              // 옛 링크를 통째로 붙여넣어도 코드를 꺼내 쓴다. 남는 것은 숫자 6자리뿐이다.
+              setTyped(normalizeInviteCode(inviteCodeFromLink(text.trim()) ?? text));
               setPreview(null);
             }}
             autoCapitalize="none"
             autoCorrect={false}
-            placeholder="WPK-0000"
+            keyboardType="number-pad"
+            inputMode="numeric"
+            maxLength={INVITE_CODE_LENGTH}
+            textContentType="oneTimeCode"
+            placeholder="000000"
             hint={preview && !preview.usable ? preview.message : null}
             hintColor="negative"
           />
@@ -270,7 +282,7 @@ export default function JoinScreen() {
           variant="primary"
           size="sheet"
           label={busy ? '확인 중…' : S.check}
-          disabled={busy || code.trim().length === 0}
+          disabled={busy || !isInviteCode(code)}
           onPress={() => void check()}
         />
       </Dock>

@@ -1,5 +1,5 @@
 import type { CurrentUser, WeddingInvite } from '@weddingpick/api-contract';
-import { TERMS, inviteShareMessage } from '@weddingpick/domain';
+import { TERMS, inviteShareUrl } from '@weddingpick/domain';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, View } from 'react-native';
@@ -15,6 +15,7 @@ import { isServerConfigured } from '@/api/config';
 import strings from '../../../../../../spec/strings.ko.json';
 import { shareOrCopy } from '@/components/share-or-copy';
 import { formatDateTimeDot } from '@/features/common/format-date';
+import { APP_WEB_ORIGIN } from '@/features/social-meta';
 import { useDepthBack } from '@/features/navigation/depth-back';
 import { ActionButton, Border, ErrorView, Layout, Radius, SocialColors, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
@@ -197,10 +198,15 @@ export default function PartnerScreen() {
     }
   }
 
+  /*
+   * 카카오로 초대하기 — 초대 안내 주소 하나만 보낸다(2026-09-25 대표 지시 「카카오로
+   * 초대하기 시 OG카드로 보낸다. 초대코드 내용은 담지 않는다」). 카카오톡은 주소의
+   * 카드(관리자 「링크 미리보기 · 초대용」)를 그린다. 코드는 초대한 사람이 따로 알려준다.
+   */
   async function share() {
     if (!code) return;
 
-    const result = await shareOrCopy(inviteShareMessage(code));
+    const result = await shareOrCopy(inviteShareUrl(APP_WEB_ORIGIN));
 
     if (result.copied) {
       setCopied(true);

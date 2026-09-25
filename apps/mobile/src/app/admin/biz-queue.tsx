@@ -20,6 +20,7 @@ import { CLAIM_METHOD_RULES, type ClaimMethod } from '@weddingpick/domain';
 import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { WritePressable } from './_role';
 import { compactSplit, useAdminCompact } from './_ui';
 
 type BizStatus = 'pending' | 'approved' | 'rejected';
@@ -251,20 +252,20 @@ export function BizQueuePanel() {
                   */}
                 {selected.status === 'pending' && (
                   <View style={styles.actionRow}>
-                    <Pressable
+                    <WritePressable
                       style={[styles.approveBtn, !canDecide && styles.btnDisabled]}
                       onPress={() => void decide('approve')}
                       disabled={!canDecide}
                     >
                       <Text style={styles.approveBtnText}>{acting ? '처리 중…' : '승인'}</Text>
-                    </Pressable>
-                    <Pressable
+                    </WritePressable>
+                    <WritePressable
                       style={[styles.rejectBtn, !canDecide && styles.btnDisabled]}
                       onPress={() => void decide('reject')}
                       disabled={!canDecide}
                     >
                       <Text style={styles.rejectBtnText}>{acting ? '처리 중…' : '반려'}</Text>
-                    </Pressable>
+                    </WritePressable>
                   </View>
                 )}
               </ScrollView>

@@ -16,7 +16,8 @@ import { Border, Layout, ProductSymbol, Radius, Spacing, ThemedText, useTheme } 
  * **BACKEND_PENDING — 「많이 확인된 순」 · 「최근 등록순」.** 서버에 그 정렬이 없다(앞은 `data`와
  * 기준이 겹쳐 따로 잴 값이 없고, 뒤는 등록일 정렬이 없다). 줄은 정본대로 보이되 잠근다 —
  * 서버에 없는 값을 보내지 않고, 눌러서 다른 정렬로 조용히 떨어지지도 않는다. 서버가 붙으면
- * `sort`에 계약 값을 넣고 잠금을 푼다.
+ * `sort`에 계약 값을 넣고 잠금을 푼다. 잠근 줄도 모양은 정본 그대로다 — 흐리게 하지 않는다
+ * (2026-09-25 픽셀 대조: 정본 `sortRows`는 고르지 않은 줄을 모두 같은 보조색으로 그린다).
  */
 export type SortOption = {
   label: string;
@@ -93,7 +94,6 @@ export function SortPanel({
             style={[
               styles.row,
               last ? null : { borderBottomWidth: Border.hairline, borderBottomColor: theme.line },
-              disabled ? styles.pending : null,
             ]}>
             <ThemedText
               type="f14"
@@ -133,7 +133,5 @@ const styles = StyleSheet.create({
     paddingVertical: Layout.inlineGap,
     paddingHorizontal: Spacing.three,
   },
-  /* BACKEND_PENDING 줄 — 공용 `FilterChip` disabled와 같은 0.5. */
-  pending: { opacity: 0.5 },
   bold: { fontWeight: 700 },
 });

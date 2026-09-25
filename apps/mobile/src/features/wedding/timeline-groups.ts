@@ -27,9 +27,11 @@ function addDays(date: Date, amount: number): Date {
   return next;
 }
 
-/** 일요일 시작 — 화면의 요일 배열(일월화수목금토)과 맞춘다. */
+/**
+ * 월요일 시작 — 정본 `note.js` `tlGroups`의 「다음 주 9.28~10.4」 · 「10.5~10.11」이 월~일이다.
+ */
 function weekStart(date: Date): Date {
-  return addDays(startOfDay(date), -date.getDay());
+  return addDays(startOfDay(date), -((date.getDay() + 6) % 7));
 }
 
 function monthDay(date: Date): string {
@@ -66,9 +68,10 @@ export function buildUpcomingTimelineGroups(
 
   for (const event of future) {
     const startsAt = new Date(event.startsAt);
-    if (startsAt <= thisWeekEnd) {
+    // 끝날(일요일) 0시가 아니라 다음 주 시작과 비교한다 — 일요일 낮 일정이 다음 주로 넘어가지 않게.
+    if (startsAt < nextWeekStart) {
       thisWeek.push(event);
-    } else if (startsAt <= nextWeekEnd) {
+    } else if (startsAt < addDays(thisWeekStart, 14)) {
       nextWeek.push(event);
     } else {
       const anchor = startOfDay(startsAt);
@@ -85,7 +88,8 @@ export function buildUpcomingTimelineGroups(
   if (thisWeek.length > 0) {
     groups.push({
       title: '이번 주',
-      range: `${monthDay(thisWeekStart)}~${monthDay(thisWeekEnd)}${ddayAt(thisWeekStart)}`,
+      // 이번 주는 오늘부터 센다 — 정본 「9.22~9.27 · D-236」(9.22가 오늘, D-236은 오늘 기준).
+      range: `${monthDay(today)}~${monthDay(thisWeekEnd)}${ddayAt(today)}`,
       items: thisWeek.map((event) => ({ event, kind: 'event' })),
     });
   }

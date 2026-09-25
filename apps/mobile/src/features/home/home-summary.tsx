@@ -3,9 +3,10 @@ import { manwon } from '@weddingpick/domain';
 import { Pressable, StyleSheet, View } from 'react-native';
 import {
   Border,
-  CategoryIcon,
+  CanonGray,
   DonutChart,
   Layout,
+  LineHeight,
   Radius,
   SeedIcon,
   Spacing,
@@ -15,8 +16,12 @@ import {
 import strings from '../../../../../spec/strings.ko.json';
 import { budgetProgress } from './canon-state';
 import type { HomePrepCard } from './prep-groups';
+import { PrepCheckFill, PrepGroupIcon } from './prep-icons';
 
 const S = strings.home;
+
+/** home.js `icoMoreChev` — 「자세히」 옆 꺾쇠 14px. */
+export const MORE_CHEVRON = 14;
 
 /**
  * 홈 「내 웨딩 준비」 — 항상 4칸(웨딩홀 · 스드메 · 본식 · 예물 · 신혼). home.jsx
@@ -54,19 +59,19 @@ export function MyWeddingPrep({
                   styles.card,
                   {
                     backgroundColor: contracted || picking ? theme.tintSurface : theme.backgroundElement,
-                    borderColor: contracted ? theme.tint : picking ? theme.tintBorder : theme.border,
+                    borderColor: contracted ? theme.tint : picking ? theme.tintBorder : CanonGray.gray200,
                     borderWidth: contracted ? Border.selected : Border.hairline,
                   },
                   pressed && styles.pressed,
                 ]}>
                 <View style={styles.cardTop}>
-                  <CategoryIcon
-                    kind={card.icon}
+                  <PrepGroupIcon
+                    group={card.key}
                     size={Layout.iconRow}
-                    color={contracted || picking ? theme.tint : theme.textAssistive}
+                    color={contracted || picking ? theme.tint : theme.textDisabled}
                   />
                   {contracted ? (
-                    <SeedIcon name="checkFlowerFill" size={Layout.iconField} color={theme.tint} />
+                    <PrepCheckFill size={Layout.iconField} color={theme.tint} />
                   ) : picking ? (
                     <SeedIcon name="clockRegular" size={Layout.iconField} color={theme.tint} />
                   ) : (
@@ -79,6 +84,7 @@ export function MyWeddingPrep({
                 <ThemedText
                   type="f12"
                   themeColor={contracted || picking ? 'tint' : 'textAssistive'}
+                  style={styles.detail}
                   numberOfLines={1}>
                   {card.detail}
                 </ThemedText>
@@ -183,7 +189,7 @@ function SummaryHeading({ title, sub, onMore }: { title: string; sub: string | n
       <View style={styles.headingCol}>
         <ThemedText type="f14" style={styles.bold}>{title}</ThemedText>
         {sub === null ? null : (
-          <ThemedText type="f12" themeColor="textAssistive">{sub}</ThemedText>
+          <ThemedText type="f12" themeColor="textAssistive" style={styles.sub}>{sub}</ThemedText>
         )}
       </View>
       <Pressable
@@ -192,8 +198,8 @@ function SummaryHeading({ title, sub, onMore }: { title: string; sub: string | n
         onPress={onMore}
         hitSlop={Spacing.two}
         style={({ pressed }) => [styles.more, pressed && styles.pressed]}>
-        <ThemedText type="f13" themeColor="textAssistive">{S.more}</ThemedText>
-        <SeedIcon name="chevronRightRegular" size={Layout.iconField} color={theme.textAssistive} />
+        <ThemedText type="f13" themeColor="textAssistive" style={styles.bold}>{S.more}</ThemedText>
+        <SeedIcon name="chevronRightRegular" size={MORE_CHEVRON} color={theme.textAssistive} />
       </Pressable>
     </View>
   );
@@ -215,7 +221,12 @@ const styles = StyleSheet.create({
     gap: Layout.inlineGap,
     marginBottom: Layout.inlineGap,
   },
-  more: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  /* home.js `moreRow` — 13/700 · gap 2 · `icoMoreChev` 14. */
+  more: { flexDirection: 'row', alignItems: 'center', gap: Spacing.half },
+  /* home.js `secSub` 12/17. */
+  sub: { lineHeight: LineHeight.lh17 },
+  /* home.js `prepDetail` 12/17 · 500 · margin-top 2. */
+  detail: { lineHeight: LineHeight.lh17, fontWeight: 500, marginTop: Spacing.half },
   headingCol: { flex: 1, minWidth: 0, gap: Spacing.half },
   /*
    * home.jsx frame-012 `prepGridPad` — grid gap 8(가로·세로) · 아래 14. 섹션(`secNoPad`)의
