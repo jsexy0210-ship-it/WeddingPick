@@ -37,6 +37,7 @@ import { Colors, FontSize, LineHeight, Radius, Spacing } from '@weddingpick/ui';
 import { formatDateTimeDot } from '@/features/common/format-date';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { WritePressable } from './_role';
 import {
   Card,
   CardGrid,
@@ -659,8 +660,8 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
       { v: WEDDING_FEED_SOURCE_LABEL[post.source] },
       { v: String(post.sortOrder) },
       { v: formatDateTimeDot(post.updatedAt) },
-      { v: '수정', kind: 'brand', onPress: () => openEdit(post) },
-      { v: '삭제', kind: 'bad', onPress: () => setDeleting(post) },
+      { v: '수정', kind: 'brand', write: true, onPress: () => openEdit(post) },
+      { v: '삭제', kind: 'bad', write: true, onPress: () => setDeleting(post) },
     ],
   }));
 
@@ -673,10 +674,10 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
       {
         v: group.active ? '켬' : '끔',
         kind: group.active ? 'ok' : 'dim',
-        onPress: () => void toggleGroup(group),
+        write: true, onPress: () => void toggleGroup(group),
       },
-      { v: '수정', kind: 'brand', onPress: () => openGroup(group) },
-      { v: '삭제', kind: 'bad', onPress: () => setDeletingGroup(group) },
+      { v: '수정', kind: 'brand', write: true, onPress: () => openGroup(group) },
+      { v: '삭제', kind: 'bad', write: true, onPress: () => setDeletingGroup(group) },
     ],
   }));
 
@@ -693,10 +694,10 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
       {
         v: category.active ? '켬' : '끔',
         kind: category.active ? 'ok' : 'dim',
-        onPress: () => void toggleCategory(category),
+        write: true, onPress: () => void toggleCategory(category),
       },
-      { v: '수정', kind: 'brand', onPress: () => openCategory(category) },
-      { v: '삭제', kind: 'bad', onPress: () => setDeletingCategory(category) },
+      { v: '수정', kind: 'brand', write: true, onPress: () => openCategory(category) },
+      { v: '삭제', kind: 'bad', write: true, onPress: () => setDeletingCategory(category) },
     ],
   }));
 
@@ -720,7 +721,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
           </AdminFormModal>
 
           <CardGrid>
-            <Card title="글 목록" sub="등록 · 수정 · 삭제는 직접 한다" action={{ label: '+ 새 글', onPress: openNew, kind: 'brand' }} full>
+            <Card title="글 목록" sub="등록 · 수정 · 삭제는 직접 한다" action={{ label: '+ 새 글', write: true, onPress: openNew, kind: 'brand' }} full>
               <DataTable cols={COLS} rows={rows} empty="등록된 글이 없어요" />
             </Card>
 
@@ -751,7 +752,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
             <Card
               title="탭과 카테고리"
               sub="피드 화면 위쪽 탭과 그 안에 드는 카테고리 — 앱은 여기 있는 것을 그린다"
-              action={{ label: '+ 새 탭', onPress: () => openGroup('new'), kind: 'brand' }}
+              action={{ label: '+ 새 탭', write: true, onPress: () => openGroup('new'), kind: 'brand' }}
               full
             >
               <DataTable cols={GROUP_COLS} rows={groupRows} empty="등록된 탭이 없어요" />
@@ -760,7 +761,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
             <Card
               title="카테고리"
               sub="글 작성에서 고르는 값. 끄면 고를 수 없고 쌓인 글은 그대로 남는다"
-              action={{ label: '+ 새 카테고리', onPress: () => openCategory('new'), kind: 'brand' }}
+              action={{ label: '+ 새 카테고리', write: true, onPress: () => openCategory('new'), kind: 'brand' }}
               full
             >
               <DataTable
@@ -833,7 +834,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                   >
                     <Text style={styles.btnGhostLabel}>취소</Text>
                   </Pressable>
-                  <Pressable
+                  <WritePressable
                     style={[styles.btnPrimary, taxonomySaving && styles.btnDisabled]}
                     onPress={() => void saveGroup()}
                     disabled={taxonomySaving}
@@ -841,7 +842,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                     <Text style={styles.btnPrimaryLabel}>
                       {taxonomySaving ? '저장 중…' : '저장'}
                     </Text>
-                  </Pressable>
+                  </WritePressable>
                 </View>
               </View>
             ) : null}
@@ -966,7 +967,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                   >
                     <Text style={styles.btnGhostLabel}>취소</Text>
                   </Pressable>
-                  <Pressable
+                  <WritePressable
                     style={[styles.btnPrimary, taxonomySaving && styles.btnDisabled]}
                     onPress={() => void saveCategory()}
                     disabled={taxonomySaving}
@@ -974,7 +975,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                     <Text style={styles.btnPrimaryLabel}>
                       {taxonomySaving ? '저장 중…' : '저장'}
                     </Text>
-                  </Pressable>
+                  </WritePressable>
                 </View>
               </View>
             ) : null}
@@ -1041,7 +1042,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
 
                 {editing === 'new' ? (
                   <View style={styles.inlineActions}>
-                    <Pressable
+                    <WritePressable
                       style={[styles.btnPrimary, draftGenerating && styles.btnDisabled]}
                       onPress={() => void generateDraft()}
                       disabled={draftGenerating}
@@ -1051,7 +1052,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                       ) : (
                         <Text style={styles.btnPrimaryLabel}>자동 작성</Text>
                       )}
-                    </Pressable>
+                    </WritePressable>
                     <Text style={styles.hint}>선택한 카테고리로 제목 · 한 줄 요약 · 본문을 Gemini가 채워요.</Text>
                   </View>
                 ) : null}
@@ -1081,7 +1082,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                     </View>
                   )}
                   <View style={styles.inlineActions}>
-                    <Pressable
+                    <WritePressable
                       style={styles.btnGhost}
                       onPress={() => void uploadFeedImage('thumbnail')}
                       disabled={uploadingImage !== null || generatingImage !== null}
@@ -1091,15 +1092,15 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                       ) : (
                         <Text style={styles.btnGhostLabel}>{form.imageKey ? '썸네일 교체' : '썸네일 올리기'}</Text>
                       )}
-                    </Pressable>
-                    <Pressable
+                    </WritePressable>
+                    <WritePressable
                       style={styles.btnGhost}
                       onPress={() => void generateFeedImage('thumbnail')}
                       disabled={uploadingImage !== null || generatingImage !== null}
                     >
                       {generatingImage === 'thumbnail' ? <ActivityIndicator /> :
                         <Text style={styles.btnGhostLabel}>이미지 생성</Text>}
-                    </Pressable>
+                    </WritePressable>
                     {form.imageKey ? (
                       <Pressable style={styles.btnGhost} onPress={() => clearFeedImage('thumbnail')} disabled={uploadingImage !== null || generatingImage !== null}>
                         <Text style={styles.btnGhostLabel}>삭제</Text>
@@ -1129,7 +1130,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                     </View>
                   )}
                   <View style={styles.inlineActions}>
-                    <Pressable
+                    <WritePressable
                       style={styles.btnGhost}
                       onPress={() => void uploadFeedImage('body')}
                       disabled={uploadingImage !== null || generatingImage !== null}
@@ -1139,15 +1140,15 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                       ) : (
                         <Text style={styles.btnGhostLabel}>{form.bodyImageKey ? '본문 이미지 교체' : '본문 이미지 올리기'}</Text>
                       )}
-                    </Pressable>
-                    <Pressable
+                    </WritePressable>
+                    <WritePressable
                       style={styles.btnGhost}
                       onPress={() => void generateFeedImage('body')}
                       disabled={uploadingImage !== null || generatingImage !== null}
                     >
                       {generatingImage === 'body' ? <ActivityIndicator /> :
                         <Text style={styles.btnGhostLabel}>이미지 생성</Text>}
-                    </Pressable>
+                    </WritePressable>
                     {form.bodyImageKey ? (
                       <Pressable style={styles.btnGhost} onPress={() => clearFeedImage('body')} disabled={uploadingImage !== null || generatingImage !== null}>
                         <Text style={styles.btnGhostLabel}>삭제</Text>
@@ -1197,13 +1198,13 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                   <Pressable style={styles.btnGhost} onPress={closePostEditor} disabled={saving}>
                     <Text style={styles.btnGhostLabel}>취소</Text>
                   </Pressable>
-                  <Pressable
+                  <WritePressable
                     style={[styles.btnPrimary, (saving || needsPick) && styles.btnDisabled]}
                     onPress={() => void save()}
                     disabled={saving || needsPick}
                   >
                     <Text style={styles.btnPrimaryLabel}>{saving ? '저장 중…' : '저장'}</Text>
-                  </Pressable>
+                  </WritePressable>
                 </View>
               </View>
             ) : null}

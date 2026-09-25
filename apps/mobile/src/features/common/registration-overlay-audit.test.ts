@@ -20,7 +20,6 @@ const { basename, join, relative } = require('path') as {
 };
 
 const APP = join(__dirname, '..', '..', 'app');
-const CAPTURE_EXCEPTION = '(tabs)/capture/payment/register.tsx';
 
 function filesUnder(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -62,25 +61,14 @@ describe('registration routes use canonical overlays', () => {
     expect(candidates).toContain('(tabs)/wedding/[id]/events/new.tsx');
     expect(candidates).toContain('(tabs)/wedding/[id]/expenses/add.tsx');
     expect(candidates).toContain('(tabs)/search/[vendorId]/write-review.tsx');
-    expect(candidates).toContain(CAPTURE_EXCEPTION);
 
-    for (const path of candidates.filter((candidate) => candidate !== CAPTURE_EXCEPTION)) {
+    for (const path of candidates) {
       expectCanonicalSheet(path);
     }
   });
 
-  it('수정/외부 캘린더처럼 이름 규칙 밖의 입력 흐름도 시트로 유지한다', () => {
-    const eventDetail = source('(tabs)/wedding/[id]/events/[eventId].tsx');
-    expect(eventDetail).toContain('testID="event-edit-sheet"');
-    expect(eventDetail).toContain('<BottomSheet');
-    expect(eventDetail).toContain('<SheetPanel>');
-
-    for (const path of [
-      '(tabs)/search/[vendorId]/edit-review.tsx',
-      '(tabs)/search/expo/[expoId]/calendar.tsx',
-    ]) {
-      expectCanonicalSheet(path);
-    }
+  it('외부 캘린더처럼 이름 규칙 밖의 입력 흐름도 시트로 유지한다', () => {
+    expectCanonicalSheet('(tabs)/search/expo/[expoId]/calendar.tsx');
   });
 
   it('상담/예약처럼 route 이름이 등록이 아니어도 데이터를 만들면 시트다', () => {
@@ -99,7 +87,6 @@ describe('registration routes use canonical overlays', () => {
       ['(tabs)/wedding/[id]/events/new.tsx', "dismissToOrReplace('/wedding?tab=calendar')"],
       ['(tabs)/wedding/[id]/expenses/add.tsx', "dismissToOrReplace('/wedding?tab=budget')"],
       ['(tabs)/search/[vendorId]/write-review.tsx', 'dismissToOrReplace(`/search/${vendorId}`)'],
-      ['(tabs)/search/[vendorId]/edit-review.tsx', 'dismissToOrReplace(`/search/${vendorId}/reviews`)'],
       ['(tabs)/search/[vendorId]/consult.tsx', 'dismissToOrReplace(`/search/${vendorId}`)'],
     ] as const;
 
@@ -111,13 +98,5 @@ describe('registration routes use canonical overlays', () => {
 
     const calendar = source('(tabs)/search/expo/[expoId]/calendar.tsx');
     expect(calendar).toContain('dismissToOrReplace(`/search/expo/${expoId}`)');
-  });
-
-  it('증빙 등록 one-shot 작업 단계만 명시적 전체 화면 예외다', () => {
-    const content = source(CAPTURE_EXCEPTION);
-
-    expect(content).toContain('registerPaymentProof');
-    expect(content).toContain('pickFromLibrary');
-    expect(content).toContain('uploadPaymentProof');
   });
 });

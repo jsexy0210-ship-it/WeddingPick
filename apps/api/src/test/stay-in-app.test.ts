@@ -65,7 +65,7 @@ const LEGAL_SCREENS = [
    * 연다. 그 화면이 원문을 WebView/iframe으로 담고, 우리 사이트 밖 링크만 `openExternal`로 넘긴다.
    */
   'apps/mobile/src/features/settings/policy-document-screen.tsx',
-  'apps/mobile/src/app/(tabs)/my/privacy.tsx',
+  // `my/privacy.tsx`(방침 요약)는 2026-09-25 정본 밖 화면 삭제로 없어졌다.
 ];
 
 /**

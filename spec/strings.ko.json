@@ -279,8 +279,6 @@
     "schedule.sub": "가까운 일정부터 안내드려요",
     "schedule.subDefault": "기본 순서로 안내드려요 · 언제든 바꿀 수 있어요",
     "schedule.noDate": "날짜는 아직이에요",
-    "done.body": "정한 곳은 웨딩노트에서 볼 수 있어요",
-    "note.open": "웨딩노트 보기",
     "budget.total": "예산 {amount}",
     "budget.note": "Pick 인증하면 낸 금액이 자동으로 들어가요",
     "budget.exceeded": "예산을 넘었어요",
@@ -290,13 +288,6 @@
     "budget.noSpend": "아직 예산 정보가 없어요",
     "budget.set": "예산 정하기",
     "budget.progress": "예산의 {n}% 사용",
-    "recommend.error": "추천을 불러오지 못했어요",
-    "recommend.empty": "정보 수집 중",
-    "recommend.done": "정할 준비를 다 끝냈어요",
-    "recommend.more": "더 찾아보기",
-    "recommend.title": "웨딩픽 추천",
-    "pick.failed": "Pick하지 못했어요. 잠시 후 다시 시도해주세요.",
-    "unpick.failed": "후보를 빼지 못했어요. 잠시 후 다시 시도해주세요.",
     "recommend.body": "아직 남은 준비를 한눈에 확인해보세요",
     "news.body": "지금 알아두면 좋은 것만 모았어요"
   },
@@ -415,12 +406,9 @@
     "bothPickedHint": "먼저 비교해보세요",
     "categoryHero": "{n}곳 중 {m}곳은\n{partner}님도 골랐어요",
     "categoryHint": "둘 다 고른 곳부터 비교해보세요",
-    "decideTitle": "{category}는 {vendor}로 결정할까요?",
-    "decideNote1": "{partner}님도 Pick한 곳이에요",
     "decideNote2": "웨딩일정 준비현황과 지출에 자동으로 반영돼요",
     "decideNote3": "결정은 언제든 바꿀 수 있어요",
     "doneTitle": "{category} 준비 완료",
-    "doneBody": "{vendor}로 결정했어요",
     "unpickTitle": "후보에서 뺄까요?",
     "unpickBody": "{partner}님 목록에서도 함께 사라져요",
     "empty.title": "아직 Pick한 곳이 없어요",
@@ -453,8 +441,6 @@
     "reading": "상담 내용을 정리하고 있어요",
     "readingNote": "길이에 따라 몇 분 걸릴 수 있어요",
 
-    "review.title": "정리한 내용을 확인해주세요",
-    "review.body": "금액과 계약 조건은 저장하기 전에 확인해주세요.",
     "review.confirm": "확인했어요. 저장할게요",
     "review.amount": "제시 금액",
     "review.included": "기본 포함",
@@ -580,14 +566,6 @@
     "kind.priceDesc": "증빙 없이 들은 금액만 알려주는 방법이에요",
     "kind.vendorInfo": "업체정보 제보",
     "kind.vendorInfoDesc": "새 업체 등록 · 정보 정정 · 영업종료 알림",
-    "upload.hero": "낸 금액이 보이는\n화면을 올려주세요",
-    "upload.sub": "영수증 · 문자 · 앱 화면 캡처 모두 돼요",
-    "upload.camera": "촬영하기",
-    "upload.gallery": "앨범에서 고르기",
-    "upload.note1": "금액 · 날짜 · 업체명이 보이면 충분해요",
-    "upload.note2": "카드번호와 이름은 자동으로 가려요",
-    "upload.note3": "확인이 끝난 원본은 24시간 안에 지워요",
-    "upload.cta": "{n}장으로 계속하기",
     "scan.title": "읽고 있어요",
     "scan.sub": "10초 안에 끝나요",
     "scan.step1": "글자 읽는 중",
@@ -619,7 +597,6 @@
     "log.title": "내 제보 내역",
     "log.hero": "{total}건 제보했고\n{done}건이 반영됐어요",
     "state.reflected": "반영됨",
-    "state.checking": "확인 중",
     "state.needMore": "보완 필요",
     "state.rejected": "반려"
   },
@@ -699,6 +676,15 @@
     "disconnectDesc": "지금까지 쌓인 기록은 각자 남아요"
   },
 
+  "inviteShare": {
+    "metaTitle": "웨딩픽에서 같이 준비해요",
+    "metaDescription": "초대한 분께 받은 코드 6자리를 넣으면 Pick한 곳 · 일정 · 지출을 함께 봐요",
+    "imageAlt": "웨딩픽 — 같이 준비할 사람을 초대해요",
+    "pageTitle": "초대를 받으셨나요?",
+    "pageBody": "초대한 분께 받은 코드 6자리를 넣으면 연결돼요",
+    "pageCta": "코드 넣기"
+  },
+
   "community": {
     "title": "라운지",
     "tab.review": "리얼후기",
@@ -724,8 +710,6 @@
   "weddingFeed": {
     "title": "웨딩픽 콘텐츠",
     "sub": "두 분의 준비에 맞는 이야기를 골라드려요.",
-    "empty.all": "준비 중이에요. 곧 새로운 글이 올라올 거예요.",
-    "empty.tab": "이 묶음에는 아직 올라온 글이 없어요.",
     "detail.error": "글을 불러오지 못했어요",
     "detail.emptyBody": "본문이 아직 없어요",
     "detail.back": "돌아가기"
@@ -736,13 +720,9 @@
     "hero": "{n}개를 더 하면\n{amount}을 받아요",
     "sub": "커플당 한 번",
     "mission": "미션 {n}개 완주",
-    "missionDesc": "업체 둘러보기 · 준비 관리 · 배우자 연결 · Pick 인증",
     "missionNoteTitle": "준비 순서대로 하나씩 채워져요",
-    "missionNoteBody": "다 채우면 혜택에서 신청해주세요.\n확인 후 Npay로 보내드려요.",
     "invite": "친구 초대",
-    "inviteDesc": "친구가 첫 Pick 인증을 하면 받아요 · 최대 100건",
     "promo": "홍보 인증",
-    "promoDesc": "블로그나 SNS에 올린 글 주소를 남겨주세요 · 1인 1회",
     "fund": "{month}월 웨딩지원금",
     "npayTitle": "{amount}을\n받을 수 있어요",
     "npaySub": "받는 분 정보만 확인하면 끝나요",
@@ -922,12 +902,7 @@
 
   "journey": {
     "loadFailed": "정보를 불러오지 못했어요",
-    "readFailed": "읽음 상태를 저장하지 못했어요",
     "loading": "불러오는 중이에요",
-    "documentEmpty": "아직 올린 문서가 없어요",
-    "documentListTitle": "올린 문서를 읽은 결과",
-    "documentListBody": "앱으로 올린 문서에서 웨딩픽이 금액과 날짜를 읽었어요. 확인을 마친 자료부터 가격 비교에 쓰여요.",
-    "uploadDocument": "자료 올리기",
     "partnerShareTitle": "연결하면 함께 볼 수 있어요",
     "partnerShareBody": "연결을 끊으면 공유가 멈추고 기존 기록은 각자에게 남아요."
   },
@@ -948,7 +923,9 @@
     "permissionDenied.title": "사진 접근이 꺼져 있어요",
     "permissionDenied.body": "설정에서 켜면 사진으로 바로 인증할 수 있어요",
     "processing.title": "확인하고 있어요",
-    "processing.body": "10초 안에 끝나요"
+    "processing.body": "10초 안에 끝나요",
+    "notFound.title": "찾을 수 없어요",
+    "notFound.cta": "홈으로 돌아가기"
   },
 
   "inAppBrowser": {
@@ -1022,30 +999,8 @@
     "info.detail.check.todo": "미완료"
   },
 
-  "referral": {
-    "title": "친구 초대",
-    "heroTitle": "친구가 첫 Pick 인증을 하면\n혜택을 드려요",
-    "heroSub": "최대 100건까지 받을 수 있어요",
-    "codeSection": "내 초대 코드",
-    "codeCopied": "코드를 복사했어요",
-    "cta.copy": "코드 복사",
-    "cta.share": "공유하기",
-    "shareText": "웨딩픽에서 제보 금액을 확인하고 Pick해보세요. 초대 코드: {code}",
-    "statsSection": "초대 현황",
-    "stats.invited": "초대한 사람",
-    "stats.qualified": "Pick 인증 완료",
-    "stats.unit": "명",
-    "stats.hint": "Pick 인증까지 완료한 분의 수예요",
-    "empty.title": "아직 초대한 친구가 없어요",
-    "empty.body": "코드를 공유하면 이곳에 현황이 나와요"
-  },
-
   "confirm": {
     "delete.title": "삭제할까요?",
     "delete.cta": "삭제"
-  },
-
-  "camera": {
-    "qualityHint": "사진이 흐릿할 수 있어요. 다시 찍어도 돼요."
   }
 }

@@ -2,24 +2,22 @@ import type {
   AppBootstrapResponse,
   CandidateListResponse,
   CurrentUser,
-  MyMonthlyDrawResponse,
   WeddingTask,
 } from '@weddingpick/api-contract';
-import { daysUntil, formatCount, hasUnread } from '@weddingpick/domain';
+import { daysUntil } from '@weddingpick/domain';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { getAppBootstrap, getMyMonthlyDraw, listWeddingTasks } from '@/api/client';
+import { getAppBootstrap, listWeddingTasks } from '@/api/client';
 import {
   ActionButton,
   ErrorView,
   Layout,
   LetterSpacing,
+  LineHeight,
   MaxContentWidth,
-  Motion,
-  Radius,
   SeedIcon,
   Spacing,
   ThemedText,
@@ -27,11 +25,9 @@ import {
   Toast,
   useTheme,
 } from '@weddingpick/ui';
-import { BenefitSheet } from '@/features/home/benefit-sheet';
-import { hasSeenBenefitSheet, markBenefitSheetSeen } from '@/features/home/benefit-sheet-seen';
 import { listWeddingContent, type WeddingContentItem } from '@/features/home/content';
 import { Hero } from '@/features/home/hero';
-import { HomeBudget, MyWeddingPrep } from '@/features/home/home-summary';
+import { HomeBudget, MORE_CHEVRON, MyWeddingPrep } from '@/features/home/home-summary';
 import { HomeSkeleton } from '@/features/home/home-skeleton';
 import { homePrepCards, homePrepSectionSub } from '@/features/home/prep-groups';
 import { scheduleRows } from '@/features/home/schedule-view';
@@ -65,7 +61,6 @@ type HomeData = {
   tasks: readonly WeddingTask[];
   content: readonly WeddingContentItem[];
   /** 안 읽은 알림 수. 벨의 점이 이 값을 본다. */
-  unread: number;
 };
 
 const EMPTY: HomeData = {
@@ -76,7 +71,6 @@ const EMPTY: HomeData = {
   partnerInvitePending: false,
   tasks: [],
   content: [],
-  unread: 0,
 };
 
 export default function HomeScreen() {
@@ -96,14 +90,6 @@ export default function HomeScreen() {
    */
   // 하이브리드 웹뷰 쉘 POC일 때는 애초에 스켈레톤을 거칠 일이 없어 settled로 시작한다.
   const [settled, setSettled] = useState(() => isWebShellScreen('home'));
-  /*
-   * 혜택 안내 시트(WP-SHT-017) — 온보딩 완료 후 홈 최초 진입 1회, 400ms 뒤. 남은 응모
-   * 조건이 0이면 띄우지 않는다(서버가 응모 완료 알림으로 대신한다). 닫으면 sheetSeen을
-   * 저장해 다시 띄우지 않는다.
-   */
-  const [benefit, setBenefit] = useState<MyMonthlyDrawResponse | null>(null);
-  const [benefitOpen, setBenefitOpen] = useState(false);
-  const benefitChecked = useRef(false);
   const [toast, setToast] = useState<string | null>(null);
 
   const load = useCallback(() => {
@@ -143,7 +129,6 @@ export default function HomeScreen() {
           budget: boot.budget,
           bracketAnswered: boot.bracketAnswered,
           partnerInvitePending: boot.partnerInvitePending,
-          unread: boot.notifications?.unread ?? 0,
         }));
         bootLoadedOnce.current = true;
 
@@ -185,48 +170,6 @@ export default function HomeScreen() {
     return () => { loadVersion.current += 1; };
   }, [load]));
 
-  useEffect(() => {
-    if (!settled || taskStatus === 'loading' || contentStatus === 'loading'
-      || data.me?.setupComplete !== true || benefitChecked.current) return;
-    benefitChecked.current = true;
-
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    let alive = true;
-
-    void hasSeenBenefitSheet().then(async (seen) => {
-      if (seen || !alive) return;
-      try {
-        const draw = await getMyMonthlyDraw();
-        if (!alive) return;
-        if (draw.remaining === 0) {
-          // 조건을 다 채웠다 — 시트 대신 응모 완료 알림. 다시 묻지 않는다.
-          void markBenefitSheetSeen();
-          return;
-        }
-        setBenefit(draw);
-        timer = setTimeout(() => setBenefitOpen(true), Motion.benefitSheetDelay.duration);
-      } catch {
-        // 혜택 현황을 못 받았으면 시트를 띄우지 않는다. 다음 진입에 한 번 더 본다.
-      }
-    });
-
-    return () => {
-      alive = false;
-      if (timer !== null) clearTimeout(timer);
-    };
-  }, [settled, taskStatus, contentStatus, data.me?.setupComplete]);
-
-  const dismissBenefit = useCallback(() => {
-    setBenefitOpen(false);
-    void markBenefitSheetSeen();
-  }, []);
-
-  const openBenefit = useCallback(() => {
-    setBenefitOpen(false);
-    void markBenefitSheetSeen();
-    router.push('/my/rewards');
-  }, []);
-
   // 하이브리드 웹뷰 쉘 POC. `EXPO_PUBLIC_WEBSHELL_SCREENS`에 "home"이 없으면
   // (기본값) 이 분기는 타지 않고 기존 네이티브 화면 그대로다.
   if (isWebShellScreen('home')) {
@@ -257,10 +200,7 @@ export default function HomeScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <Header
-          unread={data.unread}
-          onPressBell={() => router.push('/my/notifications')}
-        />
+        <Header />
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Hero
@@ -287,13 +227,7 @@ export default function HomeScreen() {
           <MyWeddingPrep
             cards={prepCards}
             sub={prepSub}
-            onOpen={(card) =>
-              router.push(
-                card.pickCount > 0
-                  ? `/pick/${card.targetCategory}`
-                  : `/pick?section=recommendations&category=${card.targetCategory}`
-              )
-            }
+            onOpen={(card) => router.push(`/pick?group=${card.key}` as never)}
             onMore={() => router.push('/pick')}
           />
 
@@ -324,15 +258,15 @@ export default function HomeScreen() {
             <View style={styles.sectionHead}>
               <View style={styles.sectionHeadCol}>
                 <ThemedText type="f14" style={styles.bold}>웨딩 준비 팁</ThemedText>
-                <ThemedText type="f12" themeColor="textAssistive">{S['section.tipsSub']}</ThemedText>
+                <ThemedText type="f12" themeColor="textAssistive" style={styles.sub}>{S['section.tipsSub']}</ThemedText>
               </View>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="웨딩 준비 팁 자세히"
                 onPress={() => router.push('/community/feed' as never)}
                 style={({ pressed }) => [styles.feedMore, pressed && styles.pressed]}>
-                <ThemedText type="f13" themeColor="textAssistive">{S.more}</ThemedText>
-                <SeedIcon name="chevronRightRegular" size={Layout.iconField} color={theme.textAssistive} />
+                <ThemedText type="f13" themeColor="textAssistive" style={styles.bold}>{S.more}</ThemedText>
+                <SeedIcon name="chevronRightRegular" size={MORE_CHEVRON} color={theme.textAssistive} />
               </Pressable>
             </View>
             {contentStatus === 'error' ? (
@@ -352,14 +286,6 @@ export default function HomeScreen() {
         </ScrollView>
       </SafeAreaView>
 
-      {benefit ? (
-        <BenefitSheet
-          visible={benefitOpen}
-          draw={benefit}
-          onDismiss={dismissBenefit}
-          onOpenBenefit={openBenefit}
-        />
-      ) : null}
       <Toast message={toast} onHidden={() => setToast(null)} />
     </ThemedView>
   );
@@ -367,37 +293,12 @@ export default function HomeScreen() {
 
 /* ---------------------------------------------------------------- 공통 조각 */
 
-function Header({
-  unread,
-  onPressBell,
-}: {
-  unread: number;
-  onPressBell: () => void;
-}) {
-  const theme = useTheme();
-
+/* 정본 home.jsx `headIcons`의 벨은 알림 화면 삭제(2026-09-25)로 뺐다. */
+function Header() {
   return (
     <ThemedView style={styles.header}>
       <ThemedText type="f26" style={styles.brand}>웨딩픽</ThemedText>
 
-      {/*
-        React_Native/home.jsx WP-HOME-001~003 header `headIcons` — 아이콘 하나(벨)뿐이다. 검색은
-        Root 탭에서 들어가고(WP-TAB), 홈 헤더의 검색 아이콘은 진입점 중복이라 뺐다
-        (2026-09-23 v3.29 재검증 — 「헤더에 아이콘이 2개인데 정본은 벨 1개뿐」).
-      */}
-      <View style={styles.headerButtons}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={hasUnread({ unread, total: unread }) ? `알림 ${formatCount(unread)}건` : '알림'}
-          onPress={onPressBell}
-          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
-          <SeedIcon name="notificationRegular" size={Layout.iconRow} color={theme.text} />
-          {/* 개수를 적지 않는다. 세는 것이 목적이 아니다. */}
-          {hasUnread({ unread, total: unread }) ? (
-            <View style={[styles.bellDot, { backgroundColor: theme.negative }]} />
-          ) : null}
-        </Pressable>
-      </View>
     </ThemedView>
   );
 }
@@ -424,15 +325,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Layout.gutter,
   },
   brand: { fontWeight: 700, letterSpacing: LetterSpacing.n052 },
-  headerButtons: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
-  iconButton: {
-    width: Layout.iconButton,
-    height: Layout.iconButton,
-    borderRadius: Radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bellDot: { position: 'absolute', top: 6, right: 6, width: 8, height: 8, borderRadius: Radius.pill },
 
   content: { paddingBottom: Spacing.three },
 
@@ -448,6 +340,8 @@ const styles = StyleSheet.create({
   },
   sectionHeadCol: { flex: 1, minWidth: 0, gap: Spacing.half },
   bold: { fontWeight: 700 },
-  feedMore: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  /* home.js `moreRow` — 13/700 · gap 2 · 꺾쇠 14. */
+  feedMore: { flexDirection: 'row', alignItems: 'center', gap: Spacing.half },
+  sub: { lineHeight: LineHeight.lh17 },
   pressed: { opacity: 0.8 },
 });

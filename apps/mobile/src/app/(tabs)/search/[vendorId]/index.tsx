@@ -108,7 +108,7 @@ function formatYearMonth(iso: string): string {
 
 /**
  * WP-VEND-001~004 업체 상세(`docs/design/React_Native/search.jsx` frame-004~007 · `search.js`).
- * 히어로(`Layout.heroVendor` 290 = 정본 `heroWrap`) → 제보 금액 블록(30/38 · «자세히»로 WP-VEND-007) → 탭 넷(소개 · 패키지 · 후기 ·
+ * 히어로(`Layout.heroVendor` 290 = 정본 `heroWrap`) → 제보 금액 블록(30/38 · 탭을 바꿔도 고정 · «자세히»와 WP-VEND-007은 2026-09-25 대표 지시로 삭제) → 탭 넷(소개 · 패키지 · 후기 ·
  * 정보, 48 · 16/700) → 하단 Pick 하나. 탭 안 구성이 정본과 다른 자리는 PR 본문
  * DESIGN_UNRESOLVED 표에 적었다. 아래는 이 파일이 옛 시안(09-core-loop #10a) 때 세운 순서다:
  *
@@ -312,11 +312,11 @@ export default function VendorDetailScreen() {
           contentContainerStyle={styles.scrollContent}>
 
           {/*
-            히어로와 제보 금액 블록은 「소개」 탭에만 있다 — 정본 frame-005~007(패키지 · 후기 · 정보)은
-            헤더 바로 아래에 탭 줄이 온다(2026-09-25 픽셀 대조).
+            히어로와 제보 금액 블록은 탭을 바꿔도 그대로 둔다(2026-09-25 대표 지시 「업체 상세 위 영역은
+            탭 메뉴 변경 시에도 고정으로 나온다」). 정본 frame-005~007은 헤더 바로 아래에 탭 줄을
+            그리지만 대표님 지시가 이긴다.
           */}
-          {tab === 'intro' ? (
-            <>
+          <>
               {/*
                 ①  대표 이미지 390×260 + «1 / N» 카운터.
                 승인된 실사진이 있으면 그 대표 이미지를, 없으면 카테고리 기본으로
@@ -390,29 +390,9 @@ export default function VendorDetailScreen() {
                   <ThemedText type="f13" themeColor="textAssistive" numeric style={styles.priceMetaText}>
                     {line.caption}
                   </ThemedText>
-                  {/*
-                    «자세히» — WP-VEND-007 제보 금액 상세로(정본 frame-011 tagDesc 「업체상세 실 제보
-                    블록에서 «자세히»로 들어옵니다」). 정본 frame-004는 이 링크의 모양을 그리지 않아
-                    (DESIGN_UNRESOLVED) 금액 설명 줄과 같은 13 보조색 + 꺾쇠로 둔다. 실 제보가 없는
-                    0·1층(회색 줄)에는 볼 분포가 없어 두지 않는다.
-                  */}
-                  {!line.dim ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="제보 금액 자세히 보기"
-                      hitSlop={Spacing.two}
-                      onPress={() => router.push(`/search/${currentVendor.id}/price`)}
-                      style={styles.priceMore}>
-                      <ThemedText type="f13" themeColor="textAssistive" style={styles.bold}>
-                        자세히
-                      </ThemedText>
-                      <ProductSymbol name="chevronRight" size={Layout.iconSmall} color={theme.textAssistive} />
-                    </Pressable>
-                  ) : null}
                 </View>
               </View>
-            </>
-          ) : null}
+          </>
 
           {/*
             탭 넷 — 소개 · 가격 · 후기 · 정보. Figma `VendorDetailPage`의 탭 배치를 가져온
@@ -519,7 +499,7 @@ export default function VendorDetailScreen() {
               «이 구성으로 상담»은 「최종 Pick 저장 뒤에만 상담 예약」(CLAUDE.md) · 정본 vdiffs
               「상담 진입: Pick → 최종 결정 → 상담 잡기」와 맞지 않아 그리지 않는다(DESIGN_UNRESOLVED).
               2026-09-25 픽셀 대조로 정본에 없는 실 제보 카드 · 조건별 행 · 업체 안내 · 현재 혜택
-              묶음을 이 탭에서 뺐다 — 금액 한 줄은 소개 탭 위 금액 블록과 WP-VEND-007이 보여준다.
+              묶음을 이 탭에서 뺐다 — 금액 한 줄은 탭 위 금액 블록이 보여준다(WP-VEND-007 상세는 2026-09-25 삭제).
             */
             <View style={styles.pkgSec}>
               <ThemedText type="f13" themeColor="textAssistive" style={styles.pkgNote}>
@@ -947,19 +927,13 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
     paddingHorizontal: Layout.cardGap,
   },
-  /* 금액 설명 줄 ↔ «자세히». */
+  /* 금액 설명 줄. */
   priceMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
   },
   priceMetaText: { flex: 1, minWidth: 0 },
-  priceMore: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.half,
-    flexShrink: 0,
-  },
 
   // ── Identity 블록 · 시안: padding 20 24 24 · gap 14 · 머리 gap 6 ──
   identitySection: {

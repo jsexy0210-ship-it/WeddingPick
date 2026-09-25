@@ -343,7 +343,6 @@ function component(sequence = [token]) {
       '@/features/auth/providers':{hasKakaoReturn:()=>hasCode,completeKakaoRedirect:async()=>{oauth++;hasCode=false;await wait;return{activated:true};}},
       '@/features/auth/sign-in-handoff':{claimSigningInMessageForBoot:nothing,setPendingSignInError:nothing},
       '@/features/auth/signing-in-view':{SigningInView:'SigningIn'},
-      '@/features/capture/capture-draft':{CaptureDraftProvider:'Capture'},'@/features/documents/document-store':{DocumentStoreProvider:'Documents'},
       '@/features/errors/full-screen-error':{FullScreenError:'Error'},'@/features/inapp-browser/escape':{escapeInAppBrowser:()=>({kind:'none'})},
       '@/features/in-app-web/in-app-web-shell':{InAppWebShell:'Shell'},'@/features/inapp-browser/in-app-browser-notice':{InAppBrowserNotice:'Notice'},
       '@/features/auth/session-recovery':{resolveSessionEntry:async()=>{resolutions++;return'app';},sessionErrorKind:()=> 'general'},

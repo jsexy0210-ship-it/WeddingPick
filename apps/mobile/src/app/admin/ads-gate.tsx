@@ -14,6 +14,7 @@ import { Colors, FontSize, LineHeight, Spacing } from '@weddingpick/ui';
 import { formatCount } from '@weddingpick/domain';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { WritePressable } from './_role';
 import { formatDateDot } from '@/features/common/format-date';
 import { ConfirmCard } from './_ui';
 
@@ -218,7 +219,7 @@ export function AdsGatePanel() {
                 서로 다른 두 분석이 각각 돌았고, 보고서 2건이 나왔습니다.
                 실운영 전환을 확정하려면 아래 버튼을 눌러주세요.
               </Text>
-              <Pressable
+              <WritePressable
                 style={[styles.approvalBtn, confirming && styles.btnDisabled]}
                 onPress={() => { setActionError(null); setAsking({ kind: 'approve' }); }}
                 disabled={confirming}
@@ -226,7 +227,7 @@ export function AdsGatePanel() {
                 <Text style={styles.approvalBtnText}>
                   {confirming ? '처리 중…' : '실운영 전환 확정'}
                 </Text>
-              </Pressable>
+              </WritePressable>
             </View>
           )}
 
@@ -246,7 +247,7 @@ export function AdsGatePanel() {
                   ? '끄면 곧바로 멈춰요. 승인 기록은 지워지지 않아요.'
                   : '승인은 끝났어요. 이 단추를 눌러야 실제로 나갑니다.'}
               </Text>
-              <Pressable
+              <WritePressable
                 style={[
                   data.activated ? styles.stopBtn : styles.approvalBtn,
                   confirming && styles.btnDisabled,
@@ -260,7 +261,7 @@ export function AdsGatePanel() {
                 <Text style={styles.approvalBtnText}>
                   {confirming ? '처리 중…' : data.activated ? '광고 끄기' : '광고 켜기'}
                 </Text>
-              </Pressable>
+              </WritePressable>
             </View>
           )}
 
@@ -291,7 +292,7 @@ export function AdsGatePanel() {
                   </View>
                   <View style={styles.tierActions}>
                     {(['live', 'withheld', 'test'] as const).map((next) => (
-                      <Pressable
+                      <WritePressable
                         key={next}
                         style={[
                           styles.tierBtn,
@@ -309,7 +310,7 @@ export function AdsGatePanel() {
                         >
                           {next === 'live' ? '실운영' : next === 'withheld' ? '보류' : '테스트'}
                         </Text>
-                      </Pressable>
+                      </WritePressable>
                     ))}
                   </View>
                 </View>

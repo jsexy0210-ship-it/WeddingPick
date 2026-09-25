@@ -44,8 +44,8 @@ export const createWeddingEventRequestSchema = z.object({
 
 /**
  * 상담 시트가 저장하는 웨딩 일정.
- * 일반 일정과 달리 최종 Pick한 업체를 반드시 지정해야 하고, 서버가 그 결정을 같은
- * 트랜잭션에서 다시 확인한다.
+ * 일반 일정과 달리 Pick에 담은 업체(후보 또는 결정)를 반드시 지정해야 하고, 서버가 그
+ * 상태를 같은 트랜잭션에서 다시 확인한다. 2026-09-25 대표 결정(안 A)으로 최종 결정은 요구하지 않는다.
  */
 export const createConsultationEventRequestSchema = createWeddingEventRequestSchema.extend({
   vendorId: idSchema,

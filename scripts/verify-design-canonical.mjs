@@ -89,17 +89,12 @@ for (const item of [...manifest.files, ...derivedFiles]) {
 const read = (path) => readFileSync(join(root, path), 'utf8');
 const style = read('packages/domain/src/style.ts');
 const setup = read('apps/mobile/src/app/setup.tsx');
-const register = read('apps/mobile/src/app/(tabs)/capture/payment/register.tsx');
 const paymentProofRoute = read('apps/api/src/routes/payment-proofs.ts');
 const search = read('apps/mobile/src/app/(tabs)/search/index.tsx');
-const capture = read('apps/mobile/src/app/(tabs)/capture/index.tsx');
-const recommendations = read('apps/mobile/src/app/(tabs)/(home)/recommendations.tsx');
 
 if (!style.includes('STYLE_PICK_MAX = 2')) fail('스타일 최대 2개 계약이 아님');
 if (!setup.includes('STYLE_PICK_LIMIT_TOAST')) fail('온보딩 3번째 선택 토스트가 없음');
-if (!register.includes('pickFromLibrary(1)') || !register.includes('uploadPaymentProof([picture])')) {
-  fail('Pick 인증 사진 한 장 계약이 아님');
-}
+/* 앱의 Pick 인증 촬영 화면은 2026-09-25 대표 지시로 삭제했다 — 서버 쪽 한 장 계약만 남는다. */
 if (!paymentProofRoute.includes('images.length !== 1')) fail('API가 Pick 인증 사진 한 장 계약을 강제하지 않음');
 /*
  * **이 자리가 v3.28과 어긋나 보였던 것은 인벤토리가 열을 바꿔 실었기 때문이다.**
@@ -135,8 +130,6 @@ if (search.includes('styles.filterRow')) {
   fail('검색 결과 위에 폐기된 카테고리·지역·가격 칩 줄이 되살아남(v3.29 WP-SRCH-001엔 없음)');
 }
 if (search.includes('<BackButton') || search.includes('<DepthHeader')) fail('검색 Root에 Back 계열 헤더가 있음');
-if (!capture.includes('<Redirect href="/capture/payment/consent?from=reports" />')) fail('없어진 제보 홈 리다이렉트가 아님');
-if (!recommendations.includes("pathname: '/pick'")) fail('없어진 추천 독립 화면이 Pick Root로 이어지지 않음');
 
 for (const path of manifest.deletedPagesThatStayDeleted) {
   if (existsSync(join(root, path))) fail(`삭제 페이지가 되살아남: ${path}`);

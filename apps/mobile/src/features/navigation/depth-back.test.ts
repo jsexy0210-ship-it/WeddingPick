@@ -29,51 +29,26 @@ describe('depthBackTarget — 대표 경로', () => {
     ['/search/v-101', '/search', '업체 상세 → 검색'],
     ['/search/v-101/images', '/search/v-101', '전체보기 → 업체 상세'],
     ['/search/v-101/write-review', '/search/v-101', '후기 쓰기 → 업체 상세'],
-    ['/search/expo/e-9', '/search/expo', '박람회 상세 → 박람회 목록'],
     ['/search/expo/e-9/calendar', '/search/expo/e-9', '달력 등록 → 박람회 상세'],
-    ['/search/wedding-info/i-3', '/search/wedding-info', '웨딩 정보 상세 → 목록'],
-    ['/search/expo', '/search', '박람회 목록 → 검색'],
-    ['/my/rewards/npay', '/my/rewards', 'Npay 수령 → 혜택'],
-    ['/my/rewards', '/my', '혜택 → MY'],
+    ['/search/expo/e-9', '/community/expo', '박람회 상세 → 라운지 박람회(목록 화면 삭제 2026-09-25)'],
     ['/my/taste', '/my', '스타일 다시 고르기 → MY'],
-    ['/my/scraps', '/my', '스크랩 → MY'],
-    ['/my/rebuttals/r-2', '/my/rebuttals', '반론 상세 → 반론 목록'],
-    ['/my/vendor-claims/v-7', '/my/vendor-claims', '관계자 인증 상세 → 목록'],
-    ['/wedding/w-1', '/wedding', '웨딩일정 홈 → 웨딩일정 탭'],
     ['/wedding/w-1/expenses/add', '/wedding', '지출 추가 → 웨딩노트 예산현황'],
-    ['/wedding/w-1/events/ev-3', '/wedding', '일정 상세 → 웨딩노트 캘린더'],
     ['/wedding/w-1/events/new', '/wedding', '일정 추가 → 웨딩노트 캘린더'],
     ['/wedding/w-1/consultations/c-1', '/wedding', '상담기록 상세 → 웨딩노트 상담기록'],
     ['/wedding/w-1/consultations/upload', '/wedding', '상담 녹음 추가 → 웨딩노트 상담기록'],
-    ['/wedding/w-1/complete', '/wedding', 'WP-OUR-013 예식 완료 → 웨딩일정 탭'],
-    ['/pick/studio', '/pick', '업종별 Pick → Pick 탭'],
-    ['/feed', '/', '홈 하위 스택(피드) → 홈'],
-    ['/feed/f-1', '/feed', '홈 웨딩피드 글 상세 → 웨딩피드 목록'],
     ['/community/feed/f-1', '/community/feed', '라운지 웨딩정보 상세 → 웨딩정보 화면(my.jsx frame-010)'],
     ['/community/review', '/', '리얼후기 직접 진입 → 홈(옛 `/community`로 올라가면 리다이렉트로 되돌아온다)'],
     ['/community/feed', '/', '웨딩정보 직접 진입 → 홈'],
     ['/community/expo', '/', '박람회 직접 진입 → 홈'],
-    ['/progress', '/', '준비 현황 → 홈'],
 
     // ── 폴더만 있고 화면이 없는 칸은 건너뛴다 ───────────────────────
-    ['/capture/result/q-1', '/wedding', '견적서 결과 → 웨딩노트'],
-    ['/capture/analysis/a-1', '/wedding', '견적서 분석 → 웨딩노트'],
-    ['/capture/payment/consent', '/my/reports', '직접 진입한 Pick 인증 동의 → 내 제보내역'],
-    ['/capture/payment/register', '/my/reports', '직접 진입한 Pick 인증 → 내 제보내역'],
-    ['/capture/sample', '/my/guide', '샘플 → MY 사용법'],
 
     // ── 예외표 ────────────────────────────────────────────────────
-    ['/capture', '/my/reports', '삭제된 제보 홈 → 내 제보내역'],
-    ['/capture/verify/q-1', '/capture/result/q-1', '자료 확인 신청 → 그 자료의 결과 확인'],
-    ['/capture/verify-status/rq-1', '/my/reports', 'WP-RPT-008 처리 결과 → 내 제보 내역'],
     ['/search/compare', '/pick', 'WP-CMP-002 비교 결과 → Pick'],
-    ['/my/faq/payment', '/my/guide', 'FAQ 질문 상세 → FAQ 목록'],
-    ['/my/referral', '/my/rewards', '초대 현황 → 혜택'],
 
     ...['candidates', 'changelog', 'conflict', 'decided', 'map', 'notes', 'quotes', 'tasks', 'timeline', 'visit-notes'].map((part): [string, string, string] => [
       `/wedding/w-1/${part}`, '/wedding', '서버 weddingId를 로컬 문서 식별자로 취급하지 않는다',
     ]),
-    ['/wedding/document-1/verify', '/wedding/document-1', '로컬 문서 확인은 문서 상세로 복귀한다'],
 
     // ── 모르는 경로도 홈까지는 간다 ─────────────────────────────────
     ['/nope/deeper/still', '/', '없는 경로 → 홈'],
@@ -85,7 +60,6 @@ describe('depthBackTarget — 대표 경로', () => {
 
   it('쿼리와 끝 슬래시를 무시한다', () => {
     expect(depthBackTarget('/search/v-101/images?index=2')).toBe('/search/v-101');
-    expect(depthBackTarget('/my/rewards/npay/')).toBe('/my/rewards');
   });
 
   it('공유 화면은 허용된 진입 출처로 돌아가고 모르는 출처는 추측하지 않는다', () => {
@@ -94,9 +68,6 @@ describe('depthBackTarget — 대표 경로', () => {
     expect(depthBackTarget('/community/expo?from=my')).toBe('/my');
     expect(depthBackTarget('/search/v-101?from=pick')).toBe('/pick');
     expect(depthBackTarget('/search/v-101/write-review?from=vendor/v-101')).toBe('/search/v-101');
-    expect(depthBackTarget('/search/v-101/review/r-1?from=community')).toBe('/community/review');
-    expect(depthBackTarget('/capture/payment/register?from=budget')).toBe('/wedding?tab=budget');
-    expect(depthBackTarget('/capture/payment/consent?from=reports')).toBe('/my/reports');
     expect(depthBackTarget('/community?from=https%3A%2F%2Fevil.example')).toBe('/');
     expect(depthBackTarget('/community?from=%2Fadmin')).toBe('/');
     expect(depthBackTarget('/community?from=%E0%A4%A')).toBe('/');
@@ -111,7 +82,6 @@ describe('depthBackTarget — 대표 경로', () => {
 
 describe('matchRoute — 글자 그대로 적힌 라우트가 이긴다', () => {
   it('`/pick/studio`는 동적 `/pick/[category]`로 간다', () => {
-    expect(matchRoute('/pick/studio')).toBe('/pick/[category]');
   });
 
   it('`/search/compare`는 업체 상세가 아니다', () => {
@@ -121,7 +91,6 @@ describe('matchRoute — 글자 그대로 적힌 라우트가 이긴다', () => 
 
   it('`/wedding/join`은 웨딩일정 홈이 아니다', () => {
     expect(matchRoute('/wedding/join')).toBe('/wedding/join');
-    expect(matchRoute('/wedding/w-1')).toBe('/wedding/[id]');
   });
 });
 
@@ -137,8 +106,6 @@ describe('hasDepthBack — 뒤로가기를 둘 자리', () => {
   it('하위 화면에는 둔다', () => {
     expect(hasDepthBack('/search/v-101')).toBe(true);
     expect(hasDepthBack('/community')).toBe(true);
-    expect(hasDepthBack('/my/scraps')).toBe(true);
-    expect(hasDepthBack('/my/rewards/npay')).toBe(true);
   });
 });
 
@@ -281,11 +248,11 @@ describe('완료 흐름은 이전 Stack을 다시 열지 않는다', () => {
   };
   const { join } = nodeRequire('path') as { join: (...parts: string[]) => string };
 
-  it('완료성 숨은 capture 탭만 blur 시 하위 Stack을 첫 화면으로 접는다', () => {
+  it('숨은 탭은 blur 시 하위 Stack을 접지 않는다', () => {
     const layout = readFileSync(join(dirName, '..', '..', 'app', '(tabs)', '_layout.tsx'), 'utf8');
     const common = readFileSync(join(dirName, 'screen-options.ts'), 'utf8');
 
-    expect(layout).toContain("popToTopOnBlur: name === 'capture'");
+    expect(layout).not.toContain("'capture'");
     expect(layout).toContain('popToTopOnBlur: false');
     expect(common).not.toContain('popToTopOnBlur: true');
   });

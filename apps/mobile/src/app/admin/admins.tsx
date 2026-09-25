@@ -55,6 +55,7 @@ import {
   StatusBanner,
   type TableRow,
 } from './_ui';
+import { WritePressable } from './_role';
 
 type Role = 'super' | 'operator' | 'viewer';
 
@@ -352,7 +353,7 @@ export function AdminsPanel() {
       embedded
       title="관리자 계정"
       sub="콘솔에 들어올 수 있는 사람과 등급"
-      action={{ label: '관리자 추가', onPress: () => setCreating(true), kind: 'brand' }}
+      action={{ label: '관리자 추가', write: true, onPress: () => setCreating(true), kind: 'brand' }}
     >
       <StatusBanner {...banner} />
 
@@ -364,7 +365,7 @@ export function AdminsPanel() {
           demotable.length > 0
             ? {
                 label: '나머지 전체를 뷰어로',
-                onPress: () => setPending({ kind: 'demote-others', targets: demotable }),
+                write: true, onPress: () => setPending({ kind: 'demote-others', targets: demotable }),
               }
             : undefined
         }
@@ -452,7 +453,7 @@ export function AdminsPanel() {
             <Text style={styles.formLabel}>등급 바꾸기</Text>
             <View style={styles.roleRow}>
               {ROLES.map((r) => (
-                <Pressable
+                <WritePressable
                   key={r}
                   style={[styles.roleBtn, selected.role === r && styles.roleBtnActive]}
                   onPress={() => setPending({ kind: 'role', account: selected, role: r })}
@@ -461,17 +462,17 @@ export function AdminsPanel() {
                   <Text style={[styles.roleBtnText, selected.role === r && styles.roleBtnTextActive]}>
                     {ROLE_LABEL[r]}
                   </Text>
-                </Pressable>
+                </WritePressable>
               ))}
             </View>
             {selected.role !== 'super' ? (
-              <Pressable
+              <WritePressable
                 style={styles.roleBtn}
                 onPress={() => setPending({ kind: 'delete', account: selected })}
                 accessibilityLabel="계정 지우기"
               >
                 <Text style={[styles.roleBtnText, styles.error]}>계정 지우기</Text>
-              </Pressable>
+              </WritePressable>
             ) : null}
           </View>
         </ConfirmCard>

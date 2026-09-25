@@ -43,6 +43,8 @@ export const FontSize = {
   dateWheel: 17,
   /** 검색 Root 제목. RN 정본 `docs/design/React_Native/search.js:533` headTitleRoot 22px. */
   searchRootTitle: 22,
+  /** 바텀시트 · 행동 목록 제목. RN 정본 `docs/design/React_Native/common.js:190` titleStyle(sheet) 22/30. */
+  sheetTitle: 22,
   /** micro 13/18 — 정보 단계 배지 · 스타일 칩(28) · 이미지 위 순위 pill. */
   micro: 13,
   /** Npay 로고 — 원 안의 N 12 · «pay» 14. spec/tokens.json typography npay. 다른 곳에 쓰지 않는다. */
@@ -122,6 +124,8 @@ export const LineHeight = {
   dateWheelDday: 22,
   /** 로그인 제목. RN 정본 `docs/design/React_Native/home.js:650` loginTitle 32/44. */
   loginTitle: 44,
+  /** 바텀시트 · 행동 목록 제목 22/30. RN 정본 `common.js:190`. */
+  sheetTitle: 30,
   /** caption 14의 여러 줄 변형 — 안내문 2줄. */
   t7Loose: 21,
   micro: 18,

@@ -34,7 +34,6 @@ describe('MY 화면 이동과 UX 문구', () => {
   it('영문 약어와 개발 상태 대신 사용자가 이해할 안내를 보여준다', () => {
     const index = readFileSync(join(MY_ROOT, 'index.tsx'), 'utf8');
     const guide = readFileSync(join(MY_ROOT, 'guide.tsx'), 'utf8');
-    const bizClaim = readFileSync(join(MY_ROOT, 'biz', 'claim.tsx'), 'utf8');
 
     /*
      * 문구는 화면에 직접 적지 않고 `spec/strings.ko.json`에서 읽는다. 그래서 두 가지를
@@ -47,6 +46,5 @@ describe('MY 화면 이동과 UX 문구', () => {
     expect(index).toContain("label: S['item.faq']");
     expect(strings.my['item.faq']).toBe('FAQ');
     expect(guide).toContain('질문을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.');
-    expect(bizClaim).not.toContain('이 빌드는 서버에 붙어 있지 않아');
   });
 });

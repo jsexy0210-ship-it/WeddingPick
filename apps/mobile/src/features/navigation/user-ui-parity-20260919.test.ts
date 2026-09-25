@@ -39,11 +39,9 @@ describe('2026-09-19 사용자 화면 검수 회귀', () => {
 
   it('FAQ에서 문의하기 경로를 노출하지 않는다', () => {
     const guide = readApp('(tabs)/my/guide.tsx');
-    const detail = readApp('(tabs)/my/faq/[faqKey].tsx');
 
     expect(guide).not.toContain('label="문의하기"');
-    expect(detail).not.toContain("pathname: '/my/contact'");
-    expect(detail).not.toContain('FAQ_UNRESOLVED_CATEGORY');
+    expect(guide).not.toContain("pathname: '/my/contact'");
   });
 
   it('폐기한 목록 route 파일은 다시 생기지 않는다', () => {
@@ -52,6 +50,12 @@ describe('2026-09-19 사용자 화면 검수 회귀', () => {
       '(tabs)/wedding/[id]/consultations.tsx',
       '(tabs)/wedding/[id]/expenses/index.tsx',
       '(tabs)/my/policies.tsx',
+      // 2026-09-25 대표 지시 — 정본(React_Native)에 없는 앱 화면 삭제.
+      '(tabs)/my/faq/[faqKey].tsx',
+      '(tabs)/capture/index.tsx',
+      '(tabs)/(home)/recommendations.tsx',
+      // 2026-09-25 대표 결정(안 A) — Pick 최종 결정 확인 시트 삭제. 상담 예약은 결정 없이 연다.
+      '(tabs)/pick/confirm.tsx',
     ];
 
     for (const path of removed) expect(existsSync(join(APP, path))).toBe(false);

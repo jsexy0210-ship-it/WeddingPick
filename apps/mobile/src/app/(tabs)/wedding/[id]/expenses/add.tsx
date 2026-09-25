@@ -1,6 +1,6 @@
 import type { CreateExpenseRequest } from '@weddingpick/api-contract';
 import { VENDOR_CATEGORIES, VENDOR_CATEGORY_LABEL, manwon, type VendorCategory } from '@weddingpick/domain';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 
@@ -57,7 +57,7 @@ export default function AddExpenseRoute() {
 
   const [amountText, setAmountText] = useState('');
   const [picked, setPicked] = useState<VendorCategory | null>(initialCategory);
-  const [saving, setSaving] = useState<'expense' | 'proof' | null>(null);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const amount = Number(amountText.replace(/[^\d]/g, ''));
@@ -99,22 +99,11 @@ export default function AddExpenseRoute() {
 
   async function saveOnly() {
     if (!ready || saving) return;
-    setSaving('expense');
+    setSaving(true);
     setError(null);
     const ok = await save();
-    setSaving(null);
+    setSaving(false);
     if (ok) closeSheet();
-  }
-
-  async function saveAndVerify() {
-    if (!ready || saving) return;
-    setSaving('proof');
-    setError(null);
-    const ok = await save();
-    setSaving(null);
-    if (!ok) return;
-
-    router.replace('/capture/payment/consent?from=budget' as never);
   }
 
   return (
@@ -202,16 +191,12 @@ export default function AddExpenseRoute() {
           ) : null}
 
           <View style={styles.actions}>
-            <ActionButton
-              label={saving === 'expense' ? '넣는 중…' : '지출만 넣기'}
-              disabled={!ready || saving !== null}
-              onPress={() => void saveOnly()}
-            />
+            {/* «지출 넣고 인증하기»는 Pick 인증 촬영 삭제(2026-09-25)로 뺐다 — 남은 CTA가 Primary다. */}
             <ActionButton
               variant="primary"
-              label={saving === 'proof' ? '넣는 중…' : '지출 넣고 인증하기'}
-              disabled={!ready || saving !== null}
-              onPress={() => void saveAndVerify()}
+              label={saving ? '넣는 중…' : '지출만 넣기'}
+              disabled={!ready || saving}
+              onPress={() => void saveOnly()}
             />
           </View>
         </SheetPanel>

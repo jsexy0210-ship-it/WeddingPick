@@ -1,11 +1,22 @@
 import type { MyReport } from '@weddingpick/api-contract';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { ErrorView } from '@weddingpick/ui';
+import {
+  Badge,
+  Border,
+  ErrorView,
+  Layout,
+  ProductSymbol,
+  Radius,
+  Spacing,
+  ThemedText,
+  useTheme,
+} from '@weddingpick/ui';
 import { listMyReports } from '@/api/client';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
-import { EmptyBox, Row, Rows, Section, SubScreen } from '@/features/settings/my-kit';
+import { EmptyBox, Section, SubScreen } from '@/features/settings/my-kit';
 
 /** 정본 `docs/design/React_Native/my.jsx` 프레임 6 «내가 쓴 후기 · WP-MY-006». */
 const S = {
@@ -91,23 +102,23 @@ export default function MyReviewsScreen() {
     <SubScreen title={S.title}>
       <Section title={`${S.written} ${written.length}개`}>
         {written.length > 0 ? (
-          <Rows>
-            {written.map((report) => (
-              <Row
+          <ListCard>
+            {written.map((report, index) => (
+              <ReviewRow
                 key={report.id}
                 name={report.subject}
                 meta={yearMonth(report.reportedAt)}
-                tail={report.inUse ? undefined : S.hidden}
-                tailBadge={report.inUse ? undefined : 'wait'}
+                badge={report.inUse ? undefined : S.hidden}
                 chevron={report.vendorId !== null}
+                last={index === written.length - 1}
                 onPress={
                   report.vendorId === null
                     ? undefined
-                    : () => router.push(`/search/${report.vendorId}/reviews`)
+                    : () => router.push(`/search/${report.vendorId}`)
                 }
               />
             ))}
-          </Rows>
+          </ListCard>
         ) : (
           <EmptyBox>{S.emptyWritten}</EmptyBox>
         )}
@@ -115,19 +126,19 @@ export default function MyReviewsScreen() {
 
       <Section title={`${S.writable} ${writable.length}개`}>
         {writable.length > 0 ? (
-          <Rows>
-            {writable.map((report) => (
-              <Row
+          <ListCard>
+            {writable.map((report, index) => (
+              <ReviewRow
                 key={report.id}
                 name={report.subject}
                 meta={`${S.verified} · ${monthDay(report.reportedAt)}`}
-                tail={S.write}
-                tailBadge="brand"
+                write
+                last={index === writable.length - 1}
                 onPress={() => router.push(`/search/${report.vendorId}/write-review`)}
                 accessibilityLabel={`${report.subject} 후기 쓰기`}
               />
             ))}
-          </Rows>
+          </ListCard>
         ) : (
           <EmptyBox>{S.emptyWritable}</EmptyBox>
         )}
@@ -135,3 +146,93 @@ export default function MyReviewsScreen() {
     </SubScreen>
   );
 }
+
+/** 정본 listCard — radius 10 · 1 테두리 #eaebee. */
+function ListCard({ children }: { children: ReactNode }) {
+  const theme = useTheme();
+
+  return <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.border }]}>{children}</View>;
+}
+
+/**
+ * 정본 `mr()` 행 — 최소 72(+12 12 = 96) · 12 16 · gap 12 · 썸네일 48(radius 8) · 이름 15/700 · 메타 12 muted.
+ * 썸네일 자리는 `myReportSchema`에 이미지가 없어 빈 칸(이미지 자리 색)으로 둔다 — 자리는 정본대로 지킨다.
+ */
+function ReviewRow({
+  name,
+  meta,
+  badge,
+  chevron,
+  write,
+  last,
+  onPress,
+  accessibilityLabel,
+}: {
+  name: string;
+  meta: string;
+  badge?: string;
+  chevron?: boolean;
+  write?: boolean;
+  last: boolean;
+  onPress?: () => void;
+  accessibilityLabel?: string;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? name}
+      disabled={!onPress}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.row,
+        last ? null : { borderBottomWidth: Border.hairline, borderBottomColor: theme.border },
+        pressed ? styles.pressed : null,
+      ]}>
+      <View style={[styles.thumb, { backgroundColor: theme.imagePlaceholder }]} />
+      <View style={styles.col}>
+        <ThemedText type="f15" numberOfLines={1} style={styles.bold}>
+          {name}
+        </ThemedText>
+        <ThemedText type="f12" themeColor="textAssistive" numeric numberOfLines={1}>
+          {meta}
+        </ThemedText>
+      </View>
+      {badge ? <Badge kind="wait">{badge}</Badge> : null}
+      {write ? (
+        <View style={[styles.writeBtn, { backgroundColor: theme.tint }]}>
+          <ThemedText type="f13" themeColor="onTint" style={styles.bold}>
+            {S.write}
+          </ThemedText>
+        </View>
+      ) : null}
+      {chevron ? <ProductSymbol name="chevronRight" size={Layout.iconField} color={theme.textDisabled} /> : null}
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: { borderWidth: Border.hairline, borderRadius: Radius.medium, overflow: 'hidden' },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Layout.inlineGap,
+    /* 정본 min-height 72 + 위아래 12(미리보기는 content-box라 96으로 그린다). */
+    minHeight: 96,
+    paddingVertical: Layout.rowPaddingY,
+    paddingHorizontal: Spacing.three,
+  },
+  pressed: { opacity: 0.6 },
+  /* mrThumb 48 · radius 8. */
+  thumb: { width: 48, height: 48, borderRadius: Spacing.two, flexShrink: 0 },
+  col: { flex: 1, minWidth: 0, gap: Layout.cardNameGap },
+  bold: { fontWeight: 700 },
+  /* writeBtn 32 · 0 14 · radius 6 · 13/700 흰 글자. */
+  writeBtn: {
+    height: 32,
+    paddingHorizontal: Layout.chipPaddingX,
+    borderRadius: Radius.control,
+    justifyContent: 'center',
+  },
+});

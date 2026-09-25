@@ -133,7 +133,9 @@
 
 아래는 `apps/mobile/src/app` 사용자 라우트 가운데 위 80개 어디에도 대응시키지 못한 것이다. **CLAUDE.md 「정본에 없는 기능은 제거」의 검토 후보일 뿐 판정이 아니다.** 지우기 전에 공용 여부, 다른 화면군의 사용, 예외 규정을 먼저 확인한다. 「진입 0」은 `router.push` · `href` · `pathname` 문자열을 grep해서 앱 안 이동 참조를 찾지 못했다는 뜻이다(`depth-back-rules.ts` · `depth-header.tsx` 등록은 빼고 셌고, 알림 경로 표 `my/notifications.tsx`도 확인했다). 근사치이니 삭제 근거로 쓰기 전에 다시 확인한다.
 
-### 7-1. 대응 없음(52개 라우트 파일)
+### 7-1. 2026-09-25 삭제됨(Pick 인증 포함) — 52개 라우트 파일
+
+**아래 52개 파일은 2026-09-25 대표 지시(「Pick인증 포함 다 삭제한다」)로 전부 지웠다**(브랜치 `claude/remove-noncanon-screens`). 이 주소로 들어오면 공용 `app/+not-found.tsx`(「찾을 수 없어요」 · 홈으로 돌아가기)가 뜬다. 표는 무엇이 있었는지 남기려고 둔다 — 되살리지 않는다.
 
 | 라우트 | 파일 | 한 줄 설명 |
 | --- | --- | --- |
@@ -170,7 +172,7 @@
 | `/my/vendor-claims` | `app/(tabs)/my/vendor-claims/index.tsx` | 내가 낸 업체 관계자 인증 |
 | `/my/vendor-claims/[vendorId]` | `app/(tabs)/my/vendor-claims/[vendorId].tsx` | 업체 관계자 인증 신청 |
 | `/pick/[category]` | `app/(tabs)/pick/[category].tsx` | 업종별 Pick 목록. 파일이 「다른 화면군이 같이 쓰는 라우트라 단독 대조로 지우지 않는다」고 적는다 |
-| `/pick/confirm` | `app/(tabs)/pick/confirm.tsx` | 최종 결정 확인 시트(WP-SHT-005). 정본 Pick 보드에 별도 프레임이 없다 |
+| ~~`/pick/confirm`~~ | ~~`app/(tabs)/pick/confirm.tsx`~~ | 2026-09-25 삭제(대표 결정 안 A) — 최종 결정 확인 시트(WP-SHT-005)를 지우고 Pick 카드 «상담 예약»이 결정 없이 Pick 후보에게 바로 열린다 |
 | `/search/[vendorId]/reviews` | `app/(tabs)/search/[vendorId]/reviews.tsx` | 업체 후기 전체 목록(신고 · 반론 진입) |
 | `/search/[vendorId]/review/[reviewId]` | `app/(tabs)/search/[vendorId]/review/[reviewId].tsx` | 후기 상세(Figma `ReviewDetailPage` 근거) |
 | `/search/[vendorId]/edit-review` | `app/(tabs)/search/[vendorId]/edit-review.tsx` | 후기 수정 시트(후기 목록 위) |
@@ -201,16 +203,16 @@
 
 | 라우트 | 파일 | 한 줄 설명 |
 | --- | --- | --- |
-| `/capture` | `app/(tabs)/capture/index.tsx` | `/capture/payment/consent?from=reports`로 보낸다 |
-| `/my/membership` | `app/(tabs)/my/membership.tsx` | 옛 등급 · 미션 → 미션 화면으로 보낸다 |
-| `/search/[vendorId]/price-report` | `app/(tabs)/search/[vendorId]/price-report.tsx` | 폐기된 WP-RPT-010 → Pick 인증 동의로 보낸다 |
+| ~~`/capture`~~ | ~~`app/(tabs)/capture/index.tsx`~~ | 2026-09-25 삭제(보내던 곳이 삭제됨) |
+| ~~`/my/membership`~~ | ~~`app/(tabs)/my/membership.tsx`~~ | 2026-09-25 삭제(보내던 곳이 삭제됨) |
+| ~~`/search/[vendorId]/price-report`~~ | ~~`app/(tabs)/search/[vendorId]/price-report.tsx`~~ | 2026-09-25 삭제(보내던 곳이 삭제됨) |
 | `/search/[vendorId]/booking` | `app/(tabs)/search/[vendorId]/booking.tsx` | `consult`를 그대로 다시 내보낸다(WP-PICK-009 별칭) |
 | `/community/review/write` | `app/(tabs)/community/review/write.tsx` | 라운지 후기 URL로 보낸다 |
 | `/community/feed/[id]` | `app/(tabs)/community/feed/[id].tsx` | `(home)/feed/[id]`를 다시 내보낸다. WP-LNG-004로 대응시켰다 |
 
 ### 7-4. 공용 · 레이아웃 · 관리자(대조 범위 밖)
 
-- 레이아웃 · 문서 틀: `app/_layout.tsx` · `app/+html.tsx` · `app/(tabs)/_layout.tsx` · 각 폴더 `_layout.tsx`(login · (home) · capture · community · my · pick · search · wedding).
+- 레이아웃 · 문서 틀: `app/_layout.tsx` · `app/+html.tsx` · `app/(tabs)/_layout.tsx` · 각 폴더 `_layout.tsx`(login · (home) · community · my · pick · search · wedding — capture는 2026-09-25 폴더째 삭제) · `app/+not-found.tsx`(2026-09-25 신설 공용 「찾을 수 없어요」).
 - 관리자: `app/admin/` 라우트 37개(admins · ads-gate · ads · ai-usage · audit-log · automation · biz-queue · briefing · campaigns · data-pipeline · decisions · email-matching · expos · faq · home · images · index · inquiries · kill-switch · login · marketing · objections · og-card · pii-reviews · policy-engine · price-stats · queue · rebuttal · report · revenue · rollback · stats · terms · user-detail · users · vendors · wedding-feed) + 보조 `_api.ts` · `_session.ts` · `_ui.tsx`. 관리자 정본은 `docs/design/html/`이라서 이 표의 대상이 아니다.
 
 ## 8. 코드 주석의 옛 WP-ID · 옛 근거(정본과 뜻이 다른 것)
