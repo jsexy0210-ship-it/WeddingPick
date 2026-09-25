@@ -12,6 +12,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Colors, FontSize, Layout, Spacing } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { WritePressable } from './_role';
 import { formatCount } from '@weddingpick/domain';
 
 type StageCount = { stage: string; count: number; avgWaitMin: number };
@@ -162,7 +163,7 @@ export function DataPipelinePanel() {
           <View style={styles.failQueueHeader}>
             <Text style={styles.sectionTitle}>실패 큐</Text>
             {data.failedQueue.length > 0 && (
-              <Pressable
+              <WritePressable
                 style={[styles.retryAllBtn, (retrying === 'all') && styles.btnDisabled]}
                 onPress={() => void retryAll()}
                 disabled={retrying !== null}
@@ -170,7 +171,7 @@ export function DataPipelinePanel() {
                 <Text style={styles.retryAllText}>
                   {retrying === 'all' ? '처리 중…' : '전체 재처리'}
                 </Text>
-              </Pressable>
+              </WritePressable>
             )}
           </View>
           <View style={styles.card}>
@@ -194,7 +195,7 @@ export function DataPipelinePanel() {
                     <Text style={[styles.td, styles.colError]} numberOfLines={1}>{item.error}</Text>
                     <Text style={[styles.td, styles.colRetry]}>{formatCount(item.retryCount)}회</Text>
                     <View style={[styles.colAction]}>
-                      <Pressable
+                      <WritePressable
                         style={[styles.inlineBtn, (retrying === item.id) && styles.btnDisabled]}
                         onPress={() => void retryItem(item.id)}
                         disabled={retrying !== null}
@@ -202,7 +203,7 @@ export function DataPipelinePanel() {
                         <Text style={styles.inlineBtnText}>
                           {retrying === item.id ? '…' : '재처리'}
                         </Text>
-                      </Pressable>
+                      </WritePressable>
                     </View>
                   </View>
                 ))}

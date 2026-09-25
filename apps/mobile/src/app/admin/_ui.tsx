@@ -21,10 +21,21 @@
  * 값은 전부 `spec/tokens.json`에서 온다 — 이 파일에 hex를 적지 않는다.
  */
 import { type ReactNode } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  type PressableProps,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 
 import { AdminSpacing as A, Colors, FontSize, LineHeight, Radius, Spacing } from '@weddingpick/ui';
 
+import { WritePressable } from './_role';
 import { clearAdminToken } from './_session';
 
 const C = Colors.light;
@@ -90,7 +101,14 @@ export type PageProps = {
    * 흐리게만 만든다(`features/admin/pending-backend`). 이름을 「준비 중」으로 바꾸면
    * 그 단추가 원래 무엇을 하는 자리인지가 사라진다.
    */
-  action?: { label: string; onPress: () => void; kind?: 'brand' | 'danger' | 'plain'; disabled?: boolean };
+  action?: {
+    label: string;
+    onPress: () => void;
+    kind?: 'brand' | 'danger' | 'plain';
+    disabled?: boolean;
+    /** 서버에 GET 외 요청을 보내는 동작(등록 · 반영 등). 뷰어에게는 흐린 채 잠긴다(`_role.tsx`). */
+    write?: boolean;
+  };
   /**
    * 이 화면이 `AdminTabShell`의 탭 하나로 들어가 있을 때 켠다(2026-09-15 탭 재편).
    * 바깥 셸이 이미 로그아웃을 그리므로, 여기서 또 그리면 한 화면에 로그아웃이
@@ -122,6 +140,7 @@ export type PageProps = {
  * 몫을 이미 한다 — 그래도 잘못 눌리는 사례가 나오면 그때 확인 단계를 더한다.
  */
 export function Page({ title, sub, action, embedded, children }: PageProps) {
+  const ActionButton = action?.write ? WritePressable : Pressable;
   return (
     <View style={styles.page}>
       <View style={styles.topbar}>
@@ -130,7 +149,7 @@ export function Page({ title, sub, action, embedded, children }: PageProps) {
           {sub ? <Text style={styles.pageSub} numberOfLines={1}>{sub}</Text> : null}
         </View>
         {action ? (
-          <Pressable
+          <ActionButton
             onPress={action.onPress}
             disabled={action.disabled}
             style={[
@@ -149,7 +168,7 @@ export function Page({ title, sub, action, embedded, children }: PageProps) {
             >
               {action.label}
             </Text>
-          </Pressable>
+          </ActionButton>
         ) : null}
         {embedded ? null : <SignOutButton />}
       </View>
@@ -379,7 +398,7 @@ export function CardGrid({ children }: { children: ReactNode }) {
 export type CardProps = {
   title: string;
   sub?: string;
-  action?: { label: string; onPress: () => void; kind?: 'brand' | 'plain' };
+  action?: { label: string; onPress: () => void; kind?: 'brand' | 'plain'; write?: boolean };
   /** 격자에서 한 줄을 다 쓴다. 표가 들어간 카드가 그렇다. */
   full?: boolean;
   /** 카드 맨 아래 회색 한 줄 — 규칙이나 보관 기한처럼 표를 읽는 데 필요한 단서. */
@@ -396,14 +415,15 @@ export function Card({ title, sub, action, full, note, children }: CardProps) {
           {sub ? <Text style={styles.cardSub} numberOfLines={1}>{sub}</Text> : null}
         </View>
         {action ? (
-          <Pressable
+          <RowButton
+            write={action.write}
             onPress={action.onPress}
             style={[styles.cardAction, action.kind === 'brand' && styles.cardActionBrand]}
           >
             <Text style={[styles.cardActionLabel, action.kind === 'brand' && styles.onTintLabel]}>
               {action.label}
             </Text>
-          </Pressable>
+          </RowButton>
         ) : null}
       </View>
       {children}
@@ -445,7 +465,9 @@ export type RowItem = {
   /** 숫자 자리의 배지. 「정상」 「보류 6」처럼 상태를 한 낱말로. */
   tail?: string;
   tailKind?: Kind;
-  btn?: { label: string; onPress: () => void; kind?: 'danger' | 'brand' | 'plain' };
+  /** `write`는 서버에 GET 외 요청을 보내는 단추 — 뷰어에게는 잠긴다(`_role.tsx`). */
+  btn?: { label: string; onPress: () => void; kind?: 'danger' | 'brand' | 'plain'; write?: boolean };
+  /** 켜기 · 끄기는 언제나 서버를 바꾼다 — 뷰어에게는 늘 잠긴다. */
   toggle?: { on: boolean; onPress: () => void };
   /**
    * 줄 전체를 눌러 그 화면으로 간다. 21-admin.dc.html `dash`의 「안대표가 볼 일」이
@@ -486,7 +508,8 @@ export function Rows({ items }: { items: RowItem[] }) {
             ) : null}
             {r.tail ? <Badge label={r.tail} kind={r.tailKind ?? 'none'} /> : null}
             {r.btn ? (
-              <Pressable
+              <RowButton
+                write={r.btn.write}
                 onPress={r.btn.onPress}
                 style={[
                   styles.rowBtn,
@@ -503,7 +526,7 @@ export function Rows({ items }: { items: RowItem[] }) {
                 >
                   {r.btn.label}
                 </Text>
-              </Pressable>
+              </RowButton>
             ) : null}
             {r.toggle ? <Toggle on={r.toggle.on} onPress={r.toggle.onPress} /> : null}
             {r.onPress ? <Text style={styles.rowChevron}>›</Text> : null}
@@ -513,6 +536,10 @@ export function Rows({ items }: { items: RowItem[] }) {
       ))}
     </View>
   );
+}
+
+function RowButton({ write, ...rest }: PressableProps & { write?: boolean }) {
+  return write ? <WritePressable {...rest} /> : <Pressable {...rest} />;
 }
 
 export function Badge({ label, kind = 'none' }: { label: string; kind?: Kind }) {
@@ -527,14 +554,14 @@ export function Badge({ label, kind = 'none' }: { label: string; kind?: Kind }) 
 
 export function Toggle({ on, onPress }: { on: boolean; onPress: () => void }) {
   return (
-    <Pressable
+    <WritePressable
       onPress={onPress}
       accessibilityRole="switch"
       accessibilityState={{ checked: on }}
       style={[styles.toggle, on ? styles.toggleOn : styles.toggleOff]}
     >
       <View style={styles.knob} />
-    </Pressable>
+    </WritePressable>
   );
 }
 
@@ -561,6 +588,8 @@ export type Cell = {
    * 아예 누를 것을 만들지 않는다(ADMIN.md WP-ADM-015 「권리 미확인은 승인 버튼이 뜨지 않는다」).
    */
   onPress?: () => void;
+  /** `onPress`가 서버에 GET 외 요청을 보내거나 그 편집을 여는 동작(수정 · 삭제 · 승인 등). 뷰어에게는 잠긴다. */
+  write?: boolean;
 };
 export type TableRow = { key: string; cells: Cell[] };
 
@@ -598,11 +627,11 @@ export function DataTable({ cols, rows, empty }: { cols: Col[]; rows: TableRow[]
                     key={col.key}
                     style={[colWidth(col), col.align === 'right' ? styles.cellRightBox : styles.cellLeftBox]}
                   >
-                    <Pressable onPress={cell.onPress}>
+                    <RowButton write={cell.write} onPress={cell.onPress}>
                       <Text style={[styles.td, styles.bold, { color: KIND_FG[cell.kind ?? 'none'] }]}>
                         {cell.v}
                       </Text>
-                    </Pressable>
+                    </RowButton>
                   </View>
                 );
               }
@@ -760,9 +789,10 @@ export function ConfirmCard({ title, body, items, cta, danger, children, onConfi
             <Pressable onPress={onCancel} style={styles.btnGhost}>
               <Text style={styles.btnGhostLabel}>취소</Text>
             </Pressable>
-            <Pressable onPress={onConfirm} style={[styles.btnPrimary, danger && styles.btnDanger]}>
+            {/* 확인 카드는 언제나 서버를 바꾸는 자리다 — 뷰어에게는 확인 단추가 잠긴다. */}
+            <WritePressable onPress={onConfirm} style={[styles.btnPrimary, danger && styles.btnDanger]}>
               <Text style={styles.btnPrimaryLabel}>{cta}</Text>
-            </Pressable>
+            </WritePressable>
           </View>
         </View>
       </View>

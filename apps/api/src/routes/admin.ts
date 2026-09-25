@@ -15,7 +15,7 @@ import * as marketingStore from '../marketing/store';
 import * as adAdmin from '../ad-admin';
 import * as adminOps from '../admin-ops';
 import * as aiCostAdmin from '../ai-cost-admin';
-import { currentUserId, requireOperatorUser } from '../auth/plugin';
+import { currentAdminRole, currentUserId, requireOperatorUser } from '../auth/plugin';
 import { isKnownSourceKey } from '../public-data/sources';
 import type { AppContext } from '../context';
 import * as dashboardAdmin from '../dashboard-admin';
@@ -910,6 +910,14 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
    * 않는다 — 그 자리들(`reviewQueue.total: 0` · `revenue.mrr: '₩0'`)이 홈을
    * 「볼 일이 없는 화면」으로 보이게 만들던 원인이었다.
    */
+  /*
+   * 지금 로그인한 관리자의 등급. 화면이 뷰어에게 쓰기 단추를 잠그는 데 쓴다
+   * (2026-09-25 대표 지시 — 「뷰어 권한은 모든 등록, 수정, 삭제 버튼 비활성화」).
+   * 로그인 응답에도 등급이 있지만 새로고침하면 사라지므로 여기서 다시 읽는다.
+   * 막는 것은 여전히 `requireOperatorUser`다 — 이 응답은 안내용이다.
+   */
+  app.get('/v1/admin/me', auth, async (request) => ({ role: currentAdminRole(request) }));
+
   app.get('/v1/admin/dashboard', auth, async () => dashboardAdmin.dashboard(context.pool));
 
   /*
@@ -1499,6 +1507,38 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
       );
     }
   );
+
+  /*
+   * 업체 정보 수정 · 삭제(2026-09-25 대표 지시 — 「업체 관리도 수정, 삭제 버튼을
+   * 추가한다」). 둘 다 `auth`(requireOperatorUser) 아래라 뷰어는 403이다.
+   *
+   * 삭제는 사용자 기록(Pick 후보 · 후기 · 제보 금액 · Pick 결정)이나 업체주 기록이
+   * 달린 업체면 409로 거절한다 — `vendor-admin.ts`의 `DELETE_BLOCKERS`.
+   */
+  app.patch<{ Params: { id: string } }>('/v1/admin/vendors/:id', auth, async (request) => {
+    const body = z
+      .object({
+        name: z.string(),
+        category: z.enum(vendorAdmin.EDITABLE_VENDOR_CATEGORIES as [vendorAdmin.EditableVendorCategory, ...vendorAdmin.EditableVendorCategory[]]),
+        region: z.string(),
+        address: z.string().nullable().optional(),
+      })
+      .safeParse(request.body);
+    if (!body.success) {
+      throw new ApiError('invalid_request', '상호 · 업종 · 지역을 확인해 주세요.');
+    }
+    return vendorAdmin.updateVendor(
+      context.pool,
+      request.params.id,
+      { ...body.data, address: body.data.address ?? null },
+      currentUserId(request)
+    );
+  });
+
+  app.delete<{ Params: { id: string } }>('/v1/admin/vendors/:id', auth, async (request, reply) => {
+    await vendorAdmin.deleteVendor(context.pool, request.params.id, currentUserId(request));
+    return reply.status(204).send();
+  });
 
   app.patch<{ Params: { id: string } }>('/v1/admin/vendors/:id/name', auth, async (request) => {
     const body = z.object({ name: z.string() }).safeParse(request.body);

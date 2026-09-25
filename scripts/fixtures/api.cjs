@@ -1252,6 +1252,11 @@ const routes = {
       },
     ],
   },
+  /*
+   * 로그인한 관리자의 등급(2026-09-25 뷰어 조회 전용). 뷰어 화면을 찍을 때는
+   * `CAPTURE_ADMIN_ROLE=viewer`로 띄운다 — 기본은 운영자다.
+   */
+  'GET /v1/admin/me': () => ({ role: process.env.CAPTURE_ADMIN_ROLE || 'operator' }),
   'GET /v1/admin/vendors': {
     total: 3,
     vendors: [
@@ -1259,6 +1264,8 @@ const routes = {
         id: '11111111-1111-4111-8111-111111111111',
         name: '강남 A 웨딩홀',
         category: 'hall',
+        region: '서울',
+        address: '서울 강남구 테헤란로 1',
         status: 'active',
         dataCount: 1284,
         mergedInto: null,
@@ -1268,6 +1275,8 @@ const routes = {
         id: '22222222-2222-4222-8222-222222222222',
         name: '강남 B 웨딩홀',
         category: 'hall',
+        region: '서울',
+        address: null,
         status: 'suspended',
         dataCount: 96,
         mergedInto: null,
@@ -1277,6 +1286,8 @@ const routes = {
         id: '33333333-3333-4333-8333-333333333333',
         name: '분당 C 웨딩홀',
         category: 'hall',
+        region: '경기',
+        address: null,
         status: 'merged',
         dataCount: 0,
         mergedInto: '강남 A 웨딩홀',

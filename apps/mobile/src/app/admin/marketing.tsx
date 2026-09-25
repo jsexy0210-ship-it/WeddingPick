@@ -123,8 +123,8 @@ export function MarketingPanel() {
 
   /** 실패한 것은 다시 보내고, 대기 중인 것은 모의 실행한다. 끝난 것은 누를 것이 없다. */
   function actionCell(item: MarketingItem): Cell {
-    if (item.status === 'failed') return { v: '다시 보내기', kind: 'bad', onPress: () => void retry(item.id) };
-    if (item.status === 'queued') return { v: '모의 실행', kind: 'none', onPress: () => void simulate(item.id) };
+    if (item.status === 'failed') return { v: '다시 보내기', kind: 'bad', write: true, onPress: () => void retry(item.id) };
+    if (item.status === 'queued') return { v: '모의 실행', kind: 'none', write: true, onPress: () => void simulate(item.id) };
     return { v: '—', kind: 'dim' };
   }
 

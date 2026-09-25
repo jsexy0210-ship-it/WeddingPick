@@ -25,6 +25,7 @@ import { FAQ_PLACEHOLDER_LABEL, FAQ_PLACEHOLDER_NAMES } from '@weddingpick/domai
 import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { WritePressable } from './_role';
 import { AdminTabShell, ConfirmCard, type AdminTabDef } from './_ui';
 import { TermsPanel } from './terms';
 import { OgCardPanel } from './og-card';
@@ -199,9 +200,9 @@ function FaqPanel() {
     <View style={styles.root}>
       <View style={styles.header}>
         <Text style={styles.title}>FAQ 관리</Text>
-        <Pressable style={styles.addBtn} onPress={openNew}>
+        <WritePressable style={styles.addBtn} onPress={openNew}>
           <Text style={styles.addBtnText}>+ 새 FAQ</Text>
-        </Pressable>
+        </WritePressable>
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
           <Text style={styles.refreshText}>새로 고침</Text>
         </Pressable>
@@ -243,16 +244,16 @@ function FaqPanel() {
                     <Text style={styles.faqA} numberOfLines={2}>{item.answer}</Text>
                   </View>
                   <View style={styles.faqActions}>
-                    <Pressable style={styles.editBtn} onPress={() => openEdit(item)}>
+                    <WritePressable style={styles.editBtn} onPress={() => openEdit(item)}>
                       <Text style={styles.editBtnText}>수정</Text>
-                    </Pressable>
-                    <Pressable
+                    </WritePressable>
+                    <WritePressable
                       style={[styles.deleteBtn, deleting === item.id && styles.btnDisabled]}
                       onPress={() => setAsking(item)}
                       disabled={deleting !== null}
                     >
                       <Text style={styles.deleteBtnText}>{deleting === item.id ? '…' : '삭제'}</Text>
-                    </Pressable>
+                    </WritePressable>
                   </View>
                 </View>
               ))}
@@ -346,13 +347,13 @@ function FaqPanel() {
                   >
                     <Text style={styles.cancelBtnText}>취소</Text>
                   </Pressable>
-                  <Pressable
+                  <WritePressable
                     style={[styles.saveBtn, saving && styles.btnDisabled]}
                     onPress={() => void save()}
                     disabled={saving}
                   >
                     <Text style={styles.saveBtnText}>{saving ? '저장 중…' : '저장'}</Text>
-                  </Pressable>
+                  </WritePressable>
                 </View>
               </>
             )}

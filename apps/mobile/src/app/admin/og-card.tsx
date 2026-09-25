@@ -19,6 +19,7 @@ import {
 import { FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { WritePressable } from './_role';
 import { AdminFormModal } from './_ui';
 
 type Meta = {
@@ -222,9 +223,9 @@ export function OgCardPanel() {
         카카오톡이나 슬랙에 주소를 붙이면 뜨는 카드예요. 설정은 저장할 수 있고, 사이트에는 별도 배포 후 반영돼요.
       </Text>
       <View style={styles.actions}>
-        <Pressable style={[styles.button, styles.buttonPrimary]} onPress={() => setEditing(true)}>
+        <WritePressable style={[styles.button, styles.buttonPrimary]} onPress={() => setEditing(true)}>
           <Text style={styles.buttonPrimaryText}>링크 미리보기 수정</Text>
-        </Pressable>
+        </WritePressable>
       </View>
 
       <View style={styles.row}>
@@ -283,7 +284,7 @@ export function OgCardPanel() {
         <View style={styles.field}>
           <Text style={styles.fieldLabel}>카드 그림</Text>
           <View style={styles.imageActions}>
-          <Pressable
+          <WritePressable
             style={[styles.button, styles.buttonPrimary]}
             onPress={() => void uploadImage()}
             disabled={uploading}
@@ -293,11 +294,11 @@ export function OgCardPanel() {
             ) : (
               <Text style={styles.buttonPrimaryText}>그림 올리기</Text>
             )}
-          </Pressable>
+          </WritePressable>
           {data.ogImageSource === 'upload' ? (
-            <Pressable style={styles.button} onPress={() => void removeImage()} disabled={uploading}>
+            <WritePressable style={styles.button} onPress={() => void removeImage()} disabled={uploading}>
               <Text style={styles.buttonText}>올린 그림 치우기</Text>
-            </Pressable>
+            </WritePressable>
           ) : null}
           <Text style={styles.fieldHint}>
             {data.ogImageSource === 'upload'
@@ -335,9 +336,9 @@ export function OgCardPanel() {
           <Pressable style={styles.button} onPress={() => setEditing(false)} disabled={saving || uploading}>
             <Text style={styles.buttonText}>취소</Text>
           </Pressable>
-          <Pressable style={[styles.button, styles.buttonPrimary]} onPress={save} disabled={saving}>
+          <WritePressable style={[styles.button, styles.buttonPrimary]} onPress={save} disabled={saving}>
             {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonPrimaryText}>저장</Text>}
-          </Pressable>
+          </WritePressable>
         </View>
       </AdminFormModal>
     </ScrollView>

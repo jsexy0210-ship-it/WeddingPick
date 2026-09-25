@@ -8,6 +8,7 @@ import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { formatDateTimeDot } from '@/features/common/format-date';
 
 import { apiFetch } from './_api';
+import { WritePressable } from './_role';
 
 /**
  * 개인정보 검토 큐 — 문서에서 개인정보 꼴이 보인 것을 사람이 확인한다.
@@ -201,7 +202,7 @@ export function PiiReviewsPanel() {
                 const key = `${hint.field}:${hint.kind}`;
                 const done = redacted.includes(key);
                 return (
-                  <Pressable
+                  <WritePressable
                     key={key}
                     disabled={done || acting}
                     style={[styles.hintRow, done && styles.hintRowDone]}
@@ -213,7 +214,7 @@ export function PiiReviewsPanel() {
                     <Text style={[styles.hintAction, done && styles.hintActionDone]}>
                       {done ? '지웠어요' : '지우기'}
                     </Text>
-                  </Pressable>
+                  </WritePressable>
                 );
               })}
 
@@ -227,12 +228,12 @@ export function PiiReviewsPanel() {
 
               {actionError && <Text style={styles.actionErrorText}>{actionError}</Text>}
 
-              <Pressable
+              <WritePressable
                 disabled={acting}
                 style={[styles.cleanBtn, acting && styles.btnDisabled]}
                 onPress={() => void markClean()}>
                 <Text style={styles.cleanBtnText}>개인정보 없음으로 마치기</Text>
-              </Pressable>
+              </WritePressable>
               <Text style={styles.detailHint}>
                 지울 것이 없다고 판단하면 여기서 검토를 끝냅니다. 큐에서 사라져요.
               </Text>

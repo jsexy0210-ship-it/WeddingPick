@@ -17,6 +17,7 @@ import {
 import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { WritePressable } from './_role';
 import { formatDateDot } from '@/features/common/format-date';
 import { ConfirmCard } from './_ui';
 
@@ -289,21 +290,21 @@ export function TermsPanel() {
       <View style={styles.header}>
         <Text style={styles.title}>약관 · 방침 관리</Text>
         {activeDocData && !activeDocData.latestDraftVersion && (
-          <Pressable
+          <WritePressable
             style={[styles.addBtn, saving && styles.btnDisabled]}
             disabled={saving}
             onPress={() => void createDraft()}
           >
             <Text style={styles.addBtnText}>{saving ? '만드는 중…' : '새 초안 만들기'}</Text>
-          </Pressable>
+          </WritePressable>
         )}
         {activeDocData?.latestDraftVersion && (
-          <Pressable
+          <WritePressable
             style={styles.addBtn}
             onPress={() => { setNewTitle(''); setClauseBody(''); setClauseTable(null); setActionError(null); setAddingClause(true); }}
           >
             <Text style={styles.addBtnText}>조문 추가</Text>
-          </Pressable>
+          </WritePressable>
         )}
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
           <Text style={styles.refreshText}>새로 고침</Text>
@@ -385,7 +386,7 @@ export function TermsPanel() {
                         placeholderTextColor={Colors.light.textAssistive}
                       />
                     </View>
-                    <Pressable
+                    <WritePressable
                       style={[styles.publishBtn, (publishing || effectiveOn.trim() === '') && styles.btnDisabled]}
                       onPress={() => { setActionError(null); setAskingPublish(true); }}
                       disabled={publishing || effectiveOn.trim() === ''}
@@ -393,7 +394,7 @@ export function TermsPanel() {
                       <Text style={styles.publishBtnText}>
                         {publishing ? '공개 중…' : '초안 공개'}
                       </Text>
-                    </Pressable>
+                    </WritePressable>
                   </View>
                 )}
               </View>
@@ -436,20 +437,20 @@ export function TermsPanel() {
                       공개된 판을 보고 있으면 고칠 수 없다 — 단추를 눌러도 서버가
                       거절하므로, 눌리지 않게 두고 위의 「새 초안 만들기」로 보낸다.
                     */}
-                    <Pressable
+                    <WritePressable
                       style={[styles.editBtn, !activeDocData.latestDraftVersion && styles.btnDisabled]}
                       disabled={!activeDocData.latestDraftVersion}
                       onPress={() => openClause(clause)}
                     >
                       <Text style={styles.editBtnText}>수정</Text>
-                    </Pressable>
-                    <Pressable
+                    </WritePressable>
+                    <WritePressable
                       style={[styles.editBtn, !activeDocData.latestDraftVersion && styles.btnDisabled]}
                       disabled={!activeDocData.latestDraftVersion}
                       onPress={() => void deleteClause(clause)}
                     >
                       <Text style={styles.deleteBtnText}>삭제</Text>
-                    </Pressable>
+                    </WritePressable>
                   </View>
                 ))}
               </ScrollView>
@@ -536,13 +537,13 @@ export function TermsPanel() {
               <Pressable style={styles.cancelBtn} onPress={() => setEditingClause(null)} disabled={saving}>
                 <Text style={styles.cancelBtnText}>취소</Text>
               </Pressable>
-              <Pressable
+              <WritePressable
                 style={[styles.saveBtn, saving && styles.btnDisabled]}
                 onPress={() => void saveClause()}
                 disabled={saving}
               >
                 <Text style={styles.saveBtnText}>{saving ? '저장 중…' : '저장'}</Text>
-              </Pressable>
+              </WritePressable>
             </View>
           </View>
         </View>
@@ -577,13 +578,13 @@ export function TermsPanel() {
               <Pressable style={styles.cancelBtn} onPress={() => setAddingClause(false)} disabled={saving}>
                 <Text style={styles.cancelBtnText}>취소</Text>
               </Pressable>
-              <Pressable
+              <WritePressable
                 style={[styles.saveBtn, saving && styles.btnDisabled]}
                 onPress={() => void addClause()}
                 disabled={saving}
               >
                 <Text style={styles.saveBtnText}>{saving ? '추가 중…' : '추가'}</Text>
-              </Pressable>
+              </WritePressable>
             </View>
           </View>
         </View>

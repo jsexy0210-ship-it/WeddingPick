@@ -159,10 +159,10 @@ function AutomationPanel() {
        * 비울 것도 없어서 글자만 남긴다.
        */
       w.dlqSize > 0 && !busy
-        ? { v: '다시 시도', kind: 'brand', onPress: () => void act(w.id, 'recover') }
+        ? { v: '다시 시도', kind: 'brand', write: true, onPress: () => void act(w.id, 'recover') }
         : { v: '—', kind: 'dim' },
       w.dlqSize > 0 && !busy
-        ? { v: '확인함으로 표시', kind: 'warn', onPress: () => setDraining(w) }
+        ? { v: '확인함으로 표시', kind: 'warn', write: true, onPress: () => setDraining(w) }
         : { v: '—', kind: 'dim' },
     ],
   }));

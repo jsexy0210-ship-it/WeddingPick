@@ -4,6 +4,8 @@ import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-n
 
 import { AdminSpacing as A, Colors, FontSize, LineHeight, Radius, Spacing, WeddingMark } from '@weddingpick/ui';
 
+import { apiFetch } from './_api';
+import { AdminRoleProvider, type AdminRole } from './_role';
 import { loadAdminToken, readAdminTokenSync, subscribeAdminToken } from './_session';
 
 /**
@@ -177,9 +179,37 @@ function useAdminToken(): { token: string | null; checked: boolean } {
   return { token, checked: token !== null || checked };
 }
 
+/**
+ * 로그인한 관리자의 등급. 토큰이 바뀔 때마다 다시 읽는다 — 다른 계정으로 다시
+ * 로그인하면 등급도 바뀐다. 읽기에 실패하면 `null`(모름)로 두고 화면은 평소대로
+ * 그린다. 쓰기를 막는 것은 서버다(`_role.tsx`).
+ */
+function useAdminRoleFetch(token: string | null): AdminRole | null {
+  const [role, setRole] = useState<{ token: string; role: AdminRole } | null>(null);
+
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    apiFetch('/v1/admin/me')
+      .then((body) => {
+        const value = (body as { role?: unknown } | null)?.role;
+        if (!cancelled && (value === 'super' || value === 'operator' || value === 'viewer')) {
+          setRole({ token, role: value });
+        }
+      })
+      .catch(() => { /* 모르면 모르는 채로 둔다. */ });
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  return role && role.token === token ? role.role : null;
+}
+
 export default function AdminLayout() {
   const pathname = usePathname();
   const { token, checked } = useAdminToken();
+  const role = useAdminRoleFetch(pathname === LOGIN_PATH ? null : token);
 
   if (Platform.OS !== 'web') {
     return (
@@ -206,12 +236,25 @@ export default function AdminLayout() {
   if (!token) return <Redirect href={LOGIN_PATH as never} />;
 
   return (
-    <View style={styles.root}>
-      <Sidebar pathname={pathname} />
-      <View style={styles.main}>
-        <Slot />
+    <AdminRoleProvider value={role}>
+      <View style={styles.root}>
+        <Sidebar pathname={pathname} />
+        <View style={styles.main}>
+          {/*
+            * 뷰어는 모든 메뉴를 열어 보되 바꾸지는 못한다(2026-09-25 대표 지시). 단추가
+            * 왜 흐린지를 화면마다 적지 않고 여기 한 줄로 알린다.
+            */}
+          {role === 'viewer' ? (
+            <View style={styles.viewerNotice}>
+              <Text style={styles.viewerNoticeText} numberOfLines={1}>
+                조회 전용 계정이에요. 등록 · 수정 · 삭제 단추는 잠겨 있어요.
+              </Text>
+            </View>
+          ) : null}
+          <Slot />
+        </View>
       </View>
-    </View>
+    </AdminRoleProvider>
   );
 }
 
@@ -291,6 +334,18 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'column',
     minWidth: 0,
+  },
+  /* `features/admin/pending-backend`의 안내와 같은 칠 — 「지금 조작이 안 된다」를 말하는 같은 자리다. */
+  viewerNotice: {
+    backgroundColor: C.cautionaryBackground,
+    paddingVertical: Spacing.two,
+    paddingHorizontal: A.bodyPaddingX,
+  },
+  viewerNoticeText: {
+    color: C.cautionary,
+    fontSize: FontSize.micro,
+    lineHeight: LineHeight.micro,
+    fontWeight: '600',
   },
   notWeb: {
     flex: 1,

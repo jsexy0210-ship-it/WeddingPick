@@ -122,6 +122,8 @@ const NO_CONTRACT = new Set([
   'GET /v1/admin/marketing',
   'GET /v1/admin/data/images',
   'GET /v1/admin/vendors',
+  /* 관리자 등급(2026-09-25 뷰어 조회 전용) — 관리자 전용, 같은 자리다. */
+  'GET /v1/admin/me',
   'GET /v1/admin/data/pipeline',
   'GET /v1/admin/pii-reviews',
   'GET /v1/admin/policy-engine',

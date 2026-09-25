@@ -31,6 +31,7 @@ import { AdminsPanel } from './admins';
 import { formatCount } from '@weddingpick/domain';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { WritePressable } from './_role';
 import { formatDateDot } from '@/features/common/format-date';
 
 type WithdrawalStatus = 'hold' | 'failed' | 'pending' | 'deletion_pending';
@@ -280,9 +281,9 @@ function UsersPanel() {
                   삭제 실패 {formatCount(selected.withdrawal.failure.attemptCount)}회
                 </Text>
                 <Text style={styles.modalSub}>{selected.withdrawal.failure.message}</Text>
-                <Pressable style={styles.retryAction} onPress={() => void retryDeletion()} disabled={acting}>
+                <WritePressable style={styles.retryAction} onPress={() => void retryDeletion()} disabled={acting}>
                   <Text style={styles.retryActionText}>{acting ? '지우는 중…' : '삭제 다시 시도'}</Text>
-                </Pressable>
+                </WritePressable>
               </>
             )}
 
@@ -292,12 +293,12 @@ function UsersPanel() {
               막지만, 눌러도 안 되는 단추를 보여줄 이유가 없다).
             */}
             {selected && !selected.deletedAt && !selected.isOperator && !confirmWithdraw && (
-              <Pressable
+              <WritePressable
                 style={styles.withdrawAction}
                 onPress={() => { setConfirmWithdraw(true); setActionError(null); setActionNote(null); }}
               >
                 <Text style={styles.withdrawActionText}>이 계정 탈퇴시키기</Text>
-              </Pressable>
+              </WritePressable>
             )}
 
             {confirmWithdraw && (
@@ -323,13 +324,13 @@ function UsersPanel() {
                   >
                     <Text style={styles.confirmCancelText}>취소</Text>
                   </Pressable>
-                  <Pressable
+                  <WritePressable
                     style={styles.confirmGo}
                     onPress={() => void forceWithdraw()}
                     disabled={acting}
                   >
                     <Text style={styles.confirmGoText}>{acting ? '처리 중…' : '탈퇴시키기'}</Text>
-                  </Pressable>
+                  </WritePressable>
                 </View>
               </View>
             )}

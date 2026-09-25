@@ -337,7 +337,7 @@ export function AdminsPanel() {
       embedded
       title="관리자 계정"
       sub="콘솔에 들어올 수 있는 사람과 등급"
-      action={{ label: '관리자 추가', onPress: () => setCreating(true), kind: 'brand' }}
+      action={{ label: '관리자 추가', write: true, onPress: () => setCreating(true), kind: 'brand' }}
     >
       <StatusBanner {...banner} />
 
@@ -349,7 +349,7 @@ export function AdminsPanel() {
           demotable.length > 0
             ? {
                 label: '나머지 전체를 뷰어로',
-                onPress: () => setPending({ kind: 'demote-others', targets: demotable }),
+                write: true, onPress: () => setPending({ kind: 'demote-others', targets: demotable }),
               }
             : undefined
         }

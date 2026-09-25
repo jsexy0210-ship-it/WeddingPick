@@ -17,6 +17,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { WritePressable } from './_role';
 import { AdminTabShell, type AdminTabDef } from './_ui';
 import { DataPipelinePanel } from './data-pipeline';
 import { InquiryPanel } from './inquiries';
@@ -228,20 +229,20 @@ function QueuePanel() {
 
               {pending === null ? (
                 <View style={styles.actionRow}>
-                  <Pressable
+                  <WritePressable
                     style={[styles.approveBtn, acting && styles.btnDisabled]}
                     onPress={() => ask('approve')}
                     disabled={acting}
                   >
                     <Text style={styles.approveBtnText}>승인</Text>
-                  </Pressable>
-                  <Pressable
+                  </WritePressable>
+                  <WritePressable
                     style={[styles.rejectBtn, acting && styles.btnDisabled]}
                     onPress={() => ask('reject')}
                     disabled={acting}
                   >
                     <Text style={styles.rejectBtnText}>반려</Text>
-                  </Pressable>
+                  </WritePressable>
                 </View>
               ) : (
                 <ConfirmDecision
