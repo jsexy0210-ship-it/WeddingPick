@@ -43,7 +43,6 @@ describe('goDepthBack — Depth 기본, 명시된 화면만 History Back', () =>
     '/feed/f-1',
     '/community/feed/f-1',
     '/pick/confirm',
-    '/capture/review',
   ])('%s는 기록이 있을 때만 명시적인 History Back이다', (pathname) => {
     jest.mocked(router.canGoBack).mockReturnValue(true);
 
@@ -69,10 +68,10 @@ describe('goDepthBack — Depth 기본, 명시된 화면만 History Back', () =>
       throw new Error('nothing to dismiss to');
     });
 
-    goDepthBack('/my/rewards/npay');
+    goDepthBack('/search/v-101/images');
 
     expect(router.back).not.toHaveBeenCalled();
-    expect(router.replace).toHaveBeenCalledWith('/my/rewards');
+    expect(router.replace).toHaveBeenCalledWith('/search/v-101');
   });
 });
 

@@ -39,13 +39,7 @@ describe('비-MY 사용자 라우트의 직접 History Back', () => {
         .filter(([, count]) => count > 0)
     );
 
-    expect(actual).toEqual({
-      'capture/camera.tsx': 2,
-      'capture/review.tsx': 1,
-      'wedding/[id]/conflict.tsx': 2,
-      'wedding/[id]/events/[eventId].tsx': 1,
-      'wedding/[id]/expenses/[expenseId].tsx': 1,
-      'wedding/[id]/index.tsx': 1,
-    });
+    // 카메라 · 문서 확인 · 충돌 · 일정/지출 상세 · 문서 상세가 2026-09-25에 삭제돼 남은 곳이 없다.
+    expect(actual).toEqual({});
   });
 });

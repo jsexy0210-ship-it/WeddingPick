@@ -61,8 +61,6 @@ function render(route, {
     },
     '@/features/auth/sign-in-handoff': { claimSigningInMessageForBoot: () => {}, setPendingSignInError: () => {} },
     '@/features/auth/signing-in-view': { SigningInView: 'SigningInView' },
-    '@/features/capture/capture-draft': { CaptureDraftProvider: 'CaptureDraftProvider' },
-    '@/features/documents/document-store': { DocumentStoreProvider: 'DocumentStoreProvider' },
     '@/features/errors/full-screen-error': { FullScreenError: 'FullScreenError' },
     '@/features/inapp-browser/escape': {
       escapeInAppBrowser: () => { counters.escapeChecks++; return { kind: 'none' }; },

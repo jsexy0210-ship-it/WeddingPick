@@ -19,9 +19,7 @@ import { completeAuthPopup, isAuthPopup } from '@/features/auth/is-auth-popup';
 import { completeKakaoRedirect, hasKakaoReturn } from '@/features/auth/providers';
 import { claimSigningInMessageForBoot, setPendingSignInError } from '@/features/auth/sign-in-handoff';
 import { SigningInView } from '@/features/auth/signing-in-view';
-import { CaptureDraftProvider } from '@/features/capture/capture-draft';
 import { ConfirmationDialogHost } from '@/components/confirmation-dialog-host';
-import { DocumentStoreProvider } from '@/features/documents/document-store';
 import { FullScreenError } from '@/features/errors/full-screen-error';
 import { escapeInAppBrowser } from '@/features/inapp-browser/escape';
 import { InAppWebShell } from '@/features/in-app-web/in-app-web-shell';
@@ -364,32 +362,28 @@ function RootLayoutContent({ browserReady }: { browserReady: boolean }) {
   /* 항상 라이트 — 기기 다크 모드를 따르지 않는다(packages/ui use-color-scheme 참고). */
   return (
     <ThemeProvider value={navigationTheme}>
-      <DocumentStoreProvider>
-        <CaptureDraftProvider>
-          <InAppBrowserNotice notice={inAppNotice} />
-          <ConfirmationDialogHost />
-          {/*
-            바깥 주소를 앱 «안»에 띄우는 껍데기(웹). 뿌리에 한 장만 둔다 — 화면 안에
-            두면 탭바·헤더 아래에 갇혀서 앱을 덮지 못한다(2026-09-15 대표 지시 ·
-            CLAUDE.md 「앱 밖으로 나가지 않는다」). 네이티브에서는 아무것도 그리지
-            않는다 — 거기서는 expo-web-browser의 시스템 시트가 앱 위에 뜬다.
-          */}
-          <InAppWebShell />
-          <Stack screenOptions={stackScreenOptions}>
-            <Stack.Screen name="(tabs)" />
-            {/*
-              가입이 끝나기 전에는 나갈 곳이 없다. 제스처로 빠져나가면 서버가
-              전부 막아둔 계정으로 앱을 헤매게 된다(v3.13 §N-2).
-            */}
-            {/* 예식일·지역 없이는 개인화가 없다. 제스처로도 나갈 수 없게 한다. */}
-            <Stack.Screen name="setup" options={{ gestureEnabled: false }} />
-            {/* 로그인 없이는 앱을 쓸 수 없다. 제스처로 빠져나가면 뒤에 아무것도 없다. */}
-            <Stack.Screen name="login" options={{ gestureEnabled: false }} />
-            <Stack.Screen name="admin" options={{ headerShown: false }} />
-          </Stack>
-          <ResultToastHost />
-        </CaptureDraftProvider>
-      </DocumentStoreProvider>
+      <InAppBrowserNotice notice={inAppNotice} />
+      <ConfirmationDialogHost />
+      {/*
+        바깥 주소를 앱 «안»에 띄우는 껍데기(웹). 뿌리에 한 장만 둔다 — 화면 안에
+        두면 탭바·헤더 아래에 갇혀서 앱을 덮지 못한다(2026-09-15 대표 지시 ·
+        CLAUDE.md 「앱 밖으로 나가지 않는다」). 네이티브에서는 아무것도 그리지
+        않는다 — 거기서는 expo-web-browser의 시스템 시트가 앱 위에 뜬다.
+      */}
+      <InAppWebShell />
+      <Stack screenOptions={stackScreenOptions}>
+        <Stack.Screen name="(tabs)" />
+        {/*
+          가입이 끝나기 전에는 나갈 곳이 없다. 제스처로 빠져나가면 서버가
+          전부 막아둔 계정으로 앱을 헤매게 된다(v3.13 §N-2).
+        */}
+        {/* 예식일·지역 없이는 개인화가 없다. 제스처로도 나갈 수 없게 한다. */}
+        <Stack.Screen name="setup" options={{ gestureEnabled: false }} />
+        {/* 로그인 없이는 앱을 쓸 수 없다. 제스처로 빠져나가면 뒤에 아무것도 없다. */}
+        <Stack.Screen name="login" options={{ gestureEnabled: false }} />
+        <Stack.Screen name="admin" options={{ headerShown: false }} />
+      </Stack>
+      <ResultToastHost />
     </ThemeProvider>
   );
 }

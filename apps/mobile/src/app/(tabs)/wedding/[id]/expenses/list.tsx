@@ -1,8 +1,8 @@
 import type { ExpenseSummaryResponse } from '@weddingpick/api-contract';
 import { manwon } from '@weddingpick/domain';
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { getExpenses } from '@/api/client';
 import { useDepthBack } from '@/features/navigation/depth-back';
@@ -63,16 +63,7 @@ export default function ExpenseListScreen() {
                   ? { label: '상담 정리', text: theme.cautionary, background: theme.cautionaryBackground }
                   : null;
             return (
-              <Pressable
-                key={expense.id}
-                accessibilityRole="button"
-                accessibilityLabel={`${expense.label} 상세 보기`}
-                onPress={() => router.push(`/wedding/${id}/expenses/${expense.id}` as never)}
-                style={({ pressed }) => [
-                  styles.row,
-                  { borderBottomColor: theme.border },
-                  pressed ? styles.pressed : null,
-                ]}>
+              <View key={expense.id} style={[styles.row, { borderBottomColor: theme.border }]}>
                 <View style={styles.col}>
                   <ThemedText type="f15" numberOfLines={1} style={styles.bold}>
                     {expense.label}
@@ -93,7 +84,7 @@ export default function ExpenseListScreen() {
                     </ThemedText>
                   </View>
                 ) : null}
-              </Pressable>
+              </View>
             );
           })}
         </View>
@@ -118,5 +109,4 @@ const styles = StyleSheet.create({
   bold: { fontWeight: 700 },
   /* `spendBadge` — `height:24px;padding:0 8px;border-radius:4px`. 글자가 커져도 잘리지 않게 minHeight로 둔다. */
   badge: { minHeight: 24, paddingHorizontal: Spacing.two, borderRadius: Radius.badge, justifyContent: 'center' },
-  pressed: { opacity: 0.6 },
 });

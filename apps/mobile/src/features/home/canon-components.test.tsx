@@ -1,11 +1,8 @@
-import type { CategoryRecommendation, VendorSummary } from '@weddingpick/api-contract';
 import React from 'react';
 import { act, create, type ReactTestRenderer, type ReactTestRendererJSON } from 'react-test-renderer';
 import { MyWeddingPrep, HomeBudget } from './home-summary';
 import { ceremonyLine } from './hero';
 import { homePrepCards } from './prep-groups';
-import { PickRecommend } from './pick-recommend';
-import { VendorCard } from './vendor-card';
 
 jest.mock('./category-image', () => ({ CategoryImage: () => null }));
 
@@ -22,23 +19,6 @@ function renderedText(node: ReactTestRendererJSON | ReactTestRendererJSON[] | st
   return (node.children ?? []).map(renderedText).join(' ');
 }
 const text = (view: ReactTestRenderer) => renderedText(view.toJSON());
-
-const group: CategoryRecommendation = {
-  category: 'studio', categoryLabel: '스튜디오', state: 'NOT_STARTED', pickCount: 0, vendors: [],
-};
-
-const vendor: VendorSummary = {
-  id: 'vendor-1', name: '테스트 업체', category: 'studio', region: '서울',
-  coordinates: null, imageUrl: null, sourceNote: null, comparableQuoteCount: 0,
-  paidPrice: { stage: 'collecting', count: 0, caption: '아직 정보가 적어요' },
-  guidePrice: { fromKrw: 1500000, sourceLabel: '업체 홈페이지' },
-  styleTags: [], reasons: ['선호하는 분위기가 같아요'], rating: { average: 4.8, count: 10 },
-};
-
-const groupWithVendor: CategoryRecommendation = {
-  ...group,
-  vendors: [vendor],
-};
 
 describe('최신 홈·추천 연결', () => {
   it('히어로 예식 정보 줄은 RN 정본 home.jsx WP-HOME-001~003 세 상태를 따른다', () => {
@@ -57,74 +37,6 @@ describe('최신 홈·추천 연결', () => {
   const views: ReactTestRenderer[] = [];
   const mount = (element: React.ReactElement) => { const view = render(element); views.push(view); return view; };
   afterEach(() => { act(() => { views.splice(0).forEach((view) => view.unmount()); }); });
-
-  it('추천 전체는 기본 카드에서 이유를 숨기고 카드를 누르면 이유 확장 상태로 교체한다', () => {
-    const view = mount(<PickRecommend groups={[groupWithVendor]} open="studio" onToggle={jest.fn()}
-      remaining={1} remainingCategories={[]} isPicked={() => false} onPressVendor={jest.fn()}
-      onPressPick={jest.fn()} onPressCompare={jest.fn()} onPressMore={jest.fn()}
-      onPressSearchMore={jest.fn()} />);
-
-    expect(text(view)).not.toContain('추천 1위');
-    expect(text(view)).not.toContain('선호하는 분위기가 같아요');
-
-    const card = view.root.findAllByProps({ accessibilityLabel: '테스트 업체 추천 이유 보기' })
-      .find((node) => typeof node.props.onPress === 'function');
-    expect(card).toBeDefined();
-    act(() => { card!.props.onPress(); });
-
-    expect(text(view)).toMatch(/추천\s*1\s*위/);
-    expect(text(view)).toContain('선호하는 분위기가 같아요');
-    expect(text(view)).toMatch(/실 제보\s*0\s*건/);
-    expect(text(view)).toContain('비교에 담기');
-    expect(view.root.findAllByProps({ accessibilityLabel: '스튜디오 더 찾아보기' })).toHaveLength(0);
-  });
-
-  it('업체가 없는 업종도 더 찾아보기를 열 수 있다', () => {
-    const onMore = jest.fn();
-    const view = mount(<PickRecommend groups={[group]} open="studio" onToggle={jest.fn()}
-      remaining={1} remainingCategories={[]} isPicked={() => false} onPressVendor={jest.fn()}
-      onPressPick={jest.fn()} onPressCompare={jest.fn()} onPressMore={jest.fn()} onPressSearchMore={onMore} />);
-    const button = view.root.findAllByProps({ accessibilityLabel: '스튜디오 더 찾아보기' })
-      .find((node) => typeof node.props.onPress === 'function');
-    expect(button).toBeDefined();
-    act(() => { button!.props.onPress(); });
-    expect(onMore).toHaveBeenCalledWith('studio');
-  });
-
-  it('접힌 업종의 검색 버튼을 중복 노출하지 않는다', () => {
-    const view = mount(<PickRecommend groups={[group]} open={null} onToggle={jest.fn()}
-      remaining={1} remainingCategories={[]} isPicked={() => false} onPressVendor={jest.fn()}
-      onPressPick={jest.fn()} onPressCompare={jest.fn()} onPressMore={jest.fn()} onPressSearchMore={jest.fn()} />);
-    expect(view.root.findAllByProps({ accessibilityLabel: '스튜디오 더 찾아보기' })).toHaveLength(0);
-  });
-
-  it('추천이 비어도 남은 준비가 있으면 완료라고 하지 않는다', () => {
-    const view = mount(<PickRecommend groups={[]} open={null} onToggle={jest.fn()}
-      remaining={2} remainingCategories={[]} isPicked={() => false} onPressVendor={jest.fn()}
-      onPressPick={jest.fn()} onPressCompare={jest.fn()} onPressMore={jest.fn()} />);
-    expect(text(view)).toContain('정보 수집 중');
-    expect(text(view)).not.toContain('정할 준비를 다 끝냈어요');
-  });
-
-  it('제보 부족은 수집 중으로 표시하고 별점을 제보 건수로 혼용하지 않는다', () => {
-    const view = mount(<VendorCard vendor={vendor} picked={false} onPress={jest.fn()} onPressPick={jest.fn()} />);
-    expect(text(view)).toContain('수집 중');
-    expect(text(view)).toContain('선호하는 분위기가 같아요');
-    expect(text(view)).not.toContain('업체 안내 150만원');
-    expect(text(view)).not.toContain('4.8');
-    expect(text(view)).toMatch(/0\s*건/);
-  });
-
-  it('Pick 버튼은 상위 상세 이동 이벤트를 차단한다', () => {
-    const onPick = jest.fn(), onDetail = jest.fn(), stopPropagation = jest.fn();
-    const view = mount(<VendorCard vendor={vendor} picked={false} onPress={onDetail} onPressPick={onPick} />);
-    const button = view.root.findAllByProps({ accessibilityLabel: '테스트 업체 Pick' })
-      .find((node) => typeof node.props.onPress === 'function');
-    act(() => { button!.props.onPress({ stopPropagation }); });
-    expect(stopPropagation).toHaveBeenCalledTimes(1);
-    expect(onPick).toHaveBeenCalledTimes(1);
-    expect(onDetail).not.toHaveBeenCalled();
-  });
 
   it('「내 웨딩 준비」는 완료해도 사라지지 않고 항상 4칸이다', () => {
     const statuses = ['hall', 'studio', 'dress', 'makeup', 'hair', 'snap', 'bouquet', 'invitation', 'goods', 'dowry', 'honeymoon']

@@ -326,7 +326,6 @@ export default function WeddingScreen({
               events={events ?? []}
               weddingDate={me?.weddingDate ?? null}
               decidedCount={decidedCount}
-              onEdit={(event) => (weddingId ? router.push(`/wedding/${weddingId}/events/${event.id}` as never) : null)}
               onOpenDecided={() => (weddingId ? router.push(`/wedding/${weddingId}/decided` as never) : null)}
             />
           ) : tab === 'budget' ? (
@@ -473,13 +472,11 @@ function CalendarPanel({
   events,
   weddingDate,
   decidedCount,
-  onEdit,
   onOpenDecided,
 }: {
   events: WeddingEvent[];
   weddingDate: string | null;
   decidedCount: number | null;
-  onEdit: (event: WeddingEvent) => void;
   onOpenDecided: () => void;
 }) {
   const theme = useTheme();
@@ -542,10 +539,10 @@ function CalendarPanel({
         </Pressable>
       ) : null}
 
-      {showPast && past.length > 0 ? <TimelineGroupView title="지난 일정" range="" items={past.map((event) => ({ event, kind: 'event' as const }))} dimmed onEdit={onEdit} /> : null}
+      {showPast && past.length > 0 ? <TimelineGroupView title="지난 일정" range="" items={past.map((event) => ({ event, kind: 'event' as const }))} dimmed /> : null}
 
       {upcomingGroups.map((group) => (
-        <TimelineGroupView key={group.title} {...group} onEdit={onEdit} />
+        <TimelineGroupView key={group.title} {...group} />
       ))}
 
     </View>
@@ -557,13 +554,11 @@ function TimelineGroupView({
   range,
   items,
   dimmed = false,
-  onEdit,
 }: {
   title: string;
   range: string;
   items: TimelineItem[];
   dimmed?: boolean;
-  onEdit: (event: WeddingEvent) => void;
 }) {
   const theme = useTheme();
   return (
@@ -606,11 +601,8 @@ function TimelineGroupView({
               <View style={[styles.timelineDot, { backgroundColor: done ? theme.track : theme.tint }]} />
               <View style={[styles.timelineLine, { backgroundColor: theme.border }]} />
             </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={event.title}
-              onPress={() => onEdit(event)}
-              style={[styles.eventRow, { backgroundColor: done ? theme.backgroundElement : theme.backgroundSelected }]}>
+            {/* 일정 상세(WP-OUR-005)는 2026-09-25 삭제 — 행은 보기만 한다. */}
+            <View style={[styles.eventRow, { backgroundColor: done ? theme.backgroundElement : theme.backgroundSelected }]}>
               <ThemedText type="f12" themeColor="textAssistive" numeric style={styles.bold}>
                 {noteMonthDayWeekdayTime(event.startsAt)}
               </ThemedText>
@@ -626,7 +618,7 @@ function TimelineGroupView({
                   {event.memo}
                 </ThemedText>
               ) : null}
-            </Pressable>
+            </View>
           </View>
         );
       })}

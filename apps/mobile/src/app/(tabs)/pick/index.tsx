@@ -7,11 +7,14 @@
  *
  * **v3.29 대조로 정한 것.**
  * - Pick 탭 안에 «추천 · 내 Pick»(Figma 원본) 같은 상단 탭을 두지 않는다 — v3.29 diffs
- *   «탭 구성»이 명시한다. 비교 → 결정이 한 화면에서 끝난다.
+ *   «탭 구성»이 명시한다. 비교 → 결정이 한 화면에서 끝난다. 홈 «내 웨딩 준비» 카드는
+ *   `/pick?group=<묶음>`으로 들어와 그 업종 칩이 켜진 채 열린다(home.jsx «각 카드를 누르면
+ *   Pick의 해당 업종으로 이동»).
  * - `/pick?section=recommendations` 분기는 없앴다(2026-09-25 대표 지시). 옛 링크로 들어와도
  *   `section`을 보지 않으므로 이 기본 화면이 뜬다.
  * - Pick = 후보 담기 · 최종 결정은 별도(v3.29 diffs «Pick 의미»). 최종 결정은 확인 시트
- *   (`/pick/confirm`)에서 저장한다.
+ *   (`/pick/confirm`)에서 저장한다 — 정본 pick.js «최종 결정: 확인 시트 → 완료 화면»이라
+ *   2026-09-25 정본 밖 화면 삭제(#535)에서 제외했다.
  * - 카드를 누르면 그 업체의 상담 예약(`/search/[vendorId]/consult`)으로 바로 간다 — 정본
  *   frame-001 tagDesc «카드를 누르면 상담 예약으로 바로 이어집니다»(2026-09-25 MASTER 지시로
  *   diffs «상담 진입»보다 이 동선을 따른다). 상담 예약 화면 자체는 검색 화면군 소유다.
@@ -38,7 +41,7 @@ import {
   type VendorCategory,
   regionLabel,
 } from '@weddingpick/domain';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -166,11 +169,21 @@ function pickSections(rows: readonly Row[]): Section[] {
 }
 
 export default function PickScreen() {
+  const { group: groupParam } = useLocalSearchParams<{ group?: string | string[] }>();
+  const rawGroup = Array.isArray(groupParam) ? groupParam[0] : groupParam;
+  /* 홈 «내 웨딩 준비» 카드가 넘긴 묶음. 모르는 값이면 «전체». */
+  const requestedGroup = PREPARATION_GROUPS.find((group) => group.key === rawGroup)?.key ?? null;
   const theme = useTheme();
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [page, setPage] = useState<CandidateListResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<Filter>('all');
+  const [filter, setFilter] = useState<Filter>(requestedGroup ?? 'all');
+  /* 탭에 머문 채 홈에서 다른 묶음으로 다시 들어오면 그 칩으로 바꾼다(렌더 중 조정 — 이펙트 불필요). */
+  const [seenGroup, setSeenGroup] = useState(requestedGroup);
+  if (seenGroup !== requestedGroup) {
+    setSeenGroup(requestedGroup);
+    if (requestedGroup) setFilter(requestedGroup);
+  }
   /** 비교함에 담은 업체(vendorId). 최대 PICK_COMPARE_MAX. */
   const [compare, setCompare] = useState<ReadonlySet<string>>(new Set());
   const [busy, setBusy] = useState(false);

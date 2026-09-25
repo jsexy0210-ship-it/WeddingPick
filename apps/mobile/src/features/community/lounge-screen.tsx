@@ -18,7 +18,6 @@ import {
   Layout,
   LineHeight,
   MaxContentWidth,
-  ProductSymbol,
   Radius,
   SeedIcon,
   Spacing,
@@ -327,14 +326,6 @@ function ReviewList({
       <Empty
         title={category === '전체' ? S['review.empty.title'] : `${category} 후기가 아직 없어요`}
         body={category === '전체' ? S['review.empty.body'] : '다른 업종의 후기를 먼저 둘러보세요'}
-        action={
-          category === '전체'
-            ? {
-                label: S['review.empty.cta'],
-                onPress: () => router.push('/capture/payment/consent?from=community' as never),
-              }
-            : undefined
-        }
       />
     );
   }
@@ -353,11 +344,8 @@ function ReviewList({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`${review.vendor.name} 후기`}
-              onPress={() =>
-                router.push(
-                  `/search/${encodeURIComponent(review.vendor.id)}/review/${encodeURIComponent(review.id)}` as never
-                )
-              }
+              /* 후기 상세는 2026-09-25 삭제 — 그 업체 상세로 연다. */
+              onPress={() => router.push(`/search/${encodeURIComponent(review.vendor.id)}` as never)}
               style={({ pressed }) => [styles.reviewTap, pressed ? styles.pressed : null]}>
             <View style={styles.reviewHead}>
               <View style={[styles.reviewAvatar, { backgroundColor: theme.backgroundSelected }]}>
@@ -442,21 +430,7 @@ function ReviewList({
                   {helpful.count}
                 </ThemedText>
               </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() =>
-                  router.push(
-                    `/search/${encodeURIComponent(review.vendor.id)}/review/${encodeURIComponent(review.id)}` as never
-                  )
-                }
-                accessibilityLabel={`댓글 ${review.comments.count}`}
-                style={({ pressed }) => [styles.reviewAction, pressed ? styles.pressed : null]}>
-                {/* 정본 revCmt — 말풍선 18 + 숫자 14/700 #4d5159. */}
-                <ProductSymbol name="chatting" size={18} color={CanonGray.gray700} />
-                <ThemedText type="f14" numeric style={[styles.bold, { color: CanonGray.gray700 }]}>
-                  {review.comments.count}
-                </ThemedText>
-              </Pressable>
+              {/* «댓글 N»은 후기 상세(댓글이 사는 곳) 삭제(2026-09-25)로 뺐다. */}
             </View>
           </View>
         );
