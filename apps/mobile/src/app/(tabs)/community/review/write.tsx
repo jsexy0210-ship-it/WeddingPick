@@ -5,12 +5,11 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { searchVendors } from '@/api/client';
-import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
+import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import {
   Border,
   Layout,
-  ProductSymbol,
   Radius,
   Spacing,
   ThemedText,
@@ -79,17 +78,7 @@ export function LoungeReviewVendorSheet({
     <BottomSheet visible onRequestClose={onClose} testID="lounge-review-write-sheet">
         <SheetPanel style={styles.sheet}>
           <View style={styles.head}>
-            <View style={styles.headRow}>
-              <ThemedText type="t4">후기 쓰기</ThemedText>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="후기 작성 닫기"
-                hitSlop={12}
-                onPress={onClose}
-                style={styles.close}>
-                <ProductSymbol name="close" size={20} color={theme.textAssistive} />
-              </Pressable>
-            </View>
+            <SheetHeader title="후기 쓰기" closeLabel="후기 작성 닫기" onClose={onClose} />
             <ThemedText type="t7" themeColor="textSecondary">
               이용한 업체를 먼저 골라주세요.
             </ThemedText>
@@ -163,8 +152,6 @@ export function LoungeReviewVendorSheet({
 const styles = StyleSheet.create({
   sheet: { flexShrink: 1 },
   head: { gap: Spacing.one },
-  headRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  close: { minWidth: 44, minHeight: 44, alignItems: 'flex-end', justifyContent: 'center' },
   input: {
     minHeight: Layout.field,
     borderWidth: Border.hairline,

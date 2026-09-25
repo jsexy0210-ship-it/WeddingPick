@@ -92,7 +92,6 @@ export const ROUTES: readonly string[] = [
   '/my/reports',
   '/my/reviews',
   '/my/taste',
-  '/my/terms',
   '/my/wedding-settings',
   '/my/withdrawal',
   '/pick',

@@ -1,6 +1,7 @@
 import {
   IN_PROGRESS_WITHIN_DAYS,
   TASK_PRESETS,
+  tentativeDueDate,
   TASK_STATE_LABEL,
   formatTaskDate,
   nextTask,
@@ -138,5 +139,21 @@ describe('진행률과 다음 일정', () => {
   it('전역 날짜 표기(v3.21)의 연도 없는 꼴을 쓴다 — 서술형 «9월 2일»은 금지어다', () => {
     expect(formatTaskDate('2026-09-02')).toBe('09.02(수)');
     expect(formatTaskDate('2027-05-16')).toBe('05.16(일)');
+  });
+});
+
+describe('tentativeDueDate — 예식일 역산 임시 날짜(2026-09-25 대표 지시)', () => {
+  it('할 일 이름별로 예식일에서 정해진 날수를 뺀다', () => {
+    expect(tentativeDueDate('2027-05-15', '웨딩홀 계약')).toBe('2026-07-19');
+    expect(tentativeDueDate('2027-05-15', '청첩장 인쇄')).toBe('2027-03-16');
+  });
+
+  it('모르는 이름이나 잘못된 날짜는 null', () => {
+    expect(tentativeDueDate('2027-05-15', '없는 할 일')).toBeNull();
+    expect(tentativeDueDate('bad', '웨딩홀 계약')).toBeNull();
+  });
+
+  it('기본 열셋 이름은 전부 임시 날짜가 있다', () => {
+    for (const preset of TASK_PRESETS) expect(tentativeDueDate('2027-05-15', preset.label)).not.toBeNull();
   });
 });

@@ -59,10 +59,14 @@ describe('최신 홈·추천 연결', () => {
     expect(view.root.findAllByProps({ accessibilityLabel: '웨딩홀' }).length).toBeGreaterThan(0);
   });
 
-  it('예산이 0이면 0%로 오해시키지 않고 설정 행동을 준다', () => {
+  it('예산이 없어도 예산현황을 그대로 그리고 서브 문구로 입력을 안내한다(2026-09-25 대표 지시)', () => {
     const view = mount(<HomeBudget budget={{ total: 0, spent: 0, remaining: 0 }} onOpen={jest.fn()} />);
-    expect(text(view)).toContain('예산 정하기');
-    expect(view.root.findAllByProps({ accessibilityRole: 'progressbar' })).toHaveLength(0);
+    expect(text(view)).toContain('예산 정보를 입력해 주세요');
+    expect(text(view)).toContain('예산 미입력');
+    expect(view.root.findAllByProps({ accessibilityRole: 'progressbar' })).not.toHaveLength(0);
+
+    const empty = mount(<HomeBudget budget={null} onOpen={jest.fn()} />);
+    expect(text(empty)).toContain('예산 정보를 입력해 주세요');
   });
 
   it('예산만 있고 쓴 돈이 없으면 WP-HOME-002 문구를 보여 준다', () => {

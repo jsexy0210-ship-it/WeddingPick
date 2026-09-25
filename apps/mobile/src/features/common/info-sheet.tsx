@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ActionButton, Layout, Radius, ThemedText, useTheme } from '@weddingpick/ui';
-import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
+import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
 
 /**
  * 금액 옆 ⓘ가 여는 설명 시트 — WP-SHT-014 «실 제보가 뭔가요?» · WP-SHT-015 «기준금액이 뭔가요?».
@@ -52,7 +52,7 @@ export function InfoSheet({
     <BottomSheet visible={topic !== null} onRequestClose={onClose}>
       <SheetPanel>
         <View style={styles.head}>
-          <ThemedText type="t4">{sheet.title}</ThemedText>
+          <SheetHeader title={sheet.title} onClose={onClose} />
           <ThemedText type="t6" themeColor="textSecondary">
             {sheet.body}
           </ThemedText>

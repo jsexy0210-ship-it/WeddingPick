@@ -194,7 +194,7 @@ export default function HomeScreen() {
   const currentLabel = current === null ? null : (statuses.find((row) => row.category === current)?.label ?? null);
   const prepSub = homePrepSectionSub({ cards: prepCards, currentLabel });
 
-  const schedule = scheduleRows(data.tasks);
+  const schedule = scheduleRows(data.tasks, new Date(), data.me?.weddingDate ?? null);
   const scheduleHasDate = schedule[0]?.kind === 'dated';
 
   return (

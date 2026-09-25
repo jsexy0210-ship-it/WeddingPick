@@ -17,7 +17,7 @@
  */
 import { FullScreenError } from '@/features/errors/full-screen-error';
 import type { CurrentUser, MyReportListResponse } from '@weddingpick/api-contract';
-import { BUSINESS_NOTICE_LINES, daysUntil, formatCount } from '@weddingpick/domain';
+import { BUSINESS_NOTICE_LINES, type ConsentAgreementKey, TERM_DOCUMENTS, daysUntil, formatCount } from '@weddingpick/domain';
 import { Redirect, router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -44,6 +44,7 @@ import {
   listMyInquiries,
   listMyReports,
 } from '@/api/client';
+import { TermsDetailModal } from '@/features/auth/terms-detail-modal';
 import { useSession } from '@/features/auth/use-session';
 import { DelayedLoader, DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { AVATAR_MY, Avatar } from '@/features/settings/my-kit';
@@ -83,6 +84,8 @@ export default function MyScreen() {
   const { state, refresh } = useSession();
   const [data, setData] = useState<MyData>(EMPTY);
   const [loadFailed, setLoadFailed] = useState(false);
+  /* 약관 상세(WP-AUTH-011 공통 풀팝업) — 누른 약관의 탭으로 연다. */
+  const [termsKey, setTermsKey] = useState<ConsentAgreementKey | null>(null);
   const loadVersion = useRef(0);
 
   const isSignedIn = state.status === 'signedIn';
@@ -195,9 +198,19 @@ export default function MyScreen() {
     },
     {
       title: S['group.terms'],
-      /* 정본 my.jsx frame-021 · 022 — 목록 없이 바로 원문 화면(WP-MY-015 · 015b)이 뜬다. */
+      /*
+       * 2026-09-25 대표 지시 「약관 리스트는 온보딩과 동일한 UX로 맞춘다. 메뉴도 늘리도록 한다」 —
+       * 약관 동의(WP-AUTH-010)가 보여주는 약관 전부를 줄로 두고, 누르면 같은 공통 풀팝업
+       * (WP-AUTH-011 `TermsDetailModal`)이 그 탭으로 열린다(«동의하기» 없음). 개인정보처리방침은
+       * 동의 항목이 아니라 웹사이트 정본 원문이라 기존 화면으로 둔다.
+       */
       rows: [
-        { key: 'terms', label: S['item.terms'], icon: 'bookmark', onPress: () => router.push('/my/terms' as never) },
+        ...TERM_DOCUMENTS.map((doc) => ({
+          key: `term-${doc.key}`,
+          label: doc.title,
+          icon: 'bookmark' as const,
+          onPress: () => setTermsKey(doc.key),
+        })),
         { key: 'privacy', label: S['item.privacy'], icon: 'bookmark', onPress: () => router.push('/my/privacy-policy' as never) },
       ],
     },
@@ -327,6 +340,11 @@ export default function MyScreen() {
           </View>
         </ScrollView>
       </SafeAreaView>
+      <TermsDetailModal
+        visible={termsKey !== null}
+        initialKey={termsKey ?? 'terms'}
+        onClose={() => setTermsKey(null)}
+      />
     </ThemedView>
   );
 }

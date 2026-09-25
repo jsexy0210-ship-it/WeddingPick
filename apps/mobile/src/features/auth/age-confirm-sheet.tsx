@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { ActionButton, Layout, ProductSymbol, Radius, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
-import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
+import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
 
 const LABEL = '만 14세 이상이에요';
 
@@ -31,7 +31,7 @@ export function AgeConfirmSheet({
     <BottomSheet visible={visible} onRequestClose={onDismiss}>
       <SheetPanel>
         <ThemedView style={styles.headline}>
-          <ThemedText type="t4">만 14세 이상인지{'\n'}확인하면 시작할 수 있어요</ThemedText>
+          <SheetHeader title={'만 14세 이상인지\n확인하면 시작할 수 있어요'} onClose={onDismiss} closeDisabled={busy} />
         </ThemedView>
 
         <View style={[styles.row, { backgroundColor: theme.tintSurface }]}>

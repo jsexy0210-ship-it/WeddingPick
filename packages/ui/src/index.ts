@@ -33,7 +33,6 @@ export { SegmentedTabs, type SegmentedTabsProps, type SegmentedTabItem } from '.
  */
 export { RatingPicker, type RatingPickerProps } from './rating-picker';
 export { RatingStars, type RatingStarsProps } from './rating-stars';
-export { WeddingCalendar, type WeddingCalendarProps } from './wedding-calendar';
 export {
   WeddingMark,
   /* 하트 윤곽만. Pick Mark(하트 + 체크)가 아니라 하트 하나로 그리는 자리가 쓴다 — 검색 결과 카드의 Pick pill. */
