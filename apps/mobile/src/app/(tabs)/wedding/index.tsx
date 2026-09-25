@@ -11,6 +11,7 @@ import type {
   CurrentUser,
   ExpenseSummaryResponse,
   WeddingEvent,
+  WeddingForecast,
   WeddingTask,
 } from '@weddingpick/api-contract';
 import {
@@ -49,6 +50,7 @@ import {
   ensureWedding,
   getCurrentUser,
   getExpenses,
+  getWeddingForecast,
   listConsultations,
   listDecisions,
   listWeddingEvents,
@@ -61,6 +63,7 @@ import { formatDateDot, formatMonthDayTimeDot } from '@/features/common/format-d
 import { useSession } from '@/features/auth/use-session';
 import { CheckBox } from '@/features/wedding/screen-kit';
 import { WeddingCompleteView } from '@/features/wedding/complete-view';
+import { forecastLine } from '@/features/wedding/public-calendar-lines';
 import { buildUpcomingTimelineGroups, type TimelineItem } from '@/features/wedding/timeline-groups';
 
 type Tab = 'calendar' | 'consult' | 'budget';
@@ -110,6 +113,7 @@ export default function WeddingScreen({
   const [consults, setConsults] = useState<ConsultationRecord[] | null>(null);
   const [tasks, setTasks] = useState<WeddingTask[] | null>(null);
   const [decidedCount, setDecidedCount] = useState<number | null>(null);
+  const [forecast, setForecast] = useState<WeddingForecast | null>(null);
   const [tab, setTab] = useState<Tab>(initialTab ?? parseTab(params.tab) ?? 'calendar');
   const [toast, setToast] = useState<string | null>(null);
   const [budgetOpen, setBudgetOpen] = useState(false);
@@ -145,6 +149,8 @@ export default function WeddingScreen({
         void listConsultations(weddingId).then((r) => { if (active) setConsults(r.records); }).catch(() => undefined);
         void listWeddingTasks(weddingId).then((r) => { if (active) setTasks(r.tasks); }).catch(() => undefined);
         void listDecisions(weddingId).then((r) => { if (active) setDecidedCount(r.decisions.length); }).catch(() => undefined);
+        // 예보는 보조 줄이다 — 못 받으면 줄을 그리지 않을 뿐 화면을 막지 않는다.
+        void getWeddingForecast(weddingId).then((r) => { if (active) setForecast(r.forecast); }).catch(() => undefined);
       })
       .catch(() => undefined);
     return () => { active = false; };
@@ -378,6 +384,7 @@ export default function WeddingScreen({
               events={events ?? []}
               weddingDate={me?.weddingDate ?? null}
               decidedCount={decidedCount}
+              forecast={forecast}
               tasks={tasks}
               onEdit={(event) => (weddingId ? router.push(`/wedding/${weddingId}/events/${event.id}` as never) : null)}
               onOpenDecided={() => (weddingId ? router.push(`/wedding/${weddingId}/decided` as never) : null)}
@@ -531,6 +538,7 @@ function CalendarPanel({
   events,
   weddingDate,
   decidedCount,
+  forecast,
   tasks,
   onEdit,
   onOpenDecided,
@@ -543,6 +551,7 @@ function CalendarPanel({
   events: WeddingEvent[];
   weddingDate: string | null;
   decidedCount: number | null;
+  forecast: WeddingForecast | null;
   tasks: WeddingTask[] | null;
   onEdit: (event: WeddingEvent) => void;
   onOpenDecided: () => void;
@@ -604,6 +613,11 @@ function CalendarPanel({
               ? `남은 ${Math.max(1, Math.ceil(days / 7))}주 · 이번 주에 할 일 ${dueThisWeek}건`
               : '예식이 곧이에요'}
           </ThemedText>
+          {forecastLine(forecast) ? (
+            <ThemedText type="f13" themeColor="textSecondary" numeric>
+              {forecastLine(forecast)}
+            </ThemedText>
+          ) : null}
           {decidedCount !== null ? (
             <Pressable
               accessibilityRole="button"

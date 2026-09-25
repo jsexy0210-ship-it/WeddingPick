@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from './themed-text';
@@ -9,8 +9,12 @@ import { useTheme } from './use-theme';
 /**
  * 예식일 캘린더. 디자인 핸드오프 3번.
  *
- * **오늘 포함 과거는 고를 수 없다** — 결혼식은 미래이기 때문이다. 일요일은 붉게,
- * 토요일은 파랗게. 오늘은 테두리로 표시하되 고를 수는 없다.
+ * **오늘 포함 과거는 고를 수 없다** — 결혼식은 미래이기 때문이다. 오늘은 테두리로
+ * 표시하되 고를 수는 없다.
+ *
+ * **요일로 색을 나누지 않는다**(2026-09-24 대표 지시 「달력 일요일 색도 정본대로 고쳐」).
+ * 정본 `대메뉴_웨딩노트.dc.html`의 `day()`는 요일과 무관하게 한 색이고 선택한 날만
+ * 코랄 배경이다 — 일요일 빨강 · 토요일 코랄은 정본에 없던 값이었다.
  *
  * `allowPast=true`이면 제한을 뒤집는다 — 방문노트처럼 지난 날을 골라야 할 때 쓴다.
  */
@@ -22,6 +26,8 @@ export type WeddingCalendarProps = {
   today?: Date;
   /** true이면 과거 날짜도 고를 수 있다. 기본값은 false(미래만). */
   allowPast?: boolean;
+  /** 보고 있는 달이 바뀔 때(처음 그릴 때 포함). month는 0부터. 공휴일 한 줄처럼 달에 딸린 것을 읽을 때 쓴다. */
+  onMonthChange?: (year: number, month: number) => void;
 };
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
@@ -39,7 +45,13 @@ function monthShape(year: number, month: number) {
   };
 }
 
-export function WeddingCalendar({ value, onChange, today = new Date(), allowPast = false }: WeddingCalendarProps) {
+export function WeddingCalendar({
+  value,
+  onChange,
+  today = new Date(),
+  allowPast = false,
+  onMonthChange,
+}: WeddingCalendarProps) {
   const theme = useTheme();
   const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
@@ -52,6 +64,10 @@ export function WeddingCalendar({ value, onChange, today = new Date(), allowPast
 
     return { year: today.getFullYear(), month: today.getMonth() };
   });
+
+  useEffect(() => {
+    onMonthChange?.(cursor.year, cursor.month);
+  }, [cursor.year, cursor.month, onMonthChange]);
 
   const { firstWeekday, dayCount } = monthShape(cursor.year, cursor.month);
   /** 42칸. 앞의 빈 칸은 null. 달마다 높이가 달라지면 시트가 들썩인다. */
@@ -101,12 +117,12 @@ export function WeddingCalendar({ value, onChange, today = new Date(), allowPast
       </ThemedView>
 
       <View style={styles.week}>
-        {WEEKDAYS.map((label, index) => (
+        {WEEKDAYS.map((label) => (
           <ThemedText
             key={label}
             type="t7"
             style={styles.cell}
-            themeColor={index === 0 ? 'negative' : index === 6 ? 'tint' : 'textAssistive'}>
+            themeColor="textAssistive">
             {label}
           </ThemedText>
         ))}
@@ -125,7 +141,6 @@ export function WeddingCalendar({ value, onChange, today = new Date(), allowPast
             : asDate.getTime() > startOfToday.getTime();
           const isToday = asDate.getTime() === startOfToday.getTime();
           const selected = value === date;
-          const weekday = index % 7;
 
           return (
             <Pressable
@@ -151,11 +166,7 @@ export function WeddingCalendar({ value, onChange, today = new Date(), allowPast
                       ? undefined
                       : !selectable
                         ? 'track'
-                        : weekday === 0
-                          ? 'negative'
-                          : weekday === 6
-                            ? 'tint'
-                            : 'text'
+                        : 'text'
                   }>
                   {day}
                 </ThemedText>

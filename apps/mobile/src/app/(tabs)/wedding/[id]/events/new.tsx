@@ -1,15 +1,16 @@
-import type { CurrentUser } from '@weddingpick/api-contract';
+import type { CurrentUser, PublicHoliday } from '@weddingpick/api-contract';
 import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, View, useWindowDimensions } from 'react-native';
 
-import { addWeddingEvent, getCurrentUser } from '@/api/client';
+import { addWeddingEvent, getCurrentUser, listPublicHolidays } from '@/api/client';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
 import { formatDateDot } from '@/features/common/format-date';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { showResultToast } from '@/features/navigation/result-toast';
 import { combineDayTime, TIME_PATTERN } from '@/features/wedding/event-form';
+import { holidayLine, monthRange } from '@/features/wedding/public-calendar-lines';
 import { CheckBox, Field, FieldButton, ListRow } from '@/features/wedding/screen-kit';
 import { ActionButton, ProductSymbol, Radius, Spacing, ThemedText, WeddingCalendar, useTheme } from '@weddingpick/ui';
 
@@ -40,6 +41,22 @@ export default function AddWeddingEventRoute() {
   const [title, setTitle] = useState('');
   const [day, setDay] = useState<string | null>(date ?? null);
   const [dateOpen, setDateOpen] = useState(date === undefined);
+  /* 달력 아래 공휴일 한 줄(A안) — 보고 있는 달 것만. 못 받으면 줄을 그리지 않는다. */
+  const [shownMonth, setShownMonth] = useState<{ year: number; month: number } | null>(null);
+  const [holidays, setHolidays] = useState<PublicHoliday[]>([]);
+  const onMonthChange = useCallback((year: number, month: number) => setShownMonth({ year, month }), []);
+
+  useEffect(() => {
+    if (!shownMonth) return;
+    let active = true;
+    const { from, to } = monthRange(shownMonth.year, shownMonth.month);
+    void listPublicHolidays(from, to)
+      .then((r) => { if (active) setHolidays(r.holidays); })
+      .catch(() => { if (active) setHolidays([]); });
+    return () => { active = false; };
+  }, [shownMonth]);
+
+  const holidayText = shownMonth ? holidayLine(holidays, shownMonth.year, shownMonth.month) : null;
   const [time, setTime] = useState(DEFAULT_TIME);
   const [notifyEnabled, setNotifyEnabled] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -131,7 +148,13 @@ export default function AddWeddingEventRoute() {
                     setDay(next);
                     setDateOpen(false);
                   }}
+                  onMonthChange={onMonthChange}
                 />
+              ) : null}
+              {dateOpen && holidayText ? (
+                <ThemedText type="f13" themeColor="textSecondary" numeric>
+                  {holidayText}
+                </ThemedText>
               ) : null}
               <Field
                 label="제목"

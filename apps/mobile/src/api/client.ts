@@ -6,6 +6,8 @@ import {
   expenseSummaryResponseSchema,
   visitNoteListResponseSchema,
   weddingEventListResponseSchema,
+  publicHolidayListResponseSchema,
+  weddingForecastResponseSchema,
   weddingNoteListResponseSchema,
   weddingTaskListResponseSchema,
   authProvidersResponseSchema,
@@ -100,6 +102,8 @@ import {
   type CreateWeddingEventRequest,
   type UpdateWeddingEventRequest,
   type WeddingEventListResponse,
+  type PublicHolidayListResponse,
+  type WeddingForecastResponse,
   type Analysis,
   type ComparisonResponse,
   type AuthProvidersResponse,
@@ -986,6 +990,17 @@ export async function addVisitNote(
 
 export async function removeVisitNote(weddingId: string, noteId: string): Promise<void> {
   await request(`/v1/weddings/${weddingId}/visit-notes/${noteId}`, z.null(), { method: 'DELETE' });
+}
+
+/** 공휴일 — 일정 등록 달력(WP-NOTE-002) 아래 한 줄. 날짜는 YYYY-MM-DD. */
+export async function listPublicHolidays(from: string, to: string): Promise<PublicHolidayListResponse> {
+  const query = new URLSearchParams({ from, to });
+  return request(`/v1/public-holidays?${query.toString()}`, publicHolidayListResponseSchema);
+}
+
+/** 예식일 예보 — D-day 카드(WP-NOTE-001) 한 줄. 4~10일 전에만 값이 온다. */
+export async function getWeddingForecast(weddingId: string): Promise<WeddingForecastResponse> {
+  return request(`/v1/weddings/${weddingId}/forecast`, weddingForecastResponseSchema);
 }
 
 /** 웨딩 스케줄(체크리스트)과 다른 개념이다 — 일시·장소가 있는 캘린더 이벤트. */

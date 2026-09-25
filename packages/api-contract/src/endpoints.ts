@@ -1,6 +1,7 @@
 import { z, type ZodType } from 'zod';
 
 import { analysisSchema } from './analyses';
+import { publicHolidayListResponseSchema, weddingForecastResponseSchema } from './public-calendar';
 import {
   consultationListResponseSchema,
   consultationRecordSchema,
@@ -522,6 +523,20 @@ export const ENDPOINTS = {
     method: 'GET',
     path: '/v1/weddings/{weddingId}/events',
     response: weddingEventListResponseSchema,
+  },
+
+  /** 공휴일 — 일정 등록 달력(WP-NOTE-002) 아래 한 줄. `from`·`to`는 YYYY-MM-DD. */
+  listPublicHolidays: {
+    method: 'GET',
+    path: '/v1/public-holidays',
+    response: publicHolidayListResponseSchema,
+  },
+
+  /** 예식일 예보 — 웨딩노트 D-day 카드(WP-NOTE-001) 한 줄. 4~10일 전에만 값이 있다. */
+  getWeddingForecast: {
+    method: 'GET',
+    path: '/v1/weddings/{weddingId}/forecast',
+    response: weddingForecastResponseSchema,
   },
 
   addWeddingEvent: {
