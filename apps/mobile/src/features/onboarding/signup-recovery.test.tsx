@@ -24,7 +24,7 @@ jest.mock('./wedding-draft', () => ({
 }));
 jest.mock('@/features/home/home-skeleton', () => ({ HomeSkeleton: 'HomeSkeleton' }));
 jest.mock('./budget-amount', () => ({ BudgetAmount: 'BudgetAmount' }));
-jest.mock('./date-picker-sheet', () => ({ DatePickerSheet: 'DatePickerSheet' }));
+jest.mock('./date-picker-sheet', () => ({ OnboardingDatePickerSheet: 'OnboardingDatePickerSheet' }));
 jest.mock('./inline-toast', () => ({ InlineToast: 'InlineToast', useInlineToast: () => ({ toast: null, show: jest.fn(), hide: jest.fn() }) }));
 jest.mock('./option-row', () => ({ OptionRow: 'OptionRow' }));
 jest.mock('./question-head', () => ({ QuestionHead: 'QuestionHead' }));
