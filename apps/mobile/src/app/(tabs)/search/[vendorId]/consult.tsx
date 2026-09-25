@@ -1,4 +1,4 @@
-import type { VendorDetail } from '@weddingpick/api-contract';
+import type { CandidateListResponse, VendorDetail } from '@weddingpick/api-contract';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
@@ -46,6 +46,21 @@ function upcomingDays(from: Date): DayOption[] {
     const date = new Date(from.getFullYear(), from.getMonth(), from.getDate() + offset + 1);
     return { date, weekday: WEEKDAYS[date.getDay()], day: date.getDate() };
   });
+}
+
+/* 2026-09-25 대표 결정(안 A) — 상담 예약은 최종 결정이 아니라 Pick(후보 담기)을 요구한다. */
+const PICK_REQUIRED_TITLE = 'Pick 확인이 필요해요';
+const PICK_REQUIRED = 'Pick에 담은 업체만 상담 예약을 할 수 있어요.';
+
+/**
+ * 이 업체가 이 웨딩의 Pick 후보이거나 이미 결정한 업체인가. 서버
+ * (`POST /v1/weddings/{id}/consultation-events`)도 같은 두 조건으로 다시 확인한다.
+ */
+function isPickedVendor(page: CandidateListResponse, vendorId: string): boolean {
+  return page.groups.some(
+    (group) =>
+      group.decidedVendorId === vendorId || group.candidates.some((candidate) => candidate.vendorId === vendorId)
+  );
 }
 
 /** 「오전 11시 반」처럼 말로 적은 라벨을 24시간 시각으로 읽는다. 「반」은 30분이다. */
@@ -101,7 +116,8 @@ export default function ConsultRoute() {
         return;
       }
       const page = await listCandidates(me.weddingId, { force: true });
-      const allowed = page.groups.some((group) => group.decidedVendorId === vendorId);
+      // 2026-09-25 대표 결정(안 A) — 최종 결정 없이도 Pick에 담은 업체(후보)면 상담 예약을 연다.
+      const allowed = isPickedVendor(page, vendorId);
       if (active) setDecisionState(allowed ? 'allowed' : 'blocked');
     })().catch(() => {
       if (active) setDecisionState('error');
@@ -141,12 +157,12 @@ export default function ConsultRoute() {
         return;
       }
 
-      // 배우자가 방금 결정을 바꿨을 수 있으므로 공용 30초 GET 캐시를 우회한다.
+      // 배우자가 방금 Pick에서 뺐을 수 있으므로 공용 30초 GET 캐시를 우회한다.
       const latestCandidates = await listCandidates(me.weddingId, { force: true });
-      const stillDecided = latestCandidates.groups.some((group) => group.decidedVendorId === vendor.id);
-      if (!stillDecided) {
+      const stillPicked = isPickedVendor(latestCandidates, vendor.id);
+      if (!stillPicked) {
         setDecisionState('blocked');
-        setToast('최종 Pick을 완료한 업체만 상담 예약을 이어갈 수 있어요.');
+        setToast(PICK_REQUIRED);
         return;
       }
       decisionVerified = true;
@@ -189,13 +205,13 @@ export default function ConsultRoute() {
       }
       if (caught instanceof ApiError && caught.status === 403) {
         setDecisionState('blocked');
-        setToast('최종 Pick 상태가 바뀌었어요. 나의 Pick에서 다시 확인해주세요.');
+        setToast('Pick 상태가 바뀌었어요. 나의 Pick에서 다시 확인해주세요.');
         return;
       }
       setToast(
         decisionVerified
           ? '상담 일정을 등록하지 못했어요. 잠시 후 다시 시도해주세요.'
-          : '최종 Pick 상태를 확인하지 못했어요. 연결을 확인한 뒤 다시 시도해주세요.'
+          : 'Pick 상태를 확인하지 못했어요. 연결을 확인한 뒤 다시 시도해주세요.'
       );
     } finally {
       submitLock.current = false;
@@ -205,8 +221,8 @@ export default function ConsultRoute() {
 
   const decisionMessage =
     decisionState === 'error'
-      ? '최종 Pick 상태를 확인하지 못했어요. 잠시 후 다시 시도해주세요.'
-      : '최종 Pick을 완료한 뒤 상담 예약을 이어갈 수 있어요.';
+      ? 'Pick 상태를 확인하지 못했어요. 잠시 후 다시 시도해주세요.'
+      : PICK_REQUIRED;
 
   return (
     <View style={styles.host}>
@@ -225,7 +241,7 @@ export default function ConsultRoute() {
             </View>
           ) : decisionState !== 'allowed' ? (
             <View style={styles.guard}>
-              <ThemedText type="f16" style={styles.bold}>최종 Pick 확인이 필요해요</ThemedText>
+              <ThemedText type="f16" style={styles.bold}>{PICK_REQUIRED_TITLE}</ThemedText>
               <ThemedText type="f13" themeColor="textAssistive" style={styles.guardText}>
                 {decisionMessage}
               </ThemedText>

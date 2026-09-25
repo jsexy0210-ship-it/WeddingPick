@@ -22,15 +22,12 @@ function screen(...parts: string[]): string {
 }
 
 describe('transient completion flow navigation', () => {
-  it('Pick 결정 성공은 완료 라우트를 쌓지 않고 Pick으로 돌아간다', () => {
+  it('Pick 최종 결정 확인 시트와 완료 화면은 없다(2026-09-25 대표 결정 안 A)', () => {
     const layout = screen('_layout.tsx');
-    const confirm = screen('(tabs)', 'pick', 'confirm.tsx');
 
+    expect(existsSync(join(APP, '(tabs)', 'pick', 'confirm.tsx'))).toBe(false);
     expect(existsSync(join(APP, '(tabs)', 'pick', 'done.tsx'))).toBe(false);
     expect(layout).toContain('<ResultToastHost />');
-    expect(confirm).toContain('showResultToast(`${withInstrument(vendorName)} 결정했어요`)');
-    expect(confirm).toContain("dismissToOrReplace('/pick')");
-    expect(confirm).not.toContain('/pick/done');
   });
 
   it('정보 오류 완료 CTA는 direct-entry fallback을 가진다', () => {

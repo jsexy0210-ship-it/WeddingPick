@@ -12,14 +12,14 @@
  *   Pick의 해당 업종으로 이동»).
  * - `/pick?section=recommendations` 분기는 없앴다(2026-09-25 대표 지시). 옛 링크로 들어와도
  *   `section`을 보지 않으므로 이 기본 화면이 뜬다.
- * - Pick = 후보 담기 · 최종 결정은 별도(v3.29 diffs «Pick 의미»). 최종 결정은 확인 시트
- *   (`/pick/confirm`)에서 저장한다 — 정본 pick.js «최종 결정: 확인 시트 → 완료 화면»이라
- *   2026-09-25 정본 밖 화면 삭제(#535)에서 제외했다.
+ * - 최종 결정 확인 시트(옛 `/pick/confirm`)는 2026-09-25 대표 결정(안 A)으로 삭제했다.
+ *   상담 예약은 더 이상 최종 결정을 먼저 요구하지 않는다 — Pick에 담은 업체(후보)라면
+ *   결정 전이라도 카드에서 바로 상담 예약으로 간다(서버도 후보 · 결정 둘 다 받는다).
  * - 카드를 누르면 그 업체의 상담 예약(`/search/[vendorId]/consult`)으로 바로 간다 — 정본
  *   frame-001 tagDesc «카드를 누르면 상담 예약으로 바로 이어집니다»(2026-09-25 MASTER 지시로
  *   diffs «상담 진입»보다 이 동선을 따른다). 상담 예약 화면 자체는 검색 화면군 소유다.
- * - 카드 CTA는 Primary 1개(«결정하기»)이고 비교는 텍스트 링크(«비교에 담기»)다(v3.29 diffs
- *   «카드 CTA» — 화면당 Primary 1개).
+ * - 카드 CTA는 정본 btnB «상담 예약» 하나이고 비교는 텍스트 링크(«비교에 담기»)다(v3.29 diffs
+ *   «카드 CTA» — 화면당 Primary 1개). 결정한 카드만 코랄, 나머지는 흰 바탕 + 1px 선이다.
  * - 삭제(WP-PICK-008)는 확인 시트 없이 «빼기»로 즉시 지우고 «되돌리기» 토스트만 띄운다.
  *
  * **정본을 그대로 옮기지 않은 것.**
@@ -94,7 +94,6 @@ const COMPARE_ALL = '비교하기';
 const CHIP_ALL = '전체';
 const ACTION_COMPARE = PICK_COMPARE_ADD_LABEL;
 const ACTION_COMPARING = PICK_COMPARE_REMOVE_LABEL;
-const ACTION_DECIDE = '결정하기';
 const ACTION_UNDECIDE = '결정 취소';
 /* 정본 pick.js `sv().labelB` «상담 예약». */
 const ACTION_CONSULT = '상담 예약';
@@ -131,8 +130,6 @@ type Section = {
 
 type Row = {
   candidate: VendorCandidate;
-  /** 이 업종이 결정됐는가. */
-  groupDecided: boolean;
   /** 이 후보가 그 결정인가. */
   isDecided: boolean;
 };
@@ -206,7 +203,7 @@ export default function PickScreen() {
       .catch((caught: Error) => setError(caught.message));
   }, []);
 
-  /* 결정 시트에서 돌아오면 목록이 바뀌어 있다 — 화면에 올 때마다 다시 읽는다. */
+  /* 상담 예약 · 비교에서 돌아오면 목록이 바뀌어 있을 수 있다 — 화면에 올 때마다 다시 읽는다. */
   useFocusEffect(load);
 
   // 하이브리드 웹뷰 쉘 POC. `EXPO_PUBLIC_WEBSHELL_SCREENS`에 "pick"이 없으면
@@ -218,7 +215,6 @@ export default function PickScreen() {
   const rows: Row[] = (page?.groups ?? []).flatMap((group) =>
     group.candidates.map((candidate) => ({
       candidate,
-      groupDecided: group.state === 'decided',
       isDecided: group.decidedVendorId === candidate.vendorId,
     }))
   );
@@ -259,19 +255,6 @@ export default function PickScreen() {
 
   function startCompare() {
     router.push({ pathname: '/search/compare', params: { ids: Array.from(compare).join(',') } });
-  }
-
-  /** 최종 결정은 확인 시트(`/pick/confirm`)가 한다 — 여기서 먼저 결정 기록을 만들지 않는다. */
-  function goDecide(candidate: VendorCandidate) {
-    router.push({
-      pathname: '/pick/confirm',
-      params: {
-        category: candidate.category,
-        vendorId: candidate.vendorId,
-        vendorName: candidate.vendorName,
-        shared: candidate.addedByPartner ? '1' : '0',
-      },
-    });
   }
 
   /** 결정 취소는 되돌릴 수 있는 조작이라 DLG-B 확인을 쓴다. */
@@ -478,7 +461,6 @@ export default function PickScreen() {
                                     compareFull={compare.size >= PICK_COMPARE_MAX}
                                     busy={busy}
                                     onCompare={() => toggleCompare(row.candidate.vendorId)}
-                                    onDecide={() => goDecide(row.candidate)}
                                     onUndecide={() => askUndecide(row.candidate)}
                                     onRemove={() => void unpick(row)}
                                   />
@@ -577,7 +559,6 @@ function CandidateCard({
   compareFull,
   busy,
   onCompare,
-  onDecide,
   onUndecide,
   onRemove,
 }: {
@@ -586,12 +567,11 @@ function CandidateCard({
   compareFull: boolean;
   busy: boolean;
   onCompare: () => void;
-  onDecide: () => void;
   onUndecide: () => void;
   onRemove: () => void;
 }) {
   const theme = useTheme();
-  const { candidate, groupDecided, isDecided } = row;
+  const { candidate, isDecided } = row;
   const compareDisabled = !comparing && compareFull;
   const openConsult = () => router.push({ pathname: '/search/[vendorId]/consult', params: { vendorId: candidate.vendorId } });
 
@@ -698,40 +678,24 @@ function CandidateCard({
         </Pressable>
 
         {/* 정본 btnB «상담 예약» — 결정한 카드는 코랄, 나머지는 흰 바탕 + 1px 선.
-            업종을 아직 안 정한 카드만 그 자리에 «결정하기»를 둔다(DESIGN_UNRESOLVED — 정본 카드에는 결정 진입이 없다). */}
-        {!isDecided && !groupDecided ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${candidate.vendorName} ${ACTION_DECIDE}`}
-            onPress={onDecide}
-            style={({ pressed }) => [
-              styles.decisionCta,
-              { backgroundColor: theme.background, borderColor: theme.border },
-              pressed ? styles.pressed : null,
-            ]}>
-            <ThemedText type="f13" style={[styles.bold, { color: theme.text }]}>
-              {ACTION_DECIDE}
-            </ThemedText>
-          </Pressable>
-        ) : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${candidate.vendorName} ${ACTION_CONSULT}`}
-            disabled={busy}
-            onPress={openConsult}
-            style={({ pressed }) => [
-              styles.decisionCta,
-              isDecided
-                ? { backgroundColor: theme.tint, borderColor: theme.tint }
-                : { backgroundColor: theme.background, borderColor: theme.border },
-              pressed ? styles.pressed : null,
-              busy ? styles.busy : null,
-            ]}>
-            <ThemedText type="f13" style={[styles.bold, { color: isDecided ? theme.onTint : theme.text }]}>
-              {ACTION_CONSULT}
-            </ThemedText>
-          </Pressable>
-        )}
+            2026-09-25 대표 결정(안 A): 결정 전 후보도 여기서 바로 상담 예약으로 간다. */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${candidate.vendorName} ${ACTION_CONSULT}`}
+          disabled={busy}
+          onPress={openConsult}
+          style={({ pressed }) => [
+            styles.decisionCta,
+            isDecided
+              ? { backgroundColor: theme.tint, borderColor: theme.tint }
+              : { backgroundColor: theme.background, borderColor: theme.border },
+            pressed ? styles.pressed : null,
+            busy ? styles.busy : null,
+          ]}>
+          <ThemedText type="f13" style={[styles.bold, { color: isDecided ? theme.onTint : theme.text }]}>
+            {ACTION_CONSULT}
+          </ThemedText>
+        </Pressable>
       </View>
     </View>
   );

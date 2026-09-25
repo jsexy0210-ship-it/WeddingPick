@@ -96,7 +96,7 @@ describeWithDb('일정', () => {
     expect(updated.statusCode).toBe(200);
   });
 
-  it('상담 전용 일정은 최종 Pick한 업체에만 만들 수 있다', async () => {
+  it('상담 전용 일정은 Pick에 담은 업체에만 만들 수 있다 — 최종 결정은 요구하지 않는다', async () => {
     const { headers, weddingId } = await mine();
     const { rows } = await test.pool.query<{ id: string }>(
       `INSERT INTO structured.vendors (name, category, region, source)
@@ -118,15 +118,12 @@ describeWithDb('일정', () => {
       payload: request,
     });
 
+    // 후보도 결정도 아닌 업체는 막는다.
     expect(blocked.statusCode).toBe(403);
 
+    // 2026-09-25 대표 결정(안 A) — 후보에만 있고 결정 전이어도 상담 일정을 만든다.
     await test.pool.query(
       'INSERT INTO structured.vendor_candidates (wedding_id, vendor_id) VALUES ($1, $2)',
-      [weddingId, vendorId]
-    );
-    await test.pool.query(
-      `INSERT INTO structured.category_decisions (wedding_id, category, vendor_id)
-       VALUES ($1, 'hall', $2)`,
       [weddingId, vendorId]
     );
 
@@ -139,7 +136,22 @@ describeWithDb('일정', () => {
     expect(allowed.statusCode).toBe(201);
     const eventId = allowed.json<{ eventId: string }>().eventId;
 
-    await test.pool.query('DELETE FROM structured.category_decisions WHERE wedding_id = $1', [weddingId]);
+    // 결정한 업체도 그대로 받는다(결정은 후보 줄을 가리킨다).
+    await test.pool.query(
+      `INSERT INTO structured.category_decisions (wedding_id, category, vendor_id)
+       VALUES ($1, 'hall', $2)`,
+      [weddingId, vendorId]
+    );
+    const decidedRequest = { ...request, startsAt: at(30), idempotencyKey: `consult:${vendorId}:decided` };
+    const decided = await test.app.inject({
+      method: 'POST',
+      url: `/v1/weddings/${weddingId}/consultation-events`,
+      headers,
+      payload: decidedRequest,
+    });
+    expect(decided.statusCode).toBe(201);
+
+    // 같은 키 재전송은 새로 만들지 않고 처음 것을 돌려준다.
     const retried = await test.app.inject({
       method: 'POST',
       url: `/v1/weddings/${weddingId}/consultation-events`,
@@ -154,6 +166,16 @@ describeWithDb('일정', () => {
       [weddingId, request.idempotencyKey]
     );
     expect(Number(stored.rows[0]!.count)).toBe(1);
+
+    // Pick에서 빼면(결정도 cascade로 풀린다) 새 상담 일정은 다시 막는다.
+    await test.pool.query('DELETE FROM structured.vendor_candidates WHERE wedding_id = $1', [weddingId]);
+    const removed = await test.app.inject({
+      method: 'POST',
+      url: `/v1/weddings/${weddingId}/consultation-events`,
+      headers,
+      payload: { ...request, startsAt: at(40), idempotencyKey: `consult:${vendorId}:removed` },
+    });
+    expect(removed.statusCode).toBe(403);
   });
 
   it('지난 일정은 완료로, 다가올 일정은 예정으로 계산한다', async () => {

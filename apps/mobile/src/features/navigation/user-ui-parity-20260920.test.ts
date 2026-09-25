@@ -112,8 +112,9 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(pick).not.toContain('RecommendationsContent');
     expect(pick).not.toContain("section: 'recommendations'");
     expect(pick).toContain('PREPARATION_GROUPS.find((group) => group.key === rawGroup)');
-    /* 최종 결정 확인 시트는 정본(pick.js «최종 결정: 확인 시트 → 완료 화면»)이라 남긴다. */
-    expect(pick).toContain("'/pick/confirm'");
+    /* 최종 결정 확인 시트는 2026-09-25 대표 결정(안 A)으로 지웠다 — 카드 CTA는 «상담 예약» 하나다. */
+    expect(pick).not.toContain("'/pick/confirm'");
+    expect(pick).not.toContain('결정하기');
     expect(pick).toContain("pathname: '/search/compare'");
     expect(mobile('app/(tabs)/search/compare.tsx')).not.toContain('PickSectionTabs');
 
@@ -144,7 +145,7 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
   });
 
 
-  it('최종 Pick 저장 뒤에만 상담 예약을 열고 직접 URL에서도 다시 검증한다', () => {
+  it('Pick에 담은 업체만 상담 예약을 열고 직접 URL에서도 다시 검증한다', () => {
     /*
      * v3.29(2026-09-23) 대메뉴_검색.dc.html WP-VEND-001~004 vdiffs(#13) — 업체 상세의
      * 하단 CTA는 하트+«Pick하기» 1개뿐이고, «최종 Pick하기 / 상담 예약하기» 2단계 라벨과
@@ -152,6 +153,9 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
      * 최종 결정 → 상담 잡기»고 그 흐름은 Pick 탭(`pick/index.tsx`·`pick/[category].tsx`)이
      * 이미 따로 갖고 있다 — 업체 상세에서 지운 것은 그 흐름의 중복 진입점이지 흐름
      * 자체가 아니다. 아래는 Pick 탭 쪽에서 같은 게이트가 여전히 도는지를 본다.
+     *
+     * 2026-09-25 대표 결정(안 A) — 최종 결정 확인 시트를 지우고, 상담 예약은 결정 없이
+     * Pick 후보(또는 이미 결정한 업체)면 연다. 게이트는 «최종 결정»이 아니라 «Pick»이다.
      */
     const consult = mobile('app/(tabs)/search/[vendorId]/consult.tsx');
     expect(consult).toContain("listCandidates(me.weddingId, { force: true })");
@@ -160,7 +164,9 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(consult).not.toContain('addWeddingEvent(me.weddingId');
     expect(consult).toContain('submitLock.current = true');
     expect(consult).toContain('group.decidedVendorId === vendorId');
-    expect(consult).toContain('최종 Pick 확인이 필요해요');
+    expect(consult).toContain('group.candidates.some((candidate) => candidate.vendorId === vendorId)');
+    expect(consult).toContain('Pick에 담은 업체만 상담 예약을 할 수 있어요.');
+    expect(consult).not.toContain('최종 Pick');
     // v3.28 WP-PICK-009 — CTA가 고른 값을 그대로 말한다(「9월 20일 오후 2시로 잡기」).
     expect(consult).toContain('로 잡기');
   });

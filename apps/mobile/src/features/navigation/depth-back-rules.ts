@@ -96,7 +96,6 @@ export const ROUTES: readonly string[] = [
   '/my/wedding-settings',
   '/my/withdrawal',
   '/pick',
-  '/pick/confirm',
   '/search',
   '/search/[vendorId]',
   '/search/[vendorId]/booking',
@@ -104,7 +103,6 @@ export const ROUTES: readonly string[] = [
   '/search/[vendorId]/consult-done',
   '/search/[vendorId]/fix-report',
   '/search/[vendorId]/images',
-  '/search/[vendorId]/price',
   '/search/[vendorId]/write-review',
   '/search/compare',
   '/search/expo/[expoId]',
@@ -136,14 +134,13 @@ export const TAB_ROOTS: readonly string[] = ['/', '/search', '/pick', '/wedding'
  * SPEC §14.5가 허용한 History Back 예외.
  *
  * - 피드 상세 둘은 목록의 탭·스크롤 위치를 복원한다.
- * - 최종 결정 확인은 화면이 아니라 기존 화면 위에 열린 시트라 연 자리만 닫는다.
+ * - (옛 최종 결정 확인 시트 `/pick/confirm`은 2026-09-25 대표 결정으로 삭제했다.)
  *
  * 직접 진입처럼 history가 없으면 `depthBackTarget`의 논리 부모를 쓴다.
  */
 export const HISTORY_BACK_ROUTES: readonly string[] = [
   '/feed/[id]',
   '/community/feed/[id]',
-  '/pick/confirm',
 ];
 
 /**
@@ -163,12 +160,6 @@ export const NO_BACK_ROUTES: readonly string[] = [
   '/setup',
   '/login',
   '/login/age-required',
-  /*
-   * Pick 확정은 화면이 아니라 **바텀시트**다. 나가는 길은 시트가 이미
-   * 셋을 들고 있다(딤 탭 · 안드로이드 뒤로가기 · 시트 안 버튼) — 여기에 뒤로가기 줄을
-   * 얹으면 시트 위에 화면 헤더가 떠서 무엇을 닫는 버튼인지 알 수 없게 된다.
-   */
-  '/pick/confirm',
 ];
 
 /**

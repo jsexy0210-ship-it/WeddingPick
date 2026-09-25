@@ -14,7 +14,7 @@ describe('Root 1Depth 하단 내비게이션', () => {
 
   it.each([
     ['/search/vendor-1', 'search'],
-    ['/pick/confirm', 'pick'],
+    ['/search/compare', 'search'],
     ['/wedding/wedding-1', 'wedding'],
     ['/my/taste', 'my'],
     ['/community', 'community'],

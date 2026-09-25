@@ -54,6 +54,8 @@ describe('2026-09-19 사용자 화면 검수 회귀', () => {
       '(tabs)/my/faq/[faqKey].tsx',
       '(tabs)/capture/index.tsx',
       '(tabs)/(home)/recommendations.tsx',
+      // 2026-09-25 대표 결정(안 A) — Pick 최종 결정 확인 시트 삭제. 상담 예약은 결정 없이 연다.
+      '(tabs)/pick/confirm.tsx',
     ];
 
     for (const path of removed) expect(existsSync(join(APP, path))).toBe(false);

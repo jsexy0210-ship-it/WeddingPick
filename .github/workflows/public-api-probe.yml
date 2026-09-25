@@ -1,0 +1,51 @@
+# 공공데이터포털 OpenAPI 응답 모양을 한 번 본다. DB·배포에 닿지 않는다.
+#
+# 작업 세션 컨테이너는 data.go.kr이 막혀 있어 응답을 직접 못 본다(2026-09-24).
+# 모양을 모르고 수집기를 짜면 엉뚱한 칸을 읽으므로 러너에서 먼저 본다.
+# 파일데이터 페이지를 주면 키 없이 공식 다운로드 파일(CSV · XLSX) 앞부분을 찍는다.
+# 키는 로그에 찍지 않고, 전화 · 주소 · 좌표 칸은 값 대신 「값 있음」만 찍는다.
+name: 공공 API 응답 조회 (읽기 전용)
+
+on:
+  workflow_dispatch:
+    inputs:
+      endpoint:
+        description: 'OpenAPI End Point(apis.data.go.kr · api.data.go.kr) 또는 파일데이터 페이지(www.data.go.kr/data/번호/fileData.do — 키 불필요)'
+        type: string
+        required: true
+      key_secret:
+        description: '인증키가 든 GitHub Secret 이름(파일데이터는 무시)'
+        type: choice
+        default: DATA_GO_KR_MY_KEY
+        options:
+          # 포털 인증키는 계정당 하나다 — 대표님이 이 이름 하나로 등록했다(2026-09-24).
+          - DATA_GO_KR_MY_KEY
+          - DATA_GO_KR_WEDDING_HALL_KEY
+          - DATA_GO_KR_MARRIAGE_AGENCY_KEY
+      params:
+        description: '추가 조회 조건(공백 구분 key=value). 기본값 pageNo=1 numOfRows=3 type=json'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - name: 응답 조회
+        env:
+          PUBLIC_API_KEY: ${{ secrets[inputs.key_secret] }}
+          ENDPOINT: ${{ inputs.endpoint }}
+          PARAMS: ${{ inputs.params }}
+        run: |
+          # PARAMS는 공백으로만 나눈다 — 따옴표 없이 넘겨 글자 그대로 인자가 된다.
+          set -f
+          node scripts/public-api-probe.mjs "$ENDPOINT" $PARAMS

@@ -532,7 +532,7 @@ export const ENDPOINTS = {
   },
 
   /**
-   * 최종 Pick 이후 상담 시트가 남기는 일정.
+   * Pick에 담은 업체의 상담 시트가 남기는 일정(2026-09-25부터 최종 결정 없이 가능).
    * 일반 `/events`와 분리해 기존 업체 연결 일정 계약을 좁히지 않는다.
    */
   addConsultationEvent: {

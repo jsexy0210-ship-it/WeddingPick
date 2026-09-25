@@ -42,7 +42,6 @@ describe('goDepthBack — Depth 기본, 명시된 화면만 History Back', () =>
   it.each([
     '/feed/f-1',
     '/community/feed/f-1',
-    '/pick/confirm',
   ])('%s는 기록이 있을 때만 명시적인 History Back이다', (pathname) => {
     jest.mocked(router.canGoBack).mockReturnValue(true);
 

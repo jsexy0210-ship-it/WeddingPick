@@ -172,7 +172,7 @@
 | `/my/vendor-claims` | `app/(tabs)/my/vendor-claims/index.tsx` | 내가 낸 업체 관계자 인증 |
 | `/my/vendor-claims/[vendorId]` | `app/(tabs)/my/vendor-claims/[vendorId].tsx` | 업체 관계자 인증 신청 |
 | `/pick/[category]` | `app/(tabs)/pick/[category].tsx` | 업종별 Pick 목록. 파일이 「다른 화면군이 같이 쓰는 라우트라 단독 대조로 지우지 않는다」고 적는다 |
-| `/pick/confirm` | `app/(tabs)/pick/confirm.tsx` | 최종 결정 확인 시트(WP-SHT-005). 정본 Pick 보드에 별도 프레임이 없다 |
+| ~~`/pick/confirm`~~ | ~~`app/(tabs)/pick/confirm.tsx`~~ | 2026-09-25 삭제(대표 결정 안 A) — 최종 결정 확인 시트(WP-SHT-005)를 지우고 Pick 카드 «상담 예약»이 결정 없이 Pick 후보에게 바로 열린다 |
 | `/search/[vendorId]/reviews` | `app/(tabs)/search/[vendorId]/reviews.tsx` | 업체 후기 전체 목록(신고 · 반론 진입) |
 | `/search/[vendorId]/review/[reviewId]` | `app/(tabs)/search/[vendorId]/review/[reviewId].tsx` | 후기 상세(Figma `ReviewDetailPage` 근거) |
 | `/search/[vendorId]/edit-review` | `app/(tabs)/search/[vendorId]/edit-review.tsx` | 후기 수정 시트(후기 목록 위) |

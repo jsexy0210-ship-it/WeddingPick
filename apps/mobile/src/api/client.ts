@@ -802,7 +802,7 @@ export async function addWeddingEvent(
   });
 }
 
-/** 최종 Pick 뒤 상담 시트 전용. 서버가 결정 행을 잠근 상태에서 다시 검증한다. */
+/** 상담 시트 전용. 서버가 Pick 후보 · 결정 행을 잠근 상태에서 다시 검증한다(2026-09-25 결정 없이 가능). */
 export async function addConsultationEvent(
   weddingId: string,
   body: CreateConsultationEventRequest

@@ -60,15 +60,22 @@ async function createConsultationEvent(
       return existing.rows[0].id;
     }
 
+    /*
+     * 2026-09-25 대표 결정(안 A) — 상담 예약은 최종 결정이 아니라 Pick(후보 담기)을 요구한다.
+     * 받는 조건은 «후보에 있다» 또는 «이미 결정했다»인데, 결정은 FK `decision_is_a_pick`
+     * (0041)으로 반드시 후보 줄을 가리키므로 후보 줄 하나만 보면 둘 다 덮는다.
+     * 후보 줄을 FOR SHARE로 잠가, 이 INSERT가 끝나기 전에 배우자가 Pick에서 빼는(DELETE —
+     * 결정도 cascade로 같이 지워진다) 경합을 막는다. 상담 등록끼리는 서로 막지 않는다.
+     */
     const locked = await client.query(
       `SELECT 1
-       FROM structured.category_decisions
+       FROM structured.vendor_candidates
        WHERE wedding_id = $1 AND vendor_id = $2
-       FOR UPDATE`,
+       FOR SHARE`,
       [weddingId, body.vendorId]
     );
     if (locked.rows.length === 0) {
-      throw new ApiError('forbidden', '최종 Pick을 완료한 업체만 상담 일정을 등록할 수 있습니다.');
+      throw new ApiError('forbidden', 'Pick에 담은 업체만 상담 일정을 등록할 수 있습니다.');
     }
 
     const inserted = await client.query<{ id: string }>(
@@ -180,8 +187,10 @@ export function registerWeddingEventRoutes(app: FastifyInstance, context: AppCon
   /**
    * 상담 시트 전용 일정 등록.
    *
-   * 일반 일정의 vendorId는 단순 관련 업체라 최종 Pick 전에도 쓸 수 있다. 상담 시트만
-   * 이 별도 경로를 사용하고, 여기서만 최종 Pick 여부를 서버 쓰기와 원자적으로 묶는다.
+   * 일반 일정의 vendorId는 단순 관련 업체라 Pick 전에도 쓸 수 있다. 상담 시트만
+   * 이 별도 경로를 사용하고, 여기서만 Pick 여부를 서버 쓰기와 원자적으로 묶는다.
+   * 예전에는 «최종 Pick 저장 뒤에만 상담 예약»이었는데, 2026-09-25 대표 결정(안 A)으로
+   * 최종 결정 확인 시트를 지우고 Pick 후보(또는 결정한 업체)면 받는다.
    */
   app.post<{ Params: { weddingId: string } }>(
     '/v1/weddings/:weddingId/consultation-events',
