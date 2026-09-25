@@ -11,10 +11,11 @@ import {
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   ActionButton,
+  CanonGray,
   ErrorView,
   Layout,
   LineHeight,
@@ -48,7 +49,7 @@ import { dismissToOrReplace } from '@/features/navigation/depth-back';
  * 넓어지면 그때 같이 보낸다.
  */
 export default function ConsentScreen() {
-  const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [checked, setChecked] = useState<ReadonlySet<ConsentAgreementKey>>(new Set());
   const [submitting, setSubmitting] = useState(false);
@@ -154,7 +155,7 @@ export default function ConsentScreen() {
             accessibilityState={{ checked: allChecked }}
             accessibilityLabel="전체 동의"
             onPress={toggleAll}
-            style={[styles.allRow, { backgroundColor: theme.backgroundElement }]}>
+            style={[styles.allRow, { backgroundColor: CanonGray.gray100 }]}>
             <Mark on={allChecked} />
             <ThemedText type="f17" style={styles.bold}>
               전체 동의
@@ -165,7 +166,7 @@ export default function ConsentScreen() {
           <AgreementSection title="선택" items={OPTIONAL_AGREEMENT_ITEMS} checked={checked} onToggle={toggle} onOpenDetail={setDetailKey} />
 
           <View style={styles.permSection}>
-            <ThemedText type="f14" themeColor="textSecondary" style={styles.permSectionTitle}>
+            <ThemedText type="f14" style={styles.permSectionTitle}>
               앱 접근 권한
             </ThemedText>
             <View style={styles.permGrid}>
@@ -183,10 +184,10 @@ export default function ConsentScreen() {
           ) : null}
         </ScrollView>
 
-        <ThemedView style={[styles.dock, { borderTopColor: theme.border }]}>
+        <ThemedView style={[styles.dock, { borderTopColor: CanonGray.gray200, paddingBottom: Math.max(DOCK_BOTTOM, Layout.gutter + insets.bottom) }]}>
           <ActionButton
             variant="primary"
-            size="xlarge"
+            size="sheet"
             label="동의하고 시작하기"
             disabled={!allRequiredChecked || submitting}
             onPress={() => void submit()}
@@ -222,7 +223,7 @@ function AgreementSection({
 }) {
   return (
     <View style={styles.section}>
-      <ThemedText type="f14" themeColor="textSecondary" style={styles.sectionTitle}>
+      <ThemedText type="f14" style={styles.sectionTitle}>
         {title}
       </ThemedText>
       {items.map((item) => (
@@ -268,7 +269,7 @@ function Mark({ on }: { on: boolean }) {
 
 function ProductSymbolChevron() {
   const theme = useTheme();
-  return <ProductSymbol name="chevronRight" size={16} color={theme.textAssistive} />;
+  return <ProductSymbol name="chevronRight" size={16} color={theme.textDisabled} />;
 }
 
 /** home.jsx frame-004 `permNoteT` — 13/19 · 「설정 > 웨딩픽」만 700. */
@@ -302,10 +303,10 @@ function PermissionCell({ item }: { item: AppPermissionItem }) {
 
   return (
     <View style={styles.permCell}>
-      <View style={[styles.permIconWrap, { backgroundColor: theme.backgroundElement }]}>
+      <View style={[styles.permIconWrap, { backgroundColor: CanonGray.gray100 }]}>
         <ProductSymbol name={PERMISSION_ICON[item.key]} size={22} color={theme.text} />
       </View>
-      <ThemedText type="f13" style={styles.bold}>
+      <ThemedText type="f13" style={[styles.bold, styles.permName]}>
         {item.name}
       </ThemedText>
     </View>
@@ -317,7 +318,8 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: { paddingHorizontal: Layout.gutter, paddingTop: 40, paddingBottom: Spacing.four, gap: 28 },
-  head: { gap: 8 },
+  /* `permTitle` 24/33 두 줄 = 66. 줄높이 33 토큰이 없어 상자 높이로 맞춘다. */
+  head: { gap: 8, minHeight: 66 },
   /* home.js `agAllRow` — min-height 60 · 좌우 16 · radius 8 · gap 12. */
   allRow: {
     minHeight: 60,
@@ -329,7 +331,8 @@ const styles = StyleSheet.create({
   },
   bold: { fontWeight: 700 },
   section: { gap: 2 },
-  sectionTitle: { fontWeight: 700, paddingBottom: 6 },
+  /* `agSecT` — 14/700 · #4d5159 · 줄 높이 normal(18) · 아래 6. */
+  sectionTitle: { fontWeight: 700, lineHeight: LineHeight.micro, paddingBottom: 6, color: CanonGray.gray700 },
   /* `agItem.row` — min-height 44 · gap 12 · 좌우 4. */
   agreementRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: Layout.inlineGap, paddingHorizontal: Spacing.one },
   agreementLabel: { flex: 1, minWidth: 0 },
@@ -343,10 +346,12 @@ const styles = StyleSheet.create({
   },
   /* 권한 구획도 `agSec`(gap 2 · 제목 아래 6)이고, 격자는 `permGrid`(4열 · gap 8 · 위 6 아래 12). */
   permSection: { gap: 2 },
-  permSectionTitle: { fontWeight: 700, paddingBottom: 6 },
+  permSectionTitle: { fontWeight: 700, lineHeight: LineHeight.micro, paddingBottom: 6, color: CanonGray.gray700 },
   permGrid: { flexDirection: 'row', gap: Spacing.two, paddingTop: 6, paddingBottom: 12 },
   permCell: { flex: 1, minWidth: 0, alignItems: 'center', gap: 6 },
   permNote: { lineHeight: LineHeight.lh19 },
+  /* `permName` 13/700 · 줄 높이 normal(18). */
+  permName: { lineHeight: LineHeight.micro },
   permIconWrap: {
     width: 44,
     height: 44,
@@ -355,5 +360,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   error: { paddingTop: 4 },
-  dock: { paddingHorizontal: Layout.gutter, paddingTop: 12, paddingBottom: Spacing.four, borderTopWidth: 1 },
+  /* `permCta` 도크 — 위 선 1 · 위 12 · CTA 56 · 아래 48 또는 24 + inset(정본 그림 y 828 · 아래 인디케이터 포함). */
+  dock: { paddingHorizontal: Layout.gutter, paddingTop: 12, borderTopWidth: 1 },
 });
+
+/* 도크 아래 여백 — 정본 그림의 CTA y 828(아래 48). 홈 인디케이터 기기는 24 + inset이 더 크면 그것. */
+const DOCK_BOTTOM = 48;

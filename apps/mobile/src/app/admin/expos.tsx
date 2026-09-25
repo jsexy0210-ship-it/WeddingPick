@@ -22,6 +22,7 @@ import { formatCount } from '@weddingpick/domain';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 
 import { apiFetch } from './_api';
+import { WritePressable } from './_role';
 import {
   Card,
   CardGrid,
@@ -383,8 +384,8 @@ export function ExposPanel() {
         : e.thumbnailCandidateUrl
           ? { v: '후보', badge: 'warn' as Kind }
           : { v: '없음', kind: 'dim' },
-      { v: '수정', kind: 'brand', onPress: () => openEdit(e) },
-      { v: '삭제', kind: 'bad', onPress: () => setDeleting(e) },
+      { v: '수정', kind: 'brand', write: true, onPress: () => openEdit(e) },
+      { v: '삭제', kind: 'bad', write: true, onPress: () => setDeleting(e) },
     ],
   }));
 
@@ -398,7 +399,7 @@ export function ExposPanel() {
       e.confidence
         ? { v: CONFIDENCE_LABEL[e.confidence] ?? e.confidence, badge: CONFIDENCE_KIND[e.confidence] ?? 'none' }
         : { v: '미확인', badge: 'warn' as Kind },
-      { v: '검수 완료', kind: 'brand', onPress: () => void approve(e.id) },
+      { v: '검수 완료', kind: 'brand', write: true, onPress: () => void approve(e.id) },
     ],
   }));
 
@@ -416,7 +417,7 @@ export function ExposPanel() {
       embedded
       title="박람회 관리"
       sub="수집 · 검수 · 종료 자동 삭제"
-      action={{ label: '박람회 등록', onPress: openCreate, kind: 'brand' }}
+      action={{ label: '박람회 등록', write: true, onPress: openCreate, kind: 'brand' }}
     >
       <DelayedLoader active={loading} size={40} />
       {!loading && error ? <LoadError message={error} onRetry={reload} /> : null}
@@ -495,7 +496,7 @@ export function ExposPanel() {
                     </Text>
                   ) : null}
                 </View>
-                <Pressable
+                <WritePressable
                   style={[styles.collectBtn, !collection?.ready && styles.collectBtnDisabled, collecting && styles.btnDisabled]}
                   disabled={collecting || !collection?.ready}
                   onPress={() => void collectNow()}
@@ -503,7 +504,7 @@ export function ExposPanel() {
                   <Text style={[styles.collectBtnText, !collection?.ready && styles.collectBtnTextDisabled]}>
                     {collecting ? '수집 중' : collection?.ready ? '지금 수집' : '수집 불가'}
                   </Text>
-                </Pressable>
+                </WritePressable>
               </View>
             </Card>
 
@@ -659,9 +660,9 @@ export function ExposPanel() {
                 <Pressable style={styles.ghostBtn} onPress={() => setForm(null)}>
                   <Text style={styles.ghostBtnText}>취소</Text>
                 </Pressable>
-                <Pressable style={[styles.primaryBtn, saving && styles.btnDisabled]} onPress={() => void save()} disabled={saving}>
+                <WritePressable style={[styles.primaryBtn, saving && styles.btnDisabled]} onPress={() => void save()} disabled={saving}>
                   <Text style={styles.primaryBtnText}>{saving ? '저장 중' : '저장'}</Text>
-                </Pressable>
+                </WritePressable>
               </View>
             </View>
           </ScrollView>

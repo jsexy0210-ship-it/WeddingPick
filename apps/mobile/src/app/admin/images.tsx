@@ -135,9 +135,9 @@ export function ImagesPanel() {
   function actionCell(item: ImageItem): Cell {
     if (item.rightsStatus === 'rejected') return { v: '—', kind: 'dim' };
     if (rightsConfirmed(item.rightsStatus)) {
-      return { v: '승인', kind: 'ok', onPress: () => void approve(item.id) };
+      return { v: '승인', kind: 'ok', write: true, onPress: () => void approve(item.id) };
     }
-    return { v: '폐기', kind: 'bad', onPress: () => void reject(item.id) };
+    return { v: '폐기', kind: 'bad', write: true, onPress: () => void reject(item.id) };
   }
 
   const items = data?.items ?? [];

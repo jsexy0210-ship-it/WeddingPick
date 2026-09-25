@@ -19,8 +19,10 @@ import { loadToken } from '@/api/session';
 import { error as errorCopy } from '../../../../spec/strings.ko.json';
 import {
   Border,
+  CanonGray,
   FontSize,
   Layout,
+  LineHeight,
   Radius,
   Spacing,
   ThemedText,
@@ -473,7 +475,7 @@ export default function SetupScreen() {
 
             {date && remaining ? (
               <View style={styles.ddayRow}>
-                <ThemedText type="f14" themeColor="textAssistive">
+                <ThemedText type="f14" themeColor="textAssistive" style={styles.ddayLabel}>
                   오늘부터
                 </ThemedText>
                 <ThemedText type="f16" themeColor="tint" numeric style={styles.ddayValue}>
@@ -488,10 +490,10 @@ export default function SetupScreen() {
               onPress={() => update({ date: { value: null } })}
               style={({ pressed }) => [
                 styles.undecidedChip,
-                { backgroundColor: dateUndecided ? theme.tintSurface : theme.backgroundSelected },
+                { backgroundColor: dateUndecided ? theme.tintSurface : CanonGray.gray100 },
                 pressed && styles.pressed,
               ]}>
-              <ThemedText type="f15" themeColor={dateUndecided ? 'tint' : 'textSecondary'} style={styles.bold}>
+              <ThemedText type="f15" style={[styles.bold, { color: dateUndecided ? theme.tint : CanonGray.gray700 }]}>
                 {UNDECIDED_LABEL}
               </ThemedText>
             </Pressable>
@@ -628,7 +630,9 @@ const styles = StyleSheet.create({
     gap: Layout.inlineGap,
     paddingHorizontal: Spacing.half,
   },
-  ddayValue: { fontWeight: 700 },
+  /* home.js `ddayLabel` 14 · `ddayVal` 16/700 — 줄 높이 normal(18 · 21). */
+  ddayLabel: { lineHeight: LineHeight.micro },
+  ddayValue: { fontWeight: 700, lineHeight: LineHeight.t7Loose },
   undecidedChip: {
     alignSelf: 'flex-start',
     height: 44,

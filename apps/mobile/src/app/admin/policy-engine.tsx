@@ -134,7 +134,7 @@ export function PolicyEnginePanel() {
               : `${p.description} · 기본값 ${p.defaultValue}`),
           num: isChanged ? next : p.value,
           numKind: isChanged ? ('bad' as const) : undefined,
-          btn: p.readOnlyReason ? undefined : { label: '수정', onPress: () => startEdit(p) },
+          btn: p.readOnlyReason ? undefined : { label: '수정', write: true, onPress: () => startEdit(p) },
         };
       });
   }
@@ -148,7 +148,7 @@ export function PolicyEnginePanel() {
         changed.length > 0
           ? {
               label: '변경 사항 저장',
-              onPress: () => setConfirming(true),
+              write: true, onPress: () => setConfirming(true),
               kind: 'brand',
             }
           : undefined

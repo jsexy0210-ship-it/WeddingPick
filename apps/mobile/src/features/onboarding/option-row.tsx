@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import {
   Border,
+  CanonGray,
   FontSize,
   Layout,
   LineHeight,
@@ -94,7 +95,7 @@ export function OptionRow({
           <ProductSymbol name="check" size={Layout.iconRow} color={theme.tint} />
         )
       ) : detailed ? (
-        <View style={[styles.emptyMark, prep && styles.prepMark, { borderColor: prep ? theme.border : theme.track }]} />
+        <View style={[styles.emptyMark, prep && styles.prepMark, { borderColor: prep ? CanonGray.gray200 : theme.track }]} />
       ) : (
         <View style={styles.checkSlot} />
       )}

@@ -1,11 +1,13 @@
-import type { ReactNode } from 'react';
+import { Children, cloneElement, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   ActionButton,
   Badge,
+  Border,
   type BadgeKind,
+  CanonGray,
   Layout,
   MaxContentWidth,
   ProductSymbol,
@@ -63,6 +65,7 @@ export function SubScreen({
   contentStyle?: StyleProp<ViewStyle>;
 }) {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <ThemedView style={styles.container}>
@@ -77,7 +80,14 @@ export function SubScreen({
         </ScrollView>
 
         {dock ? (
-          <View style={[styles.dock, { borderTopColor: theme.border }]}>{dock}</View>
+          <View
+            style={[
+              styles.dock,
+              /* 정본 dock 아래 48은 기기 홈 표시줄 자리를 포함한다 — 안전 영역만큼 덜어 낸다. */
+              { borderTopColor: theme.border, paddingBottom: Math.max(DOCK_BOTTOM - insets.bottom, Layout.rowPaddingY) },
+            ]}>
+            {dock}
+          </View>
         ) : null}
       </SafeAreaView>
     </ThemedView>
@@ -115,7 +125,7 @@ export function Dock({
   primary,
   secondary,
 }: {
-  primary: { label: string; onPress: () => void; disabled?: boolean; danger?: boolean };
+  primary: { label: string; onPress: () => void; disabled?: boolean; danger?: boolean; icon?: ReactNode };
   secondary?: { label: string; onPress: () => void; disabled?: boolean };
 }) {
   const theme = useTheme();
@@ -125,7 +135,7 @@ export function Dock({
       {secondary ? (
         <View style={styles.dockGhost}>
           <ActionButton
-            size="xlarge"
+            size="sheet"
             label={secondary.label}
             disabled={secondary.disabled}
             onPress={secondary.onPress}
@@ -135,8 +145,9 @@ export function Dock({
       <View style={secondary ? styles.dockPrimary : styles.dockFull}>
         <ActionButton
           variant="primary"
-          size="xlarge"
+          size="sheet"
           label={primary.label}
+          icon={primary.icon}
           disabled={primary.disabled}
           /* 13b ctaDangerWide — 탈퇴만 빨강. 그 밖의 primary는 스킨 색. */
           tone={primary.danger ? { background: theme.negative, text: theme.onTint } : undefined}
@@ -149,7 +160,7 @@ export function Dock({
 
 // ─── 블록 ─────────────────────────────────────────────────────
 
-/** padHero — eyebrow(14/19 700 coral) · 제목 26/35(2줄) · 서브 16/24 gray700(1줄). */
+/** 정본 qBlock — 16 20 20(좌우는 공통 24) · gap 8 · 제목 26/35 700(2줄) · 서브 15 muted(qSub · 1줄). */
 export function Hero({
   eyebrow,
   lines,
@@ -168,7 +179,7 @@ export function Hero({
       ) : null}
       <ThemedText type="t2">{lines.join('\n')}</ThemedText>
       {sub ? (
-        <ThemedText type="body" themeColor="textSecondary" numberOfLines={1}>
+        <ThemedText type="f15" themeColor="textAssistive" numberOfLines={1}>
           {sub}
         </ThemedText>
       ) : null}
@@ -210,7 +221,7 @@ export function Section({
 export function SectionTitle({ children, big = false }: { children: string; big?: boolean }) {
   return (
     <ThemedText
-      type={big ? 't4' : 't7'}
+      type={big ? 't4' : 'f13'}
       themeColor={big ? 'text' : 'textAssistive'}
       numberOfLines={1}
       style={styles.bold}>
@@ -221,7 +232,65 @@ export function SectionTitle({ children, big = false }: { children: string; big?
 
 /** rows — 행 사이 2, 행마다 아래 선 1. */
 export function Rows({ children }: { children: ReactNode }) {
-  return <View style={styles.rows}>{children}</View>;
+  /* 정본 `ROW(last)` — 마지막 행은 아래 선이 없다(카드 테두리가 대신한다). */
+  const items = Children.toArray(children).filter(isValidElement) as ReactElement<{ last?: boolean }>[];
+
+  return (
+    <View>
+      {items.map((item, index) => (index === items.length - 1 ? cloneElement(item, { last: true }) : item))}
+    </View>
+  );
+}
+
+/**
+ * 정본 `cat()`(my.js) — 34 · 0 14 · pill · 13/700. 켜짐 먹색 바탕 흰 글자 · 꺼짐 #f2f3f6 바탕 #4d5159.
+ * FAQ · 라운지 칩바가 쓴다(공용 FilterChip은 36/14 — pick.js `chip` 규격이라 여기와 다르다).
+ */
+export function CatChip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityState={{ selected }}
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={[styles.cat, { backgroundColor: selected ? theme.text : theme.backgroundSelected }]}>
+      <ThemedText type="f13" numberOfLines={1} style={[styles.bold, { color: selected ? theme.background : CanonGray.gray700 }]}>
+        {label}
+      </ThemedText>
+    </Pressable>
+  );
+}
+
+/** 정본 토글(my.js `track` · `knob`) — 44 × 26 · 안쪽 3 · 흰 원 20. 켜짐 코랄 · 꺼짐 #dcdee3. */
+export function Toggle({
+  value,
+  onValueChange,
+  disabled,
+  accessibilityLabel,
+}: {
+  value: boolean;
+  onValueChange: (next: boolean) => void;
+  disabled?: boolean;
+  accessibilityLabel?: string;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      accessibilityRole="switch"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ checked: value, disabled: disabled === true }}
+      disabled={disabled}
+      onPress={() => onValueChange(!value)}
+      style={[
+        styles.toggle,
+        { backgroundColor: value ? theme.tint : theme.track, justifyContent: value ? 'flex-end' : 'flex-start' },
+      ]}>
+      <View style={[styles.knob, { backgroundColor: theme.onTint }]} />
+    </Pressable>
+  );
 }
 
 /** 배지는 디자인 시스템 것을 그대로 쓴다 — height 22 · 4 9 · radius 4 · 14/19/700. */
@@ -258,6 +327,9 @@ export function Row({
   right,
   accessibilityLabel,
   inset,
+  wide,
+  tall,
+  last,
 }: {
   lead?: ReactNode;
   name: string;
@@ -276,8 +348,14 @@ export function Row({
   /** 꼬리 자리에 직접 놓는 것(스위치 · 로고). */
   right?: ReactNode;
   accessibilityLabel?: string;
-  /** 테두리 카드 안 행의 정본 좌우 여백(16). 구분선 폭은 카드 전체를 유지한다. */
+  /** 테두리 카드 안 행의 정본 좌우 여백(16 · my.js `LI`). 구분선 폭은 카드 전체를 유지한다. */
   inset?: boolean;
+  /** 정본 `ROW` · `rowPlain` — 좌우 20. `inset`보다 넓은 행(알림 · 계정). */
+  wide?: boolean;
+  /** 정본 `li2` · `profileBasic` — 최소 높이 64 · 56. 기본은 52. */
+  tall?: 56 | 64;
+  /** `Rows`가 채운다 — 마지막 행은 아래 선을 긋지 않는다. */
+  last?: boolean;
 }) {
   const theme = useTheme();
   const nameColor: ThemeColor = danger ? 'negative' : off ? 'textDisabled' : 'text';
@@ -285,11 +363,11 @@ export function Row({
     <>
       {lead}
       <View style={styles.rowText}>
-        <ThemedText type="t5" themeColor={nameColor} numberOfLines={1} style={styles.regular}>
+        <ThemedText type="f15" themeColor={nameColor} numberOfLines={1} style={styles.regular}>
           {name}
         </ThemedText>
         {meta ? (
-          <ThemedText type="t7" themeColor="textAssistive" numeric>
+          <ThemedText type="f12" themeColor="textAssistive" numeric>
             {meta}
           </ThemedText>
         ) : null}
@@ -298,7 +376,7 @@ export function Row({
         <Badge kind={tailBadge}>{tail}</Badge>
       ) : tail !== undefined ? (
         <ThemedText
-          type="t6"
+          type="f15"
           numeric
           numberOfLines={1}
           themeColor={tailDim ? 'textAssistive' : 'text'}
@@ -308,31 +386,30 @@ export function Row({
       ) : null}
       {right}
       {chevron ? (
-        <ProductSymbol name="chevronRight" size={Layout.iconInline} color={theme.textDisabled} />
+        <ProductSymbol name="chevronRight" size={Layout.iconField} color={theme.textDisabled} />
       ) : null}
     </>
   );
 
-  return (
-    <View>
-      {onPress ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={accessibilityLabel}
-          onPress={onPress}
-          style={({ pressed }) => [
-            styles.row,
-            inset ? styles.rowInset : null,
-            meta ? styles.rowTall : null,
-            pressed && styles.pressed,
-          ]}>
-          {body}
-        </Pressable>
-      ) : (
-        <View style={[styles.row, inset ? styles.rowInset : null, meta ? styles.rowTall : null]}>{body}</View>
-      )}
-      <View style={[styles.hr, { backgroundColor: theme.border }]} />
-    </View>
+  /* 정본 행은 선을 안쪽 그림자(inset 0 -1px 0)로 긋는다 — 행 높이에 선이 들어간다. */
+  const frame = [
+    styles.row,
+    inset ? styles.rowInset : null,
+    wide ? styles.rowWide : null,
+    tall ? { minHeight: tall } : null,
+    last ? null : { borderBottomWidth: Border.hairline, borderBottomColor: theme.border },
+  ];
+
+  return onPress ? (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
+      style={({ pressed }) => [frame, pressed && styles.pressed]}>
+      {body}
+    </Pressable>
+  ) : (
+    <View style={frame}>{body}</View>
   );
 }
 
@@ -386,13 +463,15 @@ export function StatBox({
   );
 }
 
-/** noteBox — 제목 18/24 700 · 본문 16/24 gray700. 화면 맨 아래 «무엇을 바꾸면 무엇이 달라지는지». */
+/** noteBox(my.js) — 18 · gap 5 · 제목 15/700 · 본문 13/20 muted. 화면 맨 아래 «무엇을 바꾸면 무엇이 달라지는지». */
 export function NoteBox({ title, body }: { title: string; body?: string }) {
   return (
     <ThemedView type="backgroundElement" style={styles.noteBox}>
-      <ThemedText type="t5">{title}</ThemedText>
+      <ThemedText type="f15" style={styles.bold}>
+        {title}
+      </ThemedText>
       {body ? (
-        <ThemedText type="body" themeColor="textSecondary">
+        <ThemedText type="f13" themeColor="textAssistive">
           {body}
         </ThemedText>
       ) : null}
@@ -501,6 +580,8 @@ export function Avatar({ initial, size = AVATAR_MY }: { initial: string; size?: 
 
 // ─── 값 ───────────────────────────────────────────────────────
 
+/** 정본 dock 아래 여백 48(미리보기 기준 — 홈 표시줄 자리 포함). */
+const DOCK_BOTTOM = 48;
 /** 체크 원 안의 획 16. 시안 check(): background-size 16px. */
 const CHECK_GLYPH = Spacing.three;
 /** 진행 막대 6. 시안 track: height 6px. */
@@ -515,61 +596,75 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.4 },
 
   scroll: { flex: 1 },
-  content: { paddingBottom: Spacing.four },
+  /* 정본 scroll `padding-top:16px`. */
+  content: { paddingTop: Spacing.three, paddingBottom: Spacing.four },
 
-  /* dock 92 = 12 + 52 + 28. 위 선 1. */
+  /* 정본 dockSingle · dockTwo — 위 12 · CTA 56 · 아래 48(= 116, 미리보기가 그린 높이) · 사이 10 · 위 선 1. */
   dock: {
-    minHeight: Layout.dock,
     flexDirection: 'row',
-    gap: Spacing.two,
+    gap: Layout.cardGap,
     paddingHorizontal: Layout.gutter,
     paddingTop: Layout.rowPaddingY,
-    paddingBottom: Layout.sectionGap,
     borderTopWidth: 1,
   },
   dockGhost: { flex: 1 },
   dockPrimary: { flex: 1.4 },
   dockFull: { flex: 1 },
 
-  /* padHero 12 24 24 · gap 8 */
+  /* qBlock 16 · 20(좌우 공통 24) · 아래 20 · gap 8 */
   hero: {
     paddingHorizontal: Layout.gutter,
-    paddingTop: Layout.rowPaddingY,
-    paddingBottom: Spacing.four,
+    paddingTop: Spacing.three,
+    paddingBottom: Layout.listGap,
     gap: Spacing.two,
   },
-  /* padSec — 13-my-sub 0 24 24 · gap 10 / 15-events 0 24 28 · gap 12 */
+  /* 정본 sec — 0 20 20(좌우 공통 24) · gap 12 / 15-events 0 24 28 · gap 12 */
   section: {
     paddingHorizontal: Layout.gutter,
-    paddingBottom: Spacing.four,
-    gap: Layout.cardGap,
+    paddingBottom: Layout.listGap,
+    gap: Layout.inlineGap,
   },
   sectionEvents: {
     paddingHorizontal: Layout.gutter,
     paddingBottom: Layout.sectionGap,
     gap: Layout.rowPaddingY,
   },
-  rows: { gap: Spacing.half },
 
   /* SEED는 400 · 700 둘뿐 — 굵기는 이 두 곳에서만 바꾼다. */
   bold: { fontWeight: '700' },
   regular: { fontWeight: '400' },
 
-  /* 행 — min 56 · 12 0 · gap 12 · 메타 있으면 14 0 위 정렬 */
+  /* 정본 ROW · LI — 최소 52 · gap 12 · 가운데 정렬. 메타는 setCol gap 3. */
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Layout.rowPaddingY,
-    minHeight: Layout.rowMinHeight,
-    paddingVertical: Layout.rowPaddingY,
-  },
-  rowTall: {
-    alignItems: 'flex-start',
-    paddingVertical: Layout.sectionHeadGap,
+    gap: Layout.inlineGap,
+    minHeight: 52,
   },
   rowInset: { paddingHorizontal: Spacing.three },
-  rowText: { flex: 1, minWidth: 0, gap: Spacing.half },
+  rowWide: { paddingHorizontal: Layout.listGap },
+  rowText: { flex: 1, minWidth: 0, gap: Layout.cardNameGap },
   hr: { height: 1 },
+
+  /* 정본 track 44 × 26 · 안쪽 3 · knob 20. */
+  toggle: {
+    width: 44,
+    height: 26,
+    flexShrink: 0,
+    borderRadius: Radius.pill,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 3,
+  },
+  knob: { width: 20, height: 20, borderRadius: Radius.pill },
+  /* 정본 cat — 34 · 0 14 · pill. */
+  cat: {
+    height: 34,
+    paddingHorizontal: Layout.chipPaddingX,
+    borderRadius: Radius.pill,
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
 
   kvRow: {
     flexDirection: 'row',
@@ -598,8 +693,8 @@ const styles = StyleSheet.create({
   },
   noteBox: {
     borderRadius: Radius.medium,
-    padding: Layout.cardPadding,
-    gap: Spacing.two,
+    padding: Layout.cardPaddingCompactY,
+    gap: 5,
   },
   emptyBox: {
     borderRadius: Radius.medium,

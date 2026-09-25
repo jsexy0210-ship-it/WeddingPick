@@ -26,3 +26,13 @@ export function noteMonthDayTime(value: string | Date): string {
   const minute = String(date.getMinutes()).padStart(2, '0');
   return `${noteMonthDay(date)} ${hour}:${minute}`;
 }
+
+const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
+
+/** `9.23(수) 15:00` — 웨딩일정 타임라인 카드 위 줄(`tlItem` time). */
+export function noteMonthDayWeekdayTime(value: string | Date): string {
+  const date = toDate(value);
+  const hour = String(date.getHours()).padStart(2, '0');
+  const minute = String(date.getMinutes()).padStart(2, '0');
+  return `${noteMonthDay(date)}(${WEEKDAYS[date.getDay()]}) ${hour}:${minute}`;
+}

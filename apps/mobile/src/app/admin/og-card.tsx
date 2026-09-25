@@ -2,6 +2,10 @@ import { Redirect } from 'expo-router';
 /**
  * 링크 미리보기(OG 카드) 관리.
  * 설정 저장과 정적 사이트 반영은 별개다. 이 화면에서는 배포를 요청하지 않는다.
+ *
+ * 세 벌을 따로 관리한다(2026-09-25 대표 지시 · 0436) — 앱용 · 초대용 · 웹사이트용.
+ * 관리자 정본(`docs/design/html/웨딩픽 관리자*.dc.html`)에 이 화면이 없어 기존 구조를
+ * 그대로 두고 맨 위에 벌을 고르는 칸만 더했다.
  */
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useState } from 'react';
@@ -19,7 +23,32 @@ import {
 import { FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { WritePressable } from './_role';
 import { AdminFormModal } from './_ui';
+
+type Kind = 'app' | 'invite' | 'website';
+
+/** 벌마다 카드가 실리는 주소와 반영되는 빌드. */
+const KINDS: readonly { key: Kind; label: string; path: string; lead: string }[] = [
+  {
+    key: 'app',
+    label: '앱용',
+    path: '',
+    lead: '앱 주소(로그인 · 앱 화면 링크)를 붙이면 뜨는 카드예요. 앱 화면 배포 때 함께 반영돼요.',
+  },
+  {
+    key: 'invite',
+    label: '초대용',
+    path: '/invite',
+    lead: '「카카오로 초대하기」가 보내는 초대 안내 주소의 카드예요. 초대 코드는 카드에 담기지 않아요. 앱 화면 배포 때 함께 반영돼요.',
+  },
+  {
+    key: 'website',
+    label: '웹사이트용',
+    path: '/website.html',
+    lead: '웹사이트(소개 · 하위 페이지) 주소를 붙이면 뜨는 카드예요. 웹사이트 배포 때 반영돼요.',
+  },
+];
 
 type Meta = {
   ogTitle: string;
@@ -66,6 +95,7 @@ function formatWhen(value: string | null): string {
 }
 
 export function OgCardPanel() {
+  const [kind, setKind] = useState<Kind>('app');
   const [data, setData] = useState<AdminView | null>(null);
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -79,7 +109,8 @@ export function OgCardPanel() {
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
-    apiFetch('/v1/admin/site-meta')
+    setNotice(null);
+    apiFetch(`/v1/admin/site-meta?kind=${kind}`)
       .then((value) => {
         if (cancelled) return;
         const view = value as AdminView;
@@ -101,7 +132,7 @@ export function OgCardPanel() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [kind]);
 
   /** 칸이 비어 있으면 기본값이 무엇인지 보여준다. 저장하면 그 값이 다시 이긴다. */
   function shown(key: keyof Meta): string {
@@ -113,7 +144,7 @@ export function OgCardPanel() {
   }
 
   async function persist(): Promise<AdminView> {
-    const saved = (await apiFetch('/v1/admin/site-meta', {
+    const saved = (await apiFetch(`/v1/admin/site-meta?kind=${kind}`, {
       method: 'PUT',
       body: JSON.stringify(draft),
     })) as AdminView;
@@ -145,7 +176,7 @@ export function OgCardPanel() {
     try {
       const blob = await fetch(asset.uri).then((response) => response.blob());
 
-      const target = (await apiFetch('/v1/admin/site-meta/og-image/upload-target', {
+      const target = (await apiFetch(`/v1/admin/site-meta/og-image/upload-target?kind=${kind}`, {
         method: 'POST',
         body: JSON.stringify({ mimeType }),
       })) as { storageKey: string; uploadUrl: string };
@@ -158,7 +189,7 @@ export function OgCardPanel() {
 
       if (!put.ok) throw new Error(`그림을 올리지 못했어요 (${put.status})`);
 
-      const saved = (await apiFetch('/v1/admin/site-meta/og-image', {
+      const saved = (await apiFetch(`/v1/admin/site-meta/og-image?kind=${kind}`, {
         method: 'PUT',
         body: JSON.stringify({ storageKey: target.storageKey }),
       })) as AdminView;
@@ -177,7 +208,7 @@ export function OgCardPanel() {
     setNotice(null);
     setUploading(true);
     try {
-      const saved = (await apiFetch('/v1/admin/site-meta/og-image', {
+      const saved = (await apiFetch(`/v1/admin/site-meta/og-image?kind=${kind}`, {
         method: 'DELETE',
       })) as AdminView;
 
@@ -203,8 +234,45 @@ export function OgCardPanel() {
     }
   }
 
-  if (loading) return <DelayedLoader active size={40} style={styles.centered} />;
-  if (error) return <Text style={styles.error}>{error}</Text>;
+  const current = KINDS.find((item) => item.key === kind) ?? KINDS[0]!;
+  const kindTabs = (
+    <View style={styles.kindRow} accessibilityRole="tablist">
+      {KINDS.map((item) => {
+        const selected = item.key === kind;
+        return (
+          <Pressable
+            key={item.key}
+            accessibilityRole="tab"
+            accessibilityState={{ selected }}
+            onPress={() => setKind(item.key)}
+            disabled={saving || uploading}
+            style={[styles.kindBtn, selected && styles.kindBtnActive]}
+          >
+            <Text style={[styles.kindBtnText, selected && styles.kindBtnTextActive]}>{item.label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+
+  if (loading) {
+    return (
+      <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+        <Text style={styles.h1}>링크 미리보기</Text>
+        {kindTabs}
+        <DelayedLoader active size={40} style={styles.centered} />
+      </ScrollView>
+    );
+  }
+  if (error) {
+    return (
+      <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+        <Text style={styles.h1}>링크 미리보기</Text>
+        {kindTabs}
+        <Text style={styles.error}>{error}</Text>
+      </ScrollView>
+    );
+  }
   if (!data) return null;
 
   const live = data.liveOgTitle;
@@ -218,13 +286,14 @@ export function OgCardPanel() {
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
       <Text style={styles.h1}>링크 미리보기</Text>
+      {kindTabs}
       <Text style={styles.lead}>
-        카카오톡이나 슬랙에 주소를 붙이면 뜨는 카드예요. 설정은 저장할 수 있고, 사이트에는 별도 배포 후 반영돼요.
+        {current.lead} 설정은 저장할 수 있고, 사이트에는 별도 배포 후 반영돼요.
       </Text>
       <View style={styles.actions}>
-        <Pressable style={[styles.button, styles.buttonPrimary]} onPress={() => setEditing(true)}>
-          <Text style={styles.buttonPrimaryText}>링크 미리보기 수정</Text>
-        </Pressable>
+        <WritePressable style={[styles.button, styles.buttonPrimary]} onPress={() => setEditing(true)}>
+          <Text style={styles.buttonPrimaryText}>{`${current.label} 미리보기 수정`}</Text>
+        </WritePressable>
       </View>
 
       <View style={styles.row}>
@@ -250,7 +319,7 @@ export function OgCardPanel() {
               <Text style={styles.previewDesc} numberOfLines={2}>
                 {shown('ogDescription')}
               </Text>
-              <Text style={styles.previewHost}>210.109.82.212</Text>
+              <Text style={styles.previewHost}>{`210.109.82.212${current.path}`}</Text>
             </View>
           </View>
         </View>
@@ -279,11 +348,11 @@ export function OgCardPanel() {
         </View>
       </View>
 
-      <AdminFormModal visible={editing} title="링크 미리보기 수정" onClose={() => setEditing(false)}>
+      <AdminFormModal visible={editing} title={`${current.label} 미리보기 수정`} onClose={() => setEditing(false)}>
         <View style={styles.field}>
           <Text style={styles.fieldLabel}>카드 그림</Text>
           <View style={styles.imageActions}>
-          <Pressable
+          <WritePressable
             style={[styles.button, styles.buttonPrimary]}
             onPress={() => void uploadImage()}
             disabled={uploading}
@@ -293,11 +362,11 @@ export function OgCardPanel() {
             ) : (
               <Text style={styles.buttonPrimaryText}>그림 올리기</Text>
             )}
-          </Pressable>
+          </WritePressable>
           {data.ogImageSource === 'upload' ? (
-            <Pressable style={styles.button} onPress={() => void removeImage()} disabled={uploading}>
+            <WritePressable style={styles.button} onPress={() => void removeImage()} disabled={uploading}>
               <Text style={styles.buttonText}>올린 그림 치우기</Text>
-            </Pressable>
+            </WritePressable>
           ) : null}
           <Text style={styles.fieldHint}>
             {data.ogImageSource === 'upload'
@@ -335,9 +404,9 @@ export function OgCardPanel() {
           <Pressable style={styles.button} onPress={() => setEditing(false)} disabled={saving || uploading}>
             <Text style={styles.buttonText}>취소</Text>
           </Pressable>
-          <Pressable style={[styles.button, styles.buttonPrimary]} onPress={save} disabled={saving}>
+          <WritePressable style={[styles.button, styles.buttonPrimary]} onPress={save} disabled={saving}>
             {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonPrimaryText}>저장</Text>}
-          </Pressable>
+          </WritePressable>
         </View>
       </AdminFormModal>
     </ScrollView>
@@ -350,6 +419,18 @@ const styles = StyleSheet.create({
   h1: { fontSize: FontSize.t3, fontWeight: '700', color: '#212124' },
   lead: { fontSize: FontSize.t7, lineHeight: LineHeight.t7, color: '#4d5159' },
   row: { flexDirection: 'row', gap: 16, flexWrap: 'wrap' },
+  kindRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  kindBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: 8,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  kindBtnActive: { backgroundColor: '#212124', borderColor: '#212124' },
+  kindBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: '#4d5159' },
+  kindBtnTextActive: { color: '#fff' },
   imageActions: { flexDirection: 'row', gap: 12, alignItems: 'center', flexWrap: 'wrap' },
   card: {
     flex: 1,

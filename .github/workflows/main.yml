@@ -64,7 +64,7 @@ jobs:
           if [[ "$staged_sha" =~ ^[0-9a-f]{40}$ ]] && git cat-file -e "$staged_sha^{commit}" 2>/dev/null; then
             if git merge-base --is-ancestor "$staged_sha" "$GITHUB_SHA"; then
               paths="$(git diff --name-only "$staged_sha" "$GITHUB_SHA")"
-              if ! grep -Eq '^(apps/(mobile|web)/|packages/(api-contract|domain|ui)/|spec/|package(-lock)?\.json$|scripts/(ensure-modules|split-admin-dist|package-kakao-static)\.mjs$|scripts/audit-kakao-runtime\.sh$|\.github/workflows/(main|stage-kakao-static)\.yml$)' <<< "$paths"; then
+              if ! grep -Eq '^(apps/(mobile|web)/|packages/(api-contract|domain|ui)/|spec/|package(-lock)?\.json$|scripts/(ensure-modules|split-admin-dist|package-kakao-static|apply-app-og-meta)\.mjs$|scripts/audit-kakao-runtime\.sh$|\.github/workflows/(main|stage-kakao-static)\.yml$)' <<< "$paths"; then
                 changed=false
               fi
             fi
@@ -87,6 +87,7 @@ jobs:
           node --test scripts/verification/kakao-retention-cleanup-policy.test.mjs
           node --test scripts/verification/ci-workspace-parallelism.test.mjs
           node --test scripts/verification/main-deploy-policy.test.mjs
+          node --test scripts/apply-app-og-meta.test.mjs
 
       - name: Reject retired deployment paths
         run: node scripts/check-render-retired.mjs

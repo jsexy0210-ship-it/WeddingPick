@@ -27,6 +27,7 @@ import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { formatDateTimeDot } from '@/features/common/format-date';
 import { apiFetch } from './_api';
+import { WritePressable } from './_role';
 import { compactSplit, useAdminCompact } from './_ui';
 
 type PendingInquiry = {
@@ -286,12 +287,12 @@ export function InquiryPanel() {
                 ) : (
                   <>
                     {detail.status === 'received' && (
-                      <Pressable
+                      <WritePressable
                         style={[styles.reviewBtn, acting && styles.btnDisabled]}
                         onPress={() => void startReview()}
                         disabled={acting}>
                         <Text style={styles.reviewBtnText}>확인 시작</Text>
-                      </Pressable>
+                      </WritePressable>
                     )}
 
                     <Text style={[styles.fieldLabel, { marginTop: 20 }]}>답변</Text>
@@ -322,12 +323,12 @@ export function InquiryPanel() {
 
                     {actionError && <Text style={styles.actionError}>{actionError}</Text>}
 
-                    <Pressable
+                    <WritePressable
                       style={[styles.answerBtn, !canAnswer && styles.btnDisabled]}
                       onPress={() => void answer()}
                       disabled={!canAnswer}>
                       <Text style={styles.answerBtnText}>{acting ? '처리 중…' : '답변 완료'}</Text>
-                    </Pressable>
+                    </WritePressable>
                   </>
                 )}
               </ScrollView>

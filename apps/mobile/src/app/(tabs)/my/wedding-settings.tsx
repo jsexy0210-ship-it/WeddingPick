@@ -1,12 +1,11 @@
 import type { CurrentUser } from '@weddingpick/api-contract';
 import {
-  BUDGET_BRACKET_FIELD_LABEL,
   BUDGET_BRACKET_LABEL,
   PREPARATION_NOT_STARTED_LABEL,
   WEDDING_REGIONS,
+  VENDOR_CATEGORY_LABEL,
   WEDDING_STYLE_LABEL,
   combineRegion,
-  formatCount,
   formatDateDot,
   regionTokens,
   type VendorCategory,
@@ -46,13 +45,13 @@ const S = {
   title: '내 웨딩설정',
   date: '예식일',
   region: '지역',
-  budget: BUDGET_BRACKET_FIELD_LABEL,
+  /* 정본 weddingSet k «예산». */
+  budget: '예산',
   style: '스타일',
   prepared: '준비 현황',
   /** 예식일이 지난 상태(운영 데이터 상태). */
   passed: '지났어요',
   none: '아직 안 골랐어요',
-  preparedCount: (n: number) => `${formatCount(n)}개 정함`,
   saved: '설정을 바꿨어요',
   /* 정본 my.jsx frame-003 noteBox(my.jsx:186). */
   noteTitle: '바꾸면 추천이 다시 계산돼요',
@@ -179,7 +178,8 @@ export default function WeddingSettingsScreen() {
     : UNDECIDED_LABEL;
   const preparedValue =
     current.preparedCategories.length > 0
-      ? S.preparedCount(current.preparedCategories.length)
+      /* 정본 weddingSet v «웨딩홀» — 정한 업종 이름을 그대로 잇는다. */
+      ? current.preparedCategories.map((category) => VENDOR_CATEGORY_LABEL[category as VendorCategory]).join(' · ')
       : PREPARATION_NOT_STARTED_LABEL;
   const styleValue =
     current.styleTags.length > 0
@@ -189,7 +189,7 @@ export default function WeddingSettingsScreen() {
   return (
     <SubScreen title={S.title}>
       <Section>
-        <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.track }]}>
+        <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.border }]}>
           <SettingRow
             label={S.date}
             value={dateValue}
@@ -299,7 +299,12 @@ function SettingRow({
         accessibilityRole="button"
         accessibilityLabel={`${label} ${value}`}
         onPress={onPress}
-        style={({ pressed }) => [styles.settingRow, pressed && styles.pressed]}>
+        style={({ pressed }) => [
+          styles.settingRow,
+          /* 정본 행 선은 inset 그림자 — 행 높이 64 안에 든다. */
+          last ? null : { borderBottomWidth: Border.hairline, borderBottomColor: theme.border },
+          pressed && styles.pressed,
+        ]}>
         <View style={styles.settingText}>
           <ThemedText type="f13" themeColor="textAssistive" numberOfLines={1}>
             {label}
@@ -308,9 +313,8 @@ function SettingRow({
             {value}
           </ThemedText>
         </View>
-        <ProductSymbol name="chevronRight" size={Layout.iconInline} color={theme.textDisabled} />
+        <ProductSymbol name="chevronRight" size={Layout.iconField} color={theme.textDisabled} />
       </Pressable>
-      {!last ? <View style={[styles.divider, { backgroundColor: theme.border }]} /> : null}
     </View>
   );
 }
@@ -353,9 +357,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Layout.inlineGap,
   },
-  settingText: { flex: 1, minWidth: 0, gap: Spacing.half },
+  /* 정본 setCol gap 3. */
+  settingText: { flex: 1, minWidth: 0, gap: Layout.cardNameGap },
   settingValue: { fontWeight: '700' },
-  divider: { height: Border.hairline },
   pressed: { opacity: 0.6 },
   /* 펼친 편집기 — 행 아래 · 아래 여백만 준다. 부품이 제 여백을 갖고 있다. */
   /*

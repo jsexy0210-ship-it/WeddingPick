@@ -9,6 +9,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { WritePressable } from './_role';
 
 type CampaignType = 'mission' | 'referral' | 'promo_cert' | 'grant';
 type PayoutStatus = 'pending' | 'paid' | 'failed' | 'blocked';
@@ -192,22 +193,22 @@ export function CampaignsPanel() {
                 </Text>
                 <View style={[styles.colAction, { flexDirection: 'row', gap: 4 }]}>
                   {item.payoutStatus === 'pending' && !item.abuseFlag && (
-                    <Pressable
+                    <WritePressable
                       style={[styles.payBtn, (acting === item.id + '_pay') && styles.btnDisabled]}
                       onPress={() => void pay(item.id)}
                       disabled={acting !== null}
                     >
                       <Text style={styles.payBtnText}>{acting === item.id + '_pay' ? '…' : '지급'}</Text>
-                    </Pressable>
+                    </WritePressable>
                   )}
                   {item.abuseFlag && item.payoutStatus !== 'blocked' && (
-                    <Pressable
+                    <WritePressable
                       style={[styles.blockBtn, (acting === item.id) && styles.btnDisabled]}
                       onPress={() => void block(item.id)}
                       disabled={acting !== null}
                     >
                       <Text style={styles.blockBtnText}>{acting === item.id ? '…' : '차단'}</Text>
-                    </Pressable>
+                    </WritePressable>
                   )}
                 </View>
               </View>

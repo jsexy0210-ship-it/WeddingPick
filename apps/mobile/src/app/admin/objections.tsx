@@ -7,6 +7,7 @@ import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { formatDateTimeDot } from '@/features/common/format-date';
 
 import { apiFetch } from './_api';
+import { WritePressable } from './_role';
 import { ConfirmDecision } from '@/features/admin/confirm-decision';
 import { compactSplit, useAdminCompact } from './_ui';
 
@@ -218,18 +219,18 @@ export function ObjectionsPanel() {
 
               {pending === null ? (
                 <View style={styles.actionRow}>
-                  <Pressable
+                  <WritePressable
                     disabled={acting}
                     style={[styles.restoreBtn, acting && styles.btnDisabled]}
                     onPress={() => ask('restore')}>
                     <Text style={styles.restoreBtnText}>되살리기</Text>
-                  </Pressable>
-                  <Pressable
+                  </WritePressable>
+                  <WritePressable
                     disabled={acting}
                     style={[styles.removeBtn, acting && styles.btnDisabled]}
                     onPress={() => ask('remove')}>
                     <Text style={styles.removeBtnText}>내리기</Text>
-                  </Pressable>
+                  </WritePressable>
                 </View>
               ) : (
                 <ConfirmDecision
@@ -273,12 +274,12 @@ export function ObjectionsPanel() {
                   value={days}
                   onChangeText={setDays}
                 />
-                <Pressable
+                <WritePressable
                   disabled={acting}
                   style={[styles.extendBtn, acting && styles.btnDisabled]}
                   onPress={() => void extend()}>
                   <Text style={styles.extendBtnText}>기한 늘리기</Text>
-                </Pressable>
+                </WritePressable>
               </View>
             </ScrollView>
           )}

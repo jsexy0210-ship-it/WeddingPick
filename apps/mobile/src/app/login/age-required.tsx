@@ -1,8 +1,8 @@
 import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ActionButton, Layout, MaxContentWidth, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+import { ActionButton, CanonGray, Layout, LineHeight, MaxContentWidth, ThemedText, ThemedView } from '@weddingpick/ui';
 
 /**
  * WP-AUTH-009 만 14세 이용 불가. v3.29 정본
@@ -31,33 +31,43 @@ import { ActionButton, Layout, MaxContentWidth, ThemedText, ThemedView, useTheme
  * 근거 — 이용약관 제4조 · 개인정보처리방침 8항.
  */
 export default function AgeRequiredScreen() {
-  const theme = useTheme();
-
+  const insets = useSafeAreaInsets();
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={styles.safeArea}>
+      <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
         <View style={styles.stage}>
           <ThemedText type="t3" style={styles.center}>
             만 14세가 되면{'\n'}웨딩픽을 이용할 수 있어요
           </ThemedText>
 
-          <ThemedText type="f14" themeColor="textSecondary" style={styles.center}>
+          <ThemedText type="f14" themeColor="textSecondary" style={[styles.center, styles.note]}>
             계정은 만들지 않았어요. 연령대는 삭제했어요.
           </ThemedText>
         </View>
 
-        <ThemedView style={[styles.dock, { borderTopColor: theme.border }]}>
+        <ThemedView style={[styles.dock, { borderTopColor: CanonGray.gray200, paddingBottom: Math.max(DOCK_PADDING_BOTTOM, Layout.gutter + insets.bottom) }]}>
           {/* 안내 화면이라 coral을 쓰지 않는다 — variant="secondary"가 회색 톤(ctaGhostH)이다. */}
-          <ActionButton variant="secondary" size="xlarge" label="돌아가기" onPress={() => router.replace('/login')} />
+          <ActionButton
+            variant="secondary"
+            size="sheet"
+            /* `ctaGhostH` — 면 #f2f3f6 · 글자 #4d5159. */
+            tone={{ background: CanonGray.gray100, text: CanonGray.gray700 }}
+            label="돌아가기" onPress={() => router.replace('/login')} />
         </ThemedView>
       </SafeAreaView>
     </ThemedView>
   );
 }
 
-/* home.js 고정값 — agesStage gap14·좌우32, dockSingleH flex 0 0 92·좌우24·위12. */
+/* home.js 고정값 — agesStage gap14·좌우32. */
 const STAGE_PADDING_X = 32;
-const DOCK_HEIGHT = 92;
+/*
+ * dockSingleH — 위 선 1 · 위 12 · CTA 56(`ctaGhostH`) · 아래 48. 정본 그림에서 CTA는 프레임
+ * 아래 끝에서 104 위(y 828)에 앉는다(`flex:0 0 92` + 위아래 padding 12 = 116). 아래 48 — 홈
+ * 인디케이터가 있는 기기는 24 + inset이 더 크면 그것을 쓴다.
+ */
+const DOCK_PADDING_TOP = 12;
+const DOCK_PADDING_BOTTOM = 48;
 
 const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
@@ -71,10 +81,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: STAGE_PADDING_X,
   },
   center: { textAlign: 'center' },
-  /* home.js dockSingleH — flex 0 0 92 · 위 1px 선 · 위아래 12 · 좌우 24. */
+  /* home.js `agesNote` 14/21. */
+  note: { lineHeight: LineHeight.t7Loose },
   dock: {
-    minHeight: DOCK_HEIGHT,
-    justifyContent: 'center',
+    paddingTop: DOCK_PADDING_TOP,
     paddingHorizontal: Layout.gutter,
     borderTopWidth: 1,
   },

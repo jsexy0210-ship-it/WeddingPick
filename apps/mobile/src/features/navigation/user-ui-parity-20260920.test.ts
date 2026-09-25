@@ -110,9 +110,9 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     const pick = mobile('app/(tabs)/pick/index.tsx');
     expect(pick).not.toContain('PickSectionTabs');
     expect(pick).not.toContain('<CompareBasket');
-    expect(pick).toContain("const showRecommendations = requestedSection === 'recommendations'");
-    expect(pick).toContain('<RecommendationsContent requestedCategory={requestedCategory} />');
-    expect(pick).toContain('VENDOR_CATEGORIES.includes(rawCategory as VendorCategory)');
+    /* 2026-09-25 대표 지시 — `/pick?section=recommendations` 분기를 없앴다. */
+    expect(pick).not.toContain('RecommendationsContent');
+    expect(pick).not.toContain("section: 'recommendations'");
     expect(pick).toContain("pathname: '/search/compare'");
     expect(mobile('app/(tabs)/search/compare.tsx')).not.toContain('PickSectionTabs');
 
@@ -124,7 +124,8 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     const home = mobile('app/(tabs)/index.tsx');
     expect(home).toContain('card.pickCount > 0');
     expect(home).toContain(`/pick/\${card.targetCategory}`);
-    expect(home).toContain(`/pick?section=recommendations&category=\${card.targetCategory}`);
+    expect(home).toContain(`/search?category=\${card.targetCategory}`);
+    expect(home).not.toContain('section=recommendations');
 
     const recommendations = mobile('app/(tabs)/(home)/recommendations.tsx');
     expect(recommendations).toContain("pathname: '/pick'");
