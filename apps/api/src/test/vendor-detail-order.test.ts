@@ -30,17 +30,20 @@ const SCREEN = 'apps/mobile/src/app/(tabs)/search/[vendorId]/index.tsx';
 const ANCHORS: Record<string, string> = {
   name: '<DepthHeader title={vendor.name} />',
   key_conditions: 'VENDOR_CATEGORY_LABEL[vendor.category]',
-  verified_data: 'type="t4">{TERMS.verifiedData}',
+  // 2026-09-25 RN 정본 픽셀 대조(WP-VEND-001~004)로 실 제보는 소개 탭 위 금액 블록(`priceBlock`)이
+  // 맡고, 후기 · 기본 정보 제목도 정본 모양(17/700 · «N명이 답했어요» · 후기 줄)으로 바뀌었다 —
+  // 그 자리를 실제로 그리는 줄의 조각으로 잰다.
+  verified_data: 'styles.priceSummary',
   // 2026-09-23 v3.29 재검증(WP-VEND-001~004 `dockSingle`)으로 하단 CTA가 하트+「Pick하기」
   // 글자 1개 단추로 바뀌면서 accessibilityLabel이 picked 여부에 따른 두 갈래 템플릿
   // 리터럴이 됐다(`accessibilityLabel={primaryLabel}`이던 자리) — 그래서 그 단추의
   // 스타일 참조(소스에 한 번만 나오는 조각)로 잰다.
   pick: 'styles.pickCta',
-  experience: 'type="t4">{TERMS.experience}',
-  reviews: 'type="t4">{TERMS.review}',
+  experience: 'EXPERIENCE_COUNT(experience.count)',
+  reviews: 'styles.revItem',
   // 2026-09-23 v3.29 재검증(WP-VEND-004 `secTitle`)으로 「공식정보」→「기본 정보」로
   // 정정됐다. 「공식정보」는 다른 화면(WP-VEND-005, 아직 미구현)의 이름이다.
-  official_source: 'type="t4">기본 정보',
+  official_source: 'style={styles.bold}>기본 정보',
   report_error: '{REPORT_ERROR}',
 };
 
