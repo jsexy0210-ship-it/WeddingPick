@@ -62,6 +62,7 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/weddings/:weddingId/candidates', candidateListResponseSchema],
   ['GET /v1/weddings/:weddingId/decisions', decisionListResponseSchema],
   ['POST /v1/weddings/:weddingId/candidates', ENDPOINTS.addCandidate.response],
+  ['POST /v1/weddings/:weddingId/invites', ENDPOINTS.createWeddingInvite.response],
   ['DELETE /v1/weddings/:weddingId/candidates/:candidateId', ENDPOINTS.removeCandidate.response],
   ['GET /v1/me/monthly-draw', myMonthlyDrawResponseSchema],
   ['POST /v1/weddings/:weddingId/comparisons', z.null()],
@@ -110,6 +111,8 @@ const NO_CONTRACT = new Set([
   'GET /v1/admin/dashboard',
   'GET /v1/admin/members-trend',
   'GET /v1/admin/briefing',
+  /* 링크 미리보기 3벌(0436) — 관리자 전용. */
+  'GET /v1/admin/site-meta',
   /* 박람회 관리(0410) — 관리자 전용이라 사용자 계약이 없다. 위 admin 넷과 같은 자리다. */
   'GET /v1/admin/expos',
   'POST /v1/admin/expos/collect',
