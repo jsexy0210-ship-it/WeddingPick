@@ -70,10 +70,20 @@ export class WeddingFeedImageError extends Error {
 }
 
 export async function generateWeddingFeedImage(apiKey: string, input: FeedImageRequest): Promise<WeddingFeedImage> {
+  /*
+   * 2026-09-25 대표 지시 — 「이미지 내 텍스트는 안나오도록한다. 그리고 실사 이미지 위주로
+   * 생성한다」. 글자는 한글·영문·숫자·간판·표지판·자막·워터마크까지 전부 막고, 삽화·
+   * 일러스트가 아니라 사진처럼 찍은 실사 장면으로 요청한다. 영어 지시도 함께 둔다 —
+   * 이미지 모델은 글자 금지를 영어 지시에서 더 잘 지킨다.
+   */
   const prompt = [
-    '한국의 결혼 준비 정보 글에 사용할 삽화 한 장을 만들어라.',
-    '실제 업체, 상표, 로고, 글자, 가격표, 식별 가능한 인물은 넣지 마라.',
-    '완성된 이미지 한 장만 출력한다. 차분하고 선명한 편집 디자인 스타일로 그린다.',
+    '한국의 결혼 준비 정보 글에 쓸 실사 사진 한 장을 만들어라.',
+    '카메라로 실제 촬영한 것 같은 사실적인 사진이어야 한다. 삽화, 일러스트, 만화, 3D 렌더, 그래픽 디자인 스타일은 쓰지 마라.',
+    '자연광, 얕은 심도, 차분하고 따뜻한 색감의 웨딩 사진 톤으로 찍는다.',
+    '이미지 안에 어떤 글자도 넣지 마라 — 한글, 영문, 숫자, 간판, 표지판, 라벨, 자막, 워터마크, 로고, 가격표 모두 금지.',
+    '실제 업체, 상표, 식별 가능한 인물의 얼굴은 넣지 마라. 사람이 나오면 뒷모습·손·실루엣처럼 얼굴이 보이지 않게 한다.',
+    'Photorealistic photograph only. Absolutely no text, letters, numbers, signage, captions, logos or watermarks anywhere in the image.',
+    '완성된 이미지 한 장만 출력한다.',
     `용도: ${input.kind === 'thumbnail' ? '웨딩피드 대표 썸네일' : '웨딩피드 본문 삽화'}`,
     `제목: ${input.title}`,
     input.summary ? `요약: ${input.summary}` : '',
