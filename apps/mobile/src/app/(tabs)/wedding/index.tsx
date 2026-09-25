@@ -53,7 +53,7 @@ import {
   listWeddingEvents,
   setBudget,
 } from '@/api/client';
-import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
+import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
 import { formatDateDot } from '@/features/common/format-date';
 import { noteMonthDayWeekdayTime } from '@/features/wedding/note-format';
 import { useSession } from '@/features/auth/use-session';
@@ -358,9 +358,11 @@ export default function WeddingScreen({
         onRequestClose={() => setBudgetOpen(false)}
         testID="initial-budget-sheet">
         <SheetPanel style={styles.budgetSheet}>
-          <ThemedText type="t3">
-            {budgetIsSet ? '총예산을 바꿔볼까요?' : '총예산을 정해볼까요?'}
-          </ThemedText>
+          <SheetHeader
+            title={budgetIsSet ? '총예산을 바꿔볼까요?' : '총예산을 정해볼까요?'}
+            onClose={budgetIsSet ? () => setBudgetOpen(false) : undefined}
+            closeDisabled={budgetSaving}
+          />
           <ThemedText type="body" themeColor="textSecondary">
             {budgetIsSet
               ? '바꾼 예산으로 남은 금액과 사용률을 다시 계산해요.'

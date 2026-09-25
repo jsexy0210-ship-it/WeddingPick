@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { ActionButton, Layout, ThemedText } from '@weddingpick/ui';
-import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
+import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
 
 export type ConfirmSheetProps = {
   visible: boolean;
@@ -47,7 +47,7 @@ export function ConfirmSheet({
     <BottomSheet visible={visible} onRequestClose={onCancel}>
       <SheetPanel>
         <View style={styles.headline}>
-          <ThemedText type="t3">{title}</ThemedText>
+          <SheetHeader title={title} onClose={onCancel} closeDisabled={busy} />
           {message ? (
             <ThemedText type="t6" themeColor="textSecondary">
               {message}

@@ -279,6 +279,7 @@
     "schedule.sub": "가까운 일정부터 안내드려요",
     "schedule.subDefault": "기본 순서로 안내드려요 · 언제든 바꿀 수 있어요",
     "schedule.noDate": "날짜는 아직이에요",
+    "schedule.tentative": "예식일 기준 임시 날짜",
     "budget.total": "예산 {amount}",
     "budget.note": "Pick 인증하면 낸 금액이 자동으로 들어가요",
     "budget.exceeded": "예산을 넘었어요",
@@ -287,6 +288,9 @@
     "budget.subOnboarding": "온보딩에서 등록한 예산이에요",
     "budget.noSpend": "아직 예산 정보가 없어요",
     "budget.set": "예산 정하기",
+    "budget.subEmpty": "예산 정보를 입력해 주세요",
+    "budget.totalEmpty": "예산 미입력",
+    "budget.noteEmpty": "눌러서 총예산을 입력하면 남은 금액을 알려드려요",
     "budget.progress": "예산의 {n}% 사용",
     "recommend.body": "아직 남은 준비를 한눈에 확인해보세요",
     "news.body": "지금 알아두면 좋은 것만 모았어요"

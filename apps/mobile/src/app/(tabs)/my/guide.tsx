@@ -101,7 +101,7 @@ export default function GuideScreen() {
                         <ThemedText type="f15" style={styles.faqQ}>
                           {item.question}
                         </ThemedText>
-                        <View style={open ? styles.chevronOpen : null}>
+                        <View style={open ? styles.chevronOpen : styles.chevronClosed}>
                           <ProductSymbol name="chevronRight" size={Layout.iconInline} color={theme.textDisabled} />
                         </View>
                       </View>
@@ -156,7 +156,12 @@ const styles = StyleSheet.create({
   faqQ: { flex: 1, fontWeight: 700, lineHeight: LineHeight.lh22 },
   /* faqA 14/22 #4d5159. */
   faqA: { lineHeight: LineHeight.lh22 },
-  chevronOpen: { transform: [{ rotate: '90deg' }] },
+  /*
+   * 아코디언 꺾쇠 — 닫힘은 아래(∨), 열림은 위(∧)(2026-09-25 대표 지시 「아코디언 화살표 방향 수정한다」).
+   * 정본 my.js `faq()`는 닫힘 오른쪽(>) · 열림 아래였다 — 대표 지시가 이긴다.
+   */
+  chevronClosed: { transform: [{ rotate: '90deg' }] },
+  chevronOpen: { transform: [{ rotate: '-90deg' }] },
   content: {
     paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.five,

@@ -46,6 +46,46 @@ export const TASK_PRESETS: readonly TaskPreset[] = [
 ];
 
 /**
+ * 날짜를 아직 안 넣은 할 일에 **임시로** 붙이는 날짜 — 예식일에서 며칠 앞인가
+ * (2026-09-25 대표 지시 「기본 날짜는 결혼식 예정일을 역산해서 임시로 넣어놓는다」).
+ *
+ * 저장하지 않는다. 홈이 보여 줄 때만 예식일에서 빼서 계산하고 「예식일 기준 임시 날짜」로
+ * 표시한다 — 사용자가 날짜를 넣으면 그 날짜가 이긴다. 값은 흔히 준비하는 순서에 맞춘
+ * 기본값이지 규칙이 아니다. 기본 열셋(`TASK_PRESETS`)과 홈 기본 다섯 줄 이름을 함께 담는다.
+ */
+export const TENTATIVE_DAYS_BEFORE: Readonly<Record<string, number>> = {
+  // 홈 기본 다섯 줄(home.js WP-HOME-002 · 003 `defaultSchedule`)
+  '상견례 날짜 정하기': 360,
+  '웨딩홀 계약금 입금': 300,
+  '스드메 예약': 240,
+  '청첩장 인쇄': 60,
+  // 기본 열셋
+  '웨딩홀 계약': 300,
+  '본식 스냅·영상': 240,
+  '드레스 투어': 180,
+  '스튜디오 촬영일': 150,
+  '예물·예단': 120,
+  '신혼여행 예약': 120,
+  '예복 맞춤': 90,
+  '청첩장 시안': 75,
+  '메이크업 시연': 60,
+  '하객 명단 정리': 45,
+  '식순·사회자 확정': 30,
+  '혼인신고 서류': 14,
+  '웨딩홀 잔금 납부': 7,
+};
+
+/** `YYYY-MM-DD` 예식일에서 할 일 이름의 임시 날짜를 계산한다. 모르는 이름이면 null. */
+export function tentativeDueDate(weddingDate: string, label: string): string | null {
+  const daysBefore = TENTATIVE_DAYS_BEFORE[label];
+  if (daysBefore === undefined) return null;
+  const [year, month, day] = weddingDate.split('-').map(Number);
+  if (!year || !month || !day) return null;
+  const date = new Date(Date.UTC(year, month - 1, day - daysBefore));
+  return date.toISOString().slice(0, 10);
+}
+
+/**
  * 며칠 앞이면 진행중으로 보는가. **핸드오프 15번이 정한 값이다.**
  *
  *   4일 이상 남음 → 예정

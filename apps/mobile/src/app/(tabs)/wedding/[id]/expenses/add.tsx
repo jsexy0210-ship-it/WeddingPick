@@ -2,23 +2,23 @@ import type { CreateExpenseRequest } from '@weddingpick/api-contract';
 import { VENDOR_CATEGORIES, VENDOR_CATEGORY_LABEL, manwon, type VendorCategory } from '@weddingpick/domain';
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { addExpense } from '@/api/client';
-import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
+import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
 import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { showResultToast } from '@/features/navigation/result-toast';
 import { todayDay } from '@/features/wedding/expense-day';
 import { Field } from '@/features/wedding/screen-kit';
-import { ActionButton, FilterChip, ProductSymbol, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { ActionButton, FilterChip, Spacing, ThemedText } from '@weddingpick/ui';
 
 import WeddingScreen from '../../index';
 
 /**
  * 예산 추가 시트 — WP-NOTE-007 · `docs/design/React_Native/note.jsx` frame-006.
  *
- *   formHead  타이틀 «예산 추가» + 우측 36px 회색 원형 X
+ *   formHead  공용 SheetHeader — 타이틀 «예산 추가» + 우측 36px 회색 원형 X
  *   칸        정본 `budgetFields` 순서대로 항목 · 예산 · 낸 금액 셋을 그린다. 서버가 받는 것
  *             (`createExpenseRequest`)은 항목(업종 → 줄 이름) · 낸 금액뿐이라 그 둘만 보내고,
  *             날짜는 오늘로 넣는다.
@@ -52,7 +52,6 @@ export default function AddExpenseRoute() {
   }>();
 
   const { height } = useWindowDimensions();
-  const theme = useTheme();
   const initialCategory = isVendorCategory(category) ? category : null;
 
   const [amountText, setAmountText] = useState('');
@@ -112,21 +111,7 @@ export default function AddExpenseRoute() {
 
       <BottomSheet visible onRequestClose={requestClose} style={styles.sheetHost} testID="expense-add-sheet">
         <SheetPanel>
-          <View style={styles.sheetHead}>
-            <ThemedText type="t4">예산 추가</ThemedText>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="닫기"
-              onPress={requestClose}
-              hitSlop={4}
-              style={({ pressed }) => [
-                styles.formClose,
-                { backgroundColor: theme.backgroundSelected },
-                pressed && styles.pressed,
-              ]}>
-              <ProductSymbol name="close" size={16} color={theme.text} />
-            </Pressable>
-          </View>
+          <SheetHeader title="예산 추가" onClose={requestClose} />
 
           <ScrollView
             style={[styles.scroll, { maxHeight: Math.max(280, height * 0.58) }]}
@@ -208,9 +193,6 @@ export default function AddExpenseRoute() {
 const styles = StyleSheet.create({
   host: { flex: 1 },
   sheetHost: { flexShrink: 1 },
-  sheetHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
-  formClose: { width: 36, height: 36, borderRadius: Radius.pill, alignItems: 'center', justifyContent: 'center' },
-  pressed: { opacity: 0.8 },
   scroll: { flexShrink: 1 },
   content: { paddingBottom: Spacing.two, gap: 12 },
   /* note.js `sheetForm` — 칸 사이 `gap:12px`, `fieldWrap` — 라벨과 칸 사이 `gap:6px`. */

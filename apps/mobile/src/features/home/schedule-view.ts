@@ -1,5 +1,5 @@
 import type { WeddingTask } from '@weddingpick/api-contract';
-import { daysUntil, formatCount } from '@weddingpick/domain';
+import { daysUntil, formatCount, tentativeDueDate } from '@weddingpick/domain';
 
 import strings from '../../../../../spec/strings.ko.json';
 
@@ -91,7 +91,53 @@ export function presetScheduleRows(tasks: readonly WeddingTask[]): ScheduleRow[]
   }));
 }
 
-export function scheduleRows(tasks: readonly WeddingTask[], now: Date = new Date()): ScheduleRow[] {
+const TENTATIVE_META = S['schedule.tentative'];
+
+/**
+ * 날짜를 넣은 일정이 하나도 없을 때 — 기본 줄에 예식일에서 역산한 **임시 날짜**를 붙인다
+ * (2026-09-25 대표 지시 「기본 날짜는 결혼식 예정일을 역산해서 임시로 넣어놓는다」).
+ * 저장하지 않고 보여 줄 때만 계산한다(`tentativeDueDate`). 이미 지난 날짜는 빼고, 남은 것을
+ * 가까운 순으로 최대 다섯 줄. 예식일을 모르거나 남는 줄이 없으면 빈 배열 — 번호 줄로 대신한다.
+ */
+export function tentativeScheduleRows(
+  tasks: readonly WeddingTask[],
+  weddingDate: string | null,
+  now: Date = new Date()
+): ScheduleRow[] {
+  if (weddingDate === null) return [];
+  const labels = tasks.length > 0
+    ? tasks.filter((task) => task.state !== 'done').map((task) => ({ id: task.id, label: task.label }))
+    : HOME_DEFAULT_ORDER.map((label, index) => ({ id: `schedule-preset-${index}`, label }));
+
+  return labels
+    .map((item) => ({ item, due: tentativeDueDate(weddingDate, item.label) }))
+    .filter((row): row is { item: { id: string; label: string }; due: string } => row.due !== null)
+    .map((row) => ({ ...row, daysLeft: daysUntil(row.due, now) }))
+    .filter((row) => row.daysLeft >= 0)
+    .sort((a, b) => a.daysLeft - b.daysLeft)
+    .slice(0, DEFAULT_ROWS_MAX)
+    .map(({ item, due, daysLeft }, index) => {
+      const { month, day } = monthDay(due);
+      return {
+        kind: 'dated' as const,
+        id: item.id,
+        month,
+        day,
+        title: item.label,
+        meta: TENTATIVE_META,
+        dday: ddayLabel(daysLeft),
+        near: index === 0,
+      };
+    });
+}
+
+export function scheduleRows(
+  tasks: readonly WeddingTask[],
+  now: Date = new Date(),
+  weddingDate: string | null = null
+): ScheduleRow[] {
   const dated = datedScheduleRows(tasks, now);
-  return dated.length > 0 ? dated : presetScheduleRows(tasks);
+  if (dated.length > 0) return dated;
+  const tentative = tentativeScheduleRows(tasks, weddingDate, now);
+  return tentative.length > 0 ? tentative : presetScheduleRows(tasks);
 }

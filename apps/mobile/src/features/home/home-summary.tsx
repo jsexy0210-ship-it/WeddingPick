@@ -107,11 +107,19 @@ export function HomeBudget({ budget, onOpen }: {
   const progress = budgetProgress(budget);
   /* WP-HOME-002 — 아직 쓴 돈이 없으면 서브 「온보딩에서 등록한 예산이에요」 · 비고 「아직 예산 정보가 없어요」. */
   const noSpend = budget !== null && budget.spent === 0;
-  const budgetSub = budget && progress !== null
+  /*
+   * 2026-09-25 대표 지시 — 「홈화면의 예산현황 그대로 노출한다. 정보가 없을 경우 서브 문구에
+   * 정보를 입력해주세요 등으로 안내한다」. 예산이 없어도 빈 카드로 바꾸지 않고 같은 도넛 · 금액
+   * 모양을 0으로 그리며, 서브 문구가 입력을 안내한다.
+   */
+  const hasBudget = budget !== null && progress !== null;
+  const shownProgress = progress ?? 0;
+  const spent = budget?.spent ?? 0;
+  const budgetSub = hasBudget
     ? budget.spent > budget.total
       ? '예산을 넘었어요'
       : noSpend ? S['budget.subOnboarding'] : `예산의 ${progress}%를 썼어요`
-    : null;
+    : S['budget.subEmpty'];
 
   return (
     <View style={styles.section}>
@@ -120,60 +128,45 @@ export function HomeBudget({ budget, onOpen }: {
         sub={budgetSub}
         onMore={onOpen}
       />
-      {budget === null || progress === null ? (
-        /* common.jsx WP-EMPTY-HOME 「예산현황」 `emptyCard` r12 · #f7f8fa(가장 가까운 backgroundElement #f7f8f9) · 32/20 · gap 6 ·
-           `emptyT` 16/700 · `emptyS` 13/20 · CTA 44 · 좌우 18 · r8 · 코랄 · 15/700 · 위 12. */
-        <View style={[styles.empty, { backgroundColor: theme.backgroundElement }]}>
-          <ThemedText type="f16" style={[styles.bold, styles.center]}>{S['budget.empty']}</ThemedText>
-          <ThemedText type="f13" themeColor="textAssistive" style={styles.center}>{S['budget.emptySub']}</ThemedText>
-          <Pressable
-            accessibilityRole="button"
-            onPress={onOpen}
-            style={({ pressed }) => [styles.emptyCta, { backgroundColor: theme.tint }, pressed && styles.pressed]}>
-            <ThemedText type="f15" style={[styles.bold, { color: theme.onTint }]}>{S['budget.set']}</ThemedText>
-          </Pressable>
-        </View>
-      ) : (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="예산현황 자세히"
-          onPress={onOpen}
-          style={({ pressed }) => [
-            styles.budget,
-            { backgroundColor: theme.background, borderColor: theme.border },
-            pressed && styles.pressed,
-          ]}>
-          <View
-            accessibilityRole="progressbar"
-            accessibilityLabel={S['budget.progress'].replace('{n}', String(progress))}
-            accessibilityValue={{ min: 0, max: 100, now: progress }}
-            style={styles.budgetTop}>
-            <DonutChart
-              size={72}
-              holeSize={52}
-              holeColor={theme.background}
-              slices={[
-                { key: 'used', value: progress, color: theme.tint },
-                { key: 'remaining', value: 100 - progress, color: theme.chartMuted },
-              ]}>
-              <ThemedText type="f14" numeric style={styles.bold}>
-                {budget.spent > budget.total ? '100%+' : `${progress}%`}
-              </ThemedText>
-            </DonutChart>
-            <View style={styles.budgetCol}>
-              <ThemedText type="f26" numeric style={styles.bold}>{manwon(budget.spent)}</ThemedText>
-              <ThemedText type="f13" numeric themeColor="textAssistive">
-                {S['budget.total'].replace('{amount}', manwon(budget.total))}
-              </ThemedText>
-            </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="예산현황 자세히"
+        onPress={onOpen}
+        style={({ pressed }) => [
+          styles.budget,
+          { backgroundColor: theme.background, borderColor: theme.border },
+          pressed && styles.pressed,
+        ]}>
+        <View
+          accessibilityRole="progressbar"
+          accessibilityLabel={S['budget.progress'].replace('{n}', String(shownProgress))}
+          accessibilityValue={{ min: 0, max: 100, now: shownProgress }}
+          style={styles.budgetTop}>
+          <DonutChart
+            size={72}
+            holeSize={52}
+            holeColor={theme.background}
+            slices={[
+              { key: 'used', value: shownProgress, color: theme.tint },
+              { key: 'remaining', value: 100 - shownProgress, color: theme.chartMuted },
+            ]}>
+            <ThemedText type="f14" numeric style={styles.bold}>
+              {hasBudget && budget.spent > budget.total ? '100%+' : `${shownProgress}%`}
+            </ThemedText>
+          </DonutChart>
+          <View style={styles.budgetCol}>
+            <ThemedText type="f26" numeric style={styles.bold}>{manwon(spent)}</ThemedText>
+            <ThemedText type="f13" numeric themeColor="textAssistive">
+              {hasBudget ? S['budget.total'].replace('{amount}', manwon(budget.total)) : S['budget.totalEmpty']}
+            </ThemedText>
           </View>
-          <ThemedText
-            type="f12"
-            themeColor={budget.spent > budget.total ? 'negative' : 'textAssistive'}>
-            {budget.spent > budget.total ? S['budget.exceeded'] : noSpend ? S['budget.noSpend'] : S['budget.note']}
-          </ThemedText>
-        </Pressable>
-      )}
+        </View>
+        <ThemedText
+          type="f12"
+          themeColor={hasBudget && budget.spent > budget.total ? 'negative' : 'textAssistive'}>
+          {!hasBudget ? S['budget.noteEmpty'] : budget.spent > budget.total ? S['budget.exceeded'] : noSpend ? S['budget.noSpend'] : S['budget.note']}
+        </ThemedText>
+      </Pressable>
     </View>
   );
 }
@@ -275,19 +268,4 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   budgetCol: { flex: 1, minWidth: 0, gap: Spacing.half },
-  empty: {
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 32,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-  },
-  center: { textAlign: 'center' },
-  emptyCta: {
-    marginTop: 12,
-    height: 44,
-    paddingHorizontal: 18,
-    borderRadius: 8,
-    justifyContent: 'center',
-  },
 });

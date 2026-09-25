@@ -11,7 +11,7 @@ import {
   VendorImage,
   useTheme,
 } from '@weddingpick/ui';
-import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
+import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 
 /**
@@ -70,7 +70,7 @@ export function PickDoneSheet({
   return (
     <BottomSheet visible={visible} onRequestClose={onDismiss}>
       <SheetPanel>
-        <ThemedText type="t3">후보에 담았어요</ThemedText>
+        <SheetHeader title="후보에 담았어요" onClose={onDismiss} />
         <View style={styles.actions}>
           <SheetButton label="닫기" kind="ghost" flex={1} onPress={onDismiss} />
           <SheetButton
@@ -109,6 +109,7 @@ export function UnpickSheet({
   return (
     <BottomSheet visible={candidate !== null} onRequestClose={onDismiss}>
       <SheetPanel>
+        <SheetHeader title="후보에서 뺄까요?" onClose={onDismiss} closeDisabled={busy} />
         {candidate ? (
           <View style={styles.vendorRow}>
             <View style={styles.thumb}>
@@ -128,7 +129,6 @@ export function UnpickSheet({
             </View>
           </View>
         ) : null}
-        <ThemedText type="t3">후보에서 뺄까요?</ThemedText>
         <ThemedText type="body" themeColor="textSecondary">
           {shared ? `${who} 목록에서도 함께 사라져요. 다시 담을 수 있어요.` : '다시 담을 수 있어요.'}
         </ThemedText>

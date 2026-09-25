@@ -11,7 +11,7 @@ import {
   createConsultationUpload,
 } from '@/api/client';
 import { pickConsultationAudio } from '@/features/capture/pickers';
-import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
+import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { showResultToast } from '@/features/navigation/result-toast';
 import { ActionButton, Spacing, ThemedText } from '@weddingpick/ui';
@@ -83,7 +83,7 @@ export default function ConsultationUploadRoute() {
         testID="consultation-upload-sheet">
         <SheetPanel style={styles.sheet}>
           <View style={styles.head}>
-            <ThemedText type="t4">상담기록 추가</ThemedText>
+            <SheetHeader title="상담기록 추가" onClose={close} closeDisabled={uploading} />
             <ThemedText type="t7" themeColor="textSecondary">
               녹음 파일을 올리면 금액과 조건을 정리해드려요.
             </ThemedText>

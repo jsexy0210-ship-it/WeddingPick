@@ -168,7 +168,8 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(consult).toContain('Pick에 담은 업체만 상담 예약을 할 수 있어요.');
     expect(consult).not.toContain('최종 Pick');
     // v3.28 WP-PICK-009 — CTA가 고른 값을 그대로 말한다(「9월 20일 오후 2시로 잡기」).
-    expect(consult).toContain('로 잡기');
+    // 2026-09-25 OS 타임피커로 「오후 2시 반」이 생겨 조사(로/으로)를 `withInstrument`가 붙인다.
+    expect(consult).toContain("{withInstrument(spokenTime(selectedTime ?? ''))} 잡기");
   });
 
   it('빈 상태는 페이지 전체와 섹션 범위를 구분한다', () => {
