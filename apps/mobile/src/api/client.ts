@@ -1,25 +1,16 @@
 import {
-  analysisSchema,
   candidateListResponseSchema,
   decisionListResponseSchema,
-  expenseDetailSchema,
   expenseSummaryResponseSchema,
-  visitNoteListResponseSchema,
   weddingEventListResponseSchema,
   weddingNoteListResponseSchema,
   weddingTaskListResponseSchema,
   authProvidersResponseSchema,
   faqListResponseSchema,
-  comparisonResponseSchema,
-  completeUploadResponseSchema,
   createSessionResponseSchema,
-  createUploadResponseSchema,
   currentUserSchema,
   displayNameResponseSchema,
-  categoryRecommendationsResponseSchema,
   errorResponseSchema,
-  createVerificationResponseSchema,
-  quoteSchema,
   createInquiryResponseSchema,
   inquiryListResponseSchema,
   registerDeviceResponseSchema,
@@ -29,14 +20,8 @@ import {
   myReportListResponseSchema,
   notificationListResponseSchema,
   notificationSummaryResponseSchema,
-  rebuttalListResponseSchema,
-  registerPaymentProofResponseSchema,
   createReviewMediaUploadTargetResponseSchema,
-  createReviewReportResponseSchema,
   createReviewResponseSchema,
-  reportReasonListResponseSchema,
-  reviewCommentListResponseSchema,
-  reviewCommentSchema,
   reviewFormSchema,
   reviewHelpfulSchema,
   reviewListResponseSchema,
@@ -51,39 +36,23 @@ import {
   invitePreviewResponseSchema,
   vendorSearchResponseSchema,
   conditionStatsSchema,
-  myRewardsResponseSchema,
-  myMonthlyDrawResponseSchema,
-  vendorClaimListResponseSchema,
   weddingInviteListResponseSchema,
-  verificationRequestSchema,
   weddingDetailSchema,
   type CandidateListResponse,
   type ConditionStats,
   type DecideCategoryRequest,
-  type MyRewardsResponse,
-  type MyMonthlyDrawResponse,
-  type CreateRebuttalRequest,
-  type CreateVendorClaimRequest,
-  type VendorClaimListResponse,
   type MyReportListResponse,
   type NotificationListResponse,
   type NotificationSummaryResponse,
-  type RebuttalListResponse,
-  type UpdateReviewRequest,
   type Settings,
   type UpdateSettingsRequest,
   type TasteListResponse,
   type UpdateTasteRequest,
   type VendorSort,
-  type UpdateRebuttalRequest,
   type CreateExpenseRequest,
-  type CreateVisitNoteRequest,
-  type CreateWeddingNoteRequest,
   type DecisionListResponse,
-  type ExpenseDetail,
   type ExpenseSummaryResponse,
   type UpdateExpenseRequest,
-  type UpdateWeddingNoteRequest,
   type UpdateWeddingTaskRequest,
   consultationListResponseSchema,
   consultationRecordSchema,
@@ -93,38 +62,22 @@ import {
   type CreateConsultationUploadRequest,
   type CreateConsultationUploadResponse,
   type UpdateConsultationRequest,
-  type VisitNoteListResponse,
   type WeddingNoteListResponse,
   type WeddingTaskListResponse,
   type CreateConsultationEventRequest,
   type CreateWeddingEventRequest,
-  type UpdateWeddingEventRequest,
   type WeddingEventListResponse,
-  type Analysis,
-  type ComparisonResponse,
   type AuthProvidersResponse,
   type FaqListResponse,
-  type CreateVerificationRequest,
-  type CreateVerificationResponse,
   type ErrorCode,
   type CreateInquiryRequest,
   type RegisterDeviceRequest,
   type RegisterDeviceResponse,
-  type RegisterPaymentProofRequest,
-  type RegisterPaymentProofResponse,
-  type OriginalKind,
-  type CreateReviewCommentReportRequest,
-  type CreateReviewCommentRequest,
   type CreateReviewMediaUploadTargetRequest,
   type CreateReviewMediaUploadTargetResponse,
-  type CreateReviewReportRequest,
-  type CreateReviewReportResponse,
   type CreateReviewRequest,
   type CreateReviewResponse,
-  type ReviewComment,
-  type ReviewCommentListResponse,
   type ReviewHelpful,
-  type ReportReasonListResponse,
   type ReviewForm,
   type ReviewListResponse,
   type LoungeReviewListResponse,
@@ -133,7 +86,6 @@ import {
   type PlannerDetail,
   type PlannerRegionsResponse,
   type PlannerSearchResponse,
-  type Quote,
   type VendorComparisonResponse,
   type VendorDetail,
   type VendorRegionsResponse,
@@ -141,43 +93,28 @@ import {
   type InvitePreviewResponse,
   type VendorSearchResponse,
   type WeddingInviteListResponse,
-  type VerificationRequest,
   createPriceReportResponseSchema,
-  quoteListResponseSchema,
   type CreatePriceReportRequest,
   type CreatePriceReportResponse,
-  type QuoteListResponse,
   withdrawalNoticeSchema,
   withdrawalResultSchema,
   type WithdrawalNotice,
   type WithdrawalResult,
   expoListResponseSchema,
   expoDetailSchema,
-  weddingInfoListResponseSchema,
-  weddingInfoDetailSchema,
   type ExpoListResponse,
   type ExpoDetail,
-  type WeddingInfoListResponse,
-  type WeddingInfoDetail,
   vendorPhotosResponseSchema,
   type VendorPhotosResponse,
   type CompleteSetupRequest,
   appBootstrapResponseSchema,
   type AppBootstrapResponse,
-  type CategoryRecommendationsResponse,
   type CurrentUser,
-  myRewardPayoutResponseSchema,
-  rewardPayoutSchema,
-  type MyRewardPayoutResponse,
-  type RequestRewardPayoutRequest,
-  type RewardPayout,
   weddingFeedDetailSchema,
   type WeddingFeedDetail,
   weddingFeedListResponseSchema,
   type WeddingFeedListResponse,
-  weddingFeedScrapListResponseSchema,
   weddingFeedScrapStateSchema,
-  type WeddingFeedScrapListResponse,
   type WeddingFeedScrapState,
 } from '@weddingpick/api-contract';
 import { z, type ZodType } from 'zod';
@@ -630,21 +567,6 @@ export async function getAppBootstrap(): Promise<AppBootstrapResponse> {
   return request('/v1/app/bootstrap', appBootstrapResponseSchema);
 }
 
-/**
- * Pick 추천 — 아직 정하지 않은 업종과 업종별 추천 업체.
- *
- * **홈과 「웨딩픽 추천」 전체 페이지가 이 하나를 나눠 쓴다.** 홈은 `limit`을 주어 앞의 셋만,
- * 전체 페이지는 `limit` 없이 전부 받는다 — 두 화면이 각자 부르면 「전체에서 본 곳이 홈에
- * 없다」가 생기고, 그때 어느 쪽이 맞는지 아무도 모른다.
- */
-export async function getCategoryRecommendations(
-  limit?: number
-): Promise<CategoryRecommendationsResponse> {
-  const suffix = limit === undefined ? '' : `?limit=${limit}`;
-
-  return request(`/v1/me/recommendations${suffix}`, categoryRecommendationsResponseSchema);
-}
-
 /** 웨딩피드 — 공개된 글만. 로그인 여부와 무관해 bootstrap과 따로 부른다. */
 export async function getWeddingFeed(limit?: number): Promise<WeddingFeedListResponse> {
   return request(
@@ -656,10 +578,6 @@ export async function getWeddingFeed(limit?: number): Promise<WeddingFeedListRes
 /** 웨딩피드 글 하나. 목록에 없는 본문이 여기 있다 — 공개된 글이 아니면 404다. */
 export async function getWeddingFeedPost(id: string): Promise<WeddingFeedDetail> {
   return request(`/v1/wedding-feed/${encodeURIComponent(id)}`, weddingFeedDetailSchema);
-}
-
-export async function listMyWeddingFeedScraps(): Promise<WeddingFeedScrapListResponse> {
-  return request('/v1/me/scraps', weddingFeedScrapListResponseSchema);
 }
 
 export async function getWeddingFeedScrapState(postId: string): Promise<WeddingFeedScrapState> {
@@ -717,77 +635,6 @@ export async function ensureWedding(): Promise<string> {
   return me.weddingId ?? (await createWedding()).id;
 }
 
-export async function createUpload(input: {
-  weddingId: string;
-  /** 무엇을 찍은 것인가. 보관 기간이 이 값으로 갈린다 — 결제내역 24시간, 그 밖 30일. */
-  kind?: OriginalKind;
-  pages: { mimeType: string; sizeBytes: number }[];
-}) {
-  return request('/v1/documents/uploads', createUploadResponseSchema, {
-    method: 'POST',
-    body: JSON.stringify(input),
-  });
-}
-
-export async function uploadDocumentPage(uploadPath: string, body: Blob): Promise<void> {
-  await request(uploadPath, z.null(), {
-    method: 'PUT',
-    headers: { 'content-type': 'application/octet-stream' },
-    body,
-    signal: AbortSignal.timeout(60_000),
-  });
-}
-
-/** 업로드가 끝났음을 알린다. 분석 작업이 만들어진다. */
-export async function completeUpload(rawDocumentId: string, weddingId: string) {
-  return request(`/v1/documents/${rawDocumentId}/complete`, completeUploadResponseSchema, {
-    method: 'POST',
-    body: JSON.stringify({ weddingId }),
-  });
-}
-
-export async function getAnalysis(analysisId: string): Promise<Analysis> {
-  return request(`/v1/analyses/${analysisId}`, analysisSchema);
-}
-
-export async function getQuote(quoteId: string): Promise<Quote> {
-  return request(`/v1/quotes/${quoteId}`, quoteSchema);
-}
-
-export async function confirmFields(
-  quoteId: string,
-  fields: { path: string }[]
-): Promise<Quote> {
-  return request(`/v1/quotes/${quoteId}/confirmations`, quoteSchema, {
-    method: 'POST',
-    body: JSON.stringify({ fields }),
-  });
-}
-
-export async function getComparison(quoteId: string): Promise<ComparisonResponse> {
-  return request(`/v1/quotes/${quoteId}/comparison`, comparisonResponseSchema);
-}
-
-/**
- * A-13 인증 신청 접수.
- *
- * 응답에 'received' 말고는 들어올 수 없다 — 계약이 그렇게 되어 있다. 등급은 사람이
- * 증빙을 확인한 뒤에야 오른다 (서비스정책서 7번).
- */
-export async function createVerificationRequest(
-  quoteId: string,
-  body: CreateVerificationRequest
-): Promise<CreateVerificationResponse> {
-  return request(`/v1/quotes/${quoteId}/verification-requests`, createVerificationResponseSchema, {
-    method: 'POST',
-    body: JSON.stringify(body),
-  });
-}
-
-export async function getVerificationRequest(requestId: string): Promise<VerificationRequest> {
-  return request(`/v1/verification-requests/${requestId}`, verificationRequestSchema);
-}
-
 export async function createPriceReport(
   body: CreatePriceReportRequest
 ): Promise<CreatePriceReportResponse> {
@@ -795,19 +642,6 @@ export async function createPriceReport(
     method: 'POST',
     body: JSON.stringify(body),
   });
-}
-
-export async function listQuotes(
-  weddingId: string,
-  cursor?: string
-): Promise<QuoteListResponse> {
-  const params = new URLSearchParams();
-  if (cursor) params.set('cursor', cursor);
-  const qs = params.toString();
-  return request(
-    `/v1/weddings/${weddingId}/quotes${qs ? `?${qs}` : ''}`,
-    quoteListResponseSchema
-  );
 }
 
 /**
@@ -920,10 +754,6 @@ export async function updateWeddingTask(
   });
 }
 
-export async function removeWeddingTask(weddingId: string, taskId: string): Promise<void> {
-  await request(`/v1/weddings/${weddingId}/tasks/${taskId}`, z.null(), { method: 'DELETE' });
-}
-
 export async function getExpenses(weddingId: string): Promise<ExpenseSummaryResponse> {
   return request(`/v1/weddings/${weddingId}/expenses`, expenseSummaryResponseSchema);
 }
@@ -936,19 +766,6 @@ export async function addExpense(
     method: 'POST',
     body: JSON.stringify(body),
   });
-}
-
-/** 직접 입력한 항목만 지워진다. 결제인증에서 온 줄은 404다. */
-export async function removeExpense(weddingId: string, expenseId: string): Promise<void> {
-  await request(`/v1/weddings/${weddingId}/expenses/${expenseId}`, z.null(), { method: 'DELETE' });
-}
-
-/** 지출 상세. WP-OUR-010. */
-export async function getExpenseDetail(
-  weddingId: string,
-  expenseId: string
-): Promise<ExpenseDetail> {
-  return request(`/v1/weddings/${weddingId}/expenses/${expenseId}`, expenseDetailSchema);
 }
 
 /** 환불 상태만 고친다. 직접 입력한 항목만 — 결제인증에서 온 줄은 404다. */
@@ -968,24 +785,6 @@ export async function setBudget(weddingId: string, budget: number | null): Promi
     method: 'PUT',
     body: JSON.stringify({ budget }),
   });
-}
-
-export async function listVisitNotes(weddingId: string): Promise<VisitNoteListResponse> {
-  return request(`/v1/weddings/${weddingId}/visit-notes`, visitNoteListResponseSchema);
-}
-
-export async function addVisitNote(
-  weddingId: string,
-  body: CreateVisitNoteRequest
-): Promise<{ noteId: string }> {
-  return request(`/v1/weddings/${weddingId}/visit-notes`, z.object({ noteId: z.string() }), {
-    method: 'POST',
-    body: JSON.stringify(body),
-  });
-}
-
-export async function removeVisitNote(weddingId: string, noteId: string): Promise<void> {
-  await request(`/v1/weddings/${weddingId}/visit-notes/${noteId}`, z.null(), { method: 'DELETE' });
 }
 
 /** 웨딩 스케줄(체크리스트)과 다른 개념이다 — 일시·장소가 있는 캘린더 이벤트. */
@@ -1012,22 +811,6 @@ export async function addConsultationEvent(
     method: 'POST',
     body: JSON.stringify(body),
   });
-}
-
-/** 보낸 칸만 고친다. */
-export async function updateWeddingEvent(
-  weddingId: string,
-  eventId: string,
-  body: UpdateWeddingEventRequest
-): Promise<void> {
-  await request(`/v1/weddings/${weddingId}/events/${eventId}`, z.object({ ok: z.boolean() }), {
-    method: 'PATCH',
-    body: JSON.stringify(body),
-  });
-}
-
-export async function removeWeddingEvent(weddingId: string, eventId: string): Promise<void> {
-  await request(`/v1/weddings/${weddingId}/events/${eventId}`, z.null(), { method: 'DELETE' });
 }
 
 /**
@@ -1079,53 +862,6 @@ export async function listWeddingNotes(weddingId: string): Promise<WeddingNoteLi
   return request(`/v1/weddings/${weddingId}/notes`, weddingNoteListResponseSchema);
 }
 
-export async function addWeddingNote(
-  weddingId: string,
-  body: CreateWeddingNoteRequest
-): Promise<{ noteId: string }> {
-  return request(`/v1/weddings/${weddingId}/notes`, z.object({ noteId: z.string() }), {
-    method: 'POST',
-    body: JSON.stringify(body),
-  });
-}
-
-/**
- * 고치기. `version`이 배우자가 먼저 고친 뒤의 값과 다르면 서버가 conflict(409)를
- * 돌려준다 — 부르는 화면이 `ApiError`의 `code === 'conflict'`를 잡아 충돌 화면으로
- * 보낸다.
- */
-export async function updateWeddingNote(
-  weddingId: string,
-  noteId: string,
-  body: UpdateWeddingNoteRequest
-): Promise<void> {
-  await request(`/v1/weddings/${weddingId}/notes/${noteId}`, z.object({ ok: z.boolean() }), {
-    method: 'PATCH',
-    body: JSON.stringify(body),
-  });
-}
-
-export async function removeWeddingNote(weddingId: string, noteId: string): Promise<void> {
-  await request(`/v1/weddings/${weddingId}/notes/${noteId}`, z.null(), { method: 'DELETE' });
-}
-
-/**
- * 결제인증 등록 — **사진 한 장.**
- *
- * 올린 원본 묶음 하나만 보낸다. 금액·업체·날짜를 보낼 자리가 요청 타입에 없어
- * 화면이 지어낸 값을 넣을 수 없고, 못 읽은 제보는 접수는 되되 검수를 기다린다.
- *
- * 심사가 아니라 등록이다 — 사람이 등급을 올리지 않는다. 카드번호를 보낼 자리도 없다.
- */
-export async function registerPaymentProof(
-  body: RegisterPaymentProofRequest
-): Promise<RegisterPaymentProofResponse> {
-  return request('/v1/payment-proofs', registerPaymentProofResponseSchema, {
-    method: 'POST',
-    body: JSON.stringify(body),
-  });
-}
-
 /**
  * 내가 낸 결제인증과, 그것으로 열린 것.
  *
@@ -1175,22 +911,6 @@ export async function createReview(
 }
 
 /** 업체의 후기와 이용점수. 단서는 목록과 한 응답으로 온다. */
-/**
- * 후기 고치기. 자기 글만.
- *
- * 규칙이 위험정보를 찾아 가린 글은 고치면 되살아난다 — 그래야 "지우고 다시
- * 올려주세요"가 지킬 수 있는 말이 된다.
- */
-export async function updateReview(
-  reviewId: string,
-  body: UpdateReviewRequest
-): Promise<void> {
-  await request(`/v1/reviews/${reviewId}`, z.null(), {
-    method: 'PUT',
-    body: JSON.stringify(body),
-  });
-}
-
 /** 후기 삭제. 한 사람이 한 업체에 하나라, 지울 수 없으면 다시 쓸 수도 없다. */
 export async function deleteReview(reviewId: string): Promise<void> {
   await request(`/v1/reviews/${reviewId}`, z.null(), { method: 'DELETE' });
@@ -1220,60 +940,10 @@ export async function listLoungeReviews(input: {
   return request(`/v1/reviews${suffix}`, loungeReviewListResponseSchema);
 }
 
-export async function listReportReasons(): Promise<ReportReasonListResponse> {
-  return request('/v1/review-report-reasons', reportReasonListResponseSchema);
-}
-
-/** 후기 신고. 접수만 된다 — 내릴지는 사람이 정한다. */
-export async function reportReview(
-  reviewId: string,
-  body: CreateReviewReportRequest
-): Promise<CreateReviewReportResponse> {
-  return request(`/v1/reviews/${reviewId}/reports`, createReviewReportResponseSchema, {
-    method: 'POST',
-    body: JSON.stringify(body),
-  });
-}
-
 /** 도움돼요 상태는 서버 응답이 정본이다. 연타해도 PUT/DELETE가 멱등이다. */
 export async function setReviewHelpful(reviewId: string, helpful: boolean): Promise<ReviewHelpful> {
   return request(`/v1/reviews/${reviewId}/helpful`, reviewHelpfulSchema, {
     method: helpful ? 'PUT' : 'DELETE',
-  });
-}
-
-export async function listReviewComments(
-  reviewId: string,
-  cursor?: string
-): Promise<ReviewCommentListResponse> {
-  const suffix = cursor ? `?cursor=${encodeURIComponent(cursor)}` : '';
-  return request(
-    `/v1/reviews/${reviewId}/comments${suffix}`,
-    reviewCommentListResponseSchema
-  );
-}
-
-export async function createReviewComment(
-  reviewId: string,
-  body: CreateReviewCommentRequest
-): Promise<ReviewComment> {
-  return request(`/v1/reviews/${reviewId}/comments`, reviewCommentSchema, {
-    method: 'POST',
-    body: JSON.stringify(body),
-  });
-}
-
-export async function deleteReviewComment(commentId: string): Promise<void> {
-  await request(`/v1/review-comments/${commentId}`, z.null(), { method: 'DELETE' });
-}
-
-export async function reportReviewComment(
-  commentId: string,
-  body: CreateReviewCommentReportRequest
-): Promise<CreateReviewReportResponse> {
-  return request(`/v1/review-comments/${commentId}/reports`, createReviewReportResponseSchema, {
-    method: 'POST',
-    body: JSON.stringify(body),
   });
 }
 
@@ -1393,56 +1063,9 @@ export async function getNotificationSummary(): Promise<NotificationSummaryRespo
   return request('/v1/me/notifications/summary', notificationSummaryResponseSchema);
 }
 
-export async function readNotification(
-  notificationId: string
-): Promise<NotificationSummaryResponse> {
-  return request(
-    `/v1/me/notifications/${notificationId}/read`,
-    notificationSummaryResponseSchema,
-    { method: 'POST' }
-  );
-}
-
-export async function readAllNotifications(): Promise<NotificationSummaryResponse> {
-  return request('/v1/me/notifications/read-all', notificationSummaryResponseSchema, {
-    method: 'POST',
-  });
-}
-
 /** 내가 낸 자료. 결제인증·가격제보·후기가 종류를 달고 한 목록에 선다. */
 export async function listMyReports(): Promise<MyReportListResponse> {
   return request('/v1/me/reports', myReportListResponseSchema);
-}
-
-/**
- * 업체 반론 등록.
- *
- * **여기서 게시되지 않는다.** 사람이 확인한 뒤에 후기 옆에 붙는다 — 요청 타입에
- * 상태를 정할 자리가 없는 것이 그 사실을 말해준다.
- */
-export async function createRebuttal(body: CreateRebuttalRequest): Promise<{ rebuttalId: string }> {
-  return request('/v1/rebuttals', z.object({ rebuttalId: z.string() }), {
-    method: 'POST',
-    body: JSON.stringify(body),
-  });
-}
-
-export async function listMyRebuttals(): Promise<RebuttalListResponse> {
-  return request('/v1/me/rebuttals', rebuttalListResponseSchema);
-}
-
-export async function updateRebuttal(
-  rebuttalId: string,
-  body: UpdateRebuttalRequest
-): Promise<void> {
-  await request(`/v1/rebuttals/${rebuttalId}`, z.null(), {
-    method: 'PUT',
-    body: JSON.stringify(body),
-  });
-}
-
-export async function removeRebuttal(rebuttalId: string): Promise<void> {
-  await request(`/v1/rebuttals/${rebuttalId}`, z.null(), { method: 'DELETE' });
 }
 
 /*
@@ -1450,26 +1073,6 @@ export async function removeRebuttal(rebuttalId: string): Promise<void> {
  * 업체 관계자 인증 (최종통합정책 v2.0 26·27번)
  * ---------------------------------------------------------------------------
  */
-
-/**
- * 업체 관계자 인증 신청.
- *
- * **여기서 확인되지 않는다.** 이메일 도메인이 맞아떨어져도 담당자가 그 주소로
- * 연락해 확인한 뒤에야 관계자가 된다 — 요청 타입에 상태를 정할 자리가 없는 것이
- * 그 사실을 말해준다.
- */
-export async function createVendorClaim(
-  body: CreateVendorClaimRequest
-): Promise<{ claimId: string }> {
-  return request('/v1/vendor-claims', z.object({ claimId: z.string() }), {
-    method: 'POST',
-    body: JSON.stringify(body),
-  });
-}
-
-export async function listMyVendorClaims(): Promise<VendorClaimListResponse> {
-  return request('/v1/me/vendor-claims', vendorClaimListResponseSchema);
-}
 
 /*
  * ---------------------------------------------------------------------------
@@ -1510,40 +1113,6 @@ export async function removeDecision(weddingId: string, category: string): Promi
   await request(`/v1/weddings/${weddingId}/decisions/${category}`, z.null(), { method: 'DELETE' });
 }
 
-export async function getMyRewards(): Promise<MyRewardsResponse> {
-  return request('/v1/me/rewards', myRewardsResponseSchema);
-}
-
-export async function getMyMonthlyDraw(): Promise<MyMonthlyDrawResponse> {
-  return request('/v1/me/monthly-draw', myMonthlyDrawResponseSchema);
-}
-
-/** Npay 리워드 수령 현황(WP-EVT-006). 번호는 가린 꼴만 온다. */
-export async function getMyRewardPayout(): Promise<MyRewardPayoutResponse> {
-  return request('/v1/me/rewards/payout', myRewardPayoutResponseSchema);
-}
-
-/** 수령 요청 — 그 순간 지급 대기인 보상 전부가 한 요청으로 묶인다. */
-export async function requestRewardPayout(body: RequestRewardPayoutRequest): Promise<RewardPayout> {
-  return request('/v1/me/rewards/payout', rewardPayoutSchema, {
-    method: 'POST',
-    body: JSON.stringify(body),
-  });
-}
-
-/**
- * 초대 코드 넣기.
- *
- * **여기서 보상이 생기지 않는다.** 결제내역을 처음 등록할 때 초대한 분의 조건이
- * 찬다 — 가입만으로 돈을 주면 가입만 하는 계정이 모인다(v2.0 K-7).
- */
-export async function redeemReferral(code: string): Promise<void> {
-  await request('/v1/referrals/redeem', z.null(), {
-    method: 'POST',
-    body: JSON.stringify({ code }),
-  });
-}
-
 // ──────────────────────────────────────────────────────────
 // 박람회 (Expos)
 // ──────────────────────────────────────────────────────────
@@ -1575,32 +1144,6 @@ export async function toggleExpoNotify(expoId: string, enabled: boolean): Promis
 // ──────────────────────────────────────────────────────────
 // 웨딩 정보 (Wedding Info)
 // ──────────────────────────────────────────────────────────
-
-export async function listWeddingInfo(params?: {
-  sort?: string;
-  stage?: string;
-  category?: string;
-  cursor?: string;
-}): Promise<WeddingInfoListResponse> {
-  const q = new URLSearchParams();
-  if (params?.sort) q.set('sort', params.sort);
-  if (params?.stage) q.set('stage', params.stage);
-  if (params?.category) q.set('category', params.category);
-  if (params?.cursor) q.set('cursor', params.cursor);
-  const suffix = q.size > 0 ? `?${q.toString()}` : '';
-  return request(`/v1/wedding-info${suffix}`, weddingInfoListResponseSchema);
-}
-
-export async function getWeddingInfo(infoId: string): Promise<WeddingInfoDetail> {
-  return request(`/v1/wedding-info/${infoId}`, weddingInfoDetailSchema);
-}
-
-export async function submitPromotion(url: string): Promise<{ promotionId: string }> {
-  return request('/v1/promotions', z.object({ promotionId: z.string() }), {
-    method: 'POST',
-    body: JSON.stringify({ url }),
-  });
-}
 
 /** 내 초대 코드와 사용 횟수. */
 export async function getMyInviteCode(): Promise<{ code: string; uses: number }> {
@@ -1707,18 +1250,8 @@ export async function withdraw(): Promise<WithdrawalResult> {
   return request('/v1/me/withdrawal', withdrawalResultSchema, { method: 'POST' });
 }
 
-/** 결제인증 동의. 최초 1회만 — 두 번 눌러도 한 번만 남는다. */
-export async function grantPaymentConsent(): Promise<Settings> {
-  return request('/v1/me/payment-consent', settingsSchema, { method: 'POST' });
-}
-
 export async function revokePaymentConsent(): Promise<Settings> {
   return request('/v1/me/payment-consent', settingsSchema, { method: 'DELETE' });
-}
-
-/** 견적서 업로드 동의. 결제인증과 따로 받는다 — 읽어가는 것도 쓰는 곳도 다르다. */
-export async function grantDocumentConsent(): Promise<Settings> {
-  return request('/v1/me/document-consent', settingsSchema, { method: 'POST' });
 }
 
 export async function revokeDocumentConsent(): Promise<Settings> {

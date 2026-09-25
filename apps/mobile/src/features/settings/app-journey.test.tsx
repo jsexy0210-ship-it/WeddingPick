@@ -1,7 +1,6 @@
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { Switch } from 'react-native';
-import { router } from 'expo-router';
 import { getCurrentUser, getSettings, setDisplayName, updateSettings } from '@/api/client';
 import ProfileScreen from '@/app/(tabs)/my/profile';
 
