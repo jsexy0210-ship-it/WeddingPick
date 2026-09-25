@@ -2,7 +2,7 @@ import { usePathname } from 'expo-router';
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { Layout, ThemedText } from '@weddingpick/ui';
+import { Border, Layout, ThemedText, useTheme } from '@weddingpick/ui';
 import { BackButton, TOUCH_SLOT_SIZE } from '@/components/back-button';
 
 export function DepthHeader({
@@ -16,19 +16,17 @@ export function DepthHeader({
   onBack?: () => void;
   variant?: 'back' | 'close';
 }) {
+  const theme = useTheme();
   const pathname = usePathname();
   const resolvedTitle = title ?? depthHeaderTitle(pathname);
 
   return (
-    <View style={styles.bar}>
+    <View style={[styles.bar, { borderBottomColor: theme.border }]}>
       <BackButton onPress={onBack} variant={variant} />
-      <ThemedText
-        type="t5"
-        numberOfLines={1}
-        style={[styles.title, variant === 'close' ? styles.titleCentered : null]}>
+      <ThemedText type="f16" numberOfLines={1} style={styles.title}>
         {resolvedTitle}
       </ThemedText>
-      {right ?? (variant === 'close' ? <View style={styles.pad} /> : null)}
+      {right ?? <View style={styles.pad} />}
     </View>
   );
 }
@@ -62,6 +60,14 @@ function depthHeaderTitle(pathname: string): string {
   return rules.find(([pattern]) => pattern.test(pathname))?.[1] ?? '';
 }
 
+/*
+ * RN 정본 공통 뒤로 헤더 — `common.js:396~398` · `search.js:240~241` · `pick.js:90~91` · `note.js:93~94` ·
+ * `my.js:168~169` · `home.js:641~642` 여섯 보드가 같은 값이다(2026-09-25 common 픽셀 대조).
+ *   navBar    높이 56 · padding 0 16 · gap 8 · 아래 1px BORDER(#eaebee, inset — 높이 안)
+ *   navTitle  flex 1 · 가운데 · 16 · 700 · INK · 한 줄 말줄임
+ *   navPad    오른쪽 동작이 없으면 36 빈 칸 — 제목이 화면 가운데 앉는다
+ * 전에는 왼쪽 12 · 오른쪽 20 · 제목 18/24 왼쪽 정렬 · 아래 선 없음이었다.
+ */
 const styles = StyleSheet.create({
   bar: {
     height: Layout.navBar,
@@ -70,13 +76,9 @@ const styles = StyleSheet.create({
     paddingLeft: Layout.navPaddingLeft,
     paddingRight: Layout.navPaddingRight,
     gap: Layout.navGap,
+    borderBottomWidth: Border.hairline,
   },
-  title: { flex: 1, minWidth: 0 },
-  /*
-   * v3.28 풀팝업 — 좌측 X 닫기 + 중앙 타이틀. 오른쪽 액션이 없으면 닫기 단추와 같은
-   * 폭의 빈 칸을 두어 제목이 화면 가운데 앉는다. `back` 헤더는 그대로다.
-   */
-  titleCentered: { textAlign: 'center' },
+  title: { flex: 1, minWidth: 0, textAlign: 'center', fontWeight: '700' },
   /* 왼쪽 BackButton과 같은 폭이어야 제목이 실제로 가운데 앉는다 — back-button.tsx의 TOUCH_SLOT_SIZE(36) 그대로. */
   pad: { width: TOUCH_SLOT_SIZE },
 });

@@ -1,7 +1,8 @@
 import type { Pool, PoolClient } from 'pg';
 
-import { officialVendorCondition } from '@weddingpick/domain';
+import { officialVendorCondition, VENDOR_CATEGORIES, VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
 
+import { newEventId, recordDecision } from './decisions';
 import { ApiError, notFound } from './errors';
 
 /**
@@ -135,6 +136,10 @@ const ACTION_LABEL: Record<string, string> = {
   source: '출처 변경',
   status: '영업 상태 변경',
   merged_into_vendor_id: '업체 병합',
+  // 정보 수정(`updateVendor`)이 남기는 칸. 영문 필드 이름이 화면에 뜨지 않게 적어 둔다.
+  category: '업종 변경',
+  region: '지역 변경',
+  address: '주소 변경',
 };
 
 /**
@@ -174,10 +179,17 @@ function toEntry(r: {
   note: string | null;
   changed_at: Date;
 }): ChangeLogEntry {
+  // 업종은 DB 값(`studio`)으로 담고 화면에는 이름(「스튜디오」)으로 적는다.
+  const show = (value: string | null) =>
+    r.field_name === 'category' && value !== null
+      ? ((VENDOR_CATEGORY_LABEL as Record<string, string>)[value] ?? value)
+      : value;
+  const oldValue = show(r.old_value);
+  const newValue = show(r.new_value);
   const changed =
-    r.old_value !== null && r.new_value !== null
-      ? `${r.old_value} → ${r.new_value}`
-      : (r.new_value ?? r.old_value ?? '');
+    oldValue !== null && newValue !== null
+      ? `${oldValue} → ${newValue}`
+      : (newValue ?? oldValue ?? '');
   return {
     at: r.changed_at.toISOString(),
     action: ACTION_LABEL[r.field_name] ?? r.field_name,
@@ -191,6 +203,8 @@ export type AdminVendor = {
   id: string;
   name: string;
   category: string;
+  region: string;
+  address: string | null;
   status: VendorStatus;
   dataCount: number;
   mergedInto: string | null;
@@ -210,9 +224,9 @@ const HISTORY_PER_VENDOR = 10;
  */
 export async function listVendors(pool: Pool): Promise<{ vendors: AdminVendor[]; total: number }> {
   const { rows } = await pool.query<
-    VendorRow & { data_count: string; merged_into_name: string | null }
+    VendorRow & { region: string; address: string | null; data_count: string; merged_into_name: string | null }
   >(
-    `SELECT v.id, v.name, v.category::text AS category, v.is_active,
+    `SELECT v.id, v.name, v.category::text AS category, v.region, v.address, v.is_active,
             v.closed_at, v.suspended_at, v.merged_into_vendor_id,
             m.name AS merged_into_name,
             (SELECT COUNT(*) FROM structured.price_reports pr
@@ -267,6 +281,8 @@ export async function listVendors(pool: Pool): Promise<{ vendors: AdminVendor[];
       id: r.id,
       name: r.name,
       category: r.category,
+      region: r.region,
+      address: r.address,
       status: vendorStatus(r),
       dataCount: Number(r.data_count),
       // 화면은 대상 업체를 사람이 읽어야 하므로 id가 아니라 이름을 준다.
@@ -333,6 +349,219 @@ export async function renameVendor(
 
     await client.query('COMMIT');
     return { name };
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+// ─── 정보 수정 ──────────────────────────────────────────────────────────────
+
+/**
+ * 관리자가 고를 수 있는 업종. 결정사(`wedding_info_company`)는 뺀다 — 2026-09-24
+ * 대표 지시 「결정사 따윈 필요없다」. DB enum 값은 과거 기록 때문에 남아 있어도
+ * 새로 그 업종으로 옮기지는 않는다.
+ */
+export const EDITABLE_VENDOR_CATEGORIES = VENDOR_CATEGORIES.filter(
+  (category) => category !== 'wedding_info_company'
+);
+export type EditableVendorCategory = (typeof EDITABLE_VENDOR_CATEGORIES)[number];
+
+export type VendorEdit = {
+  name: string;
+  category: EditableVendorCategory;
+  region: string;
+  /** 비우면 주소를 지운다. */
+  address: string | null;
+};
+
+/**
+ * 업체 정보를 고친다 — 상호 · 업종 · 지역 · 주소(2026-09-25 대표 지시 「업체 관리도
+ * 수정, 삭제 버튼을 추가한다」). 바뀐 칸마다 `vendor_change_log`에 한 줄씩 남긴다 —
+ * 상호 변경(`renameVendor`)과 같은 기록 방식이다.
+ */
+export async function updateVendor(
+  pool: Pool,
+  vendorId: string,
+  input: VendorEdit,
+  operatorId: string
+): Promise<VendorEdit> {
+  requireUuid(vendorId, '업체');
+  const next: VendorEdit = {
+    name: input.name.trim(),
+    category: input.category,
+    region: input.region.trim(),
+    address: input.address?.trim() ? input.address.trim() : null,
+  };
+  if (!next.name) throw new ApiError('invalid_request', '상호를 입력해 주세요.');
+  if (!next.region) throw new ApiError('invalid_request', '지역을 입력해 주세요.');
+  if (!(EDITABLE_VENDOR_CATEGORIES as readonly string[]).includes(next.category)) {
+    throw new ApiError('invalid_request', '고를 수 없는 업종이에요.');
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows } = await client.query<{
+      name: string;
+      category: string;
+      region: string;
+      address: string | null;
+      merged_into_vendor_id: string | null;
+    }>(
+      `SELECT name, category::text AS category, region, address, merged_into_vendor_id
+         FROM structured.vendors WHERE id = $1 FOR UPDATE`,
+      [vendorId]
+    );
+    const before = rows[0];
+    if (!before) throw notFound('업체');
+    if (before.merged_into_vendor_id !== null) {
+      throw new ApiError('conflict', '병합된 업체는 수정할 수 없습니다.');
+    }
+
+    const fields = ['name', 'category', 'region', 'address'] as const;
+    const changed = fields.filter((field) => (before[field] ?? null) !== (next[field] ?? null));
+
+    if (changed.length > 0) {
+      await client.query(
+        `UPDATE structured.vendors
+            SET name = $2, category = $3::vendor_category, region = $4, address = $5
+          WHERE id = $1`,
+        [vendorId, next.name, next.category, next.region, next.address]
+      );
+      for (const field of changed) {
+        await writeChangeLog(client, {
+          vendorId,
+          field,
+          oldValue: before[field] ?? null,
+          newValue: next[field] ?? null,
+          operatorId,
+          note: null,
+        });
+      }
+    }
+
+    await client.query('COMMIT');
+    return next;
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+// ─── 삭제 ───────────────────────────────────────────────────────────────────
+
+/**
+ * 업체를 지우면 CASCADE로 함께 사라지는 사용자 · 업체주 기록. 하나라도 달려 있으면
+ * **지우지 않는다** — 관리자 단추 하나로 남이 쓴 것이 소리 없이 사라지면 안 된다.
+ *
+ * 앞의 넷은 업종 일괄 삭제 CLI(`vendor-category-purge.ts`, 결정사 제거 작업)의
+ * `USER_LINKED`와 같다. 관리자 화면에서 한 곳씩 지우는 자리라 셋을 더 막는다 —
+ * 업체주가 낸 소유 확인 · 정보 수정 요청과 돈이 걸린 광고 자리도 CASCADE로 지워진다.
+ *
+ * SET NULL로 걸린 표(결제 증빙 · 웨딩 일정 · 상담 기록 등)는 기록이 남고 업체
+ * 연결만 끊기므로 막지 않는다.
+ */
+const DELETE_BLOCKERS = [
+  { table: 'structured.vendor_candidates', label: 'Pick 후보' },
+  { table: 'structured.reviews', label: '후기' },
+  { table: 'structured.price_reports', label: '제보 금액' },
+  { table: 'structured.category_decisions', label: 'Pick 결정' },
+  { table: 'structured.vendor_claims', label: '업체 소유 확인' },
+  { table: 'structured.vendor_corrections', label: '정보 수정 요청' },
+  { table: 'ads.placements', label: '광고 자리' },
+] as const;
+
+/** 지우지 못하게 막는 기록이 몇 건씩 있는지. 0건인 것은 빼고 돌려준다. */
+async function deleteBlockers(
+  db: Pool | PoolClient,
+  vendorId: string
+): Promise<{ label: string; count: number }[]> {
+  const found: { label: string; count: number }[] = [];
+  for (const { table, label } of DELETE_BLOCKERS) {
+    const { rows } = await db.query<{ n: string }>(
+      `SELECT COUNT(*)::text AS n FROM ${table} WHERE vendor_id = $1`,
+      [vendorId]
+    );
+    const count = Number(rows[0]?.n ?? '0');
+    if (count > 0) found.push({ label, count });
+  }
+  return found;
+}
+
+/**
+ * 업체 한 곳을 지운다. **되돌릴 수 없다.**
+ *
+ * 순서는 업종 일괄 삭제 CLI와 같다 — `vendor_source_records`는 업체를 CASCADE 없이
+ * 잡고 있어 먼저 지우고, 이 업체로 병합된 다른 업체의 `merged_into_vendor_id`
+ * (RESTRICT)를 끊은 뒤(폐업 표시와 함께) 업체 행을 지운다. 업체의 변경 이력은 업체와 함께 지워지므로
+ * 지웠다는 사실은 `structured.decisions`에 남긴다.
+ */
+export async function deleteVendor(
+  pool: Pool,
+  vendorId: string,
+  operatorId: string
+): Promise<{ deleted: true }> {
+  requireUuid(vendorId, '업체');
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const vendor = await loadVendor(client, vendorId, true);
+    if (!vendor) throw notFound('업체');
+
+    const blockers = await deleteBlockers(client, vendorId);
+    if (blockers.length > 0) {
+      const list = blockers.map((b) => `${b.label} ${b.count}건`).join(' · ');
+      throw new ApiError(
+        'conflict',
+        `연결된 기록이 있어 지울 수 없어요 (${list}). 영업 상태를 바꾸거나 다른 업체로 병합해 주세요.`
+      );
+    }
+
+    await client.query('DELETE FROM structured.vendor_source_records WHERE vendor_id = $1', [vendorId]);
+    /*
+     * 병합된 업체는 비활성이다. 연결만 끊으면 「비활성인데 이유가 없는」 행이 되어
+     * `vendors_inactive_requires_reason`에 걸리므로 폐업 표시를 함께 남긴다 —
+     * 흡수된 껍데기라 다시 노출될 일이 없다는 뜻은 그대로다.
+     */
+    const { rows: unlinked } = await client.query<{ id: string }>(
+      `UPDATE structured.vendors
+          SET merged_into_vendor_id = NULL, closed_at = COALESCE(closed_at, now())
+        WHERE merged_into_vendor_id = $1
+        RETURNING id`,
+      [vendorId]
+    );
+    for (const { id } of unlinked) {
+      await writeChangeLog(client, {
+        vendorId: id,
+        field: 'merged_into_vendor_id',
+        oldValue: vendorId,
+        newValue: null,
+        operatorId,
+        note: '병합 대상 업체가 삭제됨',
+      });
+    }
+    await client.query('DELETE FROM structured.vendors WHERE id = $1', [vendorId]);
+
+    await recordDecision(client, {
+      eventId: newEventId(),
+      workflow: 'vendor_admin',
+      step: 'delete',
+      subjectKind: 'vendor',
+      subjectId: vendorId,
+      decider: { kind: 'human', userId: operatorId },
+      decision: 'deleted',
+      reasonCode: 'vendor_deleted',
+      evidence: [{ kind: 'vendor', id: vendorId }],
+    });
+
+    await client.query('COMMIT');
+    return { deleted: true };
   } catch (e) {
     await client.query('ROLLBACK');
     throw e;

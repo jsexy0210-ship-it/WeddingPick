@@ -118,7 +118,12 @@ function renderDialog(request: Confirmation, choose: (index: number | null) => v
     [data-wp-dialog] button:active { transform:${CANON.motion.pressButton.transform}; }
     [data-wp-dialog] button[data-cancel] { background:${C.surface.band}; color:${C.text.tertiary}; }
     [data-wp-dialog] button[data-danger] { background:${C.status.dangerAction}; }
-    [data-wp-dialog="E"] { margin:auto auto 0; max-width:${px(CANON.size.screen.width)}; width:100%; }
+    /*
+     * 행동 목록(E)은 화면 아래에 붙는 전체 폭 시트다(정본 SHEET \`left:0;right:0;bottom:0\`).
+     * 선택자를 \`dialog[...]\`로 적는다 — \`[data-wp-dialog="E"]\`만으로는 위 \`dialog[data-wp-dialog]\`
+     * (margin:auto · 좌우 32 폭)보다 우선순위가 낮아, 시트가 가운데 뜨고 좌우가 비었다(2026-09-25 캡처).
+     */
+    dialog[data-wp-dialog="E"] { margin:auto 0 0; max-width:none; width:100%; }
     [data-wp-dialog="E"] .wp-dialog-panel { border-radius:${px(CANON.radius.sheet)} ${px(CANON.radius.sheet)} 0 0;
       padding:${px(S.sheetTop)} ${px(S.gutter)} calc(${px(S.sectionBottom)} + env(safe-area-inset-bottom, 0px));
       gap:${px(S.inlineGap)}; }

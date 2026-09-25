@@ -3,6 +3,8 @@
  * 일정 · 상담 · 예산 세 탭과 헤더 추가 액션을 둔다.
  * 항목별 예산은 API buckets에 없으므로 항목별 수정·삭제는 연결하지 않는다.
  * 예식 뒤 화면은 별도 WeddingCompleteView가 맡는다.
+ * 일정 탭의 «할 일» 섹션과 그 추가 시트는 뺐다(2026-09-25 대표 지시 — 정본 note.jsx에는 있다).
+ * 할 일 서버 API · DB는 그대로 둔다.
  */
 import { FullScreenError } from '@/features/errors/full-screen-error';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
@@ -11,11 +13,9 @@ import type {
   CurrentUser,
   ExpenseSummaryResponse,
   WeddingEvent,
-  WeddingTask,
 } from '@weddingpick/api-contract';
 import {
   PREPARATION_CATEGORIES,
-  TASK_STATE_LABEL,
   TERMS,
   budgetView,
   daysUntil,
@@ -45,22 +45,18 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import {
-  addWeddingTask,
   ensureWedding,
   getCurrentUser,
   getExpenses,
   listConsultations,
   listDecisions,
   listWeddingEvents,
-  listWeddingTasks,
   setBudget,
-  updateWeddingTask,
 } from '@/api/client';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 import { formatDateDot } from '@/features/common/format-date';
 import { noteMonthDayWeekdayTime } from '@/features/wedding/note-format';
 import { useSession } from '@/features/auth/use-session';
-import { CheckBox } from '@/features/wedding/screen-kit';
 import { WeddingCompleteView } from '@/features/wedding/complete-view';
 import { buildUpcomingTimelineGroups, type TimelineItem } from '@/features/wedding/timeline-groups';
 
@@ -86,7 +82,6 @@ const ADD_LABEL: Record<Tab, string> = { calendar: '일정 추가', budget: '예
 const DECIDED_LINK = '예약현황';
 const PAST_EVENTS_SHOW = '보기';
 const PAST_EVENTS_HIDE = '접기';
-const TASKS_TITLE = '할 일';
 
 const BAR_HEIGHT = 6;
 
@@ -109,15 +104,12 @@ export default function WeddingScreen({
   const [expenses, setExpenses] = useState<ExpenseSummaryResponse | null>(null);
   const [expensesError, setExpensesError] = useState(false);
   const [consults, setConsults] = useState<ConsultationRecord[] | null>(null);
-  const [tasks, setTasks] = useState<WeddingTask[] | null>(null);
   const [decidedCount, setDecidedCount] = useState<number | null>(null);
   const [tab, setTab] = useState<Tab>(initialTab ?? parseTab(params.tab) ?? 'calendar');
   const [toast, setToast] = useState<string | null>(null);
   const [budgetOpen, setBudgetOpen] = useState(false);
   const [budgetDraft, setBudgetDraft] = useState('');
   const [budgetSaving, setBudgetSaving] = useState(false);
-  const [taskSheetOpen, setTaskSheetOpen] = useState(false);
-  const pendingTaskSequence = useRef(0);
   const budgetPrompted = useRef(false);
 
   const isSignedIn = state.status === 'signedIn';
@@ -144,7 +136,6 @@ export default function WeddingScreen({
             if (active) setExpensesError(true);
           });
         void listConsultations(weddingId).then((r) => { if (active) setConsults(r.records); }).catch(() => undefined);
-        void listWeddingTasks(weddingId).then((r) => { if (active) setTasks(r.tasks); }).catch(() => undefined);
         void listDecisions(weddingId).then((r) => { if (active) setDecidedCount(r.decisions.length); }).catch(() => undefined);
       })
       .catch(() => undefined);
@@ -304,50 +295,6 @@ export default function WeddingScreen({
     }
   }
 
-  /*
-   * 체크는 «직접 지정 완료», 되돌리면 자동 판정(`state: null`)으로 돌아간다 — tasks.tsx와
-   * 같은 규칙이다. 되돌린 뒤 실제 상태는 서버가 날짜로 다시 정하므로 미리 짐작하지 않고
-   * 다시 읽어온다.
-   */
-  async function toggleTask(task: WeddingTask) {
-    if (!weddingId || task.id.startsWith('pending-')) return;
-    try {
-      await updateWeddingTask(weddingId, task.id, { state: task.state === 'done' ? null : 'done' });
-      void listWeddingTasks(weddingId).then((r) => setTasks(r.tasks)).catch(() => undefined);
-      setToast(task.state === 'done' ? '할 일을 다시 열었어요' : '할 일을 완료했어요');
-    } catch {
-      setToast('할 일을 바꾸지 못했어요. 잠시 후 다시 시도해주세요.');
-    }
-  }
-
-  async function addTask(label: string) {
-    if (!weddingId) return;
-    const pendingId = `pending-${Date.now()}-${++pendingTaskSequence.current}`;
-    // 화면에는 즉시 넣고, 서버가 확인한 ID로 바꾼다. 실패하면 행을 되돌린다.
-    setTasks((current) => [
-      ...(current ?? []),
-      {
-        id: pendingId,
-        label,
-        dueDate: null,
-        vendorId: null,
-        vendorLabel: null,
-        state: 'upcoming',
-        stateLabel: TASK_STATE_LABEL.upcoming,
-        manualState: false,
-      },
-    ]);
-    try {
-      const { taskId } = await addWeddingTask(weddingId, { label });
-      setTasks((current) => current?.map((task) => task.id === pendingId ? { ...task, id: taskId } : task) ?? null);
-      setToast('할 일을 추가했어요');
-    } catch (caught) {
-      setTasks((current) => current?.filter((task) => task.id !== pendingId) ?? null);
-      setToast('할 일을 추가하지 못했어요. 다시 시도해 주세요.');
-      throw caught;
-    }
-  }
-
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -379,14 +326,8 @@ export default function WeddingScreen({
               events={events ?? []}
               weddingDate={me?.weddingDate ?? null}
               decidedCount={decidedCount}
-              tasks={tasks}
               onEdit={(event) => (weddingId ? router.push(`/wedding/${weddingId}/events/${event.id}` as never) : null)}
               onOpenDecided={() => (weddingId ? router.push(`/wedding/${weddingId}/decided` as never) : null)}
-              onToggleTask={(task) => void toggleTask(task)}
-              onAddTask={addTask}
-              onOpenTaskSheet={() => setTaskSheetOpen(true)}
-              taskSheetOpen={taskSheetOpen}
-              onCloseTaskSheet={() => setTaskSheetOpen(false)}
             />
           ) : tab === 'budget' ? (
             <BudgetPanel
@@ -526,38 +467,24 @@ function EmptyNoteView({
 /* ────────────────────────────────────────────
    캘린더 패널 — React_Native/note.jsx WP-NOTE-001.
    월 격자를 폐기하고 예식일까지 주 단위 흐름으로 바꿨다: D-day 카드 → 지난 일정
-   접은 줄 → 이번 주 · 다음 주 · 달 단위 타임라인 → 할 일 체크리스트.
+   접은 줄 → 이번 주 · 다음 주 · 달 단위 타임라인. 할 일 체크리스트는 뺐다(2026-09-25 대표 지시).
 ──────────────────────────────────────────── */
 function CalendarPanel({
   events,
   weddingDate,
   decidedCount,
-  tasks,
   onEdit,
   onOpenDecided,
-  onToggleTask,
-  onAddTask,
-  onOpenTaskSheet,
-  taskSheetOpen,
-  onCloseTaskSheet,
 }: {
   events: WeddingEvent[];
   weddingDate: string | null;
   decidedCount: number | null;
-  tasks: WeddingTask[] | null;
   onEdit: (event: WeddingEvent) => void;
   onOpenDecided: () => void;
-  onToggleTask: (task: WeddingTask) => void;
-  onAddTask: (label: string) => Promise<void>;
-  onOpenTaskSheet: () => void;
-  taskSheetOpen: boolean;
-  onCloseTaskSheet: () => void;
 }) {
   const theme = useTheme();
   const [now] = useState(() => new Date());
   const [showPast, setShowPast] = useState(false);
-  const [taskDraft, setTaskDraft] = useState('');
-  const [taskSaving, setTaskSaving] = useState(false);
 
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const past = events
@@ -567,28 +494,6 @@ function CalendarPanel({
 
   const days = weddingDate !== null ? daysUntil(weddingDate, now) : null;
   const ddayText = days === null ? null : days > 0 ? `D-${days}` : days === 0 ? 'D-DAY' : `D+${-days}`;
-  const weekEnd = new Date(today);
-  // 주는 월~일이다 — 타임라인 「이번 주」(timeline-groups.ts)와 같은 끝날(일요일).
-  weekEnd.setDate(weekEnd.getDate() + ((7 - today.getDay()) % 7));
-  const dueThisWeek = (tasks ?? []).filter(
-    (task) => task.state !== 'done' && task.dueDate !== null && new Date(task.dueDate) >= today && new Date(task.dueDate) <= weekEnd
-  ).length;
-
-  async function submitTask() {
-    const label = taskDraft.trim();
-    if (label.length === 0 || taskSaving) return;
-    setTaskSaving(true);
-    onCloseTaskSheet();
-    try {
-      await onAddTask(label);
-      setTaskDraft('');
-    } catch {
-      onOpenTaskSheet();
-    } finally {
-      setTaskSaving(false);
-    }
-  }
-
   return (
     <View style={styles.calendarStack}>
       {weddingDate !== null ? (
@@ -603,7 +508,7 @@ function CalendarPanel({
           </View>
           <ThemedText type="f13" themeColor="textSecondary" numeric>
             {days !== null && days > 0
-              ? `남은 ${Math.max(1, Math.ceil(days / 7))}주 · 이번 주에 할 일 ${dueThisWeek}건`
+              ? `남은 ${Math.max(1, Math.ceil(days / 7))}주`
               : '예식이 곧이에요'}
           </ThemedText>
           {decidedCount !== null ? (
@@ -643,60 +548,6 @@ function CalendarPanel({
         <TimelineGroupView key={group.title} {...group} onEdit={onEdit} />
       ))}
 
-      <View style={styles.checklistSection}>
-        <View style={styles.clHead}>
-          <ThemedText type="f15" style={styles.bold}>{TASKS_TITLE}</ThemedText>
-          <Pressable accessibilityRole="button" accessibilityLabel="할 일 추가" onPress={onOpenTaskSheet}>
-            <ThemedText type="f14" themeColor="tint" style={styles.bold}>추가</ThemedText>
-          </Pressable>
-        </View>
-        {(tasks ?? []).map((task) => {
-          const done = task.state === 'done';
-          return (
-            <Pressable
-              key={task.id}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: done }}
-              accessibilityLabel={task.label}
-              onPress={() => onToggleTask(task)}
-              style={[styles.taskRow, { borderBottomColor: theme.border }]}>
-              <CheckBox checked={done} round size={22} />
-              <ThemedText
-                type="f15"
-                numberOfLines={1}
-                themeColor={done ? 'textAssistive' : undefined}
-                style={[styles.grow, done ? styles.strike : null]}>
-                {task.label}
-              </ThemedText>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      <BottomSheet visible={taskSheetOpen} onRequestClose={onCloseTaskSheet} testID="task-add-sheet">
-        <SheetPanel>
-          <ThemedText type="t3">할 일을 더해볼까요?</ThemedText>
-          <TextInput
-            value={taskDraft}
-            onChangeText={setTaskDraft}
-            editable={!taskSaving}
-            placeholder="예: 상견례 날짜 정하기"
-            placeholderTextColor={theme.textDisabled}
-            accessibilityLabel="할 일"
-            maxLength={40}
-            returnKeyType="done"
-            onSubmitEditing={() => void submitTask()}
-            style={[styles.taskInput, { color: theme.text, borderColor: theme.fieldBorder }]}
-          />
-          <ActionButton
-            variant="primary"
-            size="xlarge"
-            label={taskSaving ? '넣는 중…' : '할 일 넣기'}
-            disabled={taskDraft.trim().length === 0 || taskSaving}
-            onPress={() => void submitTask()}
-          />
-        </SheetPanel>
-      </BottomSheet>
     </View>
   );
 }
@@ -1177,30 +1028,6 @@ const styles = StyleSheet.create({
   },
   /* note.js `tlItem(…'wed')` — `box-shadow:inset 0 0 0 1.5px P`. */
   weddingRow: { borderWidth: 1.5 },
-
-  // ── 할 일 ──
-  /* note.js `sec` — `padding:0 24px 20px;gap:12px`(머리와 행, 행과 행 사이 모두 12). */
-  checklistSection: { marginHorizontal: Layout.pageX, paddingBottom: Layout.listGap, gap: Layout.inlineGap },
-  clHead: {
-    paddingHorizontal: Spacing.one,
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    gap: Layout.inlineGap,
-  },
-  taskRow: {
-    paddingVertical: 10,
-    borderBottomWidth: Border.hairline,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  taskInput: {
-    height: Layout.field,
-    borderRadius: Radius.input,
-    borderWidth: 1,
-    paddingHorizontal: Layout.fieldPaddingX,
-  },
 
   // ── 예산현황 ──
   budgetSummary: {},

@@ -10,6 +10,7 @@ jest.mock('../auth/plugin', () => ({
   currentUserId: () => '00000000-0000-4000-8000-000000000001',
 }));
 jest.mock('../site-meta', () => ({
+  ...jest.requireActual('../site-meta'),
   save: jest.fn(),
   markPublishRequested: jest.fn(),
 }));
@@ -70,7 +71,7 @@ test('배포 통로를 제거해도 설정 저장은 유지한다', async () => 
       method: 'PUT', url: '/v1/admin/site-meta', payload: { ogTitle: '웨딩픽' },
     });
     expect(response.statusCode).toBe(200);
-    expect(siteMeta.save).toHaveBeenCalledWith(pool, { ogTitle: '웨딩픽' }, expect.any(String), expect.any(String));
+    expect(siteMeta.save).toHaveBeenCalledWith(pool, { ogTitle: '웨딩픽' }, expect.any(String), expect.any(String), 'website');
     expect(siteMeta.markPublishRequested).not.toHaveBeenCalled();
   } finally {
     await app.close();

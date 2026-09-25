@@ -8,17 +8,16 @@ import {
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ApiError, completeSetup, getCurrentUser } from '@/api/client';
 import { STEP_DESCRIPTION, STEP_TITLE_LINES, STYLE_DESCRIPTION } from '@/features/onboarding/flow';
 import { InlineToast, useInlineToast } from '@/features/onboarding/inline-toast';
-import { OptionRow } from '@/features/onboarding/option-row';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { useDepthBack } from '@/features/navigation/depth-back';
 import { showResultToast } from '@/features/navigation/result-toast';
 import { Dock, Hero, NoteBox, Section, SubScreen } from '@/features/settings/my-kit';
-import { ErrorView, Layout } from '@weddingpick/ui';
+import { ErrorView, Layout, LineHeight, ProductSymbol, Radius, ThemedText, useTheme } from '@weddingpick/ui';
 
 /** `spec/strings.ko.json` `my.item.taste` · 정본 WP-MY-014(docs/design/React_Native/my.jsx frame-016). */
 const S = {
@@ -111,9 +110,8 @@ export default function StyleScreen() {
 
       <View style={styles.options}>
         {WEDDING_STYLES.map((style) => (
-          <OptionRow
+          <StyleButton
             key={style}
-            role="checkbox"
             label={WEDDING_STYLE_LABEL[style]}
             description={STYLE_DESCRIPTION[style]}
             selected={loaded.chosen.includes(style)}
@@ -139,11 +137,80 @@ export default function StyleScreen() {
   );
 }
 
+/**
+ * 정본 `styleBtn2`(my.js) — 최소 72 · 16 18 · radius 10 · gap 12. 켜짐 #fff5f2 + 1.5 코랄 안쪽 선 ·
+ * 이름 17/700 코랄 · 체크 원 24. 꺼짐 #f7f8fa · 이름 먹색 · 1.5 #dcdee3 원. 설명 13/19 muted.
+ */
+function StyleButton({
+  label,
+  description,
+  selected,
+  onPress,
+}: {
+  label: string;
+  description: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: selected }}
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={[
+        styles.button,
+        selected
+          ? { backgroundColor: theme.tintSurface, borderColor: theme.tint }
+          : { backgroundColor: theme.backgroundElement, borderColor: theme.backgroundElement },
+      ]}>
+      <View style={styles.col}>
+        <ThemedText type="f17" themeColor={selected ? 'tint' : 'text'} style={styles.bold}>
+          {label}
+        </ThemedText>
+        <ThemedText type="f13" themeColor="textAssistive" style={styles.desc}>
+          {description}
+        </ThemedText>
+      </View>
+      {selected ? (
+        <View style={[styles.mark, { backgroundColor: theme.tint }]}>
+          <ProductSymbol name="check" size={14} color={theme.onTint} />
+        </View>
+      ) : (
+        <View style={[styles.mark, styles.markOff, { borderColor: theme.track }]} />
+      )}
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
-  /* 온보딩 3/3의 `options`와 같은 자리 — 규격서 «줄 사이 mar 0 0 12 0». 좌우는 화면 여백. */
+  /* 정본 styleBtnWrap — 0 20 4(좌우 공통 24) · gap 10. */
   options: {
     paddingHorizontal: Layout.gutter,
-    paddingBottom: Layout.gutter,
+    paddingBottom: 4,
+    gap: Layout.cardGap,
+  },
+  button: {
+    minHeight: 72,
+    paddingVertical: 16 - 1.5,
+    paddingHorizontal: 18 - 1.5,
+    borderRadius: Radius.medium,
+    borderWidth: 1.5,
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: Layout.inlineGap,
   },
+  col: { flex: 1, minWidth: 0, gap: Layout.cardNameGap },
+  bold: { fontWeight: 700 },
+  desc: { lineHeight: LineHeight.lh19 },
+  mark: {
+    width: 24,
+    height: 24,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  markOff: { borderWidth: 1.5 },
 });

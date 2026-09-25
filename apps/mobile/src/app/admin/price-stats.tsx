@@ -10,6 +10,7 @@ import { Colors, FontSize } from '@weddingpick/ui';
 import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { WritePressable } from './_role';
 
 type VendorStat = {
   vendorId: string;
@@ -170,7 +171,7 @@ export function PriceStatsPanel() {
                     * 없다. 눌리는 대로 두면 「눌렀는데 통계 버전이 그대로」가 되고,
                     * 운영자는 계산이 늦는 것으로 읽는다.
                     */}
-                  <Pressable
+                  <WritePressable
                     style={[
                       styles.inlineBtn,
                       (BACKEND_PENDING || recalcId === v.vendorId) && styles.btnDisabled,
@@ -179,7 +180,7 @@ export function PriceStatsPanel() {
                     disabled={BACKEND_PENDING || recalcId !== null}
                   >
                     <Text style={styles.inlineBtnText}>{recalcId === v.vendorId ? '…' : '재계산'}</Text>
-                  </Pressable>
+                  </WritePressable>
                 </View>
               </View>
             ))}

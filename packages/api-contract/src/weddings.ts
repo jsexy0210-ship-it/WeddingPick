@@ -163,7 +163,8 @@ export const completeSetupRequestSchema = z.object({
  */
 export const createInviteResponseSchema = z.object({
   inviteId: idSchema,
-  code: z.string().min(1),
+  /** 6자리 숫자(2026-09-25 대표 지시). 앞자리 0도 코드의 일부다. */
+  code: z.string().regex(/^\d{6}$/),
   expiresAt: timestampSchema,
   /** 초대받은 사람이 볼 안내. 무엇이 공유되고 무엇이 안 되는지. */
   shared: z.array(z.string().min(1)).min(1),
@@ -203,8 +204,9 @@ export const invitePreviewResponseSchema = z.discriminatedUnion('usable', [
   }),
 ]);
 
+/** 6자리 숫자만 받는다. 옛 긴 코드는 더 받지 않는다 — 72시간 안에 모두 만료된다. */
 export const acceptInviteRequestSchema = z.object({
-  code: z.string().trim().min(1).max(200),
+  code: z.string().trim().regex(/^\d{6}$/, '초대 코드는 숫자 6자리예요.'),
 });
 
 export type Wedding = z.infer<typeof weddingSchema>;

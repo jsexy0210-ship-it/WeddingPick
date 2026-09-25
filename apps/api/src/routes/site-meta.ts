@@ -43,10 +43,27 @@ const OG_IMAGE_TYPES: Record<string, string> = {
   'image/webp': 'webp',
 };
 
-/** 저장소 열쇠는 우리가 만든다. 화면이 준 열쇠를 그대로 믿으면 남의 파일을 가리킬 수 있다. */
-const OG_IMAGE_PREFIX = 'site-meta/og-';
+/**
+ * 저장소 열쇠는 우리가 만든다. 화면이 준 열쇠를 그대로 믿으면 남의 파일을 가리킬 수 있다.
+ * 웹사이트 벌은 옛 모양(`site-meta/og-<시각>`)을 그대로 쓰고, 앱 · 초대용은 벌 이름을 넣는다.
+ */
+function ogImageKeyFor(kind: siteMeta.SiteMetaKind, extension: string): string {
+  const scope = kind === siteMeta.DEFAULT_SITE_META_KIND ? '' : `${kind}-`;
+  return `site-meta/og-${scope}${Date.now()}.${extension}`;
+}
 
-const OG_KEY_RE = /^site-meta\/og-\d+\.(png|jpg|webp)$/;
+const OG_KEY_RE = /^site-meta\/og-(?:(?:app|invite)-)?\d+\.(png|jpg|webp)$/;
+
+/**
+ * 어느 벌인가 — `?kind=app|invite|website`. 없으면 웹사이트 벌이다(옛 호출과 같은 뜻).
+ * 모르는 이름은 받지 않는다: 조용히 웹사이트 벌로 바꾸면 다른 벌의 값을 덮어쓴다.
+ */
+function kindOf(request: { query: unknown }): siteMeta.SiteMetaKind {
+  const raw = (request.query as { kind?: unknown } | undefined)?.kind;
+  const kind = siteMeta.parseSiteMetaKind(raw);
+  if (!kind) throw new ApiError('invalid_request', '미리보기 종류는 app · invite · website 중 하나예요.');
+  return kind;
+}
 
 /** 요청이 들어온 origin. 올린 그림의 절대 주소를 만드는 데만 쓴다. */
 function originOf(request: { protocol: string; hostname: string }): string {
@@ -56,7 +73,9 @@ function originOf(request: { protocol: string; hostname: string }): string {
 export function registerSiteMetaRoutes(app: FastifyInstance, context: AppContext): void {
   const auth = { preHandler: requireOperatorUser(context) };
 
-  app.get('/v1/site-meta', async (request) => siteMeta.effective(context.pool, originOf(request)));
+  app.get('/v1/site-meta', async (request) =>
+    siteMeta.effective(context.pool, originOf(request), kindOf(request))
+  );
 
   /**
    * 올린 카드 그림.
@@ -66,8 +85,8 @@ export function registerSiteMetaRoutes(app: FastifyInstance, context: AppContext
    *
    * 오래 캐시하게 둔다 — 주소에 `?v=`가 붙어 있어 새 그림은 새 주소로 나간다.
    */
-  app.get('/v1/site-meta/og-image', async (_request, reply) => {
-    const key = await siteMeta.ogImageKey(context.pool);
+  app.get('/v1/site-meta/og-image', async (request, reply) => {
+    const key = await siteMeta.ogImageKey(context.pool, kindOf(request));
 
     if (!key) throw new ApiError('not_found', '올려 둔 카드 그림이 없어요.');
 
@@ -82,17 +101,18 @@ export function registerSiteMetaRoutes(app: FastifyInstance, context: AppContext
   });
 
   app.get('/v1/admin/site-meta', auth, async (request) =>
-    siteMeta.adminView(context.pool, originOf(request))
+    siteMeta.adminView(context.pool, originOf(request), kindOf(request))
   );
 
   app.put('/v1/admin/site-meta', auth, async (request) => {
+    const kind = kindOf(request);
     const parsed = saveSchema.safeParse(request.body);
 
     if (!parsed.success) {
       throw new ApiError('invalid_request', parsed.error.issues[0]?.message ?? '잘못된 요청이에요.');
     }
 
-    return siteMeta.save(context.pool, parsed.data, currentUserId(request), originOf(request));
+    return siteMeta.save(context.pool, parsed.data, currentUserId(request), originOf(request), kind);
   });
 
   /**
@@ -105,6 +125,7 @@ export function registerSiteMetaRoutes(app: FastifyInstance, context: AppContext
     '/v1/admin/site-meta/og-image/upload-target',
     auth,
     async (request) => {
+      const kind = kindOf(request);
       const mimeType = request.body?.mimeType ?? '';
       const extension = OG_IMAGE_TYPES[mimeType];
 
@@ -113,7 +134,7 @@ export function registerSiteMetaRoutes(app: FastifyInstance, context: AppContext
       }
 
       return context.storage.createUploadTarget({
-        storageKey: `${OG_IMAGE_PREFIX}${Date.now()}.${extension}`,
+        storageKey: ogImageKeyFor(kind, extension),
         mimeType,
         expiresInSeconds: 600,
       });
@@ -124,6 +145,7 @@ export function registerSiteMetaRoutes(app: FastifyInstance, context: AppContext
     '/v1/admin/site-meta/og-image',
     auth,
     async (request) => {
+      const kind = kindOf(request);
       const storageKey = request.body?.storageKey?.trim() ?? '';
 
       /*
@@ -149,13 +171,14 @@ export function registerSiteMetaRoutes(app: FastifyInstance, context: AppContext
         context.pool,
         storageKey,
         currentUserId(request),
-        originOf(request)
+        originOf(request),
+        kind
       );
     }
   );
 
   app.delete('/v1/admin/site-meta/og-image', auth, async (request) =>
-    siteMeta.clearOgImage(context.pool, currentUserId(request), originOf(request))
+    siteMeta.clearOgImage(context.pool, currentUserId(request), originOf(request), kindOf(request))
   );
 
   /**

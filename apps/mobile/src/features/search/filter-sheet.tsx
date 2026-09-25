@@ -10,12 +10,13 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import {
   ActionButton,
-  FilterChip,
+  Border,
   Layout,
+  LineHeight,
   ProductSymbol,
+  Radius,
   Spacing,
   ThemedText,
-  ThemedView,
   useTheme,
 } from '@weddingpick/ui';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
@@ -42,9 +43,10 @@ import { SHEET_SORTS } from '@/features/search/sort-panel';
  * 2026-09-24 RN 정본 대조로 정렬 묶음(`sortSec`)을 시트 맨 아래에 되살렸다 — 결과 위 정렬
  * 칩의 인라인 패널(WP-SRCH-003)과 같은 값을 본다. 예산 묶음 첫 칸 «전체»도 정본대로 둔다.
  *
- * **바텀시트다.** 그래버 → 제목 24/32 ↔ «초기화» 16/700 #4D5159 → 조건 묶음(제목 16/22 700 ·
- * 칩 38/16) → «실 제보가 있는 곳만» 토글 → 아래 붙은 dock의 CTA «{n}곳 보기». 전체 화면이
- * 아니다 — 뒤의 결과가 비쳐 보여야 무엇을 좁히는 중인지 알 수 있다.
+ * **바텀시트다.** 그래버 → 제목 18 ↔ «전체 해제» 12 코랄 → 묶음(위 선 1 · 제목 14/700 · 칩 12/700)
+ * → 정렬 줄 → CTA «{n}개 업체 보기». 제목부터 CTA까지 한 덩어리로 스크롤하고 닫기(X)는 없다
+ * (2026-09-25 픽셀 대조 — 정본 `sheet`). 전체 화면이 아니다 — 뒤의 결과가 비쳐 보여야 무엇을
+ * 좁히는 중인지 알 수 있다.
  *
  * CTA의 수는 **고르는 대로 바뀐다**(시안 «조건을 바꿀 때마다 하단 버튼의 결과 수가 함께
  * 바뀝니다»). 그 수는 시트가 스스로 세지 않고 부모가 넘긴다 — 결과 화면이 이미 같은
@@ -129,54 +131,36 @@ export function FilterSheet({
 
   return (
     <BottomSheet visible={visible} onRequestClose={onDismiss}>
+      {/*
+       * 정본 `sheet`는 제목부터 CTA까지 한 덩어리로 스크롤한다 — 본문만 따로 자르고
+       * dock을 붙이는 구조가 아니다. 제목 줄에 닫기(X)도 없다(닫기는 딤 · 뒤로가기).
+       */}
       <SheetPanel style={styles.panel}>
-        <View style={styles.head}>
-          <ThemedText type="f18" style={styles.bold}>{S.title}</ThemedText>
-          <View style={styles.headActions}>
+        <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+          <View style={styles.head}>
+            <ThemedText type="f18" style={styles.bold}>{S.title}</ThemedText>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={S.reset}
               hitSlop={Spacing.three}
               onPress={() => onChange({ ...value, category: null, region: null, budget: null })}>
-              <ThemedText type="f12" style={[styles.bold, { color: theme.tint }]}>
+              <ThemedText type="f12" style={[styles.bold, styles.small, { color: theme.tint }]}>
                 {S.reset}
               </ThemedText>
             </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="필터 닫기"
-              onPress={onDismiss}
-              style={styles.closeButton}>
-              <ProductSymbol name="close" size={16} color={theme.text} />
-            </Pressable>
           </View>
-        </View>
 
-        <ScrollView
-          style={styles.body}
-          contentContainerStyle={styles.bodyContent}
-          showsVerticalScrollIndicator={false}>
-          {/* 카테고리 — 정본 `groups[0]`. 결과 위 «카테고리 ▾» 칩이 이 시트를 연다. */}
-          <View style={styles.group}>
-            <ThemedText type="f14" style={styles.bold}>
+          {/* 카테고리 — 정본 `groups[0]`. */}
+          <View style={[styles.group, { borderTopColor: theme.border }]}>
+            <ThemedText type="f14" style={[styles.bold, styles.label]}>
               {S.groupCategory}
             </ThemedText>
             <View style={styles.chips}>
-              <FilterChip
-                label={S.allCategories}
-                size="sheet"
-                accent="tint"
-                role="radio"
-                selected={value.category === null}
-                onPress={() => set({ category: null })}
-              />
+              <OptChip label={S.allCategories} selected={value.category === null} onPress={() => set({ category: null })} />
               {CATEGORY_OPTIONS.map(({ label, category }) => (
-                <FilterChip
+                <OptChip
                   key={label}
                   label={label}
-                  size="sheet"
-                  accent="tint"
-                  role="radio"
                   disabled={category === null}
                   selected={category !== null && value.category === category}
                   onPress={() =>
@@ -188,18 +172,15 @@ export function FilterSheet({
           </View>
 
           {/* 지역 */}
-          <View style={styles.group}>
-            <ThemedText type="f14" style={styles.bold}>
+          <View style={[styles.group, { borderTopColor: theme.border }]}>
+            <ThemedText type="f14" style={[styles.bold, styles.label]}>
               {S.groupRegion}
             </ThemedText>
             <View style={styles.chips}>
               {regions.map((region) => (
-                <FilterChip
+                <OptChip
                   key={region}
                   label={S.regionAll(region)}
-                  size="sheet"
-                  accent="tint"
-                  role="radio"
                   selected={value.region === region}
                   onPress={() => set({ region: value.region === region ? null : region })}
                 />
@@ -208,58 +189,41 @@ export function FilterSheet({
           </View>
 
           {/* 예산 — 정본 `groups[2]`. «전체» 외 넷은 BACKEND_PENDING. */}
-          <View style={styles.group}>
-            <ThemedText type="f14" style={styles.bold}>
+          <View style={[styles.group, { borderTopColor: theme.border }]}>
+            <ThemedText type="f14" style={[styles.bold, styles.label]}>
               {S.groupBudget}
             </ThemedText>
             <View style={styles.chips}>
-              <FilterChip
-                label={S.allBudgets}
-                size="sheet"
-                accent="tint"
-                role="radio"
-                selected={value.budget === null}
-                onPress={() => set({ budget: null })}
-              />
+              <OptChip label={S.allBudgets} selected={value.budget === null} onPress={() => set({ budget: null })} />
               {BUDGET_OPTIONS.map((label) => (
-                <FilterChip key={label} label={label} size="sheet" accent="tint" role="radio" disabled selected={false} onPress={() => undefined} />
+                <OptChip key={label} label={label} disabled selected={false} onPress={() => undefined} />
               ))}
             </View>
           </View>
 
           {/* 스타일 — 정본 `groups[3]`. 서버 질의 칸이 없어 BACKEND_PENDING. */}
-          <View style={styles.group}>
-            <ThemedText type="f14" style={styles.bold}>
+          <View style={[styles.group, { borderTopColor: theme.border }]}>
+            <ThemedText type="f14" style={[styles.bold, styles.label]}>
               {S.groupStyle}
             </ThemedText>
             <View style={styles.chips}>
               {WEDDING_STYLES.map((style) => (
-                <FilterChip
-                  key={style}
-                  label={WEDDING_STYLE_LABEL[style]}
-                  size="sheet"
-                  accent="tint"
-                  role="radio"
-                  disabled
-                  selected={false}
-                  onPress={() => undefined}
-                />
+                <OptChip key={style} label={WEDDING_STYLE_LABEL[style]} disabled selected={false} onPress={() => undefined} />
               ))}
             </View>
           </View>
 
           {/* 정렬 — 정본 `sortSec` · `sorts`: 한 줄 가로 스크롤, 켠 칸은 잉크 면(`sortPill`). */}
           <View style={styles.sortGroup}>
-            <ThemedText type="f12" style={styles.bold}>
+            <ThemedText type="f12" style={[styles.bold, styles.small]}>
               {S.groupSort}
             </ThemedText>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sortRow}>
               {SHEET_SORTS.map(({ label, sort }) => (
-                <FilterChip
+                <OptChip
                   key={label}
                   label={label}
-                  size="sheet"
-                  role="radio"
+                  pill
                   disabled={sort === null}
                   selected={sort !== null && value.sort === sort}
                   onPress={() => (sort === null ? undefined : set({ sort }))}
@@ -267,40 +231,99 @@ export function FilterSheet({
               ))}
             </ScrollView>
           </View>
-        </ScrollView>
 
-        {/* dock — 화면당 Primary CTA 하나. 고른 조건으로 몇 곳인지 그대로 적는다. */}
-        <ThemedView style={[styles.dock, { borderTopColor: theme.line }]}>
-          <ActionButton variant="primary" size="xlarge" label={S.apply(count)} onPress={onApply} />
-        </ThemedView>
+          {/* 정본 `sheetCta` — 화면당 Primary CTA 하나. 고른 조건으로 몇 곳인지 그대로 적는다. */}
+          <View style={styles.cta}>
+            <ActionButton variant="primary" size="xlarge" label={S.apply(count)} onPress={onApply} />
+          </View>
+        </ScrollView>
       </SheetPanel>
     </BottomSheet>
   );
 }
 
-/** 시안 06-search #16d — 시트 본문 «max-height:440px». 8단 사다리 밖의 시트 전용 값이다. */
-const BODY_MAX_HEIGHT = 440;
+/**
+ * 시트 안 조건 칩 — 정본 `opt`(search.js): padding 10/14 · radius 999 · 12/700 · 켜지면 코랄 면 +
+ * 흰 글자 + 체크 14(`optCheck` · check-fill), 꺼지면 회색 면(`SEC`) + 보조색 글자.
+ * `pill`은 정렬 줄의 `sortPill`: padding 10/16 · 켜지면 잉크 면. 공용 `FilterChip`(36 · 14px)과
+ * 규격이 달라 이 시트에 둔다. 서버가 거를 수 없는 칸은 같은 모양으로 두고 누름만 잠근다.
+ */
+function OptChip({
+  label,
+  selected,
+  disabled = false,
+  pill = false,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  disabled?: boolean;
+  pill?: boolean;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  const on = selected ? (pill ? theme.text : theme.tint) : theme.backgroundElement;
+  const color = selected ? theme.onTint : theme.textAssistive;
+  return (
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityLabel={label}
+      accessibilityState={{ selected, disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={[styles.opt, pill ? styles.pill : null, { backgroundColor: on }]}>
+      {selected && !pill ? <ProductSymbol name="checkFill" size={Layout.iconSmall} color={color} /> : null}
+      <ThemedText type="f12" numberOfLines={1} style={[styles.bold, styles.small, { color }]}>
+        {label}
+      </ThemedText>
+    </Pressable>
+  );
+}
+
+/**
+ * 정본 `sheet` max-height 760 — 시트 전체(위 여백 · 그래버 · 아래 여백 포함)가 760을 넘으면 안에서 스크롤한다.
+ * 패널 여백과 그래버는 SheetPanel이 그리므로 스크롤 칸에는 그만큼 뺀 높이를 준다.
+ */
+const SHEET_MAX_HEIGHT = 760;
+const SCROLL_MAX_HEIGHT = SHEET_MAX_HEIGHT - Layout.sheetPaddingTop - Layout.sheetPaddingBottom - Layout.grabberHeight;
 
 const styles = StyleSheet.create({
-  /* SheetPanel이 padding 12 24 (28+safe) · gap 20을 준다. 여기서는 dock만 좌우로 늘린다. */
-  panel: { gap: Spacing.three },
+  scroll: { maxHeight: SCROLL_MAX_HEIGHT },
+  /* SheetPanel의 gap을 끄고 정본 간격을 줄마다 적는다. */
+  panel: { gap: 0 },
+  /* 정본 `sheetHead`: padding 20 0 · 양끝 정렬 · 위 맞춤. */
   head: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
+    gap: Layout.inlineGap,
+    paddingVertical: Spacing.three + Spacing.one,
   },
-  headActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  closeButton: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  /* 시안: 조건 묶음은 440까지만 늘고 그 안에서 스크롤한다 — dock이 밀려 내려가지 않게. */
-  body: { maxHeight: BODY_MAX_HEIGHT },
-  bodyContent: { gap: Layout.sectionGap, paddingBottom: Spacing.one },
-  group: { gap: Layout.cardGap },
-  /* 정본 `sortSec` 사이 8. */
-  sortGroup: { gap: Spacing.two },
+  /* 정본 `resetBtn` · `sortLabel` · `opt` 12/17. */
+  small: { lineHeight: LineHeight.lh17 },
+  /* 정본 `fLabel` 14/20. */
+  label: { lineHeight: LineHeight.lh20 },
+  /* 정본 `fGroup`: 위 선 1 · padding 20 0 · 사이 12. */
+  group: {
+    borderTopWidth: Border.hairline,
+    paddingVertical: Spacing.three + Spacing.one,
+    gap: Layout.inlineGap,
+  },
+  /* 정본 `sortSec`: 위 28 · 사이 8. */
+  sortGroup: { paddingTop: Layout.sectionGap, gap: Spacing.two },
+  /* 정본 `sortRow`: 사이 8 · 아래 4. */
+  sortRow: { flexDirection: 'row', gap: Spacing.two, paddingBottom: Spacing.one },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Layout.chipGap },
-  dock: {
-    borderTopWidth: 1,
-    paddingTop: Layout.sheetPaddingTop,
+  opt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+    paddingVertical: Spacing.two + Spacing.half,
+    paddingHorizontal: Layout.chipPaddingX,
+    borderRadius: Radius.pill,
   },
+  pill: { paddingHorizontal: Spacing.three },
+  /* 정본 `sheetCta` margin-top 32. */
+  cta: { marginTop: Spacing.five },
   bold: { fontWeight: 700 },
 });

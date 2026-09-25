@@ -2,17 +2,7 @@ import type { BottomTabBarProps } from 'expo-router/build/layouts/Tabs';
 import { usePathname } from 'expo-router';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
-import {
-  Border,
-  Layout,
-  LetterSpacing,
-  Radius,
-  SeedIcon,
-  Spacing,
-  ThemedText,
-  WeddingMark,
-  useTheme,
-} from '@weddingpick/ui';
+import { Border, Layout, SeedIcon, ThemedText, WeddingMark, useTheme } from '@weddingpick/ui';
 
 import { rootTab, type RootTabSpec } from './root-tabs';
 import { isRootTabPath } from './root-tab-visibility';
@@ -20,7 +10,14 @@ import { isRootTabPath } from './root-tab-visibility';
 /**
  * Root 탭 바. 탭 구성은 root-tabs.ts, 노출 범위는 docs/design/README.md를 따른다.
  * 상세 화면을 스택 첫 항목으로 직접 열어도 탭 바가 나타나지 않도록 경로로 판정한다.
- * Pick Mark와 기존 토큰을 유지한다. 이 변경은 시각 수치를 새로 정하지 않는다.
+ *
+ * RN 정본 `docs/design/React_Native/pick.js:62 · 250~251`(search.js:157 · note.js:390 같은 값) —
+ *   tabBar   높이 72 · 위 1px 선 · padding-top 9 · 5칸 균등(flex:1, 좌우 여백 없음)
+ *   tabCell  세로 · 가운데 · gap 3
+ *   아이콘   24 · 켜짐 INK(#212124) · 꺼짐 MUTED(#868b94)
+ *   라벨     12/16 · 700 · 아이콘과 같은 색
+ * Pick 칸도 다른 넷과 같은 모양이다 — 정본에 튀어나온 원이 없다(2026-09-25 common 픽셀 대조로
+ * 뺐다). 글리프는 CLAUDE.md 「심볼」의 Pick Mark를 그대로 쓴다(정본은 heart — PR에 적었다).
  */
 export function RootTabBar({ state, descriptors, navigation, insets }: BottomTabBarProps) {
   const theme = useTheme();
@@ -46,7 +43,6 @@ export function RootTabBar({ state, descriptors, navigation, insets }: BottomTab
         if (!spec) return null;
         const active = state.index === index;
         const color = active ? theme.text : theme.textAssistive;
-        const weight = active || spec.emphasized ? 600 : 500;
 
         const onPress = () => {
           const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
@@ -61,11 +57,9 @@ export function RootTabBar({ state, descriptors, navigation, insets }: BottomTab
             accessibilityLabel={options.tabBarAccessibilityLabel ?? spec.label}
             onPress={onPress}
             onLongPress={() => navigation.emit({ type: 'tabLongPress', target: route.key })}
-            style={spec.emphasized ? styles.itemPick : styles.item}>
+            style={styles.item}>
             <TabIcon spec={spec} active={active} />
-            <ThemedText
-              type="f10"
-              style={[styles.label, spec.emphasized && styles.labelPick, { color, fontWeight: weight }]}>
+            <ThemedText type="tab" style={[styles.label, { color }]}>
               {spec.label}
             </ThemedText>
           </Pressable>
@@ -80,63 +74,33 @@ function TabIcon({ spec, active }: { spec: RootTabSpec; active: boolean }) {
   const theme = useTheme();
 
   if (spec.icon === 'pick') {
-    const filled = active;
-
-    return (
-      <View
-        style={[
-          styles.pickCircle,
-          filled
-            ? [styles.pickCircleOn, { backgroundColor: theme.tint, shadowColor: theme.tint }]
-            : { backgroundColor: theme.backgroundElement },
-        ]}>
-        <WeddingMark size={Layout.iconRow} color={filled ? theme.onTint : theme.textAssistive} />
-      </View>
-    );
+    return <WeddingMark size={Layout.iconTab} color={active ? theme.text : theme.textAssistive} />;
   }
 
   return (
     <SeedIcon
       name={active ? spec.icon.on : spec.icon.off}
-      size={Layout.iconRow}
+      size={Layout.iconTab}
       color={active ? theme.text : theme.textAssistive}
     />
   );
 }
 
+/* 위 1px 선은 border라 높이 안에 든다 — 아이콘 위치(9)를 맞추려고 padding-top은 그만큼 뺀다. */
+const BAR_PADDING_TOP = 9 - Border.hairline;
+const CELL_GAP = 3;
+
 const styles = StyleSheet.create({
   bar: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Layout.tabBarPaddingX,
+    alignItems: 'flex-start',
+    paddingTop: BAR_PADDING_TOP,
     borderTopWidth: Border.hairline,
   },
   item: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: Layout.tabItemGap,
-    paddingVertical: Spacing.two,
-  },
-  itemPick: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Layout.tabItemGap,
-  },
-  pickCircle: {
-    width: Layout.tabEmphasized,
-    height: Layout.tabEmphasized,
-    borderRadius: Radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pickCircleOn: {
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    gap: CELL_GAP,
   },
   label: { textAlign: 'center' },
-  labelPick: { letterSpacing: LetterSpacing.p025 },
 });

@@ -167,9 +167,9 @@ export function RollbackPanel() {
       busy
         ? { v: '…', kind: 'dim' }
         : item.status === 'pending_approval'
-          ? { v: '롤백 승인', kind: 'brand', onPress: () => void act(item.id, 'approve') }
+          ? { v: '롤백 승인', kind: 'brand', write: true, onPress: () => void act(item.id, 'approve') }
           : item.status === 'anomaly_detected'
-            ? { v: '롤백 실행', kind: 'bad', onPress: () => setTriggering(item) }
+            ? { v: '롤백 실행', kind: 'bad', write: true, onPress: () => setTriggering(item) }
             : { v: '—', kind: 'dim' },
     ],
   }));

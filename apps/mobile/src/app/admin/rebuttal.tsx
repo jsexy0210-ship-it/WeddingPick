@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { WritePressable } from './_role';
 import { AdminTabShell, compactSplit, useAdminCompact, type AdminTabDef } from './_ui';
 import { ObjectionsPanel } from './objections';
 import { ReportPanel } from './report';
@@ -314,20 +315,20 @@ function RebuttalPanel() {
 
               {pending === null ? (
                 <View style={styles.actionRow}>
-                  <Pressable
+                  <WritePressable
                     style={[styles.publishBtn, acting && styles.btnDisabled]}
                     onPress={() => ask('publish')}
                     disabled={acting}
                   >
                     <Text style={styles.publishBtnText}>게시</Text>
-                  </Pressable>
-                  <Pressable
+                  </WritePressable>
+                  <WritePressable
                     style={[styles.rejectBtn, acting && styles.btnDisabled]}
                     onPress={() => ask('reject')}
                     disabled={acting}
                   >
                     <Text style={styles.rejectBtnText}>게시 불가</Text>
-                  </Pressable>
+                  </WritePressable>
                 </View>
               ) : (
                 <ConfirmDecision

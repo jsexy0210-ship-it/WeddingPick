@@ -3,7 +3,7 @@ import { useEffect, useSyncExternalStore } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-import { CanonGray, Layout, LineHeight, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { CanonGray, FontSize, Layout, LineHeight, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import strings from '../../../../spec/strings.ko.json';
 
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
@@ -63,7 +63,8 @@ function NativeConfirmation({ active }: { active: ActiveNativeConfirmation }) {
         <SheetPanel>
           {request.icon ? <DialogIconCircle icon={request.icon} /> : null}
           <View style={styles.sheetHead}>
-            <ThemedText type="t4">{request.title}</ThemedText>
+            {/* WP-DLG-E titleStyle(sheet) — 22/30 · 700(`common.js:190`). */}
+            <ThemedText type="t4" style={styles.sheetTitle}>{request.title}</ThemedText>
             {/* WP-DLG bodyStyle — 14/22 · MUTED(`common.js:192`). */}
             {request.message ? (
               <ThemedText type="f14" themeColor="textSecondary" style={styles.body}>
@@ -305,6 +306,7 @@ const styles = StyleSheet.create({
   },
   buttonLabel: { fontWeight: '700', textAlign: 'center' },
   sheetHead: { gap: Layout.sheetHeadGap },
+  sheetTitle: { fontSize: FontSize.sheetTitle, lineHeight: LineHeight.sheetTitle },
   actionList: { width: '100%' },
   actionRow: {
     minHeight: Layout.rowMinHeight,

@@ -22,6 +22,7 @@ import { PickDoneSheet } from '@/features/pick/pick-sheets';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import {
+  Border,
   ErrorView,
   Layout,
   MaxContentWidth,
@@ -149,7 +150,7 @@ export default function CompareScreen() {
         <SafeAreaView style={styles.safeArea}>
           <DepthHeader title={HEADER_TITLE} variant="close" />
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-            <View style={styles.hint}>
+            <View style={[styles.hint, { borderBottomColor: theme.border }]}>
               <Skeleton width="72%" height={24} />
               <Skeleton width="90%" height={20} />
             </View>
@@ -267,7 +268,7 @@ export default function CompareScreen() {
       <SafeAreaView style={styles.safeArea}>
         <DepthHeader title={HEADER_TITLE} variant="close" />
 
-        <View style={styles.hint}>
+        <View style={[styles.hint, { borderBottomColor: theme.border }]}>
           <ThemedText type="t5">{heroTitle}</ThemedText>
           {heroSub ? (
             <ThemedText type="f14" themeColor="textAssistive">
@@ -447,10 +448,10 @@ const styles = StyleSheet.create({
 
   /* 정본 hint — padding 16 24 · gap 4 · border-bottom 1. */
   hint: {
-    paddingTop: Spacing.three,
+    paddingVertical: Spacing.three,
     paddingHorizontal: Layout.gutter,
-    paddingBottom: Layout.gutter,
-    gap: Spacing.half,
+    gap: Spacing.one,
+    borderBottomWidth: Border.hairline,
   },
 
   loadingCards: { paddingHorizontal: Layout.gutter, gap: Layout.sectionHeadGap },
@@ -491,7 +492,9 @@ const styles = StyleSheet.create({
   },
 
   /* 정본 rankMetrics — background REC · radius 8 · padding 4 12(Layout.inlineGap). */
+  /* 정본 rankMetrics gap 1 — 줄 사이 1(줄 37 간격). */
   metrics: {
+    gap: 1,
     borderRadius: METRICS_RADIUS,
     paddingVertical: METRICS_PAD_Y,
     paddingHorizontal: Layout.inlineGap,

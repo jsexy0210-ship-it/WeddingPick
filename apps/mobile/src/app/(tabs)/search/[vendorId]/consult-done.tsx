@@ -1,7 +1,7 @@
 import { withParticle } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   Layout,
@@ -39,11 +39,12 @@ import {
  *   다음 카드 `nextCard`(«다음» + 정본 문구)는 **두지 않았다 — DESIGN_UNRESOLVED.** 정본 문구의
  *             «좋아요»를 카피 린트(`spec/glossary.json` 금지어 «좋아요» → «Pick»)가 막는다.
  *             문구를 바꾸지도, 린트 규칙을 고치지도 않고 대표님 판단으로 올린다.
- *   dock      92 · 안쪽 12 20 · 사이 8 · 위 선 1. «홈으로»(flex 1 · 56 · r6 · #f2f3f6 ·
+ *   dock      116(콘텐츠 92 + 위아래 12) — 위 12 · 단추 56 · 아래 48 · 좌우 20 · 사이 8 · 위 선 1. «홈으로»(flex 1 · 56 · r6 · #f2f3f6 ·
  *             17/700) + «웨딩노트 보기»(flex 1.4 · 코랄 · 흰 글자).
  */
 export default function ConsultDoneScreen() {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const { vendorName, when, partnerName } = useLocalSearchParams<{
     vendorName?: string;
     when?: string;
@@ -58,7 +59,7 @@ export default function ConsultDoneScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <View style={[styles.mark, { backgroundColor: theme.tintSurface }]}>
             <ProductSymbol name="check" size={MARK_ICON} color={theme.tint} />
@@ -94,7 +95,11 @@ export default function ConsultDoneScreen() {
 
         </ScrollView>
 
-        <ThemedView style={[styles.dock, { borderTopColor: theme.line }]}>
+        <ThemedView
+          style={[
+            styles.dock,
+            { borderTopColor: theme.line, paddingBottom: Math.max(DOCK_PAD_BOTTOM, insets.bottom) },
+          ]}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="홈으로"
@@ -143,6 +148,7 @@ const ITEM_GAP = 14;
 const TITLE_PAD_TOP = 6;
 /** 정본 dock «padding:12px 20px» — 좌우 20(거터 24와 다르다). */
 const DOCK_PAD_X = 20;
+const DOCK_PAD_BOTTOM = 48;
 /** 정본 dock 두 단추 비율 1 : 1.4. */
 const PRIMARY_FLEX = 1.4;
 
@@ -189,12 +195,12 @@ const styles = StyleSheet.create({
   itemCol: { flex: 1, minWidth: 0, gap: Spacing.half },
 
 
-  /* 정본 dock 92 · padding 12 20 · gap 8 · 위 선 1. */
+  /* 정본 dock: flex-basis 92(콘텐츠) + 위아래 12 = 116 — 위 12 · 단추 56 · 아래 48(홈 표시줄 자리 겸함) ·
+     padding 좌우 20 · gap 8 · 위 선 1. 캡처 DOM에서 잰 값이다(816..932). */
   dock: {
-    minHeight: Layout.dock,
     borderTopWidth: 1,
     paddingHorizontal: DOCK_PAD_X,
-    paddingVertical: Layout.rowPaddingY,
+    paddingTop: Layout.rowPaddingY,
     flexDirection: 'row',
     gap: Spacing.two,
   },
