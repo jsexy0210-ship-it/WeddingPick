@@ -27,7 +27,7 @@ import * as faqAdmin from '../faq-admin';
 import * as weddingFeed from '../wedding-feed';
 import * as feedTaxonomy from '../wedding-feed-taxonomy';
 import { createGeminiFeedWriter } from '../analysis/wedding-feed-writer';
-import { feedImageRequestSchema, generateWeddingFeedImage, WeddingFeedImageError } from '../analysis/wedding-feed-image';
+import { feedImageRequestSchema, generateWeddingFeedImage, WeddingFeedImageError, type WeddingFeedImage } from '../analysis/wedding-feed-image';
 import { NotAnOperator } from '../decisions';
 import { ApiError, forbidden, notFound } from '../errors';
 import * as inquiryAdmin from '../inquiry-admin';
@@ -1179,9 +1179,9 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
       throw new ApiError('internal', 'Gemini 연결을 확인해주세요.');
     }
 
-    let bytes: Buffer;
+    let image: WeddingFeedImage;
     try {
-      bytes = await generateWeddingFeedImage(apiKey, parsed.data);
+      image = await generateWeddingFeedImage(apiKey, parsed.data);
     } catch (error) {
       request.log.error({ err: error }, '웨딩피드 이미지 생성 실패');
       if (error instanceof WeddingFeedImageError) {
@@ -1190,13 +1190,13 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
           throw new ApiError(error.providerStatus === 429 ? 'rate_limited' : 'internal', `Gemini 이미지 요청이 거절됐어요 (${detail}).`);
         }
         if (error.reason === 'incomplete') throw new ApiError('internal', 'Gemini 이미지 생성이 완료되지 않았어요.');
-        throw new ApiError('internal', 'Gemini가 쓸 수 있는 PNG 이미지를 보내지 않았어요.');
+        throw new ApiError('internal', 'Gemini가 쓸 수 있는 이미지를 보내지 않았어요.');
       }
       throw new ApiError('internal', '이미지를 만들지 못했어요. 잠시 후 다시 시도해주세요.');
     }
 
-    const storageKey = `wedding-feed/${parsed.data.kind}/${randomUUID()}.png`;
-    await context.storage.upload(storageKey, bytes, 'image/png');
+    const storageKey = `wedding-feed/${parsed.data.kind}/${randomUUID()}.${image.extension}`;
+    await context.storage.upload(storageKey, image.bytes, image.mimeType);
     return {
       storageKey,
       imageUrl: await context.storage.getPublicUrl(storageKey, 3600),

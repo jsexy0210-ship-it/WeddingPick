@@ -307,7 +307,9 @@ describe('웨딩피드 관리자 라우트', () => {
   it('관리자 이미지 생성은 웨딩피드 저장소에만 쓰고 글은 저장하지 않는다', async () => {
     process.env.GEMINI_API_KEY = 'test-key';
     const png = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 0]);
-    const generate = jest.spyOn(weddingFeedImage, 'generateWeddingFeedImage').mockResolvedValue(png);
+    const generate = jest.spyOn(weddingFeedImage, 'generateWeddingFeedImage').mockResolvedValue({
+      bytes: png, mimeType: 'image/png', extension: 'png',
+    });
     const upload = jest.fn().mockResolvedValue(undefined);
     const getPublicUrl = jest.fn().mockResolvedValue('https://image.example/preview');
 
