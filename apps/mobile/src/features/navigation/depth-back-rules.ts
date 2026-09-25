@@ -175,6 +175,9 @@ export const DEPTH_BACK_EXCEPTIONS: Readonly<Record<string, string>> = {
   '/community/feed/[id]': '/community/feed',
   '/community/review': '/',
   '/search/compare': '/pick',
+  // 박람회 목록(`/search/expo`)은 2026-09-25 삭제 — 상세는 라운지 박람회 탭에서 연다.
+  // 계층대로 올라가면 `/search/expo`가 업체 상세(`/search/[vendorId]`)로 잘못 잡힌다.
+  '/search/expo/[expoId]': '/community/expo',
   // 이 경로의 id는 서버 weddingId다. /wedding/[id]는 로컬 문서 상세이므로 그곳으로 보내지 않는다.
   '/wedding/[id]/changelog': '/wedding',
   '/wedding/[id]/decided': '/wedding',

@@ -53,10 +53,8 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(depth).not.toContain('sub?:');
     expect(depth).toContain('depthHeaderTitle(pathname)');
     for (const path of [
-      'app/(tabs)/pick/[category].tsx',
       'app/(tabs)/search/compare.tsx',
       'app/(tabs)/search/[vendorId]/index.tsx',
-      'app/(tabs)/search/[vendorId]/review/[reviewId].tsx',
     ]) {
       expect(mobile(path)).toContain('<DepthHeader');
       expect(mobile(path)).not.toContain('<BackButton');
@@ -103,37 +101,23 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(s).toContain('headerFilterBtn');
     expect(s).not.toContain('sortSlot:');
   });
-  it('Pick Root는 상단 탭 없이(v3.28) 홈의 추천 딥링크만 받고 compare로 이어진다', () => {
+  it('Pick Root는 상단 탭 없이(v3.28) 홈의 묶음 딥링크만 받고 compare로 이어진다', () => {
     /* v3.28(2026-09-22) 대조표 «탭 구성 · 준비 현황» — Pick 탭 안 추천 · 비교함 탭을 없앴다. */
     expect(() => mobile('features/pick/pick-section-tabs.tsx')).toThrow();
 
     const pick = mobile('app/(tabs)/pick/index.tsx');
     expect(pick).not.toContain('PickSectionTabs');
     expect(pick).not.toContain('<CompareBasket');
-    expect(pick).toContain("const showRecommendations = requestedSection === 'recommendations'");
-    expect(pick).toContain('<RecommendationsContent requestedCategory={requestedCategory} />');
-    expect(pick).toContain('VENDOR_CATEGORIES.includes(rawCategory as VendorCategory)');
+    // 추천 화면 · 최종 결정 확인 시트는 2026-09-25 삭제 — 홈 카드는 `?group=`으로 묶음 칩만 켠다.
+    expect(pick).not.toContain('RecommendationsContent');
+    expect(pick).not.toContain("'/pick/confirm'");
+    expect(pick).toContain('PREPARATION_GROUPS.find((group) => group.key === rawGroup)');
     expect(pick).toContain("pathname: '/search/compare'");
     expect(mobile('app/(tabs)/search/compare.tsx')).not.toContain('PickSectionTabs');
 
-    /*
-     * 2026-09-23 v3.29 홈 재구축 — 「내 웨딩 준비」 4칸(`MyWeddingPrep`)이 같은 규칙으로
-     * 딥링크를 만든다. 항목 이름이 `item`(12업종 하나)에서 `card`(4칸 그룹, 열
-     * 업종은 `targetCategory`)로 바뀌었다.
-     */
     const home = mobile('app/(tabs)/index.tsx');
-    expect(home).toContain('card.pickCount > 0');
-    expect(home).toContain(`/pick/\${card.targetCategory}`);
-    expect(home).toContain(`/pick?section=recommendations&category=\${card.targetCategory}`);
-
-    const recommendations = mobile('app/(tabs)/(home)/recommendations.tsx');
-    expect(recommendations).toContain("pathname: '/pick'");
-    expect(recommendations).toContain("section: 'recommendations'");
-    expect(recommendations).toContain('requestedCategory');
-    expect(recommendations).toContain('category: requestedCategory');
-    expect(recommendations).not.toContain('useDepthBack');
-    expect(mobile('app/(tabs)/pick/[category].tsx')).toContain("pathname: '/search/compare'");
-    expect(mobile('app/(tabs)/pick/[category].tsx')).not.toContain('<PickSectionTabs');
+    expect(home).toContain('`/pick?group=${card.key}`');
+    expect(home).not.toContain('section=recommendations');
   });
   it('홈 재진입과 핵심 검색 화면의 로딩은 기존 shell을 보존한다', () => {
     /*
@@ -157,16 +141,6 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(detail).not.toContain('<SkeletonView hero />');
   });
 
-  it('추천 재조회는 기존 내용을 유지하되 최신 상태 전까지 변경 행동을 잠근다', () => {
-    const recommendations = mobile('app/(tabs)/(home)/recommendations.tsx');
-    expect(recommendations).toContain('const [refreshing, setRefreshing] = useState(false)');
-    expect(recommendations).toContain('Promise.allSettled([load(), reloadCandidates()])');
-    expect(recommendations).toContain('interactionDisabled={refreshing}');
-    expect(recommendations).toContain('<DelayedLoader active={refreshing} size={20} />');
-
-    const recommendUi = mobile('features/home/pick-recommend.tsx');
-    expect(recommendUi).toContain("pointerEvents={interactionDisabled ? 'none' : 'auto'}");
-  });
 
   it('최종 Pick 저장 뒤에만 상담 예약을 열고 직접 URL에서도 다시 검증한다', () => {
     /*
@@ -177,18 +151,6 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
      * 이미 따로 갖고 있다 — 업체 상세에서 지운 것은 그 흐름의 중복 진입점이지 흐름
      * 자체가 아니다. 아래는 Pick 탭 쪽에서 같은 게이트가 여전히 도는지를 본다.
      */
-    const pickCategory = mobile('app/(tabs)/pick/[category].tsx');
-    expect(pickCategory).toContain("pathname: '/pick/confirm'");
-    const pickIndex = mobile('app/(tabs)/pick/index.tsx');
-    expect(pickIndex).toContain("pathname: '/pick/confirm'");
-    const pickConfirm = mobile('app/(tabs)/pick/confirm.tsx');
-    expect(pickConfirm).toContain('showResultToast(`${withInstrument(vendorName)} 결정했어요`)');
-    expect(pickConfirm).toContain("dismissToOrReplace('/pick')");
-
-    const review = mobile('app/(tabs)/search/[vendorId]/review/[reviewId].tsx');
-    expect(review).not.toContain("router.push(\`/search/\${vendorId}/consult\`)");
-    expect(review).toContain("router.push(\`/search/\${vendorId}\`)");
-
     const consult = mobile('app/(tabs)/search/[vendorId]/consult.tsx');
     expect(consult).toContain("listCandidates(me.weddingId, { force: true })");
     expect(consult).toContain('addConsultationEvent(me.weddingId');
@@ -205,7 +167,6 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     const status = root('packages/ui/src/status-view.tsx');
     expect(status).toContain("scope?: 'page' | 'section'");
     expect(status).toContain("scope === 'section'");
-    expect(mobile('app/(tabs)/(home)/recommendations.tsx')).toContain('<EmptyView scope="section"');
     expect(mobile('app/(tabs)/search/[vendorId]/images.tsx')).toContain('<EmptyView scope="section"');
   });
   it('최초 예산은 만원 입력을 원으로 환산한다', () => {

@@ -22,64 +22,27 @@ function screen(...parts: string[]): string {
 }
 
 describe('transient completion flow navigation', () => {
-  it('capture 제출 스택은 탭을 떠나면 초기화한다', () => {
-    const layout = screen('(tabs)', '_layout.tsx');
-
-    expect(layout).toContain("popToTopOnBlur: name === 'capture'");
-  });
-
-  it('Pick 결정 성공은 완료 라우트를 쌓지 않고 Pick으로 돌아간다', () => {
-    const layout = screen('_layout.tsx');
-    const confirm = screen('(tabs)', 'pick', 'confirm.tsx');
-
+  it('Pick 결정 확인 시트와 완료 라우트는 없다(2026-09-25 삭제)', () => {
     expect(existsSync(join(APP, '(tabs)', 'pick', 'done.tsx'))).toBe(false);
-    expect(layout).toContain('<ResultToastHost />');
-    expect(confirm).toContain('showResultToast(`${withInstrument(vendorName)} 결정했어요`)');
-    expect(confirm).toContain("dismissToOrReplace('/pick')");
-    expect(confirm).not.toContain('/pick/done');
+    expect(existsSync(join(APP, '(tabs)', 'pick', 'confirm.tsx'))).toBe(false);
   });
 
-  it('자료 확인 접수 완료 → 진행 상황은 완료 페이지를 history에 남기지 않는다', () => {
-    const source = screen('(tabs)', 'capture', 'verify', '[quoteId].tsx');
-    const start = source.indexOf('if (received)');
-    const end = source.indexOf('const levels =', start);
-    const done = source.slice(start, end);
-
-    expect(done).toContain('router.replace(`/capture/verify-status/');
-    expect(done).toContain('label="결과로 돌아가기" onPress={depthBack}');
-    expect(done).not.toContain('router.back()');
+  it('정보 오류 완료 CTA는 direct-entry fallback을 가진다', () => {
+    expect(screen('(tabs)', 'search', '[vendorId]', 'fix-report.tsx')).toContain('onPress: depthBack');
   });
 
-  it('정보 오류·업체 자료·업체 혜택 완료 CTA는 direct-entry fallback을 가진다', () => {
-    const files = [
-      screen('(tabs)', 'search', '[vendorId]', 'fix-report.tsx'),
-      screen('(tabs)', 'my', 'biz', 'data.tsx'),
-      screen('(tabs)', 'my', 'biz', 'benefit.tsx'),
-    ];
-
-    expect(files[0]).toContain('onPress: depthBack');
-    for (const source of files.slice(1)) {
-      expect(source).toContain('onPress={depthBack}');
-    }
-  });
-
-  it('후기 작성·수정 완료는 성공 화면을 쌓지 않고 부모 시트를 닫는다', () => {
+  it('후기 작성 완료는 성공 화면을 쌓지 않고 부모 시트를 닫는다', () => {
     const write = screen('(tabs)', 'search', '[vendorId]', 'write-review.tsx');
-    const edit = screen('(tabs)', 'search', '[vendorId]', 'edit-review.tsx');
 
     expect(write).toContain('dismissToOrReplace(`/search/${vendorId}`)');
-    expect(edit).toContain('dismissToOrReplace(`/search/${vendorId}/reviews`)');
     expect(write).not.toContain('setDone(');
-    expect(edit).not.toContain('setDone(');
   });
 
-  it('배우자 연결·Pick 인증·탈퇴 완료는 replace로 완료 화면을 폐기한다', () => {
+  it('배우자 연결·탈퇴 완료는 replace로 완료 화면을 폐기한다', () => {
     const join = screen('(tabs)', 'wedding', 'join.tsx');
-    const payment = screen('(tabs)', 'capture', 'payment', 'register.tsx');
     const withdrawal = screen('(tabs)', 'my', 'withdrawal.tsx');
 
     expect(join).toContain("router.replace('/wedding'");
-    expect(payment).toContain("router.replace('/wedding'");
     expect(withdrawal).toContain("router.replace('/login'");
   });
 

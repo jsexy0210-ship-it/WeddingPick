@@ -61,10 +61,10 @@ export const ROOT_TABS: readonly RootTabSpec[] = [
  * 있고 탭에서만 뺀다 — 후기와 박람회가 몇 건뿐이라 탭 한 칸이 빈 화면을 띄운다.
  * 진입은 홈 「웨딩 소식」 우측과 MY 「둘러보기」 둘이다. 주소 `/community`는 그대로다.
  *
- * `capture`(제보)는 v3.2 §1이 루트에서 뺀 것이고, `(home)`은 홈에서 파고드는
- * 하위 스택이라 애초에 탭이 아니다 — 숨기지 않으면 라우터가 없는 탭을 만든다.
+ * `(home)`은 홈에서 파고드는 하위 스택이라 애초에 탭이 아니다 — 숨기지 않으면 라우터가
+ * 없는 탭을 만든다. `capture`(Pick 인증 촬영)는 2026-09-25 폴더째 삭제했다.
  */
-export const OFF_TAB_ROUTES = ['community', 'capture', '(home)'] as const;
+export const OFF_TAB_ROUTES = ['community', '(home)'] as const;
 
 /** 이 라우트에 탭 바가 서는가. 다섯 탭 밖에서는 상단 뒤로가기만 쓴다. */
 export function isRootTab(routeName: string | undefined): boolean {
