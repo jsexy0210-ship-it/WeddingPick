@@ -27,7 +27,7 @@ jest.mock('@/features/auth/use-session', () => ({
   useSession: () => ({ state: mockSession.state, refresh: jest.fn(), signOut: jest.fn() }),
 }));
 jest.mock('@/features/settings/version', () => ({ APP_VERSION: '1.0.0' }));
-jest.mock('@/features/common/bottom-sheet', () => ({ BottomSheet: 'BottomSheet', SHEET_PANEL: {} }));
+jest.mock('@/features/common/bottom-sheet', () => ({ BottomSheet: 'BottomSheet', SheetPanel: 'SheetPanel', SheetHeader: 'SheetHeader' }));
 jest.mock('@/features/wedding/screen-kit', () => ({ NavBar: 'NavBar' }));
 jest.mock('@/features/loading/delayed-loader', () => ({ DelayedLoadingView: 'Loading' }));
 jest.mock('@/features/settings/my-kit', () => ({

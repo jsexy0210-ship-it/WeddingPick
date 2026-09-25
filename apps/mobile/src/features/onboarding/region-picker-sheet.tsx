@@ -4,9 +4,9 @@ import {
   type WeddingRegion,
 } from '@weddingpick/domain';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { ActionButton, Layout, ProductSymbol, Radius, ThemedText, useTheme } from '@weddingpick/ui';
-import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
+import { StyleSheet, View } from 'react-native';
+import { ActionButton, Layout } from '@weddingpick/ui';
+import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
 
 import { Wheel, WheelGroup } from './wheel';
 
@@ -67,7 +67,6 @@ function SheetBody({
   onConfirm: (picked: PickedRegion) => void;
   onDismiss: () => void;
 }) {
-  const theme = useTheme();
 
   /* 고른 것이 없으면 첫 시/도에서 시작한다 — 짐작으로 지역을 정하지 않는다. */
   const [region, setRegion] = useState<WeddingRegion>(value?.region ?? WEDDING_REGIONS[0]);
@@ -86,18 +85,7 @@ function SheetBody({
 
   return (
     <SheetPanel style={styles.sheet}>
-      <View style={styles.head}>
-        <ThemedText type="t4" style={styles.bold}>
-          {S.title}
-        </ThemedText>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={S.close}
-          onPress={onDismiss}
-          style={[styles.close, { backgroundColor: theme.backgroundSelected }]}>
-          <ProductSymbol name="close" size={16} color={theme.text} />
-        </Pressable>
-      </View>
+      <SheetHeader title={S.title} closeLabel={S.close} onClose={onDismiss} />
 
       <WheelGroup>
         <Wheel
@@ -143,21 +131,6 @@ const FLEX_DISTRICT = 1;
 const styles = StyleSheet.create({
   /* RN 정본 home.jsx WP-AUTH-003 wheelSheet — 요소 간격 14. 패딩/그래버는 SheetPanel이 맡는다. */
   sheet: { gap: Layout.sectionHeadGap },
-  head: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Layout.inlineGap,
-    minHeight: 36,
-  },
-  close: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   /* width 100% · flex 0 0 — 세로 컨테이너에서 늘어나지 않는다(SPEC §13.7). */
   cta: { width: '100%', flexGrow: 0, flexShrink: 0 },
-  bold: { fontWeight: 700 },
 });

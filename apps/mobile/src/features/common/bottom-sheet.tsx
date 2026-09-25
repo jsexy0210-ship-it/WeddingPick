@@ -16,7 +16,19 @@ import {
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Layout, Motion, Radius, Spacing, ThemedView, USE_NATIVE_DRIVER, useTheme } from '@weddingpick/ui';
+import {
+  FontSize,
+  Layout,
+  LineHeight,
+  Motion,
+  ProductSymbol,
+  Radius,
+  Spacing,
+  ThemedText,
+  ThemedView,
+  USE_NATIVE_DRIVER,
+  useTheme,
+} from '@weddingpick/ui';
 
 export type BottomSheetProps = {
   visible: boolean;
@@ -235,6 +247,65 @@ export function SheetGrabber() {
   return <View style={[styles.grabber, { backgroundColor: theme.border }]} accessibilityElementsHidden />;
 }
 
+export type SheetHeaderProps = {
+  title: ReactNode;
+  /**
+   * X를 누르면. 입력 중인 폼 시트는 `requestDirtySheetClose`를 거친 닫기를 넘긴다.
+   * 넘기지 않으면 X를 그리지 않는다 — 닫을 수 없는 시트(첫 총예산 등록)에 누를 수 없는 X를
+   * 세워 두지 않는다.
+   */
+  onClose?: () => void;
+  /** 저장 · 업로드 중처럼 지금은 닫으면 안 될 때. X를 흐리게 두고 누를 수 없다. */
+  closeDisabled?: boolean;
+  closeLabel?: string;
+  /** 제목이 업체 이름처럼 길 수 있을 때 줄 수를 묶는다. */
+  titleLines?: number;
+};
+
+/**
+ * 시트 머리 — **타이틀 + 우측 X 닫기**(CLAUDE.md v3.29 「바텀시트」 · 2026-09-25 대표 지시
+ * 「바텀시트 전체 … 공통 UX 통일」). 시트마다 따로 그리던 머리를 여기 하나로 모은다.
+ *
+ *   제목   22/30 · 700 · 왼쪽 정렬   RN 정본 `common.js:190` titleStyle(sheet) · WP-DLG-D 「제목은 왼쪽 정렬」
+ *   X      36 × 36 원 · 회색(SEC) · close 16 · 글자색   `home.js:705` · `note.js:81` `sheetClose` + `icoX`
+ *   배치   양끝 · 세로 가운데 · 사이 12                  `home.js:703` `sheetHead`
+ *
+ * 서브 문구는 머리에 넣지 않는다(Header 서브 문구 미사용) — 안내는 본문 첫 줄로 둔다.
+ */
+export function SheetHeader({
+  title,
+  onClose,
+  closeDisabled = false,
+  closeLabel = '닫기',
+  titleLines,
+}: SheetHeaderProps) {
+  const theme = useTheme();
+
+  return (
+    <View style={styles.head}>
+      <ThemedText type="t4" style={styles.headTitle} accessibilityRole="header" numberOfLines={titleLines}>
+        {title}
+      </ThemedText>
+      {onClose ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={closeLabel}
+          accessibilityState={{ disabled: closeDisabled }}
+          disabled={closeDisabled}
+          onPress={onClose}
+          hitSlop={4}
+          style={({ pressed }) => [
+            styles.headClose,
+            { backgroundColor: theme.backgroundSelected },
+            (pressed || closeDisabled) && styles.headClosePressed,
+          ]}>
+          <ProductSymbol name="close" size={16} color={theme.text} />
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
 export type SheetPanelProps = {
   children: ReactNode;
   /** 그래버를 그리지 않는다 — 폼 시트처럼 드래그로 닫히지 않는 시트. 기본은 그린다. */
@@ -298,6 +369,9 @@ const OFFSCREEN = 10000;
 /** 최대 높이 — 긴 폼(방문노트 · 일정)은 안의 ScrollView가 굴러가고 시트가 화면을 다 덮지 않는다. */
 const MAX_PANEL_HEIGHT = '90%';
 
+/** 시트 X 닫기 — 정본 `sheetClose` 36 × 36. */
+const SHEET_CLOSE_SIZE = 36;
+
 const styles = StyleSheet.create({
   /* overflow hidden — 아래로 밀려난 패널이 웹에서 스크롤 영역을 늘리지 않게 한다. */
   root: { flex: 1, justifyContent: 'flex-end', overflow: 'hidden' },
@@ -315,4 +389,20 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginBottom: Spacing.one,
   },
+  head: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Layout.inlineGap,
+    minHeight: SHEET_CLOSE_SIZE,
+  },
+  headTitle: { flex: 1, fontSize: FontSize.sheetTitle, lineHeight: LineHeight.sheetTitle, fontWeight: 700 },
+  headClose: {
+    width: SHEET_CLOSE_SIZE,
+    height: SHEET_CLOSE_SIZE,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headClosePressed: { opacity: 0.6 },
 });

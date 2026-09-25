@@ -3,13 +3,12 @@ import { StyleSheet } from 'react-native';
 
 import {
   ActionButton,
-  Layout,
   Radius,
   Spacing,
   ThemedText,
   ThemedView,
 } from '@weddingpick/ui';
-import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
+import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { completeAfterSignIn, type AfterSignIn } from '@/features/auth/after-sign-in';
 import {
@@ -74,9 +73,9 @@ export function LoginSheet({ visible, reason, onSignedIn, onDismiss }: LoginShee
   return (
     /* 시트 밖(스크림)을 누르면 닫힌다 — BottomSheet가 스크림 Pressable을 패널의 형제로 둔다. */
     <BottomSheet visible={visible} onRequestClose={onDismiss}>
-        <ThemedView style={[SHEET_PANEL, styles.sheet]}>
+        <SheetPanel>
           <ThemedView style={styles.headline}>
-            <ThemedText type="t4">로그인하고 이어서 해요</ThemedText>
+            <SheetHeader title="로그인하고 이어서 해요" onClose={onDismiss} closeDisabled={busy} />
             <ThemedText type="t6" themeColor="textSecondary">
               {reason}
             </ThemedText>
@@ -117,17 +116,12 @@ export function LoginSheet({ visible, reason, onSignedIn, onDismiss }: LoginShee
           ) : null}
 
           <ActionButton label="나중에 하기" disabled={busy} onPress={onDismiss} />
-        </ThemedView>
+        </SheetPanel>
     </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  sheet: {
-    padding: Layout.gutter,
-    paddingBottom: Spacing.five,
-    gap: Spacing.three,
-  },
   headline: { gap: Spacing.one },
   card: { borderRadius: Radius.medium, padding: Spacing.three },
   actions: { gap: Spacing.two },

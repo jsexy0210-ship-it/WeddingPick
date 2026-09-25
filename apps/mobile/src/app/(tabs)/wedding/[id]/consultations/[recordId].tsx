@@ -2,13 +2,13 @@ import type { ConsultationRecord } from '@weddingpick/api-contract';
 import { manwon } from '@weddingpick/domain';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { confirmConsultation, listConsultations } from '@/api/client';
-import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
+import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { showResultToast } from '@/features/navigation/result-toast';
-import { ActionButton, ProductSymbol, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { ActionButton, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 
 import WeddingScreen from '../../index';
@@ -38,7 +38,7 @@ function str(data: Record<string, unknown>, key: string): string | null {
 /**
  * 상담 정리 결과 시트 — WP-NOTE-005 · `docs/design/React_Native/note.jsx` frame-004.
  *
- *   formHead   업체명 20/700 + 우측 36px 회색 원형 X
+ *   formHead   공용 SheetHeader — 업체명 + 우측 36px 회색 원형 X
  *   sheetSub   «9월 14일 · 180만원» 14 · MUTED
  *   블록        `ab()` — 제목 12/700(확인 필요만 amber) + 상자 `padding:14px 16px;radius 10;SEC`
  *              (확인 필요는 `#fff8ee`), 줄 14/20
@@ -50,7 +50,6 @@ function str(data: Record<string, unknown>, key: string): string | null {
  */
 export default function ConsultationDetailRoute() {
   const { id, recordId } = useLocalSearchParams<{ id: string; recordId: string }>();
-  const theme = useTheme();
   const { height } = useWindowDimensions();
   const requestKey = `${id}:${recordId}`;
   const [record, setRecord] = useState<ConsultationRecord | null>(null);
@@ -115,28 +114,12 @@ export default function ConsultationDetailRoute() {
             <DelayedLoader active size={28} />
           ) : !record ? (
             <>
-              <ThemedText type="t4">상담기록을 찾을 수 없어요</ThemedText>
+              <SheetHeader title="상담기록을 찾을 수 없어요" onClose={close} />
               <ActionButton label="닫기" onPress={close} />
             </>
           ) : (
             <>
-              <View style={styles.formHead}>
-                <ThemedText type="t4" numberOfLines={1} style={styles.grow}>
-                  {record.vendorLabel ?? '업체 미확인'}
-                </ThemedText>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="닫기"
-                  onPress={close}
-                  hitSlop={4}
-                  style={({ pressed }) => [
-                    styles.formClose,
-                    { backgroundColor: theme.backgroundSelected },
-                    pressed && styles.pressed,
-                  ]}>
-                  <ProductSymbol name="close" size={16} color={theme.text} />
-                </Pressable>
-              </View>
+              <SheetHeader title={record.vendorLabel ?? '업체 미확인'} titleLines={1} onClose={close} />
               <ThemedText type="f14" themeColor="textAssistive" numeric>
                 {sub}
               </ThemedText>
@@ -220,10 +203,6 @@ const styles = StyleSheet.create({
   host: { flex: 1 },
   sheetHost: { flexShrink: 1 },
   sheet: { flexShrink: 1 },
-  formHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  formClose: { width: 36, height: 36, borderRadius: Radius.pill, alignItems: 'center', justifyContent: 'center' },
-  pressed: { opacity: 0.8 },
-  grow: { flex: 1, minWidth: 0 },
   bold: { fontWeight: 700 },
   /* note.js `sheetBody` — 블록 사이 `gap:16px`. */
   content: { gap: Spacing.three, paddingBottom: Spacing.two },

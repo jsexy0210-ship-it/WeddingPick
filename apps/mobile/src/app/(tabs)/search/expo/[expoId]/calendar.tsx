@@ -4,7 +4,7 @@ import { Linking, Platform, ScrollView, StyleSheet, View } from 'react-native';
 
 import { getExpo, type ExpoDetail } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
-import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
+import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { openExternal } from '@/features/open-external';
 import {
@@ -167,7 +167,7 @@ export default function CalendarRoute() {
       <BottomSheet visible onRequestClose={closeSheet} testID="expo-calendar-sheet">
         <SheetPanel>
           <View style={styles.sheetHead}>
-            <ThemedText type="t4">캘린더에 추가</ThemedText>
+            <SheetHeader title="캘린더에 추가" onClose={closeSheet} closeDisabled={adding !== null} />
             <ThemedText type="t7" themeColor="textSecondary">
               박람회 일정을 어떤 캘린더에 넣을지 골라주세요.
             </ThemedText>

@@ -13,14 +13,13 @@ import {
   Radius,
   Spacing,
   ThemedText,
-  ThemedView,
   Toast,
   useTheme,
 } from '@weddingpick/ui';
 import { getCurrentUser, getSettings, setDisplayName, updateSettings } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
 import { useSession } from '@/features/auth/use-session';
-import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
+import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { Avatar, Row, Rows, Section, SubScreen, Toggle } from '@/features/settings/my-kit';
 
@@ -297,8 +296,8 @@ export default function ProfileScreen() {
       </Section>
 
       <BottomSheet dismissible={false} visible={nameOpen} onRequestClose={() => setNameOpen(false)}>
-        <ThemedView style={[SHEET_PANEL, styles.sheet]}>
-          <ThemedText type="t3">{S.sheetTitle}</ThemedText>
+        <SheetPanel>
+          <SheetHeader title={S.sheetTitle} onClose={() => setNameOpen(false)} />
           <TextInput
             style={[styles.input, { color: theme.text, borderColor: theme.fieldBorder }]}
             value={nameDraft}
@@ -325,7 +324,7 @@ export default function ProfileScreen() {
               />
             </View>
           </View>
-        </ThemedView>
+        </SheetPanel>
       </BottomSheet>
 
       <Toast message={toast} onHidden={() => setToast(null)} />
@@ -350,7 +349,6 @@ const styles = StyleSheet.create({
     padding: Layout.cardPadding,
     gap: Spacing.two,
   },
-  sheet: { padding: Layout.gutter, paddingBottom: Layout.sectionGap, gap: Spacing.three },
   input: {
     height: Layout.field,
     borderWidth: 1,

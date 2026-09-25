@@ -1,11 +1,14 @@
 import type { VendorDetail } from '@weddingpick/api-contract';
+import { withInstrument } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { ApiError, addConsultationEvent, getCurrentUser, getVendor, listCandidates } from '@/api/client';
-import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
+import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
 import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
+import { OsDateField, OsTimeField } from '@/features/common/os-picker-field';
+import { dateOfDay, dayOf } from '@/features/common/os-picker-field.shared';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { showResultToast } from '@/features/navigation/result-toast';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
@@ -28,33 +31,21 @@ import VendorDetailScreen from './index';
 const TITLE = '상담 예약';
 /* 정본 pick.jsx WP-PICK-009 h1 «언제 만나면 / 좋을까요?». */
 const HEADLINE = '언제 만나면\n좋을까요?';
-/*
- * 시간은 «숫자 대신 말로» 적는다 — 시안 WP-PICK-009 `times`가 그대로 이 여섯이다.
- * 「오전 10:00」 꼴은 Figma 원본이고 정본 대조표가 「오전 10시」로 바꿔 적었다.
- */
-const TIMES = ['오전 10시', '오전 11시 반', '오후 1시', '오후 2시', '오후 3시 반', '오후 5시'] as const;
 /* 정본 textarea 문구. */
 const NOTE_PLACEHOLDER = '원하는 분위기나 궁금한 점을 적어주세요';
-const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
+/* 상담 날짜는 내일부터 7일 안에서 고른다 — 날짜 칩 7개이던 때의 범위를 그대로 선택기에 건다. */
 const DAY_COUNT = 7;
 
-type DayOption = { date: Date; weekday: string; day: number };
 type DecisionState = 'loading' | 'allowed' | 'blocked' | 'error';
 
-function upcomingDays(from: Date): DayOption[] {
-  return Array.from({ length: DAY_COUNT }, (_, offset) => {
-    const date = new Date(from.getFullYear(), from.getMonth(), from.getDate() + offset + 1);
-    return { date, weekday: WEEKDAYS[date.getDay()], day: date.getDate() };
-  });
-}
+/** `HH:MM` → 「오후 2시」 · 「오전 11시 반」 — 완료 화면과 CTA의 말투(시안 WP-PICK-009 `times`)를 잇는다. */
+function spokenTime(time: string): string {
+  const [hour, minute] = time.split(':').map(Number);
+  const meridiem = hour! < 12 ? '오전' : '오후';
+  const hour12 = hour! % 12 === 0 ? 12 : hour! % 12;
+  const tail = minute === 0 ? '' : minute === 30 ? ' 반' : ` ${minute}분`;
 
-/** 「오전 11시 반」처럼 말로 적은 라벨을 24시간 시각으로 읽는다. 「반」은 30분이다. */
-function parseTime(label: string): { hour: number; minute: number } {
-  const [meridiem, ...rest] = label.split(' ');
-  const rawHour = Number(rest[0].replace('시', ''));
-  const minute = rest.includes('반') ? 30 : 0;
-  const hour = meridiem === '오후' && rawHour !== 12 ? rawHour + 12 : rawHour;
-  return { hour, minute };
+  return `${meridiem} ${hour12}시${tail}`;
 }
 
 /**
@@ -66,9 +57,15 @@ export default function ConsultRoute() {
   const { vendorId } = useLocalSearchParams<{ vendorId: string }>();
   const candidates = useMyCandidates();
   const [vendor, setVendor] = useState<VendorDetail | null>(null);
-  const [days] = useState(() => upcomingDays(new Date()));
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
-  const [selectedTime, setSelectedTime] = useState<(typeof TIMES)[number] | null>(null);
+  const [range] = useState(() => {
+    const today = new Date();
+    return {
+      min: dayOf(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1)),
+      max: dayOf(new Date(today.getFullYear(), today.getMonth(), today.getDate() + DAY_COUNT)),
+    };
+  });
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [sending, setSending] = useState(false);
   const submitLock = useRef(false);
@@ -113,8 +110,7 @@ export default function ConsultRoute() {
   }, [vendorId]);
 
   const canConfirm = selectedDay !== null && selectedTime !== null && !sending;
-  const monthLabel = `${days[0].date.getFullYear()}년 ${days[0].date.getMonth() + 1}월`;
-  const chosen = days.find((option) => option.day === selectedDay) ?? null;
+  const chosen = dateOfDay(selectedDay);
   const dirty = selectedDay !== null || selectedTime !== null || note.length > 0;
 
   function closeSheet() {
@@ -151,14 +147,8 @@ export default function ConsultRoute() {
       }
       decisionVerified = true;
 
-      const { hour, minute } = parseTime(selectedTime);
-      const startsAt = new Date(
-        chosen.date.getFullYear(),
-        chosen.date.getMonth(),
-        chosen.day,
-        hour,
-        minute
-      );
+      const [hour, minute] = selectedTime.split(':').map(Number);
+      const startsAt = new Date(chosen.getFullYear(), chosen.getMonth(), chosen.getDate(), hour, minute);
 
       await addConsultationEvent(me.weddingId, {
         title: `${vendor.name} 상담`,
@@ -178,7 +168,7 @@ export default function ConsultRoute() {
         params: {
           vendorId: vendor.id,
           vendorName: vendor.name,
-          when: `${chosen.date.getMonth() + 1}월 ${chosen.day}일 ${selectedTime}`,
+          when: `${chosen.getMonth() + 1}월 ${chosen.getDate()}일 ${spokenTime(selectedTime)}`,
           partnerName: candidates.partnerName ?? '',
         },
       });
@@ -215,9 +205,7 @@ export default function ConsultRoute() {
       <BottomSheet visible onRequestClose={requestClose} testID="consult-booking-sheet">
         <SheetPanel>
           {/* 정본 navTitle «상담 예약» 자리. 정본에 없는 설명 줄(«업체 상세를 보면서…»)은 지웠다. */}
-          <View style={styles.sheetHead}>
-            <ThemedText type="t4">{TITLE}</ThemedText>
-          </View>
+          <SheetHeader title={TITLE} onClose={requestClose} closeDisabled={sending} />
 
           {vendor === null || decisionState === 'loading' ? (
             <View style={styles.loading}>
@@ -258,78 +246,18 @@ export default function ConsultRoute() {
                 </ThemedText>
               </View>
 
-              {/* 정본 sec «날짜» — 머리 17/700 · 달 13 회색, 칸 60×72 · radius 10 · 사이 8. */}
+              {/* 정본 sec «날짜» · «시간» — 날짜 칩 7개 · 시간 칩 6개를 OS 날짜 · 시간 선택기로
+                  바꿨다(2026-09-25 대표 지시 「OS 데이트피커 · 타임피커」). */}
               <View style={styles.section}>
-                <View style={styles.sectionHeadRow}>
-                  <ThemedText type="f17" style={styles.bold}>날짜</ThemedText>
-                  <ThemedText type="f13" numeric themeColor="textAssistive">
-                    {monthLabel}
-                  </ThemedText>
-                </View>
-
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.dayRow}>
-                  {days.map((option) => {
-                    const selected = selectedDay === option.day;
-
-                    return (
-                      <Pressable
-                        key={option.date.toISOString()}
-                        accessibilityRole="radio"
-                        accessibilityState={{ selected }}
-                        accessibilityLabel={`${option.day}일 ${option.weekday}요일`}
-                        onPress={() => setSelectedDay(option.day)}
-                        style={[
-                          styles.dayCell,
-                          { backgroundColor: selected ? theme.tint : theme.backgroundElement },
-                        ]}>
-                        <ThemedText
-                          type="f12"
-                          style={selected ? [styles.dayWeekOn, { color: theme.onTint }] : { color: theme.textAssistive }}>
-                          {option.weekday}
-                        </ThemedText>
-                        <ThemedText
-                          type="f16"
-                          numeric
-                          style={[styles.bold, { color: selected ? theme.onTint : theme.text }]}>
-                          {option.day}일
-                        </ThemedText>
-                      </Pressable>
-                    );
-                  })}
-                </ScrollView>
-              </View>
-
-              {/* 정본 sec «시간» — 3열 · 사이 8, 칸 높이 48 · radius 6 · 15/700. */}
-              <View style={styles.section}>
-                <ThemedText type="f17" style={styles.bold}>시간</ThemedText>
-                <View style={styles.timeGrid}>
-                  {TIMES.map((time) => {
-                    const selected = selectedTime === time;
-
-                    return (
-                      <Pressable
-                        key={time}
-                        accessibilityRole="radio"
-                        accessibilityState={{ selected }}
-                        onPress={() => setSelectedTime(time)}
-                        style={[
-                          styles.timeCell,
-                          { backgroundColor: selected ? theme.tint : theme.backgroundElement },
-                        ]}>
-                        <ThemedText
-                          type="f15"
-                          numeric
-                          themeColor={selected ? 'onTint' : 'textSecondary'}
-                          style={styles.bold}>
-                          {time}
-                        </ThemedText>
-                      </Pressable>
-                    );
-                  })}
-                </View>
+                <OsDateField
+                  label="날짜"
+                  value={selectedDay}
+                  placeholder="날짜를 골라주세요"
+                  min={range.min}
+                  max={range.max}
+                  onChange={setSelectedDay}
+                />
+                <OsTimeField label="시간" value={selectedTime} placeholder="시간을 골라주세요" onChange={setSelectedTime} />
               </View>
 
               {/* 정본 sec «남기고 싶은 말» — 입력 최소 96 · radius 6 · 1px #d1d3d8 · 안쪽 14 · 15px. */}
@@ -377,7 +305,7 @@ export default function ConsultRoute() {
               ]}>
               {canConfirm && chosen ? (
                 <ThemedText type="f18" themeColor="onTint" style={styles.bold}>
-                  {chosen.date.getMonth() + 1}월 {chosen.day}일 {selectedTime}로 잡기
+                  {chosen.getMonth() + 1}월 {chosen.getDate()}일 {withInstrument(spokenTime(selectedTime ?? ''))} 잡기
                 </ThemedText>
               ) : (
                 <ThemedText type="f18" themeColor="textAssistive" style={styles.bold}>
@@ -396,7 +324,6 @@ export default function ConsultRoute() {
 
 const styles = StyleSheet.create({
   host: { flex: 1 },
-  sheetHead: { gap: Spacing.one },
   loading: { minHeight: 160, alignItems: 'center', justifyContent: 'center' },
   guard: { minHeight: 220, alignItems: 'center', justifyContent: 'center', gap: Spacing.two },
   guardText: { textAlign: 'center' },
@@ -416,34 +343,6 @@ const styles = StyleSheet.create({
   /* 정본 secTop · sec — 위아래 20 · 안쪽 사이 14 / 12. 좌우는 시트 거터가 맡는다. */
   secTop: { paddingVertical: Layout.listGap, gap: Layout.sectionHeadGap },
   section: { paddingVertical: Layout.listGap, gap: Layout.inlineGap },
-  sectionHeadRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    gap: Layout.inlineGap,
-  },
-  dayRow: { flexDirection: 'row', gap: Spacing.two },
-  /* 정본 dt().cell — 60×72 · radius 10 · 사이 4. */
-  dayCell: {
-    width: 60,
-    height: 72,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.one,
-    borderRadius: Radius.medium,
-  },
-  /* 정본 고른 요일 rgba(255,255,255,.72). */
-  dayWeekOn: { opacity: 0.72 },
-  timeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  /* 정본 tm() — 3열(1fr) · 높이 48 · radius 6. 3열 폭은 (100% − 사이 8×2) ÷ 3. */
-  timeCell: {
-    width: '31%',
-    flexGrow: 1,
-    height: Layout.controlLarge,
-    borderRadius: Radius.input,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   /* 정본 textarea — 최소 96 · radius 6 · 1px · 안쪽 14 · 15px. */
   note: {
     minHeight: 96,

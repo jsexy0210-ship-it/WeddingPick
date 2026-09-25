@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 
 import { ActionButton, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
-import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
+import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
 
 export type LoginFailureSheetProps = {
   visible: boolean;
@@ -29,7 +29,7 @@ export function LoginFailureSheet({ visible, onRetry, onDismiss }: LoginFailureS
     <BottomSheet visible={visible} onRequestClose={onDismiss}>
         <SheetPanel>
           <ThemedView style={styles.headline}>
-            <ThemedText type="t4">잠시 후 다시 해볼까요?</ThemedText>
+            <SheetHeader title="잠시 후 다시 해볼까요?" onClose={onDismiss} />
             <ThemedText type="small" themeColor="textSecondary">
               로그인을 마치지 못했어요.{'\n'}다시 시도해주세요.
             </ThemedText>

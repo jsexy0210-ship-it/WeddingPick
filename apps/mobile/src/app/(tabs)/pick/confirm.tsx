@@ -12,7 +12,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { decideCategory, getCurrentUser, getVendor } from '@/api/client';
-import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
+import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import {
   Layout,
@@ -35,8 +35,8 @@ import { showResultToast } from '@/features/navigation/result-toast';
  * `html/대메뉴_Pick.dc.html`(2026-09-24 삭제)과 07-pick·09-core-loop 시안을 근거로 쓰지 않는다.
  *
  *   시트   공용 SheetPanel(그래버 40×4 · padding 12 24 28 · gap 20)
- *   머리   썸네일 64 radius 10 · 업체명 24 · «제보 금액 152~184만원» 16
- *   제목   24 «스튜디오는 강남 A 스튜디오로 결정할까요?»
+ *   머리   공용 SheetHeader — «스튜디오는 강남 A 스튜디오로 결정할까요?» + 우측 X
+ *   업체   썸네일 64 radius 10 · 업체명 24 · «제보 금액 152~184만원» 16
  *   항목   체크 18 + 16/24 — «준호님도 Pick한 곳이에요» · «웨딩일정 준비현황과 지출에 자동으로 반영돼요» ·
  *          «결정은 언제든 바꿀 수 있어요»
  *   버튼   «다시 볼게요»(gray · flex 1) + «최종 결정»(coral · flex 1.4) · 52(tokens size.ctaPrimary — 시안 56보다 토큰이 우선)
@@ -123,8 +123,13 @@ export default function PickConfirmScreen() {
     <ThemedView style={styles.container}>
       <BottomSheet visible={visible} onRequestClose={dismiss}>
         <SheetPanel>
+          <SheetHeader
+            title={`${withParticle(categoryLabel, '은는')} ${withInstrument(vendorName)} 결정할까요?`}
+            onClose={dismiss}
+            closeDisabled={loading}
+          />
 
-          {/* 머리 — 썸네일 64 · 업체명 24 · 제보 금액 16 */}
+          {/* 업체 — 썸네일 64 · 업체명 24 · 제보 금액 16 */}
           <View style={styles.head}>
             <View style={styles.thumb}>
               <VendorImage
@@ -144,10 +149,6 @@ export default function PickConfirmScreen() {
               ) : null}
             </View>
           </View>
-
-          <ThemedText type="t3">
-            {`${withParticle(categoryLabel, '은는')} ${withInstrument(vendorName)} 결정할까요?`}
-          </ThemedText>
 
           <View style={styles.notes}>
             {notes.map((note) => (

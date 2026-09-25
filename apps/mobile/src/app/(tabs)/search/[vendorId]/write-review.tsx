@@ -12,7 +12,7 @@ import { Image, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react
 import { createReview, getReviewForm } from '@/api/client';
 import { pickFromLibrary } from '@/features/capture/pickers';
 import type { CapturedPage } from '@/features/capture/types';
-import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
+import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
 import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { showResultToast } from '@/features/navigation/result-toast';
@@ -170,7 +170,7 @@ export function ReviewWriteSheet({
     <BottomSheet visible onRequestClose={requestClose} testID="review-write-sheet">
         <SheetPanel>
           <View style={styles.sheetHead}>
-              <ThemedText type="t4">후기 작성</ThemedText>
+              <SheetHeader title="후기 작성" onClose={requestClose} />
               <ThemedText type="t7" themeColor="textSecondary">
                 {supportingText}
               </ThemedText>

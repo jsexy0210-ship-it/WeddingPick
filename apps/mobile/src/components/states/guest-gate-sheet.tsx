@@ -1,9 +1,6 @@
-import { StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
 import { TERMS } from '@weddingpick/domain';
-import { ActionButton, Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
-import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
+import { ActionButton, ThemedText } from '@weddingpick/ui';
+import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
 
 export type GuestGateSheetProps = {
   visible: boolean;
@@ -19,22 +16,11 @@ export type GuestGateSheetProps = {
  * 비회원에게 개인화 영역을 보여주지 않는다 — 이 시트 밖에서는 실 제보만 열려 있다.
  */
 export function GuestGateSheet({ visible, onDismiss, onKakaoPress }: GuestGateSheetProps) {
-  const theme = useTheme();
-  const insets = useSafeAreaInsets();
-
   return (
     <BottomSheet visible={visible} onRequestClose={onDismiss}>
-      <View
-        style={[
-          SHEET_PANEL,
-          styles.sheet,
-          { backgroundColor: theme.background, paddingBottom: insets.bottom + Spacing.three },
-        ]}>
-        <View style={styles.grabber} />
-        <ThemedText type="t4" style={styles.title}>
-          로그인하면 저장돼요
-        </ThemedText>
-        <ThemedText type="body" themeColor="textSecondary" style={styles.body}>
+      <SheetPanel>
+        <SheetHeader title="로그인하면 저장돼요" onClose={onDismiss} />
+        <ThemedText type="body" themeColor="textSecondary">
           {TERMS.verifiedData}는 로그인 없이도 볼 수 있어요
         </ThemedText>
         <ActionButton
@@ -43,29 +29,7 @@ export function GuestGateSheet({ visible, onDismiss, onKakaoPress }: GuestGateSh
           label="3초 만에 시작"
           onPress={onKakaoPress}
         />
-      </View>
+      </SheetPanel>
     </BottomSheet>
   );
 }
-
-const styles = StyleSheet.create({
-  sheet: {
-    paddingHorizontal: Layout.gutter,
-    paddingTop: 12,
-    gap: Spacing.two,
-  },
-  grabber: {
-    width: 36,
-    height: 4,
-    borderRadius: Radius.pill,
-    backgroundColor: '#eaebee',
-    alignSelf: 'center',
-    marginBottom: 4,
-  },
-  title: {
-    marginTop: Spacing.two,
-  },
-  body: {
-    marginBottom: Spacing.two,
-  },
-});
