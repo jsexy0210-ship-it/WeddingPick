@@ -3,22 +3,23 @@ import type {
   LoungeReviewListResponse,
   WeddingFeedListResponse,
 } from '@weddingpick/api-contract';
-import { VENDOR_CATEGORY_LABEL, daysUntil } from '@weddingpick/domain';
+import { daysUntil } from '@weddingpick/domain';
 import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import Svg, { Path } from 'react-native-svg';
+
 import {
   ActionButton,
-  Badge,
   Border,
-  FilterChip,
+  CanonGray,
   Layout,
-  LineHeight,
   MaxContentWidth,
+  ProductSymbol,
   Radius,
-  RatingStars,
+  SeedIcon,
   Spacing,
   ThemedText,
   ThemedView,
@@ -29,7 +30,15 @@ import { useSession } from '@/features/auth/use-session';
 import { FullScreenError } from '@/features/errors/full-screen-error';
 import { CategoryImage } from '@/features/home/category-image';
 import { DelayedLoader, DelayedLoadingView } from '@/features/loading/delayed-loader';
-import { appendLoungeReviewPage, loungeReviewCategory } from '@/features/community/lounge-reviews';
+import {
+  LOUNGE_CATEGORIES,
+  appendLoungeReviewPage,
+  loungeFeedMatches,
+  loungeReviewCategory,
+  loungeVendorMatches,
+  type LoungeCategory,
+} from '@/features/community/lounge-reviews';
+import { CatChip } from '@/features/settings/my-kit';
 import { NavBar } from '@/features/wedding/screen-kit';
 import strings from '../../../../../spec/strings.ko.json';
 import { ReviewWriteSheet } from '@/app/(tabs)/search/[vendorId]/write-review';
@@ -46,8 +55,9 @@ const TITLE: Record<LoungeKind, string> = {
   feed: S['tab.feed'],
   expo: S['tab.expo'],
 };
-const CATEGORIES = ['전체', '웨딩홀', '드레스', '스튜디오', '메이크업', '예산', '허니문'] as const;
-type CategoryLabel = (typeof CATEGORIES)[number];
+/** 정본 my.js `cats` — 전체 · 웨딩홀 · 스드메 · 본식 · 예물 · 신혼 · 예산. */
+const CATEGORIES = LOUNGE_CATEGORIES;
+type CategoryLabel = LoungeCategory;
 type Loaded<T> = { status: 'loading' } | { status: 'error' } | { status: 'ready'; value: T };
 type LoungeReview = LoungeReviewListResponse['reviews'][number];
 
@@ -198,7 +208,7 @@ export function LoungeScreen({ kind: tab }: { kind: LoungeKind }) {
             style={styles.chipScroll}
             contentContainerStyle={styles.chipBar}>
             {CATEGORIES.map((label) => (
-              <FilterChip
+              <CatChip
                 key={label}
                 label={label}
                 selected={category === label}
@@ -207,7 +217,6 @@ export function LoungeScreen({ kind: tab }: { kind: LoungeKind }) {
                   setCategory(label);
                   if (tab === 'review') loadReviews(label);
                 }}
-                role="radio"
               />
             ))}
           </ScrollView>
@@ -310,9 +319,7 @@ function ReviewList({
   if (state.status === 'loading') return <DelayedLoader size={28} />;
   if (state.status === 'error') return <LoadFailed onRetry={onRetry} />;
 
-  const items = state.value.reviews.filter(
-    (review) => category === '전체' || VENDOR_CATEGORY_LABEL[review.vendor.category] === category
-  );
+  const items = state.value.reviews.filter((review) => loungeVendorMatches(category, review.vendor.category));
 
   if (items.length === 0) {
     return (
@@ -362,16 +369,21 @@ function ReviewList({
                   <ThemedText type="f15" style={styles.bold}>
                     {who}
                   </ThemedText>
-                  {verified ? <Badge kind="ok">{R.verifiedBadge}</Badge> : null}
+                  {verified ? (
+                    <View style={[styles.verifyBadge, { backgroundColor: theme.positiveBackground }]}>
+                      <ThemedText type="f11" style={[styles.bold, { color: theme.positive }]}>
+                        {R.verifiedBadge}
+                      </ThemedText>
+                    </View>
+                  ) : null}
                 </View>
+                {/* 정본 revNameCol — 이름 줄 · 별 줄(14 · 사이 2) · 업체 · 시간 순서다. */}
+                <StarRow value={review.overall} />
                 <ThemedText type="f12" themeColor="textAssistive" numeric numberOfLines={1}>
                   {reviewMeta(review)}
                 </ThemedText>
               </View>
             </View>
-
-            {/* 정본 my.jsx frame-008 — 별 5개 + 3축 답변 칩을 함께 둔다. */}
-            <RatingStars value={review.overall} showValue={false} />
 
             {answers.length > 0 ? (
               <View style={styles.reviewAnswers}>
@@ -394,7 +406,7 @@ function ReviewList({
               />
             ) : null}
 
-            <ThemedText type="f14" style={styles.reviewBody}>
+            <ThemedText type="f15" style={[styles.reviewBody, { color: CanonGray.gray700 }]}>
               {review.body}
             </ThemedText>
 
@@ -414,11 +426,19 @@ function ReviewList({
                 accessibilityState={{ selected: helpful.mine, disabled: helpfulPending[review.id] }}
                 disabled={helpfulPending[review.id]}
                 onPress={() => void toggleHelpful(review)}
+                accessibilityLabel={`도움돼요 ${helpful.count}`}
                 style={({ pressed }) => [styles.reviewAction, pressed ? styles.pressed : null]}>
+                {/* 정본 likeStyle — 하트 18 + 숫자 14/700 · 누른 뒤 코랄. */}
+                <SeedIcon
+                  name={helpful.mine ? 'heartFill' : 'heartRegular'}
+                  size={18}
+                  color={helpful.mine ? theme.tint : CanonGray.gray700}
+                />
                 <ThemedText
-                  type="f12"
-                  style={helpful.mine ? [styles.bold, { color: theme.tint }] : styles.bold}>
-                  도움돼요 {helpful.count}
+                  type="f14"
+                  numeric
+                  style={[styles.bold, { color: helpful.mine ? theme.tint : CanonGray.gray700 }]}>
+                  {helpful.count}
                 </ThemedText>
               </Pressable>
               <Pressable
@@ -428,9 +448,12 @@ function ReviewList({
                     `/search/${encodeURIComponent(review.vendor.id)}/review/${encodeURIComponent(review.id)}` as never
                   )
                 }
+                accessibilityLabel={`댓글 ${review.comments.count}`}
                 style={({ pressed }) => [styles.reviewAction, pressed ? styles.pressed : null]}>
-                <ThemedText type="f12" style={styles.bold}>
-                  댓글 {review.comments.count}
+                {/* 정본 revCmt — 말풍선 18 + 숫자 14/700 #4d5159. */}
+                <ProductSymbol name="chatting" size={18} color={CanonGray.gray700} />
+                <ThemedText type="f14" numeric style={[styles.bold, { color: CanonGray.gray700 }]}>
+                  {review.comments.count}
                 </ThemedText>
               </Pressable>
             </View>
@@ -439,9 +462,24 @@ function ReviewList({
       })}
       {moreLoading ? <DelayedLoader size={20} /> : null}
       {moreError ? <LoadFailed onRetry={onRetryMore} /> : null}
-      <ThemedText type="f12" themeColor="textAssistive" style={styles.caveat}>
-        {state.value.caveat}
-      </ThemedText>
+    </View>
+  );
+}
+
+/** 정본 STARROW2 — 별 14 · 사이 2 · 채움 코랄 · 빈 별 #dcdee3. */
+const STAR_PATH = 'M12 2.5l2.9 6 6.6.7-4.9 4.5 1.3 6.5L12 16.9l-5.9 3.3 1.3-6.5-4.9-4.5 6.6-.7Z';
+
+function StarRow({ value }: { value: number }) {
+  const theme = useTheme();
+  const filled = Math.round(value);
+
+  return (
+    <View accessibilityRole="image" accessibilityLabel={`5점 만점에 ${value.toFixed(1)}점`} style={styles.starRow}>
+      {Array.from({ length: 5 }, (_, index) => (
+        <Svg key={index} width={14} height={14} viewBox="0 0 24 24">
+          <Path d={STAR_PATH} fill={index < filled ? theme.tint : theme.track} />
+        </Svg>
+      ))}
     </View>
   );
 }
@@ -502,10 +540,7 @@ function FeedList({
   if (state.status === 'loading') return <DelayedLoader size={28} />;
   if (state.status === 'error') return <LoadFailed onRetry={onRetry} />;
 
-  const items =
-    category === '전체'
-      ? state.value.items
-      : state.value.items.filter((item) => item.categoryLabel === category);
+  const items = state.value.items.filter((item) => loungeFeedMatches(category, item.categoryLabel));
 
   if (items.length === 0) return <Empty title={S['feed.empty.title']} body={S['feed.empty.body']} />;
 
@@ -558,10 +593,16 @@ function ExpoList({ state, onRetry }: { state: Loaded<ExpoItem[]>; onRetry: () =
               styles.expoCard,
               past
                 ? { backgroundColor: theme.backgroundElement }
-                : { borderWidth: Border.hairline, borderColor: theme.track, backgroundColor: theme.background },
+                : { borderWidth: Border.hairline, borderColor: theme.border, backgroundColor: theme.background },
               pressed ? styles.pressed : null,
             ]}>
             <View style={styles.expoHead}>
+              {/* 정본 thumbCell 64 · radius 8. */}
+              <View style={[styles.expoThumb, { backgroundColor: theme.imagePlaceholder }]}>
+                {expo.thumbnailUrl ? (
+                  <Image source={{ uri: expo.thumbnailUrl }} style={styles.expoThumbImage} resizeMode="cover" />
+                ) : null}
+              </View>
               <View style={styles.expoCol}>
                 <ThemedText type="f16" numberOfLines={1} themeColor={past ? 'textDisabled' : 'text'} style={styles.bold}>
                   {expo.title}
@@ -587,20 +628,20 @@ function ExpoList({ state, onRetry }: { state: Loaded<ExpoItem[]>; onRetry: () =
   );
 }
 
+/** 정본 expo(date) — 다가오는 박람회는 «9월 19일~20일», 끝난 박람회는 «8월 30일 종료». */
 function expoDateRange(expo: ExpoItem): string {
   const start = ymd(expo.startsAt);
   const end = ymd(expo.endsAt);
   if (!start || !end) return `${expo.startsAt}~${expo.endsAt}`;
+  if (expo.status === 'closed') return S['expo.closedDate'].replace('{date}', `${end.month}월 ${end.day}일`);
   const from = `${start.month}월 ${start.day}일`;
   if (start.month === end.month && start.day === end.day) return from;
   return start.month === end.month ? `${from}~${end.day}일` : `${from}~${end.month}월 ${end.day}일`;
 }
 
 function expoDday(expo: ExpoItem): string {
-  if (expo.status === 'closed') {
-    const end = ymd(expo.endsAt);
-    return end ? S['expo.closedDate'].replace('{date}', `${end.month}월 ${end.day}일`) : S['expo.closed'];
-  }
+  /* 정본 dday «종료» — 날짜는 윗줄(날짜 칸)이 적는다. */
+  if (expo.status === 'closed') return S['expo.closed'];
   if (expo.status === 'ongoing') return S['expo.ongoing'];
   const days = daysUntil(expo.startsAt.slice(0, 10));
   if (days <= 0) return S['expo.today'];
@@ -651,7 +692,8 @@ const styles = StyleSheet.create({
   center: { textAlign: 'center' },
   pressed: { opacity: 0.8 },
   scroll: { flex: 1 },
-  scrollContent: { paddingBottom: Spacing.four },
+  /* 정본 scroll padding-top 16. */
+  scrollContent: { paddingTop: Spacing.three, paddingBottom: Spacing.four },
   /* 화면 바깥 여백은 공통 24px. */
   chipScroll: { flexGrow: 0 },
   chipBar: { gap: Layout.chipGap, paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionHeadGap },
@@ -665,16 +707,19 @@ const styles = StyleSheet.create({
     gap: Layout.inlineGap,
   },
   reviewTap: { gap: Layout.inlineGap },
-  /* revImg: 전달된 이미지 비율을 유지한다. */
+  /* revImg: 너비 100% · 높이 240 · radius 10. */
   reviewImage: {
     width: '100%',
-    aspectRatio: 1.625,
+    height: 240,
     borderRadius: Radius.medium,
     backgroundColor: '#F7F8F9',
   },
-  /* revFoot: gap 18px. */
+  /* revFoot: gap 18px. 누르는 칸은 글자 높이 그대로(정본은 줄 높이만 차지한다). */
   reviewActions: { flexDirection: 'row', alignItems: 'center', gap: 18 },
-  reviewAction: { minHeight: Layout.touchTarget, justifyContent: 'center' },
+  reviewAction: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  /* badgeVerify — 3 8 · radius 4 · 11/700. */
+  verifyBadge: { paddingHorizontal: Spacing.two, paddingVertical: 3, borderRadius: Radius.badge },
+  starRow: { flexDirection: 'row', gap: Spacing.half },
   /* revHead: gap 10px. */
   reviewHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   /* revAvatar: 40×40(정본 — Layout 토큰에 40이 없어 px 그대로 둔다). */
@@ -685,16 +730,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  reviewHeadText: { flex: 1, minWidth: 0, gap: Spacing.half },
+  /* revNameCol gap 3. */
+  reviewHeadText: { flex: 1, minWidth: 0, gap: Layout.cardNameGap },
   /* revNameRow: gap 6px. */
   reviewNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   /* revAnswers: gap 6px. */
   reviewAnswers: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   /* revChip: height 26 · padding 0 10px. */
   reviewChip: { height: 26, borderRadius: Radius.pill, paddingHorizontal: 10, justifyContent: 'center' },
-  reviewBody: { lineHeight: LineHeight.lh22 },
+  /* revText 15/24. */
+  reviewBody: { lineHeight: 24 },
   rebuttal: { borderRadius: Radius.medium, padding: Spacing.three, gap: Spacing.one },
-  caveat: { paddingHorizontal: Layout.gutter, paddingTop: Spacing.three },
 
   /* guideRow: 세로 16px, 바깥 좌우 24px. */
   guideRow: {
@@ -716,6 +762,8 @@ const styles = StyleSheet.create({
   },
   expoHead: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: Layout.inlineGap },
   expoCol: { flex: 1, minWidth: 0, gap: Spacing.one },
+  expoThumb: { width: 64, height: 64, borderRadius: Spacing.two, overflow: 'hidden', flexShrink: 0 },
+  expoThumbImage: { width: '100%', height: '100%' },
   empty: { paddingHorizontal: Layout.gutter, paddingTop: Layout.sectionGap, gap: Spacing.two, alignItems: 'center' },
   emptyAction: { marginTop: Spacing.two, alignSelf: 'stretch' },
 });

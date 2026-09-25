@@ -218,7 +218,7 @@ export default function MyScreen() {
           {/* 프로필 카드 — 아바타 + 이름 18/700 + Pick 인증 배지 + 예식일 · D-day 13 muted + 꺾쇠 → 프로필. 선. «내 웨딩설정» 행. */}
           {isSignedIn && me ? (
             <View style={styles.block}>
-              <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.track }]}>
+              <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.border }]}>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="프로필"
@@ -281,7 +281,7 @@ export default function MyScreen() {
               <ThemedText type="f13" themeColor="textAssistive" style={[styles.bold, styles.sectionTitle]}>
                 {section.title}
               </ThemedText>
-              <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.track }]}>
+              <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.border }]}>
                 {section.rows.map((row, index) => (
                   <Pressable
                     key={row.key}

@@ -1,6 +1,11 @@
 import type { LoungeReviewListResponse } from '@weddingpick/api-contract';
 
-import { appendLoungeReviewPage, loungeReviewCategory } from './lounge-reviews';
+import {
+  appendLoungeReviewPage,
+  loungeFeedMatches,
+  loungeReviewCategory,
+  loungeVendorMatches,
+} from './lounge-reviews';
 
 const baseReview = {
   id: '00000000-0000-4000-8000-000000000001',
@@ -38,10 +43,22 @@ describe('라운지 후기 페이지 연결', () => {
     expect(loungeReviewCategory('전체')).toBeUndefined();
     expect(loungeReviewCategory('예산')).toBeUndefined();
     expect(loungeReviewCategory('웨딩홀')).toBe('hall');
-    expect(loungeReviewCategory('드레스')).toBe('dress');
-    expect(loungeReviewCategory('스튜디오')).toBe('studio');
-    expect(loungeReviewCategory('메이크업')).toBe('makeup');
-    expect(loungeReviewCategory('허니문')).toBe('honeymoon');
+    /* 묶음 칩은 서버에 한 업종으로 보낼 수 없다 — 전체를 받아 화면에서 거른다. */
+    expect(loungeReviewCategory('스드메')).toBeUndefined();
+    expect(loungeReviewCategory('본식')).toBeUndefined();
+    expect(loungeReviewCategory('예물 · 신혼')).toBeUndefined();
+  });
+
+  it('묶음 칩은 준비 현황 그룹의 업종을 모두 담는다', () => {
+    expect(loungeVendorMatches('전체', 'hall')).toBe(true);
+    expect(loungeVendorMatches('스드메', 'dress')).toBe(true);
+    expect(loungeVendorMatches('스드메', 'hair')).toBe(true);
+    expect(loungeVendorMatches('본식', 'snap')).toBe(true);
+    expect(loungeVendorMatches('예물 · 신혼', 'honeymoon')).toBe(true);
+    expect(loungeVendorMatches('예산', 'hall')).toBe(false);
+    expect(loungeFeedMatches('스드메', '드레스')).toBe(true);
+    expect(loungeFeedMatches('예산', '예산')).toBe(true);
+    expect(loungeFeedMatches('웨딩홀', '드레스')).toBe(false);
   });
 
   it('cursor 다음 쪽을 순서대로 붙이고 중복 id는 제거한다', () => {

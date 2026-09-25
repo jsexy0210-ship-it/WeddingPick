@@ -1,36 +1,31 @@
 import type { WithdrawalNotice } from '@weddingpick/api-contract';
 import {
-  WITHDRAWAL_ANONYMOUS_BADGE,
   WITHDRAWAL_CONSENT,
   WITHDRAWAL_DELETED_GROUP,
   WITHDRAWAL_DONE_BODY,
   WITHDRAWAL_DONE_GROUP,
   WITHDRAWAL_DONE_TITLE,
   WITHDRAWAL_HEADLINE_LINES,
-  WITHDRAWAL_IRREVERSIBLE,
   WITHDRAWAL_SEPARATED_EMPTY,
   WITHDRAWAL_SEPARATED_GROUP,
   WITHDRAWAL_SEPARATED_NOTE,
   WITHDRAWAL_SHEET_BODY,
   WITHDRAWAL_SHEET_TITLE,
   WITHDRAWAL_SUBMIT,
-  WITHDRAWAL_TITLE,
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Layout, ProductSymbol, Spacing, ThemedText, Toast, useTheme } from '@weddingpick/ui';
+import { Border, Layout, ProductSymbol, Radius, Spacing, ThemedText, Toast, useTheme } from '@weddingpick/ui';
 import { getWithdrawalNotice, withdraw } from '@/api/client';
 import { wipeDevice } from '@/api/session';
 import { ConfirmSheet } from '@/features/common/confirm-sheet';
 import { showResultToast } from '@/features/navigation/result-toast';
 import {
-  CheckDot,
   Dock,
   EmptyBox,
   Hero,
-  KeyValueRow,
   NoteBox,
   Row,
   Rows,
@@ -136,54 +131,65 @@ export default function WithdrawalScreen() {
           }}
         />
       }>
-      <Hero lines={[...WITHDRAWAL_HEADLINE_LINES]} sub={notice?.lead} />
+      {/* 정본 qBlock — 제목 두 줄뿐이다. 되돌릴 수 없다는 말은 확인 시트가 한 번 더 한다. */}
+      <Hero lines={[...WITHDRAWAL_HEADLINE_LINES]} />
 
+      {/* 정본 delNow — listCard 안 52 행 · 회색 점 5 + 라벨 15. */}
       <Section title={WITHDRAWAL_DELETED_GROUP}>
-        <Rows>
-          {notice?.deleted.map((row) => (
-            <KeyValueRow key={row.label} label={row.label} value={row.value} dim={row.empty} />
-          ))}
-        </Rows>
+        <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.border }]}>
+          <Rows>
+            {(notice?.deleted ?? []).map((row) => (
+              <Row
+                key={row.label}
+                inset
+                lead={<View style={[styles.dot, { backgroundColor: theme.textDisabled }]} />}
+                name={row.label}
+                off={row.empty}
+              />
+            ))}
+          </Rows>
+        </View>
       </Section>
 
+      {/* 정본 delKeep — listCard 안 64 행(라벨 15 · 설명 12) + 카드 아래 note 13/20. */}
       <Section title={WITHDRAWAL_SEPARATED_GROUP}>
         {notice && notice.separated.length === 0 ? (
           <EmptyBox>{WITHDRAWAL_SEPARATED_EMPTY}</EmptyBox>
         ) : (
           <>
-            <ThemedText type="t7" themeColor="textAssistive">
+            <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.border }]}>
+              <Rows>
+                {(notice?.separated ?? []).map((row) => (
+                  <Row key={row.label} inset tall={64} name={row.label} meta={row.note} />
+                ))}
+              </Rows>
+            </View>
+            <ThemedText type="f13" themeColor="textAssistive">
               {WITHDRAWAL_SEPARATED_NOTE}
             </ThemedText>
-            <Rows>
-              {notice?.separated.map((row) => (
-                <Row
-                  key={row.label}
-                  name={row.label}
-                  meta={row.note}
-                  tail={row.anonymous ? WITHDRAWAL_ANONYMOUS_BADGE : undefined}
-                  tailBadge="none"
-                />
-              ))}
-            </Rows>
           </>
         )}
       </Section>
 
+      {/* 정본 chkRow — 최소 44 · gap 10 · 네모 22(radius 4) · 15. 동의 없이는 누를 수 없다. */}
       <Section>
-        <NoteBox title={WITHDRAWAL_TITLE} body={WITHDRAWAL_IRREVERSIBLE} />
+        <Pressable
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: agreed }}
+          onPress={() => setAgreed((was) => !was)}
+          style={styles.consent}>
+          {agreed ? (
+            <View style={[styles.box, { backgroundColor: theme.tint }]}>
+              <ProductSymbol name="check" size={14} color={theme.onTint} />
+            </View>
+          ) : (
+            <View style={[styles.box, styles.boxOff, { borderColor: theme.track }]} />
+          )}
+          <ThemedText type="f15" style={styles.grow}>
+            {WITHDRAWAL_CONSENT}
+          </ThemedText>
+        </Pressable>
       </Section>
-
-      {/* 동의 없이는 누를 수 없다. 되돌릴 수 없는 행동에서 한 번 더 멈추게 하는 자리다. */}
-      <Pressable
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked: agreed }}
-        onPress={() => setAgreed((was) => !was)}
-        style={styles.consent}>
-        <CheckDot on={agreed} />
-        <ThemedText type="body" themeColor="textSecondary" style={styles.grow}>
-          {WITHDRAWAL_CONSENT}
-        </ThemedText>
-      </Pressable>
 
       <ConfirmSheet
         visible={confirming}
@@ -202,14 +208,25 @@ export default function WithdrawalScreen() {
 }
 
 const styles = StyleSheet.create({
-  /* 시안 21a: 동의 행 0 24 28 · gap 12 · 위 정렬 */
+  card: { borderWidth: Border.hairline, borderRadius: Radius.medium, overflow: 'hidden' },
+  /* 정본 delDot 5. */
+  dot: { width: 5, height: 5, borderRadius: Radius.pill },
+  /* 정본 chkRow — 최소 44 · gap 10 · 가운데 정렬. */
   consent: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Layout.rowPaddingY,
-    paddingHorizontal: Layout.gutter,
-    paddingBottom: Layout.sectionGap,
+    alignItems: 'center',
+    gap: Layout.cardGap,
+    minHeight: Layout.touchTarget,
   },
+  /* 정본 chkOn 22 · radius 4 · 흰 체크 14. */
+  box: {
+    width: 22,
+    height: 22,
+    borderRadius: Radius.badge,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  boxOff: { borderWidth: 1.5 },
   grow: { flex: 1 },
   /* 시안 21d: 완료 제목은 위 64에서 시작 — Hero의 12에 52를 더한다. */
   doneHero: { paddingTop: Layout.controlXLarge },

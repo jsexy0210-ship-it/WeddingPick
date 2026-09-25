@@ -2,7 +2,7 @@ import type { CurrentUser, Settings } from '@weddingpick/api-contract';
 import { DISPLAY_NAME_HINT, MAX_DISPLAY_NAME_LENGTH, checkDisplayName } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, Switch, TextInput, View } from 'react-native';
+import { StyleSheet, TextInput, View } from 'react-native';
 
 import {
   ActionButton,
@@ -22,7 +22,7 @@ import { confirmAlert } from '@/components/confirm-alert';
 import { useSession } from '@/features/auth/use-session';
 import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
-import { Avatar, Row, Rows, Section, SubScreen } from '@/features/settings/my-kit';
+import { Avatar, Row, Rows, Section, SubScreen, Toggle } from '@/features/settings/my-kit';
 
 /** 정본 `docs/design/React_Native/my.jsx` 프로필 프레임 · WP-MY-002. */
 const S = {
@@ -195,12 +195,6 @@ export default function ProfileScreen() {
   if (loadError && !me) return <ErrorView message={loadError} onRetry={load} />;
   if (!me) return <DelayedLoadingView />;
 
-  const switchProps = {
-    trackColor: { true: theme.tint, false: theme.track },
-    thumbColor: theme.onTint,
-    ios_backgroundColor: theme.track,
-  };
-
   return (
     <SubScreen title={S.title}>
       {/* 아바타 88 — 시안 avatarBig. */}
@@ -209,7 +203,7 @@ export default function ProfileScreen() {
       </View>
 
       <Section title={S.basic}>
-        <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.track }]}>
+        <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.border }]}>
           <Rows>
             {/* v3.28 — 「이름 / 배우자에게 보이는 이름」 두 칸을 «닉네임» 한 칸으로 합쳤다. */}
             <Row
@@ -222,28 +216,28 @@ export default function ProfileScreen() {
                 setNameOpen(true);
               }}
               inset
+              tall={56}
             />
           </Rows>
         </View>
-        <ThemedText type="t7" themeColor="textAssistive" style={styles.nameNote}>
+        <ThemedText type="f13" themeColor="textAssistive">
           {S.note}
         </ThemedText>
       </Section>
 
       <Section title={S.notifications}>
         {settings ? (
-          <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.track }]}>
+          <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.border }]}>
             <Rows>
               <Row
                 name={S.service}
                 meta={S.serviceMeta}
                 right={
-                  <Switch
+                  <Toggle
                     disabled={settingsSaving}
                     value={settings.pushEnabled}
                     onValueChange={(next) => void toggleSetting('service', next)}
                     accessibilityLabel={S.service}
-                    {...switchProps}
                   />
                 }
                 inset
@@ -252,12 +246,11 @@ export default function ProfileScreen() {
                 name={S.marketing}
                 meta={S.marketingMeta}
                 right={
-                  <Switch
+                  <Toggle
                     disabled={settingsSaving}
                     value={settings.marketingEnabled}
                     onValueChange={(next) => void toggleSetting('marketingEnabled', next)}
                     accessibilityLabel={S.marketing}
-                    {...switchProps}
                   />
                 }
                 inset
@@ -266,12 +259,11 @@ export default function ProfileScreen() {
                 name={S.night}
                 meta={S.nightMeta}
                 right={
-                  <Switch
+                  <Toggle
                     disabled={settingsSaving}
                     value={settings.nightPushEnabled}
                     onValueChange={(next) => void toggleSetting('nightPushEnabled', next)}
                     accessibilityLabel={S.night}
-                    {...switchProps}
                   />
                 }
                 inset
@@ -288,18 +280,18 @@ export default function ProfileScreen() {
             ) : null}
           </View>
         )}
-        <ThemedText type="t7" themeColor="textAssistive" style={styles.nameNote}>
+        <ThemedText type="f13" themeColor="textAssistive">
           {S.notiNote}
         </ThemedText>
       </Section>
 
       {/* 시안 「계정」 — 로그인 연결 · 로그아웃 · 회원 탈퇴만 둔다. Pick 인증은 MY 별도 메뉴다. */}
       <Section title={S.account}>
-        <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.track }]}>
+        <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.border }]}>
           <Rows>
-            <Row name={S.social} tail={S.connected} tailBadge="ok" inset />
-            <Row name={S.logout} chevron onPress={confirmSignOut} inset />
-            <Row name={S.withdraw} off chevron onPress={() => router.push('/my/withdrawal' as never)} inset />
+            <Row name={S.social} tail={S.connected} tailBadge="ok" wide />
+            <Row name={S.logout} chevron onPress={confirmSignOut} wide />
+            <Row name={S.withdraw} off chevron onPress={() => router.push('/my/withdrawal' as never)} wide />
           </Rows>
         </View>
       </Section>
@@ -342,11 +334,11 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  /* 시안 profile: padding 20 24 28 · 가운데 */
+  /* 정본 avatarSec: 24 20 20 · 가운데. */
   avatarWrap: {
     alignItems: 'center',
-    paddingTop: Layout.cardPadding,
-    paddingBottom: Layout.sectionGap,
+    paddingTop: Spacing.four,
+    paddingBottom: Layout.listGap,
   },
   card: {
     borderWidth: Border.hairline,
@@ -358,7 +350,6 @@ const styles = StyleSheet.create({
     padding: Layout.cardPadding,
     gap: Spacing.two,
   },
-  nameNote: { marginTop: Spacing.two },
   sheet: { padding: Layout.gutter, paddingBottom: Layout.sectionGap, gap: Spacing.three },
   input: {
     height: Layout.field,

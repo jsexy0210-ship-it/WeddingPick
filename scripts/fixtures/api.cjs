@@ -648,9 +648,31 @@ const routes = {
     open: null,
     history: [],
   },
-  'GET /v1/me/reports': { reports: [] },
+  /** 정본 my.jsx frame-006 «내가 쓴 후기» — 쓴 후기 둘 · 쓸 수 있는 곳 둘. */
+  'GET /v1/me/reports': {
+    reports: [
+      { id: '00000000-0000-4000-8000-000000000001', kind: 'review', kindLabel: '후기', use: '후기', subject: '강남 A 스튜디오', vendorId: '00000000-0000-4000-8000-0000000000a1', amount: null, reportedAt: '2026-09-02T03:00:00.000Z', inUse: true, needsCheck: false, note: null },
+      { id: '00000000-0000-4000-8000-000000000002', kind: 'review', kindLabel: '후기', use: '후기', subject: '더채플 강남', vendorId: '00000000-0000-4000-8000-0000000000a2', amount: null, reportedAt: '2026-03-12T03:00:00.000Z', inUse: true, needsCheck: false, note: null },
+      { id: '00000000-0000-4000-8000-000000000003', kind: 'payment_proof', kindLabel: 'Pick 인증', use: '실 제보', subject: '라비드레스', vendorId: '00000000-0000-4000-8000-0000000000a3', amount: 1_120_000, reportedAt: '2026-03-04T03:00:00.000Z', inUse: true, needsCheck: false, note: null },
+      { id: '00000000-0000-4000-8000-000000000004', kind: 'payment_proof', kindLabel: 'Pick 인증', use: '실 제보', subject: '청담 헤메', vendorId: '00000000-0000-4000-8000-0000000000a4', amount: 980_000, reportedAt: '2026-04-02T03:00:00.000Z', inUse: true, needsCheck: false, note: null },
+    ],
+  },
   /* MY 「문의하기」 꼬리 · 라운지 — 문의가 없는 상태가 기본이다. */
-  'GET /v1/inquiries': { inquiries: [] },
+  /** 정본 my.jsx frame-007 «지난 문의 1건» — 답변 완료 한 건. */
+  'GET /v1/inquiries': {
+    inquiries: [
+      {
+        id: '00000000-0000-4000-8000-0000000000c1',
+        category: 'other',
+        body: 'Pick 인증이 안 됐어요',
+        status: 'answered',
+        subject: null,
+        receivedAt: '2026-08-12T03:00:00.000Z',
+        decidedAt: '2026-08-13T03:00:00.000Z',
+        resolution: null,
+      },
+    ],
+  },
   'GET /v1/me/rewards': {
     referralCode: 'ABC123',
     invitedCount: 0,
@@ -676,11 +698,18 @@ const routes = {
   'GET /v1/me/withdrawal': {
     lead: '배우자와 함께 만든 기록도 함께 사라져요',
     hasPartner: true,
+    /* 정본 my.jsx frame-014 delNow · delKeep. */
     deleted: [
-      { label: '계정 정보', value: '이메일 · 로그인 정보' },
-      { label: 'Pick 목록', value: '2건' },
+      { label: '계정 · 프로필', value: '이메일 · 로그인 정보' },
+      { label: '배우자 연결', value: '1건' },
+      { label: 'Pick · 스타일', value: '2건' },
+      { label: '일정 · 지출 · 메모', value: '12건' },
     ],
-    separated: [{ label: '작성한 후기', note: '작성자 정보만 지워지고 후기는 남아요', anonymous: true }],
+    separated: [
+      { label: '실 제보 금액', note: '이름을 지우고 금액만 남아요', anonymous: true },
+      { label: '내가 쓴 후기', note: '작성자를 지우고 글만 남아요', anonymous: true },
+      { label: '신고 · 분쟁 기록', note: '법령상 보존 항목이에요', anonymous: false },
+    ],
     done: ['계정이 삭제됐어요', '로그인 정보가 지워졌어요'],
   },
   'GET /v1/weddings/:weddingId/invites': { invite: null },
@@ -732,8 +761,59 @@ const routes = {
         thumbnailUrl: 'https://example.com/expo-poster.jpg',
         lastVerifiedAt: '2026-09-10T00:00:00.000Z',
       },
+      /* 정본 my.jsx frame-012 — 다가오는 둘 · 끝난 하나. */
+      {
+        id: 'e2222222-2222-4222-8222-222222222222',
+        title: '더현대 서울 웨딩위크',
+        organizer: '더현대 서울',
+        startsAt: '2026-10-03T01:00:00.000Z',
+        endsAt: '2026-10-04T09:00:00.000Z',
+        venue: '더현대 서울 6층',
+        region: '서울',
+        status: 'upcoming',
+        isDeadlineSoon: false,
+        sourceNote: '주최사 공지 기준',
+        thumbnailUrl: null,
+        lastVerifiedAt: '2026-09-10T00:00:00.000Z',
+      },
+      {
+        id: 'e3333333-3333-4333-8333-333333333333',
+        title: '강남 웨딩박람회',
+        organizer: '세텍',
+        startsAt: '2026-08-29T01:00:00.000Z',
+        endsAt: '2026-08-30T09:00:00.000Z',
+        venue: '세텍',
+        region: '서울',
+        status: 'closed',
+        isDeadlineSoon: false,
+        sourceNote: '주최사 공지 기준',
+        thumbnailUrl: null,
+        lastVerifiedAt: '2026-09-10T00:00:00.000Z',
+      },
     ],
     nextCursor: null,
+  },
+  /* 정본 my.jsx frame-013 박람회 상세 — 목록 첫 박람회. */
+  'GET /v1/expos/:expoId': {
+    id: 'e1111111-1111-4111-8111-111111111111',
+    title: '2026 가을 웨딩 박람회',
+    organizer: '더 웨딩페어',
+    startsAt: '2026-09-26T01:00:00.000Z',
+    endsAt: '2026-09-27T09:00:00.000Z',
+    venue: '코엑스 D홀',
+    region: '서울',
+    status: 'upcoming',
+    isDeadlineSoon: true,
+    sourceNote: '주최사 공지 기준',
+    thumbnailUrl: null,
+    lastVerifiedAt: '2026-09-10T00:00:00.000Z',
+    address: '서울 강남구 영동대로 513',
+    registrationDeadline: '2026-09-24',
+    benefits: ['웨딩홀 · 스드메 상담 부스', '드레스 쇼케이스 14:00', '사전등록 사은품'],
+    description: '',
+    notifyEnabled: false,
+    applyUrl: 'https://example.com/expo-apply',
+    officialWebsiteUrl: null,
   },
   'GET /v1/review-report-reasons': {
     reasons: [
