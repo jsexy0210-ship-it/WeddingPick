@@ -27,9 +27,16 @@ it('웨딩피드 이미지는 표준 generateContent에 이미지 응답을 켜�
     `https://generativelanguage.googleapis.com/v1beta/models/${DEFAULT_WEDDING_FEED_IMAGE_MODEL}:generateContent`
   );
   expect(request?.headers).toMatchObject({ 'x-goog-api-key': 'test-key' });
-  expect(JSON.parse(String(request?.body))).toMatchObject({
+  const sent = JSON.parse(String(request?.body));
+  expect(sent).toMatchObject({
     generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: '16:9' } },
   });
+  // 2026-09-25 대표 지시 — 이미지 안 글자 금지 · 실사 위주.
+  const prompt: string = sent.contents[0].parts[0].text;
+  expect(prompt).toContain('실사 사진');
+  expect(prompt).toContain('어떤 글자도 넣지 마라');
+  expect(prompt).toContain('Absolutely no text');
+  expect(prompt).not.toContain('삽화 한 장');
 });
 
 it('모델은 GEMINI_IMAGE_MODEL로 바꿀 수 있고 JPEG 응답도 받는다', async () => {

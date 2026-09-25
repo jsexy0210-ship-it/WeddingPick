@@ -233,6 +233,11 @@ export async function create(
   generatedModel: string | null = null
 ): Promise<{ id: string; sortOrder: number }> {
   /*
+   * `$9`(모델)는 형을 적어 둔다(2026-09-25 운영 사고). `INSERT … SELECT`의 SELECT 쪽
+   * 매개변수는 대상 열의 형을 물려받지 않아, 직접 쓴 글처럼 `$9`가 null이면 Postgres가
+   * 「could not determine data type of parameter $9」로 저장을 통째로 거절했다 —
+   * 관리자 화면에는 「잠시 후 다시 시도해주세요」만 떴다.
+   *
    * 새 글 순서는 클라이언트가 열어 둔 값이 아니라 저장 순간의 서버 DB를 기준으로
    * 다시 계산한다. 팝업을 오래 열어 둔 사이 다른 글이 생겨도 낡은 번호를 저장하지 않는다.
    */
@@ -242,8 +247,8 @@ export async function create(
         source, model, sort_order, published_at, created_by)
      SELECT $1, (SELECT id FROM structured.wedding_feed_categories WHERE name = $1),
             $2, $3, $4, $5, $6, $7,
-            CASE WHEN $9 IS NULL THEN 'manual' ELSE 'generated' END,
-            $9,
+            CASE WHEN $9::text IS NULL THEN 'manual' ELSE 'generated' END,
+            $9::text,
             (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM structured.wedding_feed_posts),
             CASE WHEN $7 = 'published' THEN now() ELSE NULL END, $8
      RETURNING id, sort_order`,
