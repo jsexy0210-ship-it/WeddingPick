@@ -37,6 +37,12 @@ try {
       EXISTS (SELECT 1 FROM identity.identities i
         WHERE i.provider = 'admin' AND i.subject = a.login_id AND i.user_id = a.user_id) AS identity_points_here,
       u.activated_at IS NOT NULL AS activated,
+      u.deleted_at IS NOT NULL AS user_deleted,
+      (SELECT count(*) FROM identity.identities i2 WHERE i2.user_id = a.user_id)::int AS identities_on_user,
+      (SELECT string_agg(DISTINCT i3.provider::text, ',') FROM identity.identities i3 WHERE i3.user_id = a.user_id) AS providers_on_user,
+      (SELECT (ou.deleted_at IS NOT NULL)::text || '/' || EXISTS (SELECT 1 FROM structured.admin_accounts oa WHERE oa.user_id = ou.id)::text
+         FROM identity.identities oi JOIN structured.users ou ON ou.id = oi.user_id
+        WHERE oi.provider = 'admin' AND oi.subject = a.login_id AND oi.user_id <> a.user_id LIMIT 1) AS other_user_deleted_hasadmin,
       u.age_gate::text AS age_gate,
       EXISTS (SELECT 1 FROM structured.active_users au WHERE au.id = a.user_id) AS in_active_users,
       u.is_operator,
@@ -58,6 +64,7 @@ try {
     if (a.identity_rows === 0) problems.push('로그인 신원 없음');
     else if (!a.identity_points_here) problems.push('로그인 신원이 다른 사용자를 가리킴');
     if (!a.activated) problems.push('가입 완료 표시 없음');
+    if (a.user_deleted) problems.push('연결된 사용자가 탈퇴 처리됨(deleted_at)');
     if (!a.in_active_users) problems.push('active_users에 없음');
     console.log(
       [
@@ -65,6 +72,8 @@ try {
         `등급 ${a.role}`,
         `생성 ${a.created_kst} KST(${a.created_by ?? '부트스트랩'})`,
         `연령 ${a.age_gate}`,
+        `사용자 신원 ${a.identities_on_user}개(${a.providers_on_user ?? '없음'})`,
+        `아이디 신원이 가리키는 다른 사용자(탈퇴/관리자계정) ${a.other_user_deleted_hasadmin ?? '-'}`,
         `유효 세션 ${a.live_sessions}`,
         `마지막 세션 ${a.last_session_kst ?? '없음'}`,
         problems.length ? `문제: ${problems.join(' · ')}` : '문제 없음',
