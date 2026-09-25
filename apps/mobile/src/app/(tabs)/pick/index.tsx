@@ -7,11 +7,11 @@
  *
  * **v3.29 대조로 정한 것.**
  * - Pick 탭 안에 «추천 · 내 Pick»(Figma 원본) 같은 상단 탭을 두지 않는다 — v3.29 diffs
- *   «탭 구성»이 명시한다. 추천 → 비교 → 결정이 한 화면에서 끝난다. 준비 현황(웨딩픽 추천)은
- *   홈에서만 들어오는 별도 화면이라 `/pick?section=recommendations` 딥링크만 받아 그린다
- *   (홈의 `(home)/recommendations.tsx`가 그리로 보낸다).
- * - Pick = 후보 담기 · 최종 결정은 별도(v3.29 diffs «Pick 의미»). 최종 결정은 확인 시트
- *   (`/pick/confirm`)에서 저장한다.
+ *   «탭 구성»이 명시한다. 비교 → 상담 예약이 한 화면에서 끝난다. 홈 «내 웨딩 준비» 카드는
+ *   `/pick?group=<묶음>`으로 들어와 그 업종 칩이 켜진 채 열린다(home.jsx «각 카드를 누르면
+ *   Pick의 해당 업종으로 이동»).
+ * - 추천 화면 · 최종 결정 확인 시트(`/pick/confirm`)는 2026-09-25 대표 지시로 삭제했다 —
+ *   카드 CTA는 정본 btnB «상담 예약» 하나다. 이미 결정한 업종은 «결정 취소»만 남는다.
  * - 카드를 누르면 그 업체의 상담 예약(`/search/[vendorId]/consult`)으로 바로 간다 — 정본
  *   frame-001 tagDesc «카드를 누르면 상담 예약으로 바로 이어집니다»(2026-09-25 MASTER 지시로
  *   diffs «상담 진입»보다 이 동선을 따른다). 상담 예약 화면 자체는 검색 화면군 소유다.
@@ -32,7 +32,6 @@ import type { CandidateListResponse, CurrentUser, VendorCandidate } from '@weddi
 import {
   PREPARATION_GROUPS,
   TERMS,
-  VENDOR_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
   withParticle,
   type PreparationGroupKey,
@@ -40,7 +39,7 @@ import {
   regionLabel,
 } from '@weddingpick/domain';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -84,7 +83,6 @@ import {
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import { isWebShellScreen } from '@/features/webshell/config';
 import { WebShellView } from '@/features/webshell/WebShellView';
-import { RecommendationsContent } from '../(home)/recommendations';
 
 /* 문구 — spec/strings.ko.json `pick` · features/pick/canonical-rules. */
 const COMPARE_HINT = PICK_COMPARE_BANNER_HINT;
@@ -92,7 +90,6 @@ const COMPARE_ALL = '비교하기';
 const CHIP_ALL = '전체';
 const ACTION_COMPARE = PICK_COMPARE_ADD_LABEL;
 const ACTION_COMPARING = PICK_COMPARE_REMOVE_LABEL;
-const ACTION_DECIDE = '결정하기';
 const ACTION_UNDECIDE = '결정 취소';
 /* 정본 pick.js `sv().labelB` «상담 예약». */
 const ACTION_CONSULT = '상담 예약';
@@ -101,7 +98,6 @@ const GROUP_MORE = '더 보기';
 const BADGE_SHARED = '함께';
 const EMPTY_TITLE = '아직 담은 곳이 없어요';
 const EMPTY_BODY = '담아두면 여기서 비교할 수 있어요';
-const EMPTY_CTA = '추천 보기';
 const UNDECIDE_TITLE = '결정을 취소할까요?';
 const UNDECIDE_BODY = '웨딩노트의 결정 상태가 풀려요. 언제든 다시 결정할 수 있어요.';
 const MIN_COMPARE = 2;
@@ -130,7 +126,6 @@ type Section = {
 type Row = {
   candidate: VendorCandidate;
   /** 이 업종이 결정됐는가. */
-  groupDecided: boolean;
   /** 이 후보가 그 결정인가. */
   isDecided: boolean;
 };
@@ -167,23 +162,18 @@ function pickSections(rows: readonly Row[]): Section[] {
 }
 
 export default function PickScreen() {
-  const { section: sectionParam, category: categoryParam } = useLocalSearchParams<{
-    section?: string | string[];
-    category?: string | string[];
-  }>();
-  const requestedSection = Array.isArray(sectionParam) ? sectionParam[0] : sectionParam;
-  const rawCategory = Array.isArray(categoryParam) ? categoryParam[0] : categoryParam;
-  const requestedCategory =
-    rawCategory && VENDOR_CATEGORIES.includes(rawCategory as VendorCategory)
-      ? (rawCategory as VendorCategory)
-      : null;
-  /* 홈의 «웨딩픽 추천» 딥링크만 받는다. Pick 탭 자체에는 상단 탭이 없다(v3.29 diffs «탭 구성»). */
-  const showRecommendations = requestedSection === 'recommendations';
+  const { group: groupParam } = useLocalSearchParams<{ group?: string | string[] }>();
+  const rawGroup = Array.isArray(groupParam) ? groupParam[0] : groupParam;
+  /* 홈 «내 웨딩 준비» 카드가 넘긴 묶음. 모르는 값이면 «전체». */
+  const requestedGroup = PREPARATION_GROUPS.find((group) => group.key === rawGroup)?.key ?? null;
   const theme = useTheme();
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [page, setPage] = useState<CandidateListResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<Filter>('all');
+  const [filter, setFilter] = useState<Filter>(requestedGroup ?? 'all');
+  useEffect(() => {
+    if (requestedGroup) setFilter(requestedGroup);
+  }, [requestedGroup]);
   /** 비교함에 담은 업체(vendorId). 최대 PICK_COMPARE_MAX. */
   const [compare, setCompare] = useState<ReadonlySet<string>>(new Set());
   const [busy, setBusy] = useState(false);
@@ -218,7 +208,6 @@ export default function PickScreen() {
   const rows: Row[] = (page?.groups ?? []).flatMap((group) =>
     group.candidates.map((candidate) => ({
       candidate,
-      groupDecided: group.state === 'decided',
       isDecided: group.decidedVendorId === candidate.vendorId,
     }))
   );
@@ -259,19 +248,6 @@ export default function PickScreen() {
 
   function startCompare() {
     router.push({ pathname: '/search/compare', params: { ids: Array.from(compare).join(',') } });
-  }
-
-  /** 최종 결정은 확인 시트(`/pick/confirm`)가 한다 — 여기서 먼저 결정 기록을 만들지 않는다. */
-  function goDecide(candidate: VendorCandidate) {
-    router.push({
-      pathname: '/pick/confirm',
-      params: {
-        category: candidate.category,
-        vendorId: candidate.vendorId,
-        vendorName: candidate.vendorName,
-        shared: candidate.addedByPartner ? '1' : '0',
-      },
-    });
   }
 
   /** 결정 취소는 되돌릴 수 있는 조작이라 DLG-B 확인을 쓴다. */
@@ -385,9 +361,7 @@ export default function PickScreen() {
     <ThemedView style={styles.root}>
       <SafeAreaView style={styles.safeArea}>
         <View style={[styles.wrapper, { maxWidth: MaxContentWidth }]}>
-          {showRecommendations ? (
-            <RecommendationsContent requestedCategory={requestedCategory} />
-          ) : error ? (
+          {error ? (
             <ScrollView contentContainerStyle={styles.scroll}>
               <View style={styles.errorBox}>
                 <ThemedText type="t2">불러오지 못했어요</ThemedText>
@@ -480,7 +454,6 @@ export default function PickScreen() {
                                     compareFull={compare.size >= PICK_COMPARE_MAX}
                                     busy={busy}
                                     onCompare={() => toggleCompare(row.candidate.vendorId)}
-                                    onDecide={() => goDecide(row.candidate)}
                                     onUndecide={() => askUndecide(row.candidate)}
                                     onRemove={() => void unpick(row)}
                                   />
@@ -578,7 +551,6 @@ function CandidateCard({
   compareFull,
   busy,
   onCompare,
-  onDecide,
   onUndecide,
   onRemove,
 }: {
@@ -587,12 +559,11 @@ function CandidateCard({
   compareFull: boolean;
   busy: boolean;
   onCompare: () => void;
-  onDecide: () => void;
   onUndecide: () => void;
   onRemove: () => void;
 }) {
   const theme = useTheme();
-  const { candidate, groupDecided, isDecided } = row;
+  const { candidate, isDecided } = row;
   const compareDisabled = !comparing && compareFull;
   const openConsult = () => router.push({ pathname: '/search/[vendorId]/consult', params: { vendorId: candidate.vendorId } });
 
@@ -697,41 +668,24 @@ function CandidateCard({
           </ThemedText>
         </Pressable>
 
-        {/* 정본 btnB «상담 예약» — 결정한 카드는 코랄, 나머지는 흰 바탕 + 1px 선.
-            업종을 아직 안 정한 카드만 그 자리에 «결정하기»를 둔다(DESIGN_UNRESOLVED — 정본 카드에는 결정 진입이 없다). */}
-        {!isDecided && !groupDecided ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${candidate.vendorName} ${ACTION_DECIDE}`}
-            onPress={onDecide}
-            style={({ pressed }) => [
-              styles.decisionCta,
-              { backgroundColor: theme.background, borderColor: theme.border },
-              pressed ? styles.pressed : null,
-            ]}>
-            <ThemedText type="f13" style={[styles.bold, { color: theme.text }]}>
-              {ACTION_DECIDE}
-            </ThemedText>
-          </Pressable>
-        ) : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${candidate.vendorName} ${ACTION_CONSULT}`}
-            disabled={busy}
-            onPress={openConsult}
-            style={({ pressed }) => [
-              styles.decisionCta,
-              isDecided
-                ? { backgroundColor: theme.tint, borderColor: theme.tint }
-                : { backgroundColor: theme.background, borderColor: theme.border },
-              pressed ? styles.pressed : null,
-              busy ? styles.busy : null,
-            ]}>
-            <ThemedText type="f13" style={[styles.bold, { color: isDecided ? theme.onTint : theme.text }]}>
-              {ACTION_CONSULT}
-            </ThemedText>
-          </Pressable>
-        )}
+        {/* 정본 btnB «상담 예약» — 결정한 카드는 코랄, 나머지는 흰 바탕 + 1px 선. */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${candidate.vendorName} ${ACTION_CONSULT}`}
+          disabled={busy}
+          onPress={openConsult}
+          style={({ pressed }) => [
+            styles.decisionCta,
+            isDecided
+              ? { backgroundColor: theme.tint, borderColor: theme.tint }
+              : { backgroundColor: theme.background, borderColor: theme.border },
+            pressed ? styles.pressed : null,
+            busy ? styles.busy : null,
+          ]}>
+          <ThemedText type="f13" style={[styles.bold, { color: isDecided ? theme.onTint : theme.text }]}>
+            {ACTION_CONSULT}
+          </ThemedText>
+        </Pressable>
       </View>
     </View>
   );
@@ -750,13 +704,6 @@ function Empty() {
         <ThemedText type="f13" themeColor="textAssistive" style={styles.emptyText}>
           {EMPTY_BODY}
         </ThemedText>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={EMPTY_CTA}
-          onPress={() => router.push({ pathname: '/pick', params: { section: 'recommendations' } })}
-          style={({ pressed }) => [styles.emptyCta, { backgroundColor: theme.tint }, pressed ? styles.pressed : null]}>
-          <ThemedText type="f15" style={[styles.bold, { color: theme.onTint }]}>{EMPTY_CTA}</ThemedText>
-        </Pressable>
       </View>
     </View>
   );
