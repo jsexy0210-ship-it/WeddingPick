@@ -866,8 +866,8 @@ export const Layout = {
   /** Pick 빈 상태의 원 64와 그 안 하트 32 — size.emptyMark · iconEmpty(피그마 `Pick.tsx` `h-16 w-16` · `h-8 w-8`). */
   emptyMark: 64,
   iconEmpty: 32,
-  /** 업체 상세 대표 이미지 260 · 포트폴리오 띠 정사각 144 — docs/design/handoff/screens.json WP-VEND-001. */
-  heroVendor: 260,
+  /** 업체 상세 대표 이미지 290(RN 정본 search.js `heroWrap` · 2026-09-25 픽셀 대조, 전 260) · 포트폴리오 띠 정사각 144. */
+  heroVendor: 290,
   thumbPortfolio: 144,
   /**
    * 웨딩피드 글 상세의 대표 이미지 208 — size.heroFeed(피그마 `FlowScreens.tsx`

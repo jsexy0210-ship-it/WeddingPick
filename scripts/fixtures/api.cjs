@@ -43,7 +43,8 @@ const vendor = (id, name, category, region, opts = {}) => ({
 const disclosed = (count, low, high, median) => ({
   stage: median === undefined ? 'normal' : 'detailed',
   count,
-  caption: `실 제보 ${count}건 · 최근 12개월`,
+  /* 서버(domain disclosure.ts)는 상세 단계에서만 «· 기준금액 N만원»을 붙인다 — 정본 WP-VEND-001 · 007 금액 설명 줄. */
+  caption: `실 제보 ${count}건 · 최근 12개월${median === undefined ? '' : ` · 기준금액 ${Math.round(median / 10_000)}만원`}`,
   low,
   high,
   ...(median === undefined ? {} : { median }),
@@ -1123,7 +1124,20 @@ const routes = {
 
   /* WP-VEND-001 업체 상세 및 하위 화면(이미지·조건별 사례·후기). id는 무엇이 와도 같은 fixture를 낸다 — 캡처는 실제 DB를 보지 않는다. */
   'GET /v1/vendors/:vendorId': VENDOR_DETAIL,
-  'GET /v1/vendors/:vendorId/images': { photos: [] },
+  /*
+   * 승인된 실사진 8장 — 정본 WP-VEND-001 «1 / 8» · 포트폴리오 · WP-VEND-006 전체보기와 같은 수.
+   * 주소는 캡처가 바깥으로 나가지 않으므로 열리지 않는다(정본 미리보기도 사진 칸이 비어 찍힌다).
+   */
+  'GET /v1/vendors/:vendorId/images': {
+    photos: Array.from({ length: 8 }, (_, i) => ({
+      id: `9a000000-0000-4000-8000-00000000000${i + 1}`,
+      url: `https://images.weddingpick.invalid/vendor-${i + 1}.jpg`,
+      isRepresentative: i === 0,
+      useContain: false,
+      sourceNote: null,
+      verifiedAt: '2026-08-12T00:00:00.000Z',
+    })),
+  },
   'GET /v1/vendors/:vendorId/conditions': {
     available: false,
     note: '조건이 비슷한 사례를 더 모으고 있어요',
