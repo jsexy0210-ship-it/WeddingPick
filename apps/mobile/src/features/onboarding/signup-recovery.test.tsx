@@ -32,8 +32,10 @@ jest.mock('./region-picker-sheet', () => ({ RegionPickerSheet: 'RegionPickerShee
 jest.mock('./step-frame', () => ({ StepFrame: 'StepFrame' }));
 jest.mock('@weddingpick/ui', () => ({
   Border: { selected: 1.5 },
+  CanonGray: {},
   FontSize: { dateWheel: 17 },
   Layout: {},
+  LineHeight: {},
   ProductSymbol: 'ProductSymbol',
   Radius: {},
   Spacing: {},

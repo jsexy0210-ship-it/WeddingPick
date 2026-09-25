@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
-import { Border, FontSize, Layout, LineHeight, Radius, ThemedText, useTheme } from '@weddingpick/ui';
+import { Border, CanonGray, FontSize, Layout, LineHeight, Radius, ThemedText, useTheme } from '@weddingpick/ui';
 
 import { BUDGET_NOTE, BUDGET_QUICK_CHIPS, BUDGET_UNIT, formatManWonDigits } from './flow';
 
@@ -52,7 +52,7 @@ export function BudgetAmount({
           maxLength={MAX_DIGITS + Math.floor((MAX_DIGITS - 1) / 3)}
           style={[styles.amount, { color: theme.text }]}
         />
-        <ThemedText type="f17" themeColor="textSecondary" style={styles.unit}>
+        <ThemedText type="f17" style={styles.unit}>
           {BUDGET_UNIT}
         </ThemedText>
       </Pressable>
@@ -66,10 +66,10 @@ export function BudgetAmount({
             onPress={() => onChange(chip.add === null ? null : Math.min((value ?? 0) + chip.add, MAX_AMOUNT))}
             style={({ pressed }) => [
               styles.chip,
-              { backgroundColor: theme.backgroundSelected },
+              { backgroundColor: CanonGray.gray100 },
               pressed && styles.pressed,
             ]}>
-            <ThemedText type="f14" themeColor="textSecondary" numeric style={styles.chipLabel}>
+            <ThemedText type="f14" numeric style={styles.chipLabel}>
               {chip.label}
             </ThemedText>
           </Pressable>
@@ -90,6 +90,7 @@ const MAX_AMOUNT = 10 ** MAX_DIGITS - 1;
 const FIELD_HEIGHT = 64;
 const FIELD_PADDING_X = 18;
 const FIELD_GAP = 6;
+const UNIT_DROP = 11;
 
 const styles = StyleSheet.create({
   /* 시안 sec — 좌우 24 · 아래 20 · 사이 12. */
@@ -104,7 +105,12 @@ const styles = StyleSheet.create({
     borderWidth: Border.selected,
     paddingHorizontal: FIELD_PADDING_X,
     flexDirection: 'row',
-    alignItems: 'baseline',
+    /*
+     * 정본 `amtField`는 baseline 정렬이다(`amtVal` 32/64 · `amtUnit` 17). RN TextInput은 웹에서
+     * baseline을 내놓지 않아 «만원»이 10px 위로 떴다 — 가운데 정렬 뒤 단위만 아래로 내려
+     * 정본 그림과 같은 자리(단위 상자 중심이 칸 중심보다 5.5 아래)에 둔다.
+     */
+    alignItems: 'center',
     justifyContent: 'flex-end',
     gap: FIELD_GAP,
   },
@@ -121,7 +127,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   /* 단위는 줄바꿈하지 않는다 — 입력 칸이 남은 폭을 다 쓰더라도 «만원»은 한 덩어리다. */
-  unit: { flexShrink: 0, fontWeight: 700 },
+  unit: { flexShrink: 0, fontWeight: 700, marginTop: UNIT_DROP, color: CanonGray.gray700 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Layout.chipGap },
   chip: {
     height: Layout.chipSheet,
@@ -129,7 +135,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
     justifyContent: 'center',
   },
-  chipLabel: { fontWeight: 700 },
+  chipLabel: { fontWeight: 700, color: CanonGray.gray700 },
   note: { lineHeight: LineHeight.lh19 },
   pressed: { opacity: 0.8 },
 });

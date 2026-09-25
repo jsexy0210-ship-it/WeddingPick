@@ -54,6 +54,7 @@ import {
   MaxContentWidth,
   ProductSymbol,
   Radius,
+  SeedIcon,
   Spacing,
   ThemedText,
   ThemedView,
@@ -102,14 +103,12 @@ const CLEAR_LABEL = '검색어 지우기';
 
 /** 자동완성은 결과보다 빨리 따라와야 한다(RN 정본 WP-SRCH-004 · search.jsx frame-008). */
 const AUTOCOMPLETE_DEBOUNCE_MS = 200;
-/** 자동완성 «업체» 행 수 · «지역» 행 수. 시안은 3줄이다. */
+/** 추천 검색어 중 업체 이름 수 · 지역 이름 수. 정본 `acSuggest`는 네 줄이다. */
 const AUTOCOMPLETE_VENDORS = 3;
-const AUTOCOMPLETE_REGIONS = 3;
+const AUTOCOMPLETE_REGIONS = 1;
 
-/** 자동완성 그룹 제목. spec/strings.ko.json search.group.* · SPEC §13.7(«업체 · 바로 상세로»). */
-const AC_GROUP_VENDOR = '업체 · 바로 상세로';
-const AC_GROUP_REGION = '지역';
-const AC_GROUP_KEYWORD = '이 말로 검색';
+/** 추천 검색어 — v3.29 WP-SRCH-004 `acLabel`. */
+const AC_GROUP_SUGGEST = '추천 검색어';
 /** 최근 검색 — v3.29 WP-SRCH-004 `acLabel` · `acClearAll`. */
 const AC_GROUP_RECENT = '최근 검색';
 const AC_CLEAR_ALL = '전체 삭제';
@@ -223,7 +222,6 @@ export default function SearchScreen() {
 
   /* 자동완성 — 업체 · 결과 수. 지역은 이미 읽어둔 목록에서 고른다. */
   const [acVendors, setAcVendors] = useState<VendorSummary[]>([]);
-  const [acTotal, setAcTotal] = useState<number | null>(null);
 
   /*
    * Pick — 카드의 버튼이 진짜 후보에 담는다(SPEC §13.1).
@@ -359,8 +357,8 @@ export default function SearchScreen() {
   }, [viewState, showAutocomplete, runSearch]);
 
   /*
-   * 자동완성. 검색어가 있을 때만 서버를 부른다 — 업체명 행은 결과를 건너뛰고 상세로 가고,
-   * «이 말로 검색» 행은 결과 수를 미리 보여준다(WP-SRCH-004).
+   * 자동완성. 검색어가 있을 때만 서버를 부른다 — 추천 검색어의 업체 이름 줄은 결과를
+   * 건너뛰고 상세로 간다(WP-SRCH-004).
    */
   useEffect(() => {
     if (!isServerConfigured || !showAutocomplete || !trimmedQ) return;
@@ -370,7 +368,6 @@ export default function SearchScreen() {
         .then((response) => {
           if (id !== acRequestId.current) return;
           setAcVendors(response.vendors.slice(0, AUTOCOMPLETE_VENDORS));
-          setAcTotal(response.total);
         })
         .catch(() => undefined);
     }, AUTOCOMPLETE_DEBOUNCE_MS);
@@ -573,54 +570,42 @@ export default function SearchScreen() {
   // ─── 자동완성 · WP-SRCH-004 ───────────────────────────────────────────────
 
   /**
-   * RN 정본 WP-SRCH-004(`search.jsx` frame-008). 검색어가 없으면 «최근 검색»(각 줄 X · «전체 삭제»)만 보여준다
-   * (`acSec`/`acRecent`/`acClearAll`). 검색어가 생기면 «업체 · 바로 상세로»(이름 18 ·
-   * «지역 · 업종» 14 · 꼬리 «실 제보 N건») · «지역»(지역명 · «N곳») · «이 말로 검색»
-   * (검색어 · «결과 N곳») 순으로 뜬다. 행 56 · padding 12 0 · 아래 선 1. 그룹 제목
-   * t14m · 그룹 사이 20.
-   *
-   * 정본의 «추천 검색어»(입력한 글자를 굵게 표시하는 조합 문구, 예: «강남**구 웨딩홀**»)는
-   * 만들지 않는다 — 서버에 그런 문구를 조립할 자료가 없고, 지어내면 실제로 없는 결과로
-   * 이어질 수 있다(DESIGN_UNRESOLVED).
+   * RN 정본 WP-SRCH-004(`search.jsx` frame-008). 묶음 둘(`acSec`: 위 16 · 아래 4 · 사이 2):
+   *   - «최근 검색» ↔ «전체 삭제»(13/700 보조색 · 아래 8) → 줄(`acRow` 최소 48 · 사이 10): 시계 18 ·
+   *     검색어 15 잉크 · 지우기 16 흐린색. 입력 중에도 그대로 보인다.
+   *   - «추천 검색어» → 줄: 돋보기 18 · 입력한 글자와 겹치는 부분만 굵게(`acBold`) 15 잉크.
+   * 추천 검색어는 지어내지 않는다 — 서버가 찾은 업체 이름과 지역 이름뿐이다. 업체 이름은 상세로,
+   * 지역 이름은 그 지역 결과로 간다. 2026-09-25 픽셀 대조로 정본에 없던 묶음 제목(«업체 · 바로
+   * 상세로» · «지역» · «이 말로 검색»)과 줄 아래 설명 · 건수를 뺐다.
    */
   function renderAutocomplete() {
     const lower = trimmedQ.toLowerCase();
     const regionRows = trimmedQ
       ? regions.filter((region) => region.name.toLowerCase().includes(lower)).slice(0, AUTOCOMPLETE_REGIONS)
       : [];
-
-    const row = (
-      key: string,
-      name: string,
-      meta: string | null,
-      tail: string | null,
-      onPress: () => void,
-      label: string
-    ) => (
-      <View key={key}>
-        <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress}>
-          <View style={styles.acRow}>
-            <View style={styles.acBody}>
-              <ThemedText type="t5" numberOfLines={1}>{name}</ThemedText>
-              {meta ? (
-                <ThemedText type="t7" themeColor="textAssistive" numberOfLines={1}>{meta}</ThemedText>
-              ) : null}
-            </View>
-            {tail ? (
-              <ThemedText type="t7" themeColor="textAssistive" numeric style={styles.acTail}>{tail}</ThemedText>
-            ) : null}
-          </View>
-        </Pressable>
-        <View style={[styles.divider, { backgroundColor: theme.border }]} />
-      </View>
-    );
+    const suggestions = trimmedQ
+      ? [
+          ...acVendors.map((item) => ({
+            key: item.id,
+            text: item.name,
+            label: `${item.name} 자세히 보기`,
+            onPress: () => openVendorFromAutocomplete(item),
+          })),
+          ...regionRows.map((region) => ({
+            key: `region-${region.name}`,
+            text: region.name,
+            label: `${region.name} 검색`,
+            onPress: () => openRegionFromAutocomplete(region.name),
+          })),
+        ]
+      : [];
 
     return (
-      <View style={styles.acPanel}>
-        {!trimmedQ && recentSearches.length > 0 ? (
-          <View style={styles.acGroup}>
+      <View>
+        {recentSearches.length > 0 ? (
+          <View style={styles.acSec}>
             <View style={styles.acHead}>
-              <ThemedText type="t7" themeColor="textAssistive" style={styles.bold}>
+              <ThemedText type="f13" themeColor="textAssistive" style={styles.bold}>
                 {AC_GROUP_RECENT}
               </ThemedText>
               <Pressable
@@ -628,83 +613,65 @@ export default function SearchScreen() {
                 accessibilityLabel={AC_CLEAR_ALL}
                 hitSlop={Spacing.two}
                 onPress={() => clearRecentSearches().then(() => setRecentSearches([]))}>
-                <ThemedText type="t7" themeColor="textAssistive" style={styles.bold}>
+                <ThemedText type="f13" themeColor="textAssistive" style={styles.bold}>
                   {AC_CLEAR_ALL}
                 </ThemedText>
               </Pressable>
             </View>
-            <View style={styles.acList}>
-              {recentSearches.map((query) => (
-                <View key={query} style={styles.acRow}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`${query} 검색`}
-                    style={styles.acRecentQuery}
-                    onPress={() => submitSearch(query)}>
-                    <ProductSymbol name="clock" size={Layout.iconField} color={theme.textAssistive} />
-                    <ThemedText type="t5" numberOfLines={1} style={styles.acRecentText}>
-                      {query}
-                    </ThemedText>
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`${query} 삭제`}
-                    hitSlop={Spacing.two}
-                    onPress={() => removeRecentSearch(query, recentSearches).then(setRecentSearches)}>
-                    <ProductSymbol name="close" size={Layout.iconField} color={theme.textAssistive} />
-                  </Pressable>
-                </View>
-              ))}
-            </View>
+            {recentSearches.map((query) => (
+              <View key={query} style={styles.acRow}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${query} 검색`}
+                  style={styles.acRecentQuery}
+                  onPress={() => submitSearch(query)}>
+                  <ProductSymbol name="clock" size={Layout.iconInline} color={theme.textAssistive} />
+                  <ThemedText type="f15" numberOfLines={1} style={styles.acText}>
+                    {query}
+                  </ThemedText>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${query} 삭제`}
+                  hitSlop={Spacing.two}
+                  onPress={() => removeRecentSearch(query, recentSearches).then(setRecentSearches)}>
+                  <ProductSymbol name="close" size={Layout.iconField} color={theme.textDisabled} />
+                </Pressable>
+              </View>
+            ))}
           </View>
         ) : null}
-        {trimmedQ && acVendors.length > 0 ? (
-          <View style={styles.acGroup}>
-            <ThemedText type="t7" themeColor="textAssistive" style={styles.bold}>{AC_GROUP_VENDOR}</ThemedText>
-            <View style={styles.acList}>
-              {acVendors.map((item) =>
-                row(
-                  item.id,
-                  item.name,
-                  `${regionLabel(item.region)} · ${VENDOR_CATEGORY_LABEL[item.category]}`,
-                  countTail(item),
-                  () => openVendorFromAutocomplete(item),
-                  `${item.name} 자세히 보기`
-                )
-              )}
-            </View>
-          </View>
-        ) : null}
-        {regionRows.length > 0 ? (
-          <View style={styles.acGroup}>
-            <ThemedText type="t7" themeColor="textAssistive" style={styles.bold}>{AC_GROUP_REGION}</ThemedText>
-            <View style={styles.acList}>
-              {regionRows.map((region) =>
-                row(
-                  region.name,
-                  region.name,
-                  `${region.count}곳`,
-                  null,
-                  () => openRegionFromAutocomplete(region.name),
-                  `${region.name} 검색`
-                )
-              )}
-            </View>
-          </View>
-        ) : null}
-        {trimmedQ ? (
-          <View style={styles.acGroup}>
-            <ThemedText type="t7" themeColor="textAssistive" style={styles.bold}>{AC_GROUP_KEYWORD}</ThemedText>
-            <View style={styles.acList}>
-              {row(
-                'keyword',
-                trimmedQ,
-                null,
-                acTotal === null ? null : `결과 ${acTotal}곳`,
-                () => submitSearch(trimmedQ),
-                `${trimmedQ} 검색`
-              )}
-            </View>
+        {suggestions.length > 0 ? (
+          <View style={styles.acSec}>
+            <ThemedText type="f13" themeColor="textAssistive" style={styles.bold}>
+              {AC_GROUP_SUGGEST}
+            </ThemedText>
+            {suggestions.map((row) => {
+              const at = row.text.toLowerCase().indexOf(lower);
+              return (
+                <Pressable
+                  key={row.key}
+                  accessibilityRole="button"
+                  accessibilityLabel={row.label}
+                  onPress={row.onPress}
+                  style={styles.acRow}>
+                  <SeedIcon name="searchRegular" size={Layout.iconInline} color={theme.textAssistive} />
+                  <ThemedText type="f15" numberOfLines={1} style={styles.acText}>
+                    {at < 0 ? (
+                      row.text
+                    ) : (
+                      <>
+                        {row.text.slice(0, at)}
+                        <ThemedText type="f15" style={styles.bold}>
+                          {row.text.slice(at, at + trimmedQ.length)}
+                        </ThemedText>
+                        {row.text.slice(at + trimmedQ.length)}
+                      </>
+                    )}
+                  </ThemedText>
+                </Pressable>
+              );
+            })}
           </View>
         ) : null}
       </View>
@@ -776,7 +743,7 @@ export default function SearchScreen() {
           : '찾으시는 업체가 아직 등록되지 않았어요.';
 
     return (
-      <View>
+      <View style={styles.emptyRoot}>
         <View style={styles.emptyWrap}>
           <ThemedText type="f16" style={[styles.bold, styles.emptyTitle]}>{EMPTY_TITLE}</ThemedText>
           <ThemedText type="f14" themeColor="textAssistive" style={styles.emptySub}>{body}</ThemedText>
@@ -940,7 +907,7 @@ export default function SearchScreen() {
             onRefresh={() => runSearch(true)}
             accessibilityState={{ busy: refreshing }}
             keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.resultList}
+            contentContainerStyle={[styles.resultList, styles.resultListGrow]}
             onEndReached={loadMore}
             onEndReachedThreshold={0.4}
             showsVerticalScrollIndicator={false}
@@ -1001,13 +968,17 @@ export default function SearchScreen() {
           </View>
           <View style={styles.headerSearchRow}>
             {renderSearchBox()}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={activeFilterCount > 0 ? `필터 ${formatCount(activeFilterCount)}개 적용됨` : '필터'}
-              onPress={() => setFilterOpen(true)}
-              style={[styles.headerFilterBtn, { backgroundColor: theme.backgroundElement }]}>
-              <FilterIcon color={theme.text} />
-            </Pressable>
+            {/* 입력 중(WP-SRCH-004)에는 검색창이 줄을 다 쓴다 — 정본 frame-008에 필터 단추가 없다. */}
+            {showAutocomplete ? null : (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={activeFilterCount > 0 ? `필터 ${formatCount(activeFilterCount)}개 적용됨` : '필터'}
+                onPress={() => setFilterOpen(true)}
+                style={[styles.headerFilterBtn, { backgroundColor: theme.backgroundElement }]}>
+                {/* 정본 WP-SRCH-001 `icoSliders` = ICO('more-horiz', 16, INK) — search.js. */}
+                <SeedIcon name="moreHorizRegular" size={Layout.iconField} color={theme.text} />
+              </Pressable>
+            )}
           </View>
           {/* 지도 보기는 여기 없다(2026-09-08) — 위치는 업체 상세에서만 보인다. */}
         </ThemedView>
@@ -1048,19 +1019,6 @@ export default function SearchScreen() {
         />
       </SafeAreaView>
     </ThemedView>
-  );
-}
-
-/**
- * 검색바 옆 필터 버튼 아이콘 — 2026-09-14 대표 지시(피그마 채택). 길이가 줄어드는
- * 가로줄 셋으로 "거르기"를 뜻하는 통상적인 필터 기호다. `ProductSymbol`에 없는
- * 아이콘이라 이 화면에 로컬로 둔다. 크기는 피그마 `SlidersHorizontal w-4 h-4` = 16.
- */
-function FilterIcon({ color }: { color: string }) {
-  return (
-    <Svg width={Layout.iconField} height={Layout.iconField} viewBox="0 0 24 24" fill="none">
-      <Path d="M4 7h16M7 12h10M10 17h4" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-    </Svg>
   );
 }
 
@@ -1141,7 +1099,8 @@ function ResultCard({
         {badge ? (
           /* 피그마 badge: 열 기준 left/top 14 · pill · 잉크 채움 · 흰 글자 · padding 8/2. */
           <View style={[styles.cardBadge, { backgroundColor: theme.text }]}>
-            <ThemedText type="micro" style={[styles.bold, { color: theme.onInk }]}>
+            {/* 정본 `vBadge` 10/14/700(search.js) — micro(13/18)가 아니다. */}
+            <ThemedText type="f10" style={[styles.bold, styles.badgeText, { color: theme.onInk }]}>
               {badge}
             </ThemedText>
           </View>
@@ -1263,6 +1222,9 @@ function DropdownChip({
 /** 정본 `nearRow` 최소 높이 60 — 사다리 밖의 행 높이라 여기 적는다. */
 const NEAR_ROW_HEIGHT = 60;
 
+/** 정본 `emptyWrap` 아래 여백 120 — 빈 상태를 화면 가운데보다 조금 위에 둔다. */
+const EMPTY_PAD_BOTTOM = 120;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -1326,53 +1288,40 @@ const styles = StyleSheet.create({
   },
 
   // 자동완성 · 시안 #16b: 그룹 padding 0 24 20 · 제목→목록 8 · 행 56 · padding 12 0 · 행 사이 2
-  acPanel: {
-    paddingBottom: Spacing.two,
-  },
-  acGroup: {
-    paddingHorizontal: Layout.gutter,
-    paddingBottom: Layout.listGap,
-    gap: Spacing.two,
-  },
-  acList: {
+  /* 정본 `acSec`: 위 16 · 좌우 20(전역 거터 24) · 아래 4 · 사이 2. */
+  acSec: {
+    paddingTop: Spacing.three,
+    paddingHorizontal: Layout.pageX,
+    paddingBottom: Spacing.one,
     gap: Spacing.half,
   },
-  acRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Layout.rowPaddingY,
-    minHeight: Layout.rowMinHeight,
-    paddingVertical: Layout.rowPaddingY,
-  },
-  acBody: {
-    flex: 1,
-    minWidth: 0,
-    gap: Spacing.half,
-  },
-  acTail: {
-    flexShrink: 0,
-  },
-  /* 최근 검색 묶음 머리 — 정본 `acHead`: 제목 ↔ «전체 삭제» 양끝. */
+  /* 정본 `acHead`: 양끝 · 사이 12 · 아래 8. */
   acHead: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: Spacing.three,
+    gap: Layout.inlineGap,
+    paddingBottom: Spacing.two,
   },
-  /* 최근 검색 한 줄 — 시계 아이콘 + 검색어(누르면 그 검색어로), X는 그 줄만 지운다. */
+  /* 정본 `acRow`: 최소 48 · 사이 10. */
+  acRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Layout.cardGap,
+    minHeight: Layout.searchField,
+  },
   acRecentQuery: {
     flex: 1,
     minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Layout.rowPaddingY,
+    gap: Layout.cardGap,
   },
-  acRecentText: {
+  acText: {
     flex: 1,
     minWidth: 0,
   },
 
-  // ── 홈 ──
   scroll: {
     flex: 1,
   },
@@ -1569,6 +1518,11 @@ const styles = StyleSheet.create({
   },
 
   /* 규격서 「div 390×137 … bg #FFFFFF · r16 · border 1 #000000 6% · shadow」 — radius 16 · 테두리 1 · shadow-sm. */
+  /* 결과가 없을 때 빈 상태가 남은 높이를 채운다(정본 `emptyWrap` flex:1). */
+  resultListGrow: {
+    flexGrow: 1,
+  },
+
   resultCard: {
     flexDirection: 'row',
     borderRadius: Radius.cardLarge,
@@ -1590,6 +1544,9 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.half,
   },
   /* 오른쪽 정보 `flex-1 p-3.5 flex-col justify-between` — 안쪽 14(같은 값의 fieldPaddingX). */
+  badgeText: {
+    lineHeight: LineHeight.lh14,
+  },
   cardInfo: {
     flex: 1,
     minWidth: 0,
@@ -1646,11 +1603,16 @@ const styles = StyleSheet.create({
   },
 
   // 결과 없음 · RN 정본 WP-SRCH-003 `emptyWrap`: 가운데 · 사이 12 · 좌우 40 · 제목 16/22 · 안내 14/20.
+  emptyRoot: {
+    flex: 1,
+  },
+  /* 정본 `emptyWrap`은 flex 1 · 가운데 정렬 · 아래 120 — 남은 높이 한가운데보다 조금 위에 선다. */
   emptyWrap: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
     gap: Layout.inlineGap,
-    paddingTop: Layout.sectionGap,
-    paddingBottom: Layout.sectionGap,
+    paddingBottom: EMPTY_PAD_BOTTOM,
     /* 정본 좌우 40 — 목록(`resultList`)이 이미 24를 주므로 16만 더한다. */
     paddingHorizontal: Spacing.three,
   },
@@ -1664,7 +1626,7 @@ const styles = StyleSheet.create({
   },
   /* 정본 `emptyCta`: 위 14 · 높이 48 · 좌우 20 · radius 8 · 코랄 면 · 15/700 흰 글자. */
   emptyCta: {
-    marginTop: Layout.sectionHeadGap - Layout.inlineGap,
+    marginTop: Layout.sectionHeadGap,
     height: Layout.searchField,
     paddingHorizontal: Layout.cardPadding,
     borderRadius: Radius.picker,

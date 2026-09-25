@@ -1,7 +1,9 @@
 import {
   INVITE_TTL_HOURS,
   inviteCodeFromLink,
-  inviteShareMessage,
+  inviteShareUrl,
+  isInviteCode,
+  normalizeInviteCode,
   PARTNER_NOT_SHARED,
   PARTNER_SHARED,
   inviteState,
@@ -53,12 +55,12 @@ describe('초대 링크', () => {
     expect(inviteCodeFromLink('weddingpick://join?code=ABCD-1234')).toBe('ABCD-1234');
   });
 
-  it('공유 문구에 링크와 코드를 함께 담는다', () => {
-    const message = inviteShareMessage('ABCD-1234');
+  it('공유 주소에는 초대 코드가 없다 — 안내 주소 하나뿐이다(2026-09-25 대표 지시)', () => {
+    const url = inviteShareUrl('https://example.test/');
 
-    // 앱이 깔린 사람은 링크로, 아닌 사람은 코드로. 하나만 담으면 한쪽이 막힌다.
-    expect(message).toContain('weddingpick://join?code=ABCD-1234');
-    expect(message).toContain('ABCD-1234');
+    expect(url).toBe('https://example.test/invite');
+    expect(url).not.toMatch(/\d{6}/);
+    expect(url).not.toContain('code');
   });
 
   it('우리 스킴이 아니면 받지 않는다', () => {
@@ -73,5 +75,19 @@ describe('초대 링크', () => {
 
   it('링크가 아니어도 터지지 않는다', () => {
     expect(inviteCodeFromLink('그냥 문자열')).toBeNull();
+  });
+});
+
+describe('초대 코드 형식', () => {
+  it('6자리 숫자만 코드다', () => {
+    expect(isInviteCode('012345')).toBe(true);
+    expect(isInviteCode('12345')).toBe(false);
+    expect(isInviteCode('1234567')).toBe(false);
+    expect(isInviteCode('12a456')).toBe(false);
+  });
+
+  it('붙여 넣은 글에서 숫자 6자리만 남긴다', () => {
+    expect(normalizeInviteCode('123 456')).toBe('123456');
+    expect(normalizeInviteCode('123-4567')).toBe('123456');
   });
 });

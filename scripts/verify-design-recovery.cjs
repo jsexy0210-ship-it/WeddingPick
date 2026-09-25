@@ -90,7 +90,8 @@ function detailHarness(initialId='a') {
 const post = (id, body='body') => ({ id, title:`title-${id}`, categoryLabel:'예산', summary:'summary', body, imageUri:null,publishedAt:null });
 function loungeHarness(kind='review') {
   const h=hooks();const pushed=[];const replaced=[];
-  const loungeReviewHelpers=load('apps/mobile/src/features/community/lounge-reviews.ts');
+  const loungeReviewHelpers=load('apps/mobile/src/features/community/lounge-reviews.ts',{
+    '@weddingpick/domain':{VENDOR_CATEGORY_LABEL:{},PREPARATION_GROUPS:[{key:'start',categories:['hall']}]}});
   const items=[{id:'post/a?b',title:'첫 글',summary:'summary',imageUrl:null,categoryLabel:'예산'},
     {id:'second',title:'둘째 글',summary:'summary',imageUrl:null,categoryLabel:'체크리스트'}];
   const feed={tabs:[{key:'all',label:'전체',categories:[]},{key:'budget',label:'예산',categories:['예산']}],items};
@@ -104,6 +105,7 @@ function loungeHarness(kind='review') {
     '@/features/errors/full-screen-error':{FullScreenError:'FullScreenError'},
     '@/features/home/category-image':{CategoryImage:'CategoryImage'},
     '@/features/community/lounge-reviews':loungeReviewHelpers,
+    '@/features/settings/my-kit':{CatChip:'CatChip'},'react-native-svg':{default:'Svg',Path:'Path'},
     '@/features/loading/delayed-loader':{DelayedLoader:'Loader',DelayedLoadingView:'Loading'},
     '@/features/wedding/screen-kit':{NavBar:'NavBar'},'../../../../../spec/strings.ko.json':strings,
     '@/app/(tabs)/search/[vendorId]/write-review':{ReviewWriteSheet:'ReviewWriteSheet'},
@@ -188,7 +190,7 @@ function splitFixture(script,role,missingAdmin=false) {
   });
   await check('lounge category filters preserve clickable detail',async()=>{
     const l=loungeHarness('feed');l.render();l.h.commit();await flush();
-    find(l.render(),'FilterChip').find(chip=>chip.props.label==='예산').props.onPress();const buttons=find(l.render(),'Pressable');
+    find(l.render(),'CatChip').find(chip=>chip.props.label==='예산').props.onPress();const buttons=find(l.render(),'Pressable');
     assert.equal(buttons.length,1);assert.equal(buttons[0].props.accessibilityLabel,'첫 글');
   });
   await check('lounge verified review action is restricted to review tab',async()=>{

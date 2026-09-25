@@ -1,7 +1,8 @@
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Layout, Radius, SeedIcon, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { CanonGray, FontSize, Layout, LineHeight, Radius, SeedIcon, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 
 import strings from '../../../../../spec/strings.ko.json';
+import { MORE_CHEVRON } from './home-summary';
 import type { ScheduleRow } from './schedule-view';
 
 const S = strings.home;
@@ -32,7 +33,7 @@ export function UpcomingSchedule({
       <View style={styles.heading}>
         <View style={styles.headingCol}>
           <ThemedText type="f14" style={styles.bold}>{S['section.schedule']}</ThemedText>
-          <ThemedText type="f12" themeColor="textAssistive">
+          <ThemedText type="f12" themeColor="textAssistive" style={styles.sub}>
             {hasDate ? S['schedule.sub'] : S['schedule.subDefault']}
           </ThemedText>
         </View>
@@ -42,44 +43,44 @@ export function UpcomingSchedule({
           onPress={onMore}
           hitSlop={Spacing.two}
           style={({ pressed }) => [styles.more, pressed && styles.pressed]}>
-          <ThemedText type="f13" themeColor="textAssistive">{S.more}</ThemedText>
-          <SeedIcon name="chevronRightRegular" size={Layout.iconField} color={theme.textAssistive} />
+          <ThemedText type="f13" themeColor="textAssistive" style={styles.bold}>{S.more}</ThemedText>
+          <SeedIcon name="chevronRightRegular" size={MORE_CHEVRON} color={theme.textAssistive} />
         </Pressable>
       </View>
 
-      <View style={[styles.wrap, { borderColor: theme.border }]}>
+      <View style={[styles.wrap, { borderColor: CanonGray.gray200 }]}>
         {rows.map((row, index) => (
           <View
             key={row.id}
             style={[
               styles.row,
-              index < rows.length - 1 ? { borderBottomWidth: 1, borderBottomColor: theme.border } : null,
+              index < rows.length - 1 ? { borderBottomWidth: 1, borderBottomColor: CanonGray.gray200 } : null,
             ]}>
             <View style={styles.dateCol}>
               {row.kind === 'dated' ? (
                 <>
-                  <ThemedText type="f11" themeColor="textAssistive">{row.month}</ThemedText>
-                  {/* 정본 19/700 — 래더에 없는 값이라 가장 가까운 f18을 쓴다(wedding/index.tsx의
-                      ddayTop과 같은 대체 규칙). 리터럴 fontSize를 직접 적지 않는다
-                      (apps/api/src/test/typography.test.ts). */}
+                  <ThemedText type="f11" themeColor="textAssistive" style={styles.month}>{row.month}</ThemedText>
+                  {/* 정본 `dayStyle` 19/25/700 — 크기는 같은 19인 FontSize.noteDday를 쓴다. 줄 높이
+                      25는 토큰이 없어 가장 가까운 lh24다(공용 토큰은 common 담당 — PR에 요청).
+                      리터럴 fontSize를 직접 적지 않는다(apps/api/src/test/typography.test.ts). */}
                   <ThemedText
                     type="f18"
                     numeric
-                    style={styles.bold}
+                    style={[styles.bold, styles.day]}
                     themeColor={row.near ? 'tint' : 'text'}>
                     {row.day}
                   </ThemedText>
                 </>
               ) : (
-                <View style={[styles.numBadge, { backgroundColor: theme.backgroundElement }]}>
+                <View style={[styles.numBadge, { backgroundColor: CanonGray.gray100 }]}>
                   <ThemedText type="f12" style={styles.bold} themeColor="textAssistive">{row.num}</ThemedText>
                 </View>
               )}
             </View>
 
             <View style={styles.titleCol}>
-              <ThemedText type="f15" style={styles.bold} numberOfLines={1}>{row.title}</ThemedText>
-              <ThemedText type="f12" themeColor="textAssistive" numberOfLines={1}>{row.meta}</ThemedText>
+              <ThemedText type="f15" style={[styles.bold, styles.title]} numberOfLines={1}>{row.title}</ThemedText>
+              <ThemedText type="f12" themeColor="textAssistive" style={styles.sub} numberOfLines={1}>{row.meta}</ThemedText>
             </View>
 
             {row.kind === 'dated' ? (
@@ -105,7 +106,14 @@ const styles = StyleSheet.create({
     marginBottom: Layout.inlineGap,
   },
   headingCol: { flex: 1, minWidth: 0, gap: Spacing.half },
-  more: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  more: { flexDirection: 'row', alignItems: 'center', gap: Spacing.half },
+  /* home.js `secSub` · `schedMeta` 12/17. */
+  sub: { lineHeight: LineHeight.lh17 },
+  /* home.js `schedMonth` 11/15. */
+  month: { lineHeight: LineHeight.lh15 },
+  day: { fontSize: FontSize.noteDday, lineHeight: LineHeight.lh24 },
+  /* home.js `schedTitle` 15/21 — 줄 높이 21 토큰은 t7Loose(값 21) 하나뿐이다. */
+  title: { lineHeight: LineHeight.t7Loose },
   wrap: { borderRadius: 12, borderWidth: 1, overflow: 'hidden' },
   /* home.jsx `row`/`row2` — min-height 64 · padding 0 14px. 그대로 옮겼다. */
   row: { flexDirection: 'row', alignItems: 'center', gap: Layout.inlineGap, minHeight: 64, paddingHorizontal: 14 },

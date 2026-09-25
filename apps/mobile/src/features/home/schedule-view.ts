@@ -1,5 +1,5 @@
 import type { WeddingTask } from '@weddingpick/api-contract';
-import { TASK_PRESETS, daysUntil, formatCount } from '@weddingpick/domain';
+import { daysUntil, formatCount } from '@weddingpick/domain';
 
 import strings from '../../../../../spec/strings.ko.json';
 
@@ -70,9 +70,17 @@ export function datedScheduleRows(tasks: readonly WeddingTask[], now: Date = new
 const NO_DATE_META = S['schedule.noDate'];
 
 /** 날짜 있는 일정이 하나도 없을 때 — 서버 순서(TASK_PRESETS 순) 그대로 다섯 줄. */
+/**
+ * 할 일이 하나도 없을 때 보여 주는 기본 순서 — 정본 문구 그대로다
+ * (`docs/design/React_Native/home.js` WP-HOME-002 · 003 `defaultSchedule`). 서버가 새 웨딩에
+ * 심는 `TASK_PRESETS`(웨딩노트 체크리스트)와는 다른 목록이다 — 홈은 «무엇부터 하나»를 짧게
+ * 안내하고, 체크리스트는 전부를 담는다.
+ */
+const HOME_DEFAULT_ORDER = ['상견례 날짜 정하기', '웨딩홀 계약금 입금', '스드메 예약', '청첩장 인쇄', '신혼여행 예약'] as const;
+
 export function presetScheduleRows(tasks: readonly WeddingTask[]): ScheduleRow[] {
   const labels =
-    tasks.length > 0 ? tasks.map((task) => task.label) : TASK_PRESETS.map((preset) => preset.label);
+    tasks.length > 0 ? tasks.map((task) => task.label) : [...HOME_DEFAULT_ORDER];
 
   return labels.slice(0, DEFAULT_ROWS_MAX).map((label, index) => ({
     kind: 'preset' as const,

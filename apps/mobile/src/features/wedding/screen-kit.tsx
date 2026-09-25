@@ -477,12 +477,52 @@ export function FieldButton({
           },
           pressed && styles.pressed,
         ]}>
-        <ThemedText type="t6" themeColor={value ? 'text' : 'textDisabled'} numeric numberOfLines={1}>
+        {/* 강조(accent) 자리는 정본 `dateVal` 16/700이다. */}
+        <ThemedText
+          type="t6"
+          themeColor={value ? 'text' : 'textDisabled'}
+          numeric
+          numberOfLines={1}
+          style={accent && value ? styles.valueBold : null}>
           {value ?? placeholder}
         </ThemedText>
         {icon}
       </Pressable>
     </View>
+  );
+}
+
+/**
+ * 켬/끔 토글 — React_Native `note.js` `tg()` · `knob`(WP-NOTE-002): 트랙 52 × 32 · 안쪽 3 ·
+ * 켜면 코랄에 손잡이 오른쪽, 끄면 회색(track)에 왼쪽 · 손잡이 26 흰 원.
+ *
+ * RN `Switch`는 웹에서 브라우저 기본 모양(작은 트랙 · 다른 색 손잡이)으로 그려져 정본과
+ * 어긋난다 — 모양을 직접 그린다.
+ */
+export function ToggleSwitch({
+  value,
+  onValueChange,
+  accessibilityLabel,
+}: {
+  value: boolean;
+  onValueChange: (next: boolean) => void;
+  accessibilityLabel: string;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      accessibilityRole="switch"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ checked: value }}
+      onPress={() => onValueChange(!value)}
+      hitSlop={Spacing.two}
+      style={[
+        styles.toggleTrack,
+        { backgroundColor: value ? theme.tint : theme.track, justifyContent: value ? 'flex-end' : 'flex-start' },
+      ]}>
+      <View style={[styles.toggleKnob, { backgroundColor: theme.onTint }]} />
+    </Pressable>
   );
 }
 
@@ -617,6 +657,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: Layout.fieldPaddingX,
   },
   inputButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  valueBold: { fontWeight: 700 },
+  toggleTrack: {
+    width: Layout.toggleWidth,
+    height: Layout.toggleHeight,
+    borderRadius: Radius.pill,
+    paddingHorizontal: (Layout.toggleHeight - Layout.toggleKnob) / 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  toggleKnob: { width: Layout.toggleKnob, height: Layout.toggleKnob, borderRadius: Radius.pill },
 
   dock: {
     borderTopWidth: 1,

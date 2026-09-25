@@ -9,21 +9,22 @@ import {
 } from '@weddingpick/domain';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { createInquiry, listMyInquiries } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
-import { formatDateDot } from '@/features/common/format-date';
 import { useDepthBack } from '@/features/navigation/depth-back';
 import { showResultToast } from '@/features/navigation/result-toast';
-import { OptionRow } from '@/features/onboarding/option-row';
-import { Row, Rows } from '@/features/settings/my-kit';
+import { Dock, Hero, NoteBox, Section, SubScreen } from '@/features/settings/my-kit';
 import { BackBar } from '@/components/back-bar';
 import {
   ActionButton,
   type BadgeKind,
+  Border,
   FontSize,
+  LineHeight,
+  ProductSymbol,
   Layout,
   MaxContentWidth,
   Radius,
@@ -47,6 +48,14 @@ function isCategory(value: string | undefined): value is InquiryCategory {
 }
 
 /** 지난 문의 배지 색 — 시안 `p.badge`는 색을 정하지 않는다. 진행/완료/종료를 일반 규칙으로 매핑한다. */
+/** 정본 pastInquiries state «답변 완료» — 사용자 화면 문구. 도메인 라벨(관리자 공용)은 그대로 둔다. */
+const STATUS_LABEL: Record<InquiryStatus, string> = {
+  received: INQUIRY_STATUS_LABEL.received,
+  in_review: INQUIRY_STATUS_LABEL.in_review,
+  answered: '답변 완료',
+  closed: INQUIRY_STATUS_LABEL.closed,
+};
+
 const INQUIRY_BADGE_KIND: Record<InquiryStatus, BadgeKind> = {
   received: 'wait',
   in_review: 'wait',
@@ -149,135 +158,158 @@ export default function ContactScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <BackBar title="문의하기" onBack={depthBack} />
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-          {mine.length > 0 ? (
-            <ThemedView style={styles.section}>
-              <ThemedText type="smallBold">지난 문의 {mine.length}건</ThemedText>
-              <Rows>
-                {mine.map((inquiry) => (
-                  <View key={inquiry.id}>
-                    <Row
-                      name={inquiry.body}
-                      meta={formatDateDot(inquiry.receivedAt)}
-                      tail={INQUIRY_STATUS_LABEL[inquiry.status]}
-                      tailBadge={INQUIRY_BADGE_KIND[inquiry.status]}
-                    />
-                    {/* 시안(WP-MY-008)엔 없는 줄이다 — 답을 보여줄 상세 화면이 아직 없어 여기서 보여준다. */}
-                    {inquiry.resolution ? (
-                      <ThemedText type="small" themeColor="textSecondary" style={styles.resolution}>
-                        답변: {inquiry.resolution}
-                      </ThemedText>
-                    ) : null}
+    <SubScreen
+      title="문의하기"
+      onBack={depthBack}
+      dock={
+        <Dock
+          primary={{
+            label: busy ? '보내는 중…' : '문의 보내기',
+            disabled: busy || !ready || !isServerConfigured,
+            onPress: () => void submit(),
+          }}
+        />
+      }>
+      {/* 정본 sec «지난 문의 N건» — listCard 안 64 행(질문 15 · 날짜 · 상태 12 muted + 상태 배지 + 꺾쇠). */}
+      {mine.length > 0 ? (
+        <Section title={`지난 문의 ${mine.length}건`}>
+          <View style={[styles.listCard, { backgroundColor: theme.background, borderColor: theme.border }]}>
+            {mine.map((inquiry, index) => (
+              <View key={inquiry.id}>
+                <View
+                  style={[
+                    styles.pastRow,
+                    index < mine.length - 1 ? { borderBottomWidth: Border.hairline, borderBottomColor: theme.border } : null,
+                  ]}>
+                  <View style={styles.pastCol}>
+                    <ThemedText type="f15" numberOfLines={1}>
+                      {inquiry.body}
+                    </ThemedText>
+                    <ThemedText type="f12" themeColor="textAssistive" numeric numberOfLines={1}>
+                      {`${monthDay(inquiry.receivedAt)} · ${STATUS_LABEL[inquiry.status]}`}
+                    </ThemedText>
                   </View>
-                ))}
-              </Rows>
-            </ThemedView>
-          ) : null}
+                  {/* 정본 badgeS — 4 9 · radius 4 · 12/700. 공용 Badge(22 · 14)보다 작다. */}
+                  <View style={[styles.stateBadge, { backgroundColor: badgeTone(theme, INQUIRY_BADGE_KIND[inquiry.status]).background }]}>
+                    <ThemedText type="f12" style={[styles.bold, { color: badgeTone(theme, INQUIRY_BADGE_KIND[inquiry.status]).text }]}>
+                      {STATUS_LABEL[inquiry.status]}
+                    </ThemedText>
+                  </View>
+                  <ProductSymbol name="chevronRight" size={Layout.iconField} color={theme.textDisabled} />
+                </View>
+                {/* 정본엔 없는 줄이다 — 답을 보여줄 상세 화면이 아직 없어 여기서 보여준다. */}
+                {inquiry.resolution ? (
+                  <ThemedText type="f13" themeColor="textAssistive" style={styles.resolution}>
+                    답변: {inquiry.resolution}
+                  </ThemedText>
+                ) : null}
+              </View>
+            ))}
+          </View>
+        </Section>
+      ) : null}
 
-          <View style={[styles.divider, { backgroundColor: theme.border }]} />
+      {/* 정본 divider — 8px 회색 띠. */}
+      {mine.length > 0 ? <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} /> : null}
 
-          <ThemedView style={styles.section}>
-            <ThemedText type="subtitle">{'어떤 점이\n궁금하세요?'}</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              사람이 직접 읽고 답해요. 이름이나 주소 없이 보낼 수 있어요.
-            </ThemedText>
-          </ThemedView>
+      {/* 정본 qBlock — 26/35 700 두 줄. 서브 문구는 없다. */}
+      <Hero lines={['어떤 점이', '궁금하세요?']} />
 
-          {!isServerConfigured ? (
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="small" themeColor="textSecondary">
-                지금은 문의를 보낼 수 없어요. 잠시 후 다시 시도해 주세요.
-              </ThemedText>
-            </ThemedView>
-          ) : null}
+      {!isServerConfigured ? (
+        <Section>
+          <NoteBox title="지금은 문의를 보낼 수 없어요. 잠시 후 다시 시도해 주세요." />
+        </Section>
+      ) : null}
 
-          <ThemedView style={styles.section}>
-            <View style={styles.optionList}>
-              {USER_INQUIRY_CATEGORIES.map((item) => (
-                <OptionRow
-                  key={item}
-                  role="radio"
-                  label={INQUIRY_CATEGORY_RULES[item].label}
-                  selected={category === item}
-                  onPress={() => setCategory(item)}
-                />
-              ))}
-            </View>
-            <ThemedText type="small" themeColor="textSecondary">
-              {rule.description}
-            </ThemedText>
-          </ThemedView>
+      {/* 정본 inquiryTypes — listCard 안 52 행 · 라디오 22 + 라벨 15. */}
+      <Section>
+        <View style={[styles.listCard, { backgroundColor: theme.background, borderColor: theme.border }]}>
+          {USER_INQUIRY_CATEGORIES.map((item, index) => {
+            const on = category === item;
 
-          {/* 어디서 눌러 들어왔는지 보여준다. 무엇에 대한 문의인지 헷갈리지 않게. */}
-          {params.subjectName ? (
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="small" themeColor="textSecondary">
-                대상: {params.subjectName}
-              </ThemedText>
-            </ThemedView>
-          ) : null}
+            return (
+              <Pressable
+                key={item}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: on }}
+                accessibilityLabel={INQUIRY_CATEGORY_RULES[item].label}
+                onPress={() => setCategory(item)}
+                style={[
+                  styles.typeRow,
+                  index < USER_INQUIRY_CATEGORIES.length - 1
+                    ? { borderBottomWidth: Border.hairline, borderBottomColor: theme.border }
+                    : null,
+                ]}>
+                {on ? (
+                  <View style={[styles.radio, { backgroundColor: theme.tint }]}>
+                    <ProductSymbol name="check" size={14} color={theme.onTint} />
+                  </View>
+                ) : (
+                  <View style={[styles.radio, styles.radioOff, { borderColor: theme.track }]} />
+                )}
+                <ThemedText type="f15" numberOfLines={1} style={styles.grow}>
+                  {INQUIRY_CATEGORY_RULES[item].label}
+                </ThemedText>
+              </Pressable>
+            );
+          })}
+        </View>
+      </Section>
 
-          {rule.requiresSubject && !subject ? (
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="small" themeColor="textSecondary">
-                이 항목은 어느 대상에 대한 것인지가 있어야 해요. 해당 화면에서 눌러
-                들어와주세요.
-              </ThemedText>
-            </ThemedView>
-          ) : null}
+      {/* 어디서 눌러 들어왔는지 보여준다. 무엇에 대한 문의인지 헷갈리지 않게. */}
+      {params.subjectName ? (
+        <Section>
+          <NoteBox title={`대상: ${params.subjectName}`} />
+        </Section>
+      ) : null}
 
-          <ThemedView style={styles.section}>
-            <ThemedText type="smallBold">내용</ThemedText>
-            <TextInput
-              style={[styles.input, styles.body, { color: theme.text, borderColor: theme.border }]}
-              value={body}
-              onChangeText={setBody}
-              multiline
-              placeholder="무엇이 잘못되었는지, 무엇을 원하시는지 적어주세요"
-              placeholderTextColor={theme.textSecondary}
-              accessibilityLabel="문의 내용"
-            />
-          </ThemedView>
+      {rule.requiresSubject && !subject ? (
+        <Section>
+          <NoteBox title="이 항목은 어느 대상에 대한 것인지가 있어야 해요. 해당 화면에서 눌러 들어와주세요." />
+        </Section>
+      ) : null}
 
-          {error ? (
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="small" themeColor="textSecondary">
-                {error}
-              </ThemedText>
-            </ThemedView>
-          ) : null}
+      <Section title="내용">
+        <TextInput
+          style={[styles.textarea, { color: theme.text, borderColor: theme.fieldBorder }]}
+          value={body}
+          onChangeText={setBody}
+          multiline
+          placeholder="무엇이 잘못되었는지, 무엇을 원하시는지 적어주세요"
+          placeholderTextColor={theme.textAssistive}
+          accessibilityLabel="문의 내용"
+        />
+      </Section>
 
-          {/* 시안 7(WP-MY-008) «답변 시간을 미리 적습니다» — 보내기 전에 언제 답이 오는지 말한다. */}
-          <ThemedView type="backgroundElement" style={styles.card}>
-            <ThemedText type="smallBold">평일 오전 10시부터 오후 6시까지 답변드려요</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              주말과 공휴일에 남긴 문의는 다음 영업일에 처리해요.
-            </ThemedText>
-          </ThemedView>
+      {error ? (
+        <Section>
+          <NoteBox title={error} />
+        </Section>
+      ) : null}
 
-        </ScrollView>
-        <ThemedView style={[styles.dock, { borderTopColor: theme.border }]}>
-          <ActionButton
-            variant="primary"
-            size="xlarge"
-            label={busy ? '보내는 중…' : '문의 보내기'}
-            hint={
-              ready
-                ? undefined
-                : rule.requiresSubject && !subject
-                  ? '해당 화면에서 눌러 들어와주세요'
-                  : '내용을 적어주세요'
-            }
-            disabled={busy || !ready || !isServerConfigured}
-            onPress={submit}
-          />
-        </ThemedView>
-      </SafeAreaView>
-    </ThemedView>
+      {/* 정본 noteBox «답변 시간을 미리 적습니다». */}
+      <Section>
+        <NoteBox
+          title="평일 오전 10시부터 오후 6시까지 답변드려요"
+          body="주말과 공휴일에 남긴 문의는 다음 영업일에 처리해요."
+        />
+      </Section>
+    </SubScreen>
   );
+}
+
+/** 정본 badgeS 색 — ok 초록 · warn 주황 · 그 밖 회색. */
+function badgeTone(theme: ReturnType<typeof useTheme>, kind: BadgeKind): { background: string; text: string } {
+  if (kind === 'ok') return { background: theme.positiveBackground, text: theme.positive };
+  if (kind === 'wait') return { background: theme.cautionaryBackground, text: theme.cautionary };
+  return { background: theme.backgroundSelected, text: theme.textAssistive };
+}
+
+/** «8월 12일» — 정본 pastInquiries date. */
+function monthDay(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso.slice(0, 10);
+  return `${date.getMonth() + 1}월 ${date.getDate()}일`;
 }
 
 const styles = StyleSheet.create({
@@ -291,47 +323,55 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     width: '100%',
   },
-  scroll: { flex: 1 },
   content: {
     paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.five,
     paddingBottom: Spacing.four,
     gap: Spacing.four,
   },
-  section: {
-    gap: Spacing.two,
+  grow: { flex: 1, minWidth: 0 },
+  /* 정본 listCard — radius 10 · 1 테두리. */
+  listCard: { borderWidth: Border.hairline, borderRadius: Radius.medium, overflow: 'hidden' },
+  /* 정본 pastInquiries rowStyle — 최소 64 · 0 16 · gap 12. */
+  pastRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Layout.inlineGap,
+    minHeight: 64,
+    paddingHorizontal: Spacing.three,
   },
-  /* 시안 divider — 지난 문의와 질문 블록 사이 한 줄. */
-  divider: {
-    height: 1,
+  pastCol: { flex: 1, minWidth: 0, gap: Layout.cardNameGap },
+  bold: { fontWeight: 700 },
+  stateBadge: { paddingHorizontal: 9, paddingVertical: Spacing.one, borderRadius: Radius.badge },
+  resolution: { paddingHorizontal: Spacing.three, paddingBottom: Layout.rowPaddingY },
+  /* 정본 divider — flex 0 0 8px · 회색 띠. */
+  band: { height: Spacing.two },
+  /* 정본 ROW — 최소 52 · 0 20 · gap 12. */
+  typeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Layout.inlineGap,
+    minHeight: 52,
+    paddingHorizontal: Layout.listGap,
   },
-  resolution: {
-    paddingLeft: Layout.gutter - Spacing.two,
+  /* 정본 RADIO 22 — 켜짐 코랄 + 흰 체크 14 · 꺼짐 1.5 테두리. */
+  radio: {
+    width: 22,
+    height: 22,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
-  optionList: {
-    gap: Spacing.two,
-  },
-  card: {
-    borderRadius: Radius.medium,
-    padding: Spacing.three,
-    gap: Spacing.one,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: Radius.input,
-    paddingHorizontal: Layout.fieldPaddingX,
-    paddingVertical: Spacing.two,
-    /* 입력 칸 글자도 본문이다. 토큰 밖의 크기를 쓰지 않는다. */
-    fontSize: FontSize.t6,
-  },
-  body: {
+  radioOff: { borderWidth: 1.5 },
+  /* 정본 textarea — 최소 120 · radius 6 · 1 #d1d3d8 · 14 · 15/23. */
+  textarea: {
     minHeight: 120,
+    borderWidth: Border.hairline,
+    borderRadius: Radius.control,
+    padding: Layout.fieldPaddingX,
+    fontSize: FontSize.f15,
+    lineHeight: LineHeight.lh23,
     textAlignVertical: 'top',
-  },
-  dock: {
-    borderTopWidth: 1,
-    paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.two,
-    paddingBottom: Spacing.two,
   },
 });

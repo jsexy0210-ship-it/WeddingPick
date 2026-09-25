@@ -75,13 +75,16 @@ export function Hero({
     <View style={[styles.hero, { backgroundColor: theme.tint }]}>
       <View style={styles.decor} />
 
-      <View style={styles.top}>
+      <View style={[styles.top, partner === null && styles.topKickerOnly]}>
         <ThemedText type="f9" style={styles.kicker}>
           두근두근
         </ThemedText>
-        <View style={styles.more}>
-          <SeedIcon name="moreHorizRegular" size={Layout.iconSmall} color={theme.onTint} />
-        </View>
+        {/* 정본 세 상태 중 `heroMore`는 두 사람이 함께 준비 중인 WP-HOME-001에만 있다. */}
+        {partner !== null ? (
+          <View style={styles.more}>
+            <SeedIcon name="moreHorizRegular" size={Layout.iconSmall} color={theme.onTint} />
+          </View>
+        ) : null}
       </View>
 
       {daysLeft === null ? (
@@ -115,10 +118,15 @@ export function Hero({
         ) : null}
       </Pressable>
 
+      {/*
+        `coupleRow`는 WP-HOME-001(함께 준비 중)에만 있고 WP-HOME-002 · 003에는 없다 — 연결 전
+        「초대해보세요」 줄은 정본에 없는 진입점이라 그리지 않는다(초대는 웨딩노트 · MY에서 한다).
+      */}
+      {partner !== null ? (
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="함께 준비하기"
-        disabled={me?.spouseLinked === true}
+        disabled
         onPress={onPressPartner}
         style={({ pressed }) => [styles.people, pressed && styles.pressed]}>
         <View style={styles.avatars}>
@@ -134,9 +142,10 @@ export function Hero({
           </View>
         </View>
         <ThemedText type="f10" numberOfLines={1} style={styles.peopleText}>
-          {partner ? `${meName} · ${partner} · 함께 준비 중` : partnerLine(me, partnerInvitePending)}
+          {`${meName} · ${partner} · 함께 준비 중`}
         </ThemedText>
       </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -204,6 +213,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: Spacing.two,
   },
+  /* 「…」 단추가 없는 상태(WP-HOME-002 · 003)는 줄이 `heroKicker` 줄 높이 13뿐이다. */
+  topKickerOnly: { height: 13 },
   /* `heroKicker` — 9 · 자간 .2em · 흰색 55%. 줄높이 13은 토큰이 없어 f9의 14를 쓴다. */
   kicker: { letterSpacing: LetterSpacing.p18, color: ON_TINT_KICKER },
   /* `heroMore` — 24 원 · 흰색 15% · 아이콘 흰색 14. */

@@ -1,12 +1,15 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 
-import { Layout, TextField, Toast } from '@weddingpick/ui';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import type { ReactNode } from 'react';
+
+import { Border, FontSize, Layout, LineHeight, Radius, Spacing, ThemedText, Toast, useTheme } from '@weddingpick/ui';
 import { createInquiry } from '@/api/client';
 import { CheckCircle } from '@/features/onboarding/check-circle';
 import { useDepthBack } from '@/features/navigation/depth-back';
 import { showResultToast } from '@/features/navigation/result-toast';
-import { Dock, Hero, NoteBox, Row, Rows, Section, SubScreen } from '@/features/settings/my-kit';
+import { Dock, Hero, NoteBox, Section, SubScreen } from '@/features/settings/my-kit';
 
 /**
  * RN 정본 WP-VEND-008 「정보 오류 제보」 — `docs/design/React_Native/search.jsx` frame-011 ·
@@ -61,6 +64,7 @@ type ItemKey = (typeof ITEMS)[number]['key'];
 export default function FixReportScreen() {
   const { vendorId } = useLocalSearchParams<{ vendorId: string }>();
   const depthBack = useDepthBack();
+  const theme = useTheme();
 
   const [item, setItem] = useState<ItemKey | null>(null);
   const [value, setValue] = useState('');
@@ -127,44 +131,109 @@ export default function FixReportScreen() {
           }}
         />
       }>
-      <Section title={S.itemGroup}>
-        <Rows>
-          {ITEMS.map((one) => (
-            <Row
-              key={one.key}
-              lead={<CheckCircle size={Layout.iconRow} checked={item === one.key} outline />}
-              name={one.label}
-              onPress={() => setItem(one.key)}
-              accessibilityLabel={one.label}
-            />
-          ))}
-        </Rows>
-      </Section>
+      {/*
+        정본 WP-VEND-008(frame-011): `sec`(안쪽 20 · 사이 12 · 제목 17/700) 셋 — 고르는 줄(`rptRow` 최소 52 ·
+        좌우 16 · 사이 12 · 아래 선 1 · 원 22 · 15 잉크) → 넓은 입력(`rptArea` 최소 100 · radius 8 · 회색 면 ·
+        안쪽 14) → 한 줄 입력(`rptInput` 48 · radius 8 · 회색 면 · 좌우 14). 자리 표시 글자 14 보조색.
+      */}
+      {/* 정본은 고르는 줄이 `sec`의 바로 아래 자식이다 — 줄 사이에도 사이 12가 든다. */}
+      <FixSection title={S.itemGroup}>
+        {ITEMS.map((one) => (
+          <Pressable
+            key={one.key}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: item === one.key }}
+            accessibilityLabel={one.label}
+            onPress={() => setItem(one.key)}
+            style={[styles.rptRow, { borderBottomColor: theme.border }]}>
+            <CheckCircle size={RPT_MARK} checked={item === one.key} outline />
+            <ThemedText type="f15" style={styles.rptLabel}>
+              {one.label}
+            </ThemedText>
+          </Pressable>
+        ))}
+      </FixSection>
 
-      <Section title={S.correct}>
-        <TextField
+      <FixSection title={S.correct}>
+        <TextInput
           value={value}
           onChangeText={setValue}
           placeholder={S.correctPlaceholder}
+          placeholderTextColor={theme.textAssistive}
           accessibilityLabel={S.correct}
           multiline
+          textAlignVertical="top"
           editable={chosen === null || chosen.needsValue}
+          style={[styles.rptArea, { backgroundColor: theme.backgroundSelected, color: theme.text }]}
         />
-      </Section>
+      </FixSection>
 
-      <Section title={S.evidence}>
-        <TextField
+      <FixSection title={S.evidence}>
+        <TextInput
           value={evidence}
           onChangeText={setEvidence}
           placeholder={S.evidencePlaceholder}
+          placeholderTextColor={theme.textAssistive}
           accessibilityLabel={S.evidence}
           autoCapitalize="none"
           keyboardType="url"
-          error={evidenceBad ? S.evidenceInvalid : undefined}
+          style={[styles.rptInput, { backgroundColor: theme.backgroundSelected, color: theme.text }]}
         />
-      </Section>
+        {evidenceBad ? (
+          <ThemedText type="f13" themeColor="negative">
+            {S.evidenceInvalid}
+          </ThemedText>
+        ) : null}
+      </FixSection>
 
       <Toast message={toast} onHidden={() => setToast(null)} />
     </SubScreen>
   );
 }
+
+/** 정본 `sec` — 안쪽 20(좌우는 전역 거터 24) · 사이 12 · 제목 17/700. */
+function FixSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <View style={styles.sec}>
+      <ThemedText type="f17" style={styles.bold}>
+        {title}
+      </ThemedText>
+      {children}
+    </View>
+  );
+}
+
+/** 정본 `rpt` 원 22 · `rptArea` 최소 높이 100(콘텐츠) + 위아래 14 = 128(RN minHeight는 안쪽 여백을 포함한다). */
+const RPT_MARK = 22;
+const RPT_AREA_MIN = 128;
+
+const styles = StyleSheet.create({
+  sec: {
+    paddingHorizontal: Layout.pageX,
+    paddingVertical: Layout.cardPadding,
+    gap: Layout.inlineGap,
+  },
+  bold: { fontWeight: 700 },
+  rptRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Layout.inlineGap,
+    minHeight: Layout.controlXLarge,
+    paddingHorizontal: Spacing.three,
+    borderBottomWidth: Border.hairline,
+  },
+  rptLabel: { flex: 1 },
+  rptArea: {
+    minHeight: RPT_AREA_MIN,
+    borderRadius: Radius.picker,
+    padding: Layout.fieldPaddingX,
+    fontSize: FontSize.f14,
+    lineHeight: LineHeight.lh20,
+  },
+  rptInput: {
+    height: Layout.searchField,
+    borderRadius: Radius.picker,
+    paddingHorizontal: Layout.fieldPaddingX,
+    fontSize: FontSize.f14,
+  },
+});

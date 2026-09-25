@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomInt } from 'node:crypto';
 
 import { acceptInviteRequestSchema } from '@weddingpick/api-contract';
 import {
@@ -8,7 +8,7 @@ import {
   PARTNER_SHARED,
   inviteState,
 } from '@weddingpick/domain';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 
 import { assertWeddingAccess } from '../access';
 import { currentUserId, requireUser } from '../auth/plugin';
@@ -16,10 +16,78 @@ import type { AppContext } from '../context';
 import { withTransaction } from '../db';
 import { ApiError, notFound } from '../errors';
 import { notify } from '../notify';
+import { networkIdFor } from './admin-login';
 
 /** 코드 원문은 저장하지 않는다. DB가 유출돼도 그것만으로 남의 웨딩에 들어갈 수 없다. */
 function hashCode(code: string): string {
   return createHash('sha256').update(code).digest('hex');
+}
+
+/**
+ * 초대 코드 — 6자리 숫자(2026-09-25 대표 지시 「초대 코드는 6자리 난수로만 생성한다」).
+ * `randomInt`는 암호학적 난수다. 앞자리 0도 코드의 일부라 0을 채운다.
+ */
+export function generateInviteCode(): string {
+  return randomInt(0, 1_000_000).toString().padStart(6, '0');
+}
+
+/** 대기 중인 초대와 겹치면 다시 뽑는다. 이 횟수 안에 못 뽑으면 잠시 뒤 다시 시도하게 한다. */
+const CODE_DRAW_ATTEMPTS = 20;
+
+/**
+ * 코드 입력 실패 제한.
+ *
+ * 100만 가지는 맞혀 보기 쉽다. 15분 창에서 계정마다 5번, IP마다 20번 틀리면 그 창이
+ * 끝날 때까지 받지 않는다. IP 한도가 더 넉넉한 것은 한 사무실 · 통신사 NAT 뒤의 여러
+ * 사람이 같은 IP를 쓰기 때문이다. 틀린 것은 «그런 코드가 없다»뿐이다 — 기한이 지났거나
+ * 취소된 코드는 맞힌 것이라 세지 않는다.
+ */
+export const INVITE_FAILURES_PER_USER = 5;
+export const INVITE_FAILURES_PER_IP = 20;
+
+function attemptKey(scope: 'user' | 'ip', id: string): string {
+  return createHash('sha256').update(`invite-code\0${scope}\0${id}`).digest('hex');
+}
+
+function attemptKeys(request: FastifyRequest, userId: string) {
+  return { user: attemptKey('user', userId), ip: attemptKey('ip', networkIdFor(request)) };
+}
+
+async function assertNotThrottled(context: AppContext, keys: { user: string; ip: string }): Promise<void> {
+  await context.pool.query(
+    `DELETE FROM structured.invite_code_attempts
+      WHERE window_started_at <= now() - interval '15 minutes'`
+  );
+
+  const { rows } = await context.pool.query<{ attempt_key: string; failure_count: number }>(
+    `SELECT attempt_key, failure_count FROM structured.invite_code_attempts
+      WHERE attempt_key = ANY($1::text[])`,
+    [[keys.user, keys.ip]]
+  );
+  const count = (key: string) => rows.find((row) => row.attempt_key === key)?.failure_count ?? 0;
+
+  if (count(keys.user) >= INVITE_FAILURES_PER_USER || count(keys.ip) >= INVITE_FAILURES_PER_IP) {
+    throw new ApiError('rate_limited', '코드를 여러 번 잘못 넣었어요. 15분 뒤에 다시 넣어주세요.');
+  }
+}
+
+async function recordFailure(context: AppContext, keys: { user: string; ip: string }): Promise<void> {
+  await context.pool.query(
+    `INSERT INTO structured.invite_code_attempts AS current
+       (attempt_key, failure_count, window_started_at, updated_at)
+     SELECT key, 1, now(), now() FROM unnest($1::text[]) AS key
+     ON CONFLICT (attempt_key) DO UPDATE
+       SET failure_count = CASE
+             WHEN current.window_started_at <= now() - interval '15 minutes' THEN 1
+             ELSE current.failure_count + 1
+           END,
+           window_started_at = CASE
+             WHEN current.window_started_at <= now() - interval '15 minutes' THEN now()
+             ELSE current.window_started_at
+           END,
+           updated_at = now()`,
+    [[keys.user, keys.ip]]
+  );
 }
 
 export function registerWeddingInviteRoutes(app: FastifyInstance, context: AppContext): void {
@@ -49,25 +117,48 @@ export function registerWeddingInviteRoutes(app: FastifyInstance, context: AppCo
         throw new ApiError('conflict', '이미 배우자가 연결되어 있습니다.');
       }
 
-      const code = randomBytes(24).toString('base64url');
       const expiresAt = new Date(Date.now() + INVITE_TTL_HOURS * 60 * 60 * 1000);
 
-      const created = await withTransaction(context.pool, async (client) => {
-        await client.query(
-          `UPDATE structured.wedding_invites
-           SET status = 'revoked', revoked_at = now()
-           WHERE wedding_id = $1 AND status = 'pending'`,
-          [weddingId]
-        );
+      /*
+       * 대기 중인 초대(0435 부분 유일 색인)와 겹치면 다시 뽑는다. 같은 순간 다른 웨딩이
+       * 같은 숫자를 뽑아 색인에 걸리면(23505) 그것도 다시 뽑는다.
+       */
+      let issued: { id: string; code: string } | null = null;
+      for (let attempt = 0; attempt < CODE_DRAW_ATTEMPTS && !issued; attempt += 1) {
+        const candidate = generateInviteCode();
+        issued = await withTransaction(context.pool, async (client) => {
+          const taken = await client.query(
+            `SELECT 1 FROM structured.wedding_invites WHERE code_hash = $1 AND status = 'pending'`,
+            [hashCode(candidate)]
+          );
+          if (taken.rowCount && taken.rowCount > 0) return null;
 
-        const inserted = await client.query<{ id: string }>(
-          `INSERT INTO structured.wedding_invites (wedding_id, invited_by, code_hash, expires_at)
-           VALUES ($1, $2, $3, $4) RETURNING id`,
-          [weddingId, userId, hashCode(code), expiresAt]
-        );
+          await client.query(
+            `UPDATE structured.wedding_invites
+             SET status = 'revoked', revoked_at = now()
+             WHERE wedding_id = $1 AND status = 'pending'`,
+            [weddingId]
+          );
 
-        return inserted.rows[0]!;
-      });
+          const inserted = await client.query<{ id: string }>(
+            `INSERT INTO structured.wedding_invites (wedding_id, invited_by, code_hash, expires_at)
+             VALUES ($1, $2, $3, $4) RETURNING id`,
+            [weddingId, userId, hashCode(candidate), expiresAt]
+          );
+          return { id: inserted.rows[0]!.id, code: candidate };
+        }).catch((caught: unknown) => {
+          // 트랜잭션은 이미 되돌려졌다. 코드 충돌만 다시 뽑고 나머지는 그대로 올린다.
+          if ((caught as { code?: string }).code === '23505') return null;
+          throw caught;
+        });
+      }
+
+      if (!issued) {
+        throw new ApiError('conflict', '초대 코드를 만들지 못했어요. 잠시 후 다시 시도해주세요.');
+      }
+
+      const { code } = issued;
+      const created = { id: issued.id };
 
       return reply.status(201).send({
         inviteId: created.id,
@@ -138,6 +229,8 @@ export function registerWeddingInviteRoutes(app: FastifyInstance, context: AppCo
    */
   app.post('/v1/wedding-invites/preview', auth, async (request) => {
     const { code } = acceptInviteRequestSchema.parse(request.body);
+    const keys = attemptKeys(request, currentUserId(request));
+    await assertNotThrottled(context, keys);
 
     const { rows } = await context.pool.query<{
       status: 'pending' | 'accepted' | 'revoked';
@@ -147,13 +240,17 @@ export function registerWeddingInviteRoutes(app: FastifyInstance, context: AppCo
       `SELECT i.status, i.expires_at, w.partner_user_id
        FROM structured.wedding_invites i
        JOIN structured.weddings w ON w.id = i.wedding_id
-       WHERE i.code_hash = $1`,
+       WHERE i.code_hash = $1
+       /* 6자리는 다시 뽑힌다 — 같은 숫자의 옛 줄보다 대기 중인 최신 줄을 먼저 본다. */
+       ORDER BY (i.status = 'pending') DESC, i.created_at DESC
+       LIMIT 1`,
       [hashCode(code)]
     );
 
     const invite = rows[0];
 
     if (!invite) {
+      await recordFailure(context, keys);
       return {
         usable: false,
         reason: 'not_found',
@@ -188,6 +285,21 @@ export function registerWeddingInviteRoutes(app: FastifyInstance, context: AppCo
   app.post('/v1/wedding-invites/accept', auth, async (request) => {
     const userId = currentUserId(request);
     const { code } = acceptInviteRequestSchema.parse(request.body);
+    const keys = attemptKeys(request, userId);
+    await assertNotThrottled(context, keys);
+
+    /*
+     * 틀린 코드는 트랜잭션 밖에서 센다 — 오류로 끝나는 트랜잭션 안에서 적으면 함께
+     * 되돌아가 세어지지 않는다.
+     */
+    const known = await context.pool.query(
+      'SELECT 1 FROM structured.wedding_invites WHERE code_hash = $1 LIMIT 1',
+      [hashCode(code)]
+    );
+    if (!known.rowCount) {
+      await recordFailure(context, keys);
+      throw new ApiError('invalid_request', '지금은 쓸 수 없는 초대입니다.');
+    }
 
     return withTransaction(context.pool, async (client) => {
       const { rows } = await client.query<{ id: string; wedding_id: string; invited_by: string }>(
