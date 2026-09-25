@@ -22,6 +22,7 @@ type InquiryRow = {
   received_at: Date;
   decided_at: Date | null;
   resolution: string | null;
+  evidence_url: string | null;
 };
 
 function toInquiry(row: InquiryRow) {
@@ -34,6 +35,7 @@ function toInquiry(row: InquiryRow) {
     receivedAt: row.received_at.toISOString(),
     decidedAt: row.decided_at?.toISOString() ?? null,
     resolution: row.resolution,
+    evidenceUrl: row.evidence_url,
   };
 }
 
@@ -114,7 +116,7 @@ export function registerInquiryRoutes(app: FastifyInstance, context: AppContext)
 
     const { rows } = await context.pool.query<InquiryRow>(
       `SELECT id, category, body, status, subject_kind, subject_id, requester_user_id,
-              received_at, decided_at, resolution
+              received_at, decided_at, resolution, evidence_url
        FROM structured.inquiries
        WHERE requester_user_id = $1
        ORDER BY received_at DESC
@@ -130,7 +132,7 @@ export function registerInquiryRoutes(app: FastifyInstance, context: AppContext)
 
     const { rows } = await context.pool.query<InquiryRow>(
       `SELECT id, category, body, status, subject_kind, subject_id, requester_user_id,
-              received_at, decided_at, resolution
+              received_at, decided_at, resolution, evidence_url
        FROM structured.inquiries WHERE id = $1`,
       [request.params.inquiryId]
     );

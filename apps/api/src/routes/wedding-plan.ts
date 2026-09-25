@@ -18,6 +18,8 @@ import {
   TASK_STATE_LABEL,
   bucketFor,
   budgetView,
+  manualExpenseOverBudget,
+  manwon,
   resolveTaskState,
   summarizeExpenses,
   taskProgress,
@@ -29,11 +31,13 @@ import {
   type WeddingBudgetBracket,
 } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
-import type { Pool } from 'pg';
+import type { Pool, PoolClient } from 'pg';
 
+import strings from '../../../../spec/strings.ko.json';
 import { assertWeddingAccess } from '../access';
 import { currentUserId, requireUser } from '../auth/plugin';
 import type { AppContext } from '../context';
+import { withTransaction } from '../db';
 import { ApiError, notFound } from '../errors';
 
 type TaskRow = {
@@ -46,6 +50,50 @@ type TaskRow = {
 };
 
 const day = (value: Date | null) => (value ? value.toISOString().slice(0, 10) : null);
+
+/**
+ * 직접 입력한 지출이 총예산을 넘기면 400 — 2026-09-25 대표 지시 「예산 추가는 총예산을 넘을 수
+ * 없다」. 판정은 앱과 같은 `manualExpenseOverBudget`, spent는 GET /expenses의 `budget.spent`와
+ * 같은 값(wedding_expenses 뷰의 낸 돈 합)이다. 결제인증 · 상담 정리 줄은 자료에서 온 금액이라
+ * 이 문을 지나지 않는다 — 직접 입력 경로(POST · PATCH)만 막는다.
+ *
+ * 웨딩 줄을 `FOR UPDATE`로 잠가 두 사람이 동시에 넣은 지출이 함께 한도를 넘지 않게 한다.
+ * 호출하는 쪽이 같은 트랜잭션 안에서 INSERT · UPDATE까지 마쳐야 잠금이 뜻이 있다.
+ *
+ *   before  이 줄이 지금 spent에 들어가 있는 금액(새 줄 · 낼 예정 줄이면 0)
+ *   after   저장 뒤 들어갈 금액(낼 예정이면 0)
+ */
+async function assertManualExpenseWithinBudget(
+  client: PoolClient,
+  weddingId: string,
+  before: number,
+  after: number
+): Promise<void> {
+  const wedding = await client.query<{ budget_amount: string | null }>(
+    'SELECT budget_amount FROM structured.weddings WHERE id = $1 FOR UPDATE',
+    [weddingId]
+  );
+  const raw = wedding.rows[0]?.budget_amount;
+  const budget = raw === null || raw === undefined ? null : Number(raw);
+
+  if (budget === null || !(budget > 0) || after <= before) return;
+
+  const spent = await client.query<{ spent: string }>(
+    `SELECT coalesce(sum(amount), 0) AS spent
+     FROM structured.wedding_expenses
+     WHERE wedding_id = $1 AND status = 'paid'`,
+    [weddingId]
+  );
+  const verdict = manualExpenseOverBudget({ budget, spent: Number(spent.rows[0]!.spent), before, after });
+
+  if (verdict.over) {
+    throw new ApiError(
+      'invalid_request',
+      strings.ourWedding['expense.overBudget'].replace('{remaining}', manwon(verdict.remaining)),
+      { remaining: String(verdict.remaining) }
+    );
+  }
+}
 
 /**
  * 기본 열넷을 깔아준다.
@@ -298,23 +346,34 @@ export function registerWeddingPlanRoutes(app: FastifyInstance, context: AppCont
 
       await assertWeddingAccess(context.pool, request.params.weddingId, userId);
 
-      const { rows } = await context.pool.query<{ id: string }>(
-        `INSERT INTO structured.expenses
-           (wedding_id, label, amount, category, status, spent_on, added_by)
-         VALUES ($1, $2, $3, $4::vendor_category, $5::expense_status, $6, $7)
-         RETURNING id`,
-        [
+      const expenseId = await withTransaction(context.pool, async (client) => {
+        await assertManualExpenseWithinBudget(
+          client,
           request.params.weddingId,
-          body.label,
-          body.amount,
-          body.category ?? null,
-          body.status,
-          body.spentOn ?? null,
-          userId,
-        ]
-      );
+          0,
+          body.status === 'paid' ? body.amount : 0
+        );
 
-      return reply.status(201).send({ expenseId: rows[0]!.id });
+        const { rows } = await client.query<{ id: string }>(
+          `INSERT INTO structured.expenses
+             (wedding_id, label, amount, category, status, spent_on, added_by)
+           VALUES ($1, $2, $3, $4::vendor_category, $5::expense_status, $6, $7)
+           RETURNING id`,
+          [
+            request.params.weddingId,
+            body.label,
+            body.amount,
+            body.category ?? null,
+            body.status,
+            body.spentOn ?? null,
+            userId,
+          ]
+        );
+
+        return rows[0]!.id;
+      });
+
+      return reply.status(201).send({ expenseId });
     }
   );
 
@@ -472,8 +531,11 @@ export function registerWeddingPlanRoutes(app: FastifyInstance, context: AppCont
   );
 
   /**
-   * 환불 상태만 고친다. 직접 입력한 항목만 — 결제인증에서 온 줄은 이 문으로
-   * 고치지 않는다(삭제와 같은 이유). v1 범위: 분할 결제 줄 편집은 아직 없다.
+   * 직접 입력한 항목을 고친다 — 등록 때 받는 칸(항목명 · 금액 · 업종 · 상태 · 날짜)과
+   * 환불 상태. 보낸 칸만 바뀐다. 결제인증에서 온 줄은 이 문으로 고치지 않는다(삭제와
+   * 같은 이유 + 증빙 금액을 사람이 바꾸면 출처가 거짓이 된다) — 그 줄은
+   * `structured.expenses`에 없어 UPDATE가 0건이고 404가 된다. v1 범위: 분할 결제 줄
+   * 편집은 아직 없다.
    */
   app.patch<{ Params: { weddingId: string; expenseId: string } }>(
     '/v1/weddings/:weddingId/expenses/:expenseId',
@@ -484,15 +546,50 @@ export function registerWeddingPlanRoutes(app: FastifyInstance, context: AppCont
 
       await assertWeddingAccess(context.pool, request.params.weddingId, userId);
 
-      const { rowCount } = await context.pool.query(
-        `UPDATE structured.expenses SET refund_status = $3
-         WHERE id = $1 AND wedding_id = $2`,
-        [request.params.expenseId, request.params.weddingId, body.refundStatus]
-      );
+      const sets: string[] = [];
+      const values: unknown[] = [request.params.expenseId, request.params.weddingId];
+      const set = (column: string, value: unknown, cast = '') => {
+        values.push(value);
+        sets.push(`${column} = $${values.length}${cast}`);
+      };
 
-      if (rowCount === 0) {
-        throw notFound('지출 항목');
-      }
+      if (body.label !== undefined) set('label', body.label);
+      if (body.amount !== undefined) set('amount', body.amount);
+      if (body.category !== undefined) set('category', body.category, '::vendor_category');
+      if (body.status !== undefined) set('status', body.status, '::expense_status');
+      if (body.spentOn !== undefined) set('spent_on', body.spentOn);
+      if (body.refundStatus !== undefined) set('refund_status', body.refundStatus);
+
+      await withTransaction(context.pool, async (client) => {
+        /* 금액이나 상태가 바뀌면 총예산 한도를 다시 본다 — 낸 돈으로 세는 몫이 늘 때만 막는다. */
+        if (body.amount !== undefined || body.status !== undefined) {
+          const current = await client.query<{ amount: string; status: ExpenseStatus }>(
+            'SELECT amount, status FROM structured.expenses WHERE id = $1 AND wedding_id = $2 FOR UPDATE',
+            [request.params.expenseId, request.params.weddingId]
+          );
+          const row = current.rows[0];
+
+          if (!row) {
+            throw notFound('지출 항목');
+          }
+
+          const before = row.status === 'paid' ? Number(row.amount) : 0;
+          const nextStatus = body.status ?? row.status;
+          const after = nextStatus === 'paid' ? (body.amount ?? Number(row.amount)) : 0;
+
+          await assertManualExpenseWithinBudget(client, request.params.weddingId, before, after);
+        }
+
+        const { rowCount } = await client.query(
+          `UPDATE structured.expenses SET ${sets.join(', ')}
+           WHERE id = $1 AND wedding_id = $2`,
+          values
+        );
+
+        if (rowCount === 0) {
+          throw notFound('지출 항목');
+        }
+      });
 
       return { ok: true };
     }

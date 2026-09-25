@@ -2,12 +2,10 @@ import type { Inquiry } from '@weddingpick/api-contract';
 import {
   INQUIRY_CATEGORIES,
   INQUIRY_CATEGORY_RULES,
-  INQUIRY_STATUS_LABEL,
   canSubmitInquiry,
   type InquiryCategory,
-  type InquiryStatus,
 } from '@weddingpick/domain';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,11 +14,11 @@ import { createInquiry, listMyInquiries } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { useDepthBack } from '@/features/navigation/depth-back';
 import { showResultToast } from '@/features/navigation/result-toast';
+import { INQUIRY_STATUS_TEXT, inquiryBadgeTone, inquiryMonthDay } from '@/features/settings/inquiry-status';
 import { Dock, Hero, NoteBox, Section, SubScreen } from '@/features/settings/my-kit';
 import { BackBar } from '@/components/back-bar';
 import {
   ActionButton,
-  type BadgeKind,
   Border,
   FontSize,
   LineHeight,
@@ -46,22 +44,6 @@ const USER_INQUIRY_CATEGORIES = INQUIRY_CATEGORIES.filter(
 function isCategory(value: string | undefined): value is InquiryCategory {
   return (USER_INQUIRY_CATEGORIES as readonly string[]).includes(value ?? '');
 }
-
-/** 지난 문의 배지 색 — 시안 `p.badge`는 색을 정하지 않는다. 진행/완료/종료를 일반 규칙으로 매핑한다. */
-/** 정본 pastInquiries state «답변 완료» — 사용자 화면 문구. 도메인 라벨(관리자 공용)은 그대로 둔다. */
-const STATUS_LABEL: Record<InquiryStatus, string> = {
-  received: INQUIRY_STATUS_LABEL.received,
-  in_review: INQUIRY_STATUS_LABEL.in_review,
-  answered: '답변 완료',
-  closed: INQUIRY_STATUS_LABEL.closed,
-};
-
-const INQUIRY_BADGE_KIND: Record<InquiryStatus, BadgeKind> = {
-  received: 'wait',
-  in_review: 'wait',
-  answered: 'ok',
-  closed: 'none',
-};
 
 /**
  * 문의 창구.
@@ -174,37 +156,38 @@ export default function ContactScreen() {
       {mine.length > 0 ? (
         <Section title={`지난 문의 ${mine.length}건`}>
           <View style={[styles.listCard, { backgroundColor: theme.background, borderColor: theme.border }]}>
-            {mine.map((inquiry, index) => (
-              <View key={inquiry.id}>
-                <View
-                  style={[
+            {mine.map((inquiry, index) => {
+              const tone = inquiryBadgeTone(theme, inquiry.status);
+              return (
+                <Pressable
+                  key={inquiry.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${inquiry.body} ${INQUIRY_STATUS_TEXT[inquiry.status]}`}
+                  /* 행을 누르면 문의 상세(답변 포함)로 간다 — 2026-09-25 대표 지시 「지난 문의 상세 화면이 없다」. */
+                  onPress={() => router.push(`/my/contact/${inquiry.id}`)}
+                  style={({ pressed }) => [
                     styles.pastRow,
                     index < mine.length - 1 ? { borderBottomWidth: Border.hairline, borderBottomColor: theme.border } : null,
+                    pressed ? { backgroundColor: theme.backgroundElement } : null,
                   ]}>
                   <View style={styles.pastCol}>
                     <ThemedText type="f15" numberOfLines={1}>
                       {inquiry.body}
                     </ThemedText>
                     <ThemedText type="f12" themeColor="textAssistive" numeric numberOfLines={1}>
-                      {`${monthDay(inquiry.receivedAt)} · ${STATUS_LABEL[inquiry.status]}`}
+                      {`${inquiryMonthDay(inquiry.receivedAt)} · ${INQUIRY_STATUS_TEXT[inquiry.status]}`}
                     </ThemedText>
                   </View>
                   {/* 정본 badgeS — 4 9 · radius 4 · 12/700. 공용 Badge(22 · 14)보다 작다. */}
-                  <View style={[styles.stateBadge, { backgroundColor: badgeTone(theme, INQUIRY_BADGE_KIND[inquiry.status]).background }]}>
-                    <ThemedText type="f12" style={[styles.bold, { color: badgeTone(theme, INQUIRY_BADGE_KIND[inquiry.status]).text }]}>
-                      {STATUS_LABEL[inquiry.status]}
+                  <View style={[styles.stateBadge, { backgroundColor: tone.background }]}>
+                    <ThemedText type="f12" style={[styles.bold, { color: tone.text }]}>
+                      {INQUIRY_STATUS_TEXT[inquiry.status]}
                     </ThemedText>
                   </View>
                   <ProductSymbol name="chevronRight" size={Layout.iconField} color={theme.textDisabled} />
-                </View>
-                {/* 정본엔 없는 줄이다 — 답을 보여줄 상세 화면이 아직 없어 여기서 보여준다. */}
-                {inquiry.resolution ? (
-                  <ThemedText type="f13" themeColor="textAssistive" style={styles.resolution}>
-                    답변: {inquiry.resolution}
-                  </ThemedText>
-                ) : null}
-              </View>
-            ))}
+                </Pressable>
+              );
+            })}
           </View>
         </Section>
       ) : null}
@@ -298,20 +281,6 @@ export default function ContactScreen() {
   );
 }
 
-/** 정본 badgeS 색 — ok 초록 · warn 주황 · 그 밖 회색. */
-function badgeTone(theme: ReturnType<typeof useTheme>, kind: BadgeKind): { background: string; text: string } {
-  if (kind === 'ok') return { background: theme.positiveBackground, text: theme.positive };
-  if (kind === 'wait') return { background: theme.cautionaryBackground, text: theme.cautionary };
-  return { background: theme.backgroundSelected, text: theme.textAssistive };
-}
-
-/** «8월 12일» — 정본 pastInquiries date. */
-function monthDay(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso.slice(0, 10);
-  return `${date.getMonth() + 1}월 ${date.getDate()}일`;
-}
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -343,7 +312,6 @@ const styles = StyleSheet.create({
   pastCol: { flex: 1, minWidth: 0, gap: Layout.cardNameGap },
   bold: { fontWeight: 700 },
   stateBadge: { paddingHorizontal: 9, paddingVertical: Spacing.one, borderRadius: Radius.badge },
-  resolution: { paddingHorizontal: Spacing.three, paddingBottom: Layout.rowPaddingY },
   /* 정본 divider — flex 0 0 8px · 회색 띠. */
   band: { height: Spacing.two },
   /* 정본 ROW — 최소 52 · 0 20 · gap 12. */

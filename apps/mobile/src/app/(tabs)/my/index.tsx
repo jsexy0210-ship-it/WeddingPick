@@ -205,7 +205,8 @@ export default function MyScreen() {
        * 동의 항목이 아니라 웹사이트 정본 원문이라 기존 화면으로 둔다.
        */
       rows: [
-        ...TERM_DOCUMENTS.map((doc) => ({
+        /* 2026-09-25 대표 재지시 — 목록은 「서비스 이용약관」 · 「개인정보처리방침」 둘만. 상세(탭 여섯)는 그대로. */
+        ...TERM_DOCUMENTS.filter((doc) => doc.key === 'terms').map((doc) => ({
           key: `term-${doc.key}`,
           label: doc.title,
           icon: 'bookmark' as const,

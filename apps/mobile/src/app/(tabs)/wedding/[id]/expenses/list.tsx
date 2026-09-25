@@ -1,14 +1,17 @@
 import type { ExpenseSummaryResponse } from '@weddingpick/api-contract';
 import { manwon } from '@weddingpick/domain';
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { getExpenses } from '@/api/client';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { showResultToast } from '@/features/navigation/result-toast';
 import { noteMonthDay } from '@/features/wedding/note-format';
 import { Border, ErrorView, Layout, Radius, SkeletonView, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import { NavBar, Screen } from '@/features/wedding/screen-kit';
+
+import { ourWedding as copy } from '../../../../../../../../spec/strings.ko.json';
 
 /**
  * 지출 목록. WP-OUR-014b · `docs/design/React_Native/note.jsx` frame-007.
@@ -23,6 +26,9 @@ import { NavBar, Screen } from '@/features/wedding/screen-kit';
  * 한 줄이 전부라 status가 paid인 것만 보여준다(잔금 예정은 예산현황 카드에서 이미
  * 보인다). 상담 정리 출처는 v3.28 대조표 「금액 출처」 결정(2026-09-23)으로 실 제보와
  * 같은 목록에 들어오되 배지로 출처를 다르게 적는다 — Pick 인증 배지 자리에 함께 둔다.
+ *
+ * 직접 입력한 줄을 누르면 등록 시트가 수정 모드로 열린다(`add?expenseId=` — 수정 · 삭제).
+ * Pick 인증 · 상담 정리 줄은 금액이 자료에서 왔다 — 누르면 그 이유만 한 줄로 알린다.
  */
 export default function ExpenseListScreen() {
   const depthBack = useDepthBack();
@@ -62,8 +68,22 @@ export default function ExpenseListScreen() {
                 : expense.source === 'consultation'
                   ? { label: '상담 정리', text: theme.cautionary, background: theme.cautionaryBackground }
                   : null;
+            const editable = expense.source === 'manual';
             return (
-              <View key={expense.id} style={[styles.row, { borderBottomColor: theme.border }]}>
+              <Pressable
+                key={expense.id}
+                accessibilityRole="button"
+                accessibilityLabel={`${expense.label} ${manwon(expense.amount)}`}
+                onPress={() =>
+                  editable
+                    ? router.push(`/wedding/${id}/expenses/add?expenseId=${expense.id}` as never)
+                    : showResultToast(copy['expense.lockedSource'].replace('{source}', expense.sourceLabel))
+                }
+                style={({ pressed }) => [
+                  styles.row,
+                  { borderBottomColor: theme.border },
+                  pressed ? styles.pressed : null,
+                ]}>
                 <View style={styles.col}>
                   <ThemedText type="f15" numberOfLines={1} style={styles.bold}>
                     {expense.label}
@@ -84,7 +104,7 @@ export default function ExpenseListScreen() {
                     </ThemedText>
                   </View>
                 ) : null}
-              </View>
+              </Pressable>
             );
           })}
         </View>
@@ -107,6 +127,7 @@ const styles = StyleSheet.create({
   },
   col: { flex: 1, minWidth: 0, gap: 3 },
   bold: { fontWeight: 700 },
+  pressed: { opacity: 0.8 },
   /* `spendBadge` — `height:24px;padding:0 8px;border-radius:4px`. 글자가 커져도 잘리지 않게 minHeight로 둔다. */
   badge: { minHeight: 24, paddingHorizontal: Spacing.two, borderRadius: Radius.badge, justifyContent: 'center' },
 });

@@ -54,11 +54,14 @@ import {
   setBudget,
 } from '@/api/client';
 import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
+import { confirmAlert } from '@/components/confirm-alert';
 import { formatDateDot } from '@/features/common/format-date';
 import { noteMonthDayWeekdayTime } from '@/features/wedding/note-format';
 import { useSession } from '@/features/auth/use-session';
 import { WeddingCompleteView } from '@/features/wedding/complete-view';
 import { buildUpcomingTimelineGroups, type TimelineItem } from '@/features/wedding/timeline-groups';
+
+import { ourWedding as copy } from '../../../../../../spec/strings.ko.json';
 
 type Tab = 'calendar' | 'consult' | 'budget';
 
@@ -295,6 +298,39 @@ export default function WeddingScreen({
     }
   }
 
+  /** 총예산 지우기 — null을 저장한다(PUT /budget). 지운 뒤에는 «정해볼까요?» 상태로 돌아간다. */
+  function requestClearBudget() {
+    if (!weddingId || !expenses?.budget.set || budgetSaving) return;
+    confirmAlert(
+      copy['budget.clearTitle'],
+      copy['budget.clearBody'].replace('{amount}', manwon(expenses.budget.budget)),
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: copy['expense.delete'],
+          style: 'destructive',
+          onPress: () => {
+            setBudgetSaving(true);
+            setBudget(weddingId, null)
+              .then(() => {
+                // 방금 지운 사람에게 «정해볼까요?» 시트를 곧바로 다시 띄우지 않는다.
+                budgetPrompted.current = true;
+                setExpenses((current) =>
+                  current
+                    ? { ...current, budget: budgetView({ budget: null, spent: current.paidTotal }) }
+                    : current
+                );
+                setBudgetOpen(false);
+                setToast(copy['budget.cleared']);
+              })
+              .catch(() => setToast('총예산을 지우지 못했어요. 잠시 후 다시 시도해 주세요.'))
+              .finally(() => setBudgetSaving(false));
+          },
+        },
+      ]
+    );
+  }
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -395,6 +431,14 @@ export default function WeddingScreen({
             disabled={!budgetReady || budgetSaving}
             onPress={() => void saveBudget()}
           />
+          {budgetIsSet ? (
+            <ActionButton
+              variant="ghost"
+              label={copy['budget.clear']}
+              disabled={budgetSaving}
+              onPress={requestClearBudget}
+            />
+          ) : null}
         </SheetPanel>
       </BottomSheet>
 

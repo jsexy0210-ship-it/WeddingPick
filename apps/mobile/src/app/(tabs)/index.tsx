@@ -18,6 +18,7 @@ import {
   LetterSpacing,
   LineHeight,
   MaxContentWidth,
+  Radius,
   SeedIcon,
   Spacing,
   ThemedText,
@@ -293,12 +294,28 @@ export default function HomeScreen() {
 
 /* ---------------------------------------------------------------- 공통 조각 */
 
-/* 정본 home.jsx `headIcons`의 벨은 알림 화면 삭제(2026-09-25)로 뺐다. */
 function Header() {
+  const theme = useTheme();
+
   return (
     <ThemedView style={styles.header}>
       <ThemedText type="f26" style={styles.brand}>웨딩픽</ThemedText>
 
+      {/*
+        React_Native/home.jsx WP-HOME-001~003 header `headIcons` — 아이콘 하나(벨)뿐이다(`iconBtn`
+        40 원형 · `icoBell` notification 20 · ink). #535가 알림 화면과 함께 걷어냈던 것을
+        2026-09-25 대표 지시(「홈 화면에 알림 아이콘 어디갔냐」)로 되살렸다. 정본 벨에는 안 읽음
+        점이 없어 그리지 않는다.
+      */}
+      <View style={styles.headerButtons}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="알림"
+          onPress={() => router.push('/my/notifications')}
+          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
+          <SeedIcon name="notificationRegular" size={Layout.iconRow} color={theme.text} />
+        </Pressable>
+      </View>
     </ThemedView>
   );
 }
@@ -325,6 +342,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: Layout.gutter,
   },
   brand: { fontWeight: 700, letterSpacing: LetterSpacing.n052 },
+  /* 정본 headIcons — gap 4 · iconBtn 40 원형. */
+  headerButtons: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  iconButton: {
+    width: Layout.iconButton,
+    height: Layout.iconButton,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   content: { paddingBottom: Spacing.three },
 

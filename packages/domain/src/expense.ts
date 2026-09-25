@@ -131,6 +131,36 @@ export function summarizeExpenses(lines: readonly ExpenseLine[]): ExpenseSummary
   };
 }
 
+/**
+ * 직접 입력한 지출이 총예산을 넘기는가 — 2026-09-25 대표 지시 「예산 추가는 총예산을 넘을 수
+ * 없다」. 앱(등록 · 수정 시트)과 서버(POST · PATCH /expenses)가 같은 판정을 쓴다.
+ *
+ *   budget  총예산. 없거나 0 이하면 한도가 없다 — 늘 통과.
+ *   spent   `budgetView`의 spent와 같은 값(낸 돈 합 · 결제인증 · 상담 정리 포함).
+ *   before  이 줄이 지금 spent에 들어가 있는 금액. 새 줄 · 낼 예정 줄이면 0.
+ *   after   저장 뒤 이 줄이 spent에 들어갈 금액. 낼 예정(`scheduled`)이면 0.
+ *
+ * 금액을 늘리지 않는 수정(after ≤ before)은 막지 않는다 — 결제인증이 먼저 들어와 이미
+ * 넘은 웨딩에서 금액을 낮추거나 이름만 고치는 것까지 막으면 고칠 길이 없다.
+ * `remaining`은 이 줄을 뺀 나머지 기준으로 이 줄에 쓸 수 있는 최대 금액이다(0 밑으로 안 내려간다).
+ */
+export function manualExpenseOverBudget(input: {
+  budget: number | null;
+  spent: number;
+  before: number;
+  after: number;
+}): { over: false } | { over: true; remaining: number } {
+  const { budget, spent, before, after } = input;
+
+  if (budget === null || !(budget > 0)) return { over: false };
+  if (after <= before) return { over: false };
+
+  const others = spent - before;
+  if (others + after <= budget) return { over: false };
+
+  return { over: true, remaining: Math.max(budget - others, 0) };
+}
+
 export const SCHEDULED_NOTE = '잔금은 예식 뒤에 내는 돈이라 아직 더하지 않았어요';
 
 /**

@@ -1,6 +1,12 @@
 import { z } from 'zod';
 
-import { CATEGORY_PICK_STATES, RECOMMEND_VENDORS_PER_CATEGORY } from '@weddingpick/domain';
+import {
+  CATEGORY_PICK_STATES,
+  PICK_RECOMMEND_VENDORS_PER_GROUP,
+  PREPARATION_GROUPS,
+  RECOMMEND_VENDORS_PER_CATEGORY,
+  type PreparationGroupKey,
+} from '@weddingpick/domain';
 
 import { vendorCategorySchema } from './common';
 import { vendorSummarySchema } from './vendors';
@@ -55,3 +61,30 @@ export const categoryRecommendationsResponseSchema = z.object({
 
 export type CategoryRecommendation = z.infer<typeof categoryRecommendationSchema>;
 export type CategoryRecommendationsResponse = z.infer<typeof categoryRecommendationsResponseSchema>;
+
+/* ------------------------------------- Pick 묶음별 «내 조건에 맞는 곳»(2026-09-25 대표 지시) */
+
+const preparationGroupKeys = PREPARATION_GROUPS.map((group) => group.key) as [
+  PreparationGroupKey,
+  ...PreparationGroupKey[],
+];
+
+/**
+ * Pick 화면 준비 묶음 하나와 그 묶음의 추천 업체. GET /v1/me/pick-recommendations.
+ *
+ * 온보딩 값(지역 · 예산 · 스타일 · 준비 현황)으로 고른다. 담아둔 후보는 빠져 있다 — 후보는
+ * `/v1/weddings/{id}/candidates`가 따로 준다. 업체 한 줄은 검색과 같은 `vendorSummary`다.
+ */
+export const pickRecommendationGroupSchema = z.object({
+  key: z.enum(preparationGroupKeys),
+  /** 최대 5곳. 업체가 모자라면 그만큼만 — 억지로 채우지 않는다. */
+  vendors: z.array(vendorSummarySchema).max(PICK_RECOMMEND_VENDORS_PER_GROUP),
+});
+
+export const pickRecommendationsResponseSchema = z.object({
+  /** 준비 묶음 넷, `PREPARATION_GROUPS` 순서 그대로. */
+  groups: z.array(pickRecommendationGroupSchema),
+});
+
+export type PickRecommendationGroup = z.infer<typeof pickRecommendationGroupSchema>;
+export type PickRecommendationsResponse = z.infer<typeof pickRecommendationsResponseSchema>;

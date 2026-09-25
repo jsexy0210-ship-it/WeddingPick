@@ -7,6 +7,7 @@ import {
   SCHEDULED_NOTE,
   bucketFor,
   budgetView,
+  manualExpenseOverBudget,
   summarizeExpenses,
 } from './expense';
 
@@ -120,5 +121,39 @@ describe('예산', () => {
     expect(view.set === true && view.over).toBe(true);
     // 음수를 감추지 않는다. 얼마나 넘겼는지가 필요한 정보다.
     expect(view.set === true && view.remaining).toBe(-2_000_000);
+  });
+});
+
+describe('직접 입력 지출은 총예산을 넘을 수 없다(2026-09-25)', () => {
+  const budget = 10_000_000;
+
+  it('총예산이 없거나 0이면 한도가 없다', () => {
+    expect(manualExpenseOverBudget({ budget: null, spent: 9_000_000, before: 0, after: 50_000_000 }).over).toBe(false);
+    expect(manualExpenseOverBudget({ budget: 0, spent: 9_000_000, before: 0, after: 50_000_000 }).over).toBe(false);
+  });
+
+  it('딱 맞으면 통과, 1원이라도 넘으면 막고 남은 예산을 준다', () => {
+    expect(manualExpenseOverBudget({ budget, spent: 6_000_000, before: 0, after: 4_000_000 }).over).toBe(false);
+    expect(manualExpenseOverBudget({ budget, spent: 6_000_000, before: 0, after: 4_000_001 })).toEqual({
+      over: true,
+      remaining: 4_000_000,
+    });
+  });
+
+  it('수정은 자기 줄을 빼고 센다', () => {
+    // 6백만 중 이 줄이 2백만 — 나머지 4백만 + 새 6백만 = 1천만(딱 맞음).
+    expect(manualExpenseOverBudget({ budget, spent: 6_000_000, before: 2_000_000, after: 6_000_000 }).over).toBe(false);
+    expect(manualExpenseOverBudget({ budget, spent: 6_000_000, before: 2_000_000, after: 6_000_001 })).toEqual({
+      over: true,
+      remaining: 6_000_000,
+    });
+  });
+
+  it('이미 넘은 웨딩에서도 금액을 늘리지 않는 수정은 막지 않는다', () => {
+    expect(manualExpenseOverBudget({ budget, spent: 12_000_000, before: 3_000_000, after: 2_000_000 }).over).toBe(false);
+    expect(manualExpenseOverBudget({ budget, spent: 12_000_000, before: 0, after: 1 })).toEqual({
+      over: true,
+      remaining: 0,
+    });
   });
 });
