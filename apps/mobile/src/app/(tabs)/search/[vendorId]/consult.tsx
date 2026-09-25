@@ -2,10 +2,11 @@ import type { CandidateListResponse, VendorDetail } from '@weddingpick/api-contr
 import { withInstrument } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { BackHandler, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ApiError, addConsultationEvent, getCurrentUser, getVendor, listCandidates } from '@/api/client';
-import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
+import { FullPopupHeader } from '@/components/full-popup-header';
 import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
 import { OsDateField, OsTimeField } from '@/features/common/os-picker-field';
 import { dateOfDay, dayOf } from '@/features/common/os-picker-field.shared';
@@ -15,9 +16,11 @@ import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
 import {
   Border,
+  CanonGray,
   FontSize,
   Layout,
   LineHeight,
+  MaxContentWidth,
   Radius,
   Spacing,
   ThemedText,
@@ -25,8 +28,6 @@ import {
   Toast,
   useTheme,
 } from '@weddingpick/ui';
-
-import VendorDetailScreen from './index';
 
 const TITLE = '상담 예약';
 /* 정본 pick.jsx WP-PICK-009 h1 «언제 만나면 / 좋을까요?». */
@@ -64,11 +65,21 @@ function isPickedVendor(page: CandidateListResponse, vendorId: string): boolean 
 }
 
 /**
- * 상담/예약은 별도 전체 화면이 아니라 업체 상세 위 DLG-D BottomSheet다.
+ * 상담 예약 — WP-PICK-009. **공통 풀팝업**이다(2026-09-25 대표 지시 「상담 예약은 공통
+ * 풀팝업 UX로 변경한다」). 예전에는 업체 상세 위 DLG-D BottomSheet였다.
+ *
+ *   머리   `FullPopupHeader` — 56 · 좌우 16 · 좌측 36 회색 원형 X(16) · 가운데 «상담 예약» ·
+ *          우측 36 빈 칸 · 아래 1px 선. 약관 상세(WP-AUTH-011)와 같은 머리다.
+ *   본문   스크롤. 좌우 거터 24.
+ *   도크   아래 고정 — «…잡기» CTA 하나. 홈 표시줄 inset을 도크가 챙긴다.
+ *
+ * 업체 상세를 밑에 깔지 않고 이 화면 하나가 전체를 차지한다. X · 안드로이드 뒤로는 입력이
+ * 있으면 DLG-B(`requestDirtySheetClose`)를 거쳐 업체 상세로 닫는다.
  * /booking은 이 route를 그대로 re-export하므로 같은 규칙을 공유한다.
  */
 export default function ConsultRoute() {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const { vendorId } = useLocalSearchParams<{ vendorId: string }>();
   const candidates = useMyCandidates();
   const [vendor, setVendor] = useState<VendorDetail | null>(null);
@@ -137,6 +148,16 @@ export default function ConsultRoute() {
     if (sending) return;
     requestDirtySheetClose(dirty, closeSheet);
   }
+
+  /* 안드로이드 뒤로 — X와 같은 닫기(입력이 있으면 한 번 묻는다). 시트일 때 Modal이 하던 일이다. */
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (!sending) requestDirtySheetClose(dirty, () => dismissToOrReplace(`/search/${vendorId}`));
+      return true;
+    });
+    return () => subscription.remove();
+  }, [dirty, sending, vendorId]);
 
   async function confirm() {
     if (!vendor || !chosen || !selectedTime || sending || submitLock.current) return;
@@ -215,14 +236,14 @@ export default function ConsultRoute() {
       : PICK_REQUIRED;
 
   return (
-    <View style={styles.host}>
-      <VendorDetailScreen />
+    <ThemedView style={styles.container} testID="consult-booking-popup">
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        {/* 정본 navTitle «상담 예약» 자리 — 공통 풀팝업 머리(좌측 회색 원형 X · 가운데 제목). */}
+        <FullPopupHeader title={TITLE} onClose={requestClose} closeDisabled={sending} />
 
-      <BottomSheet visible onRequestClose={requestClose} testID="consult-booking-sheet">
-        <SheetPanel>
-          {/* 정본 navTitle «상담 예약» 자리. 정본에 없는 설명 줄(«업체 상세를 보면서…»)은 지웠다. */}
-          <SheetHeader title={TITLE} onClose={requestClose} closeDisabled={sending} />
-
+        {/* 메모 칸에서 키보드가 올라오면 본문 · 도크를 그만큼 밀어 올린다 — 시트일 때 BottomSheet가
+            하던 일이다. 안드로이드는 창 크기 조절을 시스템이 해서 따로 밀지 않는다. */}
+        <KeyboardAvoidingView style={styles.body} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           {vendor === null || decisionState === 'loading' ? (
             <View style={styles.loading}>
               <DelayedLoader size={40} />
@@ -307,41 +328,53 @@ export default function ConsultRoute() {
             </ScrollView>
           )}
 
-          {/* 정본 dockSingle ctaFull — 높이 56 · radius 6 · 18/700. 고르기 전 상태는 정본에 없다(PR 본문). */}
+          {/* 정본 dockSingle ctaFull — 높이 56 · radius 6 · 18/700. 고르기 전 상태는 정본에 없다(PR 본문).
+              도크는 아래에 고정하고 홈 표시줄 inset을 직접 챙긴다(약관 상세 도크와 같은 값). */}
           {decisionState === 'allowed' ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ disabled: !canConfirm }}
-              disabled={!canConfirm}
-              onPress={() => void confirm()}
-              style={({ pressed }) => [
-                styles.cta,
-                { backgroundColor: canConfirm ? theme.tint : theme.backgroundElement },
-                pressed && styles.pressed,
+            <ThemedView
+              style={[
+                styles.dock,
+                { borderTopColor: CanonGray.gray200, paddingBottom: Math.max(DOCK_BOTTOM, Layout.gutter + insets.bottom) },
               ]}>
-              {canConfirm && chosen ? (
-                <ThemedText type="f18" themeColor="onTint" style={styles.bold}>
-                  {chosen.getMonth() + 1}월 {chosen.getDate()}일 {withInstrument(spokenTime(selectedTime ?? ''))} 잡기
-                </ThemedText>
-              ) : (
-                <ThemedText type="f18" themeColor="textAssistive" style={styles.bold}>
-                  {sending ? '등록하는 중…' : '날짜와 시간을 선택해주세요'}
-                </ThemedText>
-              )}
-            </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ disabled: !canConfirm }}
+                disabled={!canConfirm}
+                onPress={() => void confirm()}
+                style={({ pressed }) => [
+                  styles.cta,
+                  { backgroundColor: canConfirm ? theme.tint : theme.backgroundElement },
+                  pressed && styles.pressed,
+                ]}>
+                {canConfirm && chosen ? (
+                  <ThemedText type="f18" themeColor="onTint" style={styles.bold}>
+                    {chosen.getMonth() + 1}월 {chosen.getDate()}일 {withInstrument(spokenTime(selectedTime ?? ''))} 잡기
+                  </ThemedText>
+                ) : (
+                  <ThemedText type="f18" themeColor="textAssistive" style={styles.bold}>
+                    {sending ? '등록하는 중…' : '날짜와 시간을 선택해주세요'}
+                  </ThemedText>
+                )}
+              </Pressable>
+            </ThemedView>
           ) : null}
-        </SheetPanel>
-      </BottomSheet>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
 
       <Toast message={toast} onHidden={() => setToast(null)} />
-    </View>
+    </ThemedView>
   );
 }
 
+/* 도크 아래 여백 — 약관 상세(WP-AUTH-011) 도크와 같은 48. 홈 인디케이터 기기는 24 + inset이 더 크면 그것. */
+const DOCK_BOTTOM = 48;
+
 const styles = StyleSheet.create({
-  host: { flex: 1 },
-  loading: { minHeight: 160, alignItems: 'center', justifyContent: 'center' },
-  guard: { minHeight: 220, alignItems: 'center', justifyContent: 'center', gap: Spacing.two },
+  container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
+  safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
+  body: { flex: 1 },
+  loading: { flex: 1, minHeight: 160, alignItems: 'center', justifyContent: 'center' },
+  guard: { flex: 1, minHeight: 220, paddingHorizontal: Layout.gutter, alignItems: 'center', justifyContent: 'center', gap: Spacing.two },
   guardText: { textAlign: 'center' },
   guardButton: {
     minHeight: Layout.ctaInCard,
@@ -351,12 +384,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  scroll: { flexShrink: 1 },
-  /* 정본 마지막 «height:24px» 여백. */
-  content: { paddingBottom: Spacing.four },
+  scroll: { flex: 1 },
+  /* 정본 마지막 «height:24px» 여백 · 좌우 거터 24. */
+  content: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four },
   /* 정본 h1 26/35(t2 줄높이 — 같은 값). */
   headline: { lineHeight: LineHeight.t2 },
-  /* 정본 secTop · sec — 위아래 20 · 안쪽 사이 14 / 12. 좌우는 시트 거터가 맡는다. */
+  /* 정본 secTop · sec — 위아래 20 · 안쪽 사이 14 / 12. 좌우는 `content`의 거터가 맡는다. */
   secTop: { paddingVertical: Layout.listGap, gap: Layout.sectionHeadGap },
   section: { paddingVertical: Layout.listGap, gap: Layout.inlineGap },
   /* 정본 textarea — 최소 96 · radius 6 · 1px · 안쪽 14 · 15px. */
@@ -369,6 +402,8 @@ const styles = StyleSheet.create({
   },
   /* 정본 syncBox — radius 10 · 안쪽 16 · 사이 4. */
   sync: { padding: Spacing.three, gap: Spacing.one, borderRadius: Radius.medium },
+  /* 도크 — 위 선 1 · 위 12 · 좌우 거터 · 아래는 inset 계산(위 DOCK_BOTTOM). */
+  dock: { paddingHorizontal: Layout.gutter, paddingTop: 12, borderTopWidth: 1 },
   /* 정본 ctaFull — 높이 56 · radius 6. */
   cta: {
     height: Layout.ctaSheet,

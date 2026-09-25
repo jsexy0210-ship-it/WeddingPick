@@ -16,7 +16,7 @@ import { candidateListResponseSchema, decisionListResponseSchema } from './candi
 import { expoDetailSchema, expoListResponseSchema } from './expos';
 import { faqListResponseSchema } from './faq';
 import { consultationListResponseSchema } from './consultations';
-import { inquiryListResponseSchema } from './inquiries';
+import { inquiryListResponseSchema, inquirySchema } from './inquiries';
 import { myReportListResponseSchema } from './my-reports';
 import { categoryRecommendationsResponseSchema } from './recommendations';
 import { myMonthlyDrawResponseSchema, myRewardPayoutResponseSchema, myRewardsResponseSchema } from './rewards';
@@ -58,6 +58,7 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/me', currentUserSchema],
   ['GET /v1/app/bootstrap', appBootstrapResponseSchema],
   ['GET /v1/me/recommendations', categoryRecommendationsResponseSchema],
+  ['GET /v1/me/pick-recommendations', ENDPOINTS.getPickRecommendations.response],
   ['GET /v1/auth/providers', authProvidersResponseSchema],
   ['GET /v1/weddings/:weddingId/candidates', candidateListResponseSchema],
   ['GET /v1/weddings/:weddingId/decisions', decisionListResponseSchema],
@@ -73,6 +74,7 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/expos/:expoId', expoDetailSchema],
   ['GET /v1/me/reports', myReportListResponseSchema],
   ['GET /v1/inquiries', inquiryListResponseSchema],
+  ['GET /v1/inquiries/:inquiryId', inquirySchema],
   ['GET /v1/me/rewards', myRewardsResponseSchema],
   ['GET /v1/me/rewards/payout', myRewardPayoutResponseSchema],
   ['GET /v1/me/settings', settingsSchema],

@@ -1,6 +1,8 @@
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
-import { getCurrentUser, getSettings, setDisplayName, updateSettings } from '@/api/client';
+import { router } from 'expo-router';
+import { listNotifications, readNotification, readAllNotifications, getCurrentUser, getSettings, setDisplayName, updateSettings } from '@/api/client';
+import NotificationsScreen from '@/app/(tabs)/my/notifications';
 import ProfileScreen from '@/app/(tabs)/my/profile';
 
 /** 프로필 알림은 정본 토글(my-kit `Toggle`)이다 — value · onValueChange · disabled는 Switch와 같다. */
@@ -13,6 +15,7 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ q: '검수', vendorId: 'vendor-1' }),
 }));
 jest.mock('@/api/client', () => ({
+  listNotifications: jest.fn(), readNotification: jest.fn(), readAllNotifications: jest.fn(),
   getCurrentUser: jest.fn(), getSettings: jest.fn(), setDisplayName: jest.fn(), updateSettings: jest.fn(),
 }));
 /*
@@ -40,6 +43,8 @@ jest.mock('@weddingpick/ui', () => ({
   Border: { hairline: 1 }, FontSize: {}, Layout: {}, Radius: {}, Spacing: {}, useTheme: () => ({}), readWebInteractionState: () => ({}),
 }));
 
+const notice = { id: 'n-1', kind: 'partner', kindLabel: '배우자', title: '연결됐어요', body: '확인해주세요',
+  targetId: null, createdAt: '2026-09-10T00:00:00Z', readAt: null };
 const settings = { pushEnabled: true, priceChangeEnabled: true, marketingEnabled: false, nightPushEnabled: false };
 const currentUser = { userId: 'user-1', displayName: '지수' };
 function deferred() {
@@ -52,9 +57,59 @@ let tree: ReactTestRenderer;
 async function mount(element: React.ReactElement) { await act(async () => { tree = create(element); }); }
 afterEach(async () => { if (tree) await act(async () => tree.unmount()); });
 beforeEach(() => {
+  jest.mocked(listNotifications).mockResolvedValue({ notifications: [notice], unread: 7, total: 7 } as never);
   jest.mocked(getCurrentUser).mockResolvedValue(currentUser as never);
   jest.mocked(getSettings).mockResolvedValue(settings as never);
   jest.mocked(setDisplayName).mockResolvedValue({ displayName: '지수' } as never);
+});
+
+/*
+ * 알림 목록(my/notifications.tsx)은 #535에서 지웠다가 2026-09-25 홈 벨을 되살리며 함께 돌아왔다
+ * (대표 지시 「홈 화면에 알림 아이콘 어디갔냐」). 그 화면이 지키던 시험도 그대로 되살린다.
+ */
+describe('알림 이동과 읽음 복구', () => {
+  it('읽음 응답을 기다리지 않고 목적지로 이동하며 중복 저장을 막는다', async () => {
+    const pending = deferred();
+    jest.mocked(readNotification).mockReturnValue(pending.promise as never);
+    await mount(<NotificationsScreen />);
+    const press = tree.root.findAll((node) => node.props.accessibilityRole === 'button' && typeof node.props.onPress === 'function')[0]!.props.onPress;
+    await act(async () => { press(); press(); });
+    expect(router.push).toHaveBeenCalledWith('/wedding/partner');
+    expect(readNotification).toHaveBeenCalledTimes(1);
+    await act(async () => pending.resolve({ unread: 6, total: 7 }));
+  });
+
+  it('문의 답변 알림은 그 문의 상세로 간다', async () => {
+    jest.mocked(listNotifications).mockResolvedValue({
+      notifications: [{ ...notice, kind: 'inquiry', kindLabel: '문의', targetId: 'inq-1' }], unread: 1, total: 1,
+    } as never);
+    jest.mocked(readNotification).mockResolvedValue({ unread: 0, total: 1 } as never);
+    await mount(<NotificationsScreen />);
+    await act(async () => tree.root.findAll((node) => node.props.accessibilityRole === 'button' && typeof node.props.onPress === 'function')[0]!.props.onPress());
+    expect(router.push).toHaveBeenCalledWith('/my/contact/inq-1');
+  });
+
+  it('개별 읽음 실패 뒤 다시 눌러 저장할 수 있다', async () => {
+    jest.mocked(readNotification).mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({ unread: 6, total: 7 });
+    await mount(<NotificationsScreen />);
+    await act(async () => tree.root.findAll((node) => node.props.accessibilityRole === 'button' && typeof node.props.onPress === 'function')[0]!.props.onPress());
+    expect(tree.root.findByType('Toast' as never).props.message).toBe('읽음 상태를 저장하지 못했어요');
+    await act(async () => tree.root.findAll((node) => node.props.accessibilityRole === 'button' && typeof node.props.onPress === 'function')[0]!.props.onPress());
+    expect(readNotification).toHaveBeenCalledTimes(2);
+  });
+
+  it('모두 읽음 실패 뒤 목록 밖 미확인 개수도 보존한다', async () => {
+    jest.mocked(readAllNotifications).mockRejectedValueOnce(new Error('offline'));
+    const pending = deferred();
+    jest.mocked(readNotification).mockReturnValue(pending.promise as never);
+    await mount(<NotificationsScreen />);
+    const nav = tree.root.findByType('SubScreen' as never).props.right;
+    await act(async () => { await nav.props.onPress(); });
+    await act(async () => tree.root.findAll((node) => node.props.accessibilityRole === 'button' && typeof node.props.onPress === 'function')[0]!.props.onPress());
+    // 복구 때 목록의 한 건만 세었으면 개별 읽음 후 모두 읽음 버튼이 사라진다.
+    expect(tree.root.findByType('SubScreen' as never).props.right).not.toBeNull();
+    await act(async () => pending.resolve({ unread: 6, total: 7 }));
+  });
 });
 
 describe('프로필 알림 저장 경합', () => {

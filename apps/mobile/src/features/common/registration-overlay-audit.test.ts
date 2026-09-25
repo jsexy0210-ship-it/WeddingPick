@@ -71,9 +71,21 @@ describe('registration routes use canonical overlays', () => {
     expectCanonicalSheet('(tabs)/search/expo/[expoId]/calendar.tsx');
   });
 
-  it('상담/예약처럼 route 이름이 등록이 아니어도 데이터를 만들면 시트다', () => {
-    expectCanonicalSheet('(tabs)/search/[vendorId]/consult.tsx');
+  it('상담 예약은 공통 풀팝업이다(2026-09-25 대표 지시) — 업체 상세 위 시트로 돌아가지 않는다', () => {
+    const consult = source('(tabs)/search/[vendorId]/consult.tsx');
+    expect(consult).toContain('<FullPopupHeader title={TITLE} onClose={requestClose}');
+    expect(consult).not.toContain('<BottomSheet');
+    expect(consult).not.toContain('<SheetPanel');
+    expect(consult).not.toContain('<VendorDetailScreen');
+    expect(consult).not.toContain('<BackBar');
+    expect(consult).not.toContain('<NavBar');
 
+    // 약관 상세(WP-AUTH-011)와 같은 머리를 쓴다.
+    const terms = readFileSync(join(APP, '..', 'features', 'auth', 'terms-detail-modal.tsx'), 'utf8');
+    expect(terms).toContain('<FullPopupHeader title="약관 상세" onClose={onClose} />');
+  });
+
+  it('데이터를 만드는 route는 이름이 등록이 아니어도 시트다', () => {
     const booking = source('(tabs)/search/[vendorId]/booking.tsx');
     expect(booking).toContain("export { default } from './consult'");
 

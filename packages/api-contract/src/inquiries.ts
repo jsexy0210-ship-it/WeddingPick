@@ -57,6 +57,8 @@ export const inquirySchema = z.object({
   decidedAt: timestampSchema.nullable(),
   /** 어떻게 처리했는지. 아직 결론이 없으면 null. */
   resolution: z.string().nullable(),
+  /** 문의와 함께 보낸 확인 주소(evidence_url). 없으면 null. 문의 상세가 보여준다. */
+  evidenceUrl: z.string().nullable(),
 });
 
 export const inquiryListResponseSchema = z.object({

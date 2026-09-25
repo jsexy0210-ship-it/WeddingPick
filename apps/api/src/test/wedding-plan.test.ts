@@ -316,6 +316,151 @@ describeWithDb('우리웨딩', () => {
   });
 
   /**
+   * 직접 입력 지출은 총예산을 넘을 수 없다 — 2026-09-25 대표 지시. 결제인증 · 상담 정리 줄은
+   * 자료에서 온 금액이라 막지 않고, 직접 입력(POST · PATCH)만 막는다.
+   */
+  describe('총예산 한도', () => {
+    async function withBudget(budget: number | null) {
+      const session = await mine();
+
+      if (budget !== null) {
+        await test.app.inject({
+          method: 'PUT',
+          url: `/v1/weddings/${session.weddingId}/budget`,
+          headers: session.headers,
+          payload: { budget },
+        });
+      }
+
+      const add = (payload: Record<string, unknown>) =>
+        test.app.inject({
+          method: 'POST',
+          url: `/v1/weddings/${session.weddingId}/expenses`,
+          headers: session.headers,
+          payload,
+        });
+
+      return { ...session, add };
+    }
+
+    it('총예산 안이면 넣는다', async () => {
+      const { add, headers, weddingId } = await withBudget(10_000_000);
+
+      expect((await add({ label: '계약금', amount: 3_000_000 })).statusCode).toBe(201);
+      expect((await add({ label: '스튜디오', amount: 2_000_000 })).statusCode).toBe(201);
+
+      const body = (await expenses(headers, weddingId)).json<{ paidTotal: number }>();
+
+      expect(body.paidTotal).toBe(5_000_000);
+    });
+
+    it('총예산과 딱 맞는 금액은 넣는다', async () => {
+      const { add } = await withBudget(10_000_000);
+
+      expect((await add({ label: '계약금', amount: 6_000_000 })).statusCode).toBe(201);
+      expect((await add({ label: '잔금', amount: 4_000_000 })).statusCode).toBe(201);
+    });
+
+    it('넘으면 400이고 남은 예산을 알려준다 — 저장되지 않는다', async () => {
+      const { add, headers, weddingId } = await withBudget(10_000_000);
+
+      await add({ label: '계약금', amount: 6_000_000 });
+
+      const over = await add({ label: '잔금', amount: 4_000_001 });
+
+      expect(over.statusCode).toBe(400);
+      expect(over.json<{ error: { message: string } }>().error.message).toBe(
+        '총예산을 넘을 수 없어요. 남은 예산은 400만원이에요'
+      );
+
+      const body = (await expenses(headers, weddingId)).json<{ paidTotal: number; expenses: unknown[] }>();
+
+      expect(body.paidTotal).toBe(6_000_000);
+      expect(body.expenses).toHaveLength(1);
+    });
+
+    it('총예산을 안 정했으면 한도가 없다', async () => {
+      const { add } = await withBudget(null);
+
+      expect((await add({ label: '웨딩홀', amount: 90_000_000 })).statusCode).toBe(201);
+    });
+
+    it('낼 예정(잔금) 줄은 쓴 금액에 안 들어가 한도에 걸리지 않는다', async () => {
+      const { add } = await withBudget(10_000_000);
+
+      expect((await add({ label: '웨딩홀 잔금', amount: 20_000_000, status: 'scheduled' })).statusCode).toBe(201);
+    });
+
+    it('결제인증이 이미 쓴 금액도 한도에 센다', async () => {
+      const { add, headers, weddingId } = await withBudget(5_000_000);
+
+      await test.pool.query(
+        `INSERT INTO structured.vendors (name, category, region, source)
+         VALUES ('가온예식홀', 'hall', '서울', 'public_data')`
+      );
+      // 결제인증 3백만 — 자료에서 온 금액이라 한도와 무관하게 들어온다.
+      expect((await registerPaymentProof(test, headers, {}, weddingId)).statusCode).toBe(201);
+
+      expect((await add({ label: '스튜디오', amount: 2_000_001 })).statusCode).toBe(400);
+      expect((await add({ label: '스튜디오', amount: 2_000_000 })).statusCode).toBe(201);
+    });
+
+    it('수정으로 금액을 올려 넘기면 400, 자기 줄을 빼고 세서 딱 맞으면 통과', async () => {
+      const { add, headers, weddingId } = await withBudget(10_000_000);
+
+      await add({ label: '계약금', amount: 6_000_000 });
+      const added = await add({ label: '스튜디오', amount: 2_000_000 });
+      const { expenseId } = added.json<{ expenseId: string }>();
+      const url = `/v1/weddings/${weddingId}/expenses/${expenseId}`;
+
+      const over = await test.app.inject({ method: 'PATCH', url, headers, payload: { amount: 4_000_001 } });
+
+      expect(over.statusCode).toBe(400);
+      expect(over.json<{ error: { message: string } }>().error.message).toContain('총예산을 넘을 수 없어요');
+
+      const exact = await test.app.inject({ method: 'PATCH', url, headers, payload: { amount: 4_000_000 } });
+
+      expect(exact.statusCode).toBe(200);
+
+      // 낼 예정이던 줄을 «냈음»으로 바꿔 넘기는 것도 막는다.
+      const scheduled = await add({ label: '잔금', amount: 1_000_000, status: 'scheduled' });
+      const scheduledId = scheduled.json<{ expenseId: string }>().expenseId;
+      const flip = await test.app.inject({
+        method: 'PATCH',
+        url: `/v1/weddings/${weddingId}/expenses/${scheduledId}`,
+        headers,
+        payload: { status: 'paid' },
+      });
+
+      expect(flip.statusCode).toBe(400);
+
+      const body = (await expenses(headers, weddingId)).json<{ paidTotal: number }>();
+
+      expect(body.paidTotal).toBe(10_000_000);
+    });
+
+    it('이미 넘은 웨딩에서도 금액을 낮추거나 이름만 고치는 수정은 된다', async () => {
+      const { add, headers, weddingId } = await withBudget(10_000_000);
+
+      const added = await add({ label: '계약금', amount: 8_000_000 });
+      const { expenseId } = added.json<{ expenseId: string }>();
+      const url = `/v1/weddings/${weddingId}/expenses/${expenseId}`;
+
+      // 총예산을 쓴 금액 아래로 줄였다.
+      await test.app.inject({
+        method: 'PUT',
+        url: `/v1/weddings/${weddingId}/budget`,
+        headers,
+        payload: { budget: 5_000_000 },
+      });
+
+      expect((await test.app.inject({ method: 'PATCH', url, headers, payload: { label: '웨딩홀' } })).statusCode).toBe(200);
+      expect((await test.app.inject({ method: 'PATCH', url, headers, payload: { amount: 7_000_000 } })).statusCode).toBe(200);
+      expect((await test.app.inject({ method: 'PATCH', url, headers, payload: { amount: 7_000_001 } })).statusCode).toBe(400);
+    });
+  });
+
+  /**
    * 지출 상세. WP-OUR-010.
    */
   describe('지출 상세', () => {
@@ -381,6 +526,159 @@ describeWithDb('우리웨딩', () => {
 
       expect(body.refundStatus).toBe('partial_refund');
       expect(body.refundStatusLabel).toBe('부분환불');
+    });
+
+    it('직접 입력한 줄의 항목명 · 금액 · 업종 · 날짜를 고칠 수 있고 보낸 칸만 바뀐다', async () => {
+      const { headers, weddingId } = await mine();
+
+      const added = await test.app.inject({
+        method: 'POST',
+        url: `/v1/weddings/${weddingId}/expenses`,
+        headers,
+        payload: { label: '웨딩홀', amount: 3_000_000, category: 'hall', spentOn: '2026-09-01' },
+      });
+
+      const { expenseId } = added.json<{ expenseId: string }>();
+
+      const updated = await test.app.inject({
+        method: 'PATCH',
+        url: `/v1/weddings/${weddingId}/expenses/${expenseId}`,
+        headers,
+        payload: { label: '스튜디오', amount: 1_200_000, category: 'studio' },
+      });
+
+      expect(updated.statusCode).toBe(200);
+
+      const body = (await detail(headers, weddingId, expenseId)).json<{
+        label: string;
+        amount: number;
+        category: string;
+        spentOn: string;
+        refundStatus: string;
+      }>();
+
+      expect(body).toMatchObject({
+        label: '스튜디오',
+        amount: 1_200_000,
+        category: 'studio',
+        spentOn: '2026-09-01',
+        refundStatus: 'normal',
+      });
+
+      const summary = (await expenses(headers, weddingId)).json<{ paidTotal: number }>();
+
+      expect(summary.paidTotal).toBe(1_200_000);
+    });
+
+    it('빈 수정 · 0원 금액은 받지 않는다', async () => {
+      const { headers, weddingId } = await mine();
+
+      const added = await test.app.inject({
+        method: 'POST',
+        url: `/v1/weddings/${weddingId}/expenses`,
+        headers,
+        payload: { label: '계약금', amount: 3_000_000 },
+      });
+
+      const { expenseId } = added.json<{ expenseId: string }>();
+      const url = `/v1/weddings/${weddingId}/expenses/${expenseId}`;
+
+      const empty = await test.app.inject({ method: 'PATCH', url, headers, payload: {} });
+      const zero = await test.app.inject({ method: 'PATCH', url, headers, payload: { amount: 0 } });
+
+      expect(empty.statusCode).toBe(400);
+      expect(zero.statusCode).toBe(400);
+    });
+
+    it('배우자도 고치고 지울 수 있다', async () => {
+      const { owner, partner, weddingId } = await weddingWithPartner(test);
+
+      const added = await test.app.inject({
+        method: 'POST',
+        url: `/v1/weddings/${weddingId}/expenses`,
+        headers: owner.headers,
+        payload: { label: '계약금', amount: 3_000_000 },
+      });
+
+      const { expenseId } = added.json<{ expenseId: string }>();
+      const url = `/v1/weddings/${weddingId}/expenses/${expenseId}`;
+
+      const updated = await test.app.inject({
+        method: 'PATCH',
+        url,
+        headers: partner.headers,
+        payload: { amount: 2_500_000 },
+      });
+
+      expect(updated.statusCode).toBe(200);
+
+      const removed = await test.app.inject({ method: 'DELETE', url, headers: partner.headers });
+
+      expect(removed.statusCode).toBe(204);
+
+      const summary = (await expenses(owner.headers, weddingId)).json<{ expenses: unknown[] }>();
+
+      expect(summary.expenses).toEqual([]);
+    });
+
+    it('남의 웨딩 지출은 고치지도 지우지도 못한다', async () => {
+      const { headers, weddingId } = await mine();
+
+      const added = await test.app.inject({
+        method: 'POST',
+        url: `/v1/weddings/${weddingId}/expenses`,
+        headers,
+        payload: { label: '계약금', amount: 3_000_000 },
+      });
+
+      const { expenseId } = added.json<{ expenseId: string }>();
+      const stranger = await signInAs(test, 'apple-stranger');
+      const strangerWedding = await createWedding(test, stranger.headers);
+
+      for (const target of [weddingId, strangerWedding]) {
+        const url = `/v1/weddings/${target}/expenses/${expenseId}`;
+        const patched = await test.app.inject({
+          method: 'PATCH',
+          url,
+          headers: stranger.headers,
+          payload: { amount: 1 },
+        });
+        const removed = await test.app.inject({ method: 'DELETE', url, headers: stranger.headers });
+
+        expect(patched.statusCode).toBeGreaterThanOrEqual(403);
+        expect(patched.statusCode).toBeLessThanOrEqual(404);
+        expect(removed.statusCode).toBeGreaterThanOrEqual(403);
+        expect(removed.statusCode).toBeLessThanOrEqual(404);
+      }
+
+      const body = (await detail(headers, weddingId, expenseId)).json<{ amount: number }>();
+
+      expect(body.amount).toBe(3_000_000);
+    });
+
+    it('결제인증에서 온 줄은 금액을 고칠 수 없다', async () => {
+      const { headers, weddingId } = await mine();
+
+      await test.pool.query(
+        `INSERT INTO structured.vendors (name, category, region, source)
+         VALUES ('가온예식홀', 'hall', '서울', 'public_data')`
+      );
+
+      const registered = await registerPaymentProof(test, headers, {}, weddingId);
+      const proofId = registered.json<{ paymentProofId: string }>().paymentProofId;
+
+      const updated = await test.app.inject({
+        method: 'PATCH',
+        url: `/v1/weddings/${weddingId}/expenses/${proofId}`,
+        headers,
+        payload: { amount: 1_000 },
+      });
+
+      expect(updated.statusCode).toBe(404);
+
+      const body = (await expenses(headers, weddingId)).json<{ paidTotal: number }>();
+
+      expect(body.paidTotal).toBe(3_000_000);
     });
 
     it('결제인증에서 온 줄도 상세를 볼 수 있고 환불 상태는 늘 정상이다', async () => {

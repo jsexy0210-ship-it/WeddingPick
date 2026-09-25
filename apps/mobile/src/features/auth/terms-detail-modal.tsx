@@ -3,7 +3,9 @@ import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ActionButton, CanonGray, FontSize, Layout, LineHeight, MaxContentWidth, ProductSymbol, Radius, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+import { ActionButton, CanonGray, FontSize, Layout, LineHeight, MaxContentWidth, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+
+import { FullPopupHeader } from '@/components/full-popup-header';
 
 /**
  * 약관 상세 — WP-AUTH-011. 공통 풀팝업.
@@ -13,7 +15,8 @@ import { ActionButton, CanonGray, FontSize, Layout, LineHeight, MaxContentWidth,
  * 누른 항목의 탭이 선택된 채로 열리고 탭은 가로 스크롤한다.
  *
  * 헤더는 CLAUDE.md 공통 풀팝업 규격 그대로다 — 56px · 좌우 16px · 좌측 36px 슬롯에
- * 회색 원형 X(16px 아이콘) · 중앙 타이틀 · 우측 36px 빈칸.
+ * 회색 원형 X(16px 아이콘) · 중앙 타이틀 · 우측 36px 빈칸. 상담 예약과 같이 쓰도록
+ * `components/full-popup-header.tsx`로 뗐다.
  *
  * **동의 화면에서 열었을 때만** 하단에 «동의하기»가 붙는다(`onAgree`가 있을 때).
  *
@@ -46,19 +49,7 @@ export function TermsDetailModal({
       <ThemedView style={styles.container}>
         {/* 동의 도크가 있으면 도크가 아래 inset을 직접 챙긴다(정본 CTA y 828). */}
         <SafeAreaView style={styles.safeArea} edges={onAgree ? ['top'] : ['top', 'bottom']}>
-          <View style={[styles.nav, { borderBottomColor: CanonGray.gray200 }]}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="닫기"
-              onPress={onClose}
-              style={({ pressed }) => [styles.navClose, { backgroundColor: CanonGray.gray100 }, pressed && styles.pressed]}>
-              <ProductSymbol name="close" size={16} color={theme.text} />
-            </Pressable>
-            <ThemedText type="f16" style={styles.navTitle}>
-              약관 상세
-            </ThemedText>
-            <View style={styles.navPad} />
-          </View>
+          <FullPopupHeader title="약관 상세" onClose={onClose} />
 
           <ScrollView
             horizontal
@@ -121,23 +112,6 @@ export function TermsDetailModal({
 const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
-  nav: {
-    height: Layout.navBar,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    gap: Spacing.two,
-    borderBottomWidth: 1,
-  },
-  navClose: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  navTitle: { flex: 1, minWidth: 0, textAlign: 'center', fontWeight: 700 },
-  navPad: { width: 36 },
   tabs: { flexGrow: 0, flexShrink: 0, borderBottomWidth: 1 },
   tabsContent: { paddingHorizontal: 20, gap: 20 },
   tab: { height: 44, alignItems: 'center', justifyContent: 'center' },
@@ -155,7 +129,6 @@ const styles = StyleSheet.create({
   articleBody: { lineHeight: LineHeight.lh22, color: CanonGray.gray700 },
   /* 도크 — 위 선 1 · 위 12 · CTA 56 · 아래 48 또는 24 + inset(정본 그림 CTA y 828). */
   dock: { paddingHorizontal: Layout.gutter, paddingTop: 12, borderTopWidth: 1 },
-  pressed: { opacity: 0.8 },
 });
 
 /* 도크 아래 여백 — 정본 그림의 CTA y 828(아래 48). 홈 인디케이터 기기는 24 + inset이 더 크면 그것. */

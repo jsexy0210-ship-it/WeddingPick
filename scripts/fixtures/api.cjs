@@ -671,8 +671,21 @@ const routes = {
         receivedAt: '2026-08-12T03:00:00.000Z',
         decidedAt: '2026-08-13T03:00:00.000Z',
         resolution: null,
+        evidenceUrl: null,
       },
     ],
+  },
+  /** 지난 문의 상세(`/my/contact/[inquiryId]`) — 답변이 달린 한 건. 정본 프레임 없음. */
+  'GET /v1/inquiries/:inquiryId': {
+    id: '00000000-0000-4000-8000-0000000000c1',
+    category: 'other',
+    body: 'Pick 인증이 안 됐어요',
+    status: 'answered',
+    subject: null,
+    receivedAt: '2026-08-12T03:00:00.000Z',
+    decidedAt: '2026-08-13T03:00:00.000Z',
+    resolution: '확인해 보니 사진이 흐려서 금액을 읽지 못했어요. 다시 올려 주시면 바로 확인할게요.',
+    evidenceUrl: null,
   },
   'GET /v1/me/rewards': {
     referralCode: 'ABC123',
@@ -748,6 +761,15 @@ const routes = {
    * 둬서 캡처 한 장에 «비교» · «보기» · «추천»이 같이 보이게 한다. `limit`은 무시한다 —
    * 캡처에서는 홈도 전체 페이지도 같은 셋을 그린다.
    */
+  /** Pick 묶음별 «내 조건에 맞는 곳»(2026-09-25) — 웨딩홀 넷 · 스튜디오 하나, 나머지 묶음은 비었다. */
+  'GET /v1/me/pick-recommendations': {
+    groups: [
+      { key: 'start', vendors: VENDORS.filter((v) => v.category === 'hall').slice(0, 5) },
+      { key: 'sdm', vendors: VENDORS.filter((v) => v.category === 'studio').slice(0, 5) },
+      { key: 'ceremony', vendors: [] },
+      { key: 'goods', vendors: [] },
+    ],
+  },
   'GET /v1/me/recommendations': {
     groups: [
       {

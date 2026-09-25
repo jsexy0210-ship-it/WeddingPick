@@ -323,27 +323,29 @@ export function ddayLabel(days: number): string {
   return days === 0 ? 'D-DAY' : `D-${days}`;
 }
 
-/** «다음»이 미정으로 확정해 주는 질문 — 시안에 미정 칩이 없는 셋. */
-const SETTLED_BY_NEXT: readonly QuestionStep[] = ['region', 'prep', 'budget'];
+/**
+ * «다음»이 미정으로 확정해 주는 질문 — 진행 상황 · 예산. 지역은 2026-09-25 대표 지시
+ * 「지역 선택 필수값이다」로 빠졌다 — 시/도를 골라야 «다음»이 켜진다.
+ */
+const SETTLED_BY_NEXT: readonly QuestionStep[] = ['prep', 'budget'];
 
 /**
- * 지금 답으로 «다음»을 누를 수 있는가. 스타일만 최소 1개 필수 — 나머지는 미정도
- * 답이다. 지역 · 진행 상황 · 예산은 아무것도 안 고르고도 누를 수 있다(누르는 순간
- * `settleAnswer`가 미정으로 적는다).
+ * 지금 답으로 «다음»을 누를 수 있는가. 스타일은 최소 1개, 지역은 시/도 하나가 필수다.
+ * 진행 상황 · 예산은 아무것도 안 고르고도 누를 수 있다(누르는 순간 `settleAnswer`가
+ * 미정으로 적는다).
  */
 export function canAdvance(step: QuestionStep, answers: Answers): boolean {
   if (SETTLED_BY_NEXT.includes(step)) return true;
+  if (step === 'region') return answers.region !== null && answers.region.region !== null;
 
   return isAnswered(step, answers);
 }
 
 /**
- * «다음»을 누를 때 아직 null인 지역 · 진행 상황 · 예산을 미정으로 확정한다 — 지역을
- * 안 골랐으면 «미정», 카드를 하나도 안 골랐으면 «아직 시작 전», 금액을 안 적었으면
- * «미정». 시안의 세 화면에는 미정 칩이 따로 없어서 «다음» 자체가 미정 선택이다.
+ * «다음»을 누를 때 아직 null인 진행 상황 · 예산을 미정으로 확정한다 — 카드를 하나도
+ * 안 골랐으면 «아직 시작 전», 금액을 안 적었으면 «미정»(지역은 필수라 여기 없다). 시안의 세 화면에는 미정 칩이 따로 없어서 «다음» 자체가 미정 선택이다.
  */
 export function settleAnswer(step: QuestionStep, answers: Answers): Answers {
-  if (step === 'region' && answers.region === null) return { ...answers, region: { region: null, district: null } };
   if (step === 'prep' && answers.prep === null) return { ...answers, prep: { categories: [] } };
   if (step === 'budget' && answers.budget === null) return { ...answers, budget: { amount: null } };
 
