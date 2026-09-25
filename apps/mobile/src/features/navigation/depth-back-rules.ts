@@ -106,6 +106,7 @@ export const ROUTES: readonly string[] = [
   '/search/compare',
   '/search/expo/[expoId]',
   '/search/expo/[expoId]/calendar',
+  '/+not-found',
   '/setup',
   '/wedding',
   '/wedding/[id]/changelog',
