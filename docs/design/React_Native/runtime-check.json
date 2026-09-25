@@ -1,0 +1,2385 @@
+{
+  "version": "3.29.1",
+  "method": "Chromium, self-contained HTML loaded via page.set_content; SVG canvas rasterization; all screen selections. File URL navigation is restricted by the execution environment.",
+  "groups": [
+    {
+      "group": "home",
+      "screenCount": 15,
+      "screens": [
+        {
+          "id": "frame-001",
+          "label": "1스플래시 · 시작 · WP-APP-001",
+          "sourceLine": "54"
+        },
+        {
+          "id": "frame-002",
+          "label": "2로그인 · WP-AUTH-001",
+          "sourceLine": "65"
+        },
+        {
+          "id": "frame-003",
+          "label": "3만 14세 이용 불가 · WP-AUTH-009",
+          "sourceLine": "87"
+        },
+        {
+          "id": "frame-004",
+          "label": "4약관 동의 · 권한 안내 · WP-AUTH-010",
+          "sourceLine": "100"
+        },
+        {
+          "id": "frame-005",
+          "label": "4-1약관 상세 · WP-AUTH-011",
+          "sourceLine": "150"
+        },
+        {
+          "id": "frame-006",
+          "label": "5초기 설정 · 1/5 예식일 · WP-AUTH-002",
+          "sourceLine": "176"
+        },
+        {
+          "id": "frame-007",
+          "label": "6초기 설정 · 2/5 지역 · WP-AUTH-003",
+          "sourceLine": "197"
+        },
+        {
+          "id": "frame-008",
+          "label": "7초기 설정 · 3/5 진행 상황 · WP-AUTH-004",
+          "sourceLine": "231"
+        },
+        {
+          "id": "frame-009",
+          "label": "8초기 설정 · 4/5 예산 · WP-AUTH-005",
+          "sourceLine": "256"
+        },
+        {
+          "id": "frame-010",
+          "label": "9초기 설정 · 5/5 스타일 · WP-AUTH-006",
+          "sourceLine": "279"
+        },
+        {
+          "id": "frame-011",
+          "label": "10초기 설정 · 완료 · WP-AUTH-007",
+          "sourceLine": "307"
+        },
+        {
+          "id": "frame-012",
+          "label": "11Home · 중복 정리 · WP-HOME-001",
+          "sourceLine": "339"
+        },
+        {
+          "id": "frame-013",
+          "label": "11-1홈 · 아무것도 없을 때 · WP-HOME-002",
+          "sourceLine": "487"
+        },
+        {
+          "id": "frame-014",
+          "label": "11-2홈 · 일부 정보가 있을 때 · WP-HOME-003",
+          "sourceLine": "556"
+        },
+        {
+          "id": "frame-015",
+          "label": "13혜택 안내 시트 · WP-SHT-017",
+          "sourceLine": "649"
+        }
+      ],
+      "masks": [
+        {
+          "dataUrl": true,
+          "width": "64px",
+          "height": "64px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "22px",
+          "height": "22px"
+        },
+        {
+          "dataUrl": true,
+          "width": "22px",
+          "height": "22px"
+        },
+        {
+          "dataUrl": true,
+          "width": "22px",
+          "height": "22px"
+        },
+        {
+          "dataUrl": true,
+          "width": "22px",
+          "height": "22px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "20px",
+          "height": "20px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "20px",
+          "height": "20px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "20px",
+          "height": "20px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "20px",
+          "height": "20px"
+        },
+        {
+          "dataUrl": true,
+          "width": "20px",
+          "height": "20px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "20px",
+          "height": "20px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "20px",
+          "height": "20px"
+        },
+        {
+          "dataUrl": true,
+          "width": "20px",
+          "height": "20px"
+        },
+        {
+          "dataUrl": true,
+          "width": "20px",
+          "height": "20px"
+        },
+        {
+          "dataUrl": true,
+          "width": "20px",
+          "height": "20px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "20px",
+          "height": "20px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "20px",
+          "height": "20px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "20px",
+          "height": "20px"
+        },
+        {
+          "dataUrl": true,
+          "width": "20px",
+          "height": "20px"
+        },
+        {
+          "dataUrl": true,
+          "width": "20px",
+          "height": "20px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        }
+      ],
+      "materialIcons": [
+        {
+          "name": "storefront",
+          "maskOk": true,
+          "afterContent": "none"
+        },
+        {
+          "name": "face_retouching_natural",
+          "maskOk": true,
+          "afterContent": "none"
+        },
+        {
+          "name": "dry_cleaning",
+          "maskOk": true,
+          "afterContent": "none"
+        },
+        {
+          "name": "diamond",
+          "maskOk": true,
+          "afterContent": "none"
+        },
+        {
+          "name": "storefront",
+          "maskOk": true,
+          "afterContent": "none"
+        },
+        {
+          "name": "face_retouching_natural",
+          "maskOk": true,
+          "afterContent": "none"
+        },
+        {
+          "name": "dry_cleaning",
+          "maskOk": true,
+          "afterContent": "none"
+        },
+        {
+          "name": "diamond",
+          "maskOk": true,
+          "afterContent": "none"
+        },
+        {
+          "name": "storefront",
+          "maskOk": true,
+          "afterContent": "none"
+        },
+        {
+          "name": "face_retouching_natural",
+          "maskOk": true,
+          "afterContent": "none"
+        },
+        {
+          "name": "dry_cleaning",
+          "maskOk": true,
+          "afterContent": "none"
+        },
+        {
+          "name": "diamond",
+          "maskOk": true,
+          "afterContent": "none"
+        }
+      ],
+      "renderErrors": 0,
+      "remainingDesignToolTags": 0,
+      "allBoardVisibleCount": 15
+    },
+    {
+      "group": "search",
+      "screenCount": 11,
+      "screens": [
+        {
+          "id": "frame-001",
+          "label": "1결과 목록 · 기본 · WP-SRCH-001",
+          "sourceLine": "51"
+        },
+        {
+          "id": "frame-002",
+          "label": "2필터 시트 · WP-SRCH-002",
+          "sourceLine": "117"
+        },
+        {
+          "id": "frame-003",
+          "label": "3정렬 드롭다운 · 결과 없음 · WP-SRCH-003",
+          "sourceLine": "156"
+        },
+        {
+          "id": "frame-004",
+          "label": "4업체 상세 · 소개 · WP-VEND-001",
+          "sourceLine": "214"
+        },
+        {
+          "id": "frame-005",
+          "label": "5패키지 · WP-VEND-002",
+          "sourceLine": "280"
+        },
+        {
+          "id": "frame-006",
+          "label": "6후기 · WP-VEND-003",
+          "sourceLine": "311"
+        },
+        {
+          "id": "frame-007",
+          "label": "7정보 · WP-VEND-004",
+          "sourceLine": "353"
+        },
+        {
+          "id": "frame-008",
+          "label": "8자동완성 · WP-SRCH-004",
+          "sourceLine": "396"
+        },
+        {
+          "id": "frame-009",
+          "label": "10이미지 전체보기 · WP-VEND-006",
+          "sourceLine": "424"
+        },
+        {
+          "id": "frame-010",
+          "label": "11제보 금액 상세 · WP-VEND-007",
+          "sourceLine": "439"
+        },
+        {
+          "id": "frame-011",
+          "label": "12정보 오류 제보 · WP-VEND-008",
+          "sourceLine": "466"
+        }
+      ],
+      "masks": [
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "12px",
+          "height": "12px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "12px",
+          "height": "12px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "12px",
+          "height": "12px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "12px",
+          "height": "12px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "12px",
+          "height": "12px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "12px",
+          "height": "12px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "12px",
+          "height": "12px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "20px",
+          "height": "20px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "22px",
+          "height": "22px"
+        },
+        {
+          "dataUrl": true,
+          "width": "20px",
+          "height": "20px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "22px",
+          "height": "22px"
+        },
+        {
+          "dataUrl": true,
+          "width": "20px",
+          "height": "20px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "22px",
+          "height": "22px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "20px",
+          "height": "20px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "22px",
+          "height": "22px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "20px",
+          "height": "20px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "24px"
+        }
+      ],
+      "materialIcons": [],
+      "renderErrors": 0,
+      "remainingDesignToolTags": 0,
+      "allBoardVisibleCount": 11
+    },
+    {
+      "group": "pick",
+      "screenCount": 5,
+      "screens": [
+        {
+          "id": "frame-001",
+          "label": "1최종 결정 · 상담 연계 · WP-PICK-001",
+          "sourceLine": "36"
+        },
+        {
+          "id": "frame-002",
+          "label": "1-1비교 · WP-PICK-006",
+          "sourceLine": "101"
+        },
+        {
+          "id": "frame-003",
+          "label": "1-2상담 예약 완료 · WP-PICK-010",
+          "sourceLine": "144"
+        },
+        {
+          "id": "frame-004",
+          "label": "2상담 예약 · WP-PICK-009",
+          "sourceLine": "168"
+        },
+        {
+          "id": "frame-005",
+          "label": "3삭제 · OS 토스트 안내 · WP-PICK-008",
+          "sourceLine": "211"
+        }
+      ],
+      "masks": [
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "12px",
+          "height": "12px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "12px",
+          "height": "12px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "12px",
+          "height": "12px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "12px",
+          "height": "12px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "12px",
+          "height": "12px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "12px",
+          "height": "12px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "12px",
+          "height": "12px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "36px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "12px",
+          "height": "12px"
+        },
+        {
+          "dataUrl": true,
+          "width": "12px",
+          "height": "12px"
+        }
+      ],
+      "materialIcons": [],
+      "renderErrors": 0,
+      "remainingDesignToolTags": 0,
+      "allBoardVisibleCount": 5
+    },
+    {
+      "group": "note",
+      "screenCount": 9,
+      "screens": [
+        {
+          "id": "frame-001",
+          "label": "1캘린더 · WP-NOTE-001",
+          "sourceLine": "36"
+        },
+        {
+          "id": "frame-002",
+          "label": "1-1일정 등록 · WP-NOTE-002",
+          "sourceLine": "82"
+        },
+        {
+          "id": "frame-003",
+          "label": "2상담기록 · WP-NOTE-004",
+          "sourceLine": "115"
+        },
+        {
+          "id": "frame-004",
+          "label": "2-1정리 결과 · WP-NOTE-005",
+          "sourceLine": "140"
+        },
+        {
+          "id": "frame-005",
+          "label": "3예산현황 · WP-NOTE-006",
+          "sourceLine": "182"
+        },
+        {
+          "id": "frame-006",
+          "label": "3-1예산 항목 추가 · WP-NOTE-007",
+          "sourceLine": "222"
+        },
+        {
+          "id": "frame-007",
+          "label": "3-4지출 목록 · WP-OUR-014b",
+          "sourceLine": "253"
+        },
+        {
+          "id": "frame-008",
+          "label": "4예약현황 · WP-OUR-003",
+          "sourceLine": "278"
+        },
+        {
+          "id": "frame-009",
+          "label": "5변경내역 · WP-CPL-005",
+          "sourceLine": "300"
+        }
+      ],
+      "masks": [
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "20px",
+          "height": "20px"
+        },
+        {
+          "dataUrl": true,
+          "width": "20px",
+          "height": "20px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "20px",
+          "height": "20px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "26px",
+          "height": "26px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        }
+      ],
+      "materialIcons": [],
+      "renderErrors": 0,
+      "remainingDesignToolTags": 0,
+      "allBoardVisibleCount": 9
+    },
+    {
+      "group": "my",
+      "screenCount": 22,
+      "screens": [
+        {
+          "id": "frame-001",
+          "label": "1MY · WP-MY-001",
+          "sourceLine": "54"
+        },
+        {
+          "id": "frame-002",
+          "label": "2프로필 · WP-MY-002",
+          "sourceLine": "100"
+        },
+        {
+          "id": "frame-003",
+          "label": "3내 웨딩설정 · WP-MY-003",
+          "sourceLine": "147"
+        },
+        {
+          "id": "frame-004",
+          "label": "4Pick 인증내역 · WP-MY-004",
+          "sourceLine": "172"
+        },
+        {
+          "id": "frame-005",
+          "label": "5연결관리 · WP-MY-005",
+          "sourceLine": "202"
+        },
+        {
+          "id": "frame-006",
+          "label": "6내가 쓴 후기 · WP-MY-006",
+          "sourceLine": "245"
+        },
+        {
+          "id": "frame-007",
+          "label": "7문의하기 · WP-MY-008",
+          "sourceLine": "282"
+        },
+        {
+          "id": "frame-008",
+          "label": "8리얼후기 · WP-LNG-001",
+          "sourceLine": "332"
+        },
+        {
+          "id": "frame-009",
+          "label": "8-1후기 쓰기 · WP-LNG-005",
+          "sourceLine": "361"
+        },
+        {
+          "id": "frame-010",
+          "label": "9웨딩정보 · WP-LNG-002",
+          "sourceLine": "408"
+        },
+        {
+          "id": "frame-011",
+          "label": "9-1글 상세 · WP-LNG-004",
+          "sourceLine": "431"
+        },
+        {
+          "id": "frame-012",
+          "label": "10박람회 · WP-LNG-003",
+          "sourceLine": "468"
+        },
+        {
+          "id": "frame-013",
+          "label": "10-1박람회 상세 · WP-LNG-006",
+          "sourceLine": "498"
+        },
+        {
+          "id": "frame-014",
+          "label": "11회원탈퇴 · WP-MY-012",
+          "sourceLine": "535"
+        },
+        {
+          "id": "frame-015",
+          "label": "12FAQ · WP-MY-013",
+          "sourceLine": "571"
+        },
+        {
+          "id": "frame-016",
+          "label": "13스타일 다시 고르기 · WP-MY-014",
+          "sourceLine": "595"
+        },
+        {
+          "id": "frame-017",
+          "label": "14배우자 초대 · WP-CPL-001",
+          "sourceLine": "625"
+        },
+        {
+          "id": "frame-018",
+          "label": "14-1초대 수락 · WP-CPL-002",
+          "sourceLine": "661"
+        },
+        {
+          "id": "frame-019",
+          "label": "14-2연결 완료 · WP-CPL-003",
+          "sourceLine": "693"
+        },
+        {
+          "id": "frame-020",
+          "label": "14-3연결 해제 · WP-CPL-006",
+          "sourceLine": "724"
+        },
+        {
+          "id": "frame-021",
+          "label": "1-14이용약관 · WP-MY-015",
+          "sourceLine": "757"
+        },
+        {
+          "id": "frame-022",
+          "label": "1-15개인정보처리방침 · WP-MY-015b",
+          "sourceLine": "774"
+        }
+      ],
+      "masks": [
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "22px",
+          "height": "22px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "32px",
+          "height": "32px"
+        },
+        {
+          "dataUrl": true,
+          "width": "32px",
+          "height": "32px"
+        },
+        {
+          "dataUrl": true,
+          "width": "32px",
+          "height": "32px"
+        },
+        {
+          "dataUrl": true,
+          "width": "32px",
+          "height": "32px"
+        },
+        {
+          "dataUrl": true,
+          "width": "32px",
+          "height": "32px"
+        },
+        {
+          "dataUrl": true,
+          "width": "22px",
+          "height": "22px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "20px",
+          "height": "20px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "16px",
+          "height": "16px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "18px",
+          "height": "18px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        }
+      ],
+      "materialIcons": [],
+      "renderErrors": 0,
+      "remainingDesignToolTags": 0,
+      "allBoardVisibleCount": 22
+    },
+    {
+      "group": "common",
+      "screenCount": 18,
+      "screens": [
+        {
+          "id": "frame-001",
+          "label": "1 · 다이얼로그",
+          "sourceLine": "68"
+        },
+        {
+          "id": "frame-002",
+          "label": "1 · 다이얼로그",
+          "sourceLine": "68"
+        },
+        {
+          "id": "frame-003",
+          "label": "1 · 다이얼로그",
+          "sourceLine": "68"
+        },
+        {
+          "id": "frame-004",
+          "label": "1 · 다이얼로그",
+          "sourceLine": "68"
+        },
+        {
+          "id": "frame-005",
+          "label": "1 · 다이얼로그",
+          "sourceLine": "68"
+        },
+        {
+          "id": "frame-006",
+          "label": "1 · 다이얼로그",
+          "sourceLine": "68"
+        },
+        {
+          "id": "frame-007",
+          "label": "1 · 다이얼로그",
+          "sourceLine": "68"
+        },
+        {
+          "id": "frame-008",
+          "label": "1 · 다이얼로그",
+          "sourceLine": "68"
+        },
+        {
+          "id": "frame-009",
+          "label": "1 · 다이얼로그",
+          "sourceLine": "140"
+        },
+        {
+          "id": "frame-010",
+          "label": "1 · 다이얼로그",
+          "sourceLine": "140"
+        },
+        {
+          "id": "frame-011",
+          "label": "1 · 다이얼로그",
+          "sourceLine": "140"
+        },
+        {
+          "id": "frame-012",
+          "label": "1 · 다이얼로그",
+          "sourceLine": "140"
+        },
+        {
+          "id": "frame-013",
+          "label": "1 · 다이얼로그",
+          "sourceLine": "140"
+        },
+        {
+          "id": "frame-014",
+          "label": "1 · 다이얼로그",
+          "sourceLine": "140"
+        },
+        {
+          "id": "frame-015",
+          "label": "1 · 다이얼로그",
+          "sourceLine": "140"
+        },
+        {
+          "id": "frame-016",
+          "label": "3-1업종 순회 로딩 · WP-LOAD-001",
+          "sourceLine": "229"
+        },
+        {
+          "id": "frame-017",
+          "label": "3-4목록 뼈대 · WP-LOAD-004",
+          "sourceLine": "324"
+        },
+        {
+          "id": "frame-018",
+          "label": "3-5처리 중 · 단계 표시 · WP-LOAD-005",
+          "sourceLine": "351"
+        }
+      ],
+      "masks": [
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "14px",
+          "height": "14px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "24px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "24px"
+        },
+        {
+          "dataUrl": true,
+          "width": "36px",
+          "height": "24px"
+        }
+      ],
+      "materialIcons": [],
+      "renderErrors": 0,
+      "remainingDesignToolTags": 0,
+      "allBoardVisibleCount": 18
+    },
+    {
+      "group": "components",
+      "screenCount": 0,
+      "screens": [],
+      "masks": [],
+      "materialIcons": [],
+      "renderErrors": 0,
+      "remainingDesignToolTags": 0,
+      "allBoardVisibleCount": 0
+    },
+    {
+      "group": "devices",
+      "screenCount": 0,
+      "screens": [],
+      "masks": [],
+      "materialIcons": [],
+      "renderErrors": 0,
+      "remainingDesignToolTags": 0,
+      "allBoardVisibleCount": 0
+    }
+  ],
+  "pageErrors": [],
+  "consoleErrors": [],
+  "externalNetworkRequests": [],
+  "iconRasterization": [
+    {
+      "file": "public/assets/material-icons/diamond.svg",
+      "loaded": true,
+      "nontransparentPixels": 2734
+    },
+    {
+      "file": "public/assets/material-icons/dry_cleaning.svg",
+      "loaded": true,
+      "nontransparentPixels": 2281
+    },
+    {
+      "file": "public/assets/material-icons/face_retouching_natural.svg",
+      "loaded": true,
+      "nontransparentPixels": 2829
+    },
+    {
+      "file": "public/assets/material-icons/storefront.svg",
+      "loaded": true,
+      "nontransparentPixels": 3145
+    },
+    {
+      "file": "public/assets/seed-icons/bookmark.svg",
+      "loaded": true,
+      "nontransparentPixels": 2257
+    },
+    {
+      "file": "public/assets/seed-icons/calendar.svg",
+      "loaded": true,
+      "nontransparentPixels": 2778
+    },
+    {
+      "file": "public/assets/seed-icons/camera.svg",
+      "loaded": true,
+      "nontransparentPixels": 3006
+    },
+    {
+      "file": "public/assets/seed-icons/chatting.svg",
+      "loaded": true,
+      "nontransparentPixels": 2444
+    },
+    {
+      "file": "public/assets/seed-icons/check-fill.svg",
+      "loaded": true,
+      "nontransparentPixels": 1049
+    },
+    {
+      "file": "public/assets/seed-icons/chevron-left.svg",
+      "loaded": true,
+      "nontransparentPixels": 696
+    },
+    {
+      "file": "public/assets/seed-icons/chevron-right.svg",
+      "loaded": true,
+      "nontransparentPixels": 696
+    },
+    {
+      "file": "public/assets/seed-icons/clock.svg",
+      "loaded": true,
+      "nontransparentPixels": 2073
+    },
+    {
+      "file": "public/assets/seed-icons/close-fill.svg",
+      "loaded": true,
+      "nontransparentPixels": 1594
+    },
+    {
+      "file": "public/assets/seed-icons/community.svg",
+      "loaded": true,
+      "nontransparentPixels": 2932
+    },
+    {
+      "file": "public/assets/seed-icons/edit.svg",
+      "loaded": true,
+      "nontransparentPixels": 1793
+    },
+    {
+      "file": "public/assets/seed-icons/heart-fill.svg",
+      "loaded": true,
+      "nontransparentPixels": 4697
+    },
+    {
+      "file": "public/assets/seed-icons/heart.svg",
+      "loaded": true,
+      "nontransparentPixels": 1809
+    },
+    {
+      "file": "public/assets/seed-icons/history.svg",
+      "loaded": true,
+      "nontransparentPixels": 2282
+    },
+    {
+      "file": "public/assets/seed-icons/home-fill.svg",
+      "loaded": true,
+      "nontransparentPixels": 4560
+    },
+    {
+      "file": "public/assets/seed-icons/home.svg",
+      "loaded": true,
+      "nontransparentPixels": 2282
+    },
+    {
+      "file": "public/assets/seed-icons/location.svg",
+      "loaded": true,
+      "nontransparentPixels": 2218
+    },
+    {
+      "file": "public/assets/seed-icons/mic.svg",
+      "loaded": true,
+      "nontransparentPixels": 2222
+    },
+    {
+      "file": "public/assets/seed-icons/more-horiz.svg",
+      "loaded": true,
+      "nontransparentPixels": 320
+    },
+    {
+      "file": "public/assets/seed-icons/notification.svg",
+      "loaded": true,
+      "nontransparentPixels": 1856
+    },
+    {
+      "file": "public/assets/seed-icons/photo.svg",
+      "loaded": true,
+      "nontransparentPixels": 3250
+    },
+    {
+      "file": "public/assets/seed-icons/profile-fill.svg",
+      "loaded": true,
+      "nontransparentPixels": 3372
+    },
+    {
+      "file": "public/assets/seed-icons/profile.svg",
+      "loaded": true,
+      "nontransparentPixels": 2007
+    },
+    {
+      "file": "public/assets/seed-icons/search-fill.svg",
+      "loaded": true,
+      "nontransparentPixels": 1956
+    },
+    {
+      "file": "public/assets/seed-icons/search.svg",
+      "loaded": true,
+      "nontransparentPixels": 1636
+    },
+    {
+      "file": "public/assets/seed-icons/trash.svg",
+      "loaded": true,
+      "nontransparentPixels": 2798
+    }
+  ],
+  "screenSelectionFailures": [],
+  "termsTabs": [
+    {
+      "tab": "개인정보",
+      "pass": true
+    },
+    {
+      "tab": "Pick 인증",
+      "pass": true
+    },
+    {
+      "tab": "상담 녹음",
+      "pass": true
+    },
+    {
+      "tab": "제3자 제공",
+      "pass": true
+    },
+    {
+      "tab": "혜택 알림",
+      "pass": true
+    },
+    {
+      "tab": "이용약관",
+      "pass": true
+    }
+  ],
+  "narrowViewport": {
+    "width": 600,
+    "navigationVisible": true,
+    "renderErrors": 0
+  },
+  "totalScreens": 80,
+  "includedSvgCount": 30,
+  "passed": true,
+  "limitations": [
+    "원본 업로드 사진 7종, 원본 디자인 도구/스타일시트는 미첨부 상태. 공식 SVG 아이콘은 보완했지만 원본 전체의 완전한 픽셀 일치를 주장하지 않는다.",
+    "React DOM 디자인 레퍼런스의 실행·아이콘·화면 선택만 검증했다. RN 네이티브, 실기기, 운영 API·인증·예약·녹음 연결은 범위 밖이다.",
+    "npm 설치 및 Vite 빌드는 실행하지 않았다. TypeScript로 생성한 단일 HTML의 React 실행을 검증했다.",
+    "이 환경은 file:// 브라우저 탐색을 차단하므로 HTML 내용 주입으로 같은 번들 실행을 검사했다. 외부 네트워크는 차단한 상태였다."
+  ]
+}

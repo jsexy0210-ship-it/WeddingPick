@@ -113,6 +113,53 @@ test('빈 업종코드를 넘기면 수집을 시작하지 않는다', () => {
   // 코드가 틀리거나 비면 API는 오류 대신 빈 목록을 준다 — 조용한 0건 수집을 막는다.
   expect(() => resolveUpjongQuery({ divId: 'indsSclsCd', codes: [] })).toThrow('SBIZ_UPJONG_CODES');
 });
+
+test('결혼 상담 업종은 코드가 있으면 업종명과 상호에 관계없이 제외한다', () => {
+  const data = '상호명,도로명주소,상가업소번호,상권업종소분류코드,상권업종소분류명\n'
+    + '웨딩심리상담센터,서울특별시 강남구 길 1,1,S21105,기타 서비스업';
+  const parsed = parsePublicCsv(Buffer.from(data), 'sbiz', at);
+  expect(parsed.vendors).toHaveLength(0);
+  expect(parsed.rejected).toBe(1);
+});
+
+test('결정사 업종 코드는 기본값과 외부 설정에서 제외한다', () => {
+  expect(WEDDING_UPJONG_CODES).not.toContain('S21105');
+  expect(resolveUpjongQuery({ divId: 'indsSclsCd', codes: ['S21101', 'S21105'] }).codes)
+    .toEqual(['S21101']);
+  expect(resolveSbizCategory('기타 서비스업', '웨딩심리상담센터', 's21105')).toBeNull();
+  expect(() => resolveUpjongQuery({ divId: 'indsSclsCd', codes: ['S21105'] }))
+    .toThrow('허용된 SBIZ_UPJONG_CODES');
+  const saved = [process.env.SBIZ_UPJONG_CODES, process.env.SBIZ_UPJONG_DIV_ID];
+  process.env.SBIZ_UPJONG_CODES = 's21101,s21105';
+  delete process.env.SBIZ_UPJONG_DIV_ID;
+  try {
+    expect(resolveUpjongQuery()).toEqual({ divId: 'indsSclsCd', codes: ['S21101'] });
+    process.env.SBIZ_UPJONG_DIV_ID = 'indsLclsCd';
+    expect(() => resolveUpjongQuery()).toThrow('업종코드 단계');
+  } finally {
+    for (const [name, value] of [['SBIZ_UPJONG_CODES', saved[0]], ['SBIZ_UPJONG_DIV_ID', saved[1]]] as const) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  }
+});
+
+test('업종코드 길이로 조회 단계를 고르고 잘못된 조합은 호출 전에 거절한다', () => {
+  const saved = process.env.SBIZ_UPJONG_DIV_ID;
+  delete process.env.SBIZ_UPJONG_DIV_ID;
+  try {
+    expect(resolveUpjongQuery({ codes: ['S1'] }).divId).toBe('indsLclsCd');
+    expect(resolveUpjongQuery({ codes: ['S110'] }).divId).toBe('indsMclsCd');
+    expect(resolveUpjongQuery({ codes: ['S21101'] }).divId).toBe('indsSclsCd');
+    expect(() => resolveUpjongQuery({ divId: 'indsLclsCd', codes: ['S21101'] }))
+      .toThrow('업종코드 단계');
+    expect(() => resolveUpjongQuery({ codes: ['S1', 'S21101'] }))
+      .toThrow('같은 단계');
+  } finally {
+    if (saved === undefined) delete process.env.SBIZ_UPJONG_DIV_ID;
+    else process.env.SBIZ_UPJONG_DIV_ID = saved;
+  }
+});
 test('이미 URL-encode된 서비스키를 이중 인코딩하지 않는다', async () => {
   // 공공데이터포털 인증키는 이미 encode된 값으로 온다('/'→%2F, '='→%3D).
   // URLSearchParams.set()에 그대로 넘기면 '%'가 %25로 한 번 더 encode되어
@@ -347,10 +394,14 @@ test('영업상태 열이 없는 명단 파일은 그대로 수집한다', () =>
   expect(parsePublicCsv(iconv.encode(csv, 'utf8'), 'icheon-halls', at).closed).toBe(0);
 });
 
-test('업종 12종으로 매핑하고, 못 고른 웨딩 업체는 버리지 않고 etc로 남긴다', () => {
+test('허용 업종으로 매핑하고, 결혼 상담업은 etc로도 받지 않는다', () => {
   const rows: [string, string, string | null][] = [
     ['예식장업', '행복예식장', 'hall'],
-    ['결혼 상담업', '좋은결혼정보', 'wedding_info_company'],
+    ['결혼 상담업', '좋은결혼정보', null],
+    ['결혼 중개업', '웨딩매칭', null],
+    ['결혼 상담 서비스업', '아동발달센터', null],
+    ['결혼 상담 서비스업', '웨딩심리상담센터', null],
+    ['혼인 상담 서비스업', '웨딩혼인상담소', null],
     ['그외 기타 미용업', '웨딩헤어살롱', 'hair'],
     ['피부 미용업', '브라이덜메이크업', 'makeup'],
     ['화훼 소매업', '웨딩플라워', 'bouquet'],

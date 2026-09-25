@@ -280,21 +280,6 @@ export const categoryFieldsSchema = {
     extras: z.array(z.string()).describe('더할 수 있다고 말한 구성.'),
   }),
 
-  wedding_info_company: z.object({
-    accompanies: flag('동행하는가.'),
-    planningFee: money('플래닝 비용.'),
-    plannerName: text('담당자.'),
-    consultScope: text('상담범위.'),
-    partnerScope: text('제휴업체 범위.'),
-    packageComposition: text('스드메 구성.'),
-    accompanyCount: count('동행 횟수.'),
-    scheduleScope: text('일정관리 범위.'),
-    contractScope: text('계약관리 범위.'),
-    benefitsOffered: text('제공한다고 말한 혜택.'),
-    commission: money('수수료.'),
-    staffChangeCondition: text('담당자 변경 조건.'),
-  }),
-
   honeymoon: z.object({
     destination: text('여행지.'),
     departureDate: text('출발 예정일. YYYY-MM-DD.'),
@@ -389,7 +374,7 @@ export const CLASSIFY_PROMPT = `너는 올라온 녹음이 웨딩업체 상담�
 2. 상품·서비스 설명이 있는지 본다. 값을 묻고 답하는 대목이 있으면 그렇다.
 3. 가격 · 일정 · 계약 · 혜택 중 무엇이 나왔는지 각각 표시한다. **없는 것을 있다고
    하지 마라** — 이 표시로 다음 단계를 부를지 정한다.
-4. 웨딩 상담이 맞는데 청첩장 · 한복 · 답례품이면 UNSUPPORTED_WEDDING_CONSULTATION이다.
+4. 웨딩 상담이 맞는데 청첩장 · 한복 · 답례품 · 결정사 · 플래너면 UNSUPPORTED_WEDDING_CONSULTATION이다.
 5. 일상대화 · 회사회의 · 보험상담 · 휴대폰상담 · 영업전화 · 음식점 예약 · 잡담이면
    NOT_WEDDING_CONSULTATION이다.
 6. 확신이 없으면 confidence를 낮게 준다. 낮으면 사람에게 묻는 자리로 간다 —
@@ -421,7 +406,7 @@ export const EXTRACT_PROMPT = `너는 웨딩업체 상담 녹음에서 정해진
 /**
  * 그 업종의 2차 추출 스키마. 공통 + 업종별 + 후처리를 한 덩어리로 묶는다.
  *
- * **업종마다 다른 칸만 보낸다.** 열네 종을 다 합쳐 보내면 웨딩홀 상담에 「원단
+ * **업종마다 다른 칸만 보낸다.** 열세 종을 다 합쳐 보내면 웨딩홀 상담에 「원단
  * 브랜드」 칸이 딸려가고, 모델은 빈 칸을 채우려 든다.
  */
 export function readingSchemaFor(category: ConsultationCategory) {

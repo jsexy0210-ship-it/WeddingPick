@@ -351,18 +351,20 @@ export function DateChip({ date, muted = false }: { date: string | Date; muted?:
 }
 
 /** 체크 24 · radius 4 — 켜짐은 coral 채움, 꺼짐은 테두리. 시안 `check`. */
-export function CheckBox({ checked }: { checked: boolean }) {
+export function CheckBox({ checked, round = false, size }: { checked: boolean; round?: boolean; size?: number }) {
   const theme = useTheme();
 
   return (
     <View
       style={[
         styles.check,
+        round ? { borderRadius: Radius.pill } : null,
+        size ? { width: size, height: size } : null,
         checked
           ? { backgroundColor: theme.tint }
           : { borderWidth: 1, borderColor: theme.track, backgroundColor: theme.background },
       ]}>
-      {checked ? <ProductSymbol name="check" size={16} color={theme.onTint} /> : null}
+      {checked ? <ProductSymbol name="check" size={size ? size - 8 : 16} color={theme.onTint} /> : null}
     </View>
   );
 }

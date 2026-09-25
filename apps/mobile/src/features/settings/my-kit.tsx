@@ -23,6 +23,10 @@ import { DepthHeader } from '@/components/depth-header';
  * MY 하위 · 혜택 화면 공통 부품. 디자인 핸드오프 `13-my-sub` · `15-events` · `13b-withdrawal`의
  * renderVals를 그대로 옮겼다 — 값은 전부 `@weddingpick/ui` 토큰에서 온다.
  *
+ * **그 핸드오프는 파기됐다**(2026-09-22). 앱 정본은 `docs/design/React_Native/my.js`이고,
+ * 아래 값 가운데 정본과 다른 것(행 56→52 · 이름 18→15 · 섹션 제목 14→13 · 섹션 아래 24→20 ·
+ * gap 10→12)은 MY 하위 화면 전체가 함께 바뀌는 자리라 `DESIGN_UNRESOLVED`로 올려 두었다.
+ *
  *   navBack   56 · 뒤로 40 원형 · 제목 18/24 700 · 오른쪽 글자 액션
  *   padHero   12 24 24 · gap 8 · 26/35 700 + 16/24 gray700
  *   padSec    0 24 28(24) · 섹션 제목 14/19 700 gray600
@@ -474,19 +478,21 @@ export function CardList({ children }: { children: ReactNode }) {
   return <View style={styles.cardList}>{children}</View>;
 }
 
-/** 아바타 원 — 이니셜 한 글자. Layout.avatarProfile(56 · MY 홈) · avatarRow(32) · avatarLarge(88). */
-export function Avatar({ initial, size = Layout.avatarProfile }: { initial: string; size?: number }) {
+/**
+ * 아바타 원 — 이니셜 한 글자. 두 자리뿐이다.
+ *
+ *   MY 프로필 카드 `profAvatar`  52 · #fff5f2 · 코랄 20/700  (my.jsx frame-001)
+ *   프로필 `avatarBig`           88 · #fff5f2 · 코랄 32/700  (my.jsx frame-002)
+ */
+export const AVATAR_MY = 52;
+
+export function Avatar({ initial, size = AVATAR_MY }: { initial: string; size?: number }) {
   const theme = useTheme();
-  const big = size >= Layout.avatarProfile;
+  const large = size >= Layout.avatarLarge;
 
   return (
-    <View
-      style={[
-        styles.avatar,
-        { width: size, height: size, backgroundColor: big ? theme.tintSubtle : theme.backgroundSelected },
-      ]}>
-      {/* 시안 13-my-sub.dc.html L235 — 88 아바타는 코랄틴트 바탕에 코랄 32/700이다. 작은 아바타는 회색 그대로. */}
-      <ThemedText type={big ? 't1' : 't7'} themeColor={big ? 'tint' : 'textAssistive'}>
+    <View style={[styles.avatar, { width: size, height: size, backgroundColor: theme.tintSurface }]}>
+      <ThemedText type={large ? 'f32' : 'f20'} themeColor="tint" style={styles.avatarText}>
         {initial}
       </ThemedText>
     </View>
@@ -617,4 +623,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexShrink: 0,
   },
+  avatarText: { fontWeight: 700 },
 });

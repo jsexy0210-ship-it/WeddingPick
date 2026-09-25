@@ -8,6 +8,7 @@ import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
 import { formatDateDot } from '@/features/common/format-date';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
+import { showResultToast } from '@/features/navigation/result-toast';
 import { combineDayTime, TIME_PATTERN } from '@/features/wedding/event-form';
 import { CheckBox, Field, FieldButton, ListRow } from '@/features/wedding/screen-kit';
 import { ActionButton, ProductSymbol, Radius, Spacing, ThemedText, WeddingCalendar, useTheme } from '@weddingpick/ui';
@@ -17,7 +18,7 @@ import WeddingScreen from '../../index';
 const DEFAULT_TIME = '14:00';
 
 /**
- * 일정 추가 시트 — WP-NOTE-002 · `docs/design/html/대메뉴_웨딩노트.dc.html`.
+ * 일정 추가 시트 — WP-NOTE-002 · `docs/design/React_Native/note.jsx` frame-002.
  *
  *   formHead   타이틀 「일정 추가」 + 우측 36px 회색 원형 X 닫기(서브 문구 없음)
  *   fieldWrap  날짜(FieldButton, coral 강조 + 캘린더 아이콘) → 제목 → 시간
@@ -74,6 +75,7 @@ export default function AddWeddingEventRoute() {
 
     try {
       await addWeddingEvent(id, { title: title.trim(), startsAt, notifyEnabled });
+      showResultToast('일정을 추가했어요');
       closeSheet();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '넣지 못했어요. 다시 시도해주세요.');
@@ -169,7 +171,7 @@ export default function AddWeddingEventRoute() {
                 divider={false}
               />
               {partner ? (
-                <ListRow left={<CheckBox checked />} title={`${partner}님에게도 알려줘요`} divider={false} />
+                <ListRow left={<CheckBox checked />} title={`${partner}님에게도 알려주기`} divider={false} />
               ) : null}
             </View>
 
@@ -204,9 +206,11 @@ const styles = StyleSheet.create({
   formHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
   formClose: { width: 36, height: 36, borderRadius: Radius.pill, alignItems: 'center', justifyContent: 'center' },
   scroll: { flexShrink: 1 },
-  content: { paddingBottom: Spacing.two, gap: Spacing.three },
-  fields: { gap: Spacing.three },
-  divider: { height: 1 },
+  content: { paddingBottom: Spacing.two, gap: 12 },
+  /* note.js `sheetForm` — 칸 사이 `gap:12px`. */
+  fields: { gap: 12 },
+  /* note.js `divider` — `margin:20px 0`이 시트 `gap:12px` 위에 더해진다. */
+  divider: { height: 1, marginVertical: 20 },
   alarms: { gap: Spacing.half },
   pressed: { opacity: 0.8 },
 });

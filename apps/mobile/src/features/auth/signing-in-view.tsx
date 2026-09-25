@@ -69,7 +69,7 @@ export function SigningInBody({
   show: SigningInShow;
   message?: string;
 }) {
-  if (show === 'loader') return <DelayedLoader size={size} />;
+  if (show === 'loader') return <DelayedLoader size={size} shape="mark" />;
 
   return (
     <ThemedText type="small" themeColor="textAssistive">
@@ -93,7 +93,8 @@ export function SigningInBody({
 export function SigningInView() {
   return (
     <ThemedView style={styles.container}>
-      <DelayedLoader size={40} />
+      {/* 2026-09-25 「스켈레톤으로 해」 — 원형 로더 자리를 돌지 않는 원형 블록으로. 문구는 그대로. */}
+      <DelayedLoader size={40} shape="mark" />
       <ThemedText type="small" themeColor="textAssistive">
         {SIGNING_IN_MESSAGE}
       </ThemedText>

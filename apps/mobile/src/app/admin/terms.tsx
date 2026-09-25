@@ -499,7 +499,7 @@ export function TermsPanel() {
       {/* 조문 편집 모달 */}
       <Modal visible={editingClause !== null} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
+          <ScrollView style={styles.modalBox} contentContainerStyle={styles.modalBoxContent}>
             <Text style={styles.modalTitle}>{editingClause?.title}</Text>
             <Text style={styles.modalSub}>
               {clauseTable
@@ -545,14 +545,14 @@ export function TermsPanel() {
                 <Text style={styles.saveBtnText}>{saving ? '저장 중…' : '저장'}</Text>
               </WritePressable>
             </View>
-          </View>
+          </ScrollView>
         </View>
       </Modal>
 
       {/* 조문 더하기. 제목은 화면에 그대로 그려진다 — 「제1조 목적」처럼 번호를 안에 적는다. */}
       <Modal visible={addingClause} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
+          <ScrollView style={styles.modalBox} contentContainerStyle={styles.modalBoxContent}>
             <Text style={styles.modalTitle}>조문 추가</Text>
             <Text style={styles.modalSub}>
               제목은 화면에 그대로 나와요 — 「제1조 목적」처럼 번호를 안에 적어주세요.
@@ -586,7 +586,7 @@ export function TermsPanel() {
                 <Text style={styles.saveBtnText}>{saving ? '추가 중…' : '추가'}</Text>
               </WritePressable>
             </View>
-          </View>
+          </ScrollView>
         </View>
       </Modal>
 
@@ -781,8 +781,9 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   editBtnText: { fontSize: FontSize.tab, color: Colors.light.textStrong },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
-  modalBox: { backgroundColor: Colors.light.background, borderRadius: 14, padding: 24, width: 600, maxHeight: '85%' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
+  modalBox: { backgroundColor: Colors.light.background, borderRadius: 14, width: '100%', maxWidth: 600, maxHeight: '85%' },
+  modalBoxContent: { padding: 24 },
   modalTitle: { fontSize: FontSize.t6, fontWeight: '700', color: Colors.light.text, marginBottom: 4 },
   modalSub: { fontSize: FontSize.t7, color: Colors.light.textAssistive, marginBottom: 12 },
   clauseInput: {

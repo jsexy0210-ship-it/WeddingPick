@@ -23,7 +23,7 @@ const S = {
 } as const;
 
 /**
- * Pick 인증내역 · WP-MY-004 · `docs/design/html/대메뉴_MY.dc.html` 4.
+ * Pick 인증내역 · WP-MY-004 · `docs/design/React_Native/my.jsx` 프레임 4.
  *
  * **v3.29 대조 — 미룬 것 둘.** 시안의 `certs`는 네 상태(반영됨 · 확인 중 · 보완 필요 ·
  * 안 됐어요)이고 「보완 필요」 카드에는 «날짜 입력하기» 같은 행동 버튼이 붙는데,

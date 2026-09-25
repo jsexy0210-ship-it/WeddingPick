@@ -349,7 +349,7 @@ function VendorsPanel() {
       {/* 상세 모달 */}
       <Modal visible={selected !== null} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
+          <ScrollView style={styles.modalBox} contentContainerStyle={styles.modalBoxContent}>
             <Text style={styles.modalTitle}>{selected?.name}</Text>
             <Text style={styles.modalSub}>{selected?.id} · {selected ? formatCat(selected.category) : ''}</Text>
 
@@ -417,7 +417,7 @@ function VendorsPanel() {
             <Pressable style={styles.closeBtn} onPress={() => setSelected(null)}>
               <Text style={styles.closeBtnText}>닫기</Text>
             </Pressable>
-          </View>
+          </ScrollView>
         </View>
       </Modal>
 
@@ -503,7 +503,7 @@ function VendorsPanel() {
       */}
       <Modal visible={mergePreview !== null} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
+          <ScrollView style={styles.modalBox} contentContainerStyle={styles.modalBoxContent}>
             <Text style={styles.modalTitle}>업체를 합칠까요?</Text>
             <Text style={styles.mergeSummary}>
               {mergePreview?.source.name} → {mergePreview?.target.name}
@@ -549,7 +549,7 @@ function VendorsPanel() {
             <Pressable style={styles.closeBtn} onPress={() => setMergePreview(null)}>
               <Text style={styles.closeBtnText}>그만두기</Text>
             </Pressable>
-          </View>
+          </ScrollView>
         </View>
       </Modal>
     </View>
@@ -712,14 +712,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 16,
   },
   modalBox: {
     backgroundColor: Colors.light.background,
     borderRadius: 14,
-    padding: 24,
-    width: 480,
+    width: '100%',
+    maxWidth: 480,
     maxHeight: '80%',
   },
+  modalBoxContent: { padding: 24 },
   modalTitle: { fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text, marginBottom: 4 },
   modalSub: { fontSize: FontSize.t7, color: Colors.light.textAssistive, marginBottom: 20 },
   fieldLabel: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.textAssistive, marginBottom: 6, marginTop: 14 },

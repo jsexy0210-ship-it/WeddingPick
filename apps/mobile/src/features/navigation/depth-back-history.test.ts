@@ -60,7 +60,7 @@ describe('goDepthBack — Depth 기본, 명시된 화면만 History Back', () =>
     goDepthBack('/community/feed/f-1');
 
     expect(router.back).not.toHaveBeenCalled();
-    expect(router.dismissTo).toHaveBeenCalledWith('/community?tab=feed');
+    expect(router.dismissTo).toHaveBeenCalledWith('/community/feed');
   });
 
   it('기록이 없고 부모도 스택에 없으면(딥링크) dismissTo 실패 뒤 replace로 갈아끼운다', () => {

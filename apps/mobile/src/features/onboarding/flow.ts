@@ -120,10 +120,8 @@ export const STYLE_DESCRIPTION: Record<WeddingStyle, string> = {
  * 시안 문구를 그대로 쓴다. 카드 하나가 업종 묶음 하나다 — 고르면 그 업종이 전부
  * «결정 완료»로 서버(`preparedCategories`)에 간다.
  *
- * 업종 묶음은 `PREPARATION_GROUPS`(도메인 v3.22)와 같고, 첫 카드만 다르다 —
- * 시안의 «웨딩홀 · 예식장 · 식대 · 대관»은 웨딩홀 하나를 말하므로 결정사
- * (`wedding_info_company`)는 넣지 않는다. 결정사를 정했다고 적을 자리가 없어진
- * 것은 PR의 「판단 필요」에 적었다.
+ * 업종 묶음은 `PREPARATION_GROUPS`(도메인 v3.22)와 같다 — 첫 카드 «웨딩홀 · 예식장 ·
+ * 식대 · 대관»은 웨딩홀 하나다. 결정사는 2026-09-24 대표 지시로 업종에서 뺐다.
  */
 export type PrepCard = {
   key: 'hall' | 'sdm' | 'ceremony' | 'goods';

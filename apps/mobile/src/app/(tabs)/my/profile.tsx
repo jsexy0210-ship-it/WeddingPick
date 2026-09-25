@@ -24,7 +24,7 @@ import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { Avatar, Row, Rows, Section, SubScreen } from '@/features/settings/my-kit';
 
-/** 시안 `docs/design/html/대메뉴_MY.dc.html` 2 · WP-MY-002. */
+/** 정본 `docs/design/React_Native/my.jsx` 프로필 프레임 · WP-MY-002. */
 const S = {
   title: '프로필',
   basic: '기본',
@@ -42,8 +42,8 @@ const S = {
   social: '카카오',
   connected: '연결됨',
   logout: '로그아웃',
-  /* 메뉴 4글자는 붙여 쓴다(전체 공통 규칙) — WP-MY-012 navTitle과 같은 표기. */
-  withdraw: '회원탈퇴',
+  /* 정본 my.jsx:157(frame-002 계정 섹션 행) 「회원 탈퇴」. 탈퇴 화면 헤더(frame-014)는 「회원탈퇴」다. */
+  withdraw: '회원 탈퇴',
   logoutTitle: '로그아웃할까요',
   logoutBody: '기기에 저장된 문서는 그대로 남아요',
   stay: '계속 이용하기',
@@ -55,11 +55,13 @@ const S = {
   save: '저장',
   saving: '저장하는 중…',
   saveFail: '이름을 바꾸지 못했어요',
+  saveDone: '닉네임을 바꿨어요',
   settingsFail: '알림 설정을 바꾸지 못했어요',
+  settingsDone: '알림 설정을 바꿨어요',
 } as const;
 
 /**
- * 프로필 · WP-MY-002 · 시안 2. MY 상단 프로필 카드를 누르면 들어온다.
+ * 프로필 · WP-MY-002 · React_Native/my.jsx 프레임 2. MY 상단 프로필 카드를 누르면 들어온다.
  *
  * **MY의 설정 섹션을 흡수했다**(시안 「설정 섹션을 흡수해 이름 · 알림 · 계정을 한 화면에서
  * 다룹니다. 로그아웃과 탈퇴가 맨 아래입니다」).
@@ -70,7 +72,7 @@ const S = {
  * API의 displayName이 그 한 칸이고 배우자·후기·다른 사용자에게 모두 이 값으로 보인다.
  * 사진 바꾸기는 저장 계약이 없어 두지 않는다(v3.29 시안에도 있지만 업로드 계약이 아직 없다).
  *
- * **v3.29(대메뉴_MY.dc.html 2) 대조 — 미룬 것 셋.** 시안의 계정 섹션은 카카오 행에 마스킹
+ * **정본(docs/design/React_Native/my.jsx frame-002) 대조 — 미룬 것 셋.** 시안의 계정 섹션은 카카오 행에 마스킹
  * 이메일 · 「가입일」 · 「로그인 유지」 토글까지 5행인데 `currentUserSchema`에 이메일 · 가입일이
  * 없고 「로그인 유지」는 이 화면의 토글이 아니라 로그인 화면의 계정 기억 기능(WP-AUTH-008,
  * `features/auth/remembered-account.ts`)이다 — 값을 지어내지 않고 지금 세 행(카카오 연결 ·
@@ -130,14 +132,18 @@ export default function ProfileScreen() {
   const nameReady = nameDraft.trim() === '' || nameCheck.ok;
 
   async function saveName() {
-    if (!nameReady || !me) return;
+    if (!nameReady || !me || saving) return;
     setSaving(true);
+    const previous = me;
+    const next = nameDraft.trim() === '' ? null : nameDraft.trim();
+    setMe({ ...me, displayName: next });
+    setNameOpen(false);
     try {
-      const next = nameDraft.trim() === '' ? null : nameDraft.trim();
       const saved = await setDisplayName(next);
-      setMe({ ...me, displayName: saved.displayName });
-      setNameOpen(false);
+      setMe((current) => current === null ? current : { ...current, displayName: saved.displayName });
+      setToast(S.saveDone);
     } catch {
+      setMe((current) => current === null ? current : { ...current, displayName: previous.displayName });
       setToast(S.saveFail);
     } finally {
       setSaving(false);
@@ -172,7 +178,10 @@ export default function ProfileScreen() {
       : { [key]: value };
     setSettings({ ...settings, ...patch });
     await updateSettings(patch)
-      .then(setSettings)
+      .then((saved) => {
+        setSettings(saved);
+        setToast(S.settingsDone);
+      })
       .catch(() => {
         setSettings(previous);
         setToast(S.settingsFail);

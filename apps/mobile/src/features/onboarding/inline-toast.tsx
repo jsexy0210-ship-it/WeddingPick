@@ -7,13 +7,13 @@ import { Layout, Radius, Spacing, ThemedText, USE_NATIVE_DRIVER, useTheme } from
 /**
  * 온보딩 안의 작은 토스트 — 스타일(5/5)에서 3번째를 고르려 할 때 «2개까지 고를 수
  * 있어요»(SPEC §13.6 «선택 정책»). 눌렀는데 아무 일도 없으면 앱이 고장난 줄 알기에
- * 막은 이유를 한 줄로 말한다. 2초 뒤 사라지고, 확인을 누르게 하지 않는다.
+ * 막은 이유를 한 줄로 말한다. 1초 뒤 사라지고, 확인을 누르게 하지 않는다.
  *
  * 화면 하단 dock(92 + 안전영역) 바로 위에 뜬다. 같은 말을 연달아 띄워도 다시 뜨도록
  * `key`로 구분한다 — 3번째 카드를 두 번 눌러도 두 번 답해야 한다.
  */
-/** 떠 있는 시간 2초 · 나타나고 사라지는 데 175ms(토큰 motion.color와 같은 길이). */
-export const TOAST_MS = 2000;
+/** 떠 있는 시간 1초 · 나타나고 사라지는 데 175ms(토큰 motion.color와 같은 길이). */
+export const TOAST_MS = 1000;
 const FADE_MS = 175;
 /** spec/tokens.json size.dock — 토스트는 dock 바로 위에 뜬다. */
 const DOCK_HEIGHT = 92;

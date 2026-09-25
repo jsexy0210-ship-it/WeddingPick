@@ -43,7 +43,7 @@ function allFields(): string[] {
 }
 
 describe('상담 추출 스키마', () => {
-  it('업종 열넷이 각각 제 칸을 갖는다', () => {
+  it('업종 열셋이 각각 제 칸을 갖는다', () => {
     for (const category of CONSULTATION_CATEGORIES) {
       expect(categoryFieldsSchema[category]).toBeDefined();
       expect(fieldNames(categoryFieldsSchema[category]).size).toBeGreaterThan(5);

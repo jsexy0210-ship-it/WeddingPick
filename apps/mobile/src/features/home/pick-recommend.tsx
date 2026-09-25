@@ -7,6 +7,7 @@ import {
   nextStepsSummary,
   priceLine,
   type VendorCategory,
+  regionLabel,
 } from '@weddingpick/domain';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -299,7 +300,7 @@ function RecommendationReasonCard({
         <ThemedText type="f20" style={styles.bold} numberOfLines={1}>{vendor.name}</ThemedText>
         <View style={styles.reasonPlace}>
           <SeedIcon name="locationRegular" size={Layout.iconMicro} color={theme.textAssistive} />
-          <ThemedText type="f12" themeColor="textAssistive" numberOfLines={1}>{vendor.region}</ThemedText>
+          <ThemedText type="f12" themeColor="textAssistive" numberOfLines={1}>{regionLabel(vendor.region)}</ThemedText>
         </View>
 
         <View style={styles.reasonPriceRow}>

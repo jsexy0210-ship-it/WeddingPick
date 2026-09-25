@@ -28,6 +28,7 @@ import {
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
   type PressableProps,
   type StyleProp,
   type ViewStyle,
@@ -62,6 +63,18 @@ const FLOW_MAX = FontSize.t7 * 100;
 
 /** 카드 한 칸의 최소 폭. 1920 기준 본문에서 두 칸이 되고, 더 넓어지면 칸 수가 는다. */
 const CARD_MIN = 560;
+const COMPACT_WIDTH = 900;
+
+export function useAdminCompact(): boolean {
+  return useWindowDimensions().width < COMPACT_WIDTH;
+}
+
+/** 좁은 화면의 목록·상세 패널은 위아래로 나눠 두 영역 모두 스크롤할 수 있게 한다. */
+export const compactSplit = StyleSheet.create({
+  body: { flexDirection: 'column' },
+  list: { flex: 0, width: '100%', height: 220, borderRightWidth: 0, borderBottomWidth: 1, borderBottomColor: Colors.light.border },
+  detail: { flex: 1, width: '100%', minHeight: 0 },
+});
 
 const TONE_FG: Record<Tone, string> = {
   ok: C.positive,
@@ -140,10 +153,11 @@ export type PageProps = {
  * 몫을 이미 한다 — 그래도 잘못 눌리는 사례가 나오면 그때 확인 단계를 더한다.
  */
 export function Page({ title, sub, action, embedded, children }: PageProps) {
+  const compact = useAdminCompact();
   const ActionButton = action?.write ? WritePressable : Pressable;
   return (
     <View style={styles.page}>
-      <View style={styles.topbar}>
+      <View style={[styles.topbar, compact && styles.topbarCompact]}>
         <View style={styles.topbarText}>
           <Text style={styles.pageTitle} numberOfLines={1}>{title}</Text>
           {sub ? <Text style={styles.pageSub} numberOfLines={1}>{sub}</Text> : null}
@@ -172,7 +186,7 @@ export function Page({ title, sub, action, embedded, children }: PageProps) {
         ) : null}
         {embedded ? null : <SignOutButton />}
       </View>
-      <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
+      <ScrollView style={styles.body} contentContainerStyle={[styles.bodyContent, compact && styles.bodyContentCompact]}>
         {children}
       </ScrollView>
     </View>
@@ -242,10 +256,16 @@ export type AdminTabShellProps = {
  * 브라우저 설정에 따라 밤 화면이 될 위험을 만들지 않는다.
  */
 export function AdminTabShell({ tabs, active, onChange, children }: AdminTabShellProps) {
+  const compact = useAdminCompact();
   return (
     <View style={styles.tabShellRoot}>
-      <View style={styles.tabShellBar}>
-        <View style={styles.tabShellTabs}>
+      <View style={[styles.tabShellBar, compact && styles.tabShellBarCompact]}>
+        <ScrollView
+          horizontal
+          style={styles.tabShellTabs}
+          contentContainerStyle={styles.tabShellTabsContent}
+          showsHorizontalScrollIndicator={compact}
+        >
           {tabs.filter((t) => !t.hidden).map((t) => {
             const selected = t.key === active;
             return (
@@ -272,7 +292,7 @@ export function AdminTabShell({ tabs, active, onChange, children }: AdminTabShel
               </Pressable>
             );
           })}
-        </View>
+        </ScrollView>
         <SignOutButton />
       </View>
       <View style={styles.tabShellBody}>{children}</View>
@@ -357,10 +377,11 @@ export type KpiItem = {
 
 /** KPI 한 줄. 칸 수는 항목 수를 따르고 폭은 고르게 나눈다. */
 export function KpiRow({ items }: { items: KpiItem[] }) {
+  const compact = useAdminCompact();
   return (
-    <View style={styles.kpiRow}>
+    <View style={[styles.kpiRow, compact && styles.kpiRowCompact]}>
       {items.map((k) => (
-        <Wrap key={k.label} onPress={k.onPress} style={styles.kpiCard}>
+        <Wrap key={k.label} onPress={k.onPress} style={[styles.kpiCard, compact && styles.kpiCardCompact]}>
           <View style={styles.kpiHead}>
             <Text style={styles.kpiLabel} numberOfLines={1}>{k.label}</Text>
             {k.badge ? <Badge label={k.badge} kind={k.badgeKind ?? 'none'} /> : null}
@@ -407,8 +428,9 @@ export type CardProps = {
 };
 
 export function Card({ title, sub, action, full, note, children }: CardProps) {
+  const compact = useAdminCompact();
   return (
-    <View style={[styles.card, full ? styles.cardFull : styles.cardCell]}>
+    <View style={[styles.card, full ? styles.cardFull : styles.cardCell, compact && !full && styles.cardCellCompact]}>
       <View style={styles.cardHead}>
         <View style={styles.cardHeadText}>
           <Text style={styles.cardTitle} numberOfLines={1}>{title}</Text>
@@ -826,6 +848,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: C.line,
   },
+  topbarCompact: { paddingHorizontal: Spacing.three },
   topbarText: { flex: 1, minWidth: 0, gap: A.stackGap },
   pageTitle: { fontSize: FontSize.t4, lineHeight: LineHeight.t4, fontWeight: '700', color: C.text },
   pageSub: { fontSize: FontSize.micro, lineHeight: LineHeight.micro, color: C.textAssistive },
@@ -868,7 +891,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: C.line,
   },
-  tabShellTabs: { flex: 1, flexDirection: 'row', gap: A.stackGap, minWidth: 0 },
+  tabShellBarCompact: { paddingHorizontal: Spacing.three },
+  tabShellTabs: { flex: 1, minWidth: 0 },
+  tabShellTabsContent: { flexDirection: 'row', alignItems: 'center', gap: A.stackGap },
   tabShellBtn: {
     height: A.topActionHeight,
     flexDirection: 'row',
@@ -900,6 +925,7 @@ const styles = StyleSheet.create({
     paddingBottom: A.bodyPaddingX,
     gap: A.gridGap,
   },
+  bodyContentCompact: { paddingHorizontal: Spacing.three },
 
   inlineError: { flexDirection: 'row', alignItems: 'center', gap: A.tableGap },
   inlineErrorText: {
@@ -940,6 +966,7 @@ const styles = StyleSheet.create({
   formModalBody: { padding: A.cardPadding, gap: A.cardGap },
 
   kpiRow: { flexDirection: 'row', gap: A.gridGap },
+  kpiRowCompact: { flexWrap: 'wrap' },
   kpiCard: {
     flex: 1,
     minWidth: 0,
@@ -948,6 +975,7 @@ const styles = StyleSheet.create({
     padding: A.cardPadding,
     gap: A.kpiGap,
   },
+  kpiCardCompact: { flexBasis: '45%', minWidth: 140 },
   kpiHead: { flexDirection: 'row', alignItems: 'center', gap: A.stackGap },
   kpiLabel: { flex: 1, minWidth: 0, fontSize: FontSize.micro, lineHeight: LineHeight.micro, color: C.textAssistive },
   kpiValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: A.stackGap },
@@ -968,6 +996,7 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: A.gridGap },
   card: { backgroundColor: C.background, borderRadius: Radius.medium, padding: A.cardPadding, gap: A.cardGap },
   cardCell: { flexGrow: 1, flexShrink: 1, flexBasis: CARD_MIN, minWidth: CARD_MIN },
+  cardCellCompact: { flexBasis: '100%', minWidth: 0 },
   cardFull: { flexGrow: 1, flexShrink: 1, flexBasis: '100%', minWidth: '100%' },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: A.bannerGap, minHeight: A.cardHeadHeight },
   cardHeadText: { flex: 1, minWidth: 0, gap: A.stackGap },

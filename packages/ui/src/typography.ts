@@ -2,7 +2,7 @@
  * 글자 크기 토큰. **화면이 쓸 수 있는 크기는 이 표에 있는 것뿐이다.**
  *
  * spec/tokens.json `typography.scale` 8단 — display 32 · title 26 · heading 24 · section 20 · body 18 ·
- * sub 16 · caption 14 · micro 13 — 을 핸드오프 이름(t1~t7)으로 든다. 15 · 17 · 19 · 22px은 금지다.
+ * sub 16 · caption 14 · micro 13 — 을 핸드오프 이름(t1~t7)으로 든다. 예외 값은 아래에 용도를 명시한다.
  *
  * 여기 없는 값을 화면에 직접 적으면(`fontSize: 19`) 그 화면 하나만 다른 글자를
  * 쓰게 되고, 나중에 크기를 손볼 때 그 하나가 남는다. 남은 하나는 고장으로 보이지
@@ -41,6 +41,8 @@ export const FontSize = {
    * 세 단계로 뭉개져 「멀어질수록 흐려진다」가 눈에 덜 든다.
    */
   dateWheel: 17,
+  /** 검색 Root 제목. RN 정본 `docs/design/React_Native/search.js:533` headTitleRoot 22px. */
+  searchRootTitle: 22,
   /** micro 13/18 — 정보 단계 배지 · 스타일 칩(28) · 이미지 위 순위 pill. */
   micro: 13,
   /** Npay 로고 — 원 안의 N 12 · «pay» 14. spec/tokens.json typography npay. 다른 곳에 쓰지 않는다. */
@@ -84,6 +86,8 @@ export const FontSize = {
   /** 로그인 카카오 CTA. 06-onboarding-login.dc.html `17/700 · lh 23`. */
   f17: 17,
   f18: 18,
+  /** 웨딩노트 D-day 날짜와 숫자. React_Native/note.js `ddayDate` · `ddayNum` 19px. */
+  noteDday: 19,
   f20: 20,
   f24: 24,
   f26: 26,
@@ -116,6 +120,8 @@ export const LineHeight = {
   dateWheel: 23,
   /** 날짜 휠 결과 줄 D-day. component.dateWheel.pickedDday 15/22. */
   dateWheelDday: 22,
+  /** 로그인 제목. RN 정본 `docs/design/React_Native/home.js:650` loginTitle 32/44. */
+  loginTitle: 44,
   /** caption 14의 여러 줄 변형 — 안내문 2줄. */
   t7Loose: 21,
   micro: 18,

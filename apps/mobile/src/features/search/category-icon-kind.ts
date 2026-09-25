@@ -10,8 +10,6 @@ import type { CategoryIconKind } from '@weddingpick/ui';
  */
 export function categoryIconKind(category: VendorCategory): CategoryIconKind | null {
   switch (category) {
-    case 'wedding_info_company':
-      return 'agency';
     case 'hall':
       return 'hall';
     case 'studio':
@@ -34,6 +32,8 @@ export function categoryIconKind(category: VendorCategory): CategoryIconKind | n
       return 'honeymoon';
     case 'invitation':
       return 'invitation';
+    /* 결정사는 2026-09-24에 업종에서 뺐다. 과거 기록만 이 값을 가진다 — 아이콘 없이 글자만. */
+    case 'wedding_info_company':
     case 'etc':
       return null;
   }

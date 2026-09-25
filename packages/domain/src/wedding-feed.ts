@@ -50,7 +50,8 @@ export const WEDDING_FEED_LIMITS = {
  * 반복되고, 그것을 사람이 목록에서 발견하기까지 오래 걸린다. 여기 목록에서 고르고,
  * **이미 쓴 주제는 후보에서 빠진다**(`pickTopics`).
  *
- * 업종 이름은 정본을 쓴다 — 본식스냅 · 헤어변형 · 결정사(CLAUDE.md 2026-09-11).
+ * 업종 이름은 정본을 쓴다 — 본식스냅 · 헤어변형(CLAUDE.md 2026-09-11). 결정사 주제는
+ * 2026-09-24 대표 지시로 뺐다 — 웨딩픽은 플래너 없이 직접 고르는 서비스다.
  *
  * **`견적` · `계약서`를 쓰지 않는다.** 여기 적은 말이 카드 위 작은 줄로 그대로 나가고,
  * 모델이 본문에 그 말을 따라 쓴다. `pick-language.test.ts`가 이 파일을 훑어 막는다.
@@ -61,6 +62,12 @@ export type WeddingFeedTopic = {
   categoryLabel: string;
   /** 모델에게 주는 한 줄. 무엇을 쓸 글인지. */
   brief: string;
+  /**
+   * 통계 주제만 가진다 — 이 글에 넘길 공공 통계 키(`structured.public_stats`).
+   * **하나라도 표에 없으면 이 주제는 고르지 않는다**(`topicsMissingStats`). 숫자 없이
+   * 통계 글을 쓰게 두면 모델이 숫자를 지어낸다.
+   */
+  statKeys?: readonly string[];
 };
 
 export const WEDDING_FEED_TOPICS: readonly WeddingFeedTopic[] = [
@@ -77,12 +84,32 @@ export const WEDDING_FEED_TOPICS: readonly WeddingFeedTopic[] = [
   { key: 'makeup-trial', categoryLabel: '메이크업', brief: '메이크업 리허설을 보는 법' },
   { key: 'snap-pick', categoryLabel: '본식스냅', brief: '본식스냅을 고를 때 보는 것' },
   { key: 'hair-change', categoryLabel: '헤어변형', brief: '헤어변형이 무엇이고 언제 정하나' },
-  { key: 'info-company', categoryLabel: '결정사', brief: '결정사를 쓸 때 확인할 것' },
   { key: 'honeymoon-plan', categoryLabel: '허니문', brief: '허니문 일정을 짜는 순서' },
   { key: 'contract-check', categoryLabel: '계약', brief: '계약 전에 확인할 조건' },
   { key: 'schedule-order', categoryLabel: '준비 순서', brief: '무엇부터 정하는 것이 좋은가' },
   { key: 'guest-count', categoryLabel: '하객', brief: '하객 수를 가늠하는 법' },
+  {
+    key: 'stats-marriage-seoul',
+    categoryLabel: '준비 순서',
+    brief: '서울 혼인 건수로 보는 결혼 준비 흐름',
+    statKeys: ['seoul.marriage.count'],
+  },
+  {
+    key: 'stats-wedding-hall-count',
+    categoryLabel: '웨딩홀',
+    brief: '전국 예식장 수로 보는 웨딩홀 고르기',
+    statKeys: ['national.wedding_hall.count'],
+  },
 ];
+
+/** 통계가 표에 다 들어오지 않아 지금은 쓸 수 없는 주제의 키. */
+export function topicsMissingStats(availableStatKeys: readonly string[]): string[] {
+  const available = new Set(availableStatKeys);
+
+  return WEDDING_FEED_TOPICS.filter((topic) =>
+    (topic.statKeys ?? []).some((key) => !available.has(key))
+  ).map((topic) => topic.key);
+}
 
 /**
  * 화면 위 탭 — **전체 · 준비·예산 · 업체·서비스 · 계약·여행**(2026-09-16 대표 지시).

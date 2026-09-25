@@ -7,7 +7,7 @@ import {
   withParticle,
   type VendorCategory,
 } from '@weddingpick/domain';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -24,15 +24,15 @@ import {
   VendorImage,
   useTheme,
 } from '@weddingpick/ui';
-import { useDepthBack } from '@/features/navigation/depth-back';
+import { dismissToOrReplace, useDepthBack } from '@/features/navigation/depth-back';
+import { showResultToast } from '@/features/navigation/result-toast';
 
 /**
  * 최종 결정 확인 시트 · WP-SHT-005.
  *
- * v3.29 정본 `docs/design/html/대메뉴_Pick.dc.html`의 diffs 「최종 결정: 확인 시트 →
- * 완료 화면 신설 — 무엇이 어디에 들어가는지 먼저 보여준다」가 이 화면과 `/pick/done`의
- * 근거다. 그 파일 자체에는 이 시트가 별도 화면 카드(WP-PICK-XXX)로 안 실려 있다 —
- * 옛 07-pick·09-core-loop 시안(삭제됨)의 화면 ID를 더는 참조하지 않는다.
+ * 앱 정본 `docs/design/React_Native/pick.jsx`에는 이 시트가 화면 프레임으로 없다 — 모델
+ * `pick.js`에 `confirmSheet` · `confirmRows` 값만 남아 있다(보드가 그리지 않는다). 옛
+ * `html/대메뉴_Pick.dc.html`(2026-09-24 삭제)과 07-pick·09-core-loop 시안을 근거로 쓰지 않는다.
  *
  *   시트   공용 SheetPanel(그래버 40×4 · padding 12 24 28 · gap 20)
  *   머리   썸네일 64 radius 10 · 업체명 24 · «제보 금액 152~184만원» 16
@@ -42,7 +42,7 @@ import { useDepthBack } from '@/features/navigation/depth-back';
  *   버튼   «다시 볼게요»(gray · flex 1) + «최종 결정»(coral · flex 1.4) · 52(tokens size.ctaPrimary — 시안 56보다 토큰이 우선)
  *
  * 결정 기록은 **여기서만** 만든다 — 목록이 먼저 기록하고 이 화면이 또 기록하던 것을
- * 하나로 모았다. 기록이 끝나면 결정 완료(`/pick/done`)로 바꿔 끼운다.
+ * 하나로 모았다. 기록이 끝나면 Pick으로 돌아가 OS 토스트로 결과를 알린다.
  *
  * 문구는 spec/strings.ko.json pick.decideTitle · pick.decideNote1~3.
  */
@@ -103,10 +103,8 @@ export default function PickConfirmScreen() {
       const me = await getCurrentUser();
       if (!me.weddingId) throw new Error('결혼 정보가 없어요.');
       await decideCategory(me.weddingId, { category, vendorId });
-      router.replace({
-        pathname: '/(tabs)/pick/done',
-        params: { category, vendorId, vendorName },
-      });
+      showResultToast(`${withInstrument(vendorName)} 결정했어요`);
+      dismissToOrReplace('/pick');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '정하지 못했어요. 다시 시도해주세요.');
       setLoading(false);

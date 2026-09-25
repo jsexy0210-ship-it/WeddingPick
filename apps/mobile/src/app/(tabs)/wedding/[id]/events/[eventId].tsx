@@ -11,6 +11,7 @@ import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { showResultToast } from '@/features/navigation/result-toast';
 import { DateTimeField, combineDayTime, splitDayTime } from '@/features/wedding/event-form';
 import {
   Badge,
@@ -156,6 +157,7 @@ export default function WeddingEventDetailScreen() {
         memo: memo.trim() === '' ? null : memo.trim(),
       });
 
+      showResultToast('일정을 수정했어요');
       setEditing(false);
       load();
     } catch (caught) {
@@ -172,6 +174,7 @@ export default function WeddingEventDetailScreen() {
 
     try {
       await updateWeddingEvent(id, eventId, { notifyEnabled: next });
+      showResultToast(next ? '일정 알림을 켰어요' : '일정 알림을 껐어요');
       load();
     } catch (caught) {
       setEvent(current);
@@ -187,7 +190,10 @@ export default function WeddingEventDetailScreen() {
         style: 'destructive',
         onPress: () =>
           removeWeddingEvent(id, eventId)
-            .then(() => router.back())
+            .then(() => {
+              showResultToast('일정을 삭제했어요');
+              router.back();
+            })
             .catch((caught: Error) => setError(caught.message ?? '삭제하지 못했어요.')),
       },
     ]);

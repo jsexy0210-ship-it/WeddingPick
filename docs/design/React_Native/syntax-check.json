@@ -1,0 +1,29 @@
+{
+  "compiler": "5.8.3",
+  "files": [
+    "src/App.jsx",
+    "src/assetOverrides.js",
+    "src/boards/common.jsx",
+    "src/boards/components.jsx",
+    "src/boards/devices.jsx",
+    "src/boards/home.jsx",
+    "src/boards/my.jsx",
+    "src/boards/note.jsx",
+    "src/boards/pick.jsx",
+    "src/boards/search.jsx",
+    "src/designMetadata.js",
+    "src/iconAssets.js",
+    "src/main.jsx",
+    "src/models/common.js",
+    "src/models/components.js",
+    "src/models/devices.js",
+    "src/models/home.js",
+    "src/models/my.js",
+    "src/models/note.js",
+    "src/models/pick.js",
+    "src/models/search.js",
+    "src/runtime/designRuntime.js"
+  ],
+  "errors": [],
+  "method": "TypeScript transpileModule: JSX syntax validation and CommonJS compilation; runtime rendered separately."
+}

@@ -21,9 +21,10 @@ import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { Badge, Dock, Hero, ListRow, NavBar, NoteCard, Screen, Section } from '@/features/wedding/screen-kit';
 
 /**
- * `spec/strings.ko.json` `couple.*` · 정본 `docs/design/html/대메뉴_MY.dc.html`
- * WP-CPL-001(배우자 초대) · WP-CPL-006(연결 해제). 「연결됨」(이미 연결된 사람이 보는 관리
- * 화면)은 WP-MY-014(연결관리)에 속해 이번 작업 범위 밖이라 그대로 둔다.
+ * `spec/strings.ko.json` `couple.*` · 정본 `docs/design/React_Native/my.jsx`
+ * WP-CPL-001(배우자 초대 · frame-017) · WP-CPL-006(연결 해제 · frame-020). 「연결됨」(이미
+ * 연결된 사람이 보는 관리 화면)은 WP-MY-005(연결관리 · frame-005)다 — 정본의 공유 토글은
+ * 서버에 공유 범위 설정이 없어 아직 그리지 않는다(`DESIGN_UNRESOLVED`).
  */
 const S = {
   inviteNav: '배우자 초대',
@@ -47,13 +48,13 @@ const S = {
 } as const;
 
 /** WP-CPL-001 scopeRows(연결하면 같이 봐요) — 4행, 코랄 점 + 라벨만(배지 없음). */
-const SHARE_SCOPE = [`${TERMS.picked} · Pick`, '일정', '지출', '메모'];
+const SHARE_SCOPE = ['고른 곳 · Pick', '일정', '지출', '메모'];
 
 /** WP-CPL-006 cutRows(끝나요) — 3행, 회색 점 + 라벨만. */
-const CUT_ROWS = ['일정 · 지출 공유', `${TERMS.picked} 비교 같이 보기`, '변경 알림'];
+const CUT_ROWS = ['일정 · 지출 공유', 'Pick 비교 같이 보기', '변경 알림'];
 
 /** WP-CPL-006 keepRows(그대로예요) — 3행, 라벨 + 「그대로 남아요」. */
-const KEEP_ROWS = ['내가 쓴 일정 · 지출', `내 ${TERMS.picked}`, `${TERMS.picked} 인증내역`];
+const KEEP_ROWS = ['내가 쓴 일정 · 지출', '내 Pick', 'Pick 인증내역'];
 
 /** 정본 listCard 행 — 코랄/회색 점 + 라벨. WP-CPL-001·002·006이 함께 쓰는 모양이다. */
 function DotList({ items, tone }: { items: string[]; tone: 'brand' | 'muted' }) {
@@ -151,7 +152,7 @@ export default function PartnerScreen() {
     }, [load])
   );
 
-  async function makeInvite() {
+  const makeInvite = useCallback(async () => {
     if (busy || !weddingId) return;
     setBusy(true);
     setError(null);
@@ -166,7 +167,7 @@ export default function PartnerScreen() {
     } finally {
       setBusy(false);
     }
-  }
+  }, [busy, weddingId]);
 
   // 정본(WP-CPL-001)은 코드 카드가 항상 채워져 있다 — 초대를 아직 만든 적이 없으면 화면
   // 진입과 함께 한 번 만들어 그 모양에 맞춘다. 이미 보낸 초대가 있으면(코드는 몰라도)
@@ -175,8 +176,7 @@ export default function PartnerScreen() {
     if (autoTried.current || !weddingId || !me || me.spouseLinked || invite || code) return;
     autoTried.current = true;
     void makeInvite();
-    /* makeInvite는 매 렌더 새로 만들어지지만 autoTried ref가 한 번만 돌게 막는다. */
-  }, [weddingId, me, invite, code]);
+  }, [weddingId, me, invite, code, makeInvite]);
 
   async function copyCode() {
     if (!code) return;
@@ -287,7 +287,7 @@ export default function PartnerScreen() {
     );
   }
 
-  /* ---------------------------------------------------------- 연결됨 · WP-MY-014(이번 작업 범위 밖 — 그대로 둔다) */
+  /* ---------------------------------------------------------- 연결됨 · WP-MY-005(my.jsx frame-005) — 토글은 서버 없음, DESIGN_UNRESOLVED */
   if (me.spouseLinked) {
     return (
       <Screen>
@@ -409,13 +409,13 @@ export default function PartnerScreen() {
 
 const styles = StyleSheet.create({
   content: { paddingBottom: Spacing.four },
-  error: { paddingHorizontal: Layout.cardPadding, paddingBottom: Spacing.three },
+  error: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.three },
   bold: { fontWeight: 700 },
   noteWrap: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionGap },
 
-  /* qBlock — padding 16 20 20. */
-  qBlock: { paddingHorizontal: Layout.cardPadding, paddingTop: Layout.rowPaddingY + 4, paddingBottom: Spacing.four },
-  sec: { paddingHorizontal: Layout.cardPadding, paddingBottom: Spacing.four, gap: Layout.rowPaddingY },
+  /* qBlock — 바깥 좌우 24px. */
+  qBlock: { paddingHorizontal: Layout.gutter, paddingTop: Layout.rowPaddingY + 4, paddingBottom: Spacing.four },
+  sec: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four, gap: Layout.rowPaddingY },
 
   /* codeCard — radius 10 · 배경 회색(코랄 아님) · padding 20 · gap 6 · 가운데 정렬. */
   codeCard: { borderRadius: Radius.medium, padding: Layout.cardPadding, alignItems: 'center', gap: Spacing.two },
@@ -428,5 +428,5 @@ const styles = StyleSheet.create({
   scopeLabel: { flex: 1, minWidth: 0 },
   infoRow: { justifyContent: 'center', gap: 3, minHeight: 64, paddingHorizontal: Layout.rowPaddingY + 4 },
 
-  haveCodeLink: { paddingHorizontal: Layout.cardPadding, textDecorationLine: 'underline' },
+  haveCodeLink: { paddingHorizontal: Layout.gutter, textDecorationLine: 'underline' },
 });

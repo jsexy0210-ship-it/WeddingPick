@@ -4,15 +4,16 @@ import {
   preparationSkippedToast,
   skippedPreparationCategories,
   PREPARATION_NOT_STARTED_LABEL,
+  RETIRED_VENDOR_CATEGORIES,
+  STORED_VENDOR_CATEGORIES,
   VENDOR_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
   summarizePreparedCategories,
 } from './vendor';
 
 describe('업종', () => {
-  it('핸드오프 v3.22의 12개 업종을 그룹 순서로 둔다 — 기타는 맨 뒤', () => {
+  it('고를 수 있는 업종 11개를 그룹 순서로 둔다 — 결정사는 없고 기타는 맨 뒤', () => {
     expect(VENDOR_CATEGORIES).toEqual([
-      'wedding_info_company',
       'hall',
       'studio',
       'dress',
@@ -26,18 +27,26 @@ describe('업종', () => {
       'honeymoon',
       'etc',
     ]);
-    expect(PREPARATION_CATEGORIES).toHaveLength(12);
+    expect(PREPARATION_CATEGORIES).toHaveLength(11);
     expect(PREPARATION_CATEGORIES).not.toContain('etc');
+  });
+
+  it('결정사는 저장값으로만 남고 고르는 목록 어디에도 없다 (2026-09-24 대표 지시)', () => {
+    // DB enum 값은 남는다 — 과거 기록을 읽을 수 있어야 한다.
+    expect(STORED_VENDOR_CATEGORIES).toContain('wedding_info_company');
+    expect(RETIRED_VENDOR_CATEGORIES).toEqual(['wedding_info_company']);
+    expect(VENDOR_CATEGORIES).not.toContain('wedding_info_company');
+    expect(PREPARATION_CATEGORIES).not.toContain('wedding_info_company');
+    expect(PREPARATION_GROUPS.flatMap((group) => group.categories)).not.toContain('wedding_info_company');
   });
 
   it('앞 그룹을 비워두고 뒤 그룹만 고르면 비운 앞 그룹의 업종을 짚는다 (v3.23 토스트)', () => {
     expect(skippedPreparationCategories([])).toEqual([]);
-    expect(skippedPreparationCategories(['wedding_info_company', 'hall'])).toEqual([]);
+    expect(skippedPreparationCategories(['hall'])).toEqual([]);
     expect(skippedPreparationCategories(['hall', 'studio'])).toEqual([]);
-    expect(skippedPreparationCategories(['studio', 'dress'])).toEqual(['wedding_info_company', 'hall']);
+    expect(skippedPreparationCategories(['studio', 'dress'])).toEqual(['hall']);
     expect(skippedPreparationCategories(['hall', 'snap'])).toEqual(['studio', 'dress', 'makeup', 'hair']);
     expect(skippedPreparationCategories(['honeymoon'])).toEqual([
-      'wedding_info_company',
       'hall',
       'studio',
       'dress',
@@ -47,7 +56,7 @@ describe('업종', () => {
       'bouquet',
       'invitation',
     ]);
-    expect(preparationSkippedToast(['wedding_info_company', 'hall'])).toBe('앞 단계도 확인해주세요 · 결정사 · 웨딩홀');
+    expect(preparationSkippedToast(['hall'])).toBe('앞 단계도 확인해주세요 · 웨딩홀');
   });
 
   it('준비 현황 그룹을 펼치면 준비 순서와 같다', () => {

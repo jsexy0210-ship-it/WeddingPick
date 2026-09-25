@@ -20,6 +20,7 @@ import {
 import { NavBar } from '@/features/wedding/screen-kit';
 import { listMyRebuttals, removeRebuttal } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
+import { showResultToast } from '@/features/navigation/result-toast';
 
 /**
  * 내가 낸 업체 반론. 디자인 핸드오프 20번.
@@ -66,7 +67,10 @@ export default function MyRebuttalsScreen() {
           style: 'destructive',
           onPress: () => {
             void removeRebuttal(rebuttal.id)
-              .then(load)
+              .then(() => {
+                showResultToast('반론을 지웠어요');
+                load();
+              })
               .catch(() => confirmAlert('지우지 못했어요', '잠시 후 다시 시도해 주세요.'));
           },
         },

@@ -1,5 +1,5 @@
 /**
- * MY — WP-MY-001 · `docs/design/html/대메뉴_MY.dc.html` 1.
+ * MY — WP-MY-001 · `docs/design/React_Native/my.jsx` frame-001.
  *
  * 제목 «MY»(26/700) → 프로필 카드(아바타 + 이름 + Pick 인증 배지 + 예식일 · D-day → 프로필,
  * 선, «내 웨딩설정» 행) → 섹션 다섯(작은 제목 + 테두리 카드 안에 아이콘 18 · 라벨 15 · 꼬리 ·
@@ -10,14 +10,14 @@
  *
  * **메뉴 4글자는 붙여 쓴다** — 연결관리 · 인증내역 · 웨딩설정(새 패키지 · 전체 공통).
  * 루트 메뉴는 정본의 내 활동 / 함께 준비하기 / 라운지 / 고객지원 / 약관만 둔다.
- * 스크랩은 저장 계약이 없어 빈 상태 화면까지만 제공하고 가짜 저장 데이터는 만들지 않는다.
+ * 정본 WP-MY-001의 내 활동은 Pick 인증내역과 내가 쓴 후기 두 줄이다.
  *
- * 모양은 시안, 수치는 `spec/tokens.json`(카드 radius 10 · 행 56 · 아바타 56 ·
+ * 모양은 정본, 수치는 `spec/tokens.json`(카드 radius 10 · 행 52 · 아바타 52 ·
  * 아이콘 18 · 좌우 24). 문구는 `spec/strings.ko.json` `my`.
  */
 import { FullScreenError } from '@/features/errors/full-screen-error';
 import type { CurrentUser, MyReportListResponse } from '@weddingpick/api-contract';
-import { BUSINESS_NOTICE_LINES, POLICY_DOCUMENTS, daysUntil, formatCount } from '@weddingpick/domain';
+import { BUSINESS_NOTICE_LINES, daysUntil, formatCount } from '@weddingpick/domain';
 import { Redirect, router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -46,17 +46,11 @@ import {
 } from '@/api/client';
 import { useSession } from '@/features/auth/use-session';
 import { DelayedLoader, DelayedLoadingView } from '@/features/loading/delayed-loader';
-import { Avatar } from '@/features/settings/my-kit';
+import { AVATAR_MY, Avatar } from '@/features/settings/my-kit';
 import strings from '../../../../../../spec/strings.ko.json';
 import { APP_VERSION } from '@/features/settings/version';
-import { openExternal } from '@/features/open-external';
 
 const S = strings.my;
-
-function openPolicy(id: 'terms' | 'privacy') {
-  const policy = POLICY_DOCUMENTS.find((document) => document.id === id);
-  if (policy?.url) void openExternal(policy.url, { title: policy.title });
-}
 
 type CoupleState = 'unlinked' | 'invited' | 'linked';
 
@@ -153,60 +147,58 @@ export default function MyScreen() {
   if (state.status === 'loading') return <DelayedLoadingView />;
   if (state.status === 'signedOut') return <Redirect href="/login" />;
 
-  const count = (n: number) => (n > 0 ? S.count.replace('{n}', formatCount(n)) : undefined);
+  /* 정본 `myCount`는 숫자만 적는다(「4」 · 「2」 · 「1」) — 「건」을 붙이지 않는다. */
+  const count = (n: number) => (n > 0 ? formatCount(n) : undefined);
 
   /* 순서와 묶음은 시안 `mySections` 그대로다. 남긴 줄 · 뺀 줄의 사유는 파일 머리에 있다. */
   const sections: { title: string; rows: MenuRow[] }[] = [
     {
       title: S['group.activity'],
       rows: [
-        { key: 'certLog', label: S['item.certLog'], icon: 'checkCircle', tail: count(totalProofs), onPress: () => guestPush('/my/reports') },
+        { key: 'certLog', label: S['item.certLog'], icon: 'checkFill', tail: count(totalProofs), onPress: () => guestPush('/my/reports') },
         { key: 'myReview', label: S['item.myReview'], icon: 'edit', tail: count(totalReviews), onPress: () => guestPush('/my/reviews') },
-        { key: 'scrap', label: S['item.scrap'], icon: 'file', onPress: () => guestPush('/my/scraps') },
       ],
     },
     {
       title: S['group.together'],
       rows: [
-        { key: 'partner', label: S['item.partner'], icon: 'twoPeople', tail: data.couple ? COUPLE_LABEL[data.couple] : undefined, onPress: () => guestPush('/wedding/partner') },
+        { key: 'partner', label: S['item.partner'], icon: 'community', tail: data.couple ? COUPLE_LABEL[data.couple] : undefined, onPress: () => guestPush('/wedding/partner') },
       ],
     },
     /*
      * **라운지로 들어오는 두 자리 중 하나다.** 2026-09-17 대표 지시로 라운지가 Root 탭에서
      * 내려왔다 — 화면을 없앤 것이 아니라 진입을 옮긴 것이므로 **이 줄이 없으면 라운지에
-     * 들어갈 길이 사라진다.** 나머지 한 자리는 홈 「웨딩 소식」 섹션 우측이다. 주소는
-     * `/community` 그대로다(저장된 링크 · 공유 주소).
+     * 들어갈 길이 사라진다.** 나머지 한 자리는 홈 「웨딩 소식」 섹션 우측이다. 옛 주소
+     * `/community`는 리다이렉트로 보존한다(저장된 링크 · 공유 주소).
      *
-     * **v3.28에서 한 줄이 세 줄이 됐다**(시안 1 `mySections` — 「라운지」 섹션에
-     * 리얼후기 · 웨딩정보 · 박람회). 라운지는 한 화면 세 탭이므로 각 줄이 그 탭으로
-     * 바로 들어간다 — 들어가서 탭을 한 번 더 고르게 하지 않는다.
+     * 정본 my.jsx frame-001 `mySections` — 「라운지」 섹션에 리얼후기 · 웨딩정보 · 박람회.
+     * 셋은 세그먼트 없는 독립 화면이라(frame-008 · 010 · 012) 각 줄이 자기 화면을 연다.
      */
     {
       title: S['group.lounge'],
       rows: [
-        { key: 'realReview', label: S['item.realReview'], icon: 'edit', onPress: () => guestPush('/community?from=my&tab=review') },
-        { key: 'weddingInfo', label: S['item.weddingInfo'], icon: 'file', onPress: () => guestPush('/community?from=my&tab=feed') },
-        { key: 'expo', label: S['item.expo'], icon: 'calendar', onPress: () => guestPush('/community?from=my&tab=expo') },
+        { key: 'realReview', label: S['item.realReview'], icon: 'chatting', onPress: () => guestPush('/community/review?from=my') },
+        { key: 'weddingInfo', label: S['item.weddingInfo'], icon: 'photo', onPress: () => guestPush('/community/feed?from=my') },
+        { key: 'expo', label: S['item.expo'], icon: 'calendar', onPress: () => guestPush('/community/expo?from=my') },
       ],
     },
     /*
-     * **「FAQ」는 아직 바꾸지 않았다 — 판단 필요.** v3.28 대조표는 「자주 묻는 질문 → FAQ」
-     * (시안 12 WP-MY-013의 헤더도 «FAQ»)인데, 2026-09-15 대표 지시 「사용자 화면에 영문을
-     * 쓰지 않는다 · 남는 것은 Pick · Npay 둘뿐」과 부딪힌다. 둘 중 어느 쪽이 이기는지는
-     * 대표님·MASTER가 정한다 — 그때 `spec/strings.ko.json` `my.item.faq` 한 칸만 바꾸면 된다.
+     * 「FAQ」 — 정본 my.jsx frame-001 `mySections` · frame-015 navTitle. 2026-09-25 MASTER
+     * 후속 지시(대표님 「업데이트된 앱 화면에 다 맞추라는뜻」)로 RN 정본 표기를 따른다.
      */
     {
       title: S['group.support'],
       rows: [
-        { key: 'faq', label: S['item.faq'], icon: 'info', onPress: () => router.push({ pathname: '/my/guide', params: { mode: 'faq' } } as never) },
-        { key: 'contact', label: S['item.contact'], icon: 'headset', tail: data.inquiries !== null ? count(data.inquiries) : undefined, onPress: () => guestPush('/my/contact') },
+        { key: 'faq', label: S['item.faq'], icon: 'chatting', onPress: () => router.push({ pathname: '/my/guide', params: { mode: 'faq' } } as never) },
+        { key: 'contact', label: S['item.contact'], icon: 'edit', tail: data.inquiries !== null ? count(data.inquiries) : undefined, onPress: () => guestPush('/my/contact') },
       ],
     },
     {
       title: S['group.terms'],
+      /* 정본 my.jsx frame-021 · 022 — 목록 없이 바로 원문 화면(WP-MY-015 · 015b)이 뜬다. */
       rows: [
-        { key: 'terms', label: S['item.terms'], icon: 'file', onPress: () => openPolicy('terms') },
-        { key: 'privacy', label: S['item.privacy'], icon: 'file', onPress: () => openPolicy('privacy') },
+        { key: 'terms', label: S['item.terms'], icon: 'bookmark', onPress: () => router.push('/my/terms' as never) },
+        { key: 'privacy', label: S['item.privacy'], icon: 'bookmark', onPress: () => router.push('/my/privacy-policy' as never) },
       ],
     },
   ];
@@ -214,17 +206,15 @@ export default function MyScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <View style={styles.header}>
+          <ThemedText type="f26" style={[styles.bold, styles.title]}>
+            {S.title}
+          </ThemedText>
+        </View>
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}>
-          {/* 시안 head: 56 · 좌우 여백 · «MY» 26/700. */}
-          <View style={styles.header}>
-            <ThemedText type="f26" style={[styles.bold, styles.title]}>
-              {S.title}
-            </ThemedText>
-          </View>
-
           {/* 프로필 카드 — 아바타 + 이름 18/700 + Pick 인증 배지 + 예식일 · D-day 13 muted + 꺾쇠 → 프로필. 선. «내 웨딩설정» 행. */}
           {isSignedIn && me ? (
             <View style={styles.block}>
@@ -234,7 +224,7 @@ export default function MyScreen() {
                   accessibilityLabel="프로필"
                   onPress={() => router.push('/my/profile' as never)}
                   style={({ pressed }) => [styles.profile, pressed ? styles.pressed : null]}>
-                  <Avatar initial={me.displayName?.slice(0, 1) ?? '나'} size={Layout.avatarProfile} />
+                  <Avatar initial={me.displayName?.slice(0, 1) ?? '나'} size={AVATAR_MY} />
                   <View style={styles.profileCol}>
                     <View style={styles.profileNameRow}>
                       <ThemedText type="f18" numberOfLines={1} style={[styles.bold, styles.shrink]}>
@@ -358,7 +348,7 @@ function weddingLine(iso: string): string {
 
 const WEEKDAY = ['일', '월', '화', '수', '목', '금', '토'] as const;
 
-// ─── Styles — 모양은 대메뉴_MY.dc.html 1, 수치는 spec/tokens.json ───
+// ─── Styles — 모양은 docs/design/React_Native/my.jsx frame-001, 수치는 spec/tokens.json ───
 
 const styles = StyleSheet.create({
   container: {
@@ -372,7 +362,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   scroll: { flex: 1 },
-  scrollContent: { paddingBottom: Spacing.four },
+  scrollContent: { paddingTop: Spacing.three, paddingBottom: Spacing.four },
   bold: { fontWeight: 700 },
   /* `micro`는 기본이 700 — 시안에서 regular인 작은 글자는 400. */
   regular: { fontWeight: 400 },
@@ -383,13 +373,13 @@ const styles = StyleSheet.create({
   shrink: { flexShrink: 1, minWidth: 0 },
   pressed: { opacity: 0.6 },
 
-  /* head `flex:0 0 56px` · 좌우 24. */
+  /* Root 바깥 여백은 공통 24px. */
   header: {
     height: Layout.navBar,
     justifyContent: 'center',
     paddingHorizontal: Layout.gutter,
   },
-  /* sec `padding:0 20px 20px;gap:12px` — 좌우 24 · 아래 20 · 제목↔카드 12. */
+  /* WP-MY-001 sec: 공통 좌우 24 · 아래 20 · 제목↔카드 12. */
   block: {
     paddingHorizontal: Layout.gutter,
     paddingBottom: Layout.listGap,
@@ -409,33 +399,33 @@ const styles = StyleSheet.create({
     padding: Layout.cardPaddingCompactY,
   },
   profileCol: { flex: 1, minWidth: 0, gap: Spacing.one },
-  /* profNameRow `gap:7px` → 8(Spacing.two). */
-  profileNameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  /* profRow `gap:12px;min-height:52px;padding:0 18px` — 행 높이는 handoff 56. */
+  /* WP-MY-001 profNameRow: 이름과 배지 사이 7. */
+  profileNameRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  /* WP-MY-001 profRow: gap 12 · 최소 높이 52 · 좌우 18. */
   profileRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Layout.inlineGap,
-    minHeight: Layout.rowMinHeight,
+    minHeight: 52,
     borderTopWidth: Border.hairline,
     paddingHorizontal: Layout.cardPaddingCompactY,
   },
   /* secLabel 13/700 muted. */
   sectionTitle: { marginBottom: Layout.inlineGap },
-  /* ROW `gap:12px;min-height:52px;padding:0 16px` — 행 높이는 handoff 56. */
+  /* WP-MY-001 메뉴 행(my.js `ROW`): gap 12 · 최소 높이 52 · 좌우 20. */
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Layout.inlineGap,
-    minHeight: Layout.rowMinHeight,
-    paddingHorizontal: Spacing.three,
+    minHeight: 52,
+    paddingHorizontal: 20,
   },
-  /* secFoot `padding:4px 20px 0;gap:14px` 가운데. 아래 사업자 정보는 8 띄운다. */
+  /* WP-MY-001 secFoot: 위 4 · 공통 좌우 24 · gap 14. */
   footer: {
     paddingTop: Spacing.one,
     paddingHorizontal: Layout.gutter,
     alignItems: 'center',
-    gap: Spacing.two,
+    gap: 14,
   },
   businessNotice: { gap: Spacing.half, opacity: 0.5 },
 });

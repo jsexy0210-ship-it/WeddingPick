@@ -1,0 +1,41 @@
+{
+  "scope": "app-design-only",
+  "canonicalPath": "docs/design/",
+  "format": "React DOM JSX design reference, not React Native",
+  "sourceArchive": "웨딩픽_프로젝트.zip",
+  "sourceArchiveSha256": "4cf1364513b2f25b6284fccba40947bd88c36c357ad61a0fce6598b4e8412868",
+  "converted": [
+    "대메뉴_홈(로그인, 온보딩).dc.html",
+    "대메뉴_검색.dc.html",
+    "대메뉴_Pick.dc.html",
+    "대메뉴_웨딩노트.dc.html",
+    "대메뉴_MY.dc.html",
+    "공통_다이얼로그 빈상태 로더.dc.html",
+    "웨딩픽 컴포넌트 시트.dc.html",
+    "웨딩픽 디바이스 대응.dc.html"
+  ],
+  "excluded": [
+    "웨딩픽 관리자 운영.dc.html",
+    "웨딩픽 관리자.dc.html",
+    "웨딩픽 랜딩 v4.dc.html",
+    "웨딩픽 랜딩 하위페이지.dc.html",
+    "웨딩픽 사용자 흐름.dc.html",
+    "웨딩픽 스토어 이미지.dc.html",
+    "웨딩픽 약관 방침.dc.html",
+    "웨딩픽 전체 IA.dc.html"
+  ],
+  "githubUploaded": false,
+  "productionDeployed": false,
+  "runtimeScreens": 80,
+  "missingImageAndSvgFiles": 7,
+  "packageVersion": "3.29.1",
+  "revision": "SVG icons included and connected",
+  "includedSvgIconFiles": 30,
+  "seedOfficialIconFiles": 25,
+  "materialOfficialIconFiles": 5,
+  "documentedIconSubstitutions": [
+    "assets/seed-icons/history.svg"
+  ],
+  "fontFilesIncluded": false,
+  "iconNetworkDependency": false
+}

@@ -7,12 +7,12 @@ import type { ScheduleRow } from './schedule-view';
 const S = strings.home;
 
 /**
- * 홈 「웨딩일정」. .dc.html WP-HOME-001 §11 `schedule`(날짜 있는 일정 최대 3건) ·
+ * 홈 「웨딩일정」. RN 정본 `docs/design/React_Native/home.jsx` frame-012 WP-HOME-001 `schedule`(날짜 있는 일정 최대 3건) ·
  * WP-HOME-002/003 `defaultSchedule`(번호 매긴 기본 다섯 줄). `rows`가 `dated`면
  * 앞쪽, `preset`이면 뒤쪽 모양으로 그린다 — 한 섹션에서 둘이 섞이지 않는다
  * (`scheduleRows`가 이미 갈라 준다).
  *
- * 개별 줄은 .dc.html에 `<a href>`가 없다 — 「자세히」만 누를 수 있다. 줄마다 탭
+ * 개별 줄은 home.jsx에 `<a href>`가 없다 — 「자세히」만 누를 수 있다. 줄마다 탭
  * 진입점을 임의로 만들지 않는다(정본에 없는 진입점 추가 금지).
  */
 export function UpcomingSchedule({
@@ -95,8 +95,8 @@ export function UpcomingSchedule({
 }
 
 const styles = StyleSheet.create({
-  /* .dc.html `hsec` — 헤더→본문 gap 12px 하나뿐(heading.marginBottom에 둔다). */
-  section: { paddingHorizontal: Layout.gutter, marginBottom: Layout.sectionGap },
+  /* home.jsx `hsec` — 헤더→본문 gap 12px 하나뿐(heading.marginBottom에 둔다). */
+  section: { paddingHorizontal: Layout.gutter, marginBottom: 24 },
   heading: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -107,10 +107,10 @@ const styles = StyleSheet.create({
   headingCol: { flex: 1, minWidth: 0, gap: Spacing.half },
   more: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   wrap: { borderRadius: 12, borderWidth: 1, overflow: 'hidden' },
-  /* .dc.html `row`/`row2` — min-height 64 · padding 0 14px. 그대로 옮겼다. */
+  /* home.jsx `row`/`row2` — min-height 64 · padding 0 14px. 그대로 옮겼다. */
   row: { flexDirection: 'row', alignItems: 'center', gap: Layout.inlineGap, minHeight: 64, paddingHorizontal: 14 },
-  dateCol: { width: 44, flex: 0, alignItems: 'center', justifyContent: 'center', gap: 1 },
-  /* .dc.html `numStyle` — 24×24 원. 기존 토큰 중 정확히 24인 값이 없어 그대로 적었다. */
+  dateCol: { width: 44, flexShrink: 0, alignItems: 'center', justifyContent: 'center', gap: 1 },
+  /* home.jsx `numStyle` — 24×24 원. 기존 토큰 중 정확히 24인 값이 없어 그대로 적었다. */
   numBadge: { width: 24, height: 24, borderRadius: Radius.pill, alignItems: 'center', justifyContent: 'center' },
   titleCol: { flex: 1, minWidth: 0, gap: Spacing.half },
   bold: { fontWeight: 700 },

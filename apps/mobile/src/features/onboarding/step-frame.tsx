@@ -18,12 +18,12 @@ import { OnboardingProgress } from './progress';
 
 /**
  * 온보딩 한 장의 틀 — v3.29 정본
- * `docs/design/html/대메뉴_홈(로그인, 온보딩).dc.html` WP-AUTH-002 ~ 006
+ * `docs/design/React_Native/home.jsx` WP-AUTH-002 ~ 006
  * (`stepNav` · `scroll` · `dockSingle` · `dockPair`).
  *
  * **2026-09-23 정정 — 주석이 파기된 `docs/design/figma-export/06-onboarding-login.dc.html`
  * (2026-09-22에 이미 지워졌다)를 정본으로 적고 있었다.** 값 자체는 이미 v3.29
- * dc.html의 `stepNav`(56px) · `dockSingle`/`dockPair`(92px · 12px 24px · gap 10)와
+ * home.js의 `stepNav`(56px) · `dockSingle`/`dockPair`(92px · 12px 24px · gap 10)와
  * 픽셀 단위로 일치해서 고치지 않는다 — 주석의 근거 경로만 바로잡는다.
  *
  * 상단은 56px 진행행, 가운데만 스크롤, 하단은 92px 고정 dock이다. 첫 질문(예식일)은

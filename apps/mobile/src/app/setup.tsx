@@ -28,11 +28,7 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 
-import { DelayedRecommendingView } from '@/features/loading/delayed-loader';
-import {
-  markNextHomeLoadingCoveredBySetup,
-  takeFullScreenLoading,
-} from '@/features/loading/first-run';
+import { HomeSkeleton } from '@/features/home/home-skeleton';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { BudgetAmount } from '@/features/onboarding/budget-amount';
 import { DatePickerSheet } from '@/features/onboarding/date-picker-sheet';
@@ -77,7 +73,7 @@ import {
 } from '@/features/onboarding/wedding-draft';
 
 /**
- * 초기 설정 — v3.28 정본 `docs/design/html/대메뉴_홈(로그인, 온보딩).dc.html`
+ * 초기 설정 — `docs/design/React_Native/home.jsx`
  * WP-AUTH-002 ~ 007.
  *
  *   예식일 1/5 → 지역 2/5 → 진행 상황 3/5 → 예산 4/5 → 스타일 5/5 → 완료
@@ -117,9 +113,8 @@ import {
  * 답하는 중인 값은 기기에 적어둔다 — 앱을 닫았다 열어도 답한 데까지 이어서 묻는다.
  * 서버에 올리고 나면 지운다.
  *
- * 화면의 모양·수치·줄바꿈은 v3.28 시안의 CSS 문자열(`qBlock` · `dateField` · `amtField` ·
- * `sumCard` …)을 기준으로 맞춘다. 저장 계약(`completeSetup`)은 그대로다 — 예산은 만원
- * 금액을 구간으로 옮겨 보낸다(`budgetBracketForAmount`).
+ * 화면의 모양·수치·줄바꿈은 `docs/design/React_Native/home.jsx`를 따른다.
+ * 예산 금액은 현재 API가 받는 검색용 구간으로 저장한다.
  */
 /** 예식일 첫 줄 — 아직 안 골랐을 때. 고르면 그 날짜가 이 자리에 선다. */
 const DATE_PICK_LABEL = '날짜 고르기';
@@ -271,7 +266,6 @@ export default function SetupScreen() {
   async function finish(source: Answers = answers) {
     if (sending) return;
 
-    const loadingStartedAt = Date.now();
     setSending(true);
     setError(null);
 
@@ -279,10 +273,7 @@ export default function SetupScreen() {
     const styleTags = [...(source.style ?? [])];
     /* 진행 상황(3/5) — 고른 카드의 업종 전부. 빈 배열은 «아직 시작 전». */
     const preparedCategories = [...(source.prep?.categories ?? [])];
-    /*
-     * 예산(4/5) — 화면은 만원 금액을 받지만 계약은 아직 구간만 받는다. 적지 않았으면
-     * «아직 모르겠어요»(unknown)다. 정확한 금액을 저장하는 계약 확장은 PR의 「판단 필요」.
-     */
+    /* 예산(4/5)은 현재 API 계약에 맞춰 만원 값을 검색용 구간으로 옮긴다. */
     const budgetBracket = budgetBracketForAmount(source.budget?.amount ?? 0);
     const draft = {
       weddingDate: source.date?.value ?? null,
@@ -350,17 +341,6 @@ export default function SetupScreen() {
        */
       void clearOnboardingAnswers().catch(() => undefined);
 
-      /*
-       * 완료 뒤 로더는 이 한 번만 보여준다. 홈이 이어서 같은 전체 화면 로더를
-       * 다시 띄우지 않도록 실행당 1회 예산도 여기서 소모한다.
-       */
-      void takeFullScreenLoading();
-      markNextHomeLoadingCoveredBySetup();
-      const remainingLoadingMs = 3000 - (Date.now() - loadingStartedAt);
-      if (remainingLoadingMs > 0) {
-        await new Promise<void>((resolve) => setTimeout(resolve, remainingLoadingMs));
-      }
-
       dismissToOrReplace('/');
     } catch (caught) {
       // 세션이 끝났으면(401) 이 화면에 머물 이유가 없다 — 로그인으로 보낸다.
@@ -400,21 +380,8 @@ export default function SetupScreen() {
     return <ThemedView style={styles.blank} />;
   }
 
-  /*
-   * 결과 화면에서 «완료»를 누른 뒤. 여기서 가입과 초기 설정 두 번을 서버에 보내는데,
-   * 그동안 화면에는 CTA가 눌리지 않는 것 말고 아무 표시가 없어 멈춘 것처럼 보였다.
-   * WP-ST-015 추천 계산 화면을 띄운다 — 700ms 안에 끝나면 이것도 뜨지 않는다.
-   *
-   * **여기는 «오래 붙잡는» 기다림이다**(`features/loading/delayed-loader.tsx`의
-   * `LoaderWait`). 계정을 만들고 설정을 올린 뒤 추천을 받아 홈으로 가는 길이라,
-   * Depth 이동용 써클이 아니라 업종 순회를 그대로 쓴다.
-   *
-   * **`exclude`가 없어졌다**(2026-09-15 대표 지시 — 「기본로더만 사용할것」).
-   * 순회에서 뺄 업종을 고르던 값인데, 로더가 원형 하나가 되면서 돌 것이 없어졌다.
-   */
-  if (sending) {
-    return <DelayedRecommendingView />;
-  }
+  /* 저장부터 홈의 첫 자료가 준비될 때까지 같은 홈 골격을 유지한다. */
+  if (sending) return <HomeSkeleton />;
 
   if (step === 'done') {
     return (
@@ -557,6 +524,7 @@ export default function SetupScreen() {
               <OptionRow
                 key={card.key}
                 role="checkbox"
+                variant="prep"
                 label={card.name}
                 description={card.description}
                 selected={isPrepCardSelected(card, preparedCategories)}

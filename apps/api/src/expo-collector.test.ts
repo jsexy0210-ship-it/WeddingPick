@@ -164,6 +164,40 @@ describeWithDb('박람회 지속 수집', () => {
     expect(response.json<{ items: unknown[] }>().items).toEqual([]);
   });
 
+  it('관리용 샘플 박람회는 관리자 DB에 남겨도 앱 목록과 상세에서 숨긴다', async () => {
+    await runExpoCollection({
+      pool: test.pool,
+      discover: async () => [
+        candidate(),
+        candidate({
+          eventName: '[샘플] 서울 웨딩박람회',
+          canonicalEventName: '샘플 서울 웨딩박람회',
+          reservationUrl: 'https://example.com/sample/apply',
+          officialWebsiteUrl: 'https://example.com/sample',
+          sourceNote: 'wedding-tabs-sample-v1',
+          venueName: '샘플 컨벤션',
+        }),
+      ],
+      model: 'test-gemini',
+      trigger: 'manual',
+    });
+
+    const stored = await test.pool.query<{ id: string; title: string }>(
+      `SELECT id, title FROM structured.expos ORDER BY title`
+    );
+    expect(stored.rows).toHaveLength(2);
+    const sample = stored.rows.find((row) => row.title.startsWith('[샘플]'));
+    expect(sample).toBeDefined();
+
+    const list = await test.app.inject({ method: 'GET', url: '/v1/expos' });
+    expect(list.statusCode).toBe(200);
+    expect(list.json<{ items: { title: string }[] }>().items.map((item) => item.title))
+      .toEqual(['2099 서울 웨딩페어']);
+
+    const detail = await test.app.inject({ method: 'GET', url: `/v1/expos/${sample!.id}` });
+    expect(detail.statusCode).toBe(404);
+  });
+
   it('대표 이미지 URL만 넣어서는 공개되지 않고 권리 상태를 확인해야 노출된다', async () => {
     await runExpoCollection({
       pool: test.pool,

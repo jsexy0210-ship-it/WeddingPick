@@ -1,6 +1,43 @@
 # 웨딩픽 — 구현 규칙
 
-## 현재 디자인 기준 — v3.29 (2026-09-23, 대표 지시 — 이 파일의 맨 앞)
+## ⛔ 디자인 정본 — 절대 지침 (2026-09-24 대표 지시, 이 파일의 최우선)
+
+대표님 원문(2026-09-24) — 「**절대적 지침. 디자인 원본은 위 경로로 고정한다**」 · 「**디자인 정본**」 ·
+「**RN=…/docs/design/React_Native · 관리자, 랜딩=…/docs/design/html**」.
+
+| 대상 | 정본(이 경로 하나뿐) |
+| --- | --- |
+| **앱(RN)** — 홈 · 검색 · Pick · 웨딩노트 · MY · 로그인·약관 동의 · 온보딩 · 로더 등 | `docs/design/React_Native/` |
+| **관리자 · 랜딩** | `docs/design/html/` |
+
+```
+docs/design/React_Native/   React 변환본 v3.29.1(아이콘 보완판) 84개 파일 — 하위 폴더 없이 한 층으로 올라와 있다
+  README.md · HANDOFF.md · CONVERSION_REPORT.md   범위 · 읽는 순서 · 결손 — 먼저 읽는다
+  WeddingPick_App_Preview.html · preview.html     앱 화면 · 상태 프레임 80개 미리보기
+  home · search · pick · note · my · common · components · devices  각각 .jsx(보드) + .js(모델: 화면별 값 · 스타일)
+  *.svg · iconAssets.js · assetOverrides.js       아이콘 · 이미지 매핑
+  runtime-check.json · source-map.json            화면 ID ↔ 원본 행 번호
+docs/design/html/웨딩픽 관리자.dc.html · 웨딩픽 관리자 운영.dc.html · 웨딩픽 약관 방침.dc.html
+docs/design/html/웨딩픽 랜딩 v4.dc.html · 웨딩픽 랜딩 하위페이지.dc.html
+```
+
+- **앱 화면은 `React_Native`만 근거로 쓴다.** `html/`의 앱 대메뉴 시안 6개(홈 · 검색 · Pick · 웨딩노트 ·
+  MY · 공통 다이얼로그)는 **2026-09-24 대표님이 직접 지웠다** — git 이력에서 꺼내 근거로 쓰지 않는다
+  (`canonical-manifest.json` `supersededOn20260924`). `README.md` · `PROJECT_RULES.md` · `CHANGELOG.md`는
+  앱에 대해서는 `React_Native`와 어긋나면 진다. 어긋남을 발견하면 `React_Native` 기준으로 보고 무엇이 달랐는지 남긴다.
+- **관리자 · 랜딩은 `html/`만 근거로 쓴다.** 해당 `.dc.html`의 화면 ID 구역을 연다.
+- 두 곳 어디에도 없는 화면은 추측으로 만들지 않고 `DESIGN_SOURCE_NOT_VERIFIED`로 보고해 대표님께 받는다.
+- 읽는 순서는 폴더 안 `HANDOFF.md`를 따른다 — 다만 거기 적힌 `src/boards/…` · `src/models/…` ·
+  `reports/…` 경로는 **이 저장소에서는 한 층으로 풀려 있다**(`src/boards/home.jsx` → `home.jsx`,
+  `src/models/home.js` → `home.js`, `reports/runtime-check.json` → `runtime-check.json`).
+- 값은 `*.js` 모델과 `*.jsx` 보드에서 읽고, 필요하면 `preview.html`을 띄워 실제로 본다.
+  `scripts/canon/extract-style.mjs`는 `.dc.html` 전용이라 앱 화면에는 그대로 맞지 않는다 — 손으로 추측하지 않는다.
+- `HANDOFF.md` 자신의 경고를 그대로 지킨다: 이 폴더는 **React DOM 디자인 레퍼런스**이지 RN 완료본이 아니다.
+  사이드바 · 상단 도구 · 휴대전화 바깥 번호 · 캔버스 설명은 탐색기이지 제품 UI가 아니다.
+- 이 폴더의 파일을 바꾸거나 새로 올리면 `canonical-manifest.json`의 해시를 함께 갱신한다
+  (`npm run test:design-canonical`이 센다).
+
+## 현재 디자인 기준 — v3.29 (2026-09-23, 대표 지시 — 위 ⛔ 절대 지침이 이긴다)
 
 대표님 원문(2026-09-23) — 「**최신파일이다 깃 저장소 디자인 유일 경로에 올려주고 작업진행해**」 ·
 「**최신파일로 다 덮어씌워**」. v3.28(2026-09-22)을 잇는 같은 패턴의 지시다 — 새 전달본이
@@ -97,9 +134,10 @@ v3.29가 바꾼 것(근거: `docs/design/CHANGELOG.md`) — 별점 항목만 위
 1순위는 「정본과 구현을 화면·컴포넌트 단위로 1:1 대조하고, 차이가 확인된 것만 고치는 것」이다.
 추측·기존 구현 관성·임의 UX 개선을 금지한다.
 
-**Source of Truth — 정본은 `docs/design/` 하나뿐이다.** 위 「현재 디자인 기준」이 가리키는
-`docs/design/README.md` · `PROJECT_RULES.md` · `CHANGELOG.md` · `html/*.dc.html`(16개)만 근거로
-쓴다. **`docs/design/handoff/`·`docs/design/figma-export/`는 2026-09-22에 이미 파기됐고 이
+**Source of Truth — 앱은 `docs/design/React_Native`, 관리자 · 랜딩은 `docs/design/html`이다**
+(2026-09-24 대표 절대 지침 — 이 파일 맨 앞 ⛔). 앱 화면에 대해 `html/`의 대메뉴 시안과
+`README.md` · `PROJECT_RULES.md` · `CHANGELOG.md`는 `React_Native`와 어긋나면 진다. 두 곳 어디에도
+없는 화면은 `DESIGN_SOURCE_NOT_VERIFIED`다. **`docs/design/handoff/`·`docs/design/figma-export/`는 2026-09-22에 이미 파기됐고 이
 저장소에 없다** — 다른 세션에 지시를 넘길 때 그 경로를 정본으로 적지 않는다. `.dc.html`은
 **파일 이름만 보고 판단하지 않는다.** 해당 화면 ID(`WP-XXX-000`) 구역을 실제로 연다.
 
@@ -303,6 +341,13 @@ Pick Mark는 하트 안에 체크. 아래 두 path가 확정본이며 어떤 이
 위 다섯 파일이 그 전부다. **웹 검색 · 텍스트 생성 · 그 밖의 어떤 용도로도 새로
 부르지 않는다** — "정보 추출의 일종"이라며 넓히지 않는다.
 
+**공공 통계는 3번(웨딩피드) 안에서만 넘긴다**(2026-09-24 대표 지시 — 「피드에는 써도
+된다. 진행해」). Gemini가 공공 API를 부르지 않는다 — 서버가 받아 둔 값
+(`structured.public_stats`, 0431)을 `wedding-feed-writer.ts`에 주제와 함께 건넬 뿐이라
+부르는 파일은 늘지 않는다. 본문 숫자가 넘긴 숫자와 하나라도 다르면 글을 버리고
+(`findUnlistedNumbers`), 출처 줄은 서버가 붙인다(`statSourceLine`). 피드 밖(화면 문구 ·
+요약 · 분류)에서 공공 자료를 Gemini로 가공하지 않는다.
+
 **오늘 이미 하나가 이 규칙 밖이었다.** `expo-collector.ts`의
 `createGeminiExpoDiscoverer`가 Google Search 그라운딩으로 웹을 검색해 박람회
 후보를 짓고 있었다 — 이미지도 녹음도 피드 생성도 아니다. 이 지시가 나온 자리에서
@@ -387,7 +432,7 @@ eyebrow가 아닌 영문(버튼 · 라벨 · 안내문)은 **한국어로 바꾼
 | --- | --- | --- | --- |
 | `snap` | **본식스냅** | 본식스냅 14 · 스냅 6 | 검색 칩의 「스냅」은 칩 폭 때문에 줄여 적은 것 |
 | `hair` | **헤어변형** | 헤어변형 6 | 「헤메」 11은 업종이 아니라 **가짜 업체 이름**이다(「청담 D 헤메」) |
-| `wedding_info_company` | **결정사** | 결정사 25 | 「플래너」 22는 업종이 아니라 **B2B 문의 창구**다(업체 · 플래너 문의) |
+| ~~`wedding_info_company`~~ | ~~결정사~~ | — | **2026-09-24 대표 지시로 제거** — 「웨딩픽은 플래너 없이 누구나 예약 가능한 웨딩 플랫폼이다. 고로 결정사 따윈 필요없다」. 업종 선택지·준비 현황·기본 할 일·예산 묶음·상담 분류·피드 주제에서 뺐다. DB enum 값만 과거 기록용으로 남는다(`STORED_VENDOR_CATEGORIES` · 고르는 목록은 `VENDOR_CATEGORIES`) |
 
 **지역은 짧은 꼴 아홉으로 고정이다** — 서울 · 경기 · 인천 · 부산 · 대구 · 대전 · 광주 · 울산 ·
 그 외(`WEDDING_REGIONS`). 루트 시안도 같고 긴 꼴은 한 번도 안 나온다. **긴 꼴은 들어오는

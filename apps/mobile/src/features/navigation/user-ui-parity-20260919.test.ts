@@ -16,25 +16,25 @@ const readApp = (path: string) => readFileSync(join(APP, path), 'utf8');
 const readFeature = (path: string) => readFileSync(join(FEATURES, path), 'utf8');
 
 describe('2026-09-19 사용자 화면 검수 회귀', () => {
-  it('온보딩 완료 카피와 단일 3초 로더를 유지한다', () => {
+  it('온보딩 완료 카피와 홈 스켈레톤 전환을 유지한다', () => {
     const flow = readFeature('onboarding/flow.ts');
     const setup = readApp('setup.tsx');
 
     /* v3.28(2026-09-22) WP-AUTH-007 «이대로 시작할까요?»가 9/19의 «선택한 정보로 준비할게요»를 덮는다. */
     expect(flow).toContain("DONE_TITLE_LINES = ['이대로', '시작할까요?']");
-    expect(setup).toContain('return <DelayedRecommendingView />');
-    expect(setup).toContain('remainingLoadingMs = 3000 -');
-    expect(setup).toContain('takeFullScreenLoading()');
+    expect(setup).toContain('if (sending) return <HomeSkeleton />');
+    expect(setup).not.toContain('remainingLoadingMs = 3000 -');
   });
 
   it('홈의 웨딩피드 자세히는 라운지 웨딩피드 탭을 실제로 연다', () => {
     const home = readApp('(tabs)/index.tsx');
-    const community = readApp('(tabs)/community/index.tsx');
+    const legacy = readApp('(tabs)/community/index.tsx');
+    const feed = readApp('(tabs)/community/feed/index.tsx');
 
-    expect(home).toContain("router.push('/community?tab=feed'");
-    expect(community).toContain("requestedTab === 'feed'");
-    /* v3.28 대조표 — 탭 이름은 「웨딩정보」다. 「웨딩피드」는 관리자·서버 쪽 이름이다. */
-    expect(community).toContain("{ value: 'feed', label: S['tab.feed'] }");
+    /* 정본 my.jsx frame-010 — 웨딩정보는 독립 화면이다. 옛 `/community?tab=feed`는 리다이렉트로 보존한다. */
+    expect(home).toContain("router.push('/community/feed'");
+    expect(feed).toContain('<LoungeScreen kind="feed" />');
+    expect(legacy).toContain("tab === 'feed' || tab === 'expo' ? tab : 'review'");
   });
 
   it('FAQ에서 문의하기 경로를 노출하지 않는다', () => {

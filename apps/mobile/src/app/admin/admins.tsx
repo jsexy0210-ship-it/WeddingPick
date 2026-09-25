@@ -55,6 +55,7 @@ import {
   StatusBanner,
   type TableRow,
 } from './_ui';
+import { WritePressable } from './_role';
 
 type Role = 'super' | 'operator' | 'viewer';
 
@@ -117,12 +118,14 @@ type Pending =
   | { kind: 'create'; loginId: string; password: string; role: Role }
   | { kind: 'role'; account: AdminAccount; role: Role }
   | { kind: 'disabled'; account: AdminAccount; disabled: boolean }
+  | { kind: 'delete'; account: AdminAccount }
   | { kind: 'demote-others'; targets: AdminAccount[] };
 
 function confirmTitle(pending: Pending): string {
   if (pending.kind === 'create') return '관리자를 만들어요';
   if (pending.kind === 'role') return '등급을 바꿔요';
   if (pending.kind === 'demote-others') return '나머지를 전부 뷰어로 내려요';
+  if (pending.kind === 'delete') return '계정을 지워요';
 
   return pending.disabled ? '계정을 꺼요' : '계정을 다시 켜요';
 }
@@ -157,6 +160,16 @@ function confirmItems(pending: Pending): string[] {
     return [
       ...pending.targets.map((a) => `${a.loginId} — ${ROLE_LABEL[a.role]} → 뷰어`),
       '관리자 쓰기 · 계정 관리는 지금 이 계정에만 남아요',
+    ];
+  }
+
+  if (pending.kind === 'delete') {
+    return [
+      `아이디 ${pending.account.loginId}`,
+      `등급 ${ROLE_LABEL[pending.account.role]} → 계정 없음`,
+      '로그인 가능 → 막힘 · 열려 있던 로그인도 닫혀요',
+      '이 계정이 남긴 처리 기록은 그대로 남아요',
+      '되돌릴 수 없어요 — 같은 아이디가 필요하면 새로 만들어야 해요',
     ];
   }
 
@@ -248,6 +261,9 @@ export function AdminsPanel() {
         setSelected(null);
       } else if (pending.kind === 'demote-others') {
         await apiFetch('/v1/admin/accounts/demote-others', { method: 'POST' });
+      } else if (pending.kind === 'delete') {
+        await apiFetch(`/v1/admin/accounts/${pending.account.id}`, { method: 'DELETE' });
+        setSelected(null);
       } else {
         await apiFetch(`/v1/admin/accounts/${pending.account.id}/disabled`, {
           method: 'PATCH',
@@ -330,7 +346,7 @@ export function AdminsPanel() {
     setActionError(null);
   }
 
-  const canSubmitNew = loginId.trim().length >= 3 && password.length >= 12;
+  const canSubmitNew = loginId.trim().length >= 3 && password.length >= 4;
 
   return (
     <Page
@@ -367,7 +383,7 @@ export function AdminsPanel() {
           body="아이디와 첫 비밀번호를 정해 주세요. 비밀번호는 해시만 저장해서 나중에 다시 볼 수 없어요."
           items={[
             '아이디는 영문 소문자 · 숫자 · . _ - 만 쓸 수 있어요',
-            '비밀번호는 12자 이상이어야 해요',
+            '비밀번호는 4자 이상이어야 해요',
             `지금 고른 등급은 ${ROLE_LABEL[role]} — ${ROLE_NOTE[role]}`,
           ]}
           cta="다음"
@@ -391,7 +407,7 @@ export function AdminsPanel() {
             />
             <TextInput
               style={styles.input}
-              placeholder="비밀번호 (12자 이상)"
+              placeholder="비밀번호 (4자 이상)"
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -437,7 +453,7 @@ export function AdminsPanel() {
             <Text style={styles.formLabel}>등급 바꾸기</Text>
             <View style={styles.roleRow}>
               {ROLES.map((r) => (
-                <Pressable
+                <WritePressable
                   key={r}
                   style={[styles.roleBtn, selected.role === r && styles.roleBtnActive]}
                   onPress={() => setPending({ kind: 'role', account: selected, role: r })}
@@ -446,9 +462,18 @@ export function AdminsPanel() {
                   <Text style={[styles.roleBtnText, selected.role === r && styles.roleBtnTextActive]}>
                     {ROLE_LABEL[r]}
                   </Text>
-                </Pressable>
+                </WritePressable>
               ))}
             </View>
+            {selected.role !== 'super' ? (
+              <WritePressable
+                style={styles.roleBtn}
+                onPress={() => setPending({ kind: 'delete', account: selected })}
+                accessibilityLabel="계정 지우기"
+              >
+                <Text style={[styles.roleBtnText, styles.error]}>계정 지우기</Text>
+              </WritePressable>
+            ) : null}
           </View>
         </ConfirmCard>
       )}
@@ -459,7 +484,7 @@ export function AdminsPanel() {
           body={acting ? '바꾸는 중이에요…' : '이렇게 바뀌어요.'}
           items={confirmItems(pending)}
           cta={acting ? '바꾸는 중…' : '진행'}
-          danger={(pending.kind === 'disabled' && pending.disabled) || pending.kind === 'demote-others'}
+          danger={(pending.kind === 'disabled' && pending.disabled) || pending.kind === 'demote-others' || pending.kind === 'delete'}
           onCancel={() => {
             setPending(null);
             setActionError(null);

@@ -17,7 +17,7 @@ import { VENDOR_CATEGORY_LABEL, type VendorCategory } from './vendor';
  *
  *   웨딩홀 → 스튜디오 → 드레스 → 메이크업 → 본식스냅 → 예물 → 혼수 → 허니문 → 청첩장
  *
- * 결정사 · 헤어변형 · 부케는 사진으로 고르는 업종이 아니라 빠진다.
+ * 헤어변형 · 부케는 사진으로 고르는 업종이 아니라 빠진다.
  */
 export const TASTE_CATEGORIES = [
   'hall',

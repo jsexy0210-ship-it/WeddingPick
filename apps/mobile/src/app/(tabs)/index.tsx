@@ -27,16 +27,12 @@ import {
   Toast,
   useTheme,
 } from '@weddingpick/ui';
-import { DelayedLoader, DelayedRecommendingView } from '@/features/loading/delayed-loader';
-import {
-  takeFullScreenLoading,
-  takeHomeLoadingCoveredBySetup,
-} from '@/features/loading/first-run';
 import { BenefitSheet } from '@/features/home/benefit-sheet';
 import { hasSeenBenefitSheet, markBenefitSheetSeen } from '@/features/home/benefit-sheet-seen';
 import { listWeddingContent, type WeddingContentItem } from '@/features/home/content';
 import { Hero } from '@/features/home/hero';
 import { HomeBudget, MyWeddingPrep } from '@/features/home/home-summary';
+import { HomeSkeleton } from '@/features/home/home-skeleton';
 import { homePrepCards, homePrepSectionSub } from '@/features/home/prep-groups';
 import { scheduleRows } from '@/features/home/schedule-view';
 import { categoryStatuses, currentCategory } from '@/features/home/state';
@@ -52,8 +48,8 @@ const HOME_FEED_PREVIEW_COUNT = 2;
 /**
  * 홈. WP-HOME-001~003.
  *
- * 화면 모양과 섹션 순서는 `docs/design/html/대메뉴_홈(로그인, 온보딩).dc.html`이
- * 정본이다(2026-09-23 v3.29 재구축 — CLAUDE.md 「현재 디자인 기준」). 코랄 D-day
+ * 화면 모양과 섹션 순서는 `docs/design/React_Native/home.jsx`가
+ * 정본이다. 코랄 D-day
  * 히어로 → 「내 웨딩 준비」(4칸, 항상 4개) → 「웨딩일정」 → 예산현황 → 웨딩 준비 팁
  * 순서다. 옛 「추천」 섹션은 v3.29 핵심 메시지(추천 개념 삭제)를 어겨 뺐다 —
  * `/v1/recommendations/top3`·`getTop3`도 같은 정리에서 지웠다.
@@ -100,8 +96,6 @@ export default function HomeScreen() {
    */
   // 하이브리드 웹뷰 쉘 POC일 때는 애초에 스켈레톤을 거칠 일이 없어 settled로 시작한다.
   const [settled, setSettled] = useState(() => isWebShellScreen('home'));
-  const [fullScreen] = useState(takeFullScreenLoading);
-  const [setupCoveredLoading] = useState(takeHomeLoadingCoveredBySetup);
   /*
    * 혜택 안내 시트(WP-SHT-017) — 온보딩 완료 후 홈 최초 진입 1회, 400ms 뒤. 남은 응모
    * 조건이 0이면 띄우지 않는다(서버가 응모 완료 알림으로 대신한다). 닫으면 sheetSeen을
@@ -192,7 +186,8 @@ export default function HomeScreen() {
   }, [load]));
 
   useEffect(() => {
-    if (!settled || data.me?.setupComplete !== true || benefitChecked.current) return;
+    if (!settled || taskStatus === 'loading' || contentStatus === 'loading'
+      || data.me?.setupComplete !== true || benefitChecked.current) return;
     benefitChecked.current = true;
 
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -219,7 +214,7 @@ export default function HomeScreen() {
       alive = false;
       if (timer !== null) clearTimeout(timer);
     };
-  }, [settled, data.me?.setupComplete]);
+  }, [settled, taskStatus, contentStatus, data.me?.setupComplete]);
 
   const dismissBenefit = useCallback(() => {
     setBenefitOpen(false);
@@ -238,21 +233,12 @@ export default function HomeScreen() {
     return <WebShellView path="/" />;
   }
 
-  /*
-   * 첫 진입 — 추천을 계산하는 동안 업종 순회 로딩(WP-ST-015). 서비스가 무엇을
-   * 보고 있는지 순서대로 보여준다. 핸드오프 v3.15 «추천 계산 · 첫 진입».
-   */
-  if (!settled) {
-    return fullScreen ? (
-      <DelayedRecommendingView nickname={data.me?.displayName ?? undefined} />
-    ) : (
-      <ThemedView style={styles.loading}>
-        {setupCoveredLoading ? null : <DelayedLoader size={40} />}
-      </ThemedView>
-    );
-  }
-
   if (bootError) return <ErrorView message={strings.journey.loadFailed} onRetry={load} />;
+
+  // 첫 진입에는 흩어진 원형 로더 대신 홈 전체의 자리를 한 번만 잡는다.
+  if (!settled || taskStatus === 'loading' || contentStatus === 'loading') {
+    return <HomeSkeleton />;
+  }
 
   const daysLeft = data.me?.weddingDate == null ? null : daysUntil(data.me.weddingDate);
 
@@ -281,6 +267,7 @@ export default function HomeScreen() {
             me={data.me}
             daysLeft={daysLeft}
             venueName={venueName(data.candidates, data.me)}
+            nothingDecided={prepCards.every((card) => card.state === 'todo')}
             showBudget={false}
             budget={data.budget}
             bracketAnswered={data.bracketAnswered}
@@ -315,8 +302,6 @@ export default function HomeScreen() {
               <ThemedText type="f13" themeColor="textAssistive">{strings.journey.loadFailed}</ThemedText>
               <ActionButton variant="secondary" label={strings.common['cta.retry']} onPress={load} />
             </View>
-          ) : taskStatus === 'loading' ? (
-            <View style={styles.block}><DelayedLoader size={28} /></View>
           ) : (
             <UpcomingSchedule
               rows={schedule}
@@ -334,19 +319,23 @@ export default function HomeScreen() {
             )}
           />
 
-          <View style={styles.block}>
+          <View style={[styles.block, styles.lastBlock]}>
+            {/* home.jsx frame-012 `secLast` — 제목 14/20 · 서브 12/17(`secSub`) · 우측 「자세히」. */}
             <View style={styles.sectionHead}>
-              <ThemedText type="f20" style={styles.bold}>웨딩 준비 팁</ThemedText>
+              <View style={styles.sectionHeadCol}>
+                <ThemedText type="f14" style={styles.bold}>웨딩 준비 팁</ThemedText>
+                <ThemedText type="f12" themeColor="textAssistive">{S['section.tipsSub']}</ThemedText>
+              </View>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="웨딩 준비 팁 자세히"
-                onPress={() => router.push('/community?tab=feed' as never)}
+                onPress={() => router.push('/community/feed' as never)}
                 style={({ pressed }) => [styles.feedMore, pressed && styles.pressed]}>
                 <ThemedText type="f13" themeColor="textAssistive">{S.more}</ThemedText>
                 <SeedIcon name="chevronRightRegular" size={Layout.iconField} color={theme.textAssistive} />
               </Pressable>
             </View>
-            {contentStatus === 'loading' ? <DelayedLoader size={28} /> : contentStatus === 'error' ? (
+            {contentStatus === 'error' ? (
               <View>
                 <ThemedText type="f13" themeColor="textAssistive">{strings.journey.loadFailed}</ThemedText>
                 <ActionButton variant="secondary" label={strings.common['cta.retry']} onPress={load} />
@@ -392,7 +381,7 @@ function Header({
       <ThemedText type="f26" style={styles.brand}>웨딩픽</ThemedText>
 
       {/*
-        .dc.html WP-HOME-001~003 header `headIcons` — 아이콘 하나(벨)뿐이다. 검색은
+        React_Native/home.jsx WP-HOME-001~003 header `headIcons` — 아이콘 하나(벨)뿐이다. 검색은
         Root 탭에서 들어가고(WP-TAB), 홈 헤더의 검색 아이콘은 진입점 중복이라 뺐다
         (2026-09-23 v3.29 재검증 — 「헤더에 아이콘이 2개인데 정본은 벨 1개뿐」).
       */}
@@ -426,10 +415,9 @@ function venueName(candidates: CandidateListResponse | null, me: CurrentUser | n
 const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
-  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   header: {
-    minHeight: Layout.navBar,
+    minHeight: 66,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -449,13 +437,16 @@ const styles = StyleSheet.create({
   content: { paddingBottom: Spacing.three },
 
   block: { paddingHorizontal: Layout.gutter, marginBottom: Layout.sectionGap },
+  /* `secLast` — 마지막 섹션은 아래 여백이 없고 스크롤 끝 16(`hscroll`)만 남는다. */
+  lastBlock: { marginBottom: 0 },
   sectionHead: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: Layout.sectionHeadGapCompact,
+    marginBottom: 12,
     gap: Spacing.two,
   },
+  sectionHeadCol: { flex: 1, minWidth: 0, gap: Spacing.half },
   bold: { fontWeight: 700 },
   feedMore: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   pressed: { opacity: 0.8 },

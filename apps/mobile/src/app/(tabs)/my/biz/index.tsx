@@ -4,13 +4,13 @@ import { Hero, NoteBox, Row, Rows, Section, SubScreen } from '@/features/setting
 
 /** 시안 18-biz · 08c WP-BIZ-001. */
 const S = {
-  title: '업체 · 플래너 문의',
+  title: '업체 문의',
   hero: '업체 관계자시면\n여기서 접수해요',
   sub: '소속 확인이 끝나면 처리 결과를 알려드려요',
   kinds: '문의 유형',
   adRules: '광고 독립성',
   noEffect: '영향 없음',
-  noteTitle: '광고와 추천은 따로 운영해요',
+  noteTitle: '광고는 검색 결과를 바꾸지 않아요',
   noteBody: '검색 순위 · 후기 · 실 제보는 광고와 완전히 분리돼 있어요.',
 } as const;
 

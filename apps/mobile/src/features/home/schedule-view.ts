@@ -8,7 +8,7 @@ const S = strings.home;
 /**
  * 홈 「웨딩일정」 섹션.
  *
- * 정본: `docs/design/html/대메뉴_홈(로그인, 온보딩).dc.html` WP-HOME-001 §11 `schedule`
+ * 정본: `docs/design/React_Native/home.jsx` WP-HOME-001 §11 `schedule`
  * (날짜가 있는 일정 최대 3건) · WP-HOME-002/003 `defaultSchedule`(아직 날짜가 없을 때
  * 번호 매긴 다섯 줄).
  *

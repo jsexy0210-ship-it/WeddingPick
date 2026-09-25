@@ -3,9 +3,9 @@ import Svg, { Path } from 'react-native-svg';
 import { useTheme } from './use-theme';
 
 /**
- * WP-ST-016 — 업종 아이콘 12종. 24 viewBox · path 2개 · stroke 1.8 · round cap/join.
+ * WP-ST-016 — 업종 아이콘 11종. 24 viewBox · path 2개 · stroke 1.8 · round cap/join.
  *
- * 온보딩 진행 상황(3/5)의 12업종과 **1:1**이다 — 온보딩에 없는 업종을 여기 넣지
+ * 온보딩 진행 상황(3/5)의 11업종과 **1:1**이다 — 온보딩에 없는 업종을 여기 넣지
  * 않는다. 순회 로더(WP-ST-015)와 업종 칩·검색 업종에 같은 글리프를 쓰고, 다른
  * 아이콘 라이브러리로 대체하지 않는다.
  *
@@ -13,11 +13,10 @@ import { useTheme } from './use-theme';
  * 그리지 않는다. 시안 키와 다른 이름 셋: `invite` → invitation · `home` → dowry.
  *
  * 정본 WP-LOAD-002(업종 아이콘 8종, `공통_다이얼로그 빈상태 로더.dc.html` `ICONS`)와
- * 재대조(2026-09-23) — path 12개 전부 문자 그대로 일치한다(PASS). stroke 1.8 ·
+ * 재대조(2026-09-23) — path 12개 전부 문자 그대로 일치했다(PASS) — 그 뒤 결정사 하나를 뺐다(2026-09-24). stroke 1.8 ·
  * viewBox 24도 같다.
  */
 export type CategoryIconKind =
-  | 'agency'
   | 'hall'
   | 'studio'
   | 'dress'
@@ -31,7 +30,6 @@ export type CategoryIconKind =
   | 'honeymoon';
 
 export const CATEGORY_ICON_LABEL: Record<CategoryIconKind, string> = {
-  agency: '결정사',
   hall: '웨딩홀',
   studio: '스튜디오',
   dress: '드레스',
@@ -47,10 +45,6 @@ export const CATEGORY_ICON_LABEL: Record<CategoryIconKind, string> = {
 
 /** 시안 `ICONS` 그대로. 바꾸지 않는다. */
 const GLYPH: Record<CategoryIconKind, readonly [string, string]> = {
-  agency: [
-    'M8.6 9.6a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2zM16.4 9.6a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2z',
-    'M3.4 19.8v-1.2a4.4 4.4 0 0 1 4.4-4.4h1.6a4.4 4.4 0 0 1 4.4 4.4v1.2M14.8 14.2h1.4a4.4 4.4 0 0 1 4.4 4.4v1.2',
-  ],
   hall: ['M4.8 20.4v-9.6L12 5.2l7.2 5.6v9.6', 'M2.8 20.4h18.4M9.4 20.4v-4.4a2.6 2.6 0 0 1 5.2 0v4.4M12 2.6v2.6'],
   studio: [
     'M4.6 8.2h2.6L8.6 5.8h6.8l1.4 2.4h2.6a1.8 1.8 0 0 1 1.8 1.8v7.6a1.8 1.8 0 0 1-1.8 1.8H4.6a1.8 1.8 0 0 1-1.8-1.8V10a1.8 1.8 0 0 1 1.8-1.8z',
@@ -95,12 +89,13 @@ const GLYPH: Record<CategoryIconKind, readonly [string, string]> = {
 const STROKE_WIDTH = 1.8;
 
 /**
- * 순회 로더 순서 — 온보딩 진행 상황의 12업종 순서 그대로. **임의로 섞지 않는다.**
+ * 순회 로더 순서 — 온보딩 진행 상황의 11업종 순서 그대로. **임의로 섞지 않는다.**
+ * 정본 `docs/design/React_Native/common.js` `CATS`가 웨딩홀부터 돈다 — 결정사 아이콘은
+ * 2026-09-24 대표 지시로 뺐다.
  * 실제 순회 대상은 여기서 온보딩 «결정 완료» 업종을 뺀 것이다(`CategoryCycleLoader`
  * `exclude`).
  */
 export const CATEGORY_CYCLE_ORDER: readonly CategoryIconKind[] = [
-  'agency',
   'hall',
   'studio',
   'dress',

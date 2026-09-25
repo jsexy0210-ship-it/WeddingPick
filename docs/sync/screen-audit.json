@@ -1,5 +1,12 @@
 {
   "schemaVersion": 1,
+  "uxRelease20260924": {
+    "baselineCommit": "c67e536a",
+    "scope": "사용자 앱 홈·검색·Pick·웨딩노트·MY·라운지의 24px 바깥 여백과 문구·동작, /pick/done 제거와 결과 토스트, 공개 웹 약관 화면의 시행일 표시 제거",
+    "excluded": "미게시 필수 동의 문서 4종이 가입을 차단하는 앱 약관·가입 변경, 운영 피드 작성기와 다른 작업의 API·관리자 변경",
+    "verification": "격리된 최신 main 배포 후보에서 7개 워크스페이스 typecheck, 전체 lint 오류 0·경고 6, 디자인 정본 검사, 모바일 66스위트 540건·웹 8스위트 67건·도메인 67스위트 1001건·API 계약 4스위트 62건, 모바일 웹 export 239라우트, 운영 공개 약관 API를 읽은 웹 빌드를 통과했다. /pick/done.html은 생성되지 않았다.",
+    "limits": "운영 인증 사용자 여정, 네이티브 기기 토스트, 모든 화면의 동일 상태 픽셀 대조, API DB 테스트는 이 후보에서 완료하지 않았다."
+  },
   "canonicalDesign20260920": {
     "baselineCommit": "11f287d151a312e8f0ed5f923a7a9369c47ff5c6",
     "source": "docs/design/canonical-manifest.json",

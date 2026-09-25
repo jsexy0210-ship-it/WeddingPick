@@ -1,0 +1,590 @@
+[
+  {
+    "path": "assets/seed-icons/chevron-right.svg",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html",
+      "대메뉴_Pick.dc.html",
+      "대메뉴_웨딩노트.dc.html",
+      "대메뉴_MY.dc.html",
+      "공통_다이얼로그 빈상태 로더.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "included-official-svg",
+    "currentFile": "public/assets/seed-icons/chevron-right.svg"
+  },
+  {
+    "path": "assets/seed-icons/notification.svg",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "included-official-svg",
+    "currentFile": "public/assets/seed-icons/notification.svg"
+  },
+  {
+    "path": "assets/seed-icons/camera.svg",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_웨딩노트.dc.html",
+      "대메뉴_MY.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "included-official-svg",
+    "currentFile": "public/assets/seed-icons/camera.svg"
+  },
+  {
+    "path": "assets/seed-icons/photo.svg",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_웨딩노트.dc.html",
+      "대메뉴_MY.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "included-official-svg",
+    "currentFile": "public/assets/seed-icons/photo.svg"
+  },
+  {
+    "path": "assets/seed-icons/mic.svg",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_웨딩노트.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "included-official-svg",
+    "currentFile": "public/assets/seed-icons/mic.svg"
+  },
+  {
+    "path": "assets/seed-icons/chevron-left.svg",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html",
+      "대메뉴_Pick.dc.html",
+      "대메뉴_웨딩노트.dc.html",
+      "대메뉴_MY.dc.html",
+      "공통_다이얼로그 빈상태 로더.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "included-official-svg",
+    "currentFile": "public/assets/seed-icons/chevron-left.svg"
+  },
+  {
+    "path": "assets/seed-icons/close-fill.svg",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html",
+      "대메뉴_Pick.dc.html",
+      "대메뉴_웨딩노트.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "included-official-svg",
+    "currentFile": "public/assets/seed-icons/close-fill.svg"
+  },
+  {
+    "path": "assets/seed-icons/clock.svg",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "included-official-svg",
+    "currentFile": "public/assets/seed-icons/clock.svg"
+  },
+  {
+    "path": "assets/seed-icons/check-fill.svg",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html",
+      "대메뉴_Pick.dc.html",
+      "대메뉴_웨딩노트.dc.html",
+      "대메뉴_MY.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "included-official-svg",
+    "currentFile": "public/assets/seed-icons/check-fill.svg"
+  },
+  {
+    "path": "uploads/스타일 이미지/urban.png",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html",
+      "대메뉴_Pick.dc.html",
+      "대메뉴_MY.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "still-missing-photo"
+  },
+  {
+    "path": "assets/seed-icons/heart-fill.svg",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html",
+      "대메뉴_Pick.dc.html",
+      "대메뉴_MY.dc.html",
+      "공통_다이얼로그 빈상태 로더.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "included-official-svg",
+    "currentFile": "public/assets/seed-icons/heart-fill.svg"
+  },
+  {
+    "path": "uploads/스타일 이미지/natural.png",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html",
+      "대메뉴_Pick.dc.html",
+      "대메뉴_MY.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "still-missing-photo"
+  },
+  {
+    "path": "assets/seed-icons/heart.svg",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html",
+      "대메뉴_Pick.dc.html",
+      "대메뉴_웨딩노트.dc.html",
+      "대메뉴_MY.dc.html",
+      "공통_다이얼로그 빈상태 로더.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "included-official-svg",
+    "currentFile": "public/assets/seed-icons/heart.svg"
+  },
+  {
+    "path": "uploads/스타일 이미지/romantic.png",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html",
+      "대메뉴_Pick.dc.html",
+      "대메뉴_MY.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "still-missing-photo"
+  },
+  {
+    "path": "uploads/스타일 이미지/glamorous.png",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html",
+      "대메뉴_Pick.dc.html",
+      "대메뉴_MY.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "still-missing-photo"
+  },
+  {
+    "path": "assets/seed-icons/home-fill.svg",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "공통_다이얼로그 빈상태 로더.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "included-official-svg",
+    "currentFile": "public/assets/seed-icons/home-fill.svg"
+  },
+  {
+    "path": "assets/seed-icons/search.svg",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html",
+      "대메뉴_Pick.dc.html",
+      "대메뉴_웨딩노트.dc.html",
+      "대메뉴_MY.dc.html",
+      "공통_다이얼로그 빈상태 로더.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "included-official-svg",
+    "currentFile": "public/assets/seed-icons/search.svg"
+  },
+  {
+    "path": "assets/seed-icons/calendar.svg",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html",
+      "대메뉴_Pick.dc.html",
+      "대메뉴_웨딩노트.dc.html",
+      "대메뉴_MY.dc.html",
+      "공통_다이얼로그 빈상태 로더.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "included-official-svg",
+    "currentFile": "public/assets/seed-icons/calendar.svg"
+  },
+  {
+    "path": "assets/seed-icons/profile.svg",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html",
+      "대메뉴_Pick.dc.html",
+      "대메뉴_웨딩노트.dc.html",
+      "대메뉴_MY.dc.html",
+      "공통_다이얼로그 빈상태 로더.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "included-official-svg",
+    "currentFile": "public/assets/seed-icons/profile.svg"
+  },
+  {
+    "path": "assets/seed-icons/more-horiz.svg",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "included-official-svg",
+    "currentFile": "public/assets/seed-icons/more-horiz.svg"
+  },
+  {
+    "path": "assets/seed-icons/location.svg",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html",
+      "대메뉴_Pick.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "included-official-svg",
+    "currentFile": "public/assets/seed-icons/location.svg"
+  },
+  {
+    "path": "./support.js",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html",
+      "대메뉴_Pick.dc.html",
+      "대메뉴_웨딩노트.dc.html",
+      "대메뉴_MY.dc.html",
+      "공통_다이얼로그 빈상태 로더.dc.html",
+      "웨딩픽 컴포넌트 시트.dc.html",
+      "웨딩픽 디바이스 대응.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "not-required-original-tool-dependency-removed"
+  },
+  {
+    "path": "_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/fonts.css",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html",
+      "대메뉴_MY.dc.html",
+      "공통_다이얼로그 빈상태 로더.dc.html",
+      "웨딩픽 컴포넌트 시트.dc.html",
+      "웨딩픽 디바이스 대응.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "not-required-original-tool-dependency-removed"
+  },
+  {
+    "path": "_ds/material-3-design-system-a1c0d92d-0f96-42f9-ae1d-8302f1ccfe17/tokens/fonts.css",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "not-required-original-tool-dependency-removed"
+  },
+  {
+    "path": "_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-static.css",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html",
+      "대메뉴_MY.dc.html",
+      "공통_다이얼로그 빈상태 로더.dc.html",
+      "웨딩픽 컴포넌트 시트.dc.html",
+      "웨딩픽 디바이스 대응.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "not-required-original-tool-dependency-removed"
+  },
+  {
+    "path": "_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-scale.css",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html",
+      "대메뉴_MY.dc.html",
+      "웨딩픽 컴포넌트 시트.dc.html",
+      "웨딩픽 디바이스 대응.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "not-required-original-tool-dependency-removed"
+  },
+  {
+    "path": "_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-semantic.css",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html",
+      "대메뉴_MY.dc.html",
+      "공통_다이얼로그 빈상태 로더.dc.html",
+      "웨딩픽 컴포넌트 시트.dc.html",
+      "웨딩픽 디바이스 대응.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "not-required-original-tool-dependency-removed"
+  },
+  {
+    "path": "_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/typography.css",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html",
+      "대메뉴_MY.dc.html",
+      "공통_다이얼로그 빈상태 로더.dc.html",
+      "웨딩픽 컴포넌트 시트.dc.html",
+      "웨딩픽 디바이스 대응.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "not-required-original-tool-dependency-removed"
+  },
+  {
+    "path": "_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/dimension.css",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html",
+      "대메뉴_MY.dc.html",
+      "웨딩픽 컴포넌트 시트.dc.html",
+      "웨딩픽 디바이스 대응.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "not-required-original-tool-dependency-removed"
+  },
+  {
+    "path": "_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/motion.css",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html",
+      "대메뉴_MY.dc.html",
+      "웨딩픽 컴포넌트 시트.dc.html",
+      "웨딩픽 디바이스 대응.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "not-required-original-tool-dependency-removed"
+  },
+  {
+    "path": "_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/base.css",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html",
+      "대메뉴_MY.dc.html",
+      "공통_다이얼로그 빈상태 로더.dc.html",
+      "웨딩픽 컴포넌트 시트.dc.html",
+      "웨딩픽 디바이스 대응.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "not-required-original-tool-dependency-removed"
+  },
+  {
+    "path": "_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/core/core.css",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html",
+      "대메뉴_MY.dc.html",
+      "공통_다이얼로그 빈상태 로더.dc.html",
+      "웨딩픽 컴포넌트 시트.dc.html",
+      "웨딩픽 디바이스 대응.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "not-required-original-tool-dependency-removed"
+  },
+  {
+    "path": "_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/buttons/buttons.css",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_MY.dc.html",
+      "웨딩픽 컴포넌트 시트.dc.html",
+      "웨딩픽 디바이스 대응.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "not-required-original-tool-dependency-removed"
+  },
+  {
+    "path": "_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/forms/forms.css",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_MY.dc.html",
+      "웨딩픽 컴포넌트 시트.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "not-required-original-tool-dependency-removed"
+  },
+  {
+    "path": "_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/feedback/feedback.css",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_MY.dc.html",
+      "웨딩픽 컴포넌트 시트.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "not-required-original-tool-dependency-removed"
+  },
+  {
+    "path": "_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/overlay/overlay.css",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_MY.dc.html",
+      "웨딩픽 컴포넌트 시트.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "not-required-original-tool-dependency-removed"
+  },
+  {
+    "path": "_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/display/display.css",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html",
+      "대메뉴_MY.dc.html",
+      "웨딩픽 컴포넌트 시트.dc.html",
+      "웨딩픽 디바이스 대응.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "not-required-original-tool-dependency-removed"
+  },
+  {
+    "path": "_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/styles.css",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html",
+      "대메뉴_Pick.dc.html",
+      "대메뉴_웨딩노트.dc.html",
+      "대메뉴_MY.dc.html",
+      "공통_다이얼로그 빈상태 로더.dc.html",
+      "웨딩픽 컴포넌트 시트.dc.html",
+      "웨딩픽 디바이스 대응.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "not-required-original-tool-dependency-removed"
+  },
+  {
+    "path": "_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/_ds_bundle.js",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html",
+      "대메뉴_Pick.dc.html",
+      "대메뉴_웨딩노트.dc.html",
+      "대메뉴_MY.dc.html",
+      "공통_다이얼로그 빈상태 로더.dc.html",
+      "웨딩픽 컴포넌트 시트.dc.html",
+      "웨딩픽 디바이스 대응.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "not-required-original-tool-dependency-removed"
+  },
+  {
+    "path": "./image-slot.js",
+    "sources": [
+      "대메뉴_홈(로그인, 온보딩).dc.html",
+      "대메뉴_검색.dc.html",
+      "대메뉴_MY.dc.html",
+      "웨딩픽 컴포넌트 시트.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "not-required-original-tool-dependency-removed"
+  },
+  {
+    "path": "assets/seed-icons/home.svg",
+    "sources": [
+      "대메뉴_검색.dc.html",
+      "대메뉴_Pick.dc.html",
+      "대메뉴_웨딩노트.dc.html",
+      "대메뉴_MY.dc.html",
+      "공통_다이얼로그 빈상태 로더.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "included-official-svg",
+    "currentFile": "public/assets/seed-icons/home.svg"
+  },
+  {
+    "path": "assets/seed-icons/search-fill.svg",
+    "sources": [
+      "대메뉴_검색.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "included-official-svg",
+    "currentFile": "public/assets/seed-icons/search-fill.svg"
+  },
+  {
+    "path": "assets/seed-icons/history.svg",
+    "sources": [
+      "대메뉴_검색.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "included-official-alternative",
+    "currentFile": "public/assets/seed-icons/history.svg"
+  },
+  {
+    "path": "assets/seed-icons/edit.svg",
+    "sources": [
+      "대메뉴_웨딩노트.dc.html",
+      "대메뉴_MY.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "included-official-svg",
+    "currentFile": "public/assets/seed-icons/edit.svg"
+  },
+  {
+    "path": "assets/seed-icons/trash.svg",
+    "sources": [
+      "대메뉴_웨딩노트.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "included-official-svg",
+    "currentFile": "public/assets/seed-icons/trash.svg"
+  },
+  {
+    "path": "assets/seed-icons/chatting.svg",
+    "sources": [
+      "대메뉴_MY.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "included-official-svg",
+    "currentFile": "public/assets/seed-icons/chatting.svg"
+  },
+  {
+    "path": "assets/seed-icons/profile-fill.svg",
+    "sources": [
+      "대메뉴_MY.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "included-official-svg",
+    "currentFile": "public/assets/seed-icons/profile-fill.svg"
+  },
+  {
+    "path": "assets/seed-icons/community.svg",
+    "sources": [
+      "대메뉴_MY.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "included-official-svg",
+    "currentFile": "public/assets/seed-icons/community.svg"
+  },
+  {
+    "path": "assets/seed-icons/bookmark.svg",
+    "sources": [
+      "대메뉴_MY.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "included-official-svg",
+    "currentFile": "public/assets/seed-icons/bookmark.svg"
+  },
+  {
+    "path": "uploads/samples-1788175716407-57s9.jpg",
+    "sources": [
+      "웨딩픽 컴포넌트 시트.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "still-missing-photo"
+  },
+  {
+    "path": "uploads/samples-1788175716419-flvg.jpg",
+    "sources": [
+      "웨딩픽 컴포넌트 시트.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "still-missing-photo"
+  },
+  {
+    "path": "uploads/samples-1788175716375-3z0c.jpg",
+    "sources": [
+      "웨딩픽 컴포넌트 시트.dc.html"
+    ],
+    "originalUploadStatus": "missing-in-upload",
+    "packageStatus": "still-missing-photo"
+  }
+]

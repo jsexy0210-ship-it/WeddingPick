@@ -12,7 +12,7 @@ import { z, type ZodType } from 'zod';
 
 import { appBootstrapResponseSchema } from './app';
 import { authProvidersResponseSchema } from './auth';
-import { candidateListResponseSchema } from './candidates';
+import { candidateListResponseSchema, decisionListResponseSchema } from './candidates';
 import { expoListResponseSchema } from './expos';
 import { faqListResponseSchema } from './faq';
 import { consultationListResponseSchema } from './consultations';
@@ -60,6 +60,7 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/me/recommendations', categoryRecommendationsResponseSchema],
   ['GET /v1/auth/providers', authProvidersResponseSchema],
   ['GET /v1/weddings/:weddingId/candidates', candidateListResponseSchema],
+  ['GET /v1/weddings/:weddingId/decisions', decisionListResponseSchema],
   ['POST /v1/weddings/:weddingId/candidates', ENDPOINTS.addCandidate.response],
   ['DELETE /v1/weddings/:weddingId/candidates/:candidateId', ENDPOINTS.removeCandidate.response],
   ['GET /v1/me/monthly-draw', myMonthlyDrawResponseSchema],

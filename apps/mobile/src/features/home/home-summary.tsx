@@ -2,9 +2,9 @@ import type { AppBootstrapResponse } from '@weddingpick/api-contract';
 import { manwon } from '@weddingpick/domain';
 import { Pressable, StyleSheet, View } from 'react-native';
 import {
-  ActionButton,
   Border,
   CategoryIcon,
+  DonutChart,
   Layout,
   Radius,
   SeedIcon,
@@ -19,7 +19,7 @@ import type { HomePrepCard } from './prep-groups';
 const S = strings.home;
 
 /**
- * 홈 「내 웨딩 준비」 — 항상 4칸(웨딩홀 · 스드메 · 본식 · 예물 · 신혼). .dc.html
+ * 홈 「내 웨딩 준비」 — 항상 4칸(웨딩홀 · 스드메 · 본식 · 예물 · 신혼). home.jsx
  * WP-HOME-001~003. 옛 구현(«남은 스케줄»)은 12업종 중 미완료만 최대 4개 승격해
  * 보여줬고, 완료해도 카드가 사라지지 않는 정본과 달랐다 — `prep-groups.ts`의
  * `homePrepCards`가 만든 4장을 그대로 그린다.
@@ -99,14 +99,33 @@ export function HomeBudget({ budget, onOpen }: {
 }) {
   const theme = useTheme();
   const progress = budgetProgress(budget);
+  /* WP-HOME-002 — 아직 쓴 돈이 없으면 서브 「온보딩에서 등록한 예산이에요」 · 비고 「아직 예산 정보가 없어요」. */
+  const noSpend = budget !== null && budget.spent === 0;
+  const budgetSub = budget && progress !== null
+    ? budget.spent > budget.total
+      ? '예산을 넘었어요'
+      : noSpend ? S['budget.subOnboarding'] : `예산의 ${progress}%를 썼어요`
+    : null;
 
   return (
     <View style={styles.section}>
-      <SummaryHeading title={S['section.budget']} sub={null} onMore={onOpen} />
+      <SummaryHeading
+        title={S['section.budget']}
+        sub={budgetSub}
+        onMore={onOpen}
+      />
       {budget === null || progress === null ? (
-        <View style={styles.empty}>
-          <ThemedText type="f13" themeColor="textAssistive">{S['budget.empty']}</ThemedText>
-          <ActionButton variant="secondary" label={S['budget.set']} onPress={onOpen} />
+        /* common.jsx WP-EMPTY-HOME 「예산현황」 `emptyCard` r12 · #f7f8fa(가장 가까운 backgroundElement #f7f8f9) · 32/20 · gap 6 ·
+           `emptyT` 16/700 · `emptyS` 13/20 · CTA 44 · 좌우 18 · r8 · 코랄 · 15/700 · 위 12. */
+        <View style={[styles.empty, { backgroundColor: theme.backgroundElement }]}>
+          <ThemedText type="f16" style={[styles.bold, styles.center]}>{S['budget.empty']}</ThemedText>
+          <ThemedText type="f13" themeColor="textAssistive" style={styles.center}>{S['budget.emptySub']}</ThemedText>
+          <Pressable
+            accessibilityRole="button"
+            onPress={onOpen}
+            style={({ pressed }) => [styles.emptyCta, { backgroundColor: theme.tint }, pressed && styles.pressed]}>
+            <ThemedText type="f15" style={[styles.bold, { color: theme.onTint }]}>{S['budget.set']}</ThemedText>
+          </Pressable>
         </View>
       ) : (
         <Pressable
@@ -115,26 +134,37 @@ export function HomeBudget({ budget, onOpen }: {
           onPress={onOpen}
           style={({ pressed }) => [
             styles.budget,
-            { backgroundColor: theme.backgroundSelected },
+            { backgroundColor: theme.background, borderColor: theme.border },
             pressed && styles.pressed,
           ]}>
-          <View style={styles.budgetTop}>
-            <ThemedText type="f26" numeric style={styles.bold}>{manwon(budget.spent)}</ThemedText>
-            <ThemedText type="f13" numeric themeColor="textAssistive">
-              {S['budget.total'].replace('{amount}', manwon(budget.total))}
-            </ThemedText>
-          </View>
           <View
             accessibilityRole="progressbar"
             accessibilityLabel={S['budget.progress'].replace('{n}', String(progress))}
             accessibilityValue={{ min: 0, max: 100, now: progress }}
-            style={[styles.track, { backgroundColor: theme.track }]}>
-            <View style={[styles.fill, { width: `${progress}%`, backgroundColor: theme.tint }]} />
+            style={styles.budgetTop}>
+            <DonutChart
+              size={72}
+              holeSize={52}
+              holeColor={theme.background}
+              slices={[
+                { key: 'used', value: progress, color: theme.tint },
+                { key: 'remaining', value: 100 - progress, color: theme.chartMuted },
+              ]}>
+              <ThemedText type="f14" numeric style={styles.bold}>
+                {budget.spent > budget.total ? '100%+' : `${progress}%`}
+              </ThemedText>
+            </DonutChart>
+            <View style={styles.budgetCol}>
+              <ThemedText type="f26" numeric style={styles.bold}>{manwon(budget.spent)}</ThemedText>
+              <ThemedText type="f13" numeric themeColor="textAssistive">
+                {S['budget.total'].replace('{amount}', manwon(budget.total))}
+              </ThemedText>
+            </View>
           </View>
           <ThemedText
             type="f12"
             themeColor={budget.spent > budget.total ? 'negative' : 'textAssistive'}>
-            {budget.spent > budget.total ? S['budget.exceeded'] : S['budget.note']}
+            {budget.spent > budget.total ? S['budget.exceeded'] : noSpend ? S['budget.noSpend'] : S['budget.note']}
           </ThemedText>
         </Pressable>
       )}
@@ -143,7 +173,7 @@ export function HomeBudget({ budget, onOpen }: {
 }
 
 /**
- * 섹션 제목 줄 — .dc.html `secHeadPad`/`secHead`(타이틀 14/20/700 + 서브 12/17/뮤트,
+ * 섹션 제목 줄 — home.jsx `secHeadPad`/`secHead`(타이틀 14/20/700 + 서브 12/17/뮤트,
  * 우측 「자세히」). `sub`가 null이면(예산현황) 서브카피 없이 제목만 쓴다.
  */
 function SummaryHeading({ title, sub, onMore }: { title: string; sub: string | null; onMore: () => void }) {
@@ -171,12 +201,12 @@ function SummaryHeading({ title, sub, onMore }: { title: string; sub: string | n
 
 const styles = StyleSheet.create({
   /*
-   * .dc.html `secNoPad`/`hsec` — 헤더→본문 gap은 12px 하나뿐이다(그 값을
+   * home.jsx `secNoPad`/`hsec` — 헤더→본문 gap은 12px 하나뿐이다(그 값을
    * `heading.marginBottom`에 둔다). `section` 자체는 더 안 벌리므로 gap 없음.
    */
   section: {
     paddingHorizontal: Layout.gutter,
-    marginBottom: Layout.sectionGap,
+    marginBottom: 24,
   },
   heading: {
     flexDirection: 'row',
@@ -187,11 +217,14 @@ const styles = StyleSheet.create({
   },
   more: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
   headingCol: { flex: 1, minWidth: 0, gap: Spacing.half },
-  /* .dc.html `prepGridPad` — grid gap:8px, 가로·세로 둘 다. */
-  grid: { gap: Spacing.two },
+  /*
+   * home.jsx frame-012 `prepGridPad` — grid gap 8(가로·세로) · 아래 14. 섹션(`secNoPad`)의
+   * 아래 24와 더해져 다음 섹션까지 38이 벌어진다.
+   */
+  grid: { gap: Spacing.two, paddingBottom: 14 },
   row: { flexDirection: 'row', gap: Spacing.two },
   /*
-   * .dc.html `prepCard(kind)` — 세 상태 모두 `padding:14px;...gap:2px`다(스크립트로
+   * home.jsx `prepCard(kind)` — 세 상태 모두 `padding:14px;...gap:2px`다(스크립트로
    * 뽑아 확인: scripts/canon/extract-style.mjs --key prepTop/prepLabel). 기존
    * Layout.cardPadding(20)·cardPaddingCompactY(18)·Spacing.one(4)을 그대로 물려받았던
    * 옛 카드 스타일을 재사용했었는데, 실제 prepCard 값과 달라 다시 맞췄다.
@@ -220,19 +253,30 @@ const styles = StyleSheet.create({
   bold: { fontWeight: 700 },
   pressed: { opacity: 0.8 },
   budget: {
-    paddingHorizontal: Layout.cardPadding,
-    paddingVertical: Layout.cardPaddingCompactY,
-    borderRadius: Radius.medium,
+    padding: 18,
+    borderRadius: 12,
+    borderWidth: 1,
     gap: Layout.cardGap,
   },
   budgetTop: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    gap: Spacing.two,
+    alignItems: 'center',
+    gap: 14,
   },
-  track: { height: Spacing.two, borderRadius: Radius.pill, overflow: 'hidden' },
-  fill: { height: '100%', borderRadius: Radius.pill },
-  empty: { gap: Layout.inlineGap },
+  budgetCol: { flex: 1, minWidth: 0, gap: Spacing.half },
+  empty: {
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 32,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+  },
+  center: { textAlign: 'center' },
+  emptyCta: {
+    marginTop: 12,
+    height: 44,
+    paddingHorizontal: 18,
+    borderRadius: 8,
+    justifyContent: 'center',
+  },
 });

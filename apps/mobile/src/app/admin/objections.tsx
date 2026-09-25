@@ -9,6 +9,7 @@ import { formatDateTimeDot } from '@/features/common/format-date';
 import { apiFetch } from './_api';
 import { WritePressable } from './_role';
 import { ConfirmDecision } from '@/features/admin/confirm-decision';
+import { compactSplit, useAdminCompact } from './_ui';
 
 /**
  * 후기 이의제기 — 업체가 후기에 이의를 걸면 그 후기를 잠시 내리고 사람이 판단한다.
@@ -37,6 +38,7 @@ type ObjectedReview = {
 };
 
 export function ObjectionsPanel() {
+  const compact = useAdminCompact();
   const [items, setItems] = useState<ObjectedReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -134,8 +136,8 @@ export function ObjectionsPanel() {
         </Pressable>
       </View>
 
-      <View style={styles.body}>
-        <View style={styles.list}>
+      <View style={[styles.body, compact && compactSplit.body]}>
+        <View style={[styles.list, compact && compactSplit.list]}>
           <DelayedLoader active={loading} size={40} style={styles.centered} />
           {!loading && error && <Text style={styles.errorText}>{error}</Text>}
           {!loading && !error && (
@@ -177,7 +179,7 @@ export function ObjectionsPanel() {
           )}
         </View>
 
-        <View style={styles.detail}>
+        <View style={[styles.detail, compact && compactSplit.detail]}>
           {!selected ? (
             <View style={styles.detailEmpty}>
               <Text style={styles.emptyText}>왼쪽에서 항목을 선택하세요</Text>

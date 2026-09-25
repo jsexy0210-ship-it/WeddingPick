@@ -6,7 +6,7 @@ import {
   WITHDRAWAL_DONE_BODY,
   WITHDRAWAL_DONE_GROUP,
   WITHDRAWAL_DONE_TITLE,
-  WITHDRAWAL_HEADLINE,
+  WITHDRAWAL_HEADLINE_LINES,
   WITHDRAWAL_IRREVERSIBLE,
   WITHDRAWAL_SEPARATED_EMPTY,
   WITHDRAWAL_SEPARATED_GROUP,
@@ -24,6 +24,7 @@ import { Layout, ProductSymbol, Spacing, ThemedText, Toast, useTheme } from '@we
 import { getWithdrawalNotice, withdraw } from '@/api/client';
 import { wipeDevice } from '@/api/session';
 import { ConfirmSheet } from '@/features/common/confirm-sheet';
+import { showResultToast } from '@/features/navigation/result-toast';
 import {
   CheckDot,
   Dock,
@@ -37,7 +38,7 @@ import {
   SubScreen,
 } from '@/features/settings/my-kit';
 
-/** `spec/strings.ko.json` `withdraw.*` · 시안 13b-withdrawal. */
+/** `spec/strings.ko.json` `withdraw.*` · 정본 WP-MY-012(docs/design/React_Native/my.jsx frame-014). */
 const S = {
   /* 시안(WP-MY-012) navTitle — 「회원탈퇴」 4글자는 붙여 쓴다(전체 공통 규칙). */
   title: '회원탈퇴',
@@ -50,7 +51,7 @@ const S = {
 } as const;
 
 /**
- * 회원탈퇴 · WP-MY-008. **지워지는 것과 분리되는 것을 나눠 적는다.** 탈퇴는 개인정보 삭제이지
+ * 회원탈퇴 · WP-MY-012(docs/design/React_Native/my.jsx frame-014). **지워지는 것과 분리되는 것을 나눠 적는다.** 탈퇴는 개인정보 삭제이지
  * 서비스 정보 삭제가 아니고, 그 차이를 누르기 전에 말하지 않으면 동의가 아니라 오해다.
  *
  * **개수를 화면이 짐작하지 않는다.** 줄은 서버가 세어 보낸다 — 이용약관 제12조 · 개인정보처리방침과
@@ -83,6 +84,7 @@ export default function WithdrawalScreen() {
         await wipeDevice();
         setConfirming(false);
         setDone(result.done);
+        showResultToast('탈퇴를 마쳤어요');
       })
       .catch(() => setToast(S.fail))
       .finally(() => setSending(false));
@@ -134,7 +136,7 @@ export default function WithdrawalScreen() {
           }}
         />
       }>
-      <Hero lines={[WITHDRAWAL_HEADLINE]} sub={notice?.lead} />
+      <Hero lines={[...WITHDRAWAL_HEADLINE_LINES]} sub={notice?.lead} />
 
       <Section title={WITHDRAWAL_DELETED_GROUP}>
         <Rows>

@@ -39,19 +39,19 @@ export const EXPENSE_STATUS_LABEL: Record<ExpenseStatus, string> = {
 };
 
 /**
- * 네 갈래로 묶는다. 핸드오프 홈 5번의 4색 누적 막대와 4열 범례.
+ * 세 갈래로 묶는다. 핸드오프 홈 5번의 누적 막대와 범례. 「결정사」 갈래는 2026-09-24
+ * 대표 지시로 뺐다 — 과거 결정사 지출은 「기타」에 들어간다(`bucketFor`).
  *
- * 업종은 열인데 막대는 넷이다. 열 색을 나란히 놓으면 어느 것이 큰지 읽히지
+ * 업종은 열인데 막대는 셋이다. 열 색을 나란히 놓으면 어느 것이 큰지 읽히지
  * 않는다 — 묶는 이유가 그것이다. `sdm`은 여기서는 업종이 아니라 묶음 이름이다 —
  * 스튜디오·드레스·메이크업 세 업종이 한 막대에 들어간다.
  */
-export const EXPENSE_BUCKETS = ['hall', 'agency', 'sdm', 'etc'] as const;
+export const EXPENSE_BUCKETS = ['hall', 'sdm', 'etc'] as const;
 
 export type ExpenseBucket = (typeof EXPENSE_BUCKETS)[number];
 
 export const EXPENSE_BUCKET_LABEL: Record<ExpenseBucket, string> = {
   hall: '웨딩홀',
-  agency: '결정사',
   sdm: '스드메',
   etc: '기타',
 };
@@ -64,14 +64,12 @@ export const EXPENSE_BUCKET_LABEL: Record<ExpenseBucket, string> = {
  */
 export const EXPENSE_BUCKET_COLOR = {
   hall: { bar: 'tint', text: 'tint' },
-  agency: { bar: 'chartTeal', text: 'chartTealText' },
   sdm: { bar: 'chartViolet', text: 'chartVioletText' },
   etc: { bar: 'chartMuted', text: 'chartMutedText' },
 } as const satisfies Record<ExpenseBucket, { bar: string; text: string }>;
 
 export function bucketFor(category: VendorCategory | null): ExpenseBucket {
   if (category === 'hall') return 'hall';
-  if (category === 'wedding_info_company') return 'agency';
   /* 헤어변형(v3.22)은 스드메 묶음이다 — 메이크업 샵에서 같이 결제하는 일이 많다. 부케는 기타. */
   if (category === 'studio' || category === 'dress' || category === 'makeup' || category === 'hair') {
     return 'sdm';
@@ -117,7 +115,7 @@ export function summarizeExpenses(lines: readonly ExpenseLine[]): ExpenseSummary
       .filter((line) => line.status === 'scheduled')
       .reduce((sum, line) => sum + line.amount, 0),
     /*
-     * 네 갈래를 늘 다 내보낸다. 0원인 갈래를 빼면 막대의 색 순서가 자료에 따라
+     * 세 갈래를 늘 다 내보낸다. 0원인 갈래를 빼면 막대의 색 순서가 자료에 따라
      * 달라지고, 같은 화면을 두 번 보는 사람이 다른 것으로 읽는다.
      */
     buckets: EXPENSE_BUCKETS.map((bucket) => {

@@ -1,0 +1,827 @@
+import { DesignModel } from "../runtime/designRuntime.js";
+
+class Component extends DesignModel {
+  renderVals() {
+    const hP = '#ff6f61';
+    const hINK = '#212124';
+    const hSUB = '#4d5159';
+    const hMUTED = '#868b94';
+    const hDIM = '#adb1ba';
+    const hSEC = '#f2f3f6';
+    const hREC = '#f7f8fa';
+    const hBORDER = '#eaebee';
+    const SANS = "-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic',sans-serif";
+    const DISPLAY = SANS;
+    const MONO = SANS;
+
+    const prepCard = kind => ({
+      contracted: 'width:100%;box-sizing:border-box;padding:14px;border-radius:10px;background:#fff5f2;border:1.5px solid ' + hP + ';display:flex;flex-direction:column;gap:2px;min-width:0;overflow:hidden',
+      done: 'width:100%;box-sizing:border-box;padding:14px;border-radius:10px;background:' + hREC + ';border:1px solid ' + hBORDER + ';display:flex;flex-direction:column;gap:2px;min-width:0;overflow:hidden',
+      picking: 'width:100%;box-sizing:border-box;padding:14px;border-radius:10px;background:#fff5f2;border:1px solid #ffd9d4;display:flex;flex-direction:column;gap:2px;min-width:0;overflow:hidden',
+      todo: 'width:100%;box-sizing:border-box;padding:14px;border-radius:10px;background:' + hREC + ';border:1px solid ' + hBORDER + ';display:flex;flex-direction:column;gap:2px;min-width:0;overflow:hidden'
+    })[kind];
+
+    const prepMark = kind => ({
+      contracted: hICO('check-fill', 16, hP),
+      done: hICO('check-fill', 16, hINK),
+      picking: hICO('clock', 16, hP),
+      todo: 'width:16px;height:16px;flex:0 0 16px;border-radius:999px;border:1.5px solid #dcdee3;box-sizing:border-box'
+    })[kind];
+
+    const prepDetail = kind => 'font-size:12px;line-height:17px;font-weight:500;margin-top:2px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:'
+      + (kind === 'contracted' ? hP : kind === 'done' ? hINK : kind === 'picking' ? hP : hMUTED);
+
+    const termIdx = (this.state && this.state.termTab) || 0;
+    const A = (t, b) => ({ t, b });
+    const TERM_DOCS = [
+      { tab: '이용약관', title: '서비스 이용약관', meta: 'v1.0 · 2026년 9월 1일 시행 · 필수', arts: [
+        A('제1조 목적', '이 약관은 웨딩픽(이하 «회사»)이 제공하는 웨딩 준비 서비스의 이용 조건과 절차, 회사와 회원의 권리 · 의무를 정합니다.'),
+        A('제2조 서비스 내용', '회사는 업체 검색, Pick(후보 저장 · 비교), 상담 예약 연결, 웨딩노트(일정 · 예산 · 상담기록), 실 제보 기반 금액 안내, 리얼후기를 제공합니다. 회사는 업체를 대신 골라주거나 계약을 대행하지 않습니다.'),
+        A('제3조 회원가입', '만 14세 이상이면 카카오 계정으로 가입할 수 있습니다. 필수 항목에 모두 동의해야 가입이 완료됩니다.'),
+        A('제4조 실 제보와 Pick 인증', '회원이 올린 Pick 인증 자료의 금액은 개인을 알아볼 수 없게 구간과 건수로 집계됩니다. 실 제보가 3건 미만이면 금액을 표시하지 않습니다.'),
+        A('제5조 상담 예약', '회원이 상담 예약을 신청하면 회사는 선택한 업체에 연락처와 희망 일시를 전달합니다. 상담 · 계약 내용과 대금 지급은 회원과 업체가 직접 정합니다.'),
+        A('제6조 리얼후기', 'Pick 인증을 마친 회원만 후기를 쓸 수 있습니다. 사실과 다르거나 타인의 권리를 침해하는 후기는 게시가 중단될 수 있고, 업체는 반론을 요청할 수 있습니다.'),
+        A('제7조 광고와 검색 순위', '광고 · 스폰서 영역은 일반 검색 결과와 구분해 표시합니다. 광고비는 검색 자연순위, 실 제보, 후기 순서에 영향을 주지 않습니다.'),
+        A('제8조 금지 행위', '허위 제보, 타인 계정 사용, 자동화 수단으로 정보를 수집하는 행위, 업체 · 회원을 비방하는 행위를 금지합니다.'),
+        A('제9조 회원 탈퇴', '회원은 MY > 계정에서 언제든 탈퇴할 수 있습니다. 탈퇴 후 개인정보는 개인정보처리방침에 따라 삭제되며, 익명 집계된 실 제보는 남을 수 있습니다.'),
+        A('제10조 책임의 한계', '회사는 업체와 회원 사이의 계약 이행에 관여하지 않습니다. 다만 회사의 고의 또는 중대한 과실로 생긴 손해는 배상합니다.')
+      ] },
+      { tab: '개인정보', title: '개인정보 수집 · 이용', meta: 'v1.0 · 2026년 9월 1일 시행 · 필수', arts: [
+        A('수집 항목', '카카오 닉네임 · 이메일 · 출생연도(만 14세 확인 후 삭제), 예식일 · 지역 · 예산 · 스타일, 서비스 이용 기록, 기기 정보.'),
+        A('이용 목적', '회원 식별, 조건에 맞는 업체 검색 결과 제공, 웨딩노트 저장, 배우자 연결, 고객 문의 응대, 부정 이용 방지.'),
+        A('보유 기간', '회원 탈퇴 시 바로 삭제합니다. 관계 법령이 보존을 요구하는 기록은 정해진 기간 동안만 분리 보관합니다.'),
+        A('동의 거부 권리', '필수 항목에 동의하지 않으면 가입할 수 없습니다. 선택 항목은 동의하지 않아도 서비스를 이용할 수 있습니다.')
+      ] },
+      { tab: 'Pick 인증', title: 'Pick 인증 자료 수집 · 이용', meta: 'v1.0 · 2026년 9월 1일 시행 · 필수', arts: [
+        A('수집 항목', '회원이 올린 계약서 · 영수증 · 결제 화면 사진, 업체명, 계약 금액, 계약일, 포함 항목.'),
+        A('이용 목적', '제보 금액 확인, 실 제보 구간 · 건수 집계, 예산현황 자동 입력, 리얼후기 작성 자격 확인.'),
+        A('처리 방식', '사진 속 이름 · 연락처 · 주소 등 개인 식별 정보는 가린 뒤 금액과 조건만 추출합니다. 원본 사진은 확인이 끝나면 30일 안에 삭제합니다.'),
+        A('공개 범위', '다른 회원에게는 개별 금액이 아니라 구간과 건수로만 보입니다. 제보자가 누구인지는 표시하지 않습니다.'),
+        A('보유 기간', '추출한 금액 정보는 탈퇴 전까지 보관하고, 탈퇴 후에는 개인과 연결되지 않는 집계값만 남습니다.')
+      ] },
+      { tab: '상담 녹음', title: '상담 녹음 수집 · 이용', meta: 'v1.0 · 2026년 9월 1일 시행 · 필수', arts: [
+        A('수집 항목', '회원이 녹음하거나 올린 상담 음성 파일, 상담 업체명, 상담 일시.'),
+        A('이용 목적', '상담 내용을 포함 항목 · 별도 비용 · 조건 · 확인 필요로 정리해 상담기록에 저장합니다.'),
+        A('녹음 전 안내', '녹음에는 업체 직원의 목소리도 담깁니다. 녹음을 시작하기 전에 업체에 녹음한다고 알려주세요.'),
+        A('보유 기간', '음성 원본은 정리가 끝나면 7일 안에 삭제합니다. 정리된 상담기록은 회원이 지우거나 탈퇴할 때까지 보관합니다.'),
+        A('공개 범위', '상담기록은 본인과 연결된 배우자만 볼 수 있습니다. 다른 회원이나 업체에 공개하지 않습니다.')
+      ] },
+      { tab: '제3자 제공', title: '상담 예약 시 연락처 제공', meta: 'v1.0 · 2026년 9월 1일 시행 · 선택', arts: [
+        A('제공받는 자', '회원이 상담 예약을 신청한 업체.'),
+        A('제공 항목', '닉네임, 연락처, 희망 상담 일시, 예식일, 예산 구간.'),
+        A('제공 목적', '상담 일정 확정과 연락.'),
+        A('보유 기간', '업체는 상담 종료 후 6개월 안에 파기해야 합니다.'),
+        A('동의 거부 권리', '동의하지 않아도 가입할 수 있습니다. 다만 상담 예약을 신청할 때 다시 동의를 요청합니다.')
+      ] },
+      { tab: '혜택 알림', title: '혜택 · 이벤트 알림 수신', meta: 'v1.0 · 2026년 9월 1일 시행 · 선택', arts: [
+        A('보내는 내용', '웨딩지원금, 박람회, 업체 할인 등 혜택과 이벤트 소식.'),
+        A('보내는 방법', '앱 푸시 알림. 하루 최대 2건입니다.'),
+        A('야간 알림', '밤 9시부터 아침 8시 사이에는 별도로 동의한 경우에만 보냅니다.'),
+        A('수신 확인', '동의한 날부터 2년마다 수신 동의 여부를 다시 확인합니다.'),
+        A('동의 철회', 'MY > 알림 설정에서 언제든 끌 수 있습니다.')
+      ] }
+    ];
+    const agChk = on => 'width:24px;height:24px;flex:0 0 24px;border-radius:999px;' + (on
+      ? 'background:#ff6f61;background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'3.2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpath d=\'m5 12.5 4.5 4.5L19 7.5\'/%3E%3C/svg%3E");background-size:14px;background-position:center;background-repeat:no-repeat'
+      : 'box-shadow:inset 0 0 0 1.5px #dcdee3');
+    const agItem = (tag, label, on, hasDoc) => ({ tag, label, hasDoc,
+      row: 'display:flex;align-items:center;gap:12px;min-height:44px;padding:0 4px',
+      chk: agChk(on),
+      tagStyle: 'font-weight:700;color:' + (tag === '필수' ? '#ff6f61' : '#868b94') });
+    // Material Symbols를 폰트 대신 번들에 포함된 SVG 마스크로 표시한다.
+    const M3ICO = (name, px, color) => ({ isM3: true, name,
+      style: 'font-size:0;color:' + color + ';background-color:' + color
+        + ';flex:0 0 ' + px + 'px;width:' + px + 'px;height:' + px
+        + 'px;display:inline-flex;align-items:center;justify-content:center'
+        + ';-webkit-mask:url("assets/material-icons/' + name + '.svg") center/contain no-repeat'
+        + ';mask:url("assets/material-icons/' + name + '.svg") center/contain no-repeat'
+    });
+    const hICO = (name, px, color) => 'width:' + px + 'px;height:' + px + 'px;flex:0 0 ' + px + 'px;'
+      + 'background-color:' + color + ';'
+      + '-webkit-mask:url("assets/seed-icons/' + name + '.svg") center/contain no-repeat;'
+      + 'mask:url("assets/seed-icons/' + name + '.svg") center/contain no-repeat;'
+      + 'display:inline-block';
+
+    const IMGDIR = 'uploads/%EC%8A%A4%ED%83%80%EC%9D%BC%20%EC%9D%B4%EB%AF%B8%EC%A7%80/';
+    const IMGS = {
+      studio: IMGDIR + 'urban.png',
+      makeup: IMGDIR + 'natural.png',
+      dress: IMGDIR + 'romantic.png',
+      feed1: IMGDIR + 'glamorous.png',
+      feed2: IMGDIR + 'natural.png'
+    };
+
+    const rec = (o) => ({
+      name: o.name, category: o.category, location: o.location, price: o.price,
+      reports: o.reports, reason: o.reason, badge: o.badge || '',
+      imgStyle: 'position:absolute;inset:0;background:' + hSEC + ' url("' + o.img + '") center/cover no-repeat',
+      heartStyle: 'position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:999px;display:flex;align-items:center;justify-content:center;'
+        + (o.picked ? 'background:' + hINK + ';' : 'background:rgba(255,255,255,.82);'),
+      heartIcon: hICO(o.picked ? 'heart-fill' : 'heart', 16, o.picked ? '#fff' : hINK)
+    });
+
+    const tab = (o) => {
+      const on = !!o.active;
+      const glyph = on && o.fillName ? o.fillName : o.name;
+      return {
+        label: o.label, isPick: false, isPlain: true,
+        iconStyle: hICO(glyph, 24, on ? hINK : hMUTED),
+        wrapStyle: 'flex:1;display:flex;flex-direction:column;align-items:center;gap:4px',
+        fabStyle: '',
+        labelStyle: 'font-size:12px;line-height:16px;font-weight:700;color:' + (on ? hINK : hMUTED)
+      };
+    };
+
+    const th = (name, hex, tagText) => ({
+      name, hex, tag: tagText || '',
+      rowStyle: 'display:flex;align-items:center;gap:14px;min-height:56px;padding:12px 0;box-shadow:inset 0 -1px 0 ' + hBORDER,
+      swatchStyle: 'width:36px;height:36px;flex:0 0 36px;border-radius:10px;background:' + hex,
+      tagStyle: 'padding:3px 9px;border-radius:4px;background:#fff0f1;color:' + hP + ';font-size:13px;line-height:18px;font-weight:700;white-space:nowrap'
+    });
+
+    const hdiff = (k, a, b, verdict, kind) => ({
+      k, a, b, verdict,
+      verdictStyle: 'width:120px;flex:0 0 120px;font-size:13px;line-height:20px;font-weight:700;white-space:nowrap;color:'
+        + (kind === 'bad' ? '#dc2626' : kind === 'warn' ? '#b45309' : hMUTED)
+    });
+
+
+    const P = '#ff6f61';
+    const INK = '#212124';
+    const SUB = '#4d5159';
+    const MUTED = '#868b94';
+    const DIM = '#adb1ba';
+    const SEC = '#f2f3f6';
+    const REC = '#f7f8fa';
+    const BORDER = '#eaebee';
+    const AMBER = '#805217';
+    const DS = 'assets/seed-icons/';
+    const ICO = (n, sz, c) => 'display:inline-block;width:' + sz + 'px;height:' + sz + 'px;flex:0 0 ' + sz + 'px;background-color:' + c
+      + ';-webkit-mask:url(' + DS + n + '.svg) center/contain no-repeat;mask:url(' + DS + n + '.svg) center/contain no-repeat';
+    const CHECK = (sz, bg) => 'width:' + sz + 'px;height:' + sz + 'px;flex:0 0 ' + sz + 'px;border-radius:999px;background:' + bg
+      + ';-webkit-mask:none;position:relative;display:inline-flex;align-items:center;justify-content:center;'
+      + 'background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'3.4\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpath d=\'m5 12.5 4.5 4.5L19 7.5\'/%3E%3C/svg%3E");background-size:' + Math.round(sz * 0.62) + 'px;background-position:center;background-repeat:no-repeat';
+
+    const IMG = {
+      urban: 'uploads/스타일 이미지/urban.png',
+      natural: 'uploads/스타일 이미지/natural.png',
+      romantic: 'uploads/스타일 이미지/romantic.png',
+      glam: 'uploads/스타일 이미지/glamorous.png'
+    };
+
+    const cell = (label, on) => ({ label, on,
+      cell: 'height:48px;border-radius:10px;padding:0 14px;display:flex;align-items:center;justify-content:space-between;gap:6px;box-sizing:border-box;'
+        + (on ? 'background:#fff5f2;box-shadow:inset 0 0 0 1.5px ' + P + ';' : 'background:' + REC + ';'),
+      name: 'font-size:15px;font-weight:700;color:' + (on ? P : SUB) + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis' });
+
+    const grp = (title, items, allOn) => ({ title,
+      all: items.length > 1 ? (allOn ? '전체 해제' : '전체 선택') : '',
+      allStyle: 'font-size:13px;font-weight:700;white-space:nowrap;color:' + (allOn ? P : MUTED),
+      grid: 'display:grid;grid-template-columns:repeat(' + (items.length === 1 ? 1 : 2) + ',minmax(0,1fr));gap:8px',
+      items });
+
+    const wheelItem = (label, dist) => ({ label,
+      style: 'flex:0 0 48px;height:48px;display:flex;align-items:center;justify-content:center;white-space:nowrap;'
+        + (dist === 0 ? 'font-size:20px;font-weight:700;color:' + INK + ';'
+          : dist === 1 ? 'font-size:18px;color:' + MUTED + ';'
+            : dist === 2 ? 'font-size:17px;color:#c4c8ce;' : 'font-size:16px;color:#e2e5e9;') });
+    const wheelCol = (items, sel) => ({
+      colStyle: 'flex:1;min-width:0;height:240px;overflow-y:auto;scrollbar-width:none;display:flex;flex-direction:column;padding:96px 0;box-sizing:border-box;position:relative;z-index:2',
+      items: items.map((label, i) => wheelItem(label, Math.abs(i - sel)))
+    });
+    const styleBtn = (label, desc, on) => ({ label, desc,
+      card: 'min-height:72px;padding:16px 18px;border-radius:10px;display:flex;align-items:center;gap:12px;box-sizing:border-box;'
+        + (on ? 'background:#fff5f2;box-shadow:inset 0 0 0 1.5px ' + P + ';' : 'background:' + REC + ';'),
+      nameStyle: 'font-size:17px;font-weight:700;color:' + (on ? P : INK),
+      mark: on ? CHECK(24, P) : 'width:24px;height:24px;flex:0 0 24px;border-radius:999px;box-shadow:inset 0 0 0 1.5px #dcdee3' });
+    const sty = (id, src, label, on) => ({ id, src, label, on,
+      overlay: 'position:absolute;inset:0;border-radius:10px;background:linear-gradient(to top,rgba(0,0,0,.45),rgba(0,0,0,0) 55%);'
+        + (on ? 'box-shadow:inset 0 0 0 2px ' + P + ',inset 0 0 0 100vmax rgba(255,111,97,.16);' : '') });
+
+    const ocr = (k, v, sure, hint) => ({ k, v, hint: hint || '', tag: sure ? '읽었어요' : '확인 필요',
+      card: 'border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:5px;'
+        + (sure ? 'background:' + REC + ';' : 'background:#fff;box-shadow:inset 0 0 0 1.5px ' + P + ';'),
+      tagStyle: 'padding:3px 8px;border-radius:4px;font-size:12px;font-weight:700;white-space:nowrap;'
+        + (sure ? 'background:' + BORDER + ';color:' + MUTED + ';' : 'background:' + P + ';color:#fff;') });
+    const diff = (k, a, b, why, warn) => ({ k, a, b, why,
+      bStyle: 'width:270px;flex:0 0 270px;font-size:13px;line-height:20px;font-weight:700;color:' + (warn ? AMBER : INK) });
+
+    const prepCell = (name, on) => ({ name,
+      cell: 'height:48px;border-radius:10px;padding:0 14px;display:flex;align-items:center;justify-content:space-between;gap:6px;cursor:pointer;box-sizing:border-box;'
+        + (on ? 'background:#fff5f2;box-shadow:inset 0 0 0 1.5px ' + P + ';' : 'background:' + REC + ';'),
+      nameStyle: 'font-size:16px;line-height:22px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:' + (on ? P : SUB),
+      mark: on ? CHECK(20, P) : 'width:20px;height:20px;flex:0 0 20px;border-radius:999px;box-shadow:inset 0 0 0 1.5px ' + BORDER });
+    const PREP_CATS = [
+      { name: '웨딩홀', desc: '예식장 · 식대 · 대관' },
+      { name: '스드메', desc: '스튜디오 · 드레스 · 메이크업' },
+      { name: '본식', desc: '본식스냅 · 부케 · 청첩장' },
+      { name: '예물 · 신혼', desc: '예물 · 혼수 · 허니문' }
+    ];
+    const PREP = (done) => PREP_CATS.map(c => {
+      const on = done.indexOf(c.name) >= 0;
+      return { name: c.name, desc: c.desc,
+        cell: 'border-radius:10px;padding:16px;display:flex;align-items:center;gap:12px;cursor:pointer;box-sizing:border-box;'
+          + (on ? 'background:#fff5f2;box-shadow:inset 0 0 0 1.5px ' + P + ';' : 'background:' + REC + ';'),
+        nameStyle: 'font-size:17px;line-height:23px;font-weight:700;white-space:nowrap;color:' + (on ? P : INK),
+        descStyle: 'font-size:13px;line-height:19px;color:' + MUTED + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis',
+        mark: on ? CHECK(22, P) : 'width:22px;height:22px;flex:0 0 22px;border-radius:999px;box-shadow:inset 0 0 0 1.5px ' + BORDER };
+    });
+    return {
+      sumCard: 'border-radius:10px;background:' + REC + ';overflow:hidden',
+      sumK: 'width:72px;flex:0 0 72px;font-size:14px;line-height:20px;color:' + MUTED,
+      sumV: 'flex:1;min-width:0;font-size:16px;line-height:22px;font-weight:700;color:' + INK + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      sumEdit: 'font-size:14px;line-height:20px;font-weight:700;color:' + P + ';white-space:nowrap;cursor:pointer',
+      sumNote: 'font-size:13px;line-height:19px;color:' + MUTED,
+      dockSingle2: 'flex:0 0 92px;padding:12px 24px;display:flex;box-shadow:inset 0 1px 0 ' + BORDER,
+      ctaFullP: 'flex:1;height:56px;border-radius:6px;background:' + P + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700',
+      summary: [
+        ['예식일', '2027.05.16(토)'], ['지역', '서울 강남구'], ['준비 현황', '웨딩홀'],
+        ['예산', '5,000만원'], ['스타일', '도시적인 · 로맨틱한']
+      ].map((r, i, arr) => ({ k: r[0], v: r[1],
+        rowStyle: 'display:flex;align-items:center;gap:12px;min-height:56px;padding:0 16px;' + (i < arr.length - 1 ? 'box-shadow:inset 0 -1px 0 ' + BORDER : '') })),
+      prepSec: 'flex:0 0 auto;padding:0 24px 20px;display:flex;flex-direction:column;gap:10px',
+      prepCol: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:2px',
+      prepNote: 'padding-top:4px;font-size:13px;line-height:19px;color:' + MUTED + ';text-wrap:pretty',
+      amtField: 'height:64px;border-radius:6px;padding:0 18px;display:flex;align-items:baseline;justify-content:flex-end;gap:6px;box-shadow:inset 0 0 0 1.5px ' + P,
+      amtVal: 'font-size:32px;line-height:64px;font-weight:700;color:' + INK + ';font-variant-numeric:tabular-nums',
+      amtUnit: 'font-size:17px;font-weight:700;color:' + SUB,
+      amtChips: 'display:flex;flex-wrap:wrap;gap:8px',
+      amtNote: 'font-size:13px;line-height:19px;color:' + MUTED,
+      answered4: [{ k: '예식일', v: '2027.05.16(토)' }, { k: '지역', v: '서울 강남구' }, { k: '진행 상황', v: '웨딩홀' }, { k: '예산', v: '5,000만원' }],
+      answered3: [{ k: '예식일', v: '2027.05.16(토)' }, { k: '지역', v: '서울 강남구' }, { k: '진행 상황', v: '웨딩홀' }],
+      amtQuick: ['+100만', '+500만', '+1,000만', '지우기'].map(l => ({ label: l,
+        style: 'height:38px;padding:0 14px;border-radius:999px;background:' + SEC + ';color:' + SUB + ';display:inline-flex;align-items:center;font-size:14px;font-weight:700;cursor:pointer' })),
+      prepGroups: PREP(['웨딩홀']),
+      hroot: 'display:flex;flex-direction:column;gap:40px;align-items:flex-start;padding:64px;width:max-content',
+      hintro: 'display:none;flex-direction:column;gap:10px;max-width:1000px',
+      heyebrow: 'font-size:14px;line-height:19px;font-weight:700;color:' + hP,
+      h40: 'font-size:40px;line-height:52px;font-weight:700;color:' + hINK + ';font-family:' + DISPLAY,
+      introBody: 'font-size:18px;line-height:26px;color:#44403c;text-wrap:pretty',
+      boardRow: 'display:flex;gap:36px;align-items:flex-start',
+      hcol: 'display:flex;flex-direction:column;gap:10px;width:430px',
+      hcolWide: 'width:100%;flex:0 0 100%;display:flex;flex-direction:column;gap:10px;width:880px',
+      htag: 'height:26px;display:flex;align-items:center;gap:8px;font-size:18px;line-height:24px;font-weight:700;color:' + hINK + ';white-space:nowrap;overflow:hidden',
+      tag2: 'height:26px;display:flex;align-items:center;gap:8px;font-size:18px;line-height:24px;font-weight:700;color:' + hINK + ';white-space:nowrap;overflow:hidden;margin-top:22px',
+      htagId: 'width:26px;height:26px;flex:0 0 26px;border-radius:6px;background:' + hINK + ';color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700',
+      htagDesc: 'font-size:14px;line-height:21px;color:#57534e;text-wrap:pretty;padding-bottom:6px',
+      htagIdWide: 'height:26px;flex:0 0 auto;padding:0 8px;border-radius:6px;background:' + hMUTED + ';color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700',
+      tdNav: 'flex:0 0 56px;display:flex;align-items:center;gap:8px;padding:0 16px;box-shadow:inset 0 -1px 0 ' + hBORDER,
+      tdNavT: 'flex:1;min-width:0;text-align:center;font-size:16px;font-weight:700;color:' + hINK,
+      tdNavPad: 'width:36px;flex:0 0 36px',
+      tdTabs: 'flex:0 0 auto;display:flex;gap:20px;padding:0 20px;overflow-x:auto;scrollbar-width:none;box-shadow:inset 0 -1px 0 ' + hBORDER,
+      termTabs: TERM_DOCS.map((d, i) => ({ label: d.tab, onClick: () => this.setState({ termTab: i }),
+        style: 'flex:0 0 auto;height:44px;display:flex;align-items:center;font-size:15px;font-weight:700;white-space:nowrap;cursor:pointer;' + (i === termIdx ? 'color:' + hINK + ';box-shadow:inset 0 -2px 0 ' + hINK : 'color:' + hMUTED) })),
+      tdDocTitle: TERM_DOCS[termIdx].title,
+      tdDocMeta: TERM_DOCS[termIdx].meta,
+      tdScroll: 'flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:22px;padding:24px 24px 0;scrollbar-width:none',
+      tdHead: 'display:flex;flex-direction:column;gap:6px',
+      tdTitle: 'font-size:22px;line-height:30px;font-weight:700;color:' + hINK,
+      tdMeta: 'font-size:13px;color:' + hMUTED,
+      tdArt: 'display:flex;flex-direction:column;gap:6px',
+      tdArtT: 'font-size:15px;font-weight:700;color:' + hINK,
+      tdArtB: 'font-size:14px;line-height:22px;color:' + hSUB + ';text-wrap:pretty',
+      termArts: TERM_DOCS[termIdx].arts,
+
+      hphone: 'width:430px;height:932px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(28,25,23,.14)',
+      hbar: 'height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:' + hINK,
+      barIcons: 'display:flex;gap:5px;align-items:center',
+      header: 'flex:0 0 66px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;background:#fff',
+      wordmark: 'font-family:' + DISPLAY + ';font-size:26px;line-height:34px;font-weight:700;letter-spacing:-.02em;color:' + hINK,
+      headIcons: 'display:flex;align-items:center;gap:4px',
+      iconBtn: 'width:40px;height:40px;border-radius:999px;display:flex;align-items:center;justify-content:center;cursor:pointer',
+      hscroll: 'flex:1 1 auto;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;scrollbar-width:none;padding-bottom:16px',
+
+      heroWrap: 'flex-shrink:0;padding:0 20px 24px',
+      hero: 'position:relative;overflow:hidden;border-radius:14px;padding:18px;background:' + hP + ';color:#fff',
+      heroBlob1: 'position:absolute;right:-40px;top:-40px;width:150px;height:150px;border-radius:999px;background:rgba(255,255,255,.08)',
+      heroBlob2: 'display:none',
+      heroInner: 'position:relative;display:flex;flex-direction:column',
+      heroTop: 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px',
+      heroKicker: 'font-family:' + MONO + ';font-size:9px;line-height:13px;letter-spacing:.2em;color:rgba(255,255,255,.55)',
+      heroMore: 'width:24px;height:24px;border-radius:999px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;cursor:pointer',
+      dday: 'font-family:' + DISPLAY + ';font-size:46px;line-height:46px;font-weight:700;letter-spacing:-.03em;color:#fff',
+      heroDate: 'margin-top:4px;font-size:12px;line-height:17px;color:rgba(255,255,255,.70);display:flex;align-items:center;gap:6px',
+      heroVenueBadge: 'height:18px;padding:0 6px;border-radius:4px;background:rgba(255,255,255,.16);color:rgba(255,255,255,.85);display:inline-flex;align-items:center;font-size:10px;font-weight:600;white-space:nowrap',
+      coupleRow: 'margin-top:12px;display:flex;align-items:center;gap:6px',
+      avWrap: 'display:flex',
+      av1: 'width:16px;height:16px;border-radius:999px;border:1px solid rgba(255,255,255,.5);background:#f7d2c4;color:#513b37;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;box-sizing:border-box',
+      av2: 'width:16px;height:16px;border-radius:999px;border:1px solid rgba(255,255,255,.5);background:#c9daec;color:#31475d;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;box-sizing:border-box;margin-left:-4px',
+      coupleText: 'font-size:10px;line-height:14px;color:rgba(255,255,255,.55)',
+
+      hsec: 'flex-shrink:0;padding:0 20px 24px;display:flex;flex-direction:column;gap:12px',
+      secLast: 'flex-shrink:0;padding:0 20px;display:flex;flex-direction:column;gap:12px',
+      secNoPad: 'flex-shrink:0;padding:0 0 24px;display:flex;flex-direction:column;gap:12px',
+      secHead: 'display:flex;align-items:center;justify-content:space-between;gap:12px',
+      secHeadPad: 'display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 20px',
+      secHeadCol: 'display:flex;flex-direction:column;gap:2px;min-width:0',
+      hsecTitle: 'font-size:14px;line-height:20px;font-weight:700;color:' + hINK,
+      secTitleOnly: 'font-size:14px;line-height:20px;font-weight:700;color:' + hINK,
+      secSub: 'font-size:12px;line-height:17px;color:' + hMUTED,
+      secMeta: 'font-size:12px;line-height:17px;font-weight:700;color:' + hMUTED,
+      moreBtn: 'font-size:12px;line-height:17px;font-weight:700;color:' + hINK + ';cursor:pointer',
+      pillBtn: 'height:32px;padding:0 14px;border-radius:999px;background:' + hP + ';color:#fff;font-size:12px;font-weight:700;display:inline-flex;align-items:center;white-space:nowrap;box-shadow:0 2px 6px rgba(231,137,141,.20);cursor:pointer',
+
+      prepGrid: 'display:grid;grid-template-columns:1fr 1fr;gap:8px',
+      prepGridPad: 'display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:0 20px 14px',
+
+      schedWrap: 'display:flex;flex-direction:column;border-radius:12px;border:1px solid ' + hBORDER + ';overflow:hidden',
+      schedDate: 'width:44px;flex:0 0 44px;display:flex;flex-direction:column;align-items:center;gap:1px',
+      schedMonth: 'font-size:11px;line-height:15px;color:' + hMUTED + ';font-variant-numeric:tabular-nums',
+      schedCol: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:2px',
+      schedTitle: 'font-size:15px;line-height:21px;font-weight:700;color:' + hINK + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis',
+      schedMeta: 'font-size:12px;line-height:17px;color:' + hMUTED + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis',
+      schedule: [
+        { month: '9월', day: '12', title: '드레스 피팅', meta: '오후 2시 · 그레이스 드레스', dday: 'D-2', near: true },
+        { month: '9월', day: '20', title: '스튜디오 촬영', meta: '오전 10시 · 블루밍 스튜디오', dday: 'D-10' },
+        { month: '10월', day: '04', title: '본식 리허설', meta: '오후 4시 · 더채플 청담', dday: 'D-24', last: true }
+      ].map(s => ({ month: s.month, day: s.day, title: s.title, meta: s.meta, dday: s.dday,
+        row: 'display:flex;align-items:center;gap:12px;min-height:64px;padding:0 14px' + (s.last ? '' : ';box-shadow:inset 0 -1px 0 ' + hBORDER),
+        dayStyle: 'font-size:19px;line-height:25px;font-weight:700;font-variant-numeric:tabular-nums;color:' + (s.near ? hP : hINK),
+        ddayStyle: 'font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;color:' + (s.near ? hP : hMUTED) })),
+      prepTop: 'display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px',
+      prepEmoji: 'font-size:20px;line-height:24px',
+      prepLabel: 'font-size:14px;line-height:20px;font-weight:700;color:' + hINK,
+
+      recScroll: 'display:flex;gap:12px;padding:0 0 4px 20px;overflow-x:auto;scrollbar-width:none',
+      recCard: 'flex:0 0 208px;width:208px;border-radius:16px;overflow:hidden;background:#fff;border:1px solid ' + hBORDER + ';box-shadow:0 1px 2px rgba(28,25,23,.05);cursor:pointer',
+      recImgWrap: 'position:relative;width:100%;height:144px;background:' + hSEC,
+      recImg: 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block',
+      feedThumb: 'width:80px;height:80px;flex:0 0 80px;border-radius:10px;object-fit:cover;background:' + hSEC,
+      feedChev: hICO('chevron-right', 16, hDIM) + ';align-self:center',
+      recBadge: 'position:absolute;top:10px;left:10px;padding:2px 8px;border-radius:999px;background:' + hINK + ';color:#fff;font-size:10px;line-height:14px;font-weight:700',
+      recBody: 'padding:12px;display:flex;flex-direction:column;gap:2px',
+      recCat: 'font-size:10px;line-height:14px;font-weight:700;letter-spacing:.06em;color:' + hMUTED,
+      recName: 'font-size:14px;line-height:20px;font-weight:700;color:' + hINK + ';display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      recLoc: 'display:flex;align-items:center;gap:4px;margin-top:2px',
+      recLocText: 'font-size:12px;line-height:17px;color:' + hMUTED,
+      recFoot: 'display:flex;align-items:center;justify-content:space-between;margin-top:8px',
+      recPrice: 'font-family:' + MONO + ';font-size:12px;line-height:17px;font-weight:500;color:' + hINK,
+      recPicks: 'display:flex;align-items:center;gap:4px',
+      recPicksText: 'font-size:12px;line-height:17px;font-weight:500;color:' + hMUTED + ';font-variant-numeric:tabular-nums',
+      recTail: 'flex:0 0 16px',
+
+      catGrid: 'display:grid;grid-template-columns:repeat(3,1fr);gap:8px',
+      catCell: 'background:' + hSEC + ';border-radius:16px;padding:16px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer',
+      catEmoji: 'font-size:24px;line-height:28px',
+      catName: 'font-size:12px;line-height:17px;font-weight:700;color:' + hINK + ';white-space:nowrap',
+
+      feedWrap: 'display:flex;flex-direction:column;gap:12px',
+      feedCard: 'display:flex;gap:12px;padding:12px;border-radius:16px;border:1px solid ' + hBORDER + ';background:#fff;cursor:pointer',
+      feedBody: 'flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center',
+      feedCat: 'font-size:10px;line-height:14px;font-weight:700;letter-spacing:.04em;color:' + hMUTED,
+      feedTitle: 'margin-top:4px;font-size:14px;line-height:20px;font-weight:700;color:' + hINK + ';display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:keep-all',
+      feedMeta: 'margin-top:4px;font-size:11px;line-height:16px;color:' + hMUTED,
+
+      tabBar: 'flex:0 0 76px;display:flex;padding-top:8px;background:#fff;box-shadow:inset 0 1px 0 ' + hBORDER,
+
+      specCard: 'width:430px;background:#fff;border:1px solid ' + hBORDER + ';border-radius:12px;padding:8px 20px 12px;display:flex;flex-direction:column;box-sizing:border-box',
+      specCol: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:2px',
+      specName: 'font-size:15px;line-height:21px;font-weight:700;color:' + hINK,
+      specHex: 'font-family:' + MONO + ';font-size:13px;line-height:18px;color:' + hMUTED,
+      kvRow: 'display:flex;align-items:flex-start;justify-content:space-between;gap:16px;min-height:48px;padding:11px 0;box-shadow:inset 0 -1px 0 ' + hBORDER,
+      kvKey: 'font-size:14px;line-height:20px;color:#57534e;white-space:nowrap',
+      kvVal: 'flex:1;text-align:right;font-family:' + MONO + ';font-size:13px;line-height:20px;color:' + hINK + ';word-break:break-all',
+
+      splashStage: 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:' + hP,
+      splashMark: 'width:64px;height:64px;background-color:#fff;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'1.9\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpath d=\'M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z\'/%3E%3Cpath d=\'M9.4 11.9l1.7 1.7 3.4-3.4\'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'1.9\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpath d=\'M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z\'/%3E%3Cpath d=\'M9.4 11.9l1.7 1.7 3.4-3.4\'/%3E%3C/svg%3E") center/contain no-repeat',
+      agAllRow: 'display:flex;align-items:center;gap:12px;min-height:60px;padding:0 16px;border-radius:8px;background:' + hSEC,
+      agAllT: 'font-size:17px;font-weight:700;color:' + hINK,
+      agChkOn: agChk(false),
+      agList: 'display:flex;flex-direction:column',
+      agItemT: 'flex:1;min-width:0;font-size:15px;line-height:22px;color:' + hINK + ';text-wrap:pretty',
+      agChev: hICO('chevron-right', 16, hDIM),
+      agSec: 'display:flex;flex-direction:column;gap:2px',
+      agSecT: 'font-size:14px;font-weight:700;color:' + hSUB + ';padding:0 0 6px',
+      permGrid: 'display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:6px 0 12px',
+      permCell: 'display:flex;flex-direction:column;align-items:center;gap:6px',
+      permCellT: 'font-size:13px;font-weight:700;color:' + hINK,
+      agreeReq: [
+        agItem('필수', '만 14세 이상이에요', true, false),
+        agItem('필수', '서비스 이용약관', true, true),
+        agItem('필수', '개인정보 수집 · 이용', true, true),
+        agItem('필수', 'Pick 인증 자료 수집 · 이용', true, true),
+        agItem('필수', '상담 녹음 수집 · 이용', true, true)
+      ],
+      agreeOpt: [
+        agItem('선택', '상담 예약 시 업체에 연락처 제공', true, true),
+        agItem('선택', '혜택 · 이벤트 알림 받기', true, true),
+        agItem('선택', '밤 9시 ~ 아침 8시에도 알림 받기', false, false)
+      ],
+      agreeItems: [
+        agItem('필수', '만 14세 이상이에요', true, false),
+        agItem('필수', '서비스 이용약관', true, true),
+        agItem('필수', '개인정보 수집 · 이용', true, true),
+        agItem('필수', 'Pick 인증 자료 수집 · 이용', true, true),
+        agItem('필수', '상담 녹음 수집 · 이용', true, true),
+        agItem('선택', '상담 예약 시 업체에 연락처 제공', true, true),
+        agItem('선택', '혜택 · 이벤트 알림 받기', true, true),
+        agItem('선택', '밤 9시 ~ 아침 8시에도 알림 받기', false, false)
+      ],
+      permScroll: 'flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:28px;padding:40px 24px 24px;scrollbar-width:none',
+      permHead: 'display:flex;flex-direction:column;gap:8px',
+      permTitle: 'font-size:24px;line-height:33px;font-weight:700;color:' + hINK,
+      permSub: 'font-size:15px;line-height:22px;color:' + hSUB,
+      permSec: 'display:flex;flex-direction:column;gap:4px;padding-top:20px;box-shadow:inset 0 1px 0 ' + hBORDER,
+      permLabel: 'font-size:14px;font-weight:700;color:' + hSUB + ';padding-bottom:8px',
+      permRow: 'display:flex;align-items:center;gap:14px;min-height:64px',
+      permIcoWrap: 'width:44px;height:44px;flex:0 0 44px;border-radius:999px;background:' + hSEC + ';display:flex;align-items:center;justify-content:center',
+      permCol: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:2px',
+      permName: 'font-size:16px;font-weight:700;color:' + hINK,
+      permDesc: 'font-size:13px;line-height:19px;color:' + hMUTED + ';text-wrap:pretty',
+      permNote: 'display:flex;flex-direction:column;gap:6px;padding-top:16px;box-shadow:inset 0 1px 0 ' + hBORDER,
+      permNoteT: 'font-size:13px;line-height:19px;color:' + hMUTED,
+      permCta: 'flex:1;height:56px;border-radius:6px;background:' + hP + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700',
+      perms: [
+        { name: '알림', desc: '웨딩 일정 · Pick 인증 결과 · 상담 소식을 알려드려요', ico: hICO('notification', 22, hINK) },
+        { name: '카메라', desc: '계약서 · 영수증을 촬영해 Pick 인증할 때 사용해요', ico: hICO('camera', 22, hINK) },
+        { name: '사진', desc: '리얼후기 · Pick 인증에 사진을 첨부할 때 사용해요', ico: hICO('photo', 22, hINK) },
+        { name: '마이크', desc: '상담 내용을 녹음해 상담기록으로 남길 때 사용해요', ico: hICO('mic', 22, hINK) }
+      ],
+      splashName: 'font-size:20px;font-weight:700;color:#fff',
+
+      agesStage: 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:0 32px;text-align:center',
+      agesTitle: 'font-size:24px;line-height:33px;font-weight:700;color:' + hINK,
+      agesNote: 'font-size:14px;line-height:21px;color:' + hMUTED,
+      dockSingleH: 'flex:0 0 92px;padding:12px 24px;display:flex;box-shadow:inset 0 1px 0 ' + hBORDER,
+      ctaGhostH: 'flex:1;height:56px;border-radius:6px;background:' + hSEC + ';color:' + hSUB + ';display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700',
+
+      stateRow: 'display:flex;gap:14px',
+      stateCard: 'flex:1;min-width:0;border-radius:10px;background:' + hREC + ';padding:18px;display:flex;flex-direction:column;gap:8px',
+      stateLabel: 'font-size:12px;font-weight:700;color:' + hP,
+      stateBig: 'font-size:17px;font-weight:700;color:' + hINK,
+      stateSub: 'font-size:13px;line-height:19px;color:' + hMUTED,
+
+      navBarH: 'flex:0 0 56px;display:flex;align-items:center;gap:8px;padding:0 16px;box-shadow:inset 0 -1px 0 ' + hBORDER,
+      icoBackH: hICO('chevron-left', 24, hINK) + ';width:36px;flex:0 0 36px;-webkit-mask-size:24px;mask-size:24px',
+      navTitleH: 'flex:1;min-width:0;text-align:center;font-size:16px;font-weight:700;color:' + hINK,
+      navPadH: 'width:36px;flex:0 0 36px',
+
+      dimWrapH: 'flex:1;position:relative;overflow:hidden;display:flex;align-items:flex-end',
+      dimH: 'position:absolute;inset:0;background:rgba(0,0,0,.45)',
+      benSheet: 'position:relative;width:100%;background:#fff;border-radius:20px 20px 0 0;padding:12px 24px 28px;box-sizing:border-box;display:flex;flex-direction:column;gap:14px',
+      grabH: 'width:40px;height:4px;border-radius:999px;background:' + hBORDER + ';align-self:center;margin-bottom:8px',
+      formHead: 'display:flex;align-items:flex-start;justify-content:space-between;gap:12px',
+      formClose: 'width:36px;height:36px;flex:0 0 36px;border-radius:999px;background:' + hSEC + ';display:flex;align-items:center;justify-content:center',
+      icoXsm: hICO('close-fill', 16, hINK),
+      benBig: 'font-size:24px;line-height:33px;font-weight:700;color:' + hINK,
+      benSub: 'font-size:14px;color:' + hMUTED,
+      benConds: 'display:flex;flex-direction:column;gap:8px',
+      benRow: 'display:flex;align-items:center;gap:10px',
+      benDot: 'width:5px;height:5px;flex:0 0 5px;border-radius:999px;background:' + hP,
+      benText: 'font-size:14px;color:' + hINK,
+      benItems: ['이번 달 안에 미션 4개 완주', '웨딩노트에 배우자 연결', '응모는 한 번만 가능'],
+      benDock: 'display:flex;gap:10px;margin-top:6px',
+      btnGhostH: 'flex:1;height:52px;border-radius:6px;background:' + hSEC + ';color:' + hSUB + ';display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700',
+      btnFullH: 'flex:1.4;height:52px;border-radius:6px;background:' + hP + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700',
+
+      hdiffCard: 'width:880px;background:#fff;border:1px solid ' + hBORDER + ';border-radius:12px;padding:8px 20px 12px;display:flex;flex-direction:column;box-sizing:border-box',
+      hdiffHead: 'display:flex;align-items:center;gap:16px;min-height:44px;box-shadow:inset 0 -1px 0 #d6d3d1',
+      hdh1: 'width:130px;flex:0 0 130px;font-size:12px;line-height:17px;font-weight:700;color:' + hMUTED,
+      hdh2: 'flex:1;font-size:12px;line-height:17px;font-weight:700;color:' + hMUTED,
+      hdh3: 'flex:1;font-size:12px;line-height:17px;font-weight:700;color:' + hMUTED,
+      hdh4: 'width:120px;flex:0 0 120px;font-size:12px;line-height:17px;font-weight:700;color:' + hMUTED,
+      hdiffRow: 'display:flex;align-items:flex-start;gap:16px;min-height:52px;padding:13px 0;box-shadow:inset 0 -1px 0 ' + hBORDER,
+      hdc1: 'width:130px;flex:0 0 130px;font-size:14px;line-height:20px;font-weight:700;color:' + hINK,
+      hdc2: 'flex:1;font-size:13px;line-height:20px;color:' + hMUTED + ';text-wrap:pretty',
+      hdc3: 'flex:1;font-size:13px;line-height:20px;color:' + hINK + ';text-wrap:pretty',
+
+      newCard: 'width:880px;background:#fff;border:1px solid ' + hBORDER + ';border-radius:12px;padding:8px 20px 12px;display:flex;flex-direction:column;box-sizing:border-box',
+      newRow: 'display:flex;align-items:flex-start;gap:16px;min-height:52px;padding:13px 0;box-shadow:inset 0 -1px 0 ' + hBORDER,
+      newRoute: 'width:230px;flex:0 0 230px;font-family:' + MONO + ';font-size:13px;line-height:20px;color:' + hP,
+      newName: 'width:150px;flex:0 0 150px;font-size:14px;line-height:20px;font-weight:700;color:' + hINK,
+      newNote: 'flex:1;font-size:13px;line-height:20px;color:' + hMUTED + ';text-wrap:pretty',
+
+      moreRow: 'display:inline-flex;align-items:center;gap:2px;font-size:13px;font-weight:700;color:' + hMUTED + ';white-space:nowrap',
+      recCtaWrap: 'padding:14px 20px 0',
+      icoMoreChev: hICO('chevron-right', 14, hMUTED),
+      recFootCol: 'display:flex;flex-direction:column;gap:2px',
+      recReports: 'font-size:12px;color:' + hMUTED + ';font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis',
+      recReason: 'font-size:12px;line-height:18px;color:' + hP + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis',
+
+      todoCard: 'border-radius:14px;background:#fff5f2;border:1px solid #ffd9d4;padding:18px;display:flex;flex-direction:column;gap:8px',
+      todoTitle: 'font-size:18px;line-height:25px;font-weight:700;color:' + hINK,
+      todoSub: 'font-size:14px;line-height:21px;color:' + hMUTED,
+      todoBtn: 'margin-top:4px;height:44px;border-radius:8px;background:' + hP + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700',
+      nextWrap: 'display:flex;flex-direction:column;border-radius:12px;border:1px solid ' + hBORDER + ';overflow:hidden',
+      nextRow: 'display:flex;align-items:center;gap:10px;min-height:52px;padding:0 16px;box-shadow:inset 0 -1px 0 ' + hBORDER,
+      nextLabel: 'flex:1;min-width:0;font-size:15px;color:' + hINK + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      nextMeta: 'font-size:13px;color:' + hMUTED + ';font-variant-numeric:tabular-nums;white-space:nowrap',
+
+      spendCard: 'border-radius:12px;background:#fff;border:1px solid ' + hBORDER + ';padding:18px;display:flex;flex-direction:column;gap:10px',
+      spendTop: 'display:flex;align-items:baseline;justify-content:space-between;gap:12px',
+      spendDonutRow: 'display:flex;align-items:center;gap:14px',
+      spendDonutWrap: 'position:relative;width:72px;height:72px;flex:0 0 72px;display:flex;align-items:center;justify-content:center',
+      spendDonutPct: 'position:absolute;font-size:14px;font-weight:700;color:' + hINK + ';font-variant-numeric:tabular-nums',
+      spendDonutCol: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:3px',
+      spendBig: 'font-size:26px;font-weight:700;color:' + hINK + ';font-variant-numeric:tabular-nums',
+      spendOf: 'font-size:13px;color:' + hMUTED + ';font-variant-numeric:tabular-nums;white-space:nowrap',
+      spendTrack: 'height:8px;border-radius:999px;background:' + hBORDER + ';overflow:hidden',
+      spendFill: 'display:block;width:57%;height:100%;border-radius:999px;background:' + hP,
+      spendNote: 'font-size:12px;color:' + hMUTED,
+      secMore: 'font-size:13px;font-weight:700;color:' + hP + ';white-space:nowrap',
+
+      startBox: 'padding:24px 20px;border-radius:12px;background:' + hREC + ';display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center',
+      startT: 'font-size:17px;font-weight:700;color:' + hINK,
+      startS: 'font-size:13px;line-height:19px;color:' + hMUTED,
+      startBtn: 'margin-top:6px;height:44px;padding:0 20px;border-radius:8px;background:' + hP + ';color:#fff;display:inline-flex;align-items:center;font-size:14px;font-weight:700;text-decoration:none;',
+      prepEmpty: ['웨딩홀', '스드메', '본식', '예물 · 신혼'].map((label, i) => { const m = M3ICO(['storefront', 'face_retouching_natural', 'dry_cleaning', 'diamond'][i], 20, hDIM); return { label, detail: '아직 정하지 않았어요',
+        card: prepCard('todo') + 'text-decoration:none;', iconStyle: m.style, iconClass: 'material-symbols-outlined', iconText: m.name, markStyle: prepMark('todo'), detailStyle: prepDetail('todo'),
+        href: '대메뉴_Pick.dc.html#cat-' + ['웨딩홀', '스드메', '본식', '예물신혼'][i] }; }),
+      defaultSchedule: ['상견례 날짜 정하기', '웨딩홀 계약금 입금', '스드메 예약', '청첩장 인쇄', '신혼여행 예약'].map((label, i, arr) => ({ label,
+        row2: 'display:flex;align-items:center;gap:12px;min-height:64px;padding:0 14px' + (i < arr.length - 1 ? ';box-shadow:inset 0 -1px 0 ' + hBORDER : ''),
+        numStyle: 'width:24px;height:24px;border-radius:999px;background:' + hSEC + ';color:' + hMUTED + ';display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700',
+        num: i + 1 })),
+      prepPartial: [
+        { label: '웨딩홀', detail: '상담 예약을 마쳤어요', card: prepCard('picking') + 'text-decoration:none;', iconStyle: M3ICO('storefront', 20, hP).style, iconClass: 'material-symbols-outlined', iconText: 'storefront', markStyle: prepMark('picking'), detailStyle: prepDetail('picking'), href: '대메뉴_Pick.dc.html#cat-웨딩홀' },
+        { label: '스드메', detail: '아직 정하지 않았어요', card: prepCard('todo') + 'text-decoration:none;', iconStyle: M3ICO('face_retouching_natural', 20, hDIM).style, iconClass: 'material-symbols-outlined', iconText: 'face_retouching_natural', markStyle: prepMark('todo'), detailStyle: prepDetail('todo'), href: '대메뉴_Pick.dc.html#cat-스드메' },
+        { label: '본식', detail: '아직 정하지 않았어요', card: prepCard('todo') + 'text-decoration:none;', iconStyle: M3ICO('dry_cleaning', 20, hDIM).style, iconClass: 'material-symbols-outlined', iconText: 'dry_cleaning', markStyle: prepMark('todo'), detailStyle: prepDetail('todo'), href: '대메뉴_Pick.dc.html#cat-본식' },
+        { label: '예물 · 신혼', detail: '아직 정하지 않았어요', card: prepCard('todo') + 'text-decoration:none;', iconStyle: M3ICO('diamond', 20, hDIM).style, iconClass: 'material-symbols-outlined', iconText: 'diamond', markStyle: prepMark('todo'), detailStyle: prepDetail('todo'), href: '대메뉴_Pick.dc.html#cat-예물신혼' }
+      ],
+      prep: [
+        { label: '웨딩홀', detail: '계약 완료 · 서울 그랜드 워커힐', card: prepCard('contracted') + 'text-decoration:none;', iconStyle: M3ICO('storefront', 20, hP).style, iconClass: 'material-symbols-outlined', iconText: 'storefront', markStyle: prepMark('contracted'), detailStyle: prepDetail('contracted'), href: '대메뉴_Pick.dc.html#cat-웨딩홀' },
+        { label: '스드메', detail: '상담 예약을 마쳤어요', card: prepCard('picking') + 'text-decoration:none;', iconStyle: M3ICO('face_retouching_natural', 20, hP).style, iconClass: 'material-symbols-outlined', iconText: 'face_retouching_natural', markStyle: prepMark('picking'), detailStyle: prepDetail('picking'), href: '대메뉴_Pick.dc.html#cat-스드메' },
+        { label: '본식', detail: '아직 정하지 않았어요', card: prepCard('todo') + 'text-decoration:none;', iconStyle: M3ICO('dry_cleaning', 20, hDIM).style, iconClass: 'material-symbols-outlined', iconText: 'dry_cleaning', markStyle: prepMark('todo'), detailStyle: prepDetail('todo'), href: '대메뉴_Pick.dc.html#cat-본식' },
+        { label: '예물 · 신혼', detail: '아직 정하지 않았어요', card: prepCard('todo') + 'text-decoration:none;', iconStyle: M3ICO('diamond', 20, hDIM).style, iconClass: 'material-symbols-outlined', iconText: 'diamond', markStyle: prepMark('todo'), detailStyle: prepDetail('todo'), href: '대메뉴_Pick.dc.html#cat-예물신혼' }
+      ],
+
+      recs: [
+        rec({ name: '블루밍 스튜디오', category: '스튜디오', location: '강남구', price: '80~150만원', reports: '실 제보 12건', reason: '고른 스타일이랑 가장 비슷해요', badge: '', img: IMGS.studio, picked: true }),
+        rec({ name: '오드 메이크업', category: '메이크업', location: '청담동', price: '45~80만원', reports: '실 제보 9건', reason: '생각한 예산 안에 들어와요', badge: '', img: IMGS.makeup, picked: false }),
+        rec({ name: '그레이스 드레스', category: '드레스', location: '압구정동', price: '150~380만원', reports: '아직 정보가 적어요 · 3건', reason: '원하는 날에 가능해요', badge: '', img: IMGS.dress, picked: false })
+      ],
+      nextSteps: [
+        { label: '드레스 투어 잡기', meta: 'D-90' },
+        { label: '본식스냅 정하기', meta: 'D-60' }
+      ],
+
+
+      feed: [
+        { category: '예산', title: '예산을 넘기지 않는 스드메 조합 3가지', meta: '웨딩픽 에디터 · 5분',
+          thumbStyle: 'width:80px;height:80px;flex:0 0 80px;border-radius:10px;background:' + hSEC + ' url("' + IMGS.feed1 + '") center/cover no-repeat' },
+        { category: '체크리스트', title: '본식 4개월 전, 지금 정리할 7가지', meta: '준비 가이드 · 4분',
+          thumbStyle: 'width:80px;height:80px;flex:0 0 80px;border-radius:10px;background:' + hSEC + ' url("' + IMGS.feed2 + '") center/cover no-repeat' }
+      ],
+
+      tabs: [
+        tab({ label: '홈', name: 'home', fillName: 'home-fill', active: true }),
+        tab({ label: '검색', name: 'search' }),
+        tab({ label: 'Pick', name: 'heart', fillName: 'heart-fill', isPick: true }),
+        tab({ label: '웨딩노트', name: 'calendar' }),
+        tab({ label: 'MY', name: 'profile', fillName: 'profile-fill' })
+      ],
+
+      icoSearch: hICO('search', 20, hINK),
+      icoBell: hICO('notification', 20, hINK),
+      icoMore: hICO('more-horiz', 14, '#fff'),
+      icoLoc: hICO('location', 12, hMUTED),
+      icoChev: hICO('chevron-right', 16, hDIM),
+
+      typeSpec: [
+        { k: '아이콘', v: 'SEED vendored SVG · mask 방식' },
+        { k: '별 아이콘', v: 'IconReviewStarFill · 85종 미포함 · 직접 그림' },
+        { k: 'display', v: "Playfair Display · 700" },
+        { k: 'sans', v: 'Noto Sans KR · 400 · 500 · 700' },
+        { k: 'mono', v: 'DM Mono · 400 · 500' },
+        { k: 'D-day', v: '46px / lh 1 / ls −0.03em · display' },
+        { k: '워드마크', v: '26px / 700 / ls −0.02em · display' },
+        { k: '섹션 제목', v: '14px / 700 · sans' },
+        { k: '히어로 radius', v: '22px' },
+        { k: '카드 radius', v: '16px' },
+        { k: '프레임 폭', v: '430px · max-w-[430px]' },
+        { k: '탭바', v: '72px · fixed · border-top' }
+      ],
+
+      hdiffs: [
+        hdiff('Primary', '#FF6F61 코랄 (CLAUDE.md 확정)', '#E7898D 더스티 로즈', 'CLAUDE.md 수정', 'bad'),
+        hdiff('폰트', '시스템 서체 · 웹폰트 없음', 'Playfair Display + Noto Sans KR + DM Mono', 'tokens.json 수정', 'bad'),
+        hdiff('프레임 폭', '390px', '430px', 'tokens 수정', 'warn'),
+        hdiff('Root 탭', '홈 · 검색 · Pick · 웨딩일정 · MY', '홈 · 웨딩노트 · Pick · 라운지 · MY', '검색 탭 폐기', 'bad'),
+        hdiff('검색 진입', 'Root 탭 2번', '헤더 아이콘 → /explore', 'IA 수정', 'warn'),
+        hdiff('Pick 탭', '일반 탭 · FAB 금지 명시', '48px 원형 FAB · 그림자', '정책 충돌', 'bad'),
+        hdiff('업종 아이콘', '라인 SVG 24px', '이모지 🏛️ 📷 👗 💄', '정책 충돌 · 이모지 금지', 'bad'),
+        hdiff('평가 표기', '이용한 사람들의 경험 · 3축 · 별점 금지', '별점 4.9 · IconReviewStarFill (picks는 데이터에만 있고 미노출)', '정책 충돌', 'bad'),
+        hdiff('금액 표기', '152~184만원 · 실 제보 12건', '80–150만원 · en dash', '표기 통일 필요', 'warn'),
+        hdiff('카드 radius', '10px', '16px · 히어로 22px', 'tokens 수정', 'warn'),
+        hdiff('히어로', 'D-day + 제목 2줄 + 진행바', 'D-127 + 날짜 1줄 + 커플 아바타 + 테마 스위처', 'Figma 채택', ''),
+        hdiff('준비 현황', '2열 세로 스택 · 12업종', '2×2 카드 · 6업종 · SEED 아이콘', '카테고리 흡수 · 정리 완료', ''),
+        hdiff('카테고리 섹션', '없음', '3×2 그리드 6칸 · 전부 /explore', '중복 · 삭제', ''),
+        hdiff('비교하기 버튼', '비교는 Pick 탭에서', '홈 섹션 헤더에 pill 버튼', '중복 · 삭제', ''),
+        hdiff('남은 스케줄', '한 섹션 «내 웨딩 준비»', '두 섹션 · 자세히 2개', '같은 업종을 두 번 묻는다', ''),
+        hdiff('검색 아이콘', '하단 탭으로만 진입', '홈 헤더에도 있음', '진입점 중복', ''),
+        hdiff('다가오는 일정', '홈에 3건 · 웨딩노트 연결', '없음', '홈에 일정이 없었다', ''),
+        hdiff('웨딩 준비 팁 더보기', '라운지 탭', '/community?tab=feed', '중복 · 삭제', '')
+      ],
+
+      newScreens: [
+        { route: '/community', name: '라운지', note: '탭 아님. 홈 «웨딩 준비 팁» 자세히 · MY «둘러보기» 두 곳에서 진입' },
+        { route: '/community/feed/:id', name: '피드 상세', note: '웨딩 준비 팁 카드 → 상세' },
+        { route: '/vendor/:id/booking', name: '예약', note: 'VendorFlows.tsx. 정본은 상세만 있었음' },
+        { route: '/vendor/:id/consult', name: '상담', note: '같은 파일. 문의 → 상담으로 분리' },
+        { route: '/vendor/:id/reviews/:reviewId', name: '후기 상세', note: '정본 WP-REV-003과 대응' },
+        { route: '/contract-verify', name: '계약 인증', note: '정본 Pick 인증(WP-RPT)과 대응 · 이름 다름' },
+        { route: '/explore', name: '탐색', note: '/search와 별개 라우트. 헤더 검색 아이콘이 여기로' },
+        { route: '—', name: 'Proposal · Honeymoon · Studio', note: 'components에 있으나 라우트 미연결. 초안으로 보임' }
+      ],
+      root: 'display:flex;flex-direction:column;gap:32px;padding:64px;width:max-content',
+      intro: 'display:flex;flex-direction:column;gap:10px;max-width:960px',
+      eyebrow: 'font-size:14px;line-height:19px;font-weight:700;color:' + P,
+      h0: 'font-size:40px;line-height:52px;font-weight:700;color:' + INK,
+      lead: 'font-size:17px;line-height:26px;color:' + SUB + ';text-wrap:pretty',
+      row: 'display:flex;gap:36px;align-items:flex-start;flex-wrap:wrap',
+      col: 'display:flex;flex-direction:column;gap:10px;width:430px',
+      colDone: 'display:flex;flex-direction:column;gap:10px;width:430px',
+      colWide: 'display:flex;flex-direction:column;gap:10px;width:900px',
+      colWideAfter: 'display:flex;flex-direction:column;gap:10px;width:900px',
+      tag: 'height:26px;display:flex;align-items:center;gap:8px;font-size:18px;font-weight:700;color:' + INK + ';white-space:nowrap',
+      tagId: 'width:26px;height:26px;flex:0 0 26px;border-radius:6px;background:' + INK + ';color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700',
+      tagDesc: 'height:66px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;line-height:21px;color:' + SUB + ';text-wrap:pretty',
+
+      phone: 'width:430px;height:932px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)',
+      bar: 'flex:0 0 44px;display:flex;align-items:center;padding:0 26px;font-size:14px;font-weight:700;color:' + INK,
+      navBar: 'flex:0 0 56px;display:flex;align-items:center;gap:8px;padding:0 16px;box-shadow:inset 0 -1px 0 ' + BORDER,
+      navTitle: 'flex:1;min-width:0;text-align:center;font-size:16px;font-weight:700;color:' + INK,
+      navPad: 'width:36px;flex:0 0 36px',
+      icoBack: ICO('chevron-left', 24, INK) + ';width:36px;flex:0 0 36px;-webkit-mask-size:24px;mask-size:24px',
+      scroll: 'flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;scrollbar-width:none',
+
+      loginBrand: 'flex:1;min-height:0;padding:72px 24px 0;display:flex;flex-direction:column;gap:20px',
+      markBox: 'width:64px;height:64px;border-radius:16px;background:#fff5f2;display:flex;align-items:center;justify-content:center',
+      icoMark: ICO('heart-fill', 34, P),
+      loginTitle: 'font-size:32px;line-height:44px;letter-spacing:-0.02em;font-weight:700;color:' + INK,
+      benefitWrap: 'display:flex;flex-direction:column;gap:10px;padding-top:4px',
+      benefitRow: 'display:flex;align-items:flex-start;gap:9px',
+      benefitDot: 'width:5px;height:5px;flex:0 0 5px;margin-top:9px;border-radius:999px;background:' + P,
+      benefitCol: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:2px',
+      benefitT: 'font-size:16px;line-height:23px;font-weight:700;color:' + INK,
+      benefitText: 'flex:1;min-width:0;font-size:15px;line-height:23px;color:' + SUB + ';text-wrap:pretty',
+      benefits: ['업체별 가격과 조건을 한눈에 확인해요', '광고보다 내 기준으로 직접 골라요', '플래너를 거치지 않고 직접 연결돼요', '계약부터 결혼식까지 한곳에서 챙겨요'],
+
+      loginAuth: 'flex:0 0 auto;padding:0 24px 32px;display:flex;flex-direction:column;gap:10px',
+      ageCta: 'height:56px;border-radius:6px;background:#fff5f2;box-shadow:inset 0 0 0 1.5px ' + P + ';display:flex;align-items:center;justify-content:center;gap:10px',
+      ageRow: 'display:flex;align-items:center;gap:10px;min-height:44px',
+      ageCheck: CHECK(22, P).replace('border-radius:999px', 'border-radius:6px'),
+      ageLabel: 'font-size:16px;font-weight:700;color:' + P,
+      kakaoBtn: 'height:56px;border-radius:6px;background:#FEE500;color:#191600;display:flex;align-items:center;justify-content:center;gap:8px;font-size:17px;font-weight:700',
+      kakaoMark: 'width:20px;height:20px;border-radius:5px;background:#191600;color:#FEE500;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800',
+      legal: 'font-size:12px;line-height:18px;color:' + MUTED + ';text-align:center;padding-top:4px',
+
+      stepNav: 'flex:0 0 56px;display:flex;align-items:center;gap:12px;padding:0 24px',
+      progTrack: 'flex:1 1 auto;height:4px;border-radius:999px;background:' + SEC + ';overflow:hidden',
+      prog20: 'display:block;width:20%;height:100%;border-radius:999px;background:' + P,
+      prog40: 'display:block;width:40%;height:100%;border-radius:999px;background:' + P,
+      prog60: 'display:block;width:60%;height:100%;border-radius:999px;background:' + P,
+      prog80: 'display:block;width:80%;height:100%;border-radius:999px;background:' + P,
+      prog100: 'display:block;width:100%;height:100%;border-radius:999px;background:' + P,
+      stepLabel: 'flex:0 0 auto;font-size:13px;font-weight:700;color:' + MUTED + ';font-variant-numeric:tabular-nums;white-space:nowrap',
+
+      qBlock: 'flex:0 0 auto;padding:20px 24px 24px;display:flex;flex-direction:column;gap:10px',
+      qBlockSm: 'flex:0 0 auto;padding:12px 24px 20px;display:flex;flex-direction:column;gap:8px',
+      qTitle: 'font-size:28px;line-height:38px;letter-spacing:-0.02em;font-weight:700;color:' + INK,
+      qTitleSm: 'font-size:26px;line-height:35px;letter-spacing:-0.02em;font-weight:700;color:' + INK,
+      qSub: 'font-size:15px;line-height:23px;color:' + MUTED,
+
+      sec: 'flex:0 0 auto;padding:0 24px 20px;display:flex;flex-direction:column;gap:12px',
+      secTitle: 'font-size:15px;font-weight:700;color:' + INK,
+      rows: 'display:flex;flex-direction:column;gap:10px',
+
+      dateField: 'height:56px;border-radius:6px;padding:0 16px;display:flex;align-items:center;font-size:17px;font-weight:700;color:' + INK + ';box-shadow:inset 0 0 0 1.5px ' + P + ';font-variant-numeric:tabular-nums',
+      ddayRow: 'display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:0 2px',
+      ddayLabel: 'font-size:14px;color:' + MUTED,
+      ddayVal: 'font-size:16px;font-weight:700;color:' + P + ';font-variant-numeric:tabular-nums',
+      chipUndecided: 'align-self:flex-start;height:44px;padding:0 16px;border-radius:999px;background:' + SEC + ';color:' + SUB + ';display:inline-flex;align-items:center;font-size:15px;font-weight:700',
+
+      answeredWrap: 'flex:0 0 auto;padding:4px 24px 0;display:flex;flex-direction:column',
+      ansRow: 'display:flex;align-items:center;gap:10px;min-height:44px',
+      ansCheck: CHECK(20, P),
+      ansLabel: 'font-size:14px;color:' + MUTED + ';white-space:nowrap',
+      ansVal: 'flex:1;min-width:0;font-size:14px;font-weight:700;color:' + INK + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      ansEdit: 'font-size:13px;font-weight:700;color:' + MUTED + ';white-space:nowrap',
+      answered: [{ k: '예식일', v: '2027.05.16(토)' }],
+      answered2: [{ k: '예식일', v: '2027.05.16(토)' }, { k: '지역', v: '서울 강남구' }],
+      wheelSheet: 'position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;padding:12px 24px 28px;display:flex;flex-direction:column;gap:14px;box-shadow:0 -8px 32px rgba(0,27,55,.16);box-sizing:border-box',
+      sheetGrab: 'align-self:center;width:40px;height:4px;border-radius:999px;background:' + BORDER,
+      sheetHead: 'display:flex;align-items:center;justify-content:space-between;gap:12px',
+      sheetTitle: 'font-size:20px;font-weight:700;color:' + INK,
+      sheetClose: 'width:36px;height:36px;flex:0 0 36px;border-radius:999px;background:' + SEC + ';display:flex;align-items:center;justify-content:center',
+      icoX: ICO('close-fill', 16, INK),
+      wheelWrap: 'position:relative;display:flex;height:240px;overflow:hidden',
+      wheelBand: 'position:absolute;left:0;right:0;top:96px;height:48px;border-radius:10px;background:' + REC + ';z-index:1',
+      wheelFadeTop: 'position:absolute;left:0;right:0;top:0;height:96px;background:linear-gradient(#fff 30%,rgba(255,255,255,0));pointer-events:none;z-index:3',
+      wheelFadeBottom: 'position:absolute;left:0;right:0;bottom:0;height:96px;background:linear-gradient(rgba(255,255,255,0),#fff 70%);pointer-events:none;z-index:3',
+      sheetDock: 'display:flex;padding-top:4px',
+      wheels: [
+        wheelCol(['부산', '인천', '경기', '서울', '대구', '대전', '광주'], 3),
+        wheelCol(['서초구', '송파구', '강남구', '마포구', '성동구', '용산구', '중구'], 2)
+      ],
+      regionWrap: 'display:flex;flex-wrap:wrap;gap:8px',
+      regions: ['서울', '경기', '인천', '부산', '대구', '대전', '광주', '울산', '그 외'].map((n, i) => ({ label: n,
+        style: 'height:44px;padding:0 16px;border-radius:999px;display:inline-flex;align-items:center;font-size:15px;font-weight:700;white-space:nowrap;'
+          + (i === 0 ? 'background:' + P + ';color:#fff;' : 'background:' + SEC + ';color:' + SUB + ';') })),
+      distWrap: 'display:flex;flex-direction:column;padding-top:4px',
+      districts: ['강남구', '서초구', '송파구', '마포구', '성동구'].map((n, i) => ({ label: n, on: i === 0,
+        rowStyle: 'display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:56px;box-shadow:inset 0 -1px 0 ' + BORDER,
+        nameStyle: 'font-size:16px;' + (i === 0 ? 'font-weight:700;color:' + P + ';' : 'color:' + SUB + ';') })),
+      styleBtnWrap: 'flex:0 0 auto;padding:0 24px 16px;display:flex;flex-direction:column;gap:10px',
+      styleCol: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:3px',
+      styleDesc: 'font-size:13px;line-height:19px;color:' + MUTED,
+      styleBtns: [
+        styleBtn('도시적인', '모던하고 세련된 도심 분위기', true),
+        styleBtn('자연스러운', '편안하고 빛이 좋은 야외 느낌', true),
+        styleBtn('로맨틱한', '부드럽고 사랑스러운 분위기', false),
+        styleBtn('화려한', '풍성하고 존재감 있는 스타일', false)
+      ],
+
+      pgWrap: 'display:flex;flex-direction:column;gap:8px',
+      pgHead: 'display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:22px',
+      pgTitle: 'font-size:14px;font-weight:700;color:' + MUTED,
+      cellCheck: CHECK(20, P),
+
+      styleGrid: 'flex:0 0 auto;padding:0 24px 16px;display:grid;grid-template-columns:1fr 1fr;gap:11px',
+      styleCell: 'position:relative;width:100%;height:200px;border-radius:10px;overflow:hidden',
+      styleCheck: CHECK(26, P) + ';position:absolute;top:10px;right:10px',
+      styleLabel: 'position:absolute;left:12px;bottom:12px;font-size:16px;font-weight:700;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.55)',
+      styles: [
+        sty('ob-s1', IMG.urban, '도시적인', true),
+        sty('ob-s2', IMG.natural, '자연스러운', true),
+        sty('ob-s3', IMG.romantic, '로맨틱한', false),
+        sty('ob-s4', IMG.glam, '화려한', false)
+      ],
+      styleHead: 'flex:0 0 auto;padding:0 24px 10px;display:flex;align-items:center;justify-content:space-between',
+      selectAll: 'font-size:14px;font-weight:700;color:' + P + ';cursor:pointer',
+      osToastWrap: 'position:absolute;left:0;right:0;bottom:112px;display:flex;justify-content:center;pointer-events:none;z-index:20',
+      osToast: 'max-width:302px;padding:12px 20px;border-radius:999px;background:rgba(23,25,28,.86);color:#fff;font-size:14px;line-height:20px;text-align:center',
+      toast: 'padding:14px 18px;border-radius:10px;background:rgba(23,25,28,.92);color:#fff;font-size:15px;font-weight:700',
+
+      uploadGrid: 'display:grid;grid-template-columns:1fr 1fr;gap:11px',
+      upCell: 'height:140px;border-radius:10px;background:' + REC + ';display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px',
+      upT: 'font-size:15px;font-weight:700;color:' + INK,
+      upS: 'font-size:12px;color:' + MUTED,
+      uploadWays: [
+        { icon: ICO('camera', 28, SUB), t: '사진 찍기', s: '지금 촬영해요' },
+        { icon: ICO('photo', 28, SUB), t: '앨범에서 고르기', s: '저장한 사진' }
+      ],
+      tipRow: 'display:flex;align-items:flex-start;gap:9px',
+      tipCheck: CHECK(20, '#1aa174'),
+      tipText: 'flex:1;font-size:14px;line-height:22px;color:' + SUB,
+      tips: ['금액과 업체 이름이 같이 보이게 찍어주세요', '가릴 곳은 손으로 가리고 찍어도 괜찮아요', '여러 장이면 한 장씩 올려주세요'],
+
+      noteBox: 'border-radius:10px;background:' + REC + ';padding:18px;display:flex;flex-direction:column;gap:5px',
+      mergeBox: 'border-radius:10px;background:#fff5f2;padding:18px;display:flex;flex-direction:column;gap:5px',
+      noteT: 'font-size:15px;font-weight:700;color:' + INK,
+      noteS: 'font-size:13px;line-height:20px;color:' + MUTED,
+
+      ocrHead: 'display:flex;align-items:center;gap:8px',
+      ocrK: 'flex:1;font-size:13px;color:' + MUTED,
+      ocrV: 'font-size:18px;font-weight:700;color:' + INK + ';font-variant-numeric:tabular-nums',
+      ocrHint: 'font-size:12px;line-height:18px;color:' + P,
+      ocrFields: [
+        ocr('낸 금액', '1,520,000원', true),
+        ocr('낸 날짜', '2026년 8월 28일', true),
+        ocr('업체', '주식회사 모먼트', false, '자료에 적힌 상호가 등록된 업체명과 달라요'),
+        ocr('상품', '스튜디오 촬영 패키지', false, '어떤 구성인지 골라주시면 비교에 쓸 수 있어요')
+      ],
+
+      dockSingle: 'flex:0 0 92px;padding:12px 24px;display:flex;box-shadow:inset 0 1px 0 ' + BORDER,
+      dockPair: 'flex:0 0 92px;padding:12px 24px;display:flex;gap:10px;box-shadow:inset 0 1px 0 ' + BORDER,
+      ctaFull: 'flex:1;height:56px;border-radius:6px;background:' + P + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700',
+      ctaWide: 'flex:1.4;height:56px;border-radius:6px;background:' + P + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700',
+      ctaGhost: 'flex:1;height:56px;border-radius:6px;background:' + SEC + ';color:' + SUB + ';display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700',
+      ctaDim: 'flex:1;height:56px;border-radius:6px;background:' + SEC + ';color:' + DIM + ';display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700',
+
+      diffCard: 'width:900px;background:#fff;border:1px solid ' + BORDER + ';border-radius:10px;padding:8px 24px 16px;display:flex;flex-direction:column;box-sizing:border-box',
+      diffHead: 'display:flex;align-items:center;gap:16px;min-height:44px;box-shadow:inset 0 -1px 0 #dcdee3',
+      diffRow: 'display:flex;align-items:flex-start;gap:16px;min-height:52px;padding:12px 0;box-shadow:inset 0 -1px 0 ' + SEC,
+      dh1: 'width:130px;flex:0 0 130px;font-size:12px;font-weight:700;color:' + MUTED,
+      dh2: 'width:270px;flex:0 0 270px;font-size:12px;font-weight:700;color:' + MUTED,
+      dh3: 'width:270px;flex:0 0 270px;font-size:12px;font-weight:700;color:' + MUTED,
+      dh4: 'flex:1;font-size:12px;font-weight:700;color:' + MUTED,
+      dc1: 'width:130px;flex:0 0 130px;font-size:13px;line-height:20px;font-weight:700;color:' + INK,
+      dc2: 'width:270px;flex:0 0 270px;font-size:13px;line-height:20px;color:' + MUTED,
+      dc3: 'flex:1;font-size:12px;line-height:19px;color:' + MUTED,
+
+      diffs: [
+        diff('로그인 카피', 'WEDDING, LESS OVERWHELMING · 결정은 가볍게, 준비는 단단하게', '웨딩 준비, 진짜 견적부터 확인해 보세요', '영문 라벨을 쓰지 않는다'),
+        diff('로그인 카드', '✦ 나에게 맞는 순서부터 · 코랄 박스', '뺌 · 혜택 3줄로 대신', '첫 화면에 설명 카드를 두지 않는다'),
+        diff('카카오 버튼', '카카오로 3초 만에 시작하기', '카카오로 시작하기', '검증 못 하는 수치를 쓰지 않는다'),
+        diff('만 14세 확인', '없음', '약관 동의 화면(WP-AUTH-010) 필수 항목', '개인정보보호법'),
+        diff('온보딩 단계', '3단계 · 01 / 03', '5단계 · 1/5', '예식일 · 지역 · 진행 상황 · 예산 · 스타일'),
+        diff('Back 처리', '무조건 이전 화면', '진입 컨텍스트 유지', '어디서 들어왔는지에 따라 돌아갈 곳이 다르다'),
+        diff('온보딩 Back', '이전 화면', '이전 단계 · 1단계에서는 로그인', '단계는 순서가 있다'),
+        diff('상세 Back', '이전 화면', '진입한 목록 · 탭과 스크롤 유지', '고르던 자리로 돌아와야 한다'),
+        diff('온보딩 라벨', 'JUST FOR YOU', '뺌', '영문 라벨을 쓰지 않는다'),
+        diff('건너뛰기', '나중에', '뺌 · 미정 선택지로 대신', '설정 없이 홈에 가면 내 웨딩 준비가 비어 있다'),
+        diff('예식일 입력', '3지선다 (2027년 1월 15일 · 상반기 · 미정)', '휠 피커 + 아직 정하지 않았어요', '날짜를 고르게 해야 D-day가 나온다'),
+        diff('중요한 것 질문', '예산 안에서 · 취향 뚜렷 · 정보 충분', '뺌', '추측 질문 대신 실제 값으로 판단'),
+        diff('스타일', '없음', '4종 버튼 · 개수 제한 없음', '이미지를 쓰지 않고 말로 판단한다'),
+        diff('제보 제목', '영수증 또는 계약서를 인증해주세요', '금액이 보이는 사진 한 장이면 돼요', '계약서를 요구하지 않는다'),
+        diff('제보 이름', '가격 제보 · VERIFY THE FACTS', 'Pick 인증', '용어사전'),
+        diff('업로드 UI', '검정 대형 카메라 버튼 + 보조 파일 링크', '카메라 · 앨범 2칸 동일 무게', '두 경로의 무게가 같다'),
+        diff('OCR 결과', '검토 필요 배지 하나 · 3항목 나열', '필드마다 읽었어요 / 확인 필요', '확인이 필요한 것만 세운다'),
+        diff('제보 CTA', '확인 후 반영하기', '이대로 인증하기', '사용자 행동으로 적는다')
+      ]
+    };
+  }
+}
+
+
+export default Component;

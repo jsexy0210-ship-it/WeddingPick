@@ -16,37 +16,41 @@
 import { formatCount } from './format-number';
 
 /**
- * 탈퇴 확인 화면의 제목.
+ * 탈퇴 확인 화면의 제목 두 줄 — 정본 docs/design/React_Native/my.jsx:639(frame-014 qTitle).
  *
  * **무엇을 그만두는지 이름을 적는다**(2026-09-09 사용자 결정). 예전 제목
  * 「정말 그만두시나요?」는 어느 서비스의 무슨 화면인지 스스로 말하지 않아,
  * 캡처 한 장만 보면 탈퇴 화면인지 알 수 없었다 — 카카오 심사가 회원 탈퇴 경로를
- * 확인할 수 없다고 반려한 것과 같은 자리다.
+ * 확인할 수 없다고 반려한 것과 같은 자리다. 정본 제목도 「탈퇴」를 말하고 헤더가
+ * 「회원탈퇴」다.
  */
-export const WITHDRAWAL_HEADLINE = '웨딩픽을 탈퇴할까요?';
+export const WITHDRAWAL_HEADLINE_LINES = ['탈퇴하면', '이렇게 돼요'] as const;
+export const WITHDRAWAL_HEADLINE = WITHDRAWAL_HEADLINE_LINES.join(' ');
 
 /** 화면이 동의를 받기 전에 반드시 보여주는 두 줄. */
 export const WITHDRAWAL_TITLE = '탈퇴하면 계정과 개인화 정보는 삭제돼요';
 export const WITHDRAWAL_IRREVERSIBLE =
   '다시 되돌릴 수 없어요. 같은 계정으로 다시 가입하면 새로 시작해요.';
 
-export const WITHDRAWAL_CONSENT = '위 내용을 확인했고 탈퇴에 동의해요';
+/** 정본 my.jsx:667(frame-014 chkText). */
+export const WITHDRAWAL_CONSENT = '안내를 확인했어요';
 export const WITHDRAWAL_CANCEL = '그대로 둘게요';
 export const WITHDRAWAL_SUBMIT = '탈퇴하기';
 
-export const WITHDRAWAL_DELETED_GROUP = '지워지는 것';
+/** 정본 my.jsx:643(frame-014 secLabel). */
+export const WITHDRAWAL_DELETED_GROUP = '바로 지워져요';
 
 /**
- * 유지되는 묶음의 이름.
+ * 유지되는 묶음의 이름 — 정본 my.jsx:654(frame-014 secLabel 「남아요」).
  *
- * **`남는 것`이라고 쓰지 않는다.** 남는다는 말은 "내 것이 그대로 있다"로 읽히지만,
- * 실제로 유지되는 것은 작성자 정보와 끊어진 자료다. 이름이 사실과 다르면 그 화면은
- * 동의를 받은 것이 아니라 오해를 받은 것이 된다.
+ * **`남는 것`이라고 쓰지 않는다.** 「내 것이 그대로 있다」로 읽히기 때문이다. 정본은
+ * 묶음 이름을 「남아요」로 두고 바로 아래 고지(`WITHDRAWAL_SEPARATED_NOTE`)와 줄마다
+ * 설명(「이름을 지우고 금액만 남아요」)으로 작성자와 끊어진다는 사실을 적는다.
  */
-export const WITHDRAWAL_SEPARATED_GROUP = '작성자 정보와 분리되는 정보';
-/** 통합정책 v3.15 §J-3 "하단 고지"의 문구를 그대로 쓴다. */
+export const WITHDRAWAL_SEPARATED_GROUP = '남아요';
+/** 정본 my.jsx:664(frame-014 note) — 2026-09-25 MASTER 지시로 RN 정본 문구를 따른다. */
 export const WITHDRAWAL_SEPARATED_NOTE =
-  '후기와 실 제보는 나를 알아볼 수 없도록 분리해 유지될 수 있어요';
+  '이름과 계정은 지우고 금액만 남겨요. 누가 냈는지는 남지 않아요.';
 export const WITHDRAWAL_SEPARATED_EMPTY = '작성한 후기나 남는 정보가 없어요';
 export const WITHDRAWAL_ANONYMOUS_BADGE = '익명';
 

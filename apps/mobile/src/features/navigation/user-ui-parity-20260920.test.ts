@@ -34,7 +34,7 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
 
   it('Kakao 복귀는 기본 로더와 진행 문구를 같이 둔다', () => {
     const s = mobile('features/auth/signing-in-view.tsx');
-    expect(s).toContain('<DelayedLoader size={40} />');
+    expect(s).toContain('<DelayedLoader size={40} shape="mark" />');
     expect(s).toContain('{SIGNING_IN_MESSAGE}');
   });
   it('Android Back도 화면 계층을 따르고 홈에서만 2회 앱 종료를 쓴다', () => {
@@ -73,9 +73,10 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(setup).toContain('STYLE_PICK_LIMIT_TOAST');
     expect(taste).toContain('STYLE_PICK_LIMIT_TOAST');
   });
-  it('setup 완료 뒤 Home 두 번째 로더를 생략한다', () => {
-    expect(mobile('app/setup.tsx')).toContain('markNextHomeLoadingCoveredBySetup()');
-    expect(mobile('app/(tabs)/index.tsx')).toContain('setupCoveredLoading ? null');
+  it('setup 저장 중과 홈 첫 진입에 같은 홈 스켈레톤을 쓴다', () => {
+    expect(mobile('app/setup.tsx')).toContain('if (sending) return <HomeSkeleton />');
+    expect(mobile('app/(tabs)/index.tsx')).toContain('return <HomeSkeleton />');
+    expect(mobile('app/setup.tsx')).not.toContain('remainingLoadingMs = 3000 -');
   });
   /*
    * 「홈 추천 비교는 표시한 업체 id를 compare route에 넘긴다」는 2026-09-23 v3.29 홈
@@ -180,16 +181,13 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(pickCategory).toContain("pathname: '/pick/confirm'");
     const pickIndex = mobile('app/(tabs)/pick/index.tsx');
     expect(pickIndex).toContain("pathname: '/pick/confirm'");
-    const pickDone = mobile('app/(tabs)/pick/done.tsx');
-    expect(pickDone).toContain('router.replace(`/search/${decidedVendorId}/consult`)');
+    const pickConfirm = mobile('app/(tabs)/pick/confirm.tsx');
+    expect(pickConfirm).toContain('showResultToast(`${withInstrument(vendorName)} 결정했어요`)');
+    expect(pickConfirm).toContain("dismissToOrReplace('/pick')");
 
     const review = mobile('app/(tabs)/search/[vendorId]/review/[reviewId].tsx');
     expect(review).not.toContain("router.push(\`/search/\${vendorId}/consult\`)");
     expect(review).toContain("router.push(\`/search/\${vendorId}\`)");
-
-    const done = mobile('app/(tabs)/pick/done.tsx');
-    expect(done).toContain('상담 예약하기');
-    expect(done).toContain('vendorId: string');
 
     const consult = mobile('app/(tabs)/search/[vendorId]/consult.tsx');
     expect(consult).toContain("listCandidates(me.weddingId, { force: true })");

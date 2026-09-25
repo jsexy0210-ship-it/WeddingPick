@@ -22,13 +22,13 @@ const DEBOUNCE_MS = 250;
 /**
  * 라운지 후기 글쓰기 진입.
  *
- * 예전 주소는 라운지 후기 URL로 보낸다. 업체 선택 시트는 라운지 root가 직접 렌더해
+ * 예전 주소는 리얼후기 화면으로 보낸다. 업체 선택 시트는 리얼후기 화면이 직접 렌더해
  * 숨은 하위 탭 아래로 HOME이 비치지 않게 한다. 업체를 고르기 전에는 후기 계약을
  * 만들 수 없으므로 샘플 업체나 임의 vendorId를 지어내지 않는다.
  */
 export default function LoungeReviewWriteRoute() {
   const { from } = useLocalSearchParams<{ from?: string }>();
-  const href = `/community?tab=review&write=review${from === 'my' ? '&from=my' : ''}`;
+  const href = `/community/review?write=review${from === 'my' ? '&from=my' : ''}`;
 
   return <Redirect href={href as never} />;
 }

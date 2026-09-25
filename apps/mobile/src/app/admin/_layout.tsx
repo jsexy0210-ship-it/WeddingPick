@@ -1,6 +1,6 @@
 import { Link, Redirect, Slot, usePathname } from 'expo-router';
 import { useEffect, useState, useSyncExternalStore } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { AdminSpacing as A, Colors, FontSize, LineHeight, Radius, Spacing, WeddingMark } from '@weddingpick/ui';
 
@@ -20,8 +20,8 @@ import { loadAdminToken, readAdminTokenSync, subscribeAdminToken } from './_sess
  * 현재 사용자 홈에 바로 나가는 콘텐츠라 별도 줄로 다시 올렸다. 그래서 지금
  * 사이드바는 **열 줄이다** —
  *
- *   대시보드 · 웨딩피드 콘텐츠 · 확인 필요 · 업체·행사 · 후기·신고 · 광고·마케팅 · 자동화 ·
- *   통계·수익 · 계정·권한 · 사이트·기록
+ *   대시보드 · 앱 회원 · 관리자 계정 · 웨딩피드 콘텐츠 · 확인 필요 · 업체·행사 ·
+ *   후기·신고 · 광고·보상 · 자동화 · 통계·분석 · 사이트·기록
  *
  * 옛 화면 34개(로그인 제외 33개)는 사라지지 않았다 — 각 그룹의 대표 화면 파일이
  * `AdminTabShell`로 나머지를 탭으로 불러 그린다(예: `automation.tsx`가 「자동화」
@@ -47,8 +47,8 @@ type NavEntry = { key: string; label: string; href: string };
 
 /**
  * **열 줄.** 기존 아홉 그룹에 현재 사용자 홈과 직접 연결되는 웨딩피드 콘텐츠를
- * 독립 메뉴로 올렸다. 순서는 대표님이 준 목록 순서를
- * 그대로 따른다. 각 `href`는 그 그룹의 **대표 화면**(첫 탭)이고, 나머지는 그 화면
+ * 독립 메뉴로 올렸다. 계정 메뉴는 2026-09-24 요청대로 대시보드 바로 아래에 둔다.
+ * 각 `href`는 그 그룹의 **대표 화면**(첫 탭)이고, 나머지는 그 화면
  * 안의 탭이다 — 예를 들어 「자동화」를 누르면 `/admin/automation`이 열리고
  * 안에서 처리 상태 탭이 기본으로 선택된다.
  *
@@ -57,6 +57,7 @@ type NavEntry = { key: string; label: string; href: string };
  */
 const NAV: NavEntry[] = [
   { key: 'home', label: '대시보드', href: '/admin/home' },
+  { key: 'users', label: '앱 회원 · 관리자 계정', href: '/admin/users' },
   { key: 'wedding-feed', label: '웨딩피드 콘텐츠', href: '/admin/wedding-feed' },
   { key: 'queue', label: '확인 필요', href: '/admin/queue' },
   { key: 'vendors', label: '업체·행사', href: '/admin/vendors' },
@@ -64,24 +65,26 @@ const NAV: NavEntry[] = [
   { key: 'ads', label: '광고·보상', href: '/admin/ads' },
   { key: 'automation', label: '자동화', href: '/admin/automation' },
   { key: 'stats', label: '통계·분석', href: '/admin/stats' },
-  { key: 'users', label: '계정·권한', href: '/admin/users' },
   { key: 'faq', label: '사이트·기록', href: '/admin/faq' },
 ];
 
 const LOGIN_PATH = '/admin/login';
+const COMPACT_WIDTH = 900;
 
-function Sidebar({ pathname }: { pathname: string }) {
+function Sidebar({ pathname, compact }: { pathname: string; compact: boolean }) {
   return (
-    <View style={styles.sidebar}>
-      <View style={styles.sidebarLogo}>
+    <View style={[styles.sidebar, compact && styles.sidebarCompact]}>
+      <View style={[styles.sidebarLogo, compact && styles.sidebarLogoCompact]}>
         {/* Pick Mark. spec/tokens.json symbol — 적용처에 관리자 사이드바가 들어 있다. */}
         <WeddingMark size={20} color={Colors.light.tint} />
         <Text style={styles.sidebarTitle}>웨딩픽 관리자</Text>
       </View>
       <ScrollView
-        style={styles.sidebarScroll}
-        contentContainerStyle={styles.sidebarScrollContent}
-        showsVerticalScrollIndicator={false}
+        horizontal={compact}
+        style={[styles.sidebarScroll, compact && styles.sidebarScrollCompact]}
+        contentContainerStyle={[styles.sidebarScrollContent, compact && styles.sidebarScrollContentCompact]}
+        showsHorizontalScrollIndicator={compact}
+        showsVerticalScrollIndicator={!compact}
       >
         {NAV.map((item) => {
           const active = pathname.startsWith(item.href);
@@ -102,9 +105,9 @@ function Sidebar({ pathname }: { pathname: string }) {
                 *
                 * 아래 `Text`의 배열은 그대로 둔다 — 복제되는 것은 `Pressable` 하나뿐이다.
                 */}
-              <Pressable style={StyleSheet.flatten([styles.navItem, active && styles.navItemActive])}>
+              <Pressable style={StyleSheet.flatten([styles.navItem, compact && styles.navItemCompact, active && styles.navItemActive])}>
                 <Text
-                  style={[styles.navLabel, active && styles.navLabelActive]}
+                  style={[styles.navLabel, compact && styles.navLabelCompact, active && styles.navLabelActive]}
                   numberOfLines={1}
                 >
                   {item.label}
@@ -210,6 +213,8 @@ export default function AdminLayout() {
   const pathname = usePathname();
   const { token, checked } = useAdminToken();
   const role = useAdminRoleFetch(pathname === LOGIN_PATH ? null : token);
+  const { width, height } = useWindowDimensions();
+  const compact = width < COMPACT_WIDTH;
 
   if (Platform.OS !== 'web') {
     return (
@@ -237,9 +242,9 @@ export default function AdminLayout() {
 
   return (
     <AdminRoleProvider value={role}>
-      <View style={styles.root}>
-        <Sidebar pathname={pathname} />
-        <View style={styles.main}>
+      <View style={[styles.root, compact && styles.rootCompact, compact && { height }]}>
+        <Sidebar pathname={pathname} compact={compact} />
+        <View style={[styles.main, compact && styles.mainCompact]}>
           {/*
             * 뷰어는 모든 메뉴를 열어 보되 바꾸지는 못한다(2026-09-25 대표 지시). 단추가
             * 왜 흐린지를 화면마다 적지 않고 여기 한 줄로 알린다.
@@ -267,6 +272,7 @@ const styles = StyleSheet.create({
     backgroundColor: C.backgroundSelected,
     minHeight: '100vh' as unknown as number,
   },
+  rootCompact: { flexDirection: 'column' },
   sidebar: {
     /*
      * 240 — 핸드오프 v3.27이 관리자 콘솔 기준을 1920×1080으로 올리면서 사이드바도
@@ -286,6 +292,7 @@ const styles = StyleSheet.create({
     paddingVertical: A.sidebarPaddingY,
     paddingHorizontal: A.sidebarPaddingX,
   },
+  sidebarCompact: { width: '100%', paddingVertical: Spacing.one, paddingHorizontal: Spacing.one },
   sidebarLogo: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -294,6 +301,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: A.btnPaddingX,
     paddingBottom: A.brandPaddingBottom,
   },
+  sidebarLogoCompact: { paddingBottom: Spacing.one },
   sidebarTitle: {
     /* 시안 brandName «font-size:15px». 본문 sub(16)이 아니다. */
     fontSize: FontSize.adminBanner,
@@ -304,10 +312,12 @@ const styles = StyleSheet.create({
   sidebarScroll: {
     flex: 1,
   },
+  sidebarScrollCompact: { flex: 0, width: '100%', height: A.navItemHeight },
   /* 시안 side «gap:3px» — 메뉴 사이. */
   sidebarScrollContent: {
     gap: A.stackGap,
   },
+  sidebarScrollContentCompact: { flexDirection: 'row', alignItems: 'center' },
   navItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -316,6 +326,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: A.btnPaddingX,
     borderRadius: Radius.control,
   },
+  navItemCompact: { flexShrink: 0 },
   /* 활성 메뉴는 코랄 — 화면당 네 곳 이하로 쓰는 강조색의 첫 자리다(ADMIN.md 공통 규칙). */
   navItemActive: {
     backgroundColor: C.tint,
@@ -326,6 +337,7 @@ const styles = StyleSheet.create({
     lineHeight: LineHeight.micro,
     color: C.adminSidebarLabel,
   },
+  navLabelCompact: { flexGrow: 0, flexShrink: 0, flexBasis: 'auto' },
   navLabelActive: {
     color: C.onTint,
     fontWeight: '700',
@@ -335,6 +347,7 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     minWidth: 0,
   },
+  mainCompact: { width: '100%', minHeight: 0 },
   /* `features/admin/pending-backend`의 안내와 같은 칠 — 「지금 조작이 안 된다」를 말하는 같은 자리다. */
   viewerNotice: {
     backgroundColor: C.cautionaryBackground,

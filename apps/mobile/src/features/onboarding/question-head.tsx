@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { FontSize, Layout, LineHeight, Spacing, ThemedText } from '@weddingpick/ui';
 
 /**
- * 질문 머리 — v3.29 정본 `docs/design/html/대메뉴_홈(로그인, 온보딩).dc.html`
+ * 질문 머리 — v3.29 정본 `docs/design/React_Native/home.jsx`
  * WP-AUTH-002 ~ 006(`qBlock` · `qTitle` · `qSub`).
  *
  * **2026-09-23 정정** — 주석이 파기된 `figma-export/06-onboarding-login.dc.html`을

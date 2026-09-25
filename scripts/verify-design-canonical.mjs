@@ -35,11 +35,11 @@ function sha256(bytes) {
   return createHash('sha256').update(bytes).digest('hex').toUpperCase();
 }
 
-const textExtensions = new Set(['.css', '.html', '.js', '.json', '.md', '.svg', '.txt', '.webmanifest']);
+const textExtensions = new Set(['.cjs', '.css', '.html', '.js', '.jsx', '.json', '.md', '.svg', '.txt', '.webmanifest']);
 
 function normalizedBytes(path) {
   const bytes = readFileSync(path);
-  if (!textExtensions.has(extname(path).toLowerCase())) return bytes;
+  if (!textExtensions.has(extname(path).toLowerCase()) && !path.endsWith('download')) return bytes;
   return Buffer.from(bytes.toString('utf8').replace(/\r\n?/g, '\n'), 'utf8');
 }
 

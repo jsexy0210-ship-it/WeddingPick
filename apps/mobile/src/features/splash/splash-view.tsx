@@ -13,7 +13,7 @@ import {
 
 /**
  * 스플래시 — WP-APP-001. v3.29 정본
- * `docs/design/html/대메뉴_홈(로그인, 온보딩).dc.html` 1번 화면(`splashStage` ·
+ * `docs/design/React_Native/home.jsx` 1번 화면(`splashStage` ·
  * `splashMark` · `splashName`).
  *
  *   코랄 바탕(`splashStage` background) · 세로 중앙 · 마크 64(흰색, `splashMark`
@@ -105,7 +105,7 @@ export function SplashView() {
   );
 }
 
-/* v3.29 dc.html 고정값 — splashMark 64×64 · splashStage gap 16(마크-이름 사이). */
+/* RN 정본 home.jsx 고정값 — splashMark 64×64 · splashStage gap 16(마크-이름 사이). */
 const MARK_SIZE = 64;
 const TITLE_GAP = 16;
 
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  /* dc.html splashName — 20/700 흰색(ThemedText type="t4"와 같은 크기·굵기). */
+  /* home.js splashName — 20/700 흰색(ThemedText type="t4"와 같은 크기·굵기). */
   title: {
     marginTop: TITLE_GAP,
     fontSize: FontSize.t4,

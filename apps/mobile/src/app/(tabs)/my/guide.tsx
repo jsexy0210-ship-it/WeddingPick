@@ -92,7 +92,8 @@ export default function GuideScreen() {
         <BackBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.section}>
-            <ThemedText type="subtitle">자주 묻는 질문</ThemedText>
+            {/* 정본 my.jsx frame-015 navTitle(my.jsx:679). */}
+            <ThemedText type="subtitle">FAQ</ThemedText>
             {/*
               아코디언이 아니라 상세로 보낸다(WP-FAQ-003). 접었다 펴는 것만으로는
               답을 읽은 뒤에 할 수 있는 일이 없다 — 상세에는 관련 질문과

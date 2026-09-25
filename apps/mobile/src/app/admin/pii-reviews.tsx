@@ -9,6 +9,7 @@ import { formatDateTimeDot } from '@/features/common/format-date';
 
 import { apiFetch } from './_api';
 import { WritePressable } from './_role';
+import { compactSplit, useAdminCompact } from './_ui';
 
 /**
  * 개인정보 검토 큐 — 문서에서 개인정보 꼴이 보인 것을 사람이 확인한다.
@@ -40,6 +41,7 @@ type ReviewDetail = {
 };
 
 export function PiiReviewsPanel() {
+  const compact = useAdminCompact();
   const [items, setItems] = useState<PendingReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -133,8 +135,8 @@ export function PiiReviewsPanel() {
         </Pressable>
       </View>
 
-      <View style={styles.body}>
-        <View style={styles.list}>
+      <View style={[styles.body, compact && compactSplit.body]}>
+        <View style={[styles.list, compact && compactSplit.list]}>
           <DelayedLoader active={loading} size={40} style={styles.centered} />
           {!loading && error && <Text style={styles.errorText}>{error}</Text>}
           {!loading && !error && (
@@ -167,7 +169,7 @@ export function PiiReviewsPanel() {
           )}
         </View>
 
-        <View style={styles.detail}>
+        <View style={[styles.detail, compact && compactSplit.detail]}>
           {!selectedId ? (
             <View style={styles.detailEmpty}>
               <Text style={styles.emptyText}>왼쪽에서 문서를 선택하세요</Text>

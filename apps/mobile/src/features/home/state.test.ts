@@ -25,7 +25,7 @@ import {
   type CategoryStatus,
 } from './state';
 
-/* 시안 네 장(0개 · 3/12 · 3/12 정보 부족 · 9/12)을 되살리는 최소한의 자료만 만든다. */
+/* 시안 네 장(0개 · 3/11 · 3/11 정보 부족 · 9/11)을 되살리는 최소한의 자료만 만든다. */
 
 const ME = {
   userId: 'u1',
@@ -104,11 +104,11 @@ function decidedFirst(n: number): CandidateListResponse['groups'] {
 }
 
 describe('홈 순서', () => {
-  it('12업종이고 웨딩홀부터 시작한다', () => {
+  it('11업종이고 웨딩홀부터 시작한다 — 결정사는 없다(2026-09-24)', () => {
     // 시안 1의 격자는 웨딩홀 · 스튜디오 · 드레스 · 메이크업이다.
-    expect(HOME_TOTAL).toBe(12);
+    expect(HOME_TOTAL).toBe(11);
     expect(HOME_CATEGORIES.slice(0, 4)).toEqual(['hall', 'studio', 'dress', 'makeup']);
-    expect(HOME_CATEGORIES).toContain('wedding_info_company');
+    expect(HOME_CATEGORIES).not.toContain('wedding_info_company');
   });
 });
 
@@ -144,8 +144,8 @@ describe('1층 · 진행 구간', () => {
     expect(statuses[0]?.decidedName).toBe('hall 1');
   });
 
-  it('후보 목록이 없어도 12칸은 다 있다', () => {
-    expect(categoryStatuses({ candidates: null, preparedCategories: [] })).toHaveLength(12);
+  it('후보 목록이 없어도 11칸은 다 있다', () => {
+    expect(categoryStatuses({ candidates: null, preparedCategories: [] })).toHaveLength(11);
   });
 });
 
@@ -196,15 +196,14 @@ describe('히어로', () => {
 
   it('9개 이상 — 남은 수를 우리말로', () => {
     expect(heroCopy({ tier: 'finishing', currentLabel: '청첩장', decided: 9 })).toEqual({
-      line1: '세 개만',
+      line1: '두 개만',
       line2: '더 정하면 끝나요',
     });
-    expect(heroCopy({ tier: 'finishing', currentLabel: '예물', decided: 10 }).line1).toBe('두 개만');
-    expect(heroCopy({ tier: 'finishing', currentLabel: '허니문', decided: 11 }).line1).toBe('하나만');
+    expect(heroCopy({ tier: 'finishing', currentLabel: '허니문', decided: 10 }).line1).toBe('하나만');
   });
 
-  it('12/12 — 다 정했어요', () => {
-    expect(heroCopy({ tier: 'finishing', currentLabel: null, decided: 12 }).line1).toBe('다 정했어요');
+  it('11/11 — 다 정했어요', () => {
+    expect(heroCopy({ tier: 'finishing', currentLabel: null, decided: 11 }).line1).toBe('다 정했어요');
   });
 });
 
@@ -289,13 +288,13 @@ describe('준비 현황 4칸', () => {
       'invitation 2곳',
       'goods 시작 전',
       'honeymoon 시작 전',
-      'wedding_info_company 완료',
+      'dowry 완료',
     ]);
     expect(cells[0]?.tone).toBe('now');
     expect(cells[3]?.tone).toBe('done');
   });
 
-  it('12/12 — 네 칸 다 완료', () => {
+  it('11/11 — 네 칸 다 완료', () => {
     const statuses = categoryStatuses({
       candidates: null,
       preparedCategories: [...HOME_CATEGORIES],
@@ -307,7 +306,7 @@ describe('준비 현황 4칸', () => {
   });
 
   it('완료 개수는 격자가 아니라 헤더에 적는다', () => {
-    // 시안 1 — 시작 전에는 링크가 없다. 펼쳐도 빈 칸 12개다.
+    // 시안 1 — 시작 전에는 링크가 없다. 펼쳐도 빈 칸 11개다.
     expect(boardMoreLabel('start', 0)).toBeNull();
     expect(boardMoreLabel('going', 3)).toBe('전체 보기');
     expect(boardMoreLabel('finishing', 9)).toBe('완료 9개 · 전체 보기');
@@ -452,13 +451,13 @@ describe('홈 종합', () => {
     expect(view.tier).toBe('start');
     expect(view.current).toBe('hall');
     expect(view.hero.line1).toBe('웨딩홀부터');
-    expect(view.progressText).toBe('0 / 12');
+    expect(view.progressText).toBe('0 / 11');
     expect(view.cells).toHaveLength(4);
     expect(view.boardNote).toBe('웨딩홀이 정해지면 날짜와 예산이 잡혀요');
     expect(view.cta.kind).toBe('proof');
   });
 
-  it('시안 3 · 9/12', () => {
+  it('시안 3 · 9/11', () => {
     const view = homeView({
       me: { ...ME, preparedCategories: HOME_CATEGORIES.slice(0, 9) } as unknown as CurrentUser,
       candidates: candidates([group('goods', 'picking', 2)], 'goods'),
@@ -467,8 +466,8 @@ describe('홈 종합', () => {
     });
 
     expect(view.tier).toBe('finishing');
-    expect(view.progress).toBeCloseTo(0.75);
-    expect(view.progressText).toBe('9 / 12');
+    expect(view.progress).toBeCloseTo(9 / 11);
+    expect(view.progressText).toBe('9 / 11');
     expect(view.boardMore).toBe('완료 9개 · 전체 보기');
     expect(view.next?.target).toEqual({ kind: 'capture' });
   });

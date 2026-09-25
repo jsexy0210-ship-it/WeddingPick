@@ -1,5 +1,5 @@
 import type { VendorSummary } from '@weddingpick/api-contract';
-import { VENDOR_CATEGORY_LABEL, WEDDING_STYLE_LABEL, formatCount, priceLine } from '@weddingpick/domain';
+import { VENDOR_CATEGORY_LABEL, WEDDING_STYLE_LABEL, formatCount, priceLine, regionLabel } from '@weddingpick/domain';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import {
@@ -108,7 +108,7 @@ export function VendorCard({
         <View style={styles.place}>
           <SeedIcon name="locationRegular" size={Layout.iconMicro} color={theme.textAssistive} />
           <ThemedText type="f12" themeColor="textAssistive" numberOfLines={1} style={styles.shrink}>
-            {vendor.region}
+            {regionLabel(vendor.region)}
           </ThemedText>
         </View>
 

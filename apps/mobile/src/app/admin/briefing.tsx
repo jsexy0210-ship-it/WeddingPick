@@ -1,9 +1,9 @@
 /**
  * WP-ADM-002 일일 브리핑 — 이제 「대시보드」 화면의 아래쪽 절반이다.
  *
- * 시안 `22-admin-ops.dc.html` 1번. 하루치 요약이고, 문제가 없으면 「오늘 사람이 볼 것은
- * 없어요」가 초록 배너로 맨 위에 온다 — 그것이 이 화면의 목적이다. 미해결 리스크가
- * 있을 때만 상단 색이 바뀐다.
+ * 시안 `docs/design/html/웨딩픽 관리자 운영.dc.html` WP-ADM-002.
+ * 서버가 주는 최근 24시간 판정·비용만 보여준다. 복구·수익은 이 응답에 없으므로
+ * 수치를 만들어 채우지 않는다.
  *
  * **2026-09-15 대표 확정 — 「대시보드」(옛 `/admin/home`)와 한 화면으로 묶였다**(위아래,
  * 탭이 아니다). 대시보드가 「지금 이 순간의 상태」고 브리핑이 「하루치 요약」이라 같은
@@ -14,7 +14,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
+import { AdminSpacing as A, Colors, FontSize, LineHeight } from '@weddingpick/ui';
 import { Redirect } from 'expo-router';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
@@ -27,68 +27,36 @@ import {
   Rows,
   StatusBanner,
   type RowItem,
-  type Tone,
 } from './_ui';
 import { formatCount } from '@weddingpick/domain';
 
-type RiskItem = { id: string; category: string; description: string; severity: 'high' | 'medium' | 'low' };
-type Anomaly = { time: string; description: string };
-
+type BriefingRow = { workflow: string; decider: string; decisions: number; failed: number; costUsd: number | null };
 type BriefingData = {
-  date: string;
-  autoProcessed: number;
-  successRate: number;
-  autoRecovered: number;
-  unresolvedRisks: RiskItem[];
-  aiCostToday: string;
-  revenueToday: string;
-  anomalies: Anomaly[];
-  summary: string;
+  briefing: BriefingRow[];
+  budgetStatus: { feature: string; spentUsd: number; budgetUsd: number | null; state: string }[];
 };
 
-/** 리스크 심각도 → 행 앞 점. 배너 색도 가장 높은 심각도를 따른다. */
-const SEVERITY_TONE: Record<RiskItem['severity'], Tone> = {
-  high: 'bad',
-  medium: 'warn',
-  low: 'ok',
-};
-
-const SEVERITY_LABEL: Record<RiskItem['severity'], string> = {
-  high: '높음',
-  medium: '중간',
-  low: '낮음',
-};
-
-/**
- * 서버가 이 화면이 읽는 모양으로 답했는지 본다.
- *
- * **`GET /v1/admin/briefing`은 다른 모양을 준다** — `{ briefing: [...], budgetStatus }`다
- * (`apps/api/src/routes/admin.ts`). 이 화면은 `autoProcessed` · `successRate` ·
- * `unresolvedRisks`를 읽으므로 첫 줄에서 `undefined.length`로 죽었고, 운영자에게는
- * 스택 트레이스만 보였다(2026-09-10 검수에서 실제로 재현).
- *
- * 없는 값을 0으로 메우지 않는다 — 「자동처리 0건 · 확인할 것이 없어요」는 사실이
- * 아니라 지어낸 평온이다. 무엇이 어긋났는지 말하고 다시 시도를 준다.
- */
+/** 실제 `/v1/admin/briefing` 응답만 표시한다. 없는 수치를 평온한 0으로 채우지 않는다. */
 function isBriefingData(d: unknown): d is BriefingData {
   const o = d as Partial<BriefingData> | null;
   return (
     typeof o === 'object' &&
     o !== null &&
-    typeof o.autoProcessed === 'number' &&
-    typeof o.successRate === 'number' &&
-    Array.isArray(o.unresolvedRisks) &&
-    Array.isArray(o.anomalies)
+    Array.isArray(o.briefing) &&
+    o.briefing.every((row) =>
+      typeof row.workflow === 'string' &&
+      typeof row.decider === 'string' &&
+      typeof row.decisions === 'number' &&
+      typeof row.failed === 'number' &&
+      (row.costUsd === null || typeof row.costUsd === 'number')
+    ) &&
+    Array.isArray(o.budgetStatus)
   );
 }
 
-const SHAPE_ERROR = '서버가 이 화면이 읽는 모양으로 답하지 않았어요. 서버의 일일 브리핑 집계를 확인해주세요.';
-
-/** 문제 없으면 초록, 확인할 것이 있으면 주황, 조치가 필요하면 빨강(ADMIN.md 공통 규칙). */
-function bannerTone(risks: RiskItem[]): Tone {
-  if (risks.length === 0) return 'ok';
-  return risks.some((r) => r.severity === 'high') ? 'bad' : 'warn';
-}
+const SHAPE_ERROR = '일일 브리핑을 불러오지 못했어요. 다시 시도해 주세요.';
+const money = (value: number) => `$${value.toFixed(2)}`;
+const DECIDER_LABEL: Record<string, string> = { rule: '규칙', model: '자동 판단', human: '담당자' };
 
 /** `/admin/home`(대시보드)이 위쪽 대시보드 아래에 이어 그리는 패널. */
 export function BriefingPanel() {
@@ -124,30 +92,28 @@ export function BriefingPanel() {
 
   const reload = () => setRev((r) => r + 1);
 
-  const riskRows: RowItem[] = (data?.unresolvedRisks ?? []).map((r) => ({
-    key: r.id,
-    dot: SEVERITY_TONE[r.severity],
-    name: r.category,
-    meta: r.description,
-    tail: SEVERITY_LABEL[r.severity],
-    tailKind: SEVERITY_TONE[r.severity],
+  const rows = data?.briefing ?? [];
+  const total = rows.reduce((sum, row) => sum + row.decisions, 0);
+  const failed = rows.reduce((sum, row) => sum + row.failed, 0);
+  const knownCost = rows.length > 0 && rows.every((row) => row.costUsd !== null);
+  const cost = rows.reduce((sum, row) => sum + (row.costUsd ?? 0), 0);
+  const processedRows: RowItem[] = rows.map((row) => ({
+    key: `${row.workflow}-${row.decider}`,
+    dot: row.failed > 0 ? 'warn' : 'ok',
+    name: row.workflow,
+    meta: DECIDER_LABEL[row.decider] ?? '판정 방식 확인 필요',
+    num: `${formatCount(row.decisions)}건`,
+    tail: row.failed > 0 ? `확인 ${formatCount(row.failed)}건` : '처리됨',
+    tailKind: row.failed > 0 ? 'warn' : 'ok',
   }));
-
-  const anomalyRows: RowItem[] = (data?.anomalies ?? []).map((a, i) => ({
-    key: `${a.time}-${i}`,
-    dot: 'none',
-    name: a.description,
-    meta: a.time,
-  }));
-
-  const tone = bannerTone(data?.unresolvedRisks ?? []);
+  const pendingRows = processedRows.filter((_, i) => rows[i]?.failed > 0);
 
   return (
     <View style={styles.panel}>
       <View style={styles.panelHead}>
         <View style={styles.panelHeadText}>
           <Text style={styles.panelTitle}>일일 브리핑</Text>
-          {data ? <Text style={styles.panelSub}>{`${data.date} 기준`}</Text> : null}
+          {data ? <Text style={styles.panelSub}>최근 24시간</Text> : null}
         </View>
         <Pressable style={styles.panelAction} onPress={reload}>
           <Text style={styles.panelActionLabel}>새로 고침</Text>
@@ -160,67 +126,49 @@ export function BriefingPanel() {
       {!loading && !error && data ? (
         <>
           <StatusBanner
-            tone={tone}
+            tone={failed > 0 ? 'warn' : 'ok'}
             title={
-              data.unresolvedRisks.length === 0
-                ? '오늘 사람이 볼 것은 없어요'
-                : `미해결 리스크 ${formatCount(data.unresolvedRisks.length)}건이 있어요`
+              total === 0
+                ? '최근 24시간 판정 내역이 없어요'
+                : failed === 0
+                  ? '확인할 판정이 없어요'
+                  : `확인할 판정 ${formatCount(failed)}건이 있어요`
             }
-            detail={data.summary || undefined}
+            detail={`최근 24시간 판정 ${formatCount(total)}건`}
           />
 
           <KpiRow
             items={[
-              { label: '자동처리', value: `${formatCount(data.autoProcessed)}건` },
+              { label: '판정', value: `${formatCount(total)}건` },
               {
-                /*
-                 * `successRate`는 0~1 비율이다 — `admin-ops.ts`가
-                 * `succeeded / settled`로 만들고 `automation.tsx`도 ×100으로 그린다.
-                 * 여기만 그대로 찍어서 99.4%가 「1.0%」로 보였다(시안 1번은 99.4%).
-                 */
-                label: '성공률',
-                value: `${(data.successRate * 100).toFixed(1)}%`,
-                kind: data.successRate < 0.9 ? 'bad' : 'ok',
+                label: '처리 비율',
+                value: total === 0 ? '—' : `${(((total - failed) / total) * 100).toFixed(1)}%`,
+                kind: failed > 0 ? 'warn' : 'ok',
               },
-              { label: '자동복구', value: `${formatCount(data.autoRecovered)}건`, kind: 'ok' },
               {
-                label: '미해결 리스크',
-                value: `${formatCount(data.unresolvedRisks.length)}건`,
-                note: data.unresolvedRisks.length === 0 ? '확인할 것이 없어요' : '확인 필요',
-                kind: data.unresolvedRisks.length === 0 ? 'ok' : 'bad',
+                label: '확인 필요',
+                value: `${formatCount(failed)}건`,
+                kind: failed > 0 ? 'warn' : 'ok',
               },
-              { label: '분석 비용', value: data.aiCostToday, note: '오늘 사용분' },
+              { label: '분석 비용', value: knownCost ? money(cost) : '집계 전', note: '최근 24시간' },
             ]}
           />
 
           <CardGrid>
-            <Card title="미해결 리스크" sub="사람이 봐야 하는 것">
-              {riskRows.length === 0 ? (
-                <EmptyState title="확인할 것이 없어요" detail="미해결 리스크가 없어요. 개별 큐를 열지 않아도 괜찮아요." />
+            <Card title="무엇이 처리됐나" sub="최근 24시간 판정">
+              {processedRows.length === 0 ? (
+                <EmptyState title="처리 내역이 없어요" />
               ) : (
-                <Rows items={riskRows} />
+                <Rows items={processedRows} />
               )}
             </Card>
 
-            <Card title="특이사항" sub="사람이 알아두면 좋은 것">
-              {anomalyRows.length === 0 ? (
-                <EmptyState title="특이사항이 없어요" />
+            <Card title="확인 필요" sub="아직 끝나지 않은 판정">
+              {pendingRows.length === 0 ? (
+                <EmptyState title="확인할 것이 없어요" />
               ) : (
-                <Rows items={anomalyRows} />
+                <Rows items={pendingRows} />
               )}
-            </Card>
-
-            <Card
-              title="수익"
-              sub="오늘"
-              note="월 단위 추이는 수익 현황(WP-ADM-032)에서 볼 수 있어요."
-            >
-              <Rows
-                items={[
-                  { key: 'revenue', name: '수익', meta: '광고 · 제휴', num: data.revenueToday },
-                  { key: 'cost', name: '분석 비용', meta: '오늘 사용분', num: data.aiCostToday, numKind: 'bad' },
-                ]}
-              />
             </Card>
           </CardGrid>
         </>
@@ -238,7 +186,7 @@ export default function BriefingRedirect() {
 }
 
 const styles = StyleSheet.create({
-  panel: { gap: 16 },
+  panel: { gap: 16, paddingTop: A.bodyPaddingTop, paddingHorizontal: A.bodyPaddingX, paddingBottom: A.bodyPaddingX },
   panelHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   panelHeadText: { flex: 1, minWidth: 0, gap: 2 },
   panelTitle: { fontSize: FontSize.t6, fontWeight: '700', color: Colors.light.text },

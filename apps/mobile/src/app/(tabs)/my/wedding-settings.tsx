@@ -41,7 +41,7 @@ import { NoteBox, Section, SubScreen } from '@/features/settings/my-kit';
 /** 준비 현황이 받는 업종 — 계약이 «기타»를 받지 않는다(`preparationCategorySchema`). */
 type PreparedCategory = Exclude<VendorCategory, 'etc'>;
 
-/** screens.json WP-MY-003 layout · `spec/strings.ko.json` `my.setting.*`. */
+/** `docs/design/React_Native/my.jsx` WP-MY-003 · `spec/strings.ko.json` `my.setting.*`. */
 const S = {
   title: '내 웨딩설정',
   date: '예식일',
@@ -49,11 +49,12 @@ const S = {
   budget: BUDGET_BRACKET_FIELD_LABEL,
   style: '스타일',
   prepared: '준비 현황',
-  /** 예식일이 지난 상태(screens.json states «경과»). */
+  /** 예식일이 지난 상태(운영 데이터 상태). */
   passed: '지났어요',
   none: '아직 안 골랐어요',
   preparedCount: (n: number) => `${formatCount(n)}개 정함`,
   saved: '설정을 바꿨어요',
+  /* 정본 my.jsx frame-003 noteBox(my.jsx:186). */
   noteTitle: '바꾸면 추천이 다시 계산돼요',
   noteBody: '지금까지 고른 곳과 지출 기록은 그대로 남아요.',
   loadError: '지금 설정을 불러오지 못했어요',
@@ -64,7 +65,7 @@ const S = {
 type Editing = 'region' | 'budget' | 'prepared' | null;
 
 /**
- * 내 웨딩설정 · WP-MY-003 · `docs/design/html/대메뉴_MY.dc.html` 3. 한 카드에 다섯 행
+ * 내 웨딩설정 · WP-MY-003 · `docs/design/React_Native/my.jsx` 프레임 3. 한 카드에 다섯 행
  * (예식일 · 지역 · 준비 현황 · 예산 · 스타일) — 시안 `weddingSet` 순서 그대로다.
  *
  * 이 화면이 생기기 전에는 MY의 «내 웨딩 설정»이 온보딩 5문항(`/setup`)을 통째로 다시 열었다 —
@@ -79,7 +80,7 @@ type Editing = 'region' | 'budget' | 'prepared' | null;
  * 만들지 않는다.
  *
  * **스타일 행은 `/my/taste`(스타일 다시 고르기)로 연결된다** — 00-ia가 가리키던
- * «취향 다시 고르기»(WP-MY-004)와 같은 화면이다(v3.24가 취향을 스타일 4종으로 합치면서
+ * «취향 다시 고르기»와 같은 화면이다 — 정본 WP-MY-014(my.jsx frame-016)(v3.24가 취향을 스타일 4종으로 합치면서
  * 하나가 됐다). 같은 화면을 두 줄로 세우지 않는다.
  *
  * **예산 행 라벨은 시안 원문(«예산»)을 그대로 옮기지 않고 「준비 예산」을 유지했다** —
@@ -99,10 +100,14 @@ export default function WeddingSettingsScreen() {
 
   /** 저장 요청 줄. 연달아 누른 것이 순서대로 나가고, 앞의 것이 끝나야 뒤의 것이 나간다. */
   const queue = useRef<Promise<unknown>>(Promise.resolve());
+  const optimistic = useRef<CurrentUser | null>(null);
 
   useEffect(() => {
     void getCurrentUser()
-      .then(setMe)
+      .then((next) => {
+        optimistic.current = next;
+        setMe(next);
+      })
       .catch((caught: Error) => setError(caught.message ?? S.loadError));
   }, []);
 
@@ -122,22 +127,27 @@ export default function WeddingSettingsScreen() {
     preparedCategories?: PreparedCategory[];
   }) {
     /* 화면을 먼저 바꾼다 — 눌렀는데 아무 일도 안 일어나는 순간을 만들지 않는다. */
-    setMe((prev) => (prev === null ? prev : { ...prev, ...patch }));
+    const next = { ...(optimistic.current ?? current), ...patch };
+    optimistic.current = next;
+    setMe(next);
 
     queue.current = queue.current
       .then(() =>
         completeSetup({
-          weddingDate: patch.weddingDate !== undefined ? patch.weddingDate : current.weddingDate,
-          region: patch.region !== undefined ? patch.region : current.region,
+          weddingDate: next.weddingDate,
+          region: next.region,
           ...(patch.budgetBracket !== undefined && { budgetBracket: patch.budgetBracket }),
           ...(patch.preparedCategories !== undefined && {
             preparedCategories: patch.preparedCategories,
           }),
         })
       )
-      .then((next) => {
-        setMe(next);
-        setToast(S.saved);
+      .then((saved) => {
+        if (optimistic.current === next) {
+          optimistic.current = saved;
+          setMe(saved);
+          setToast(S.saved);
+        }
       })
       .catch((caught: unknown) => {
         if (caught instanceof ApiError && caught.status === 401) {
@@ -145,9 +155,16 @@ export default function WeddingSettingsScreen() {
           return undefined;
         }
         /* 못 바꿨으면 서버가 아는 값으로 되돌린다 — 화면만 바뀐 채로 두지 않는다. */
-        setToast(caught instanceof Error ? caught.message : S.saveError);
+        if (optimistic.current === next) {
+          setToast(caught instanceof Error ? caught.message : S.saveError);
+        }
         return getCurrentUser()
-          .then(setMe)
+          .then((saved) => {
+            if (optimistic.current === next) {
+              optimistic.current = saved;
+              setMe(saved);
+            }
+          })
           .catch(() => undefined);
       });
   }

@@ -140,7 +140,8 @@ describe('회원탈퇴 안내', () => {
 
   it('유지되는 묶음을 `남는 것`이라 부르지 않는다', () => {
     // 남는다는 말은 "내 것이 그대로 있다"로 읽힌다. 실제로는 작성자와 끊어진 자료다.
-    expect(WITHDRAWAL_SEPARATED_GROUP).toBe('작성자 정보와 분리되는 정보');
+    // 묶음 이름은 정본 docs/design/React_Native/my.jsx:654(frame-014) 「남아요」다.
+    expect(WITHDRAWAL_SEPARATED_GROUP).toBe('남아요');
     expect(findBannedPhrases('남는 것')).not.toEqual([]);
   });
 

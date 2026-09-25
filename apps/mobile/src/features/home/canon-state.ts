@@ -3,7 +3,7 @@ import type { AppBootstrapResponse, CategoryRecommendation } from '@weddingpick/
 /*
  * `pendingPreparations`(완료 업종을 빼고 최대 4칸)는 2026-09-23 v3.29 홈 재구축에서
  * 지웠다 — 근거가 이미 파기된 `docs/design/figma-export/README.md`였고, 현재 정본
- * (`docs/design/html/대메뉴_홈(로그인, 온보딩).dc.html`)은 항상 4칸(완료해도 안
+ * (`docs/design/React_Native/home.jsx`)은 항상 4칸(완료해도 안
  * 사라짐)을 요구한다. 새 계산은 `./prep-groups.ts`의 `homePrepCards`가 맡는다.
  */
 

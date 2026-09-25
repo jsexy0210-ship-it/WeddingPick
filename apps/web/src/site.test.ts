@@ -173,6 +173,11 @@ describe('서비스 웹 — 홈', () => {
         expect(html).not.toContain(`?category=etc`);
         continue;
       }
+      /* 결정사는 2026-09-24 대표 지시로 업종에서 뺐다 — 칩도 없다. */
+      if (category === 'wedding_info_company') {
+        expect(html).not.toContain(`?category=wedding_info_company`);
+        continue;
+      }
 
       expect(html).toContain(escapeHtml(label));
       expect(html).toContain(`?category=${category}`);

@@ -57,7 +57,7 @@ describeWithDb('웨딩피드 — 탭과 카테고리', () => {
   beforeEach(() => resetSchema(client));
 
   describe('초기값', () => {
-    it('탭 셋과 카테고리 열셋이 들어간다', async () => {
+    it('탭 셋과 카테고리 열둘이 들어간다 — 결정사는 0433이 걷었다', async () => {
       const groups = await client.query<{ name: string }>(
         'SELECT name FROM structured.wedding_feed_groups ORDER BY sort_order'
       );
@@ -66,7 +66,7 @@ describeWithDb('웨딩피드 — 탭과 카테고리', () => {
       );
 
       expect(groups.rows.map((r) => r.name)).toEqual(['준비·예산', '업체·서비스', '계약·여행']);
-      expect(Number(categories.rows[0]!.n)).toBe(13);
+      expect(Number(categories.rows[0]!.n)).toBe(12);
     });
 
     it('카테고리가 하나도 빠짐없이 어느 탭에 든다', async () => {
@@ -108,7 +108,7 @@ describeWithDb('웨딩피드 — 탭과 카테고리', () => {
     });
 
     it('업종 이름은 정본을 쓴다', async () => {
-      // CLAUDE.md 2026-09-11 — 본식스냅 · 헤어변형 · 결정사.
+      // CLAUDE.md 2026-09-11 — 본식스냅 · 헤어변형. 결정사는 2026-09-24에 걷었다(0433).
       const { rows } = await client.query<{ name: string }>(
         'SELECT name FROM structured.wedding_feed_categories'
       );
@@ -116,7 +116,7 @@ describeWithDb('웨딩피드 — 탭과 카테고리', () => {
 
       expect(names).toContain('본식스냅');
       expect(names).toContain('헤어변형');
-      expect(names).toContain('결정사');
+      expect(names).not.toContain('결정사');
       expect(names).not.toContain('스냅');
       expect(names).not.toContain('헤메');
       expect(names).not.toContain('플래너');
@@ -138,7 +138,7 @@ describeWithDb('웨딩피드 — 탭과 카테고리', () => {
         'SELECT count(*)::text AS n FROM structured.wedding_feed_categories'
       );
 
-      expect(Number(rows[0]!.n)).toBe(13);
+      expect(Number(rows[0]!.n)).toBe(12);
     });
 
     it('꺼 둔 카테고리는 탭이 없어도 경고하지 않는다', async () => {
@@ -208,7 +208,7 @@ describeWithDb('웨딩피드 — 탭과 카테고리', () => {
         'SELECT count(*)::text AS n FROM structured.wedding_feed_categories'
       );
 
-      expect(Number(rows[0]!.n)).toBe(12);
+      expect(Number(rows[0]!.n)).toBe(11);
     });
   });
 });

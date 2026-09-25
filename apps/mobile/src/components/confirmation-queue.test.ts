@@ -1,6 +1,24 @@
 import { createConfirmationQueue, type Confirmation } from './confirmation-queue';
 
 describe('createConfirmationQueue', () => {
+  it('아이콘(ok · bad · warn)은 선택 인자로만 전달하고, 안 주면 넣지 않는다', () => {
+    const opened: Confirmation[] = [];
+    const queue = createConfirmationQueue({
+      scope: () => '/pick',
+      render: (request) => {
+        opened.push(request);
+        return () => undefined;
+      },
+      onError: (error) => { throw error; },
+    });
+
+    queue.enqueue('완료', '', [{ text: '확인' }], 'ok');
+    expect(opened[0]?.icon).toBe('ok');
+    queue.reset();
+    queue.enqueue('기본', '', [{ text: '확인' }]);
+    expect(opened[1]).not.toHaveProperty('icon');
+  });
+
   it('다이얼로그를 겹치지 않고 순서대로 연다', () => {
     const opened: string[] = [];
     const selectors: Array<(index: number | null) => void> = [];

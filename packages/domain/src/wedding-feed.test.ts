@@ -72,10 +72,10 @@ describe('웨딩피드 — 주제 고르기', () => {
   it('업종 이름은 정본을 쓴다', () => {
     const labels = WEDDING_FEED_TOPICS.map((t) => t.categoryLabel);
 
-    // CLAUDE.md 2026-09-11 — 본식스냅 · 헤어변형 · 결정사.
+    // CLAUDE.md 2026-09-11 — 본식스냅 · 헤어변형. 결정사는 2026-09-24 대표 지시로 뺐다.
     expect(labels).toContain('본식스냅');
     expect(labels).toContain('헤어변형');
-    expect(labels).toContain('결정사');
+    expect(labels).not.toContain('결정사');
     expect(labels).not.toContain('스냅');
     expect(labels).not.toContain('헤메');
     expect(labels).not.toContain('플래너');
@@ -184,7 +184,7 @@ describe('웨딩피드 — 탭과 카테고리', () => {
     expect(tabs[1]!.categories).toEqual(['예산', '하객']);
   });
 
-  it('자동 작성이 쓰는 카테고리 이름은 열셋이다', () => {
+  it('자동 작성이 쓰는 카테고리 이름은 열둘이다', () => {
     /*
      * 표의 씨앗값(0421)이 이 목록에서 왔다. **글자 하나 다르면 그 주제로 쓴 글이
      * 어느 탭에도 안 붙는다** — 자동 작성은 화면을 거치지 않아서 고르기로 막을 수
@@ -201,7 +201,6 @@ describe('웨딩피드 — 탭과 카테고리', () => {
       '메이크업',
       '본식스냅',
       '헤어변형',
-      '결정사',
       '허니문',
       '계약',
       '준비 순서',

@@ -27,6 +27,7 @@ import * as faqAdmin from '../faq-admin';
 import * as weddingFeed from '../wedding-feed';
 import * as feedTaxonomy from '../wedding-feed-taxonomy';
 import { createGeminiFeedWriter } from '../analysis/wedding-feed-writer';
+import { feedImageRequestSchema, generateWeddingFeedImage, WeddingFeedImageError, type WeddingFeedImage } from '../analysis/wedding-feed-image';
 import { NotAnOperator } from '../decisions';
 import { ApiError, forbidden, notFound } from '../errors';
 import * as inquiryAdmin from '../inquiry-admin';
@@ -1174,6 +1175,41 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
       });
     }
   );
+
+  /** 관리자가 명시적으로 요청한 웨딩피드 이미지만 생성해 기존 이미지 저장소에 둔다. */
+  app.post<{ Body: unknown }>('/v1/admin/wedding-feed/image/generate', auth, async (request) => {
+    const parsed = feedImageRequestSchema.safeParse(request.body);
+    if (!parsed.success) {
+      throw new ApiError('invalid_request', '이미지를 만들 제목과 종류를 확인해주세요.');
+    }
+    const apiKey = process.env.GEMINI_API_KEY ?? '';
+    if (!apiKey) {
+      throw new ApiError('internal', 'Gemini 연결을 확인해주세요.');
+    }
+
+    let image: WeddingFeedImage;
+    try {
+      image = await generateWeddingFeedImage(apiKey, parsed.data);
+    } catch (error) {
+      request.log.error({ err: error }, '웨딩피드 이미지 생성 실패');
+      if (error instanceof WeddingFeedImageError) {
+        if (error.reason === 'provider') {
+          const detail = `${error.providerStatus}${error.providerCode ? ` ${error.providerCode}` : ''}`;
+          throw new ApiError(error.providerStatus === 429 ? 'rate_limited' : 'internal', `Gemini 이미지 요청이 거절됐어요 (${detail}).`);
+        }
+        if (error.reason === 'incomplete') throw new ApiError('internal', 'Gemini 이미지 생성이 완료되지 않았어요.');
+        throw new ApiError('internal', 'Gemini가 쓸 수 있는 이미지를 보내지 않았어요.');
+      }
+      throw new ApiError('internal', '이미지를 만들지 못했어요. 잠시 후 다시 시도해주세요.');
+    }
+
+    const storageKey = `wedding-feed/${parsed.data.kind}/${randomUUID()}.${image.extension}`;
+    await context.storage.upload(storageKey, image.bytes, image.mimeType);
+    return {
+      storageKey,
+      imageUrl: await context.storage.getPublicUrl(storageKey, 3600),
+    };
+  });
 
   app.put<{ Params: { id: string }; Body: unknown }>(
     '/v1/admin/wedding-feed/:id',

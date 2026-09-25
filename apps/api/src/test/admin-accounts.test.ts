@@ -8,7 +8,7 @@ const describeWithDb = process.env.DATABASE_URL ? describe : describe.skip;
 /* 시험이 끝나면 되돌린다 — 전역을 건드리므로 다음 파일에 새어 나가면 안 된다. */
 const savedEnv = { id: process.env.ADMIN_LOGIN_ID, hash: process.env.ADMIN_PASSWORD_HASH };
 
-/** 12자 이상이어야 한다(라우트 규칙). 시험용 값이고 어디에도 저장되지 않는다. */
+/** 4자 이상이어야 한다(라우트 규칙). 시험용 값이고 어디에도 저장되지 않는다. */
 const PASSWORD = 'test-password-1';
 
 /**
@@ -118,7 +118,7 @@ describeWithDb('관리자 계정 관리', () => {
 
       const response = await create(boss.headers, {
         loginId: 'too-easy',
-        password: 'short',
+        password: 'abc',
         role: 'viewer',
       });
 
@@ -628,6 +628,59 @@ describeWithDb('관리자 계정 관리', () => {
 
       expect(response.statusCode).toBe(409);
       expect(response.json<{ error: { message: string } }>().error.message).toContain('관리자 추가');
+    });
+  });
+
+  describe('계정 지우기', () => {
+    async function remove(headers: Record<string, string>, id: string) {
+      return await test.app.inject({ method: 'DELETE', url: `/v1/admin/accounts/${id}`, headers });
+    }
+
+    it('슈퍼 관리자가 뷰어 계정을 지우면 그 아이디로 더는 로그인되지 않는다', async () => {
+      const boss = await adminSession(test, 'super');
+      await create(boss.headers, { loginId: 'to-remove', role: 'viewer' });
+
+      const response = await remove(boss.headers, await accountId('to-remove'));
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toEqual({ deleted: 'to-remove' });
+
+      const login = await test.app.inject({
+        method: 'POST',
+        url: '/v1/admin/login',
+        payload: { id: 'to-remove', password: PASSWORD },
+      });
+      expect(login.statusCode).not.toBe(201);
+
+      const { rows } = await test.pool.query<{ step: string }>(
+        `SELECT step FROM structured.decisions WHERE workflow = 'admin_account' AND step = 'delete'`
+      );
+      expect(rows).toHaveLength(1);
+    });
+
+    it('슈퍼 관리자 계정은 지울 수 없다', async () => {
+      const boss = await adminSession(test, 'super');
+      await create(boss.headers, { loginId: 'other-boss', role: 'super' });
+
+      const response = await remove(boss.headers, await accountId('other-boss'));
+
+      expect(response.statusCode).toBe(403);
+    });
+
+    it('표에 저장된 슈퍼가 없어도(부트스트랩) 뷰어 계정은 지울 수 있다 — 0434', async () => {
+      process.env.ADMIN_LOGIN_ID = 'bootstrap-id';
+      process.env.ADMIN_PASSWORD_HASH = hashAdminPassword(PASSWORD);
+      const login = await test.app.inject({
+        method: 'POST',
+        url: '/v1/admin/login',
+        payload: { id: 'bootstrap-id', password: PASSWORD },
+      });
+      const headers = { authorization: `Bearer ${login.json<{ token: string }>().token}` };
+      await create(headers, { loginId: 'old-viewer', role: 'viewer' });
+
+      const response = await remove(headers, await accountId('old-viewer'));
+
+      expect(response.statusCode).toBe(200);
     });
   });
 });

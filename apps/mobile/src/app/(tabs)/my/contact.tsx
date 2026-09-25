@@ -16,6 +16,7 @@ import { createInquiry, listMyInquiries } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { formatDateDot } from '@/features/common/format-date';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { showResultToast } from '@/features/navigation/result-toast';
 import { OptionRow } from '@/features/onboarding/option-row';
 import { Row, Rows } from '@/features/settings/my-kit';
 import { BackBar } from '@/components/back-bar';
@@ -32,8 +33,17 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 
+/**
+ * 사용자가 고르는 문의 유형. 플래너 등록·노출 중단 두 가지는 뺀다 — 정본
+ * `my.js` `inquiryTypes`(my.jsx frame-007)에 없고, v3.29가 플래너 개념을 화면에서 지웠다.
+ * 서버·관리자는 과거 문의를 읽어야 하므로 도메인 목록(`INQUIRY_CATEGORIES`)은 그대로 둔다.
+ */
+const USER_INQUIRY_CATEGORIES = INQUIRY_CATEGORIES.filter(
+  (item) => item !== 'planner_delisting' && item !== 'planner_listing',
+);
+
 function isCategory(value: string | undefined): value is InquiryCategory {
-  return (INQUIRY_CATEGORIES as readonly string[]).includes(value ?? '');
+  return (USER_INQUIRY_CATEGORIES as readonly string[]).includes(value ?? '');
 }
 
 /** 지난 문의 배지 색 — 시안 `p.badge`는 색을 정하지 않는다. 진행/완료/종료를 일반 규칙으로 매핑한다. */
@@ -108,6 +118,7 @@ export default function ContactScreen() {
 
       setAcknowledgement(received.acknowledgement);
       setBody('');
+      showResultToast('문의를 보냈어요');
     } catch (caught) {
       setError((caught as Error).message);
     } finally {
@@ -185,7 +196,7 @@ export default function ContactScreen() {
 
           <ThemedView style={styles.section}>
             <View style={styles.optionList}>
-              {INQUIRY_CATEGORIES.map((item) => (
+              {USER_INQUIRY_CATEGORIES.map((item) => (
                 <OptionRow
                   key={item}
                   role="radio"

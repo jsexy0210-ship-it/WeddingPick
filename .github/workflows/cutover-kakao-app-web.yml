@@ -75,6 +75,31 @@ jobs:
           grep -Fq '/_expo/static/js/web/' /tmp/admin.html
           ! grep -Eq '관리자 콘솔 주소가 바뀌었어요|210\.109\.82\.212:8443' /tmp/admin.html
 
+      - name: Website and legal pages are distinct from app fallback
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --connect-timeout 5 --max-time 15 \
+            https://210.109.82.212/website.html > /tmp/website.html
+          grep -Fq 'wp-header' /tmp/website.html
+          ! cmp -s /tmp/login.html /tmp/website.html
+          for page in terms privacy; do
+            curl --fail --silent --show-error --connect-timeout 5 --max-time 15 \
+              "https://210.109.82.212/$page.html" > "/tmp/$page.html"
+            grep -Fq 'sp-gnb' "/tmp/$page.html"
+            ! cmp -s /tmp/login.html "/tmp/$page.html"
+          done
+          curl --fail --silent --show-error --connect-timeout 5 --max-time 15 \
+            https://210.109.82.212/assets/site.webmanifest | grep -Fq '"name"'
+
+      - name: Removed Pick completion route stays unavailable
+        run: |
+          set -euo pipefail
+          for path in /pick/done /pick/done/ /pick/done.html; do
+            status="$(curl --silent --show-error --connect-timeout 5 --max-time 15 \
+              --output /dev/null --write-out '%{http_code}' "https://210.109.82.212$path")"
+            test "$status" = 404
+          done
+
       - name: API routes remain proxied
         run: |
           set -euo pipefail

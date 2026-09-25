@@ -15,6 +15,7 @@ import type { CapturedPage } from '@/features/capture/types';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
+import { showResultToast } from '@/features/navigation/result-toast';
 import { uploadReviewMedia } from '@/features/review/media-upload';
 import {
   ActionButton,
@@ -156,7 +157,7 @@ export function ReviewWriteSheet({
         media,
       });
 
-      // 저장 뒤 부모 화면으로 돌아간다. 별도 성공 Alert는 띄우지 않는다.
+      showResultToast('후기를 남겼어요');
       (onSubmitted ?? closeSheet)();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '후기를 남기지 못했어요.');

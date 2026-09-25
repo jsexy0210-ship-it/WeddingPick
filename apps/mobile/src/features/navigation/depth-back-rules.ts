@@ -74,7 +74,10 @@ export const ROUTES: readonly string[] = [
   '/admin/vendors',
   '/admin/wedding-feed',
   '/community',
+  '/community/expo',
+  '/community/feed',
   '/community/feed/[id]',
+  '/community/review',
   '/community/review/write',
   '/capture',
   '/capture/analysis/[id]',
@@ -103,6 +106,7 @@ export const ROUTES: readonly string[] = [
   '/my/membership',
   '/my/notifications',
   '/my/privacy',
+  '/my/privacy-policy',
   '/my/profile',
   '/my/rebuttals',
   '/my/rebuttals/[reviewId]',
@@ -117,6 +121,7 @@ export const ROUTES: readonly string[] = [
   '/my/rewards/npay',
   '/my/rewards/promotion',
   '/my/taste',
+  '/my/terms',
   '/my/vendor-claims',
   '/my/vendor-claims/[vendorId]',
   '/my/wedding-settings',
@@ -124,7 +129,6 @@ export const ROUTES: readonly string[] = [
   '/pick',
   '/pick/[category]',
   '/pick/confirm',
-  '/pick/done',
   '/progress',
   '/recommendations',
   '/search',
@@ -135,6 +139,7 @@ export const ROUTES: readonly string[] = [
   '/search/[vendorId]/edit-review',
   '/search/[vendorId]/fix-report',
   '/search/[vendorId]/images',
+  '/search/[vendorId]/price',
   '/search/[vendorId]/price-report',
   '/search/[vendorId]/review/[reviewId]',
   '/search/[vendorId]/reviews',
@@ -238,14 +243,16 @@ export const NO_BACK_ROUTES: readonly string[] = [
  * | `/capture/verify-status/[requestId]` | `/my/reports`  | WP-RPT-008 처리 결과. entry «알림 · 내 제보 내역».                          |
  * | `/search/compare`                  | `/pick`          | WP-CMP-002 비교 결과. 후보를 고른 곳이 Pick이다(WP-PICK-003). 검색 폴더에    |
  * |                                    |                  | 있을 뿐이고, 홈·Pick 어디서 들어와도 Pick으로 나간다.                       |
- * | `/pick/done`                       | `/pick`          | WP-PICK-006 결정 완료. **히스토리로 돌려보내면 방금 끝낸 확인 시트로 돌아간다.** |
  * |                                    |                  | 계층 계산과 값이 같지만, 이 화면은 History Back을 쓰면 안 된다는 근거를 남긴다. |
  * | `/my/faq/[faqKey]`                 | `/my/guide`      | 질문 상세는 FAQ 목록에서 연다. 폴더상 `/my`로 바로 보내면 목록을 건너뛴다.   |
  * | `/my/referral`                     | `/my/rewards`    | 초대 현황은 혜택(WP-EVT) 아래다. 폴더가 `my/` 바로 아래라 계층 계산이 틀린다. |
  * | `/wedding/[id]/complete`           | `/wedding`       | WP-OUR-013 예식 완료 → 서버 웨딩일정 탭. `[id]` 문서 상세와 식별자가 다르다.        |
  */
 export const DEPTH_BACK_EXCEPTIONS: Readonly<Record<string, string>> = {
-  '/community/feed/[id]': '/community?tab=feed',
+  '/community/expo': '/',
+  '/community/feed': '/',
+  '/community/feed/[id]': '/community/feed',
+  '/community/review': '/',
   '/capture': '/my/reports',
   '/capture/analysis/[id]': '/wedding',
   '/capture/payment/consent': '/my/reports',
@@ -256,7 +263,6 @@ export const DEPTH_BACK_EXCEPTIONS: Readonly<Record<string, string>> = {
   '/capture/verify/[quoteId]': '/capture/result/[quoteId]',
   '/capture/verify-status/[requestId]': '/my/reports',
   '/search/compare': '/pick',
-  '/pick/done': '/pick',
   '/my/faq/[faqKey]': '/my/guide',
   '/my/referral': '/my/rewards',
   // 이 경로의 id는 서버 weddingId다. /wedding/[id]는 로컬 문서 상세이므로 그곳으로 보내지 않는다.
@@ -283,6 +289,9 @@ export const DEPTH_BACK_EXCEPTIONS: Readonly<Record<string, string>> = {
 /** SPEC §14.5에서 진입 출처를 `from`으로 넘기라고 정한 공유 화면. */
 const ORIGIN_AWARE_ROUTES: readonly string[] = [
   '/community',
+  '/community/expo',
+  '/community/feed',
+  '/community/review',
   '/search/[vendorId]',
   '/search/[vendorId]/write-review',
   '/search/[vendorId]/review/[reviewId]',
@@ -396,7 +405,7 @@ function originTarget(route: string, pathname: string): string | null {
     pick: '/pick',
     wedding: '/wedding',
     budget: '/wedding?tab=budget',
-    community: '/community',
+    community: '/community/review',
     reports: '/my/reports',
     recommendations: '/recommendations',
   };

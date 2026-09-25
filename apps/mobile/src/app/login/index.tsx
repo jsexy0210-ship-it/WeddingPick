@@ -29,7 +29,7 @@ import { SigningInBody, signingInMessage } from '@/features/auth/signing-in-view
 import { useSignIn } from '@/features/auth/use-sign-in';
 
 /**
- * WP-AUTH-001 — v3.29 정본 `대메뉴_홈(로그인, 온보딩).dc.html` 2번 화면(`loginTitle` ·
+ * WP-AUTH-001 — RN 정본 `docs/design/React_Native/home.jsx` 2번 화면(`loginTitle` ·
  * `benefits`).
  *
  * **v3.29가 타이틀·혜택을 다시 바꿨다**(CHANGELOG v3.29 「로그인 화면 타이틀 · 혜택 4줄
@@ -38,7 +38,7 @@ import { useSignIn } from '@/features/auth/use-sign-in';
  */
 const HERO_TITLE = '플래너 없이,\n직접 고르는\n웨딩 준비'; // pick-language: v3.29 로그인 정본 카피
 const BENEFITS = [
-  '업체별 가격과 조건을 한눈에 확인해요', // pick-language: v3.29 로그인 정본 혜택(dc.html benefits)
+  '업체별 가격과 조건을 한눈에 확인해요', // pick-language: v3.29 로그인 정본 혜택(home.js benefits)
   '광고보다 내 기준으로 직접 골라요',
   '플래너를 거치지 않고 직접 연결돼요',
   '계약부터 결혼식까지 한곳에서 챙겨요',
@@ -52,13 +52,13 @@ const BENEFITS = [
  * 그대로다.
  *
  * **v3.29에서 만 14세 체크 · 약관 문구가 이 화면에서 빠졌다**(CHANGELOG v3.29 「만 14세
- * 체크 · 약관 문구를 약관 동의 화면으로 일원화」). dc.html 2번 화면은 브랜드 블록 +
+ * 체크 · 약관 문구를 약관 동의 화면으로 일원화」). home.jsx 2번 화면은 브랜드 블록 +
  * 「카카오로 시작하기」 버튼뿐이다. 그 둘은 WP-AUTH-010(`app/login/consent.tsx`)으로
  * 옮겼다 — 로그인 성공 뒤(카카오가 연령대를 줘서 통과한 대부분의 경우) 그 화면이 연다.
  *
  * **카카오가 연령대를 안 줘 판정하지 못하는 드문 경우**(`needsAgeConfirm`)는 다르다 —
  * 그 판정은 세션이 열리기 «전»에 끝나야 해서 약관 동의 화면(세션이 있어야 여는 화면)으로
- * 미룰 수 없다. dc.html에는 이 상태가 없다 — 그려둔 화면이 아니라 로그인 자체를 한 번 더
+ * 미룰 수 없다. RN 정본 home.jsx에는 이 상태가 없다 — 그려둔 화면이 아니라 로그인 자체를 한 번 더
  * 받는 기존 안전장치이므로, 코랄 체크박스 화면 대신 `AgeConfirmSheet`(작은 확인 시트)로
  * 남긴다. 「확인 못 함」의 기본값은 통과가 아니라 차단이다(`packages/domain/src/signup.ts`).
  */
@@ -127,7 +127,7 @@ export default function LoginScreen() {
             ) : (
               <>
                 {/*
-                 * v3.29 dc.html 2번 화면 — 브랜드 블록 아래 카카오 버튼 하나뿐이다.
+                 * RN 정본 home.jsx 2번 화면 — 브랜드 블록 아래 카카오 버튼 하나뿐이다.
                  * 만 14세 체크 · 약관 안내 줄은 WP-AUTH-010(약관 동의 화면)으로 옮겼다.
                  */}
                 {primary ? (
@@ -163,7 +163,7 @@ export default function LoginScreen() {
       </SafeAreaView>
 
       <LoginFailureSheet visible={error !== null} onRetry={retry} onDismiss={dismissError} />
-      {/* 카카오가 연령대를 안 준 드문 경우만(`needsAgeConfirm`) — v3.29 dc.html에 없는 상태다. */}
+      {/* 카카오가 연령대를 안 준 드문 경우만(`needsAgeConfirm`) — RN 정본 home.jsx에 없는 상태다. */}
       <AgeConfirmSheet
         visible={needsAgeConfirm}
         busy={busy}
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 20,
   },
-  title: { fontWeight: 700, lineHeight: LineHeight.t1, letterSpacing: LetterSpacing.n064 },
+  title: { fontWeight: 700, lineHeight: LineHeight.loginTitle, letterSpacing: LetterSpacing.n064 },
   benefitWrap: {
     flexShrink: 0,
     paddingTop: 24,
@@ -257,9 +257,9 @@ const styles = StyleSheet.create({
   benefitText: { flex: 1, lineHeight: LineHeight.lh23 },
   authBlock: {
     flexShrink: 0,
-    paddingTop: Spacing.four + Spacing.four,
+    paddingTop: 0,
     paddingHorizontal: Layout.gutter,
-    paddingBottom: Spacing.four + Spacing.four,
+    paddingBottom: Spacing.four + Spacing.two,
     gap: 10,
   },
   card: { borderRadius: Radius.medium, padding: Spacing.three, gap: Spacing.one },

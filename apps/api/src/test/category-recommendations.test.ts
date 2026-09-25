@@ -74,12 +74,13 @@ describeWithDb('Pick 추천', () => {
 
     const body = (await get(headers)).json<Body>();
 
-    /* 준비 순서(PREPARATION_CATEGORIES)의 앞 셋. 결정사가 맨 앞이다. */
+    /* 준비 순서(PREPARATION_CATEGORIES)의 앞 셋. 결정사는 2026-09-24에 뺐다 — 웨딩홀이 맨 앞이다. */
     expect(body.groups.slice(0, 3).map((group) => group.category)).toEqual([
-      'wedding_info_company',
       'hall',
       'studio',
+      'dress',
     ]);
+    expect(body.groups.some((group) => group.category === 'wedding_info_company')).toBe(false);
     expect(body.groups.every((group) => group.state === 'NOT_STARTED')).toBe(true);
   });
 
@@ -131,7 +132,7 @@ describeWithDb('Pick 추천', () => {
     const after = (await get(headers)).json<Body>();
 
     expect(after.groups.some((group) => group.category === 'hall')).toBe(false);
-    expect(after.groups[0]!.category).toBe('wedding_info_company');
+    expect(after.groups[0]!.category).toBe('studio');
   });
 
   /*

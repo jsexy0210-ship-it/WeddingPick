@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Animated, Easing, StyleSheet } from 'react-native';
+import { Animated, Easing, Platform, StyleSheet, ToastAndroid, View } from 'react-native';
 
-import { Layout, Radius, Spacing, USE_NATIVE_DRIVER } from './theme';
+import { Elevation, Layout, Radius, ToastColors, USE_NATIVE_DRIVER } from './theme';
 import { FontSize, LineHeight } from './typography';
-import { useTheme } from './use-theme';
 
 export type ToastProps = {
   /** 보여줄 말. null이면 아무것도 그리지 않는다. */
@@ -11,22 +10,23 @@ export type ToastProps = {
   onHidden?: () => void;
 };
 
-/** 화면 하단에서 이만큼 띄운다. 핸드오프 — 96px. */
-const BOTTOM = 96;
-/** 이만큼 뒤에 사라진다. 핸드오프 — 2.2초. */
-export const TOAST_MS = 2200;
+/**
+ * 화면 하단에서 이만큼 띄운다. RN 정본 WP-DLG-F `toastWrap`(`docs/design/React_Native/
+ * common.js:198`) — dock 위 100. 이 토스트는 dock 유무를 모르므로 탭바가 있는 화면 기준 값을 쓴다.
+ */
+const BOTTOM = 100;
+/** 사용자 설정: 결과 알림은 1초 뒤 사라진다. */
+export const TOAST_MS = 1000;
+const FADE_MS = 175;
 
 /**
  * 잠깐 뜨는 안내. 디자인 핸드오프 인터랙션 규칙.
  *
- * **막은 이유를 말하는 자리다.** 다른 업종을 담으려 할 때처럼, 눌렀는데 아무 일도
- * 일어나지 않는 순간이 있으면 사용자는 앱이 고장난 줄 안다.
- *
- * 다이얼로그가 아니다 — 확인을 누르게 하지 않는다. 되돌릴 것이 있는 일에는
- * 토스트가 아니라 컨펌을 쓴다.
+ * 저장·수정·삭제 결과와 막힌 이유를 짧게 알린다. Android에서는 OS 토스트를,
+ * iOS·웹에서는 같은 문구의 앱 토스트를 쓴다. 되돌리기 동작이 필요한 삭제는
+ * 별도의 액션 토스트가 맡는다.
  */
 export function Toast({ message, onHidden }: ToastProps) {
-  const theme = useTheme();
   const [opacity] = useState(() => new Animated.Value(0));
   /** 사라지는 동안에도 그려야 해서, 글자는 따로 붙잡아 둔다. */
   const [shown, setShown] = useState<string | null>(null);
@@ -34,19 +34,25 @@ export function Toast({ message, onHidden }: ToastProps) {
   useEffect(() => {
     if (message === null) return;
 
+    if (Platform.OS === 'android') {
+      ToastAndroid.show(message, ToastAndroid.SHORT);
+      onHidden?.();
+      return;
+    }
+
     setShown(message);
 
     const animation = Animated.sequence([
       Animated.timing(opacity, {
         toValue: 1,
-        duration: 175,
+        duration: FADE_MS,
         easing: Easing.out(Easing.quad),
         useNativeDriver: USE_NATIVE_DRIVER,
       }),
-      Animated.delay(TOAST_MS),
+      Animated.delay(TOAST_MS - FADE_MS * 2),
       Animated.timing(opacity, {
         toValue: 0,
-        duration: 175,
+        duration: FADE_MS,
         easing: Easing.in(Easing.quad),
         useNativeDriver: USE_NATIVE_DRIVER,
       }),
@@ -63,30 +69,43 @@ export function Toast({ message, onHidden }: ToastProps) {
     // onHidden이 매 렌더 새로 만들어져도 토스트가 다시 뜨지 않게, 글자만 본다.
   }, [message, opacity]);
 
-  if (shown === null) return null;
+  if (Platform.OS === 'android' || shown === null) return null;
 
   return (
-    <Animated.Text
-      accessibilityRole="alert"
-      style={[styles.toast, { backgroundColor: theme.backgroundInk, color: theme.onInk, opacity }]}>
-      {shown}
-    </Animated.Text>
+    <View pointerEvents="none" style={styles.wrap}>
+      <Animated.Text
+        accessibilityRole="alert"
+        style={[styles.toast, { opacity }]}>
+        {shown}
+      </Animated.Text>
+    </View>
   );
 }
 
+/* 정본 toastStyle — 내용 폭 · padding 14 18 · radius 10 · 15/22 · 700 · 배경 · 그림자(`common.js:199`). */
 const styles = StyleSheet.create({
-  toast: {
+  wrap: {
     position: 'absolute',
     left: Layout.gutter,
     right: Layout.gutter,
     bottom: BOTTOM,
     // 바텀시트 위에도 보여야 한다.
     zIndex: 100,
+    alignItems: 'center',
+  },
+  toast: {
+    maxWidth: '100%',
     borderRadius: Radius.medium,
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.three,
+    paddingHorizontal: Layout.cardPaddingCompactY,
+    paddingVertical: Layout.sectionHeadGap,
     textAlign: 'center',
-    fontSize: FontSize.t6,
-    lineHeight: LineHeight.t6,
+    fontSize: FontSize.f15,
+    lineHeight: LineHeight.lh22,
+    fontWeight: '700',
+    color: ToastColors.text,
+    backgroundColor: ToastColors.background,
+    ...Elevation.toast,
+    // 글자 상자의 둥근 모서리를 자른다(iOS). 웹의 box-shadow는 이것에 잘리지 않는다.
+    overflow: 'hidden',
   },
 });

@@ -6,8 +6,8 @@ import { Motion } from './theme';
  * 700ms 규칙(`motion.loaderThreshold`). 응답이 700ms를 넘으면 화면 성격과 무관하게
  * 로더를 띄우고, 700ms 안에 오면 아무것도 띄우지 않는다.
  *
- * 정본 WP-LOAD-003(`공통_다이얼로그 빈상태 로더.dc.html` Lrules)의 「700ms 넘으면
- * 무조건 띄워요」와 값·조건 그대로 일치한다(2026-09-23 재대조, PASS).
+ * 정본 WP-LOAD-003(`docs/design/React_Native/common.js:323` `Lrules`)의 「700ms 넘으면
+ * 무조건 띄워요」와 값·조건 그대로 일치한다(2026-09-24 재대조, PASS).
  *
  * `active`가 `delay` ms 동안 계속 true였을 때만 true를 돌려준다. `active`가 꺼지면
  * 즉시 false다.

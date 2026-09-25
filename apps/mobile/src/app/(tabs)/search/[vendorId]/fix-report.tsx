@@ -5,60 +5,49 @@ import { Layout, TextField, Toast } from '@weddingpick/ui';
 import { createInquiry } from '@/api/client';
 import { CheckCircle } from '@/features/onboarding/check-circle';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { showResultToast } from '@/features/navigation/result-toast';
 import { Dock, Hero, NoteBox, Row, Rows, Section, SubScreen } from '@/features/settings/my-kit';
 
 /**
- * v3.29 대메뉴_검색.dc.html WP-VEND-008 「정보 오류 제보」의 renderVals(2026-09-23
- * 재검증 — 이전 주석은 v3.28 이전 번호인 WP-VEND-006을 적고 있었다. v3.29는 화면
- * 1~17을 다시 매겼고 WP-VEND-006은 지금 「이미지 전체보기」다).
+ * RN 정본 WP-VEND-008 「정보 오류 제보」 — `docs/design/React_Native/search.jsx` frame-011 ·
+ * `search.js` `rptTypes` · `rptPh` · `ctaFull2`. 문구는 정본 그대로다.
  */
 const S = {
   title: '정보 오류 제보',
-  hero: ['어떤 정보가', '틀렸나요?'],
-  itemGroup: '항목',
+  itemGroup: '무엇이 틀렸나요?',
   correct: '올바른 정보',
-  correctPlaceholder: '아는 대로 적어주세요',
-  evidence: '근거 링크',
-  evidencePlaceholder: '선택이에요',
+  correctPlaceholder: '정확한 정보를 적어주세요',
+  evidence: '근거 링크 · 선택',
+  evidencePlaceholder: '공식 홈페이지, SNS 등',
   evidenceInvalid: '주소 전체를 적어주세요 · https://로 시작해요',
-  noteTitle: '확인하고 알려드려요',
-  /*
-   * 시안은 «보통 하루 안에 확인하고»라고 적지만 처리 기한이 아직 정해지지 않았다
-   * (domain `INQUIRY_RESPONSE_BUSINESS_DAYS`가 null이다). 지키지 못할 기한을 적지 않는다.
-   */
-  noteBody: '사람이 직접 확인하고 결과를 알림으로 보내드려요.',
-  /* WP-VEND-008 `ctaFull2` — 「제출하기」. 2026-09-23 재검증에서 잡은 값(전에는 「제보하기」). */
   cta: '제출하기',
   sending: '보내는 중…',
   failed: '보내지 못했어요',
 } as const;
 
 /**
- * 무엇이 틀렸는지. 시안의 라디오 다섯 줄 그대로다.
+ * 무엇이 틀렸는지 — 정본 `rptTypes` 넷 그대로다. 접수 분류는 넷 다 `data_correction`이고
+ * 고른 줄의 이름은 본문 첫 줄로만 들어간다(아래 submit) — 서버 분류와 묶여 있지 않다.
  *
- * `needsValue`가 true인 셋은 올바른 값을 받아야 고칠 수 있고, 나머지 둘은 상태를 알리는
- * 제보라 값이 없다 — «영업 종료했어요»에 올바른 영업시간을 물으면 말이 되지 않는다.
+ * `needsValue`가 true인 셋은 올바른 값을 받아야 고칠 수 있고, «영업 종료 · 폐업»은 상태를
+ * 알리는 제보라 값이 없다.
  */
 const ITEMS = [
-  { key: 'hours', label: '영업시간', needsValue: true },
-  { key: 'contact', label: '연락처', needsValue: true },
-  { key: 'address', label: '주소', needsValue: true },
-  { key: 'closed', label: '영업 종료했어요', needsValue: false },
-  { key: 'mixed', label: '다른 업체와 섞여 있어요', needsValue: false },
+  { key: 'price', label: '가격 · 요금 정보', needsValue: true },
+  { key: 'contact', label: '영업시간 · 연락처', needsValue: true },
+  { key: 'address', label: '주소 · 위치', needsValue: true },
+  { key: 'closed', label: '영업 종료 · 폐업', needsValue: false },
 ] as const;
 
 type ItemKey = (typeof ITEMS)[number]['key'];
 
 /**
- * 정보 오류 제보 · WP-VEND-008(v3.29 대메뉴_검색.dc.html — 2026-09-23 재검증에서
- * 옛 번호 WP-VEND-006 표기를 바로잡았다). 시안 항목 라디오 4 → 올바른 정보 → 근거
- * 링크(선택) → CTA «제출하기». 이 화면의 항목 목록(5개 · «영업 종료했어요» ·
- * «다른 업체와 섞여 있어요» 포함)과 note 상자는 정본의 4항목(가격·요금 정보 ·
- * 영업시간·연락처 · 주소·위치 · 영업 종료·폐업)과 다르다 — `data_correction` 접수
- * 분류가 이 항목 이름에 걸려 있어 이번 재검증에서는 문구·CTA만 맞추고 항목 구성은
- * `DESIGN_UNRESOLVED`로 남긴다(PR 본문 참고).
+ * 정보 오류 제보 · WP-VEND-008(RN 정본 frame-011). 「무엇이 틀렸나요?」 라디오 4 → 「올바른
+ * 정보」 → 「근거 링크 · 선택」 → CTA «제출하기». 2026-09-24 RN 정본 대조로 정본에 없던 머리
+ * 두 줄(«어떤 정보가 틀렸나요?»)과 안내 상자(«확인하고 알려드려요»)를 걷어내고 항목을 정본
+ * 넷으로 바꿨다 — 항목 이름은 접수 본문 첫 줄일 뿐 분류에 걸려 있지 않았다.
  *
- * 업체 상세 ⑩ «정보가 틀렸나요? 제보하기»와 공식 정보(WP-VEND-005)가 여기로 온다. 그전에는
+ * 업체 상세 「정보」 탭(WP-VEND-004)의 «정보가 틀렸나요? 제보하기»가 여기로 온다. 그전에는
  * 범용 문의 화면(`/my/contact`)이 항목만 채워진 채 열려서, 무엇이 틀렸는지 사용자가 문장으로
  * 적어야 했다.
  *
@@ -104,6 +93,7 @@ export default function FixReportScreen() {
       });
 
       setDone(received.acknowledgement);
+      showResultToast('정보 수정 요청을 보냈어요');
     } catch (caught) {
       setToast(caught instanceof Error ? caught.message : S.failed);
     } finally {
@@ -137,8 +127,6 @@ export default function FixReportScreen() {
           }}
         />
       }>
-      <Hero lines={S.hero} />
-
       <Section title={S.itemGroup}>
         <Rows>
           {ITEMS.map((one) => (
@@ -153,27 +141,27 @@ export default function FixReportScreen() {
         </Rows>
       </Section>
 
-      <Section>
+      <Section title={S.correct}>
         <TextField
-          label={S.correct}
           value={value}
           onChangeText={setValue}
           placeholder={S.correctPlaceholder}
+          accessibilityLabel={S.correct}
+          multiline
           editable={chosen === null || chosen.needsValue}
         />
+      </Section>
+
+      <Section title={S.evidence}>
         <TextField
-          label={S.evidence}
           value={evidence}
           onChangeText={setEvidence}
           placeholder={S.evidencePlaceholder}
+          accessibilityLabel={S.evidence}
           autoCapitalize="none"
           keyboardType="url"
           error={evidenceBad ? S.evidenceInvalid : undefined}
         />
-      </Section>
-
-      <Section>
-        <NoteBox title={S.noteTitle} body={S.noteBody} />
       </Section>
 
       <Toast message={toast} onHidden={() => setToast(null)} />

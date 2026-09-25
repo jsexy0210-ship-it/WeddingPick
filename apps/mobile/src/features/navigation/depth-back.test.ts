@@ -49,7 +49,10 @@ describe('depthBackTarget — 대표 경로', () => {
     ['/pick/studio', '/pick', '업종별 Pick → Pick 탭'],
     ['/feed', '/', '홈 하위 스택(피드) → 홈'],
     ['/feed/f-1', '/feed', '홈 웨딩피드 글 상세 → 웨딩피드 목록'],
-    ['/community/feed/f-1', '/community?tab=feed', '라운지 웨딩피드 상세 → 라운지 웨딩피드 탭'],
+    ['/community/feed/f-1', '/community/feed', '라운지 웨딩정보 상세 → 웨딩정보 화면(my.jsx frame-010)'],
+    ['/community/review', '/', '리얼후기 직접 진입 → 홈(옛 `/community`로 올라가면 리다이렉트로 되돌아온다)'],
+    ['/community/feed', '/', '웨딩정보 직접 진입 → 홈'],
+    ['/community/expo', '/', '박람회 직접 진입 → 홈'],
     ['/progress', '/', '준비 현황 → 홈'],
 
     // ── 폴더만 있고 화면이 없는 칸은 건너뛴다 ───────────────────────
@@ -64,7 +67,6 @@ describe('depthBackTarget — 대표 경로', () => {
     ['/capture/verify/q-1', '/capture/result/q-1', '자료 확인 신청 → 그 자료의 결과 확인'],
     ['/capture/verify-status/rq-1', '/my/reports', 'WP-RPT-008 처리 결과 → 내 제보 내역'],
     ['/search/compare', '/pick', 'WP-CMP-002 비교 결과 → Pick'],
-    ['/pick/done', '/pick', 'WP-PICK-006 결정 완료 → Pick(끝난 확인 시트로 돌아가지 않는다)'],
     ['/my/faq/payment', '/my/guide', 'FAQ 질문 상세 → FAQ 목록'],
     ['/my/referral', '/my/rewards', '초대 현황 → 혜택'],
 
@@ -88,9 +90,11 @@ describe('depthBackTarget — 대표 경로', () => {
 
   it('공유 화면은 허용된 진입 출처로 돌아가고 모르는 출처는 추측하지 않는다', () => {
     expect(depthBackTarget('/community?from=my')).toBe('/my');
+    expect(depthBackTarget('/community/review?from=my')).toBe('/my');
+    expect(depthBackTarget('/community/expo?from=my')).toBe('/my');
     expect(depthBackTarget('/search/v-101?from=pick')).toBe('/pick');
     expect(depthBackTarget('/search/v-101/write-review?from=vendor/v-101')).toBe('/search/v-101');
-    expect(depthBackTarget('/search/v-101/review/r-1?from=community')).toBe('/community');
+    expect(depthBackTarget('/search/v-101/review/r-1?from=community')).toBe('/community/review');
     expect(depthBackTarget('/capture/payment/register?from=budget')).toBe('/wedding?tab=budget');
     expect(depthBackTarget('/capture/payment/consent?from=reports')).toBe('/my/reports');
     expect(depthBackTarget('/community?from=https%3A%2F%2Fevil.example')).toBe('/');
@@ -209,7 +213,7 @@ describe('resolveBackAction — Android/공용 Back 정책', () => {
     expect(resolveBackAction('/community/feed/f-1', true)).toEqual({ kind: 'history' });
     expect(resolveBackAction('/community/feed/f-1', false)).toEqual({
       kind: 'depth',
-      target: '/community?tab=feed',
+      target: '/community/feed',
     });
   });
 });
@@ -282,19 +286,7 @@ describe('완료 흐름은 이전 Stack을 다시 열지 않는다', () => {
     const common = readFileSync(join(dirName, 'screen-options.ts'), 'utf8');
 
     expect(layout).toContain("popToTopOnBlur: name === 'capture'");
-    expect(layout).toContain("popToTopOnBlur: tab.name === 'pick' && onPickDone");
+    expect(layout).toContain('popToTopOnBlur: false');
     expect(common).not.toContain('popToTopOnBlur: true');
-  });
-
-  it('Pick 완료에서 지출 추가로 갈 때 done 화면 위에 push하지 않는다', () => {
-    const source = readFileSync(join(dirName, '..', '..', 'app', '(tabs)', 'pick', 'done.tsx'), 'utf8');
-    const start = source.indexOf('async function goAddExpense()');
-    const end = source.indexOf('/* 완료 화면은 뒤로 갈 화면이 아니다.', start);
-    const flow = source.slice(start, end);
-
-    expect(start).toBeGreaterThanOrEqual(0);
-    expect(end).toBeGreaterThan(start);
-    expect(flow).toContain('router.replace({');
-    expect(flow).not.toContain('router.push({');
   });
 });

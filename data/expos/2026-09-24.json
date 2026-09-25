@@ -1,0 +1,1565 @@
+[
+  {
+    "eventName": "2026 광주 스타일링 웨딩페어",
+    "canonicalEventName": "2026 광주 스타일링 웨딩페어",
+    "aliases": [],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-09-25",
+    "endDate": "2026-09-27",
+    "openingHours": null,
+    "province": "광주",
+    "city": null,
+    "district": null,
+    "venueName": "더베스트 웨딩",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [],
+    "description": "더베스트 웨딩에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EC%9D%BC%EC%82%B0+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C",
+      "https://search.naver.com/search.naver?query=%EC%BD%94%EC%97%91%EC%8A%A4+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 55,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "네이버 행사 정보로만 확인 — 주최사 공식 페이지 확인 필요",
+      "시·도는 행사명의 '광주' 표기로 판단 — 광주광역시/경기 광주시 확인 필요",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "네이버 행사 정보(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "수원 스타필드 대형 웨딩 박람회",
+    "canonicalEventName": "수원 스타필드 대형 웨딩 박람회",
+    "aliases": [],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-09-26",
+    "endDate": "2026-09-27",
+    "openingHours": null,
+    "province": "경기",
+    "city": null,
+    "district": null,
+    "venueName": "수원 스타필드",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [
+      "최대65%할인"
+    ],
+    "description": "수원 스타필드에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EC%88%98%EC%9B%90+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 40,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "네이버 검색 광고 문구로만 확인 — 연도 표기 없음, 주최사 공식 페이지 확인 필요",
+      "장소는 행사명 표기 기준",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "네이버 검색 광고 문구(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "스타필드고양 웨딩 박람회",
+    "canonicalEventName": "스타필드고양 웨딩 박람회",
+    "aliases": [],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-09-26",
+    "endDate": "2026-09-27",
+    "openingHours": null,
+    "province": "경기",
+    "city": null,
+    "district": null,
+    "venueName": "스타필드 고양",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [
+      "스드메특가"
+    ],
+    "description": "스타필드 고양에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EC%9D%BC%EC%82%B0+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 40,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "네이버 검색 광고 문구로만 확인 — 연도 표기 없음, 주최사 공식 페이지 확인 필요",
+      "장소는 행사명 표기 기준",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "네이버 검색 광고 문구(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "강릉세인트존스호텔 웨딩박람회",
+    "canonicalEventName": "강릉세인트존스호텔 웨딩박람회",
+    "aliases": [],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-09-26",
+    "endDate": "2026-09-27",
+    "openingHours": null,
+    "province": "그 외",
+    "city": null,
+    "district": null,
+    "venueName": "세인트존스호텔",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [],
+    "description": "세인트존스호텔에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EC%9D%BC%EC%82%B0+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C",
+      "https://search.naver.com/search.naver?query=%EC%BD%94%EC%97%91%EC%8A%A4+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 55,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "네이버 행사 정보로만 확인 — 주최사 공식 페이지 확인 필요",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "네이버 행사 정보(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "서울 더현대 웨딩박람회",
+    "canonicalEventName": "서울 더현대 웨딩박람회",
+    "aliases": [],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-09-26",
+    "endDate": "2026-09-27",
+    "openingHours": null,
+    "province": "서울",
+    "city": null,
+    "district": null,
+    "venueName": "더현대 서울",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [],
+    "description": "더현대 서울에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EC%84%9C%EC%9A%B8+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+12%EC%9B%94"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 40,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "모음 사이트 목록으로만 확인 — 주최사 공식 페이지 확인 필요",
+      "장소는 행사명 표기 기준",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "모음 사이트 목록(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "서울 롯데월드타워 대형 웨딩박람회",
+    "canonicalEventName": "서울 롯데월드타워 대형 웨딩박람회",
+    "aliases": [],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-09-26",
+    "endDate": "2026-09-27",
+    "openingHours": null,
+    "province": "서울",
+    "city": null,
+    "district": null,
+    "venueName": "롯데월드타워",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [],
+    "description": "롯데월드타워에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EC%84%9C%EC%9A%B8+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+12%EC%9B%94"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 40,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "모음 사이트 목록으로만 확인 — 주최사 공식 페이지 확인 필요",
+      "시·도는 행사명의 지역 표기로 판단 — 장소 주소 확인 필요",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "모음 사이트 목록(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "용산 아이파크몰 대형 웨딩박람회",
+    "canonicalEventName": "용산 아이파크몰 대형 웨딩박람회",
+    "aliases": [
+      "용산 아이파크 웨딩박람회"
+    ],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-09-26",
+    "endDate": "2026-09-27",
+    "openingHours": null,
+    "province": "서울",
+    "city": null,
+    "district": null,
+    "venueName": "용산 아이파크몰",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [],
+    "description": "용산 아이파크몰에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EC%84%9C%EC%9A%B8+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+12%EC%9B%94",
+      "https://search.naver.com/search.naver?query=%EC%84%9C%EC%9A%B8+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+10%EC%9B%94"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 40,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "모음 사이트 목록으로만 확인 — 주최사 공식 페이지 확인 필요",
+      "장소는 행사명 표기 기준",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "모음 사이트 목록 + 블로그 글(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "레브 웨딩박람회",
+    "canonicalEventName": "레브 웨딩박람회",
+    "aliases": [],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-10-03",
+    "endDate": "2026-10-04",
+    "openingHours": null,
+    "province": "경기",
+    "city": null,
+    "district": null,
+    "venueName": "롯데백화점 평촌점",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [],
+    "description": "롯데백화점 평촌점에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EC%88%98%EC%9B%90+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C",
+      "https://search.naver.com/search.naver?query=%EC%9D%BC%EC%82%B0+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 40,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "블로그 글로만 확인 — 주최사 공식 페이지 확인 필요",
+      "연도 표기 없음",
+      "같은 날짜 평촌웨딩박람회(LG전자 베스트샵 롯데 평촌점)와 같은 행사인지 확인 필요",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "블로그 글(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "수원 AK플라자 웨딩박람회",
+    "canonicalEventName": "수원 AK플라자 웨딩박람회",
+    "aliases": [],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-10-03",
+    "endDate": "2026-10-04",
+    "openingHours": null,
+    "province": "경기",
+    "city": null,
+    "district": null,
+    "venueName": "수원 AK플라자",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [],
+    "description": "수원 AK플라자에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EA%B2%BD%EA%B8%B0+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+10%EC%9B%94"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 40,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "모음 사이트 목록으로만 확인 — 주최사 공식 페이지 확인 필요",
+      "장소는 행사명 표기 기준",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "모음 사이트 목록(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "수원 웨딩거리 웨딩박람회",
+    "canonicalEventName": "수원 웨딩거리 웨딩박람회",
+    "aliases": [],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-10-03",
+    "endDate": "2026-10-04",
+    "openingHours": null,
+    "province": "경기",
+    "city": null,
+    "district": null,
+    "venueName": "수원 웨딩거리",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [],
+    "description": "수원 웨딩거리에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EA%B2%BD%EA%B8%B0+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+10%EC%9B%94"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 40,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "모음 사이트 목록으로만 확인 — 주최사 공식 페이지 확인 필요",
+      "장소는 행사명 표기 기준 — 행사장 확인 필요",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "모음 사이트 목록(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "수원 타임빌라스 웨딩 박람회",
+    "canonicalEventName": "수원 타임빌라스 웨딩 박람회",
+    "aliases": [
+      "타임빌라스 수원 대형 웨딩박람회"
+    ],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-10-03",
+    "endDate": "2026-10-04",
+    "openingHours": null,
+    "province": "경기",
+    "city": null,
+    "district": null,
+    "venueName": "타임빌라스 수원",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [
+      "스드메/웨딩홀/혼수 특전"
+    ],
+    "description": "타임빌라스 수원에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EC%88%98%EC%9B%90+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C",
+      "https://search.naver.com/search.naver?query=%EA%B2%BD%EA%B8%B0+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+10%EC%9B%94"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 40,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "네이버 검색 광고 문구로만 확인 — 연도 표기 없음, 주최사 공식 페이지 확인 필요",
+      "장소는 행사명 표기 기준",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "네이버 검색 광고 문구 + 모음 사이트(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "수원메쎄 대형 웨딩박람회",
+    "canonicalEventName": "수원메쎄 대형 웨딩박람회",
+    "aliases": [],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-10-03",
+    "endDate": "2026-10-04",
+    "openingHours": null,
+    "province": "경기",
+    "city": null,
+    "district": null,
+    "venueName": "수원메쎄",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [],
+    "description": "수원메쎄에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EA%B2%BD%EA%B8%B0+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+10%EC%9B%94"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 40,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "모음 사이트 목록으로만 확인 — 주최사 공식 페이지 확인 필요",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "모음 사이트 목록(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "수원컨벤션센터 초대형 웨딩박람회",
+    "canonicalEventName": "수원컨벤션센터 초대형 웨딩박람회",
+    "aliases": [],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-10-03",
+    "endDate": "2026-10-04",
+    "openingHours": null,
+    "province": "경기",
+    "city": null,
+    "district": null,
+    "venueName": "수원컨벤션센터",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [],
+    "description": "수원컨벤션센터에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EA%B2%BD%EA%B8%B0+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+10%EC%9B%94"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 40,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "모음 사이트 목록으로만 확인 — 주최사 공식 페이지 확인 필요",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "모음 사이트 목록(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "평촌웨딩박람회",
+    "canonicalEventName": "평촌웨딩박람회",
+    "aliases": [],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-10-03",
+    "endDate": "2026-10-04",
+    "openingHours": null,
+    "province": "경기",
+    "city": null,
+    "district": null,
+    "venueName": "LG전자 베스트샵 롯데 평촌점",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [],
+    "description": "LG전자 베스트샵 롯데 평촌점에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EA%B2%BD%EA%B8%B0+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+10%EC%9B%94"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 55,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "네이버 행사 정보로만 확인 — 주최사 공식 페이지 확인 필요",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "네이버 행사 정보(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "순천 여수 광양 웨딩 박람회",
+    "canonicalEventName": "순천 여수 광양 웨딩 박람회",
+    "aliases": [],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-10-03",
+    "endDate": "2026-10-04",
+    "openingHours": null,
+    "province": "그 외",
+    "city": null,
+    "district": null,
+    "venueName": "여수해리스가든",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [
+      "스드메혼수초특가"
+    ],
+    "description": "여수해리스가든에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EC%84%9C%EC%9A%B8+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+12%EC%9B%94"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 40,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "네이버 검색 광고 문구로만 확인 — 연도 표기 없음, 주최사 공식 페이지 확인 필요",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "네이버 검색 광고 문구(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "청주 오스코 웨딩박람회",
+    "canonicalEventName": "청주 오스코 웨딩박람회",
+    "aliases": [],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-10-03",
+    "endDate": "2026-10-04",
+    "openingHours": null,
+    "province": "그 외",
+    "city": null,
+    "district": null,
+    "venueName": "청주 오스코",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [],
+    "description": "청주 오스코에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EC%84%9C%EC%9A%B8+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+10%EC%9B%94"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 40,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "블로그 글로만 확인 — 주최사 공식 페이지 확인 필요",
+      "연도 표기 없음",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "블로그 글(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "대전 컨벤션센터 웨딩박람회",
+    "canonicalEventName": "대전 컨벤션센터 웨딩박람회",
+    "aliases": [
+      "대전 웨딩박람회"
+    ],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-10-03",
+    "endDate": "2026-10-04",
+    "openingHours": null,
+    "province": "대전",
+    "city": null,
+    "district": null,
+    "venueName": "DCC 대전컨벤션센터",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [],
+    "description": "DCC 대전컨벤션센터에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EC%84%9C%EC%9A%B8+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+10%EC%9B%94",
+      "https://search.naver.com/search.naver?query=%EC%88%98%EC%9B%90+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C",
+      "https://search.naver.com/search.naver?query=%EC%9D%B8%EC%B2%9C+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 40,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "블로그 글로만 확인 — 주최사 공식 페이지 확인 필요",
+      "연도 표기 없음",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "블로그 글(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "신세계백화점 웨딩 박람회",
+    "canonicalEventName": "신세계백화점 웨딩 박람회",
+    "aliases": [],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-10-03",
+    "endDate": "2026-10-04",
+    "openingHours": null,
+    "province": "대전",
+    "city": null,
+    "district": null,
+    "venueName": "신세계백화점",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [
+      "신세계 3만원 상품권 증정"
+    ],
+    "description": "신세계백화점에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%ED%82%A8%ED%85%8D%EC%8A%A4+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 40,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "네이버 검색 광고 문구로만 확인 — 연도 표기 없음, 주최사 공식 페이지 확인 필요",
+      "시·도는 광고 제목 '대전웨딩박람회'로 판단 — 장소 주소 확인 필요",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "네이버 검색 광고 문구(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "aT센터 웨딩박람회",
+    "canonicalEventName": "aT센터 웨딩박람회",
+    "aliases": [
+      "aT센터 대형 웨딩 박람회",
+      "aT센터 서울 웨딩박람회",
+      "서울 aT센터 웨딩박람회",
+      "10월 서울 AT센터 웨딩박람회"
+    ],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-10-03",
+    "endDate": "2026-10-04",
+    "openingHours": null,
+    "province": "서울",
+    "city": null,
+    "district": "서초구",
+    "venueName": "양재 aT센터",
+    "address": "서울 서초구 강남대로 27 (양재동 232)",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [
+      "무료입장, 방문 선물 증정",
+      "스드메 특가",
+      "웨딩홀 할인"
+    ],
+    "description": "양재 aT센터에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=aT%EC%84%BC%ED%84%B0+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C",
+      "https://search.naver.com/search.naver?query=%EC%84%9C%EC%9A%B8+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+10%EC%9B%94",
+      "https://search.naver.com/search.naver?query=%EC%84%9C%EC%9A%B8+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+12%EC%9B%94"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 40,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "블로그 글로만 확인 — 주최사 공식 페이지 확인 필요",
+      "출처마다 행사명이 달라 같은 행사인지 확인 필요",
+      "주최사 확인 필요"
+    ],
+    "sourceNote": "네이버 검색 광고 문구 + 모음 사이트·블로그 글(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "세텍 SETEC 웨딩 박람회",
+    "canonicalEventName": "세텍 SETEC 웨딩 박람회",
+    "aliases": [],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-10-03",
+    "endDate": "2026-10-04",
+    "openingHours": null,
+    "province": "서울",
+    "city": null,
+    "district": null,
+    "venueName": "세텍 (SETEC)",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [
+      "무료입장, 방문 선물 증정",
+      "스드메 특가",
+      "웨딩홀 할인"
+    ],
+    "description": "세텍 (SETEC)에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EC%84%B8%ED%85%8D+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 40,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "네이버 검색 광고 문구로만 확인 — 연도 표기 없음, 주최사 공식 페이지 확인 필요",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "네이버 검색 광고 문구(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "요즘웨딩 웨딩페스타",
+    "canonicalEventName": "요즘웨딩 웨딩페스타",
+    "aliases": [],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-10-03",
+    "endDate": "2026-10-04",
+    "openingHours": null,
+    "province": "서울",
+    "city": null,
+    "district": null,
+    "venueName": "청담스퀘어",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [],
+    "description": "청담스퀘어에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EC%84%9C%EC%9A%B8+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+10%EC%9B%94",
+      "https://search.naver.com/search.naver?query=%EC%9D%BC%EC%82%B0+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C",
+      "https://search.naver.com/search.naver?query=%EC%BD%94%EC%97%91%EC%8A%A4+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 55,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "네이버 행사 정보로만 확인 — 주최사 공식 페이지 확인 필요",
+      "시·도는 네이버 행사 목록의 지역 필터(서울)로 판단 — 주소 확인 필요",
+      "주최사 확인 필요"
+    ],
+    "sourceNote": "네이버 행사 정보(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "용산 아이파크 웨딩박람회",
+    "canonicalEventName": "용산 아이파크 웨딩박람회",
+    "aliases": [],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-10-03",
+    "endDate": "2026-10-04",
+    "openingHours": null,
+    "province": "서울",
+    "city": null,
+    "district": null,
+    "venueName": "용산 아이파크",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [],
+    "description": "용산 아이파크에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EC%84%9C%EC%9A%B8+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+12%EC%9B%94"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 40,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "모음 사이트 목록으로만 확인 — 주최사 공식 페이지 확인 필요",
+      "장소는 행사명 표기 기준",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "모음 사이트 목록(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "웨덱스웨딩박람회 in 코엑스마곡",
+    "canonicalEventName": "웨덱스웨딩박람회 in 코엑스마곡",
+    "aliases": [
+      "코엑스 마곡 웨덱스 초대형 웨딩박람회",
+      "웨덱스 코엑스마곡 초대형웨딩박람회",
+      "마곡 코엑스 웨덱스 웨딩박람회"
+    ],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-10-03",
+    "endDate": "2026-10-04",
+    "openingHours": null,
+    "province": "서울",
+    "city": null,
+    "district": "강서구",
+    "venueName": "코엑스 마곡",
+    "address": "서울 강서구 마곡중앙로 143 마곡컨벤션센터",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [],
+    "description": "코엑스 마곡에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EC%84%9C%EC%9A%B8+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+10%EC%9B%94",
+      "https://search.naver.com/search.naver?query=%EC%9D%BC%EC%82%B0+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C",
+      "https://search.naver.com/search.naver?query=%EC%84%9C%EC%9A%B8+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+12%EC%9B%94",
+      "https://search.naver.com/search.naver?query=%EA%B2%BD%EA%B8%B0+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+10%EC%9B%94",
+      "https://search.naver.com/search.naver?query=%EC%BD%94%EC%97%91%EC%8A%A4+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C",
+      "https://search.naver.com/search.naver?query=aT%EC%84%BC%ED%84%B0+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C",
+      "https://search.naver.com/search.naver?query=%EC%84%B8%ED%85%8D+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 55,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "네이버 행사 정보로만 확인 — 주최사 공식 페이지 확인 필요",
+      "주소는 블로그 글(서울 강서구 마곡중앙로 143 마곡컨벤션센터) 기준",
+      "주최사 확인 필요"
+    ],
+    "sourceNote": "네이버 행사 정보 + 모음 사이트·블로그 글(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "제430회 웨덱스 웨딩박람회",
+    "canonicalEventName": "제430회 웨덱스 웨딩박람회",
+    "aliases": [
+      "COEX 웨덱스X코웨드 웨딩페어",
+      "코엑스 COEX 웨덱스X코웨드 웨딩박람회",
+      "웨덱스 웨딩 박람회 in 코엑스",
+      "삼성 코엑스 웨덱스 웨딩박람회"
+    ],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-10-03",
+    "endDate": "2026-10-04",
+    "openingHours": "오전 11시 ~ 오후 8시",
+    "province": "서울",
+    "city": null,
+    "district": "강남구",
+    "venueName": "코엑스",
+    "address": "서울 강남구 삼성동 159",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [
+      "웨딩홀 우선예약 상담 진행",
+      "예물혼수특가"
+    ],
+    "description": "코엑스에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EC%84%9C%EC%9A%B8+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+10%EC%9B%94",
+      "https://search.naver.com/search.naver?query=%EC%BD%94%EC%97%91%EC%8A%A4+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C",
+      "https://search.naver.com/search.naver?query=aT%EC%84%BC%ED%84%B0+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C",
+      "https://search.naver.com/search.naver?query=%EC%84%B8%ED%85%8D+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C",
+      "https://search.naver.com/search.naver?query=%EC%84%9C%EC%9A%B8+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+12%EC%9B%94",
+      "https://search.naver.com/search.naver?query=%EA%B2%BD%EA%B8%B0+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+10%EC%9B%94",
+      "https://search.naver.com/search.naver?query=%EA%B2%BD%EA%B8%B0+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+11%EC%9B%94"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 55,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "네이버 행사 정보로만 확인 — 주최사 공식 페이지 확인 필요",
+      "코엑스 전시 일정 조회분에는 제427·428회만 있고 제430회는 없음",
+      "주소·운영시간은 블로그 글 기준",
+      "주최사 확인 필요"
+    ],
+    "sourceNote": "네이버 행사 정보 + 검색 광고·모음 사이트·블로그 글(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "코엑스오크우드 5성급호텔 웨딩박람회",
+    "canonicalEventName": "코엑스오크우드 5성급호텔 웨딩박람회",
+    "aliases": [],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-10-03",
+    "endDate": "2026-10-05",
+    "openingHours": null,
+    "province": "서울",
+    "city": null,
+    "district": null,
+    "venueName": "아이티스퀘어",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [],
+    "description": "아이티스퀘어에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EC%84%9C%EC%9A%B8+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+10%EC%9B%94",
+      "https://search.naver.com/search.naver?query=%EC%BD%94%EC%97%91%EC%8A%A4+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 55,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "네이버 행사 정보로만 확인 — 주최사 공식 페이지 확인 필요",
+      "시·도는 네이버 행사 목록의 지역 필터(서울)로 판단 — 주소 확인 필요",
+      "주최사 확인 필요"
+    ],
+    "sourceNote": "네이버 행사 정보(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "인천 롯데백화점 웨딩 박람회",
+    "canonicalEventName": "인천 롯데백화점 웨딩 박람회",
+    "aliases": [],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-10-03",
+    "endDate": "2026-10-04",
+    "openingHours": null,
+    "province": "인천",
+    "city": null,
+    "district": null,
+    "venueName": "인천 롯데백화점",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [
+      "스드메특가",
+      "스드메/웨딩홀/혼수 특전"
+    ],
+    "description": "인천 롯데백화점에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EC%9D%B8%EC%B2%9C+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 40,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "네이버 검색 광고 문구로만 확인 — 연도 표기 없음, 주최사 공식 페이지 확인 필요",
+      "장소는 행사명 표기 기준",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "네이버 검색 광고 문구(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "인천 송도컨벤시아 웨딩박람회",
+    "canonicalEventName": "인천 송도컨벤시아 웨딩박람회",
+    "aliases": [
+      "송도컨벤시아 대형 웨딩박람회"
+    ],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-10-03",
+    "endDate": "2026-10-04",
+    "openingHours": null,
+    "province": "인천",
+    "city": null,
+    "district": null,
+    "venueName": "송도컨벤시아",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [],
+    "description": "송도컨벤시아에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EC%88%98%EC%9B%90+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C",
+      "https://search.naver.com/search.naver?query=%EC%9D%B8%EC%B2%9C+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 40,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "블로그 글로만 확인 — 주최사 공식 페이지 확인 필요",
+      "광고에는 인천 초대형 컨벤시아 웨딩 박람회 10월 10~11일 일정이 따로 있음 — 같은 행사인지 확인 필요",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "블로그 글(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "부산 벡스코 웨딩박람회",
+    "canonicalEventName": "부산 벡스코 웨딩박람회",
+    "aliases": [],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-10-09",
+    "endDate": "2026-10-11",
+    "openingHours": null,
+    "province": "부산",
+    "city": null,
+    "district": null,
+    "venueName": "부산 벡스코",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [],
+    "description": "부산 벡스코에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EC%84%9C%EC%9A%B8+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+10%EC%9B%94"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 40,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "블로그 글로만 확인 — 주최사 공식 페이지 확인 필요",
+      "연도 표기 없음",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "블로그 글(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "일산 킨텍스 대형 웨딩 박람회",
+    "canonicalEventName": "일산 킨텍스 대형 웨딩 박람회",
+    "aliases": [
+      "일산킨텍스 최대규모 대형 웨딩박람회",
+      "일산 킨텍스 최대 웨딩박람회"
+    ],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-10-10",
+    "endDate": "2026-10-11",
+    "openingHours": null,
+    "province": "경기",
+    "city": null,
+    "district": null,
+    "venueName": "일산 킨텍스 (KINTEX)",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [
+      "무료입장, 방문 선물 증정",
+      "스드메 특가",
+      "웨딩홀 할인"
+    ],
+    "description": "일산 킨텍스 (KINTEX)에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%ED%82%A8%ED%85%8D%EC%8A%A4+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C",
+      "https://search.naver.com/search.naver?query=%EC%9D%BC%EC%82%B0+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C",
+      "https://search.naver.com/search.naver?query=%EA%B2%BD%EA%B8%B0+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+12%EC%9B%94"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 40,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "네이버 검색 광고 문구로만 확인 — 연도 표기 없음, 주최사 공식 페이지 확인 필요",
+      "출처마다 행사명이 달라 같은 행사인지 확인 필요",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "네이버 검색 광고 문구 + 모음 사이트(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "인천 초대형 컨벤시아 웨딩 박람회",
+    "canonicalEventName": "인천 초대형 컨벤시아 웨딩 박람회",
+    "aliases": [],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-10-10",
+    "endDate": "2026-10-11",
+    "openingHours": null,
+    "province": "인천",
+    "city": null,
+    "district": null,
+    "venueName": "컨벤시아",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [
+      "스드메할인",
+      "웨딩 혜택 65%할인"
+    ],
+    "description": "컨벤시아에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EC%9D%B8%EC%B2%9C+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 40,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "네이버 검색 광고 문구로만 확인 — 연도 표기 없음, 주최사 공식 페이지 확인 필요",
+      "장소는 행사명 표기 기준",
+      "블로그 글에는 송도컨벤시아 10월 3~4일 일정이 따로 있음 — 같은 행사인지 확인 필요",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "네이버 검색 광고 문구(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "수원 메쎄 하우투 웨딩박람회",
+    "canonicalEventName": "수원 메쎄 하우투 웨딩박람회",
+    "aliases": [],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-10-11",
+    "endDate": "2026-10-12",
+    "openingHours": null,
+    "province": "경기",
+    "city": null,
+    "district": null,
+    "venueName": "수원메쎄",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [],
+    "description": "수원메쎄에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EA%B2%BD%EA%B8%B0+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+10%EC%9B%94"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 40,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "모음 사이트 목록으로만 확인 — 주최사 공식 페이지 확인 필요",
+      "일요일~월요일(10.11~12) 일정 — 날짜 확인 필요",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "모음 사이트 목록(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "수원 메쎄 홈씨씨 웨딩박람회",
+    "canonicalEventName": "수원 메쎄 홈씨씨 웨딩박람회",
+    "aliases": [],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-10-17",
+    "endDate": "2026-10-18",
+    "openingHours": null,
+    "province": "경기",
+    "city": null,
+    "district": null,
+    "venueName": "수원 메쎄 홈씨씨",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [],
+    "description": "수원 메쎄 홈씨씨에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EA%B2%BD%EA%B8%B0+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+10%EC%9B%94"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 40,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "모음 사이트 목록으로만 확인 — 주최사 공식 페이지 확인 필요",
+      "장소는 행사명 표기 기준 — 행사장 확인 필요",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "모음 사이트 목록(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "서울웨딩쇼 in 코엑스",
+    "canonicalEventName": "서울웨딩쇼 in 코엑스",
+    "aliases": [
+      "서울 웨딩 쇼 in 코엑스"
+    ],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-10-17",
+    "endDate": "2026-10-18",
+    "openingHours": null,
+    "province": "서울",
+    "city": null,
+    "district": null,
+    "venueName": "코엑스",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [
+      "신상드레스 무료피팅이벤트"
+    ],
+    "description": "코엑스에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EC%BD%94%EC%97%91%EC%8A%A4+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C",
+      "https://search.naver.com/search.naver?query=%EC%84%B8%ED%85%8D+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C",
+      "https://search.naver.com/search.naver?query=%EC%84%9C%EC%9A%B8+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+10%EC%9B%94",
+      "https://search.naver.com/search.naver?query=%EC%84%9C%EC%9A%B8+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+12%EC%9B%94",
+      "https://search.naver.com/search.naver?query=%EA%B2%BD%EA%B8%B0+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+11%EC%9B%94"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 55,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "네이버 행사 정보로만 확인 — 주최사 공식 페이지 확인 필요",
+      "기간은 네이버 D-23 표기와 검색 광고 문구(10/17~18, 삼성코엑스 2F 더플라츠)로 확인",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "네이버 행사 정보 + 검색 광고 문구(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "더셜리 웨딩 일산 현대백화점 킨텍스점 웨딩페어",
+    "canonicalEventName": "더셜리 웨딩 일산 현대백화점 킨텍스점 웨딩페어",
+    "aliases": [
+      "10월 더셜리 일산 현대백화점 킨텍스점 웨딩박람회"
+    ],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-10-24",
+    "endDate": "2026-10-25",
+    "openingHours": null,
+    "province": "경기",
+    "city": null,
+    "district": null,
+    "venueName": "일산 현대백화점 킨텍스점",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [],
+    "description": "일산 현대백화점 킨텍스점에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EC%9D%BC%EC%82%B0+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C",
+      "https://search.naver.com/search.naver?query=%EA%B2%BD%EA%B8%B0+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+12%EC%9B%94"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 40,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "모음 사이트 목록으로만 확인 — 주최사 공식 페이지 확인 필요",
+      "장소는 행사명 표기 기준",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "모음 사이트 목록(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  },
+  {
+    "eventName": "제이웨딩박람회",
+    "canonicalEventName": "제이웨딩박람회",
+    "aliases": [
+      "서울 제이 웨딩 박람회"
+    ],
+    "organizer": "",
+    "host": null,
+    "startDate": "2026-10-24",
+    "endDate": "2026-10-25",
+    "openingHours": null,
+    "province": "서울",
+    "city": null,
+    "district": null,
+    "venueName": "SC컨벤션센터",
+    "address": "",
+    "eventCategories": [
+      "웨딩"
+    ],
+    "admissionFee": null,
+    "reservationRequired": null,
+    "reservationUrl": null,
+    "benefitsSummary": [
+      "드레스 피팅 및 지원혜택"
+    ],
+    "description": "SC컨벤션센터에서 열리는 웨딩박람회.",
+    "officialWebsiteUrl": null,
+    "officialSnsUrls": [],
+    "discoveryUrls": [
+      "https://search.naver.com/search.naver?query=%EC%84%9C%EC%9A%B8+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+10%EC%9B%94",
+      "https://search.naver.com/search.naver?query=%EC%84%9C%EC%9A%B8+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C+12%EC%9B%94",
+      "https://search.naver.com/search.naver?query=%EC%BD%94%EC%97%91%EC%8A%A4+%EC%9B%A8%EB%94%A9%EB%B0%95%EB%9E%8C%ED%9A%8C"
+    ],
+    "verificationUrls": [],
+    "status": "UPCOMING",
+    "confidence": "SOCIAL_ONLY",
+    "confidenceScore": 40,
+    "adminReviewRequired": true,
+    "reviewReason": [
+      "네이버 검색 광고 문구로만 확인 — 연도 표기 없음, 주최사 공식 페이지 확인 필요",
+      "시·도는 행사명의 지역 표기로 판단 — 장소 주소 확인 필요",
+      "장소·이름은 네이버 행사 목록, 기간은 광고 문구(10월 24~25일 SC컨벤션)로 확인",
+      "주최사 확인 필요",
+      "주소 확인 필요"
+    ],
+    "sourceNote": "네이버 검색 광고 문구 + 네이버 행사 목록(2026-09-24 조회)",
+    "thumbnailCandidateUrl": null,
+    "thumbnailSourceUrl": null
+  }
+]

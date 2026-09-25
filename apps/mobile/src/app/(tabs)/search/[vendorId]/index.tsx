@@ -13,14 +13,12 @@ import {
   MAX_RATING,
   NOT_ENOUGH_DATA,
   TERMS,
-  WEDDING_STYLE_LABEL,
   countsTowardScore,
   formatCount,
   needsPickProof,
   priceLine,
   rangeLabel,
   styleMatchReason,
-  styleOverlap,
   VENDOR_CATEGORY_LABEL,
   regionLabel,
   type WeddingStyle,
@@ -31,7 +29,6 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
-import strings from '../../../../../../../spec/strings.ko.json';
 import {
   getCurrentUser,
   getVendor,
@@ -56,7 +53,6 @@ import {
   Border,
   ErrorView,
   Layout,
-  LetterSpacing,
   LineHeight,
   MARK_HEART_PATH,
   MaxContentWidth,
@@ -139,7 +135,10 @@ function formatYearMonth(iso: string): string {
 }
 
 /**
- * WP-VEND-001 업체 상세. 시안 09-core-loop.dc.html #10a. 섹션 순서 고정(screens.json layout):
+ * WP-VEND-001~004 업체 상세(`docs/design/React_Native/search.jsx` frame-004~007 · `search.js`).
+ * 히어로(공용 260 · 정본 290은 미해결) → 제보 금액 블록(30/38 · «자세히»로 WP-VEND-007) → 탭 넷(소개 · 패키지 · 후기 ·
+ * 정보, 48 · 16/700) → 하단 Pick 하나. 탭 안 구성이 정본과 다른 자리는 PR 본문
+ * DESIGN_UNRESOLVED 표에 적었다. 아래는 이 파일이 옛 시안(09-core-loop #10a) 때 세운 순서다:
  *
  *   ① 대표 이미지 260 + 카운터  ② 배지 → 업체명 26 → 핵심 조건 16  ③ 추천 이유(스타일 칩 + 불릿)
  *   ④ 실 제보(금액 카드 + 조건별 행)  ⑤ Pick 56 + 비교  ⑥ 업체 안내  ⑦ 현재 혜택 brand 카드
@@ -161,7 +160,7 @@ export default function VendorDetailScreen() {
   /** 조건이 비슷한 결제 사례. 상세와 따로 읽는다 — 하나가 늦어도 나머지는 뜬다. */
   const [conditions, setConditions] = useState<ConditionStats | null>(null);
   /**
-   * 승인된 업체 실사진. WP-VEND-002. 못 읽어도 상세 화면은 그대로 뜬다 —
+   * 승인된 업체 실사진(히어로 · 포트폴리오 · WP-VEND-006 전체보기). 못 읽어도 상세 화면은 그대로 뜬다 —
    * 대표 이미지가 카테고리 기본으로 조용히 대체될 뿐이다.
    */
   const [photos, setPhotos] = useState<VendorPhoto[]>([]);
@@ -321,9 +320,8 @@ export default function VendorDetailScreen() {
   /* ⑦ 현재 혜택. 서버에 혜택 자료가 없어 지금은 늘 null이고, null이면 섹션을 그리지 않는다. */
   const benefit = vendorBenefit(vendor);
 
-  /* 고른 스타일과 업체 태그의 일치. 로그인 전·미선택이면 겹침이 없고 칩은 전부 회색이다. */
+  /* 고른 스타일과 업체 태그의 일치 — 추천 이유 첫 줄이 된다. 로그인 전·미선택이면 줄이 없다. */
   const chosenStyles: readonly WeddingStyle[] = me?.styleTags ?? [];
-  const matchedStyles = styleOverlap(chosenStyles, vendor.styleTags);
   const styleReason = styleMatchReason(chosenStyles, vendor.styleTags);
   /* 첫 불릿은 스타일 일치, 그 뒤가 넘어온 이유들. 같은 문장이 두 번 오지 않게 거른다. */
   const reasonLines = [
@@ -418,31 +416,23 @@ export default function VendorDetailScreen() {
               </Defs>
               <Rect width="100%" height="100%" fill="url(#heroFade)" />
             </Svg>
+            {/*
+              정본 `heroText`: 왼쪽 20 · 아래 18 · 사이 4 — 업종 · 지역 13/700(흰 .82) → 업체명 28/36.
+              피그마에서 온 «인증» pill은 정본 히어로에 없어 뺐다(2026-09-24 RN 정본 대조).
+            */}
             <View style={styles.heroText} pointerEvents="none">
-              <View style={styles.heroBadgeRow}>
-                {vendor.sourceNote ? (
-                  /* 피그마 «인증» pill — 키 컬러 · 흰 글자 · 체크 10. 2026-09-15 대표 지시로 피그마 문구 그대로 맞춘다. */
-                  <View style={[styles.heroBadge, { backgroundColor: theme.tint }]}>
-                    {/* 규격서: pill «10/700 · lh 15 · pad 2 8 · gap 4» · 체크 10. */}
-                    <ProductSymbol name="checkCircle" size={Layout.iconTiny} color={theme.onTint} />
-                    <ThemedText type="f10" style={[styles.bold, { color: theme.onTint }]}>
-                      {strings.vendor['badge.sourceVerified']}
-                    </ThemedText>
-                  </View>
-                ) : null}
-                <View style={styles.heroCategory}>
-                  <ThemedText type="f13" style={[styles.bold, styles.tracked03, { color: theme.onInk }]}>
-                    {VENDOR_CATEGORY_LABEL[vendor.category]} · {regionLabel(vendor.region)}
-                  </ThemedText>
-                </View>
+              <View style={styles.heroCategory}>
+                <ThemedText type="f13" style={[styles.bold, { color: theme.onInk }]}>
+                  {VENDOR_CATEGORY_LABEL[vendor.category]} · {regionLabel(vendor.region)}
+                </ThemedText>
               </View>
-              <ThemedText type="f26" numberOfLines={2} style={[styles.bold, styles.heroName, { color: theme.onInk }]}>
+              <ThemedText type="f28" numberOfLines={2} style={[styles.bold, styles.heroName, { color: theme.onInk }]}>
                 {vendor.name}
               </ThemedText>
             </View>
             {photos.length > 0 ? (
               <View style={[styles.photoCounter, { backgroundColor: theme.scrim }]}>
-                <ThemedText type="micro" numeric style={{ color: theme.onTint }}>
+                <ThemedText type="f12" numeric style={[styles.bold, { color: theme.onTint }]}>
                   1 / {photos.length}
                 </ThemedText>
               </View>
@@ -461,9 +451,30 @@ export default function VendorDetailScreen() {
               style={styles.bold}>
               {line.text}
             </ThemedText>
-            <ThemedText type="f13" themeColor="textAssistive" numeric>
-              {line.caption}
-            </ThemedText>
+            <View style={styles.priceMetaRow}>
+              <ThemedText type="f13" themeColor="textAssistive" numeric style={styles.priceMetaText}>
+                {line.caption}
+              </ThemedText>
+              {/*
+                «자세히» — WP-VEND-007 제보 금액 상세로(정본 frame-011 tagDesc 「업체상세 실 제보
+                블록에서 «자세히»로 들어옵니다」). 정본 frame-004는 이 링크의 모양을 그리지 않아
+                (DESIGN_UNRESOLVED) 금액 설명 줄과 같은 13 보조색 + 꺾쇠로 둔다. 실 제보가 없는
+                0·1층(회색 줄)에는 볼 분포가 없어 두지 않는다.
+              */}
+              {!line.dim ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="제보 금액 자세히 보기"
+                  hitSlop={Spacing.two}
+                  onPress={() => router.push(`/search/${currentVendor.id}/price`)}
+                  style={styles.priceMore}>
+                  <ThemedText type="f13" themeColor="textAssistive" style={styles.bold}>
+                    자세히
+                  </ThemedText>
+                  <ProductSymbol name="chevronRight" size={Layout.iconSmall} color={theme.textAssistive} />
+                </Pressable>
+              ) : null}
+            </View>
           </View>
 
           {/*
@@ -482,8 +493,8 @@ export default function VendorDetailScreen() {
                   accessibilityLabel={t.label}
                   style={styles.tabBtn}
                   onPress={() => setTab(t.key)}>
-                  {/* 피그마 탭: 14/700 · 켬은 잉크 글자 + 아래 잉크 선 2(전폭), 끔은 보조색. */}
-                  <ThemedText type="f14" themeColor={active ? undefined : 'textAssistive'} style={styles.bold}>
+                  {/* 정본 `tab`: 48 · 16/700 · 켬은 잉크 글자 + 아래 잉크 선 2, 끔은 보조색. */}
+                  <ThemedText type="f16" themeColor={active ? undefined : 'textAssistive'} style={styles.bold}>
                     {t.label}
                   </ThemedText>
                   <View
@@ -505,107 +516,24 @@ export default function VendorDetailScreen() {
           */}
           {tab === 'intro' ? (
             /*
-              피그마 「소개」 탭 `space-y-7 px-5 pt-6`: 포트폴리오 띠 → 태그 → (설명) → 실 제보
-              어두운 카드 → 우리 조건에 맞는 이유(3열) → (자주 묻는 질문). 설명문과 FAQ는 서버에
-              그 칸이 없어 그리지 않는다 — 만들어 넣지 않는다.
+              「소개」 탭 — RN 정본 WP-VEND-001(frame-004): `sec`(안쪽 20 · 사이 12 · 제목 17/700)
+              둘을 차례로 — 추천 이유(체크 20 + 15/23) → 포트폴리오(140 정사각 · radius 10 · 사이 8).
+              정본의 «포함된 것» · «따로 드는 비용»은 서버에 그 칸이 없어 그리지 않는다
+              (DESIGN_UNRESOLVED · 서버 필요). 2026-09-24 RN 정본 대조로 정본에 없던 스타일 태그 줄과
+              어두운 실 제보 카드(위 제보 금액 블록과 같은 숫자)를 뺐다.
             */
-            <View style={styles.introSection}>
-              {/* 포트폴리오 — 승인된 실사진 띠. 144 정사각 · radius 18 · 사이 8. 사진이 없으면 띠째 없다. */}
-              {photos.length > 0 ? (
-                <View>
-                  <ThemedText type="f14" style={[styles.bold, styles.introHead]}>포트폴리오</ThemedText>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.portfolioStrip}>
-                    {photos.map((photo, index) => (
-                      <Pressable
-                        key={photo.url}
-                        accessibilityRole="button"
-                        accessibilityLabel={`포트폴리오 ${index + 1}`}
-                        onPress={() => router.push(`/search/${vendor.id}/images?index=${index}` as never)}>
-                        <VendorImage
-                          source={{ uri: photo.url }}
-                          category={vendorImageCategory(vendor.category)}
-                          width={Layout.thumbPortfolio}
-                          height={Layout.thumbPortfolio}
-                          radius={Radius.thumb}
-                        />
-                      </Pressable>
-                    ))}
-                  </ScrollView>
-                </View>
-              ) : null}
-
-              {/*
-                태그 — 피그마 `#태그` 칩(좌우 14 · 상하 8 · pill · 회색 면 · 12/600). 우리 태그는
-                업체 스타일 넷이고, 내가 고른 것과 겹치는 것만 키 컬러 + 체크(SPEC §13.6).
-              */}
-              {vendor.styleTags.length > 0 ? (
-                <View style={styles.styleChipRow}>
-                  {vendor.styleTags.map((style) => {
-                    const matched = matchedStyles.includes(style);
-                    return (
-                      <View
-                        key={style}
-                        accessibilityLabel={
-                          matched ? `${WEDDING_STYLE_LABEL[style]} · 고른 스타일` : WEDDING_STYLE_LABEL[style]
-                        }
-                        style={[
-                          styles.styleChip,
-                          { backgroundColor: matched ? theme.tintSurface : theme.backgroundElement },
-                        ]}>
-                        {matched ? (
-                          <ProductSymbol name="check" size={Layout.iconMicro} color={theme.tint} />
-                        ) : null}
-                        {/* 규격서: 태그 «12/600 · lh 16 · pad 8 14». */}
-                        <ThemedText type="f12" themeColor={matched ? 'tint' : undefined} style={styles.semibold}>
-                          {`#${WEDDING_STYLE_LABEL[style]}`}
-                        </ThemedText>
-                      </View>
-                    );
-                  })}
-                </View>
-              ) : null}
-
-              {/*
-                실 제보 카드 — 피그마 «VERIFIED PRICE RANGE» 어두운 카드(잉크 면 · radius 16 · 안쪽 20).
-                **그 영문 제목 줄은 넣지 않는다**(2026-09-15 대표 지시 — 영문 eyebrow 삭제). 카드만 쓴다.
-                영문 eyebrow는 걷어낸다(C-9). 금액 24/700 흰 글자 · 오른쪽 «실 제보 N건» · 아래 한 줄.
-                자세한 것은 「가격」 탭에 그대로 있다.
-              */}
-              <View style={[styles.priceDark, { backgroundColor: theme.backgroundInk }]}>
-                <View style={styles.priceDarkRow}>
-                  {/* 규격서: 금액 «24/500 · lh 32» · 꼬리 «12/400 65%» · 아래 줄 «12/400 55% · lh 20 · mar 12». */}
-                  <ThemedText type="f24" numeric style={[styles.medium, { color: theme.onInk }]}>
-                    {line.text}
-                  </ThemedText>
-                  {!line.dim ? (
-                    <View style={styles.priceDarkTail}>
-                      <ThemedText type="f12" numeric style={{ color: theme.onInk }}>
-                        {`${TERMS.verifiedData} ${formatCount(paidPrice.count)}건`}
-                      </ThemedText>
-                    </View>
-                  ) : null}
-                </View>
-                <View style={styles.priceDarkNote}>
-                  <ThemedText type="f12" style={[styles.noteLine, { color: theme.onInk }]}>
-                    {line.dim ? line.caption : BASE_AMOUNT_NOTE}
-                  </ThemedText>
-                </View>
-              </View>
-
-              {/* 우리 조건에 맞는 이유 — 피그마 3열 칸(radius 22 · 회색 면 · 안쪽 8/12 · 체크 12 + 11/600). */}
-              <View style={[styles.reasonSection, { borderTopColor: theme.border }]}>
-                <View style={styles.reasonHead}>
-                  {/* 규격서: 제목 «14/700 · lh 20» · «내 조건 기준» «11/400 #868B94 · lh 17». */}
-                  <ThemedText type="f14" style={styles.bold}>우리 조건에 맞는 이유</ThemedText>
-                  <ThemedText type="f11" themeColor="textAssistive">내 조건 기준</ThemedText>
-                </View>
+            <View>
+              <View style={styles.introSec}>
+                {/* 제목은 정본 «추천 이유»가 v3.29 「추천」 삭제와 겹쳐 기존 이름을 둔다(DESIGN_UNRESOLVED). */}
+                <ThemedText type="f17" style={styles.bold}>우리 조건에 맞는 이유</ThemedText>
                 {hasRecommendation && reasonLines.length > 0 ? (
-                  <View style={styles.reasonGrid}>
+                  <View style={styles.reasonWrap}>
                     {reasonLines.map((reason) => (
-                      <View key={reason} style={[styles.reasonCell, { backgroundColor: theme.backgroundElement }]}>
-                        <ProductSymbol name="check" size={Layout.iconMicro} color={theme.text} />
-                        {/* 규격서: 칸 글자 «11/600 · lh 16». */}
-                        <ThemedText type="f11" style={[styles.semibold, styles.reasonText]}>
+                      <View key={reason} style={styles.reasonRow}>
+                        <View style={[styles.reasonMark, { backgroundColor: theme.tint }]}>
+                          <ProductSymbol name="check" size={REASON_CHECK} color={theme.onTint} />
+                        </View>
+                        <ThemedText type="f15" style={styles.reasonText}>
                           {reason}
                         </ThemedText>
                       </View>
@@ -617,6 +545,30 @@ export default function VendorDetailScreen() {
                   </ThemedText>
                 )}
               </View>
+
+              {/* 포트폴리오 — 승인된 실사진 띠. 사진이 없으면 섹션째 없다. */}
+              {photos.length > 0 ? (
+                <View style={styles.introSec}>
+                  <ThemedText type="f17" style={styles.bold}>포트폴리오</ThemedText>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.portfolioStrip}>
+                    {photos.map((photo, index) => (
+                      <Pressable
+                        key={photo.url}
+                        accessibilityRole="button"
+                        accessibilityLabel={`포트폴리오 ${index + 1}`}
+                        onPress={() => router.push(`/search/${vendor.id}/images?index=${index}` as never)}>
+                        <VendorImage
+                          source={{ uri: photo.url }}
+                          category={vendorImageCategory(vendor.category)}
+                          width={PORTFOLIO_TILE}
+                          height={PORTFOLIO_TILE}
+                          radius={Radius.medium}
+                        />
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                </View>
+              ) : null}
             </View>
           ) : null}
 
@@ -934,7 +886,7 @@ export default function VendorDetailScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={REPORT_ERROR}
-              /* WP-VEND-006 — 무엇이 틀렸는지 고르는 화면. 범용 문의로 보내지 않는다. */
+              /* WP-VEND-008 정보 오류 제보 — 무엇이 틀렸는지 고르는 화면. 범용 문의로 보내지 않는다. */
               onPress={() => router.push(`/search/${vendor.id}/fix-report`)}>
               <View style={styles.row}>
                 <ThemedText type="t6" themeColor="textSecondary" style={styles.rowGrow}>{REPORT_ERROR}</ThemedText>
@@ -1005,7 +957,22 @@ export default function VendorDetailScreen() {
 
 // ─── 레이아웃 상수 ──────────────────────────────────────────────────────────
 
-/* 대표 이미지 높이는 handoff WP-VEND-001의 260 — docs/design README의 수치 우선 규칙. */
+/*
+ * 대표 이미지 높이는 공용 `Layout.heroVendor`(260)다. RN 정본 `heroWrap`은 290이라 어긋난다 —
+ * 공용 토큰이고 로딩 shell 회귀 시험(user-ui-parity-20260920)이 이 이름을 묶고 있어 여기서
+ * 바꾸지 않는다. DESIGN_UNRESOLVED · 공통 UI 담당에게 요청(PR 본문).
+ */
+/** 정본 `heroText` · `heroCount`의 bottom 18. */
+const HERO_TEXT_BOTTOM = 18;
+/** 정본 `heroCount` 높이 26. */
+const HERO_COUNT_HEIGHT = 26;
+/** 정본 `tab` 높이 48. */
+const TAB_HEIGHT = 48;
+/** 정본 `galCell` 140 정사각. */
+const PORTFOLIO_TILE = 140;
+/** 정본 추천 이유 체크 원 20 · 안의 체크 13. */
+const REASON_MARK = 20;
+const REASON_CHECK = 13;
 
 /**
  * Pick·비교 버튼 높이. tokens.json `size.ctaPick` 56.
@@ -1017,8 +984,6 @@ export default function VendorDetailScreen() {
  * 원칙은 그대로고, 이 자리의 토큰이 바뀐 것이다.
  */
 const PICK_CTA_HEIGHT = Layout.ctaPick;
-
-/* 스타일 칩은 피그마 태그 칩 기하(좌우 14 · 상하 8 · pill)를 쓴다 — styles.styleChip. 켬/끔 색은 SPEC §13.6 그대로. */
 
 /** 시안 10a 경험 막대 6. */
 const METER_HEIGHT = 6;
@@ -1044,13 +1009,13 @@ const styles = StyleSheet.create({
   },
   /*
    * 하단 고정 CTA — v3.29 WP-VEND-001~004 `dockSingle`: 위 테두리 1 · 배경 화면색
-   * (스크롤에 비쳐도 CTA가 또렷하다) · 안쪽 세로 12(`Layout.inlineGap`) · 가로 20
-   * (`Layout.cardPadding`). 2026-09-23 재검증에서 잡은 값 — 전에는 규격서 vendor-1.txt의
+   * (스크롤에 비쳐도 CTA가 또렷하다) · 안쪽 세로 12(`Layout.inlineGap`) · 가로 24
+   * (`Layout.gutter`). 2026-09-23 재검증에서 잡은 값 — 전에는 규격서 vendor-1.txt의
    * 균등 16(`Spacing.three`)을 썼다.
    */
   footer: {
     borderTopWidth: Border.hairline,
-    paddingHorizontal: Layout.cardPadding,
+    paddingHorizontal: Layout.gutter,
     paddingVertical: Layout.inlineGap,
   },
   bold: {
@@ -1090,31 +1055,16 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
   },
+  /* 정본 `heroText`: left 20 · bottom 18 · gap 4. */
   heroText: {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    padding: Layout.cardPadding,
-  },
-  /* 배지 줄 `mb-1.5 flex items-center gap-2` — 아래 6(같은 값의 menuGroupGap). */
-  heroBadgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-    marginBottom: Layout.menuGroupGap,
-  },
-  /* «인증» pill `rounded-full px-2 py-0.5 gap-1`. */
-  heroBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    left: Layout.cardPadding,
+    right: Layout.cardPadding,
+    bottom: HERO_TEXT_BOTTOM,
     gap: Spacing.one,
-    borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.half,
   },
-  /* 업종 `text-white/70`. */
-  heroCategory: { opacity: 0.7 },
+  /* 정본 `heroCat` 흰 글자 .82. */
+  heroCategory: { opacity: 0.82 },
   priceSummary: {
     paddingHorizontal: Layout.pageX,
     paddingTop: Layout.cardPadding,
@@ -1122,14 +1072,28 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
     borderBottomWidth: Border.hairline,
   },
-  /* 시안: right 16 bottom 14 · rgba(0,0,0,.5) · 13/18 700 · padding 5 10 · radius 999 */
+  /* 정본 `heroCount`: right 16 · bottom 18 · 높이 26 · 좌우 10 · rgba(0,0,0,.5) · 12/700. */
   photoCounter: {
     position: 'absolute',
     right: Spacing.three,
-    bottom: Layout.sectionHeadGap,
+    bottom: HERO_TEXT_BOTTOM,
+    height: HERO_COUNT_HEIGHT,
+    justifyContent: 'center',
     borderRadius: Radius.pill,
     paddingHorizontal: Layout.cardGap,
-    paddingVertical: Spacing.one + 1,
+  },
+  /* 금액 설명 줄 ↔ «자세히». */
+  priceMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  priceMetaText: { flex: 1, minWidth: 0 },
+  priceMore: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.half,
+    flexShrink: 0,
   },
 
   // ── Identity 블록 · 시안: padding 20 24 24 · gap 14 · 머리 gap 6 ──
@@ -1146,25 +1110,26 @@ const styles = StyleSheet.create({
   statusBadge: {
     alignSelf: 'flex-start',
   },
-  // ── 탭 넷(소개 · 가격 · 후기 · 정보) · Figma VendorDetailPage 탭 배치를 가져온 자리 ──
-  /* 규격서 「div 430×46 flex · pad 0 20 0 20」, 칸 «pad 12 0 · 14/700». */
+  // ── 탭 넷(소개 · 패키지 · 후기 · 정보) · RN 정본 `tabNav` · `tab` ──
+  /* 정본 `tabNav`: 아래 선 1. 좌우는 전역 거터(24)에 맞춘다(정본 20). */
   tabBar: {
     flexDirection: 'row',
     paddingHorizontal: Layout.pageX,
     borderBottomWidth: 1,
   },
-  /* 탭 칸 `flex-1 py-3 border-b-2` — 상하 12 · 아래 선 2 전폭. */
+  /* 정본 `tab`: flex 1 · 높이 48 · 가운데 · 켬은 안쪽 아래 선 2. */
   tabBtn: {
     flex: 1,
+    height: TAB_HEIGHT,
     alignItems: 'center',
-    paddingTop: Layout.inlineGap,
-    minHeight: Layout.touchTarget,
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
   },
   tabIndicator: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     height: Border.focus,
-    width: '100%',
-    marginTop: Layout.inlineGap - Border.focus,
   },
   /* 탭 콘텐츠 첫 섹션 — identitySection과 같은 위쪽 여백(Layout.gutter)으로 시작한다. */
   tabSection: {
@@ -1206,82 +1171,35 @@ const styles = StyleSheet.create({
   medium: {
     fontWeight: 500,
   },
-  /* 규격서 «ls 0.3px» — 히어로 업종. */
-  tracked03: {
-    letterSpacing: LetterSpacing.p03,
-  },
   heroName: {
-    letterSpacing: LetterSpacing.n052,
+    lineHeight: LineHeight.lh36,
   },
-  /* 규격서 어두운 카드 아래 줄 «lh 20». */
-  noteLine: {
-    lineHeight: LineHeight.lh20,
-  },
-  // ── 「소개」 탭 — 규격서 「div 430×1017 pad 24 20 0 20」: 좌우 20 · 위 24 · 덩어리 사이 28 ──
-  introSection: {
+  // ── 「소개」 탭 — RN 정본 `sec`: 안쪽 20(좌우는 전역 거터 24) · 제목↔내용 12 ──
+  introSec: {
     paddingHorizontal: Layout.pageX,
-    paddingTop: Spacing.four,
-    gap: Layout.sectionGap,
+    paddingVertical: Layout.cardPadding,
+    gap: Layout.inlineGap,
   },
-  /* 「포트폴리오」 `mb-3`. */
-  introHead: { marginBottom: Layout.inlineGap },
-  /* 띠 `flex gap-2 pb-1`. */
-  portfolioStrip: { flexDirection: 'row', gap: Spacing.two, paddingBottom: Spacing.one },
-  /* 태그 `flex flex-wrap gap-2`, 칩 `rounded-full px-3.5 py-2` — 좌우 14 · 상하 8. */
-  styleChipRow: {
+  /* 정본 `galWrap` 사이 8. */
+  portfolioStrip: { flexDirection: 'row', gap: Spacing.two },
+  /* 정본 `reasonWrap` 사이 10 · `reasonRow` 위 정렬 · 사이 10. */
+  reasonWrap: { gap: Layout.cardGap },
+  reasonRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
+    alignItems: 'flex-start',
+    gap: Layout.cardGap,
   },
-  styleChip: {
+  /* 정본 `reason().mark`: 20 원 · 위 2 · 코랄 면 + 흰 체크 13. */
+  reasonMark: {
+    width: REASON_MARK,
+    height: REASON_MARK,
+    marginTop: Spacing.half,
     borderRadius: Radius.pill,
-    paddingHorizontal: Layout.chipPaddingX,
-    paddingVertical: Spacing.two,
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.one,
+    justifyContent: 'center',
   },
-  /* 실 제보 어두운 카드 `rounded-2xl p-5`. 금액 줄 `mt-2 flex items-end justify-between`, 아래 줄 `mt-3`. */
-  priceDark: {
-    borderRadius: Radius.cardLarge,
-    padding: Layout.cardPadding,
-  },
-  priceDarkRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    gap: Spacing.two,
-  },
-  /* `text-white/65` · `text-white/55`. */
-  priceDarkTail: { opacity: 0.65 },
-  priceDarkNote: { marginTop: Layout.inlineGap, opacity: 0.55 },
-  /* 우리 조건에 맞는 이유 `border-t pt-6`, 머리 `mb-3`, 칸 `grid-cols-3 gap-2` · `rounded-xl px-2 py-3 gap-1.5`. */
-  reasonSection: {
-    borderTopWidth: Border.hairline,
-    paddingTop: Spacing.four,
-  },
-  reasonHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: Layout.inlineGap,
-  },
-  reasonGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
-  reasonCell: {
-    flexGrow: 1,
-    flexBasis: '30%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Layout.menuGroupGap,
-    borderRadius: Radius.hero,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Layout.inlineGap,
-  },
-  reasonText: { flex: 1, minWidth: 0 },
+  /* 정본 `reason().text` 15/23. */
+  reasonText: { flex: 1, minWidth: 0, lineHeight: LineHeight.lh23 },
 
   // ── 추천 이유 불릿 · 시안: gap 10 · 점 6 coral · 글 16/24 ──
   bulletList: {

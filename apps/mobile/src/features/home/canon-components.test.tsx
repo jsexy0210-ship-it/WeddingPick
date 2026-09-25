@@ -41,8 +41,10 @@ const groupWithVendor: CategoryRecommendation = {
 };
 
 describe('최신 홈·추천 연결', () => {
-  it('예식 날짜는 handoff의 유일한 표기 YYYY.MM.DD(요일)를 쓴다', () => {
-    expect(ceremonyLine('2027-04-17', '테스트 웨딩홀')).toBe('2027.04.17(토) · 테스트 웨딩홀');
+  it('히어로 예식 정보 줄은 RN 정본 home.jsx WP-HOME-001~003 세 상태를 따른다', () => {
+    expect(ceremonyLine('2027-04-17', '테스트 웨딩홀')).toBe('2027년 4월 17일 (토) · 테스트 웨딩홀');
+    expect(ceremonyLine('2027-01-15', null)).toBe('2027년 1월 15일 (금) · 장소는 아직이에요');
+    expect(ceremonyLine('2027-01-15', null, true)).toBe('예식일만 정했어요 · 장소는 아직이에요');
     expect(ceremonyLine(null, null)).toBe('예식일 · 예식장 미정');
   });
 
@@ -125,7 +127,7 @@ describe('최신 홈·추천 연결', () => {
   });
 
   it('「내 웨딩 준비」는 완료해도 사라지지 않고 항상 4칸이다', () => {
-    const statuses = ['wedding_info_company', 'hall', 'studio', 'dress', 'makeup', 'hair', 'snap', 'bouquet', 'invitation', 'goods', 'dowry', 'honeymoon']
+    const statuses = ['hall', 'studio', 'dress', 'makeup', 'hair', 'snap', 'bouquet', 'invitation', 'goods', 'dowry', 'honeymoon']
       .map((category) => ({ category: category as never, label: category, state: 'before' as const, pickCount: 0, decidedName: null }));
     const cards = homePrepCards({
       statuses: statuses.map((row) => row.category === 'hall' ? { ...row, state: 'decided' as const } : row),
@@ -149,6 +151,13 @@ describe('최신 홈·추천 연결', () => {
     const view = mount(<HomeBudget budget={{ total: 0, spent: 0, remaining: 0 }} onOpen={jest.fn()} />);
     expect(text(view)).toContain('예산 정하기');
     expect(view.root.findAllByProps({ accessibilityRole: 'progressbar' })).toHaveLength(0);
+  });
+
+  it('예산만 있고 쓴 돈이 없으면 WP-HOME-002 문구를 보여 준다', () => {
+    const view = mount(<HomeBudget budget={{ total: 17_500_000, spent: 0, remaining: 17_500_000 }} onOpen={jest.fn()} />);
+    expect(text(view)).toContain('온보딩에서 등록한 예산이에요');
+    expect(text(view)).toContain('아직 예산 정보가 없어요');
+    expect(text(view)).toContain('0%');
   });
 
   it('예산 초과는 100%로 제한한 진행 막대와 초과 안내를 표시한다', () => {

@@ -3,7 +3,7 @@
 ## 디자인 정본 — 2026-09-20 전달본 · 2026-09-21 현재 문서
 
 - `docs/design/source/2026-09-20/`의 ZIP 2개가 전달 원본이다. `canonical-manifest.json`의 SHA-256으로 무결성을 확인한다.
-- 작업 시작점은 `docs/design/README.md`다. `handoff/`의 현재 명세와 `figma-export/` 시안을 사용한다. 최신 확정 변경은 `UX_UI_REFRESH_HANDOFF.md`, 전수 검수는 `PAGE_STATE_AUDIT.md`를 따른다. 사용자 요청에 따라 과거·중복 MD를 제거한 근거와 해시는 manifest에 기록하고, 전달 ZIP·시각 원본은 보존한다.
+- **디자인 정본은 경로로 고정이다(2026-09-24 대표 절대 지침 — CLAUDE.md 맨 앞 ⛔).** 앱(RN) 화면은 `docs/design/React_Native/`(React 변환본 84개 — 먼저 폴더 안 HANDOFF.md · README.md를 읽는다. 경로는 한 층으로 풀려 있다), 관리자 · 랜딩은 `docs/design/html/`만 근거로 쓴다. 두 곳 어디에도 없는 화면은 `DESIGN_SOURCE_NOT_VERIFIED`로 보고한다. `handoff/` · `figma-export/` · `UX_UI_REFRESH_HANDOFF.md` · `PAGE_STATE_AUDIT.md`는 2026-09-22에 파기돼 저장소에 없다. 사용자 요청에 따라 과거·중복 MD를 제거한 근거와 해시는 manifest에 기록하고, 전달 ZIP·시각 원본은 보존한다.
 - 예외는 두 가지다. 검색 Root 화면에는 시안의 Back을 두지 않는다. 최신 PR에서 없앤 독립 페이지는 되살리지 않고 현재 통합 화면·리다이렉트에 정본의 내용과 상태를 적용한다.
 - `screens.json`의 선언 합계는 서로 어긋나므로 실제 고유 ID 208개를 기준으로 누락을 검사한다. 매핑만 있고 동일 상태 캡처 대조가 없으면 완료가 아니다. 앱은 390×844, 관리자는 1920×1080을 기준으로 한다.
 

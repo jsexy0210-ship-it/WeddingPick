@@ -336,6 +336,7 @@ function component(sequence = [token]) {
       'expo-splash-screen':{preventAutoHideAsync:nothing,hideAsync:nothing},'react-native':{Platform:{OS:'web'}},
       '@weddingpick/ui':{useTheme:()=>({})},'@/features/navigation/screen-options':{useStackScreenOptions:()=>({})},
       '@/components/confirmation-dialog-host': { ConfirmationDialogHost: 'ConfirmationDialogHost' },
+      '@/features/navigation/result-toast-host': { ResultToastHost: 'ResultToastHost' },
     '@/features/navigation/depth-back':{dismissToOrReplace:nothing},
       '@/features/auth/finish-sign-in':{entryAfterSignIn:async()=> '/',rememberSignedIn:nothing},
       '@/features/auth/is-auth-popup':{isAuthPopup:()=>false,completeAuthPopup:nothing},

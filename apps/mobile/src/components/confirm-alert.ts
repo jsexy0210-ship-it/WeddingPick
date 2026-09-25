@@ -2,6 +2,7 @@ import {
   createConfirmationQueue,
   type AlertButton,
   type Confirmation,
+  type ConfirmAlertOptions,
 } from './confirmation-queue';
 import { showNativeConfirmation } from './native-confirmation-store';
 
@@ -57,6 +58,11 @@ export function updateNativeConfirmationScope(scope: string): void {
 }
 
 /** 네이티브 구현. 웹은 같은 경로의 confirm-alert.web.ts가 담당한다. */
-export function confirmAlert(title: string, message?: string, buttons?: AlertButton[]): void {
-  queue.enqueue(title, message ?? '', orderNativeAlertButtons(buttons) ?? []);
+export function confirmAlert(
+  title: string,
+  message?: string,
+  buttons?: AlertButton[],
+  options?: ConfirmAlertOptions
+): void {
+  queue.enqueue(title, message ?? '', orderNativeAlertButtons(buttons) ?? [], options?.icon);
 }

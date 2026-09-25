@@ -32,11 +32,11 @@ import { Wheel, WheelGroup } from './wheel';
  *
  * **2026-09-23 정정 — 옛 화면번호 `WP-APP-023`(v3.18~v3.21 체계, 지금 정본에 없다)과
  * 「루트 시안」·`current/20-onboarding-v2` 경로를 근거로 적고 있었다.** v3.29 정본
- * `docs/design/html/대메뉴_홈(로그인, 온보딩).dc.html`에는 예식일(WP-AUTH-002)이 필드 +
+ * `docs/design/React_Native/home.jsx`에는 예식일(WP-AUTH-002)이 필드 +
  * D-day + 「아직 정하지 않았어요」 칩만 그려져 있고 시트가 펼쳐진 그림은 없다 — 머리
  * (`sheetHead` 20/27 제목 · 36 닫기)와 휠 그림(`wheelWrap` · `wheelBand` · 페이드)은
  * 같은 부품을 쓰는 지역 시트(WP-AUTH-003)의 `wheelSheet` 값으로 맞춘다(공용 컴포넌트
- * `wheel.tsx`). 결과 줄(`picked` — 날짜 + D-day)은 v3.29 dc.html에 그려진 화면이
+ * `wheel.tsx`). 결과 줄(`picked` — 날짜 + D-day)은 RN 정본 home.jsx에 그려진 화면이
  * 아니라 이 시트 자체의 기존 UX 보강이라 `DESIGN_UNRESOLVED`로 남기고 그대로 둔다 —
  * 지우면 굴리는 중 무엇을 고르는지 확인할 길이 없어지는 실제 회귀라 임의로 걷어내지
  * 않는다(CLAUDE.md 「애매하면 만들지 않고 DESIGN_UNRESOLVED로 남긴다」는 «새로 만드는
@@ -207,7 +207,7 @@ const FLEX_MONTH = 1;
 const FLEX_DAY = 1;
 
 const styles = StyleSheet.create({
-  /* v3.29 dc.html WP-AUTH-003 wheelSheet — 패딩/그래버는 SheetPanel, 요소 사이 14. */
+  /* RN 정본 home.jsx WP-AUTH-003 wheelSheet — 패딩/그래버는 SheetPanel, 요소 사이 14. */
   sheet: { gap: Layout.sectionHeadGap },
   /* 시안 sheetHead — 제목과 닫기를 양끝으로. */
   head: {

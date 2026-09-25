@@ -1,0 +1,23 @@
+{
+  "name": "weddingpick-app-design",
+  "version": "3.29.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "build:preview": "node scripts/build-preview.cjs",
+    "build:icons": "node scripts/build-icons.cjs",
+    "predev": "npm run build:icons",
+    "prebuild": "npm run build:icons"
+  },
+  "dependencies": {
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0",
+    "typescript": "5.8.3"
+  }
+}
