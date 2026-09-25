@@ -472,8 +472,11 @@ export function registerWeddingPlanRoutes(app: FastifyInstance, context: AppCont
   );
 
   /**
-   * 환불 상태만 고친다. 직접 입력한 항목만 — 결제인증에서 온 줄은 이 문으로
-   * 고치지 않는다(삭제와 같은 이유). v1 범위: 분할 결제 줄 편집은 아직 없다.
+   * 직접 입력한 항목을 고친다 — 등록 때 받는 칸(항목명 · 금액 · 업종 · 상태 · 날짜)과
+   * 환불 상태. 보낸 칸만 바뀐다. 결제인증에서 온 줄은 이 문으로 고치지 않는다(삭제와
+   * 같은 이유 + 증빙 금액을 사람이 바꾸면 출처가 거짓이 된다) — 그 줄은
+   * `structured.expenses`에 없어 UPDATE가 0건이고 404가 된다. v1 범위: 분할 결제 줄
+   * 편집은 아직 없다.
    */
   app.patch<{ Params: { weddingId: string; expenseId: string } }>(
     '/v1/weddings/:weddingId/expenses/:expenseId',
@@ -484,10 +487,24 @@ export function registerWeddingPlanRoutes(app: FastifyInstance, context: AppCont
 
       await assertWeddingAccess(context.pool, request.params.weddingId, userId);
 
+      const sets: string[] = [];
+      const values: unknown[] = [request.params.expenseId, request.params.weddingId];
+      const set = (column: string, value: unknown, cast = '') => {
+        values.push(value);
+        sets.push(`${column} = $${values.length}${cast}`);
+      };
+
+      if (body.label !== undefined) set('label', body.label);
+      if (body.amount !== undefined) set('amount', body.amount);
+      if (body.category !== undefined) set('category', body.category, '::vendor_category');
+      if (body.status !== undefined) set('status', body.status, '::expense_status');
+      if (body.spentOn !== undefined) set('spent_on', body.spentOn);
+      if (body.refundStatus !== undefined) set('refund_status', body.refundStatus);
+
       const { rowCount } = await context.pool.query(
-        `UPDATE structured.expenses SET refund_status = $3
+        `UPDATE structured.expenses SET ${sets.join(', ')}
          WHERE id = $1 AND wedding_id = $2`,
-        [request.params.expenseId, request.params.weddingId, body.refundStatus]
+        values
       );
 
       if (rowCount === 0) {

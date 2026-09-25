@@ -768,7 +768,7 @@ export async function addExpense(
   });
 }
 
-/** 환불 상태만 고친다. 직접 입력한 항목만 — 결제인증에서 온 줄은 404다. */
+/** 직접 입력한 항목의 등록 칸 · 환불 상태를 고친다. 결제인증에서 온 줄은 404다. */
 export async function updateExpense(
   weddingId: string,
   expenseId: string,
@@ -778,6 +778,11 @@ export async function updateExpense(
     method: 'PATCH',
     body: JSON.stringify(body),
   });
+}
+
+/** 직접 입력한 항목만 지워진다. 결제인증에서 온 줄은 404다 — 그건 제보다. */
+export async function removeExpense(weddingId: string, expenseId: string): Promise<void> {
+  await request(`/v1/weddings/${weddingId}/expenses/${expenseId}`, z.null(), { method: 'DELETE' });
 }
 
 export async function setBudget(weddingId: string, budget: number | null): Promise<void> {

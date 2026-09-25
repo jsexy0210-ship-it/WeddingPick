@@ -479,7 +479,7 @@ export const ENDPOINTS = {
     response: expenseDetailSchema,
   },
 
-  /** 환불 상태만 고친다. 결제인증에서 온 줄은 404다. */
+  /** 직접 입력한 줄의 등록 칸 · 환불 상태를 고친다. 결제인증에서 온 줄은 404다. */
   updateExpense: {
     method: 'PATCH',
     path: '/v1/weddings/{weddingId}/expenses/{expenseId}',

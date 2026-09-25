@@ -103,9 +103,23 @@ export const expenseDetailSchema = expenseSchema.extend({
   splitPayments: z.array(expenseSplitPaymentSchema),
 });
 
-export const updateExpenseRequestSchema = z.object({
-  refundStatus: expenseRefundStatusSchema,
-});
+/**
+ * 직접 입력한 줄을 고친다. 등록 때 받는 칸(항목명 · 금액 · 업종 · 상태 · 날짜)과
+ * 환불 상태 — 보낸 칸만 바뀐다. 결제인증에서 온 줄은 이 문으로 못 고친다(404) —
+ * 증빙 금액을 사람이 바꾸면 «Pick 인증» 출처가 거짓이 된다.
+ */
+export const updateExpenseRequestSchema = z
+  .object({
+    label: z.string().trim().min(1).max(60).optional(),
+    amount: amountSchema.refine((value) => value > 0, '금액을 적어주세요').optional(),
+    /** null이면 업종을 비운다(기타 묶음). */
+    category: vendorCategorySchema.nullable().optional(),
+    status: expenseStatusSchema.optional(),
+    /** null이면 날짜를 비운다. */
+    spentOn: dateSchema.nullable().optional(),
+    refundStatus: expenseRefundStatusSchema.optional(),
+  })
+  .refine((body) => Object.values(body).some((value) => value !== undefined), '고칠 칸이 없어요');
 
 /**
  * 지출 요약.

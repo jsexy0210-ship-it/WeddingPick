@@ -1,10 +1,11 @@
-import type { CreateExpenseRequest } from '@weddingpick/api-contract';
+import type { CreateExpenseRequest, ExpenseSummaryResponse } from '@weddingpick/api-contract';
 import { VENDOR_CATEGORIES, VENDOR_CATEGORY_LABEL, manwon, type VendorCategory } from '@weddingpick/domain';
 import { useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 
-import { addExpense } from '@/api/client';
+import { addExpense, getExpenses, removeExpense, updateExpense } from '@/api/client';
+import { confirmAlert } from '@/components/confirm-alert';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
@@ -13,7 +14,9 @@ import { todayDay } from '@/features/wedding/expense-day';
 import { Field } from '@/features/wedding/screen-kit';
 import { ActionButton, FilterChip, ProductSymbol, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 
+import { ourWedding as copy } from '../../../../../../../../spec/strings.ko.json';
 import WeddingScreen from '../../index';
+import ExpenseListScreen from './list';
 
 /**
  * 예산 추가 시트 — WP-NOTE-007 · `docs/design/React_Native/note.jsx` frame-006.
@@ -32,6 +35,12 @@ import WeddingScreen from '../../index';
  *     서버 경로가 없다(Pick 인증은 여러 단계 흐름). 채워 준다고 적고 안 채우는 칸을 만들지 않는다
  *   - 아래 두 단추 «직접입력 · 자동입력» — 자동입력이 위 사진 칸과 한 기능이라 함께 미뤘다.
  *     지금은 «지출만 넣기 · 지출 넣고 인증하기»(Pick 인증 흐름으로)를 그대로 둔다
+ *
+ * 수정 모드(`?expenseId=`) — 지출내역에서 직접 입력한 줄을 누르면 같은 시트가 값이 채워진 채
+ * 열린다(2026-09-25 대표 지시 「등록된 예산정보 수정, 삭제 기능이 없다」). 저장은 PATCH, 시트 안
+ * «삭제»는 무엇이 지워지는지 보여준 뒤 한 번 더 묻고 DELETE. 정본 note.jsx에 수정 · 삭제 프레임이
+ * 없어 등록 시트를 그대로 쓴다 — `DESIGN_SOURCE_NOT_VERIFIED`. 날짜는 보내지 않아 그대로 남는다.
+ * 결제인증 · 상담 정리 줄은 여기 오지 않는다(지출내역이 막는다). 주소로 직접 와도 칸을 잠근다.
  */
 
 /** 항목별 예산 저장 경로가 서버에 없다 — 붙으면 false로 바꾸고 `save()`에 예산을 싣는다. */
@@ -45,32 +54,72 @@ function isVendorCategory(value: string | undefined): value is VendorCategory {
  * /expenses/add 딥링크는 부모 지출 화면 + DLG-D 입력 시트로 연결한다.
  */
 export default function AddExpenseRoute() {
-  const { id, vendorName, category } = useLocalSearchParams<{
+  const { id, vendorName, category, expenseId } = useLocalSearchParams<{
     id: string;
     vendorName?: string;
     category?: string;
+    expenseId?: string;
   }>();
 
   const { height } = useWindowDimensions();
   const theme = useTheme();
-  const initialCategory = isVendorCategory(category) ? category : null;
+  const editing = Boolean(expenseId);
+  const [original, setOriginal] = useState<ExpenseSummaryResponse['expenses'][number] | null>(null);
+  const initialCategory = editing
+    ? isVendorCategory(original?.category ?? undefined)
+      ? (original!.category as VendorCategory)
+      : null
+    : isVendorCategory(category)
+      ? category
+      : null;
+  const initialAmountText = original ? formatAmount(String(original.amount)) : '';
 
   const [amountText, setAmountText] = useState('');
   const [picked, setPicked] = useState<VendorCategory | null>(initialCategory);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!expenseId) return;
+    let active = true;
+    getExpenses(id)
+      .then((page) => {
+        if (!active) return;
+        const row = page.expenses.find((expense) => expense.id === expenseId);
+        if (!row) {
+          setError('지출을 찾지 못했어요. 목록에서 다시 골라주세요.');
+          return;
+        }
+        setOriginal(row);
+        setAmountText(formatAmount(String(row.amount)));
+        setPicked(isVendorCategory(row.category ?? undefined) ? (row.category as VendorCategory) : null);
+      })
+      .catch((caught: Error) => active && setError(caught.message));
+    return () => {
+      active = false;
+    };
+  }, [id, expenseId]);
+
+  /* 결제인증 · 상담 정리 줄은 금액이 자료에서 왔다 — 고치면 출처가 거짓이 된다. */
+  const locked = editing && (original === null || original.source !== 'manual');
+
   const amount = Number(amountText.replace(/[^\d]/g, ''));
-  /* 줄 이름 — 업체에서 들어왔으면 그 이름, 아니면 고른 항목 이름. */
-  const label = vendorName?.trim() || (picked ? VENDOR_CATEGORY_LABEL[picked] : '');
-  const dirty = amountText.length > 0 || picked !== initialCategory;
+  /*
+   * 줄 이름 — 업체에서 들어왔으면 그 이름, 아니면 고른 항목 이름. 수정 모드에서 항목을 안
+   * 바꿨으면 원래 줄 이름을 그대로 둔다(업체 이름으로 넣은 줄이 업종 이름으로 바뀌지 않게).
+   */
+  const label =
+    editing && original && picked === initialCategory
+      ? original.label
+      : vendorName?.trim() || (picked ? VENDOR_CATEGORY_LABEL[picked] : '');
+  const dirty = amountText !== initialAmountText || picked !== initialCategory;
 
   const reason =
     label.length === 0 ? '항목을 골라주세요' : !(amount > 0) ? '낸 금액을 숫자로 적어주세요' : null;
-  const ready = reason === null;
+  const ready = reason === null && !locked && (!editing || dirty);
 
   function closeSheet() {
-    dismissToOrReplace('/wedding?tab=budget');
+    dismissToOrReplace(editing ? `/wedding/${id}/expenses/list` : '/wedding?tab=budget');
   }
 
   function requestClose() {
@@ -79,6 +128,17 @@ export default function AddExpenseRoute() {
   }
 
   async function save(): Promise<boolean> {
+    if (editing && expenseId) {
+      try {
+        await updateExpense(id, expenseId, { label, amount, category: picked });
+        showResultToast(copy['expense.saved']);
+        return true;
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : '바꾸지 못했어요. 다시 시도해주세요.');
+        return false;
+      }
+    }
+
     const body: CreateExpenseRequest = {
       label,
       amount,
@@ -106,14 +166,44 @@ export default function AddExpenseRoute() {
     if (ok) closeSheet();
   }
 
+  function requestDelete() {
+    if (!expenseId || !original || locked || saving) return;
+    confirmAlert(
+      copy['expense.deleteTitle'],
+      copy['expense.deleteBody'].replace('{label}', original.label).replace('{amount}', manwon(original.amount)),
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: copy['expense.delete'],
+          style: 'destructive',
+          onPress: () => {
+            setSaving(true);
+            setError(null);
+            removeExpense(id, expenseId)
+              .then(() => {
+                showResultToast(copy['expense.deleted']);
+                closeSheet();
+              })
+              .catch((caught: Error) => setError(caught.message))
+              .finally(() => setSaving(false));
+          },
+        },
+      ]
+    );
+  }
+
   return (
     <View style={styles.host}>
-      <WeddingScreen initialTab="budget" suppressBudgetPrompt />
+      {editing ? <ExpenseListScreen /> : <WeddingScreen initialTab="budget" suppressBudgetPrompt />}
 
-      <BottomSheet visible onRequestClose={requestClose} style={styles.sheetHost} testID="expense-add-sheet">
+      <BottomSheet
+        visible
+        onRequestClose={requestClose}
+        style={styles.sheetHost}
+        testID={editing ? 'expense-edit-sheet' : 'expense-add-sheet'}>
         <SheetPanel>
           <View style={styles.sheetHead}>
-            <ThemedText type="t4">예산 추가</ThemedText>
+            <ThemedText type="t4">{editing ? copy['expense.editTitle'] : copy['headerAdd.expense']}</ThemedText>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="닫기"
@@ -146,6 +236,7 @@ export default function AddExpenseRoute() {
                       label={VENDOR_CATEGORY_LABEL[value]}
                       selected={picked === value}
                       role="radio"
+                      disabled={locked}
                       onPress={() => setPicked((current) => (current === value ? null : value))}
                     />
                   ))}
@@ -162,20 +253,20 @@ export default function AddExpenseRoute() {
               <Field
                 label="낸 금액"
                 value={amountText}
-                onChangeText={(text) =>
-                  setAmountText(
-                    text
-                      .replace(/[^0-9]/g, '')
-                      .slice(0, 12)
-                      .replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-                  )
-                }
+                onChangeText={(text) => setAmountText(formatAmount(text))}
+                editable={!locked}
                 placeholder="예: 1,500,000"
                 keyboardType="number-pad"
                 maxLength={15}
                 hint={amount > 0 ? manwon(amount) : null}
               />
             </View>
+
+            {locked && original ? (
+              <ThemedText type="t7" themeColor="textSecondary">
+                {copy['expense.lockedSource'].replace('{source}', original.sourceLabel)}
+              </ThemedText>
+            ) : null}
 
             {error ? (
               <ThemedText type="t7" themeColor="negative">
@@ -184,7 +275,7 @@ export default function AddExpenseRoute() {
             ) : null}
           </ScrollView>
 
-          {!ready && dirty && reason ? (
+          {dirty && reason ? (
             <ThemedText type="t7" themeColor="textSecondary">
               {reason}
             </ThemedText>
@@ -192,9 +283,24 @@ export default function AddExpenseRoute() {
 
           <View style={styles.actions}>
             {/* «지출 넣고 인증하기»는 Pick 인증 촬영 삭제(2026-09-25)로 뺐다 — 남은 CTA가 Primary다. */}
+            {editing ? (
+              <ActionButton
+                label={copy['expense.delete']}
+                disabled={locked || saving}
+                onPress={requestDelete}
+              />
+            ) : null}
             <ActionButton
               variant="primary"
-              label={saving ? '넣는 중…' : '지출만 넣기'}
+              label={
+                editing
+                  ? saving
+                    ? '저장하는 중…'
+                    : copy['expense.save']
+                  : saving
+                    ? '넣는 중…'
+                    : '지출만 넣기'
+              }
               disabled={!ready || saving}
               onPress={() => void saveOnly()}
             />
@@ -203,6 +309,14 @@ export default function AddExpenseRoute() {
       </BottomSheet>
     </View>
   );
+}
+
+/** 숫자만 남기고 세 자리마다 쉼표. 12자리까지. */
+function formatAmount(text: string): string {
+  return text
+    .replace(/[^0-9]/g, '')
+    .slice(0, 12)
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
 const styles = StyleSheet.create({
