@@ -1578,4 +1578,17 @@ if (process.env.FIXTURE_NOTE_DATA === 'true') {
   };
 }
 
+/*
+ * common 캡처 전용 스위치(2026-09-25 RN 정본 common 대조). 켤 때만 덮는다.
+ *
+ *   FIXTURE_PICK_EMPTY=true  WP-EMPTY-PICK(Pick · 처음): 담은 곳 0
+ */
+if (process.env.FIXTURE_PICK_EMPTY === 'true') {
+  routes['GET /v1/weddings/:weddingId/candidates'] = {
+    ...routes['GET /v1/weddings/:weddingId/candidates'],
+    groups: [],
+    total: 0,
+  };
+}
+
 module.exports = { routes, matchRoute, VENDORS, SPONSORED, ME };

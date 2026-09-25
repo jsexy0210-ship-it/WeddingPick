@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet } from 'react-native';
 
-import { ProductSymbol, Radius, useTheme } from '@weddingpick/ui';
+import { ProductSymbol, Radius, SeedIcon, useTheme } from '@weddingpick/ui';
 import { useDepthBack } from '@/features/navigation/depth-back';
 
 /**
@@ -44,15 +44,15 @@ export function BackButton({
         (`M14.5 5 8 12l6.5 7`)와 모양도 두께도 달랐다.
       */}
       {/*
-        뒤로는 ← 화살(피그마 2026-09-14 정본 — `Search.tsx` · `VendorFlows.tsx` · `FlowScreens.tsx`
-        전부 lucide ArrowLeft `h-5 w-5` = 20). 꺾쇠였던 것을 바꿨고, 상세 화면끼리 같은 단추를
-        쓰므로 여기 한 곳만 바꾸면 전부 따라온다.
+        뒤로는 꺾쇠다 — RN 정본 `common.js:397` `icoBack` = SEED `chevron-left` 24 · INK(검색 · 웨딩노트 ·
+        Pick · MY 보드도 같은 아이콘). 2026-09-14 피그마의 ← 화살(lucide ArrowLeft)에서 되돌렸다
+        (2026-09-25 common 픽셀 대조). 상세 화면끼리 같은 단추를 쓰므로 여기 한 곳만 바꾸면 전부 따라온다.
       */}
-      <ProductSymbol
-        name={variant === 'close' ? 'close' : 'arrowLeft'}
-        size={variant === 'close' ? CLOSE_ICON_SIZE : BACK_ICON_SIZE}
-        color={theme.text}
-      />
+      {variant === 'close' ? (
+        <ProductSymbol name="close" size={CLOSE_ICON_SIZE} color={theme.text} />
+      ) : (
+        <SeedIcon name="chevronLeftRegular" size={BACK_ICON_SIZE} color={theme.text} />
+      )}
     </Pressable>
   );
 }

@@ -31,10 +31,11 @@ jest.mock('expo-router', () => ({
 }));
 
 /** 화살표 왼쪽 끝이 화면 왼쪽에서 떨어진 거리 — 막대 좌측 패딩 + 36 상자 안에서 24 아이콘이 밀려난 만큼. */
-const CANONICAL_ICON_LEFT = 12 + (TOUCH_SLOT_SIZE - BACK_ICON_SIZE) / 2;
+const CANONICAL_ICON_LEFT = 16 + (TOUCH_SLOT_SIZE - BACK_ICON_SIZE) / 2;
 const CANONICAL_NAV_HEIGHT = 56;
-const CANONICAL_NAV_PADDING_LEFT = 12;
-const CANONICAL_NAV_PADDING_RIGHT = 20;
+/* RN 정본 `navBar` «padding:0 16px» — 여섯 보드 공통(2026-09-25, 옛 12/20에서). */
+const CANONICAL_NAV_PADDING_LEFT = 16;
+const CANONICAL_NAV_PADDING_RIGHT = 16;
 
 let tree: ReactTestRenderer;
 

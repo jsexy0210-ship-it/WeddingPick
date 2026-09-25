@@ -16,7 +16,7 @@ import {
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Layout, Motion, Radius, ThemedView, USE_NATIVE_DRIVER, useTheme } from '@weddingpick/ui';
+import { Layout, Motion, Radius, Spacing, ThemedView, USE_NATIVE_DRIVER, useTheme } from '@weddingpick/ui';
 
 export type BottomSheetProps = {
   visible: boolean;
@@ -307,10 +307,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: Layout.gutter,
     gap: Layout.sheetGap,
   },
+  /* RN 정본 `common.js:571` `grab` — margin-bottom 4. 패널 gap 12와 더해 제목은 그래버 아래 16에 선다. */
   grabber: {
     width: Layout.grabberWidth,
     height: Layout.grabberHeight,
     borderRadius: Radius.pill,
     alignSelf: 'center',
+    marginBottom: Spacing.one,
   },
 });

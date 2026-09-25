@@ -738,12 +738,13 @@ export const Layout = {
   statusBar: 44,
   navBar: 56,
   /**
-   * 하위 화면 상단 내비의 좌우. component.navBack «padding:0 20px 0 12px» — 시안 18개가 모두 같다.
-   * 거터(24)와 다른 이유는 뒤로가기가 40 원형이라 그 안의 아이콘 24가 20 선에 앉기 때문이다.
-   * 화면이 24에서 직접 빼 계산하면 버튼 크기가 바뀔 때 한 곳만 어긋난다.
+   * 하위 화면 상단 내비의 좌우 — RN 정본 `navBar` «padding:0 16px»(`common.js:396` · `search.js:240` ·
+   * `pick.js:90` · `note.js:93` · `my.js:168` · `home.js:641` 여섯 보드가 같다). 뒤로가기는 36 슬롯에
+   * 24 아이콘이라 아이콘 왼쪽 끝은 16 + 6 = 22에 앉는다. 옛 핸드오프 navBack(«0 20px 0 12px», 40 원형
+   * 버튼)의 12/20에서 2026-09-25 common 픽셀 대조로 바꿨다.
    */
-  navPaddingLeft: 12,
-  navPaddingRight: 20,
+  navPaddingLeft: 16,
+  navPaddingRight: 16,
   /** 상단 내비 요소 사이. component.navBack.gap. */
   navGap: 8,
   /** 검색 헤더 높이. size.headerSearch. */
