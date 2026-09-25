@@ -5,7 +5,14 @@ import { SITE_ORIGIN } from '@weddingpick/domain';
 import strings from '../../../spec/strings.ko.json';
 
 /**
- * 링크 미리보기(OG 카드) 문구.
+ * 링크 미리보기(OG 카드) 문구 — 세 벌(2026-09-25 대표 지시, 0436).
+ *
+ *   app      앱웹(`apps/mobile` web export) 주소가 싣는 카드
+ *   invite   배우자 초대 안내 주소(`/invite`)가 싣는 카드 — 초대 코드는 담지 않는다
+ *   website  웹사이트(`apps/web` 랜딩 · 하위 페이지)가 싣는 카드
+ *
+ * 세 벌은 서로의 값을 대신 쓰지 않는다. 한 벌에서 저장 · 그림 올리기 · 지우기를 해도
+ * 다른 벌의 줄은 움직이지 않는다.
  *
  * 2026-09-10 사용자 요청 — 관리자가 직접 고치고 저장한다. 지금까지는 문구가
  * `spec/strings.ko.json`에 있어서 한 글자를 바꾸려면 코드를 고쳐 배포해야 했다.
@@ -14,6 +21,18 @@ import strings from '../../../spec/strings.ko.json';
  * 쓴다. 저장할 때 spec 값을 통째로 복사해 넣으면, 나중에 spec이 바뀌어도 표에 든
  * 낡은 사본이 계속 이긴다 — 무엇을 일부러 바꿨고 무엇이 기본값인지도 알 수 없게 된다.
  */
+export const SITE_META_KINDS = ['app', 'invite', 'website'] as const;
+
+export type SiteMetaKind = (typeof SITE_META_KINDS)[number];
+
+/** 벌을 적지 않은 옛 호출(웹사이트 빌드 · 옛 관리자 번들)은 웹사이트 벌이다. */
+export const DEFAULT_SITE_META_KIND: SiteMetaKind = 'website';
+
+export function parseSiteMetaKind(value: unknown): SiteMetaKind | null {
+  if (value === undefined || value === null || value === '') return DEFAULT_SITE_META_KIND;
+  return (SITE_META_KINDS as readonly unknown[]).includes(value) ? (value as SiteMetaKind) : null;
+}
+
 export type SiteMeta = {
   ogTitle: string;
   ogDescription: string;
@@ -24,6 +43,7 @@ export type SiteMeta = {
 
 /** 관리자 화면이 「기본값으로 되돌리기」를 그릴 수 있도록 덮어쓴 항목을 함께 준다. */
 export type SiteMetaAdminView = {
+  kind: SiteMetaKind;
   effective: SiteMeta;
   defaults: SiteMeta;
   overrides: Partial<Record<keyof SiteMeta, string | null>>;
@@ -57,23 +77,38 @@ type Row = {
   published_at: Date | null;
 };
 
-export function defaults(): SiteMeta {
+/**
+ * 벌마다의 기본값. 앱웹은 `apps/mobile/src/features/social-meta.ts`, 웹사이트는
+ * `apps/web/src/social-meta.ts`, 초대용은 `spec/strings.ko.json` `inviteShare`와 같은 값이다.
+ */
+export function defaults(kind: SiteMetaKind = DEFAULT_SITE_META_KIND): SiteMeta {
   const copy = strings.webLanding;
+
+  if (kind === 'invite') {
+    const invite = strings.inviteShare;
+    return {
+      ogTitle: invite.metaTitle,
+      ogDescription: invite.metaDescription,
+      ogImageUrl: null,
+      ogImageAlt: invite.imageAlt,
+    };
+  }
 
   return {
     ogTitle: copy.metaTitle,
     ogDescription: copy.metaDescription,
     ogImageUrl: null,
-    /* 그림에 적힌 글과 같아야 한다. apps/web의 ogImageAlt()와 같은 규칙이다. */
-    ogImageAlt: `${copy.brand} — ${copy.hero.split('\n').join(' ')}`,
+    /* 그림에 적힌 글과 같아야 한다. 웹사이트는 apps/web의 ogImageAlt(), 앱웹은 social-meta.ts와 같다. */
+    ogImageAlt: `${copy.brand} — ${(kind === 'app' ? copy.og.hero : copy.hero).split('\n').join(' ')}`,
   };
 }
 
-async function readRow(pool: Pool): Promise<Row | null> {
+async function readRow(pool: Pool, kind: SiteMetaKind): Promise<Row | null> {
   const { rows } = await pool.query<Row>(
     `SELECT og_title, og_description, og_image_url, og_image_key, og_image_alt,
             updated_at, published_at
-     FROM structured.site_meta WHERE id = true`
+     FROM structured.site_meta WHERE kind = $1`,
+    [kind]
   );
 
   return rows[0] ?? null;
@@ -90,15 +125,17 @@ export const OG_IMAGE_PATH = '/v1/site-meta/og-image';
  * 바뀌게 하고, 그러면 웹을 다시 빌드해 새 주소가 태그에 실린다. 「저장」과 「반영」이
  * 다른 일인 것은 이 화면의 다른 항목과 같다.
  */
-function uploadedImageUrl(origin: string, updatedAt: Date | null): string {
+function uploadedImageUrl(origin: string, updatedAt: Date | null, kind: SiteMetaKind): string {
   const version = Math.floor((updatedAt ?? new Date()).getTime() / 1000);
+  /* 웹사이트 벌은 벌 이름 없이 둔다 — 이미 나간 카드의 주소가 그대로 살아 있게. */
+  const kindParam = kind === DEFAULT_SITE_META_KIND ? '' : `kind=${kind}&`;
 
-  return `${origin}${OG_IMAGE_PATH}?v=${version}`;
+  return `${origin}${OG_IMAGE_PATH}?${kindParam}v=${version}`;
 }
 
-function merge(row: Row | null, origin: string): SiteMeta {
-  const base = defaults();
-  const uploaded = row?.og_image_key ? uploadedImageUrl(origin, row.updated_at) : null;
+function merge(row: Row | null, origin: string, kind: SiteMetaKind): SiteMeta {
+  const base = defaults(kind);
+  const uploaded = row?.og_image_key ? uploadedImageUrl(origin, row.updated_at, kind) : null;
 
   return {
     ogTitle: row?.og_title ?? base.ogTitle,
@@ -115,16 +152,17 @@ function merge(row: Row | null, origin: string): SiteMeta {
  * 쓴다 — 환경변수로 두면 값이 빠진 채 배포될 수 있고, 그때 카드에 실리는 것은
  * 「그림 없음」이 아니라 「없는 주소」다. 크롤러는 그것을 조용히 버린다.
  */
-export async function effective(pool: Pool, origin: string): Promise<SiteMeta> {
-  return merge(await readRow(pool), origin);
+export async function effective(pool: Pool, origin: string, kind: SiteMetaKind = DEFAULT_SITE_META_KIND): Promise<SiteMeta> {
+  return merge(await readRow(pool, kind), origin, kind);
 }
 
-export async function adminView(pool: Pool, origin: string): Promise<SiteMetaAdminView> {
-  const row = await readRow(pool);
+export async function adminView(pool: Pool, origin: string, kind: SiteMetaKind = DEFAULT_SITE_META_KIND): Promise<SiteMetaAdminView> {
+  const row = await readRow(pool, kind);
 
   return {
-    effective: merge(row, origin),
-    defaults: defaults(),
+    kind,
+    effective: merge(row, origin, kind),
+    defaults: defaults(kind),
     overrides: {
       ogTitle: row?.og_title ?? null,
       ogDescription: row?.og_description ?? null,
@@ -133,10 +171,20 @@ export async function adminView(pool: Pool, origin: string): Promise<SiteMetaAdm
     },
     updatedAt: row?.updated_at?.toISOString() ?? null,
     publishRequestedAt: row?.published_at?.toISOString() ?? null,
-    liveOgTitle: await liveOgTitle(),
+    liveOgTitle: await liveOgTitle(kind),
     ogImageSource: row?.og_image_key ? 'upload' : row?.og_image_url ? 'url' : 'default',
   };
 }
+
+/**
+ * 벌마다 실제로 카드를 싣는 공개 주소. 같은 443 origin에서 Nginx가 나눈다 —
+ * `/`는 앱웹, `/invite`는 앱웹의 초대 안내 주소, `/website.html`은 웹사이트 랜딩이다.
+ */
+export const LIVE_PAGE_PATH: Record<SiteMetaKind, string> = {
+  app: '/',
+  invite: '/invite',
+  website: '/website.html',
+};
 
 /**
  * 공개 사이트가 지금 내보내고 있는 og:title.
@@ -144,9 +192,9 @@ export async function adminView(pool: Pool, origin: string): Promise<SiteMetaAdm
  * 정적 HTML이라 태그가 소스에 그대로 있다. 읽지 못하면 `null`을 준다 — 사이트가
  * 자고 있거나 느린 것을 「바뀌지 않았다」로 단정하지 않는다.
  */
-async function liveOgTitle(): Promise<string | null> {
+async function liveOgTitle(kind: SiteMetaKind): Promise<string | null> {
   try {
-    const response = await fetch(SITE_ORIGIN, { signal: AbortSignal.timeout(4_000) });
+    const response = await fetch(`${SITE_ORIGIN}${LIVE_PAGE_PATH[kind]}`, { signal: AbortSignal.timeout(4_000) });
 
     if (!response.ok) return null;
 
@@ -178,7 +226,8 @@ export async function save(
   pool: Pool,
   input: Partial<Record<keyof SiteMeta, string | null>>,
   updatedBy: string | null,
-  origin: string
+  origin: string,
+  kind: SiteMetaKind = DEFAULT_SITE_META_KIND
 ): Promise<SiteMetaAdminView> {
   const clean = (value: string | null | undefined): string | null => {
     const trimmed = value?.trim();
@@ -194,9 +243,9 @@ export async function save(
    */
   await pool.query(
     `INSERT INTO structured.site_meta
-       (id, og_title, og_description, og_image_url, og_image_alt, updated_at, updated_by)
-     VALUES (true, $1, $2, $3, $4, now(), $5)
-     ON CONFLICT (id) DO UPDATE SET
+       (kind, og_title, og_description, og_image_url, og_image_alt, updated_at, updated_by)
+     VALUES ($6, $1, $2, $3, $4, now(), $5)
+     ON CONFLICT (kind) DO UPDATE SET
        og_title = excluded.og_title,
        og_description = excluded.og_description,
        og_image_url = excluded.og_image_url,
@@ -211,10 +260,11 @@ export async function save(
       clean(input.ogImageUrl),
       clean(input.ogImageAlt),
       updatedBy,
+      kind,
     ]
   );
 
-  return adminView(pool, origin);
+  return adminView(pool, origin, kind);
 }
 
 /**
@@ -228,42 +278,45 @@ export async function attachOgImage(
   pool: Pool,
   storageKey: string,
   updatedBy: string | null,
-  origin: string
+  origin: string,
+  kind: SiteMetaKind = DEFAULT_SITE_META_KIND
 ): Promise<SiteMetaAdminView> {
   await pool.query(
-    `INSERT INTO structured.site_meta (id, og_image_key, og_image_url, updated_at, updated_by)
-     VALUES (true, $1, NULL, now(), $2)
-     ON CONFLICT (id) DO UPDATE SET
+    `INSERT INTO structured.site_meta (kind, og_image_key, og_image_url, updated_at, updated_by)
+     VALUES ($3, $1, NULL, now(), $2)
+     ON CONFLICT (kind) DO UPDATE SET
        og_image_key = excluded.og_image_key,
        og_image_url = NULL,
        updated_at = now(),
        updated_by = excluded.updated_by`,
-    [storageKey, updatedBy]
+    [storageKey, updatedBy, kind]
   );
 
-  return adminView(pool, origin);
+  return adminView(pool, origin, kind);
 }
 
 /** 올린 그림을 치운다. 기본 그림(저장소에 든 weddingpick-og.png)으로 돌아간다. */
 export async function clearOgImage(
   pool: Pool,
   updatedBy: string | null,
-  origin: string
+  origin: string,
+  kind: SiteMetaKind = DEFAULT_SITE_META_KIND
 ): Promise<SiteMetaAdminView> {
   await pool.query(
     `UPDATE structured.site_meta
         SET og_image_key = NULL, updated_at = now(), updated_by = $1
-      WHERE id = true`,
-    [updatedBy]
+      WHERE kind = $2`,
+    [updatedBy, kind]
   );
 
-  return adminView(pool, origin);
+  return adminView(pool, origin, kind);
 }
 
 /** 공개 조회가 내보낼 파일의 열쇠. 없으면 올려 둔 그림이 없다는 뜻이다. */
-export async function ogImageKey(pool: Pool): Promise<string | null> {
+export async function ogImageKey(pool: Pool, kind: SiteMetaKind = DEFAULT_SITE_META_KIND): Promise<string | null> {
   const { rows } = await pool.query<{ og_image_key: string | null }>(
-    'SELECT og_image_key FROM structured.site_meta WHERE id = true'
+    'SELECT og_image_key FROM structured.site_meta WHERE kind = $1',
+    [kind]
   );
 
   return rows[0]?.og_image_key ?? null;
@@ -275,6 +328,6 @@ export async function ogImageKey(pool: Pool): Promise<string | null> {
  * **이것은 「반영됨」이 아니다.** 배포는 실패할 수 있고, 정적 사이트는 실패하면 옛
  * 빌드를 계속 내보낸다. 실제로 나갔는지는 `liveOgTitle`이 사이트를 읽어 말한다.
  */
-export async function markPublishRequested(pool: Pool): Promise<void> {
-  await pool.query('UPDATE structured.site_meta SET published_at = now() WHERE id = true');
+export async function markPublishRequested(pool: Pool, kind: SiteMetaKind = DEFAULT_SITE_META_KIND): Promise<void> {
+  await pool.query('UPDATE structured.site_meta SET published_at = now() WHERE kind = $1', [kind]);
 }

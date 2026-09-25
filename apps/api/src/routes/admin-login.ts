@@ -36,7 +36,7 @@ const MAX_DELAY_MS = 8_000;
  * 둘을 묶되 DB에는 해시만 남긴다. 로그인 ID 대조 자체는 기존 sameId 규칙(대소문자
  * 포함)을 그대로 쓴다.
  */
-function networkIdFor(request: FastifyRequest): string {
+export function networkIdFor(request: FastifyRequest): string {
   /*
    * Kakao Nginx는 X-Real-IP를 $remote_addr로 덮어쓰고 API 포트는 host loopback에만
    * publish한다. 반면 X-Forwarded-For는 클라이언트가 앞 값을 심을 수 있으므로

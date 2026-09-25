@@ -1,3 +1,8 @@
+import {
+  INVITE_FAILURES_PER_IP,
+  INVITE_FAILURES_PER_USER,
+  generateInviteCode,
+} from '../routes/wedding-invites';
 import { createTestApp, createWedding, resetDatabase, signInAs, type TestApp } from './helpers';
 
 let test: TestApp;
@@ -302,8 +307,87 @@ describeWithDb('배우자 초대', () => {
 
   it('없는 코드는 있는 척하지 않는다', async () => {
     const partner = await signInAs(test, 'partner');
-    const body = (await preview(partner.headers, 'made-up-code')).json();
+    const body = (await preview(partner.headers, '999999')).json();
 
     expect(body).toMatchObject({ usable: false, reason: 'not_found' });
+  });
+
+  it('초대 코드는 6자리 숫자다', async () => {
+    const owner = await signInAs(test, 'owner');
+    const weddingId = await createWedding(test, owner.headers);
+    const { code } = await invite(owner.headers, weddingId);
+
+    expect(code).toMatch(/^\d{6}$/);
+  });
+
+  it('6자리 숫자가 아닌 코드는 받지 않는다', async () => {
+    const partner = await signInAs(test, 'partner');
+
+    expect((await preview(partner.headers, 'made-up-code')).statusCode).toBe(400);
+    expect((await accept(partner.headers, '12345')).statusCode).toBe(400);
+  });
+
+  it('틀린 코드를 계정 한도만큼 넣으면 맞는 코드도 잠시 받지 않는다', async () => {
+    const owner = await signInAs(test, 'owner');
+    const weddingId = await createWedding(test, owner.headers);
+    const { code } = await invite(owner.headers, weddingId);
+    const partner = await signInAs(test, 'partner');
+    const wrong = code === '000000' ? '000001' : '000000';
+
+    for (let i = 0; i < INVITE_FAILURES_PER_USER; i += 1) {
+      expect((await accept(partner.headers, wrong)).statusCode).toBe(400);
+    }
+
+    expect((await accept(partner.headers, code)).statusCode).toBe(429);
+    expect((await preview(partner.headers, code)).statusCode).toBe(429);
+
+    // 다른 계정은 계정 한도에 걸리지 않는다(같은 IP 한도 안에서).
+    const other = await signInAs(test, 'other');
+    expect((await preview(other.headers, code)).json().usable).toBe(true);
+    expect(INVITE_FAILURES_PER_IP).toBeGreaterThan(INVITE_FAILURES_PER_USER);
+  });
+
+  it('틀린 코드를 IP 한도만큼 넣으면 그 IP의 다른 계정도 받지 않는다', async () => {
+    const owner = await signInAs(test, 'owner');
+    const weddingId = await createWedding(test, owner.headers);
+    const { code } = await invite(owner.headers, weddingId);
+    const wrong = code === '000000' ? '000001' : '000000';
+
+    for (let i = 0; i < INVITE_FAILURES_PER_IP; i += 1) {
+      const guesser = await signInAs(test, `guesser-${Math.floor(i / INVITE_FAILURES_PER_USER)}`);
+      await preview(guesser.headers, wrong);
+    }
+
+    const partner = await signInAs(test, 'partner');
+    expect((await preview(partner.headers, code)).statusCode).toBe(429);
+  });
+
+  it('기한이 지난 옛 초대와 같은 숫자가 다시 나와도 새 초대가 쓰인다', async () => {
+    const owner = await signInAs(test, 'owner');
+    const weddingId = await createWedding(test, owner.headers);
+    const { code } = await invite(owner.headers, weddingId);
+
+    // 같은 코드 해시를 가진 옛 줄을 하나 더 만든다(다른 웨딩 · 이미 쓰인 초대).
+    const other = await signInAs(test, 'other-owner');
+    const otherWedding = await createWedding(test, other.headers);
+    await test.pool.query(
+      `INSERT INTO structured.wedding_invites
+         (wedding_id, invited_by, code_hash, status, expires_at, revoked_at, created_at)
+       SELECT $1, $2, code_hash, 'revoked', now() - interval '1 day', now(), now() - interval '2 days'
+         FROM structured.wedding_invites WHERE wedding_id = $3`,
+      [otherWedding, other.userId, weddingId]
+    );
+
+    const partner = await signInAs(test, 'partner');
+    expect((await preview(partner.headers, code)).json().usable).toBe(true);
+    expect((await accept(partner.headers, code)).statusCode).toBe(200);
+  });
+});
+
+describe('초대 코드 생성', () => {
+  it('1만 번 뽑아도 전부 6자리 숫자다', () => {
+    for (let i = 0; i < 10_000; i += 1) {
+      expect(generateInviteCode()).toMatch(/^\d{6}$/);
+    }
   });
 });

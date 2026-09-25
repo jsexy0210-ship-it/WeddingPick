@@ -291,7 +291,7 @@ export default function HomeScreen() {
               router.push(
                 card.pickCount > 0
                   ? `/pick/${card.targetCategory}`
-                  : `/pick?section=recommendations&category=${card.targetCategory}`
+                  : `/search?category=${card.targetCategory}`
               )
             }
             onMore={() => router.push('/pick')}

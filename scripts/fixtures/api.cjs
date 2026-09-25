@@ -684,6 +684,35 @@ const routes = {
     done: ['계정이 삭제됐어요', '로그인 정보가 지워졌어요'],
   },
   'GET /v1/weddings/:weddingId/invites': { invite: null },
+  /* 배우자 초대 코드 — 6자리 숫자(2026-09-25). */
+  'POST /v1/weddings/:weddingId/invites': {
+    inviteId: '00000000-0000-4000-8000-00000000c0de',
+    code: '482913',
+    expiresAt: '2026-09-28T09:00:00.000Z',
+    shared: ['정리된 가격·조건 내용'],
+    notShared: ['원본 문서 파일 자체 — 올린 사람만 가져요'],
+  },
+  /* 관리자 링크 미리보기(앱용 벌) — 세 벌 중 첫 칸. */
+  'GET /v1/admin/site-meta': {
+    kind: 'app',
+    effective: {
+      ogTitle: '웨딩픽 — 플래너 없이, 직접 고르는 웨딩 준비',
+      ogDescription: '실 제보 금액과 조건을 보고 직접 골라요',
+      ogImageUrl: null,
+      ogImageAlt: '웨딩픽',
+    },
+    defaults: {
+      ogTitle: '웨딩픽 — 플래너 없이, 직접 고르는 웨딩 준비',
+      ogDescription: '실 제보 금액과 조건을 보고 직접 골라요',
+      ogImageUrl: null,
+      ogImageAlt: '웨딩픽',
+    },
+    overrides: { ogTitle: null, ogDescription: null, ogImageUrl: null, ogImageAlt: null },
+    updatedAt: null,
+    publishRequestedAt: null,
+    liveOgTitle: null,
+    ogImageSource: 'default',
+  },
   /*
    * Pick 추천 — 홈 아코디언과 「웨딩픽 추천」 전체 페이지가 같이 쓴다. 상태를 셋 다 다르게
    * 둬서 캡처 한 장에 «비교» · «보기» · «추천»이 같이 보이게 한다. `limit`은 무시한다 —

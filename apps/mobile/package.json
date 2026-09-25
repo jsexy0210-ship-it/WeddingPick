@@ -59,6 +59,7 @@
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "export:web": "node ../../scripts/ensure-modules.mjs && expo export --platform web",
+    "postexport:web": "node ../../scripts/apply-app-og-meta.mjs",
     "test": "jest --forceExit"
   },
   "private": true
