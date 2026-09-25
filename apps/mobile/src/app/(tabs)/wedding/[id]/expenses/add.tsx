@@ -119,7 +119,11 @@ export default function AddExpenseRoute() {
   const ready = reason === null && !locked && (!editing || dirty);
 
   function closeSheet() {
-    dismissToOrReplace(editing ? `/wedding/${id}/expenses/list` : '/wedding?tab=budget');
+    if (editing) {
+      dismissToOrReplace(`/wedding/${id}/expenses/list`);
+      return;
+    }
+    dismissToOrReplace('/wedding?tab=budget');
   }
 
   function requestClose() {
