@@ -1,7 +1,7 @@
 import type { CurrentUser } from '@weddingpick/api-contract';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, View, useWindowDimensions } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 
 import { addWeddingEvent, getCurrentUser } from '@/api/client';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
@@ -10,7 +10,7 @@ import { formatDateDot } from '@/features/common/format-date';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { showResultToast } from '@/features/navigation/result-toast';
 import { combineDayTime, TIME_PATTERN } from '@/features/wedding/event-form';
-import { CheckBox, Field, FieldButton, ListRow } from '@/features/wedding/screen-kit';
+import { CheckBox, Field, FieldButton, ListRow, ToggleSwitch } from '@/features/wedding/screen-kit';
 import { ActionButton, ProductSymbol, Radius, Spacing, ThemedText, WeddingCalendar, useTheme } from '@weddingpick/ui';
 
 import WeddingScreen from '../../index';
@@ -159,13 +159,10 @@ export default function AddWeddingEventRoute() {
               <ListRow
                 title="하루 전에 알려주기"
                 right={
-                  <Switch
+                  <ToggleSwitch
                     value={notifyEnabled}
                     onValueChange={setNotifyEnabled}
-                    trackColor={{ true: theme.tint, false: theme.track }}
-                    thumbColor={theme.onTint}
-                    ios_backgroundColor={theme.track}
-                    accessibilityLabel={`하루 전에 알려주기 ${notifyEnabled ? '켬' : '끔'}`}
+                    accessibilityLabel="하루 전에 알려주기"
                   />
                 }
                 divider={false}

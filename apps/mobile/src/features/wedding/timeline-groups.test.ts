@@ -17,7 +17,7 @@ function event(id: string, startsAt: string): WeddingEvent {
   };
 }
 
-/* 화요일 고정 — 일요일 시작 주 계산을 매번 같은 결과로 만든다. */
+/* 화요일 고정 — 정본 WP-NOTE-001의 오늘(9.22 · D-236)과 같은 날이다. */
 const NOW = new Date(2026, 8, 22, 9, 0, 0);
 
 describe('buildUpcomingTimelineGroups', () => {
@@ -37,6 +37,10 @@ describe('buildUpcomingTimelineGroups', () => {
     expect(groups[0]!.items).toHaveLength(1);
     expect(groups[0]!.items[0]).toMatchObject({ kind: 'event' });
     expect(groups.at(-1)).toMatchObject({ title: '예식', items: [{ kind: 'wedding', date: '2027-05-16' }] });
+    // 정본 `tlGroups` 범위 — 월~일 주, 이번 주는 오늘부터. 정본 표본의 다음 주 「D-229」는
+    // 7일씩 뺀 값이라(9.22가 D-236이면 9.28은 D-230) 계산값을 쓴다.
+    expect(groups[0]!.range).toBe('9.22~9.27 · D-236');
+    expect(groups[1]!.range).toBe('9.28~10.4 · D-230');
   });
 
   it('지난 일정은 어느 그룹에도 넣지 않는다', () => {
@@ -55,7 +59,19 @@ describe('buildUpcomingTimelineGroups', () => {
   it('예식일이 없으면 예식 줄도, D-day 표시도 만들지 않는다', () => {
     const groups = buildUpcomingTimelineGroups([event('this-week', '2026-09-23T05:00:00.000Z')], null, NOW);
     expect(groups).toEqual([
-      { title: '이번 주', range: '9.20~9.26', items: [{ event: expect.objectContaining({ id: 'this-week' }), kind: 'event' }] },
+      { title: '이번 주', range: '9.22~9.27', items: [{ event: expect.objectContaining({ id: 'this-week' }), kind: 'event' }] },
+    ]);
+  });
+
+  it('주의 마지막 날(일요일) 낮 일정도 그 주에 든다', () => {
+    const groups = buildUpcomingTimelineGroups(
+      [event('sunday-noon', new Date(2026, 8, 27, 11, 0).toISOString()), event('next-sunday', new Date(2026, 9, 4, 18, 0).toISOString())],
+      null,
+      NOW
+    );
+    expect(groups.map((g) => [g.title, g.items.length])).toEqual([
+      ['이번 주', 1],
+      ['다음 주', 1],
     ]);
   });
 

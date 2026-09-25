@@ -1531,6 +1531,30 @@ if (process.env.FIXTURE_NOTE_EMPTY === 'true') {
 }
 
 if (process.env.FIXTURE_NOTE_DATA === 'true') {
+  /*
+   * 웨딩일정(WP-NOTE-001) — 정본 `note.js` `tlGroups`와 같은 모양: 지난 일정 2건 · 이번 주 2건
+   * (하나는 메모 한 줄) · 다음 주 1건 · 그 뒤 1건. 날짜는 오늘 기준 상대값이다.
+   */
+  {
+    const today = new Date();
+    const at = (dayOffset, hour) =>
+      new Date(today.getFullYear(), today.getMonth(), today.getDate() + dayOffset, hour, 0, 0).toISOString();
+    const event = (id, title, startsAt, status, memo = null) => ({
+      id, title, startsAt, location: null, vendorId: null, vendorLabel: null, memo,
+      notifyEnabled: true, source: 'manual', status,
+    });
+    const toSunday = (7 - today.getDay()) % 7;
+    routes['GET /v1/weddings/:weddingId/events'] = {
+      events: [
+        event('81111111-1111-4111-8111-111111111111', '웨딩홀 투어 예약', at(-6, 11), 'done'),
+        event('82222222-2222-4222-8222-222222222222', '상견례 장소 알아보기', at(-3, 15), 'done'),
+        event('83333333-3333-4333-8333-333333333333', '강남 A 스튜디오 상담', at(Math.min(1, toSunday), 15), 'upcoming'),
+        event('84444444-4444-4444-8444-444444444444', '청담 E 웨딩홀 투어', at(toSunday, 11), 'upcoming', '가족 2명 같이 가요'),
+        event('85555555-5555-4555-8555-555555555555', '드레스 투어 3곳 예약하기', at(toSunday + 3, 10), 'upcoming'),
+        event('86666666-6666-4666-8666-666666666666', '웨딩홀 계약금 입금', at(toSunday + 10, 10), 'upcoming', '예산현황에 지출로 들어가요'),
+      ],
+    };
+  }
   const hall = '11111111-1111-4111-8111-111111111111';
   const studio = '12121212-1212-4212-8212-121212121212';
   const expenses = { paidTotal: 0, paidCount: 0, scheduledTotal: 0, scheduledCount: 0 };

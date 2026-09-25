@@ -57,7 +57,8 @@ import {
   updateWeddingTask,
 } from '@/api/client';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
-import { formatDateDot, formatMonthDayTimeDot } from '@/features/common/format-date';
+import { formatDateDot } from '@/features/common/format-date';
+import { noteMonthDayWeekdayTime } from '@/features/wedding/note-format';
 import { useSession } from '@/features/auth/use-session';
 import { CheckBox } from '@/features/wedding/screen-kit';
 import { WeddingCompleteView } from '@/features/wedding/complete-view';
@@ -567,7 +568,8 @@ function CalendarPanel({
   const days = weddingDate !== null ? daysUntil(weddingDate, now) : null;
   const ddayText = days === null ? null : days > 0 ? `D-${days}` : days === 0 ? 'D-DAY' : `D+${-days}`;
   const weekEnd = new Date(today);
-  weekEnd.setDate(weekEnd.getDate() + (6 - today.getDay()));
+  // 주는 월~일이다 — 타임라인 「이번 주」(timeline-groups.ts)와 같은 끝날(일요일).
+  weekEnd.setDate(weekEnd.getDate() + ((7 - today.getDay()) % 7));
   const dueThisWeek = (tasks ?? []).filter(
     (task) => task.state !== 'done' && task.dueDate !== null && new Date(task.dueDate) >= today && new Date(task.dueDate) <= weekEnd
   ).length;
@@ -759,7 +761,7 @@ function TimelineGroupView({
               onPress={() => onEdit(event)}
               style={[styles.eventRow, { backgroundColor: done ? theme.backgroundElement : theme.backgroundSelected }]}>
               <ThemedText type="f12" themeColor="textAssistive" numeric style={styles.bold}>
-                {formatMonthDayTimeDot(event.startsAt)}
+                {noteMonthDayWeekdayTime(event.startsAt)}
               </ThemedText>
               <ThemedText
                 type="f15"
@@ -884,7 +886,8 @@ function BudgetPanel({
               </ThemedText>
             </View>
             <View style={[styles.bar, { backgroundColor: theme.backgroundSelected }]}>
-              <View style={[styles.barFill, { width: `${pct}%`, backgroundColor: theme.text }]} />
+              {/* 정본 `bd()` — 다 쓴(100%) 항목만 코랄, 나머지는 옅은 코랄(`#ffb3ab` → 차트 2계열 토큰). */}
+              <View style={[styles.barFill, { width: `${pct}%`, backgroundColor: full ? theme.tint : theme.chartSeries2 }]} />
             </View>
             <View style={styles.bucketFoot}>
               <ThemedText type="f12" themeColor="textAssistive" numeric>
