@@ -613,6 +613,18 @@
         "normalizedSha256": "F4671D5BAE889912A66A6562316A115F6E4E5ED8D831D24AB817B1AFEEC0A599",
         "sizeBytes": 77,
         "note": "2026-09-24 대표 절대 지침 — 앱(RN) 화면의 디자인 정본(「디자인 원본은 위 경로로 고정한다」 · 「RN=docs/design/React_Native · 관리자, 랜딩=docs/design/html」). 대표님이 React 변환본 v3.29.1(아이콘 보완판)을 GitHub 웹 UI로 풀어 올린 파일이다(하위 폴더 없이 한 층으로 올라왔다). CLAUDE.md 맨 앞 ⛔."
+      },
+      {
+        "path": "React_Native/OG카드.png",
+        "normalizedSha256": "665DCDA752BBF868A6709FA38DF58ED4F74E1E7D70DAEF100E90AA8E736D2970",
+        "sizeBytes": 12009,
+        "note": "2026-09-26 대표님이 GitHub 웹 UI로 올린 링크 미리보기(OG) 카드 정본 — 1200×630 · 코랄 #FF6F61 바탕 · 흰 Pick Mark(확정 두 path). 커밋 26337b42."
+      },
+      {
+        "path": "React_Native/OG카드.svg",
+        "normalizedSha256": "4F47BCEB24557DF7DDFAE42F347FA61C4C6134B87D50F6F80DEDFD6EFB5F1282",
+        "sizeBytes": 473,
+        "note": "2026-09-26 대표님이 GitHub 웹 UI로 올린 링크 미리보기(OG) 카드 정본 — 1200×630 · 코랄 #FF6F61 바탕 · 흰 Pick Mark(확정 두 path). 커밋 26337b42."
       }
     ]
   },
