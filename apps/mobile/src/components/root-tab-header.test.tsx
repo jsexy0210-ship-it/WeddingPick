@@ -1,6 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
+import { FontSize, LineHeight } from '@weddingpick/ui';
+
 import { RootTabHeader, ROOT_TAB_HEADER_HEIGHT } from '@/components/root-tab-header';
 
 /**
@@ -55,7 +57,7 @@ describe('RootTabHeader', () => {
   it('제목 26 · 줄높이 39 · 700 · 자간 -0.52 · 한 줄', () => {
     const { title, titleStyle } = render(<RootTabHeader title="검색" />);
 
-    expect(titleStyle).toMatchObject({ fontSize: 26, lineHeight: 39, fontWeight: 700, letterSpacing: -0.52 });
+    expect(titleStyle).toMatchObject({ fontSize: FontSize.f26, lineHeight: LineHeight.lh39, fontWeight: 700, letterSpacing: -0.52 });
     expect(title.props.numberOfLines).toBe(1);
     expect(title.props.children).toBe('검색');
   });
@@ -78,6 +80,6 @@ describe('RootTabHeader', () => {
     const { rowStyle, titleStyle } = render(<RootTabHeader title="웨딩픽" gutter={20} />);
 
     expect(rowStyle).toMatchObject({ minHeight: 66, paddingHorizontal: 20 });
-    expect(titleStyle).toMatchObject({ fontSize: 26, lineHeight: 39, fontWeight: 700 });
+    expect(titleStyle).toMatchObject({ fontSize: FontSize.f26, lineHeight: LineHeight.lh39, fontWeight: 700 });
   });
 });
