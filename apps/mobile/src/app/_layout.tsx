@@ -25,7 +25,7 @@ import { escapeInAppBrowser } from '@/features/inapp-browser/escape';
 import { InAppWebShell } from '@/features/in-app-web/in-app-web-shell';
 import { InAppBrowserNotice } from '@/features/inapp-browser/in-app-browser-notice';
 import { resolveSessionEntry, sessionErrorKind, type SessionEntry } from '@/features/auth/session-recovery';
-import { initializeWebShellSession, stripLegacyWebShellToken } from '@/api/web-shell-session';
+import { stripLegacyUrlToken } from '@/api/session';
 import { SPLASH_MINIMUM_MS, SplashView } from '@/features/splash/splash-view';
 
 SplashScreen.preventAutoHideAsync();
@@ -79,7 +79,7 @@ export default function RootLayout() {
     if (Platform.OS !== 'web') return;
 
     // 구버전 웹뷰가 URL에 남긴 자격증명은 제품 화면을 열기 전에 제거한다.
-    stripLegacyWebShellToken();
+    stripLegacyUrlToken();
 
     if (isAuthPopup()) {
       // opener에게 결과를 넘긴 뒤 이 창에서는 소비자 부팅을 시작하지 않는다.
@@ -234,8 +234,6 @@ function RootLayoutContent({ browserReady }: { browserReady: boolean }) {
     // React StrictMode가 effect를 다시 실행해도 일회용 OAuth 코드를 두 번 교환하지 않는다.
     if (!boot.current || boot.current.attempt !== entryAttempt) {
       const promise = (async (): Promise<Entry> => {
-        await initializeWebShellSession();
-
         if (hasKakaoReturn()) {
           try {
             const session = await completeKakaoRedirect();

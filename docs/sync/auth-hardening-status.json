@@ -60,6 +60,7 @@
     "liveProviders": false,
     "limits": "SDK·React·스토리지·네트워크 경계는 테스트 대역. 실제 TS/TSX·주입 스크립트 실행 및 Node Web Crypto 사용. 직접 clone/npm 다운로드 불가. 전체 CI 통과를 의미하지 않음. 이 절의 false는 원본 검사 미완료 기록이며 최신 CI의 실패/미실행을 새로 판정한 값이 아니다."
   },
+  "webShellRemoval": "2026-09-26 대표 지시로 하이브리드 웹뷰 쉘 POC(features/webshell · api/web-shell-session)를 삭제했다. 아래 rolloutBlockers의 셸 항목 둘(wp_token 호환 · 웹뷰 메시지 실검증)은 대상이 없어졌다. 구버전 wp_token은 계속 URL에서 지우기만 한다(session.ts stripLegacyUrlToken). 검사 명령은 test:web-shell-auth → test:session-auth.",
   "rolloutBlockers": [
     "구버전 네이티브 셸의 wp_token 방식과 새 웹은 자동 호환하지 않음. 버전 일치와 복구 절차 검증",
     "Android/iOS 메시지·이동·새로고침·로그아웃 실제 검증",

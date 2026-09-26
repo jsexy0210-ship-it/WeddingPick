@@ -3,7 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
 import {
-  clearToken, clearTokenIfMatches, loadToken, saveToken, wipeDevice,
+  clearToken, loadToken, saveToken, stripLegacyUrlToken, wipeDevice,
 } from './session';
 
 jest.mock('@react-native-async-storage/async-storage', () => {
@@ -31,13 +31,6 @@ jest.mock('expo-secure-store', () => {
 });
 
 jest.mock('react-native', () => ({ Platform: { OS: 'ios' } }));
-
-jest.mock('./web-shell-session', () => ({
-  clearWebShellToken: jest.fn(),
-  initializeWebShellSession: jest.fn(async () => undefined),
-  isWebShellSession: jest.fn(() => false),
-  readWebShellToken: jest.fn(() => null),
-}));
 
 const KEY = 'weddingpick.sessionToken.v1';
 const legacyValues = (AsyncStorage as unknown as { __values: Map<string, string> }).__values;
@@ -162,16 +155,6 @@ describe('native session secure storage', () => {
     expect(SecureStore.deleteItemAsync).not.toHaveBeenCalled();
   });
 
-  it('다른 토큰을 대상으로 한 오래된 로그아웃 메시지는 현재 세션을 지우지 않는다', async () => {
-    secureValues.set(KEY, 'current-token');
-
-    await expect(clearTokenIfMatches('old-token')).resolves.toBe(false);
-    expect(secureValues.get(KEY)).toBe('current-token');
-
-    await expect(clearTokenIfMatches('current-token')).resolves.toBe(true);
-    expect(secureValues.has(KEY)).toBe(false);
-  });
-
   it('탈퇴는 SecureStore 세션과 weddingpick AsyncStorage 잔여를 모두 제거한다', async () => {
     secureValues.set(KEY, 'secure-token');
     legacyValues.set(KEY, 'legacy-token');
@@ -195,5 +178,50 @@ describe('native session secure storage', () => {
     expect(legacyValues.get(KEY)).toBe('web-token');
     expect(SecureStore.setItemAsync).not.toHaveBeenCalled();
     expect(SecureStore.getItemAsync).not.toHaveBeenCalled();
+  });
+});
+
+describe('legacy URL token stripping', () => {
+  const win = window as unknown as Record<string, unknown>;
+  const original = { location: win.location, history: win.history };
+
+  function stub(href: string) {
+    const state = { href };
+    Object.defineProperty(window, 'location', {
+      value: { get href() { return state.href; } }, configurable: true, writable: true,
+    });
+    Object.defineProperty(window, 'history', {
+      value: { replaceState: jest.fn((_data: unknown, _title: string, next: string) => {
+        state.href = new URL(next, href).href;
+      }) },
+      configurable: true, writable: true,
+    });
+    return state;
+  }
+
+  afterEach(() => {
+    Object.defineProperty(window, 'location', { value: original.location, configurable: true, writable: true });
+    Object.defineProperty(window, 'history', { value: original.history, configurable: true, writable: true });
+  });
+
+  it('구버전 wp_token은 저장하지 않고 주소에서만 지운다', () => {
+    jest.clearAllMocks();
+    legacyValues.clear();
+    const state = stub('https://app.example.test/pick?wp_token=secret&keep=1#item');
+
+    stripLegacyUrlToken();
+
+    expect(state.href).toBe('https://app.example.test/pick?keep=1#item');
+    expect(legacyValues.has(KEY)).toBe(false);
+    expect(AsyncStorage.setItem).not.toHaveBeenCalled();
+    expect(SecureStore.setItemAsync).not.toHaveBeenCalled();
+  });
+
+  it('wp_token이 없으면 방문 기록을 건드리지 않는다', () => {
+    stub('https://app.example.test/?keep=1');
+
+    stripLegacyUrlToken();
+
+    expect((window.history.replaceState as jest.Mock)).not.toHaveBeenCalled();
   });
 });

@@ -2,10 +2,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
-import {
-  clearWebShellToken, initializeWebShellSession, isWebShellSession, readWebShellToken,
-} from './web-shell-session';
-
 const STORAGE_KEY = 'weddingpick.sessionToken.v1';
 const listeners = new Set<() => void>();
 let tail: Promise<unknown> = Promise.resolve();
@@ -23,9 +19,21 @@ export function subscribeToken(listener: () => void): () => void {
 }
 
 function usesNativeSecureStore(): boolean {
-  return Platform.OS !== 'web' && !isWebShellSession();
+  return Platform.OS !== 'web';
 }
 
+/**
+ * 구버전 네이티브 웹뷰가 URL 쿼리(`wp_token`)에 실어 보내던 원문 세션 토큰을 주소창과
+ * 방문 기록에서 지운다. 값은 읽지도 저장하지도 않는다 — 인증에 쓰지 않고 제거만 한다.
+ * 웹 부팅 첫 effect(`app/_layout.tsx`)가 제품 화면을 열기 전에 부른다.
+ */
+export function stripLegacyUrlToken(): void {
+  if (typeof window === 'undefined' || typeof window.location?.href !== 'string') return;
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has('wp_token')) return;
+  url.searchParams.delete('wp_token');
+  window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+}
 
 /**
  * 기존 앱이 AsyncStorage에 보관하던 네이티브 세션을 한 번만 SecureStore로 옮긴다.
@@ -61,15 +69,12 @@ async function readNativeToken(): Promise<string | null> {
 }
 
 async function readCurrent(): Promise<string | null> {
-  if (isWebShellSession()) return readWebShellToken();
   if (usesNativeSecureStore()) return readNativeToken();
   return AsyncStorage.getItem(STORAGE_KEY);
 }
 
 async function removeCurrent(): Promise<void> {
-  if (isWebShellSession()) {
-    clearWebShellToken();
-  } else if (usesNativeSecureStore()) {
+  if (usesNativeSecureStore()) {
     /*
      * legacy를 먼저 지운다. 반대로 SecureStore를 먼저 지운 뒤 legacy 삭제가 실패하면
      * 다음 load가 옛 토큰을 다시 SecureStore로 이관해 로그아웃을 되돌릴 수 있다.
@@ -83,18 +88,10 @@ async function removeCurrent(): Promise<void> {
 }
 
 export async function loadToken(): Promise<string | null> {
-  await initializeWebShellSession();
   return serial(readCurrent);
 }
 
 export async function saveToken(token: string): Promise<void> {
-  await initializeWebShellSession();
-  if (isWebShellSession()) {
-    // 네이티브와 웹이 다른 계정으로 로그인하는 것을 막는다. 재인증은 앱에서 한다.
-    clearWebShellToken();
-    throw new Error('앱에서 다시 로그인해주세요.');
-  }
-
   await serial(async () => {
     if (usesNativeSecureStore()) {
       await SecureStore.setItemAsync(STORAGE_KEY, token);
@@ -116,23 +113,10 @@ export async function clearToken(): Promise<void> {
   await serial(removeCurrent);
 }
 
-/** 오래된 웹뷰의 로그아웃 메시지가 새 계정을 지우지 못하게 한다. */
-export async function clearTokenIfMatches(expected: string): Promise<boolean> {
-  return serial(async () => {
-    if (await readCurrent() !== expected) return false;
-    await removeCurrent();
-    return true;
-  });
-}
-
 /** 탈퇴 시 영속 저장소뿐 아니라 탭별 OAuth 임시 정보도 제거한다. */
 export async function wipeDevice(): Promise<void> {
   await serial(async () => {
     const nativeSecure = usesNativeSecureStore();
-
-    if (isWebShellSession()) {
-      clearWebShellToken();
-    }
 
     /*
      * 탈퇴도 legacy를 먼저 제거한다. AsyncStorage 정리가 실패하면 secure token을 남긴

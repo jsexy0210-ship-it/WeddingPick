@@ -1,7 +1,6 @@
 import { SITE_ORIGIN } from '@weddingpick/domain';
 
 import strings from '../../../../spec/strings.ko.json';
-import { WEB_SHELL_URL } from './webshell/config';
 
 /**
  * 앱 웹(`export:web`) 링크 공유 카드(OG) 값.
@@ -13,12 +12,12 @@ import { WEB_SHELL_URL } from './webshell/config';
  * 색이 바뀔 때 한쪽만 다시 구워지는 사본이 생긴다.
  *
  * **`og:url`만은 앱 웹 자신의 주소여야 한다.** `EXPO_PUBLIC_WEB_URL`은
- * 하이브리드 웹뷰 쉘이 이미 쓰는 이 export의 배포 주소이고(`features/webshell/config.ts`),
- * 값이 없는 로컬·프리뷰 빌드에서는 운영 주소로 대신한다.
+ * 이 export의 배포 주소(빌드 타임 환경변수)이고, 값이 없는 로컬·프리뷰 빌드에서는
+ * 운영 주소로 대신한다.
  */
 const APP_WEB_ORIGIN_FALLBACK = 'https://210.109.82.212';
 
-export const APP_WEB_ORIGIN = (WEB_SHELL_URL || APP_WEB_ORIGIN_FALLBACK).replace(/\/+$/, '');
+export const APP_WEB_ORIGIN = (process.env.EXPO_PUBLIC_WEB_URL || APP_WEB_ORIGIN_FALLBACK).replace(/\/+$/, '');
 
 const COPY = strings.webLanding;
 

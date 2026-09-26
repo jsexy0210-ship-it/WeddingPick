@@ -1,4 +1,4 @@
-/** RootLayout의 진입 분기를 실행한다. React/Expo/브리지 대역 검사이며 hydration E2E가 아니다. */
+/** RootLayout의 진입 분기를 실행한다. React/Expo 대역 검사이며 hydration E2E가 아니다. */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -27,7 +27,7 @@ function render(route, {
 } = {}) {
   const effects = [];
   const counters = {
-    bridge: 0, member: 0, redirects: 0, popup: 0,
+    strip: 0, member: 0, redirects: 0, popup: 0,
     popupChecks: 0, kakaoChecks: 0, escapeChecks: 0,
   };
   const jsx = (type, props) => ({ type, props });
@@ -71,9 +71,8 @@ function render(route, {
       resolveSessionEntry: async () => { counters.member++; return 'login'; },
       sessionErrorKind: () => 'general',
     },
-    '@/api/web-shell-session': {
-      initializeWebShellSession: async () => { counters.bridge++; },
-      stripLegacyWebShellToken: () => {},
+    '@/api/session': {
+      stripLegacyUrlToken: () => { counters.strip++; },
     },
     '@/features/splash/splash-view': { SPLASH_MINIMUM_MS: 0, SplashView: 'SplashView' },
     '@weddingpick/ui/tokens.css': {}, '@/global.css': {},
@@ -162,20 +161,20 @@ function render(route, {
     assert.equal(app.view.type, 'SplashView');
     await app.runEffects();
     assert.equal(app.counters.popup, 1);
-    assert.equal(app.counters.bridge, 0);
+    assert.equal(app.counters.strip, 1);
     assert.equal(app.counters.member, 0);
   });
-  await check('관리자 부팅은 소비자 세션 조회·웹뷰 초기화를 시작하지 않음', async () => {
+  await check('관리자 부팅은 소비자 세션 조회를 시작하지 않고 구버전 URL 토큰만 지움', async () => {
     const app = render('/admin/home', { browser: true }); await app.runEffects();
-    assert.equal(app.counters.bridge, 0); assert.equal(app.counters.member, 0); assert.equal(app.counters.redirects, 0);
+    assert.equal(app.counters.strip, 1); assert.equal(app.counters.member, 0); assert.equal(app.counters.redirects, 0);
   });
   await check('사용자 부팅은 기존 세션 복구 경로를 유지함', async () => {
     const app = render('/my', { browser: true }); await app.runEffects();
-    assert.equal(app.counters.bridge, 1); assert.equal(app.counters.member, 1);
+    assert.equal(app.counters.strip, 1); assert.equal(app.counters.member, 1);
   });
   const report = {
     passed: results.filter(r => r.passed).length, failed: results.filter(r => !r.passed).length,
-    scope: '실제 RootLayout TSX 진입 분기 실행. React/Expo/브리지 대역, 실제 hydration/빌드/전체 회귀 미검증.',
+    scope: '실제 RootLayout TSX 진입 분기 실행. React/Expo 대역, 실제 hydration/빌드/전체 회귀 미검증.',
     results,
   };
   console.log(JSON.stringify(report, null, 2));

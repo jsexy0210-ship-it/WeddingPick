@@ -35,8 +35,6 @@ import { scheduleRows } from '@/features/home/schedule-view';
 import { categoryStatuses, currentCategory } from '@/features/home/state';
 import { UpcomingSchedule } from '@/features/home/wedding-schedule';
 import { WeddingContent } from '@/features/home/wedding-content';
-import { isWebShellScreen } from '@/features/webshell/config';
-import { WebShellView } from '@/features/webshell/WebShellView';
 import strings from '../../../../../spec/strings.ko.json';
 
 const S = strings.home;
@@ -89,14 +87,10 @@ export default function HomeScreen() {
    * 시작 전 구간이고 뒤는 스켈레톤이다. 하나로 뭉치면 프로필을 못 불러온 사람에게
    * 영원히 스켈레톤이 돈다.
    */
-  // 하이브리드 웹뷰 쉘 POC일 때는 애초에 스켈레톤을 거칠 일이 없어 settled로 시작한다.
-  const [settled, setSettled] = useState(() => isWebShellScreen('home'));
+  const [settled, setSettled] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    // 웹뷰 쉘로 대체할 때는 이 밑 자료를 안 쓴다 — 훅 순서를 지키려고 호출
-    // 자체는 남기고, 몸통만 건너뛴다.
-    if (isWebShellScreen('home')) return;
     const version = ++loadVersion.current;
     const current = () => version === loadVersion.current;
     setBootError(false);
@@ -170,12 +164,6 @@ export default function HomeScreen() {
     load();
     return () => { loadVersion.current += 1; };
   }, [load]));
-
-  // 하이브리드 웹뷰 쉘 POC. `EXPO_PUBLIC_WEBSHELL_SCREENS`에 "home"이 없으면
-  // (기본값) 이 분기는 타지 않고 기존 네이티브 화면 그대로다.
-  if (isWebShellScreen('home')) {
-    return <WebShellView path="/" />;
-  }
 
   if (bootError) return <ErrorView message={strings.journey.loadFailed} onRetry={load} />;
 

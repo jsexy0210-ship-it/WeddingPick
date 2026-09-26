@@ -99,8 +99,6 @@ import {
   compareBasketLabel,
 } from '@/features/pick/canonical-rules';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
-import { isWebShellScreen } from '@/features/webshell/config';
-import { WebShellView } from '@/features/webshell/WebShellView';
 
 /* 문구 — spec/strings.ko.json `pick` · features/pick/canonical-rules. */
 const COMPARE_HINT = PICK_COMPARE_BANNER_HINT;
@@ -212,10 +210,6 @@ export default function PickScreen() {
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
 
   const load = useCallback(() => {
-    // 하이브리드 웹뷰 쉘 POC로 이 화면을 대체할 때는 이 밑 자료를 안 쓴다 —
-    // 훅 순서를 지키려고 호출 자체는 남기고, 몸통만 건너뛴다.
-    if (isWebShellScreen('pick')) return;
-
     getCurrentUser()
       .then(async (current) => {
         setError(null);
@@ -233,12 +227,6 @@ export default function PickScreen() {
 
   /* 상담 예약 · 비교에서 돌아오면 목록이 바뀌어 있을 수 있다 — 화면에 올 때마다 다시 읽는다. */
   useFocusEffect(load);
-
-  // 하이브리드 웹뷰 쉘 POC. `EXPO_PUBLIC_WEBSHELL_SCREENS`에 "pick"이 없으면
-  // (기본값) 이 분기는 타지 않고 기존 네이티브 화면 그대로다.
-  if (isWebShellScreen('pick')) {
-    return <WebShellView path="/pick" />;
-  }
 
   const rows: Row[] = (page?.groups ?? []).flatMap((group) =>
     group.candidates.map((candidate) => ({

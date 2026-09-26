@@ -33,7 +33,7 @@ import {
 import { HomeSkeleton } from '@/features/home/home-skeleton';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { BudgetAmount } from '@/features/onboarding/budget-amount';
-import { DatePickerSheet } from '@/features/onboarding/date-picker-sheet';
+import { OnboardingDatePickerSheet } from '@/features/onboarding/date-picker-sheet';
 import {
   DONE_CTA,
   DONE_DESCRIPTION,
@@ -583,7 +583,7 @@ export default function SetupScreen() {
         onDismiss={() => setRegionSheetOpen(false)}
       />
 
-      <DatePickerSheet
+      <OnboardingDatePickerSheet
         visible={sheetOpen}
         value={date}
         onConfirm={(iso) => {

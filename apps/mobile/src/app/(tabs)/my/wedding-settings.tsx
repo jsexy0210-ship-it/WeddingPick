@@ -31,7 +31,8 @@ import { ApiError, completeSetup, getCurrentUser } from '@/api/client';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { useDepthBack } from '@/features/navigation/depth-back';
 import { BudgetGrid } from '@/features/onboarding/budget-grid';
-import { DatePickerSheet } from '@/features/onboarding/date-picker-sheet';
+import { DateWheelSheet } from '@/features/common/wheel-picker-sheet';
+import { firstSelectable, toIso, YEAR_SPAN } from '@/features/onboarding/calendar';
 import { UNDECIDED_LABEL, type Answers } from '@/features/onboarding/flow';
 import { PrepStatus } from '@/features/onboarding/prep-status';
 import { RegionPicker } from '@/features/onboarding/region-picker';
@@ -44,6 +45,7 @@ type PreparedCategory = Exclude<VendorCategory, 'etc'>;
 const S = {
   title: '내 웨딩설정',
   date: '예식일',
+  dateTitle: '예식일 선택',
   region: '지역',
   /* 정본 weddingSet k «예산». */
   budget: '예산',
@@ -74,7 +76,8 @@ type Editing = 'region' | 'budget' | 'prepared' | null;
  * 않기 때문이다 — 예식일만 바꾸고 나가도 남길 것이 없다. 요청은 `queue`로 줄을 세워
  * 연달아 누른 순서대로 나간다.
  *
- * **예식일은 온보딩과 같은 예식일 시트(OS 날짜 선택기)를 그대로 쓴다.** 지역 · 예산 · 준비 현황은
+ * **예식일은 로그인 이후 공용 날짜 휠 시트(`DateWheelSheet`)를 쓴다** — 온보딩 시트와는 떼어
+ * 냈다(2026-09-25 대표 지시 「로그인 이후 날짜 … 수정 등은 OS 피커로」). 지역 · 예산 · 준비 현황은
  * 온보딩 2/5 · 4/5 · 3/5와 같은 부품을 행 아래에 펼친다 — 같은 질문을 다른 모양으로 두 번
  * 만들지 않는다.
  *
@@ -88,6 +91,13 @@ type Editing = 'region' | 'budget' | 'prepared' | null;
  * 시험(`budget-bracket.test.ts`)이 그 값을 센다. 시안의 압축 표기와 기존 확정 용어가 부딪혀
  * 임의로 바꾸지 않았다 — 대표님·MASTER 판단이 필요하다.
  */
+/** 예식일로 고를 수 있는 범위 — 온보딩과 같다. 과거는 안 되고(내일부터) 올해부터 5년 뒤 12월 31일까지. */
+function weddingDateRange(today: Date): { min: string; max: string } {
+  const first = firstSelectable(today);
+
+  return { min: toIso(first.year, first.month, first.day), max: toIso(today.getFullYear() + YEAR_SPAN - 1, 12, 31) };
+}
+
 export default function WeddingSettingsScreen() {
   const theme = useTheme();
   const depthBack = useDepthBack();
@@ -263,9 +273,11 @@ export default function WeddingSettingsScreen() {
         <NoteBox title={S.noteTitle} body={S.noteBody} />
       </Section>
 
-      {/* 예식일 — OS 날짜 선택기 시트. 온보딩 1/5와 같은 시트다. */}
-      <DatePickerSheet
+      {/* 예식일 — 로그인 이후 공용 날짜 휠. 범위는 온보딩과 같다: 내일부터 올해+5년 12월 31일. */}
+      <DateWheelSheet
         visible={dateOpen}
+        title={S.dateTitle}
+        {...weddingDateRange(new Date())}
         value={current.weddingDate}
         onConfirm={(iso) => {
           setDateOpen(false);

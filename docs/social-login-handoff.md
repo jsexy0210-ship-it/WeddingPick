@@ -169,6 +169,7 @@ identityValues()는 birthday, age_range, birth_year에 새 원문을 넣지 않�
 ## 7. 검증 범위와 CI
 
 2차 격리 검사: `npm run test:web-shell-auth`.
+(2026-09-26 웹뷰 쉘 POC 삭제로 이 명령은 셸 검사를 뺀 `npm run test:session-auth`로 바뀌었다. 아래 75건은 당시 기록이다.)
 실제 변경된 TS/TSX와 주입 스크립트를 실행하고, SDK·React·스토리지·네트워크 경계는 대역으로 검사한다.
 Node Web Crypto와 URL 검증, 잘못된 메시지·origin·channel·만료·저장소 실패, 계정/페이지 변경,
 관리자 서버 로그아웃, 부팅 effect 재실행 등의 **75건 통과**를 확인했다.
