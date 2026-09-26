@@ -75,7 +75,7 @@ export function LoungeReviewVendorSheet({
   }
 
   return (
-    <BottomSheet visible onRequestClose={onClose} testID="lounge-review-write-sheet">
+    <BottomSheet visible onRequestClose={onClose} closeOnBrowserBack testID="lounge-review-write-sheet">
         <SheetPanel style={styles.sheet}>
           <View style={styles.head}>
             <SheetHeader title="후기 쓰기" closeLabel="후기 작성 닫기" onClose={onClose} />

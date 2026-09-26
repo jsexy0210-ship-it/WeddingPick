@@ -37,6 +37,16 @@
  *   추가됐다. 검색·상세와 같은 관문(`scored_reviews`)에서 오고, 확인된 후기가 모자라거나
  *   체크리스트 업종(과거 결정사)이면 null이라 그때 카드는 별점 줄을 안 그린다.
  *
+ * **결정이 끝난 묶음**(2026-09-26 대표 지시 — 「온보딩에서 결정이 확정된 카테고리는 Pick 화면에서
+ * 완료 처리된 별도 UX가 필요하다」). 묶음 안 업종이 모두 **실제 결정**(업체 결정 · 직접 입력)으로
+ * 채워졌으면 그 묶음은 끝났다 — 온보딩 준비 현황 체크만으로는 치지 않아 «결정 취소»가 곧바로
+ * 완료를 푼다(2026-09-26 대표 결정 · `features/pick/completed-groups`, 홈 «계약 완료»와 갈린다): 머리 앞에 정본 `doneMarkSm`(22 코랄 원 ·
+ * 흰 체크 13)을 세우고 «N개 · 최신순» 자리에 «결정 완료»를 적는다(결정 카드를 맨 위로 올려
+ * 최신순이 더는 맞지 않는다). 결정 카드(직접 입력 → 업체 결정)만 펼쳐 두고 나머지 후보는 정본
+ * `moreBtn2` «더 보기» 뒤로 접으며, «내 조건에 맞는 곳»은 그리지 않는다 — 다 고른 묶음에 새
+ * 업체를 내밀지 않는다(«더 보기» 접기는 2026-09-26 대표 확정). 칩바의 끝난 묶음 칩에는 머리 마크를
+ * 줄인 14px 코랄 체크를 라벨 앞에 붙인다 — 정본에 없고 **대표 지시 신규**(2026-09-26)다.
+ *
  * **묶음마다 «내 조건에 맞는 곳» 5곳**(2026-09-25 대표 지시 — 「Pick 메뉴 카테고리별로 각각 5개씩
  * 배치한다. 이것이 추천이다. 온보딩에서 사용자가 선택한 값에 따라 그에 맞는 결과를 Pick에 5개씩
  * 보여준다」). 정본 pick.jsx에 없는 줄이다 — 대표 지시가 정본보다 우선한다(DESIGN_SOURCE_NOT_VERIFIED,
@@ -53,6 +63,7 @@ import type {
 } from '@weddingpick/api-contract';
 import {
   PREPARATION_GROUPS,
+  PREPARATION_STATE_LABEL,
   TERMS,
   VENDOR_CATEGORY_LABEL,
   priceLine,
@@ -100,7 +111,9 @@ import { DialogToast } from '@/components/confirm-alert-toast';
 import { HOME_PREP_GROUP_LABEL } from '@/features/home/prep-groups';
 import { pickOrigin } from '@/features/navigation/depth-back';
 import { showResultToast } from '@/features/navigation/result-toast';
+import { inStack } from '@/features/navigation/stack-alias';
 import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
+import { completedPickGroups, decidedFirst } from '@/features/pick/completed-groups';
 import {
   PICK_COMPARE_ADD_LABEL,
   PICK_COMPARE_BANNER_HINT,
@@ -142,6 +155,14 @@ const RECOMMEND_CARD_WIDTH = 148;
 const RECOMMEND_THUMB_HEIGHT = Layout.thumbSearchHeight;
 /** 정본 frame-001 tagDesc «곧 3개씩 제공하고» — 묶음마다 먼저 보이는 카드 수. */
 const GROUP_PREVIEW = 3;
+/* 끝난 묶음의 머리 — 정본 pick.js `confirmRows` · `doneRows` «결정 완료»(= PREPARATION_STATE_LABEL.decided). */
+const GROUP_DONE = PREPARATION_STATE_LABEL.decided;
+/* 정본 pick.js `doneMarkSm` 22 · `rIcoCheck` check-fill 13. */
+const DONE_MARK = 22;
+const DONE_MARK_ICON = 13;
+/* 칩의 완료 표시 — 머리 마크를 줄인 14 원(Layout.iconSmall) · 체크 10(Layout.iconTiny). 대표 지시 신규. */
+const CHIP_DONE_MARK = Layout.iconSmall;
+const CHIP_DONE_ICON = Layout.iconTiny;
 
 /*
  * 칩과 묶음은 업종이 아니라 준비 묶음 넷이다 — 정본 pick.js `cats` «전체 · 웨딩홀 · 스드메 · 본식 ·
@@ -257,6 +278,9 @@ export default function PickScreen() {
   );
   const manualDecisions = page?.manualDecisions ?? [];
   const sections = pickSections(rows, manualDecisions);
+  /* 결정이 끝난 묶음 — 홈 «내 웨딩 준비»와 같은 규칙(features/pick/completed-groups). */
+  const doneGroups = completedPickGroups(page);
+  const isDoneSection = (key: string) => doneGroups.has(key as PreparationGroupKey);
   /* 담은 곳이 없어도 직접 입력한 결정이 있으면 빈 화면이 아니다. */
   const hasItems = rows.length > 0 || manualDecisions.length > 0;
   const visibleSections = filter === 'all' ? sections : sections.filter((section) => section.key === filter);
@@ -302,7 +326,8 @@ export default function PickScreen() {
   }
 
   function startCompare() {
-    router.push({ pathname: '/search/compare', params: { ids: Array.from(compare).join(',') } });
+    /* 비교 · 상담 예약 · 업체 상세는 Pick 스택 안에서 민다(`stack-alias.ts` — 검색 탭으로 건너가지 않는다). */
+    router.push(inStack('/pick', `/search/compare?ids=${encodeURIComponent(Array.from(compare).join(','))}`) as never);
   }
 
   /** 결정 취소는 되돌릴 수 있는 조작이라 DLG-B 확인을 쓴다. 직접 입력한 결정도 같은 길이다. */
@@ -468,6 +493,7 @@ export default function PickScreen() {
                         key={group.key}
                         label={HOME_PREP_GROUP_LABEL[group.key]}
                         active={filter === group.key}
+                        done={doneGroups.has(group.key)}
                         onPress={() => setFilter(group.key)}
                       />
                     ))}
@@ -505,7 +531,14 @@ export default function PickScreen() {
                     <View style={styles.groupWrap}>
                       {visibleSections.map((section) => {
                         const open = expanded.has(section.key);
-                        const shown = open ? section.rows : section.rows.slice(0, GROUP_PREVIEW);
+                        const done = isDoneSection(section.key);
+                        /* 끝난 묶음은 결정 카드를 맨 위에 두고, 펼치기 전에는 결정 카드만 보인다. */
+                        const ordered = done ? decidedFirst(section.rows) : section.rows;
+                        const shown = open
+                          ? ordered
+                          : done
+                            ? ordered.filter((row) => row.isDecided)
+                            : ordered.slice(0, GROUP_PREVIEW);
                         return (
                           <View key={section.key} style={styles.group}>
                             {/*
@@ -514,11 +547,29 @@ export default function PickScreen() {
                               그리지 않는다(2026-09-26 대표 지시 — 「내 조건에 맞는 곳」에서 삭제).
                               담은 곳이 있는 묶음은 정본대로 둔다.
                             */}
-                            <View style={styles.groupHead}>
-                              <ThemedText type="f18" style={[styles.bold, styles.groupTitle]}>
-                                {section.title}
-                              </ThemedText>
-                              {showGroupMeta(section.rows.length + section.manual.length, recsFor(section.key).length) ? (
+                            <View
+                              style={[styles.groupHead, done ? styles.groupHeadDone : null]}
+                              accessibilityLabel={done ? `${section.title} ${GROUP_DONE}` : undefined}>
+                              {done ? (
+                                /* 정본 rDoneRow: 마크 22 · 제목 사이 10. */
+                                <View style={styles.groupTitleRow}>
+                                  <View style={[styles.doneMark, { backgroundColor: theme.tint }]}>
+                                    <ProductSymbol name="check" size={DONE_MARK_ICON} color={theme.onTint} />
+                                  </View>
+                                  <ThemedText type="f18" style={[styles.bold, styles.groupTitle]}>
+                                    {section.title}
+                                  </ThemedText>
+                                </View>
+                              ) : (
+                                <ThemedText type="f18" style={[styles.bold, styles.groupTitle]}>
+                                  {section.title}
+                                </ThemedText>
+                              )}
+                              {done ? (
+                                <ThemedText type="f13" style={[styles.bold, { color: theme.tint }]}>
+                                  {GROUP_DONE}
+                                </ThemedText>
+                              ) : showGroupMeta(section.rows.length + section.manual.length, recsFor(section.key).length) ? (
                                 <ThemedText type="f13" numeric themeColor="textAssistive">
                                   {groupMetaLabel(section.rows.length + section.manual.length)}
                                 </ThemedText>
@@ -550,7 +601,7 @@ export default function PickScreen() {
                               </View>
                             ) : null}
                             {/* 정본 moreBtn2 «더 보기». 가릴 카드가 있을 때만 그린다(DESIGN_UNRESOLVED — PR 본문). */}
-                            {section.rows.length > GROUP_PREVIEW && !open ? (
+                            {section.rows.length > shown.length && !open ? (
                               <Pressable
                                 accessibilityRole="button"
                                 accessibilityLabel={`${section.title} ${GROUP_MORE}`}
@@ -565,8 +616,9 @@ export default function PickScreen() {
                                 </ThemedText>
                               </Pressable>
                             ) : null}
+                            {/* 끝난 묶음에는 «내 조건에 맞는 곳»을 내밀지 않는다(2026-09-26 대표 지시). */}
                             <RecommendRow
-                              vendors={recsFor(section.key)}
+                              vendors={done ? [] : recsFor(section.key)}
                               canPick={weddingId !== null}
                               busy={busy}
                               origin={origin}
@@ -613,13 +665,24 @@ function Header() {
 /* ────────────────────────────────────────────
    업종 칩 — 켬은 잉크 채움 · 흰 글자, 끔은 회색 면 · 보조색 글자
 ──────────────────────────────────────────── */
-function CategoryChip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+function CategoryChip({
+  label,
+  active,
+  done = false,
+  onPress,
+}: {
+  label: string;
+  active: boolean;
+  /** 결정이 끝난 묶음 — 라벨 앞 코랄 체크(대표 지시 신규 2026-09-26). */
+  done?: boolean;
+  onPress: () => void;
+}) {
   const theme = useTheme();
   return (
     <Pressable
       accessibilityRole="radio"
       accessibilityState={{ selected: active }}
-      accessibilityLabel={label}
+      accessibilityLabel={done ? `${label} ${GROUP_DONE}` : label}
       onPress={onPress}
       style={({ pressed }) => [
         styles.chip,
@@ -627,6 +690,15 @@ function CategoryChip({ label, active, onPress }: { label: string; active: boole
         { backgroundColor: active ? theme.text : theme.backgroundSelected },
         pressed ? styles.pressed : null,
       ]}>
+      {/*
+        끝난 묶음 — 묶음 머리 마크(22)를 14로 줄인 코랄 원 + 흰 체크. 켬(잉크 면)·끔(회색 면) 어디서나
+        코랄 원이 면과 갈려 보인다. 칩은 그만큼 넓어지고 줄은 가로 스크롤 그대로다.
+      */}
+      {done ? (
+        <View style={[styles.chipDoneMark, { backgroundColor: theme.tint }]}>
+          <ProductSymbol name="check" size={CHIP_DONE_ICON} color={theme.onTint} />
+        </View>
+      ) : null}
       {/* WP-PICK-001 칩: 14/700 · 높이 36 · 좌우 14. 끔 글자 #4d5159는 테마 키가 없어 보조색(PR 본문). */}
       <ThemedText type="f14" numberOfLines={1} style={[styles.bold, { color: active ? theme.onInk : theme.textAssistive }]}>
         {label}
@@ -662,7 +734,7 @@ function CandidateCard({
   const { candidate, isDecided } = row;
   const compareDisabled = !comparing && compareFull;
   const openConsult = () =>
-    router.push({ pathname: '/search/[vendorId]/consult', params: { vendorId: candidate.vendorId, from: origin } });
+    router.push(inStack('/pick', `/search/${encodeURIComponent(candidate.vendorId)}/consult?from=${encodeURIComponent(origin)}`) as never);
 
   return (
     <View
@@ -903,7 +975,7 @@ function RecommendRow({
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`${vendor.name} 자세히 보기`}
-                onPress={() => router.push({ pathname: '/search/[vendorId]', params: { vendorId: vendor.id, from: origin } })}
+                onPress={() => router.push(inStack('/pick', `/search/${encodeURIComponent(vendor.id)}?from=${encodeURIComponent(origin)}`) as never)}
                 style={({ pressed }) => [styles.recommendBody, pressed ? styles.pressed : null]}>
                 <VendorImage
                   source={vendor.imageUrl ? { uri: vendor.imageUrl } : undefined}
@@ -1037,6 +1109,16 @@ const styles = StyleSheet.create({
   group: { gap: Layout.inlineGap },
   /* 정본 catGroupTitle 18/700 · 줄높이 지정 없음 — 미리보기에서 렌더된 높이 24(f18 기본 28이면 묶음마다 4씩 밀린다). */
   groupTitle: { lineHeight: LineHeight.lh24 },
+  /* 정본 rDoneRow: 마크 · 제목 사이 10(iconTextGap), 가운데 맞춤. */
+  groupTitleRow: { flexDirection: 'row', alignItems: 'center', gap: Layout.iconTextGap, flexShrink: 1 },
+  /* 정본 doneMarkSm: 22 · 코랄 원 · 가운데 흰 체크. */
+  doneMark: {
+    width: DONE_MARK,
+    height: DONE_MARK,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   groupHead: {
     paddingHorizontal: ROOT_TAB_GUTTER,
     flexDirection: 'row',
@@ -1044,6 +1126,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: Layout.inlineGap,
   },
+  /* 마크(원)가 끼면 글줄 맞춤이 안 선다 — 가운데 맞춤. */
+  groupHeadDone: { alignItems: 'center' },
 
   // ── 정본 banner: 바깥 16 20(Root 거터) · radius 10 · 안쪽 16 ──
   compareBanner: {
@@ -1083,6 +1167,15 @@ const styles = StyleSheet.create({
   chip: {
     height: Layout.chip,
     paddingHorizontal: Layout.chipPaddingX,
+    borderRadius: Radius.pill,
+    flexDirection: 'row',
+    gap: Spacing.one,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chipDoneMark: {
+    width: CHIP_DONE_MARK,
+    height: CHIP_DONE_MARK,
     borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',

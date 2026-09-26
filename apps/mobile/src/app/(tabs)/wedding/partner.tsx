@@ -1,8 +1,8 @@
 import type { CurrentUser, WeddingInvite } from '@weddingpick/api-contract';
 import { INVITE_CODE_LENGTH, TERMS, inviteShareUrl } from '@weddingpick/domain';
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams, usePathname } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import {
   createWeddingInvite,
@@ -16,7 +16,8 @@ import strings from '../../../../../../spec/strings.ko.json';
 import { shareOrCopy } from '@/components/share-or-copy';
 import { formatDateTimeDot } from '@/features/common/format-date';
 import { APP_WEB_ORIGIN } from '@/features/social-meta';
-import { chainOrigin, useDepthBack } from '@/features/navigation/depth-back';
+import { useDepthBack } from '@/features/navigation/depth-back';
+import { partnerJoinHref } from '@/features/partner/routes';
 import { ActionButton, Border, ErrorView, Layout, Radius, SocialColors, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { usePullRefresh } from '@/features/refresh/use-pull-refresh';
@@ -121,6 +122,12 @@ export default function PartnerScreen() {
   const depthBack = useDepthBack();
   /* 초대 수락으로 넘어가도 이 화면의 출처(MY · 알림 · 홈)를 이어 준다 — 돌아온 뒤 Back이 그리로 간다. */
   const { from } = useLocalSearchParams<{ from?: string | string[] }>();
+  /*
+   * 이 화면은 스택 셋에 별칭으로 있다(`features/partner/routes.ts`) — 초대 수락도 **지금 스택 안**으로
+   * 연다. `/my/partner` → `/my/partner/join`처럼 계층이 이어져 Back이 이 화면으로 돌아온다.
+   */
+  const pathname = usePathname();
+  const joinHref = partnerJoinHref(pathname, (Array.isArray(from) ? from[0] : from) ?? null);
   const theme = useTheme();
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [weddingId, setWeddingId] = useState<string | null>(null);
@@ -398,16 +405,24 @@ export default function PartnerScreen() {
          * 정본(WP-CPL-001)에는 없는 보조 진입점이다 — 내가 초대를 만드는 화면과 별개로,
          * 상대에게 받은 코드를 입력하는 길(WP-CPL-002)이 따로 있어야 한다. 헤더가 아니라
          * 화면 맨 아래 작은 밑줄 텍스트로 둬 Primary CTA(카카오로 초대하기)와 겹치지
-         * 않게 한다 — 로그아웃 링크와 같은 자리(CLAUDE.md 「강조하지 않되 찾을 수는
-         * 있게」).
+         * 않게 한다.
+         *
+         * **가운데 · 더 잘 보이게**(2026-09-26 대표 지시 「텍스트는 중앙에 배치하고 조금 더 눈에
+         * 띄게 변경한다」). 정본에 이 링크가 없어 기준은 my.js:279 `logout`(13 · DIM · 밑줄 · 왼쪽)
+         * 이었다 — 그보다 강조한 것은 전부 대표 지시다: 가로 가운데 · f15(14→15) · 700 · 본문색
+         * `text`(gray900 · 흰 바탕 16.9:1 — 이전 textAssistive gray600은 3.4:1로 4.5:1 미달) ·
+         * 터치 영역 최소 44(`Layout.touchTarget`). 밑줄은 링크 표시로 그대로 둔다. Primary CTA는
+         * 여전히 Dock의 「카카오로 초대하기」 하나다.
          */}
-        <ThemedText
-          type="t7"
-          themeColor="textAssistive"
-          style={styles.haveCodeLink}
-          onPress={() => router.push(`/wedding/join?from=${chainOrigin('partner', from)}` as never)}>
-          {S.haveCode}
-        </ThemedText>
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel={S.haveCode}
+          onPress={() => router.push(joinHref as never)}
+          style={({ pressed }) => [styles.haveCodeLink, pressed && styles.haveCodePressed]}>
+          <ThemedText type="f15" themeColor="text" style={styles.haveCodeText}>
+            {S.haveCode}
+          </ThemedText>
+        </Pressable>
       </ScrollView>
 
       <Dock>
@@ -445,5 +460,12 @@ const styles = StyleSheet.create({
   scopeLabel: { flex: 1, minWidth: 0 },
   infoRow: { justifyContent: 'center', gap: 3, minHeight: 64, paddingHorizontal: Layout.rowPaddingY + 4 },
 
-  haveCodeLink: { paddingHorizontal: Layout.gutter, textDecorationLine: 'underline' },
+  haveCodeLink: {
+    alignSelf: 'center',
+    minHeight: Layout.touchTarget,
+    paddingHorizontal: Layout.gutter,
+    justifyContent: 'center',
+  },
+  haveCodeText: { fontWeight: '700', textAlign: 'center', textDecorationLine: 'underline' },
+  haveCodePressed: { opacity: 0.6 },
 });

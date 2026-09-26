@@ -5,6 +5,7 @@ import {
   weddingEventListResponseSchema,
   publicHolidayListResponseSchema,
   weddingForecastResponseSchema,
+  regionWeatherResponseSchema,
   weddingNoteListResponseSchema,
   weddingTaskListResponseSchema,
   authProvidersResponseSchema,
@@ -70,9 +71,11 @@ import {
   type WeddingTaskListResponse,
   type CreateConsultationEventRequest,
   type CreateWeddingEventRequest,
+  type UpdateWeddingEventRequest,
   type WeddingEventListResponse,
   type PublicHolidayListResponse,
   type WeddingForecastResponse,
+  type RegionWeatherResponse,
   type AuthProvidersResponse,
   type FaqListResponse,
   type ErrorCode,
@@ -914,6 +917,11 @@ export async function updateWeddingTask(
   });
 }
 
+/** 할 일 하나를 지운다 — 서버는 다 지워도 기본 열셋을 다시 깔지 않는다(0444). */
+export async function removeWeddingTask(weddingId: string, taskId: string): Promise<void> {
+  await request(`/v1/weddings/${weddingId}/tasks/${taskId}`, z.null(), { method: 'DELETE' });
+}
+
 export async function getExpenses(weddingId: string): Promise<ExpenseSummaryResponse> {
   return request(`/v1/weddings/${weddingId}/expenses`, expenseSummaryResponseSchema);
 }
@@ -1011,6 +1019,21 @@ export async function getWeddingForecast(weddingId: string): Promise<WeddingFore
   return request(`/v1/weddings/${weddingId}/forecast`, weddingForecastResponseSchema);
 }
 
+/**
+ * 지역 오늘 날씨 — 홈 히어로. 값이 없으면 `weather`가 null이다.
+ *
+ * 곁가지라 오래 기다리지 않는다 — 5초 안에 안 오면 끊고, 홈은 정본 코랄 히어로 그대로 둔다.
+ * 서버는 표 한 줄만 읽는다(기상청은 워커가 따로 부른다).
+ */
+const WEATHER_TIMEOUT_MS = 5_000;
+
+export async function getRegionWeather(region: string): Promise<RegionWeatherResponse> {
+  const query = new URLSearchParams({ region });
+  return request(`/v1/weather/today?${query.toString()}`, regionWeatherResponseSchema, {
+    signal: AbortSignal.timeout(WEATHER_TIMEOUT_MS),
+  });
+}
+
 /** 웨딩 스케줄(체크리스트)과 다른 개념이다 — 일시·장소가 있는 캘린더 이벤트. */
 export async function listWeddingEvents(weddingId: string): Promise<WeddingEventListResponse> {
   return request(`/v1/weddings/${weddingId}/events`, weddingEventListResponseSchema);
@@ -1024,6 +1047,22 @@ export async function addWeddingEvent(
     method: 'POST',
     body: JSON.stringify(body),
   });
+}
+
+/** 보낸 칸만 고친다 — 웨딩노트 타임라인의 수정 시트(2026-09-26). 직접 넣은 일정 · 상담 일정 모두. */
+export async function updateWeddingEvent(
+  weddingId: string,
+  eventId: string,
+  body: UpdateWeddingEventRequest
+): Promise<void> {
+  await request(`/v1/weddings/${weddingId}/events/${eventId}`, z.object({ ok: z.boolean() }), {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function removeWeddingEvent(weddingId: string, eventId: string): Promise<void> {
+  await request(`/v1/weddings/${weddingId}/events/${eventId}`, z.null(), { method: 'DELETE' });
 }
 
 /** 상담 시트 전용. 서버가 Pick 후보 · 결정 행을 잠근 상태에서 다시 검증한다(2026-09-25 결정 없이 가능). */

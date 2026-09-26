@@ -2,6 +2,7 @@ import type {
   AppBootstrapResponse,
   CandidateListResponse,
   CurrentUser,
+  RegionWeather,
   WeddingTask,
 } from '@weddingpick/api-contract';
 import { daysUntil } from '@weddingpick/domain';
@@ -10,7 +11,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { getAppBootstrap, listWeddingTasks } from '@/api/client';
+import { getAppBootstrap, getRegionWeather, listWeddingTasks } from '@/api/client';
 import { RootTabHeader } from '@/components/root-tab-header';
 import {
   ActionButton,
@@ -28,6 +29,7 @@ import {
 } from '@weddingpick/ui';
 import { listWeddingContent, type WeddingContentItem } from '@/features/home/content';
 import { Hero } from '@/features/home/hero';
+import { HOME_PARTNER_ROUTE } from '@/features/partner/routes';
 import { HomeBudget, MORE_CHEVRON, MyWeddingPrep } from '@/features/home/home-summary';
 import { HOME_PAGE_X } from '@/features/home/home-layout';
 import { endHomeHandoff, useHomeHandoffActive } from '@/features/home/home-handoff';
@@ -38,6 +40,7 @@ import { categoryStatuses, currentCategory } from '@/features/home/state';
 import { UpcomingSchedule } from '@/features/home/wedding-schedule';
 import { WeddingContent } from '@/features/home/wedding-content';
 import { usePullRefresh } from '@/features/refresh/use-pull-refresh';
+import { inStack } from '@/features/navigation/stack-alias';
 import strings from '../../../../../spec/strings.ko.json';
 
 const S = strings.home;
@@ -62,7 +65,11 @@ type HomeData = {
   /** 웨딩일정 — `GET /v1/weddings/:id/tasks`. 웨딩이 없으면(온보딩 전) 빈 배열. */
   tasks: readonly WeddingTask[];
   content: readonly WeddingContentItem[];
-  /** 안 읽은 알림 수. 벨의 점이 이 값을 본다. */
+  /**
+   * 사용자 지역 오늘 날씨(`GET /v1/weather/today`, 0447) — 히어로 오른쪽. 곁가지라 실패 ·
+   * 값 없음은 모두 null이고 자리를 그리지 않는다. 오류 문구도 토스트도 내지 않는다.
+   */
+  weather: RegionWeather | null;
 };
 
 const EMPTY: HomeData = {
@@ -73,6 +80,7 @@ const EMPTY: HomeData = {
   partnerInvitePending: false,
   tasks: [],
   content: [],
+  weather: null,
 };
 
 export default function HomeScreen() {
@@ -129,6 +137,25 @@ export default function HomeScreen() {
           partnerInvitePending: boot.partnerInvitePending,
         }));
         bootLoadedOnce.current = true;
+
+        /*
+         * 날씨는 기다리지 않는다 — 홈은 이미 그려지고, 값이 오면 히어로만 바뀐다. 지역이 없으면
+         * 임의 지역을 대신 묻지 않는다. 실패는 조용히 null(정본 코랄 히어로)이다.
+         */
+        const region = boot.member?.region ?? null;
+        const clearWeather = () => {
+          if (current()) setData((previous) => ({ ...previous, weather: null }));
+        };
+        if (region === null) {
+          clearWeather();
+        } else {
+          Promise.resolve()
+            .then(() => getRegionWeather(region))
+            .then((response) => {
+              if (current()) setData((previous) => ({ ...previous, weather: response.weather }));
+            })
+            .catch(clearWeather);
+        }
 
         /*
          * 웨딩일정 — 웨딩노트가 이미 쓰는 GET /v1/weddings/:id/tasks 그대로다(새 API를
@@ -214,22 +241,10 @@ export default function HomeScreen() {
           <Hero
             me={data.me}
             daysLeft={daysLeft}
-            venueName={venueName(data.candidates, data.me)}
-            nothingDecided={prepCards.every((card) => card.state === 'todo')}
-            showBudget={false}
-            budget={data.budget}
-            bracketAnswered={data.bracketAnswered}
             partnerInvitePending={data.partnerInvitePending}
-            onPressDate={() => router.push('/my/wedding-settings')}
-            onPressVenue={() => router.push('/search?category=hall')}
-            onPressBudget={() =>
-              router.push(
-                data.me?.weddingId == null
-                  ? '/my/wedding-settings'
-                  : '/wedding?tab=budget' as never
-              )
-            }
-            onPressPartner={() => router.push('/wedding/partner?from=home')}
+            weather={data.weather}
+            onPressDate={() => router.push(inStack('/', '/my/wedding-settings') as never)}
+            onPressPartner={openPartnerFromHome}
           />
 
           <MyWeddingPrep
@@ -255,9 +270,9 @@ export default function HomeScreen() {
           <HomeBudget
             budget={data.budget}
             onOpen={() => router.push(
-              data.me?.weddingId == null
-                ? '/my/wedding-settings'
-                : '/wedding?tab=budget' as never
+              (data.me?.weddingId == null
+                ? inStack('/', '/my/wedding-settings')
+                : '/wedding?tab=budget') as never
             )}
           />
 
@@ -318,7 +333,7 @@ function Header() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="알림"
-          onPress={() => router.push('/my/notifications')}
+          onPress={() => router.push(inStack('/', '/my/notifications') as never)}
           style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
           <SeedIcon name="notificationRegular" size={Layout.iconRow} color={theme.text} />
         </Pressable>
@@ -328,6 +343,14 @@ function Header() {
 }
 
 /** 웨딩홀로 최종 결정한 업체 이름이 예식장 이름이다. */
+/**
+ * 히어로 배우자 연결 현황 → 연결관리. 출처(from=home)를 실어 Back이 홈으로 돌아온다.
+ * 경로는 한 곳에 모아 둔다 — 연결관리 라우트가 홈 스택 별칭으로 옮겨지면 여기만 고친다.
+ */
+function openPartnerFromHome(): void {
+  router.push(HOME_PARTNER_ROUTE as never);
+}
+
 function venueName(candidates: CandidateListResponse | null, me: CurrentUser | null): string | null {
   const hall = categoryStatuses({
     candidates,

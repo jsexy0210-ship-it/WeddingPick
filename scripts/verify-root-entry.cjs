@@ -17,6 +17,17 @@ const built = ts.transpileModule(source, {
 const errors = (built.diagnostics || []).filter(d => d.category === ts.DiagnosticCategory.Error);
 assert.equal(errors.length, 0, errors.map(d => ts.flattenDiagnosticMessageText(d.messageText, '\n')).join('\n'));
 
+/*
+ * 뿌리는 `<View>` 하나 안에 [스택, 덮개]를 둔다(2026-09-26 — 덮개가 첫 화면에 닿을 때까지 스택
+ * 위에 선다). 무엇이 «보이는가»만 본다: 덮개가 있으면 덮개 안(스플래시 · 로그인하는 중), 없으면 스택.
+ */
+function shown(view) {
+  if (!view || view.type !== 'View') return view;
+  const [stack, cover] = [].concat(view.props.children);
+  if (cover) return cover.props.children;
+  return stack;
+}
+
 function render(route, {
   browser = false,
   os = 'web',
@@ -38,7 +49,7 @@ function render(route, {
       useRef: current => ({ current }), useMemo: fn => fn(),
       useEffect: effect => { effects.push(effect); },
     },
-    'react-native': { Platform: { OS: os } },
+    'react-native': { Platform: { OS: os }, View: 'View', StyleSheet: { create: styles => styles, absoluteFill: {} } },
     'expo-router': {
       usePathname: () => route, DefaultTheme: { colors: {} }, ThemeProvider: 'ThemeProvider',
       Stack: Object.assign(() => null, { Screen: 'Screen' }),
@@ -64,7 +75,9 @@ function render(route, {
       completeKakaoRedirect: async () => null,
     },
     '@/features/auth/sign-in-handoff': { claimSigningInMessageForBoot: () => {}, setPendingSignInError: () => {} },
-    '@/features/auth/signing-in-view': { SigningInView: 'SigningInView' },
+    '@/features/auth/signing-in-view': { SigningInView: 'SigningInView', removeStaticAuthReturn: () => {} },
+    '@/features/loading/auth-progress': { beginAuthProgress: () => {} },
+    '@/api/client': { listAuthProviders: async () => ({ providers: [] }) },
     '@/features/errors/full-screen-error': { FullScreenError: 'FullScreenError' },
     '@/features/inapp-browser/escape': {
       escapeInAppBrowser: () => { counters.escapeChecks++; return { kind: 'none' }; },
@@ -104,7 +117,7 @@ function render(route, {
   vm.runInNewContext(built.outputText, context, { filename: '_layout.tsx' });
   const root = module.exports.default();
   assert.equal(typeof root.type, 'function');
-  const view = root.type(root.props);
+  const view = shown(root.type(root.props));
   return { view, counters, async runEffects() {
     const firstEffects = effects.slice();
     const cleanups = firstEffects.map(effect => effect());

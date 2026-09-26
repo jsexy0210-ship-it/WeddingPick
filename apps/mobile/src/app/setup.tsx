@@ -26,11 +26,11 @@ import {
   Radius,
   Spacing,
   ThemedText,
-  ThemedView,
   useTheme,
 } from '@weddingpick/ui';
 
-import { noteSignupPending } from '@/features/auth/sign-in-handoff';
+import { noteSignupPending, takeFreshSignupActivated } from '@/features/auth/sign-in-handoff';
+import { SigningInView } from '@/features/auth/signing-in-view';
 import { beginHomeHandoff, endHomeHandoff, prefetchHomeBootstrap } from '@/features/home/home-handoff';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { showResultToast } from '@/features/navigation/result-toast';
@@ -197,11 +197,13 @@ export default function SetupScreen() {
      * 못 읽으면 없는 것 — 그 앞에서는 채우지 않는다(채우면 5/5를 건너뛰게 된다).
      */
     let active = true;
+    /* 약관 동의가 방금 가입을 마쳤으면 그 답을 쓴다 — 가입 상태를 한 번 더 기다리지 않고 바로 내 정보를 묻는다. */
+    const justActivated = takeFreshSignupActivated();
     void (async () => {
       const token = await loadToken();
       if (!token) return null;
-      const state = await getSignupState();
-      if (!active || !state.activated || await loadToken() !== token) return null;
+      const activated = justActivated || (await getSignupState()).activated;
+      if (!active || !activated || await loadToken() !== token) return null;
       const me = await getCurrentUser();
       return await loadToken() === token ? me : null;
     })()
@@ -450,7 +452,8 @@ export default function SetupScreen() {
   }
 
   if (!restored) {
-    return <ThemedView style={styles.blank} />;
+    /* 기기에 적어 둔 답을 읽는 한순간 — 약관 동의에서 이어진 기다림이면 같은 원형 고리가 이어 선다. */
+    return <SigningInView message={null} />;
   }
 
   /*
@@ -663,7 +666,6 @@ const SUMMARY_KEY_WIDTH = 72;
 const KEEP_WORDS: TextStyle | null = Platform.OS === 'web' ? ({ wordBreak: 'keep-all' } as TextStyle) : null;
 
 const styles = StyleSheet.create({
-  blank: { flex: 1 },
   /* 시안 padSec — 좌우 24 · 아래 24 · 사이 12. */
   section: {
     paddingHorizontal: Layout.gutter,

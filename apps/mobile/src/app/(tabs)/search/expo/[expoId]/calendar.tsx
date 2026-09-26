@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, usePathname } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Linking, Platform, ScrollView, StyleSheet, View } from 'react-native';
 
@@ -6,6 +6,7 @@ import { getExpo, type ExpoDetail } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
 import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
+import { inStack } from '@/features/navigation/stack-alias';
 import { openExternal } from '@/features/open-external';
 import {
   ActionButton,
@@ -70,6 +71,7 @@ function buildOutlookUrl(params: {
  */
 export default function CalendarRoute() {
   const { expoId } = useLocalSearchParams<{ expoId: string }>();
+  const pathname = usePathname();
   const [adding, setAdding] = useState<CalendarOption | null>(null);
   const [expo, setExpo] = useState<ExpoDetail | null>(null);
   const [loadError, setLoadError] = useState(false);
@@ -92,7 +94,8 @@ export default function CalendarRoute() {
   const expoAddress = expo?.address ?? '';
 
   function closeSheet() {
-    dismissToOrReplace(`/search/expo/${expoId}`);
+    /* 라운지 스택 별칭이면 그 스택의 박람회 상세로 접는다(`stack-alias.ts`). */
+    dismissToOrReplace(inStack(pathname, `/search/expo/${expoId}`));
   }
 
   async function handleAdd(option: CalendarOption) {

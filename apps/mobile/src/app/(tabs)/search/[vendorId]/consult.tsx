@@ -11,7 +11,8 @@ import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
 import { KeyboardAvoid } from '@/features/common/keyboard-avoid';
 import { OsDateField, OsTimeField } from '@/features/common/os-picker-field';
 import { dateOfDay, dayOf } from '@/features/common/os-picker-field.shared';
-import { backTo, depthBackTarget, readStackState, useCrossStackBack, withBackOrigin } from '@/features/navigation/depth-back';
+import { backTo, depthBackTarget, leaveToTabRoot, readStackState, useCrossStackBack, withBackOrigin } from '@/features/navigation/depth-back';
+import { inStack } from '@/features/navigation/stack-alias';
 import { showResultToast } from '@/features/navigation/result-toast';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
@@ -212,15 +213,13 @@ export default function ConsultRoute() {
       showResultToast('상담 예약을 요청했어요');
       /* 제출 성공 뒤 WP-DONE-VEND(상담 예약 완료)으로 넘긴다 — 예전에는 곧장
          /wedding으로 가서 이 확인 화면이 없었다(2026-09-23 v3.29 대조로 추가). */
-      router.replace({
-        pathname: '/search/[vendorId]/consult-done',
-        params: {
-          vendorId: vendor.id,
-          vendorName: vendor.name,
-          when: `${chosen.getMonth() + 1}월 ${chosen.getDate()}일 ${spokenTime(selectedTime)}`,
-          partnerName: candidates.partnerName ?? '',
-        },
-      });
+      /* Pick 스택 별칭(`/pick/vendor/<업체>/consult`)이면 완료 화면도 Pick 스택 안에서 갈아끼운다(`stack-alias.ts`). */
+      const done = [
+        ['vendorName', vendor.name],
+        ['when', `${chosen.getMonth() + 1}월 ${chosen.getDate()}일 ${spokenTime(selectedTime)}`],
+        ['partnerName', candidates.partnerName ?? ''],
+      ].map(([key, value]) => `${key}=${encodeURIComponent(value!)}`).join('&');
+      router.replace(inStack(pathname, `/search/${encodeURIComponent(vendor.id)}/consult-done?${done}`) as never);
     } catch (caught) {
       if (caught instanceof ApiError && caught.status === 401) {
         router.replace('/login');
@@ -270,7 +269,7 @@ export default function ConsultRoute() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="나의 Pick 보기"
-                onPress={() => router.replace('/pick')}
+                onPress={() => leaveToTabRoot('/pick', pathname)}
                 style={({ pressed }) => [
                   styles.guardButton,
                   { backgroundColor: theme.text },

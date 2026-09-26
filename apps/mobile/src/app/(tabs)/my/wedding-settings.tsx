@@ -1,13 +1,11 @@
 import type { CurrentUser } from '@weddingpick/api-contract';
 import {
-  BUDGET_BRACKET_LABEL,
   WEDDING_REGIONS,
   WEDDING_STYLE_LABEL,
   combineRegion,
   formatDateDot,
   regionTokens,
   type VendorCategory,
-  type WeddingBudgetBracket,
   type WeddingRegion,
   type WeddingStyle,
 } from '@weddingpick/domain';
@@ -36,7 +34,6 @@ import { RegionPickerSheet, type PickedRegion } from '@/features/onboarding/regi
 import { NoteBox, Section, SubScreen, SubScreenStatus } from '@/features/settings/my-kit';
 import { StylePickSheet } from '@/features/settings/style-pick-sheet';
 import {
-  budgetOptions,
   prepCategoriesFromKey,
   prepComboKeyOf,
   prepOptions,
@@ -51,17 +48,14 @@ const S = {
   title: '내 웨딩설정',
   date: '예식일',
   region: '지역',
-  /* 정본 weddingSet k «예산». */
-  budget: '예산',
   style: '스타일',
   prepared: '준비 현황',
   /*
    * 휠 시트 제목 — 예식일 · 지역은 이미 쓰던 것(지역은 정본 home.jsx:247 「지역 선택」),
-   * 나머지 셋은 같은 꼴로 지었다(정본에 이 화면의 시트 그림이 없다 — DESIGN_UNRESOLVED).
+   * 나머지 둘은 같은 꼴로 지었다(정본에 이 화면의 시트 그림이 없다 — DESIGN_UNRESOLVED).
    */
   dateTitle: '예식일 선택',
   prepTitle: '준비 현황 선택',
-  budgetTitle: '예산 선택',
   styleTitle: '스타일 선택',
   /** 예식일이 지난 상태(운영 데이터 상태). */
   passed: '지났어요',
@@ -75,23 +69,29 @@ const S = {
 } as const;
 
 /** 지금 열린 휠 시트. 한 번에 하나만 연다 — «한 항목씩 고친다»가 이 화면의 규칙이다. */
-type Sheet = 'date' | 'region' | 'prepared' | 'budget' | 'style' | null;
+type Sheet = 'date' | 'region' | 'prepared' | 'style' | null;
 
 /**
- * 내 웨딩설정 · WP-MY-003 · `docs/design/React_Native/my.jsx` 프레임 3. 한 카드에 다섯 행
- * (예식일 · 지역 · 준비 현황 · 예산 · 스타일) — 시안 `weddingSet` 순서 그대로다.
+ * 내 웨딩설정 · WP-MY-003 · `docs/design/React_Native/my.jsx` 프레임 3. 한 카드에 네 행
+ * (예식일 · 지역 · 준비 현황 · 스타일) — 시안 `weddingSet` 순서 그대로다.
+ *
+ * **예산 행은 뺐다**(2026-09-26 대표 지시 「MY 내 웨딩설정에서 예산은 삭제한다」). 정본
+ * weddingSet에는 «예산»이 있지만 대표 지시가 이긴다. 저장 요청은 `budgetBracket` 키를 아예
+ * 보내지 않는다 — 서버는 키가 없으면 적어 둔 예산을 건드리지 않는다
+ * (`apps/api/src/test/setup.test.ts` 「예산을 안 보내면 건드리지 않는다」). 온보딩 4/5에서 고른
+ * 예산은 그대로 남는다.
  *
  * 이 화면이 생기기 전에는 MY의 «내 웨딩 설정»이 온보딩 5문항(`/setup`)을 통째로 다시 열었다 —
  * 예식일 하나 고치러 다섯 질문을 다시 지나야 했다. 여기서는 행을 눌러 그 항목만 고친다.
  *
  * **행을 누르면 전부 휠 바텀시트가 뜬다**(2026-09-26 대표 지시 「모든 항목 휠 바텀시트 ·
- * 날짜 외에는 1열 휠」). 그 전에는 지역 · 준비 현황 · 예산이 행 아래에 온보딩 부품을 펼쳤고,
+ * 날짜 외에는 1열 휠」). 그 전에는 지역 · 준비 현황이 행 아래에 온보딩 부품을 펼쳤고,
  * 스타일은 `/my/taste`로 넘어갔다.
  *
  *   예식일     공용 날짜 휠(`DateWheelSheet` · 년 · 월 · 일 3열) — 그대로
  *   지역       온보딩 지역 휠(`RegionPickerSheet`) — 정본 home.js:712~714 `wheels`가 시/도 ·
  *              시/군/구 **두 열**이다. 1열로 줄이면 구를 고를 길이 없어 적어 둔 구가 사라진다.
- *   준비 현황 · 예산   1열 휠(`OptionWheelSheet`) — 보기는 `wedding-setting-options.ts`
+ *   준비 현황  1열 휠(`OptionWheelSheet`) — 보기는 `wedding-setting-options.ts`
  *   스타일     휠이 아니다 — 다중 선택 시트(`StylePickSheet`). 2026-09-26 대표 지시 「개수제한
  *              없다」로 1~4개를 고르는데, 1열 휠은 하나만 가리킨다.
  *
@@ -136,12 +136,12 @@ export default function WeddingSettingsScreen() {
 
   /**
    * 고친 항목 하나만 보낸다. 예식일 · 지역은 계약이 늘 요구하므로 지금 값을 그대로 돌려보내고
-   * (지우지 않는다), 예산 · 준비 현황은 키를 안 보내면 서버가 건드리지 않는다.
+   * (지우지 않는다), 준비 현황 · 스타일은 키를 안 보내면 서버가 건드리지 않는다. 예산은 이 화면이
+   * 다루지 않으므로 키를 한 번도 보내지 않는다 — 서버에 적힌 값이 그대로 남는다.
    */
   function save(patch: {
     weddingDate?: string | null;
     region?: string | null;
-    budgetBracket?: WeddingBudgetBracket;
     preparedCategories?: PreparedCategory[];
     styleTags?: WeddingStyle[];
   }) {
@@ -155,7 +155,6 @@ export default function WeddingSettingsScreen() {
         completeSetup({
           weddingDate: next.weddingDate,
           region: next.region,
-          ...(patch.budgetBracket !== undefined && { budgetBracket: patch.budgetBracket }),
           ...(patch.preparedCategories !== undefined && {
             preparedCategories: patch.preparedCategories,
           }),
@@ -207,11 +206,6 @@ export default function WeddingSettingsScreen() {
           <SettingRow label={S.date} value={dateValue} onPress={() => setSheet('date')} />
           <SettingRow label={S.region} value={current.region ?? UNDECIDED_LABEL} onPress={() => setSheet('region')} />
           <SettingRow label={S.prepared} value={preparedValue} onPress={() => setSheet('prepared')} />
-          <SettingRow
-            label={S.budget}
-            value={current.budgetBracket ? BUDGET_BRACKET_LABEL[current.budgetBracket] : S.none}
-            onPress={() => setSheet('budget')}
-          />
           <SettingRow label={S.style} value={styleValue} last onPress={() => setSheet('style')} />
         </View>
       </Section>
@@ -257,19 +251,6 @@ export default function WeddingSettingsScreen() {
         onDismiss={() => setSheet(null)}
       />
 
-      <OptionWheelSheet
-        visible={sheet === 'budget'}
-        title={S.budgetTitle}
-        accessibilityLabel={S.budget}
-        options={BUDGET_OPTIONS}
-        value={current.budgetBracket}
-        onConfirm={(bracket) => {
-          setSheet(null);
-          save({ budgetBracket: bracket });
-        }}
-        onDismiss={() => setSheet(null)}
-      />
-
       {/*
         스타일 — 휠이 아니라 다중 선택 시트(2026-09-26 대표 지시 「개수제한 없다」 · 최소 1).
         1열 휠은 하나만 가리켜 여럿을 못 고른다 — 같은 공용 바텀시트에 온보딩 5/5 보기를 둔다.
@@ -292,7 +273,6 @@ export default function WeddingSettingsScreen() {
 
 /** 휠 보기 — 온보딩 답 그대로(`wedding-setting-options.ts`). 화면이 그릴 때마다 새로 만들지 않는다. */
 const PREP_OPTIONS = prepOptions();
-const BUDGET_OPTIONS = budgetOptions();
 
 /** 4-3 정본: 작은 라벨 위에 현재 값을 놓는 64px 2단 행. */
 function SettingRow({

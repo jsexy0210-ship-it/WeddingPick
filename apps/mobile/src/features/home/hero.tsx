@@ -1,5 +1,5 @@
-import type { AppBootstrapResponse, CurrentUser } from '@weddingpick/api-contract';
-import { formatCount, formatDday, manwon } from '@weddingpick/domain';
+import type { CurrentUser, RegionWeather } from '@weddingpick/api-contract';
+import { formatDday, lifecycle } from '@weddingpick/domain';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import {
@@ -14,6 +14,12 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import { HOME_PAGE_X } from '@/features/home/home-layout';
+import { WeatherIcon } from '@/features/home/weather-icon';
+import { HERO_WEATHER_PALETTE, heroWeatherTone, observedHourLabel } from '@/features/home/hero-weather';
+import { HeroWeatherBackground } from '@/features/home/hero-weather-motion';
+import strings from '../../../../../spec/strings.ko.json';
+
+const S = strings.home;
 
 /**
  * 홈 코랄 D-day 히어로.
@@ -21,35 +27,36 @@ import { HOME_PAGE_X } from '@/features/home/home-layout';
  * 정본 `docs/design/React_Native/home.jsx` frame-012 WP-HOME-001 · frame-013
  * WP-HOME-002 · frame-014 WP-HOME-003의 `hero`(값은 `home.js` `hero*` · `dday` ·
  * `couple*` · `av1`/`av2`). 홈에서 예산은 별도 「예산현황」으로 내려갔기 때문에 이
- * 카드에는 D-day · 예식 정보 · 함께 준비하는 사람만 남긴다.
+ * 카드에는 D-day · 예식일 · 배우자 연결 · 날씨만 남긴다.
  *
- * 예식 정보 줄(`heroDate`)은 정본 세 상태를 그대로 따른다.
- * - 웨딩홀 계약 완료(001): 「2027년 1월 15일 (금) · 서울 그랜드 워커힐」 + 「계약 완료」 배지
- * - 장소 미정 · 진행 있음(003): 「2027년 1월 15일 (금) · 장소는 아직이에요」
- * - 장소 미정 · 아무것도 안 정함(002): 「예식일만 정했어요 · 장소는 아직이에요」
+ * 2026-09-26 대표 지시 셋이 정본 위에 얹혀 있다(정본에 없는 자리 — DESIGN_UNRESOLVED):
+ * 1. 「웨딩홀 정보 삭제 / 배우자 초대 현황에 대한 정보로 대체한다」 — `heroDate`의 예식장 이름 ·
+ *    「장소는 아직이에요」 · 「계약 완료」 배지를 지우고 예식일만 남긴다. 연결 현황은 정본
+ *    `coupleRow`(WP-HOME-001) 모양으로 세 상태 모두 그린다: 연결됨(두 사람 이름) · 초대 보냄 ·
+ *    아직 초대 안 함. 누르면 연결관리(`/wedding/partner?from=home`)로 간다.
+ * 2. 「히어로 카드 영역 우측 빈 영역에 날씨 정보를 넣는다」 + 「날씨 반응형 홈 히어로」 명세 —
+ *    D-day 줄 오른쪽에 아이콘 · 기온 · 「지역 · 날씨」 · 「14시 기준」(관측 시각). 값이 있으면 카드
+ *    면이 날씨 팔레트(`hero-weather.ts`)로 서서히 바뀌고 비 · 맑은 낮에는 은은한 모션이 돈다
+ *    (`hero-weather-motion.tsx`). 값이 없으면(키 없음 · 지역 없음 · 「그 외」 · 수집 전 · 조회
+ *    실패) 날씨 자리를 그리지 않고 정본 코랄 히어로 그대로다. 코랄은 날씨 면에서 배경이 아니라
+ *    날씨 아이콘 포인트로만 쓴다(명세 「버튼·아이콘의 포인트 색으로」).
+ * 3. 「두근두근 영역 기존 라이프 사이클 정보로 변경한다」 — `heroKicker`는 정본 예시 「두근두근」
+ *    대신 도메인 `lifecycle()`의 남은 기간별 문구(설레는 시작 · 영차영차 · 마지막 준비 …)다.
+ *    6906ad2c 이전 홈 히어로가 쓰던 것 그대로이고, 20be467f가 「두근두근」 고정으로 바꿨다.
  */
 export type HeroProps = {
   me: CurrentUser | null;
   daysLeft: number | null;
-  venueName: string | null;
-  /** 내 웨딩 준비 4칸이 모두 미정인가(WP-HOME-002). */
-  nothingDecided?: boolean;
-  budget: AppBootstrapResponse['budget'];
-  bracketAnswered: boolean;
   partnerInvitePending: boolean;
-  /** 이전 호출부 호환용. 최신 홈에서는 false다. */
-  showBudget?: boolean;
+  /** 사용자 지역 오늘 날씨. null이면 날씨 자리를 그리지 않는다. */
+  weather?: RegionWeather | null;
   onPressDate: () => void;
-  onPressVenue: () => void;
-  onPressBudget: () => void;
   onPressPartner: () => void;
 };
 
 /* home.js `hero*` — 코랄 면 위의 흰 글자 · 흰 면은 투명도로만 단계를 준다. */
 const ON_TINT_KICKER = 'rgba(255,255,255,0.55)';
 const ON_TINT_DATE = 'rgba(255,255,255,0.70)';
-const ON_TINT_BADGE_TEXT = 'rgba(255,255,255,0.85)';
-const ON_TINT_BADGE = 'rgba(255,255,255,0.16)';
 const ON_TINT_MORE = 'rgba(255,255,255,0.15)';
 const ON_TINT_DECOR = 'rgba(255,255,255,0.08)';
 const ON_TINT_AVATAR_BORDER = 'rgba(255,255,255,0.5)';
@@ -57,134 +64,171 @@ const ON_TINT_AVATAR_BORDER = 'rgba(255,255,255,0.5)';
 const AVATAR_ME = { background: '#f7d2c4', text: '#513b37' };
 const AVATAR_PARTNER = { background: '#c9daec', text: '#31475d' };
 
+export type PartnerStatus = 'linked' | 'invited' | 'none';
+
+export function partnerStatus(me: CurrentUser | null, invitePending: boolean): PartnerStatus {
+  if (me?.spouseLinked === true) return 'linked';
+  return invitePending ? 'invited' : 'none';
+}
+
+/** 연결 현황 한 줄. 연결됨은 정본 `coupleText` 「지윤 · 준혁 · 함께 준비 중」 꼴이다. */
+export function partnerLine(me: CurrentUser | null, invitePending: boolean): string {
+  const status = partnerStatus(me, invitePending);
+  if (status === 'linked') {
+    return S['hero.partnerLinked']
+      .replace('{a}', me?.displayName ?? S['hero.partnerDefault'])
+      .replace('{b}', me?.partnerDisplayName ?? S['hero.partnerDefault']);
+  }
+  return status === 'invited' ? S['hero.partnerInvited'] : S['hero.partnerNone'];
+}
+
+/** 「18°」 · 「서울 · 맑음」 · 「14시 기준」 — 마지막 줄은 관측 시각이다(예보가 아니다). */
+export function weatherLines(weather: RegionWeather): { temperature: string; line: string; observed: string | null } {
+  const hour = observedHourLabel(weather.observedAt);
+  return {
+    temperature: S['weather.temperature'].replace('{n}', String(weather.temperature)),
+    line: S['weather.line']
+      .replace('{region}', weather.region)
+      .replace('{condition}', S[`weather.${weather.condition}`]),
+    observed: hour === null ? null : S['weather.observed'].replace('{hour}', hour),
+  };
+}
+
 export function Hero({
   me,
   daysLeft,
-  venueName,
-  nothingDecided = false,
   partnerInvitePending,
+  weather = null,
   onPressDate,
-  onPressVenue,
   onPressPartner,
 }: HeroProps) {
   const theme = useTheme();
   const date = me?.weddingDate ?? null;
-  const partner = me?.spouseLinked ? (me.partnerDisplayName ?? '배우자') : null;
-  const meName = me?.displayName ?? '우리';
+  const status = partnerStatus(me, partnerInvitePending);
+  const meName = me?.displayName ?? '';
+  const weatherText = weather === null ? null : weatherLines(weather);
+  const tone = heroWeatherTone(weather);
+  const palette = tone === null ? null : HERO_WEATHER_PALETTE[tone];
+  /* 날씨 면이면 명세 팔레트, 아니면 정본 코랄 면의 흰 글자(`hero*`). */
+  const bigText = { color: palette?.text ?? theme.onTint };
+  const subText = (fallback: string) => ({ color: palette?.sub ?? fallback });
 
   return (
     <View style={[styles.hero, { backgroundColor: theme.tint }]}>
-      <View style={styles.decor} />
+      {tone === null ? <View style={styles.decor} /> : <HeroWeatherBackground tone={tone} />}
 
-      <View style={[styles.top, partner === null && styles.topKickerOnly]}>
-        <ThemedText type="f9" style={styles.kicker}>
-          두근두근
+      <View style={[styles.top, status !== 'linked' && styles.topKickerOnly]}>
+        <ThemedText type="f9" style={[styles.kicker, subText(ON_TINT_KICKER)]}>
+          {lifecycle(date).mood}
         </ThemedText>
         {/* 정본 세 상태 중 `heroMore`는 두 사람이 함께 준비 중인 WP-HOME-001에만 있다. */}
-        {partner !== null ? (
-          <View style={styles.more}>
-            <SeedIcon name="moreHorizRegular" size={Layout.iconSmall} color={theme.onTint} />
+        {status === 'linked' ? (
+          <View style={[styles.more, palette !== null && { backgroundColor: palette.chip }]}>
+            <SeedIcon name="moreHorizRegular" size={Layout.iconSmall} color={bigText.color} />
           </View>
         ) : null}
       </View>
 
-      {daysLeft === null ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="예식일 정하기"
-          onPress={onPressDate}
-          style={({ pressed }) => pressed && styles.pressed}>
-          <ThemedText type="f24" themeColor="onTint" style={styles.bold}>
-            예식일을 정해볼까요?
-          </ThemedText>
-        </Pressable>
-      ) : (
-        <ThemedText type="f46" numeric themeColor="onTint" style={styles.dday}>
-          {formatDday(daysLeft)}
-        </ThemedText>
-      )}
+      <View style={styles.main}>
+        <View style={styles.mainText}>
+          {daysLeft === null ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="예식일 정하기"
+              onPress={onPressDate}
+              style={({ pressed }) => pressed && styles.pressed}>
+              <ThemedText type="f24" style={[styles.bold, bigText]}>
+                예식일을 정해볼까요?
+              </ThemedText>
+            </Pressable>
+          ) : (
+            <ThemedText type="f46" numeric style={[styles.dday, bigText]}>
+              {formatDday(daysLeft)}
+            </ThemedText>
+          )}
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={venueName === null ? '웨딩홀 정하기' : '예식 정보'}
-        onPress={venueName === null ? onPressVenue : onPressDate}
-        style={({ pressed }) => [styles.ceremony, pressed && styles.pressed]}>
-        <ThemedText type="f12" numberOfLines={1} style={styles.ceremonyText}>
-          {ceremonyLine(date, venueName, nothingDecided)}
-        </ThemedText>
-        {venueName !== null && date !== null ? (
-          <View style={styles.venueBadge}>
-            <ThemedText type="f10" style={styles.venueBadgeText}>계약 완료</ThemedText>
+          {date !== null ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="예식일"
+              onPress={onPressDate}
+              style={({ pressed }) => [styles.ceremony, pressed && styles.pressed]}>
+              <ThemedText type="f12" numberOfLines={1} style={[styles.ceremonyText, subText(ON_TINT_DATE)]}>
+                {formatWeddingDate(date)}
+              </ThemedText>
+            </Pressable>
+          ) : null}
+        </View>
+
+        {weather !== null && weatherText !== null ? (
+          <View
+            style={styles.weather}
+            accessible
+            accessibilityLabel={[weatherText.line, weatherText.temperature, weatherText.observed].filter(Boolean).join(' ')}>
+            <View style={styles.weatherTop}>
+              <WeatherIcon
+                condition={weather.condition}
+                night={tone === 'clearNight'}
+                size={Layout.iconRow}
+                color={theme.tint}
+              />
+              <ThemedText type="f20" numeric style={[styles.bold, bigText]}>
+                {weatherText.temperature}
+              </ThemedText>
+            </View>
+            <ThemedText type="f10" numberOfLines={1} style={[styles.weatherLine, subText(ON_TINT_DATE)]}>
+              {weatherText.line}
+            </ThemedText>
+            {weatherText.observed !== null ? (
+              <ThemedText type="f10" numberOfLines={1} style={[styles.weatherLine, subText(ON_TINT_DATE)]}>
+                {weatherText.observed}
+              </ThemedText>
+            ) : null}
           </View>
         ) : null}
-      </Pressable>
+      </View>
 
       {/*
-        `coupleRow`는 WP-HOME-001(함께 준비 중)에만 있고 WP-HOME-002 · 003에는 없다 — 연결 전
-        「초대해보세요」 줄은 정본에 없는 진입점이라 그리지 않는다(초대는 웨딩노트 · MY에서 한다).
+        배우자 연결 현황 — 정본 `coupleRow`(WP-HOME-001) 모양. 연결 전 두 상태(초대 보냄 · 아직
+        초대 안 함)는 2026-09-26 대표 지시로 더한 자리라 정본 문구가 없어, 앱에 이미 있던 문구를
+        쓴다(`spec/strings.ko.json` `home.hero.partner*`). 둘째 아바타는 연결됐을 때만 선다.
+        로그인 전(회원 정보 없음)에는 그리지 않는다.
       */}
-      {partner !== null ? (
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="함께 준비하기"
-        disabled
-        onPress={onPressPartner}
-        style={({ pressed }) => [styles.people, pressed && styles.pressed]}>
-        <View style={styles.avatars}>
-          <View style={[styles.avatar, { backgroundColor: AVATAR_ME.background }]}>
-            <ThemedText type="f7" style={[styles.avatarText, { color: AVATAR_ME.text }]}>
-              {meName.slice(0, 1)}
-            </ThemedText>
+      {me !== null ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={S['hero.partnerLabel']}
+          onPress={onPressPartner}
+          style={({ pressed }) => [styles.people, pressed && styles.pressed]}>
+          <View style={[styles.avatars, status !== 'linked' && styles.avatarsSolo]}>
+            <View style={[styles.avatar, { backgroundColor: AVATAR_ME.background }]}>
+              <ThemedText type="f7" style={[styles.avatarText, { color: AVATAR_ME.text }]}>
+                {meName.slice(0, 1)}
+              </ThemedText>
+            </View>
+            {status === 'linked' ? (
+              <View style={[styles.avatar, styles.avatarSecond, { backgroundColor: AVATAR_PARTNER.background }]}>
+                <ThemedText type="f7" style={[styles.avatarText, { color: AVATAR_PARTNER.text }]}>
+                  {(me.partnerDisplayName ?? S['hero.partnerDefault']).slice(0, 1)}
+                </ThemedText>
+              </View>
+            ) : null}
           </View>
-          <View style={[styles.avatar, styles.avatarSecond, { backgroundColor: AVATAR_PARTNER.background }]}>
-            <ThemedText type="f7" style={[styles.avatarText, { color: AVATAR_PARTNER.text }]}>
-              {(partner ?? '함').slice(0, 1)}
-            </ThemedText>
-          </View>
-        </View>
-        <ThemedText type="f10" numberOfLines={1} style={styles.peopleText}>
-          {`${meName} · ${partner} · 함께 준비 중`}
-        </ThemedText>
-      </Pressable>
+          <ThemedText type="f10" numberOfLines={1} style={[styles.peopleText, subText(ON_TINT_KICKER)]}>
+            {partnerLine(me, partnerInvitePending)}
+          </ThemedText>
+        </Pressable>
       ) : null}
     </View>
   );
 }
 
-/** home.js WP-HOME-001~003 `heroDate` 문구. */
-export function ceremonyLine(
-  weddingDate: string | null,
-  venueName: string | null,
-  nothingDecided = false,
-): string {
-  if (weddingDate === null) return '예식일 · 예식장 미정';
-  if (venueName !== null) return `${formatWeddingDate(weddingDate)} · ${venueName}`;
-  if (nothingDecided) return '예식일만 정했어요 · 장소는 아직이에요';
-  return `${formatWeddingDate(weddingDate)} · 장소는 아직이에요`;
-}
-
 /** 정본 히어로 날짜 표기 「2027년 1월 15일 (금)」. 저장된 달력 날짜 자체로 요일을 계산한다. */
-function formatWeddingDate(iso: string): string {
+export function formatWeddingDate(iso: string): string {
   const [year, month, day] = iso.split('-').map(Number);
   if (!year || !month || !day) return iso;
   const weekday = ['일', '월', '화', '수', '목', '금', '토'][new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
   return `${year}년 ${month}월 ${day}일 (${weekday})`;
-}
-
-export function budgetLine(
-  budget: AppBootstrapResponse['budget'],
-  bracketAnswered: boolean
-): string {
-  if (budget === null) return bracketAnswered ? '예산 금액을 정하면 여기에 보여요' : '예산을 정해볼까요?';
-  const used = budget.total === 0 ? 0 : Math.round((budget.spent / budget.total) * 100);
-  if (budget.remaining < 0) return `예산을 넘었어요 · ${formatCount(used)}% 사용`;
-  return `남은 예산 ${manwon(budget.remaining)} · ${formatCount(used)}% 사용`;
-}
-
-export function partnerLine(me: CurrentUser | null, invitePending: boolean): string {
-  if (me?.spouseLinked === true) return '함께 준비 중';
-  if (invitePending) return '초대 수락을 기다리고 있어요';
-  return '함께 준비할 사람을 초대해보세요';
 }
 
 /* home.js `hero` 계열 값 그대로. 주석의 이름은 정본 스타일 키다. */
@@ -230,7 +274,14 @@ const styles = StyleSheet.create({
   /* `dday` — 46/46 · 700 · 자간 -.03em. */
   dday: { fontWeight: 700, letterSpacing: LetterSpacing.n138 },
   bold: { fontWeight: 700 },
-  /* `heroDate` — 위 4 · 12/17 · 흰색 70% · 배지와 6. */
+  /* D-day · 예식일(왼쪽)과 날씨(오른쪽 빈 자리). 날씨가 없으면 왼쪽이 전부다. */
+  main: { flexDirection: 'row', alignItems: 'center', gap: Layout.inlineGap },
+  mainText: { flex: 1, minWidth: 0 },
+  /* 날씨 — 정본 밖(DESIGN_UNRESOLVED). 오른쪽 정렬 · 아이콘 20 + 기온 20/700 · 아래 10/14 흰색 70%. */
+  weather: { alignItems: 'flex-end', gap: 2, flexShrink: 0 },
+  weatherTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  weatherLine: { lineHeight: LineHeight.lh14, color: ON_TINT_DATE },
+  /* `heroDate` — 위 4 · 12/17 · 흰색 70%. */
   ceremony: {
     marginTop: Spacing.one,
     alignSelf: 'flex-start',
@@ -239,18 +290,6 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   ceremonyText: { flexShrink: 1, lineHeight: LineHeight.lh17, color: ON_TINT_DATE },
-  /*
-   * `heroVenueBadge` — 높이 18 · 좌우 6 · radius 4 · 흰색 16% · 글자 10/600 흰색 85%.
-   * 세로는 못박지 않고 최소 높이로 둔다(badge-box.test — 줄 15 < 18이라 그림은 같다).
-   */
-  venueBadge: {
-    minHeight: 18,
-    paddingHorizontal: 6,
-    borderRadius: 4,
-    justifyContent: 'center',
-    backgroundColor: ON_TINT_BADGE,
-  },
-  venueBadgeText: { fontWeight: 600, color: ON_TINT_BADGE_TEXT },
   /* `coupleRow` — 위 12 · gap 6. */
   people: {
     flexDirection: 'row',
@@ -275,6 +314,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarSecond: { marginLeft: -4 },
+  /* 연결 전에는 아바타가 하나다. */
+  avatarsSolo: { width: Layout.avatarMini },
   avatarText: { fontWeight: 700 },
   /* `coupleText` — 10/14 · 흰색 55%. */
   peopleText: { flex: 1, lineHeight: LineHeight.lh14, color: ON_TINT_KICKER },

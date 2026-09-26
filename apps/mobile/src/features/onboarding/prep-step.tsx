@@ -7,7 +7,9 @@ import {
   PREP_CARDS,
   choosePrepManual,
   choosePrepVendor,
+  PREP_NONE_LABEL,
   clearPrepCard,
+  isPrepCardNone,
   isPrepCardSelected,
   prepVendorOf,
   type Answers,
@@ -26,7 +28,10 @@ import { PrepVendorSheet } from './prep-vendor-sheet';
  *
  * **카드를 누르면 켜고 끄지 않고 시트를 연다.** 시트에서 업체를 고르면 카드가 켜지고
  * (업종 전부 «결정 완료») 부제 자리에 업체 이름이 선다. «아직 정한 곳이 없어요»는
- * 카드를 지금의 미정 상태(꺼짐)로 돌리고 업체도 지운다. X · 딤은 아무것도 바꾸지 않는다.
+ * 카드를 지금의 미정 상태(꺼짐)로 돌리고 업체도 지운다 — 그리고 부제 자리에 같은 말
+ * «아직 정한 곳이 없어요»가 서서 고른 것을 보여준다(2026-09-26 대표 지시. 정본 3/5 구역에
+ * 이 상태 그림이 없어 시트 단추 문구를 그대로 쓴다 — DESIGN_UNRESOLVED). 다시 업체를 고르면
+ * 그 표시는 빠지고 업체 이름이 선다. X · 딤은 아무것도 바꾸지 않는다.
  *
  * 고른 업체는 온보딩 «완료»에서 설정과 **같은 요청**으로 서버에 가고, 서버가 같은
  * 트랜잭션에서 Pick(`vendor_candidates`)에 담고 그 업종의 결정으로 남긴다
@@ -57,7 +62,7 @@ export function PrepStep({
               role="checkbox"
               variant="prep"
               label={one.name}
-              description={vendor?.name ?? one.description}
+              description={vendor?.name ?? (isPrepCardNone(value, one) ? PREP_NONE_LABEL : one.description)}
               selected={isPrepCardSelected(one, categories)}
               onPress={() => {
                 setCard(one);

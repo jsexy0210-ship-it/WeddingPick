@@ -2,6 +2,8 @@ import { FONT_COMMON, fontFaceRules } from '@weddingpick/domain';
 import { ScrollViewStyleReset } from 'expo-router/html';
 import type { PropsWithChildren } from 'react';
 
+import { Colors, FontSize, Fonts, Layout, LineHeight, Motion, Spacing } from '@weddingpick/ui';
+
 import {
   APP_WEB_ORIGIN,
   SHARE_DESCRIPTION,
@@ -9,6 +11,7 @@ import {
   SHARE_IMAGE_ALT,
   SHARE_TITLE,
 } from '../features/social-meta';
+import { AUTH_RETURN_STATIC_ID, SIGNING_IN_MESSAGE } from '../features/auth/signing-in-view';
 
 /*
  * 웹으로 내보낸 앱(그리고 관리자 콘솔)의 HTML 껍데기.
@@ -49,6 +52,43 @@ import {
 const FONT_DIR = '/fonts';
 const FONT_FACE = fontFaceRules(FONT_DIR);
 
+/**
+ * **카카오에서 돌아온 새 페이지의 첫 HTML**(2026-09-26 대표 지시 — 「스플래시 → 카카오 로그인 →
+ * 로더가 두 번 돈다. 로더 써클만 돌도록 통합한다」).
+ *
+ * 정적 내보내기의 첫 HTML은 부팅 화면인 **코랄 스플래시**다(`app/_layout.tsx` — 서버와 브라우저의
+ * 첫 렌더가 같아야 해서 주소를 못 읽는다). 그래서 카카오 동의를 마치고 돌아온 사람은 코랄
+ * 스플래시를 한 번 더 보고, 그 뒤에야 «로그인하는 중»(원형 고리)을 봤다 — 앱이 다시 켜지는 것처럼
+ * 보이고 기다림 화면이 두 번 섰다.
+ *
+ * 여기서는 React 밖에서 주소만 보고(`code` · `error`) 같은 모양의 판을 먼저 세운다 — 흰 바탕 ·
+ * 원형 고리 40(테두리 3 · 900ms · 700ms 뒤에 나타남) · 그 아래 문구 한 줄. 값은 전부 토큰에서 온다.
+ * React가 같은 화면(`SigningInView`)을 세우면 이 판을 걷는다. 고리 각도와 700ms는 같은 시계
+ * (페이지가 열린 순간 = 0)로 맞춰, 판이 갈아 끼워져도 고리가 다시 서지 않는다.
+ *
+ * 관리자 주소와 인증 팝업 창(`window.opener`)에는 세우지 않는다 — 그 둘은 이 화면을 그리지 않는다.
+ */
+const AUTH_RETURN_SCRIPT = `(function(){try{var p=new URLSearchParams(location.search);`
+  + `if(!(p.has('code')||p.has('error'))||window.opener||/^\\/admin(\\/|$)/.test(location.pathname))return;`
+  + `var d=document.documentElement,t=performance.now();d.setAttribute('data-wp-auth-return','');`
+  + `d.style.setProperty('--wp-ar-spin',(-(t%${Motion.loaderCircleSpin}))+'ms');`
+  + `d.style.setProperty('--wp-ar-show',Math.max(0,${Motion.loaderThreshold}-t)+'ms');}catch(e){}})();`;
+
+const AUTH_RETURN_STYLE = [
+  `#${AUTH_RETURN_STATIC_ID}{display:none}`,
+  `html[data-wp-auth-return] #${AUTH_RETURN_STATIC_ID}{position:fixed;top:0;right:0;bottom:0;left:0;z-index:2147483000;`
+    + `display:flex;flex-direction:column;align-items:center;justify-content:center;gap:${Spacing.three}px;`
+    + `background:${Colors.light.background}}`,
+  `#${AUTH_RETURN_STATIC_ID} .wp-ar-circle{box-sizing:border-box;width:40px;height:40px;border-radius:999px;`
+    + `border:${Layout.loaderCircleStrokeLarge}px solid ${Colors.light.line};border-top-color:${Colors.light.tint};`
+    + `animation:wpSpin ${Motion.loaderCircleSpin}ms linear var(--wp-ar-spin,0ms) infinite,`
+    + `wpArShow 1ms linear var(--wp-ar-show,${Motion.loaderThreshold}ms) both}`,
+  `#${AUTH_RETURN_STATIC_ID} .wp-ar-msg{font-family:${Fonts.sans ?? 'sans-serif'};font-size:${FontSize.t7}px;`
+    + `line-height:${LineHeight.t7}px;font-weight:400;color:${Colors.light.textAssistive}}`,
+  '@keyframes wpSpin{to{transform:rotate(360deg)}}',
+  '@keyframes wpArShow{from{opacity:0}to{opacity:1}}',
+].join('');
+
 export default function Root({ children }: PropsWithChildren) {
   return (
     <html lang="ko">
@@ -84,9 +124,17 @@ export default function Root({ children }: PropsWithChildren) {
           crossOrigin=""
         />
         <style id="weddingpick-font" dangerouslySetInnerHTML={{ __html: FONT_FACE }} />
+        <style id="weddingpick-auth-return" dangerouslySetInnerHTML={{ __html: AUTH_RETURN_STYLE }} />
+        <script dangerouslySetInnerHTML={{ __html: AUTH_RETURN_SCRIPT }} />
         <ScrollViewStyleReset />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <div id={AUTH_RETURN_STATIC_ID} role="progressbar" aria-label={SIGNING_IN_MESSAGE}>
+          <span className="wp-ar-circle" />
+          <span className="wp-ar-msg">{SIGNING_IN_MESSAGE}</span>
+        </div>
+      </body>
     </html>
   );
 }

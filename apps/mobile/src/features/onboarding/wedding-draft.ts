@@ -10,7 +10,7 @@ import {
   type WeddingStyle,
 } from '@weddingpick/domain';
 
-import { PREP_CARDS, manualPrepName, type Answers, type PreparedCategory, type PrepVendors } from './flow';
+import { PREP_CARDS, manualPrepName, type Answers, type PrepCard, type PreparedCategory, type PrepVendors } from './flow';
 
 const STORAGE_KEY = 'weddingpick.weddingDraft.v1';
 const ANSWERS_KEY = 'weddingpick.onboardingAnswers.v1';
@@ -209,8 +209,20 @@ function readPrepAnswer(value: unknown): Answers['prep'] {
   if (categories === undefined) return null;
 
   const vendors = readPrepVendors((value as { vendors?: unknown }).vendors);
+  const none = readPrepNone((value as { none?: unknown }).none);
 
-  return Object.keys(vendors).length > 0 ? { categories, vendors } : { categories };
+  return {
+    categories,
+    ...(Object.keys(vendors).length > 0 ? { vendors } : {}),
+    ...(none.length > 0 ? { none } : {}),
+  };
+}
+
+/** «아직 정한 곳이 없어요»를 고른 카드(2026-09-26) — 카드 키만, 카드 순서대로 남긴다. 옛 초안에는 없다. */
+function readPrepNone(value: unknown): PrepCard['key'][] {
+  if (!Array.isArray(value)) return [];
+
+  return PREP_CARDS.filter((card) => value.includes(card.key)).map((card) => card.key);
 }
 
 function readPrepVendors(value: unknown): PrepVendors {

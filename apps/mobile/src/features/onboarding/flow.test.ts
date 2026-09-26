@@ -16,6 +16,7 @@ import {
   choosePrepManual,
   choosePrepVendor,
   clearPrepCard,
+  isPrepCardNone,
   ddayLabel,
   doneRows,
   isPrepCardSelected,
@@ -270,10 +271,27 @@ describe('준비 현황 카드 → 업체 검색 시트 (2026-09-26 대표 지�
     expect(cleared.categories).toEqual(['studio', 'dress', 'makeup', 'hair']);
     expect(prepVendorOf(cleared, hall)).toBeNull();
     expect(preparedVendorIds(cleared)).toEqual(['v-studio']);
+    expect(isPrepCardNone(cleared, hall)).toBe(true);
+    expect(isPrepCardNone(cleared, sdm)).toBe(false);
 
-    // 업체 없이 켜 둔 적 없는 카드에서 눌러도 미정 그대로 — 보낼 업체가 없다.
-    expect(clearPrepCard(null, hall)).toEqual({ categories: [] });
+    // 업체 없이 켜 둔 적 없는 카드에서 눌러도 미정 그대로 — 보낼 업체가 없다. «정한 곳 없음»만 적힌다.
+    expect(clearPrepCard(null, hall)).toEqual({ categories: [], none: ['hall'] });
     expect(preparedVendorIds(clearPrepCard(null, hall))).toEqual([]);
+    expect(preparedChoicesPayload(clearPrepCard(null, hall))).toEqual({});
+  });
+
+  it('«정한 곳 없음» 뒤에 다시 업체를 고르면 그 표시가 빠지고 저장에는 그 업체만 간다', () => {
+    const none = clearPrepCard(clearPrepCard(null, hall), sdm);
+    const again = choosePrepVendor(none, hall, hallVendor);
+
+    expect(isPrepCardNone(again, hall)).toBe(false);
+    expect(isPrepCardNone(again, sdm)).toBe(true);
+    expect(again.none).toEqual(['sdm']);
+    expect(preparedChoicesPayload(again)).toEqual({ preparedVendorIds: ['v-hall'] });
+
+    const manual = choosePrepManual(none, sdm, '청담 스튜디오');
+    expect(isPrepCardNone(manual, sdm)).toBe(false);
+    expect(manual.none).toEqual(['hall']);
   });
 
   it('카드가 꺼져 있으면 남은 업체를 보내지 않는다', () => {

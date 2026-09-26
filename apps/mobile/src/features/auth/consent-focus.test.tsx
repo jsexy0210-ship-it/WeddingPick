@@ -25,11 +25,13 @@ jest.mock('@/api/client', () => ({
 }));
 jest.mock('@/features/navigation/depth-back', () => ({ dismissToOrReplace: jest.fn() }));
 jest.mock('@/features/auth/terms-detail-modal', () => ({ TermsDetailModal: 'TermsDetailModal' }));
-jest.mock('@/features/loading/delayed-loader', () => ({ DelayedLoader: 'DelayedLoader' }));
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaView: 'SafeAreaView',
   useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
 }));
+/* 로그인 · 온보딩 사이의 원형 고리 화면(2026-09-26) — 이 시험은 화면 흐름만 본다. */
+jest.mock('@/features/auth/signing-in-view', () => ({ SigningInView: 'SigningInView', SigningInOverlay: () => null }));
+jest.mock('@/features/loading/auth-progress', () => ({ beginAuthProgress: jest.fn() }));
 jest.mock('@weddingpick/ui', () => ({
   ActionButton: 'ActionButton', ErrorView: 'ErrorView', ProductSymbol: 'ProductSymbol', ThemedText: 'ThemedText', ThemedView: 'ThemedView',
   CanonGray: {}, Layout: {}, LineHeight: {}, MaxContentWidth: 0, Radius: {}, Spacing: {}, ProductSymbolName: {},

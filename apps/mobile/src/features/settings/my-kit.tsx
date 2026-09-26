@@ -433,7 +433,14 @@ export function Row({
         ) : null}
       </View>
       {tail !== undefined && tailBadge ? (
-        <Badge kind={tailBadge}>{tail}</Badge>
+        /*
+         * 꼬리 배지는 행 세로 가운데 — 정본 my.js:254 `rowPlain` align-items:center(my.jsx:153 카카오 행
+         * «연결됨» `badgeVerify`). 공용 배지 상자(`STATUS_BADGE_STYLE`)는 alignSelf flex-start라
+         * 그대로 두면 행 위쪽에 붙는다(2026-09-26 대표 지시 「연결됨 배지 위치 조정하라」).
+         */
+        <Badge kind={tailBadge} style={styles.tailBadge}>
+          {tail}
+        </Badge>
       ) : tail !== undefined ? (
         <ThemedText
           type="f15"
@@ -704,6 +711,7 @@ const styles = StyleSheet.create({
   rowInset: { paddingHorizontal: Spacing.three },
   rowWide: { paddingHorizontal: Layout.listGap },
   rowText: { flex: 1, minWidth: 0, gap: Layout.cardNameGap },
+  tailBadge: { alignSelf: 'center' },
   hr: { height: 1 },
 
   /* 정본 track 44 × 26 · 안쪽 3 · knob 20. */

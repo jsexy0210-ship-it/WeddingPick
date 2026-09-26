@@ -24,10 +24,14 @@ import { createUploadResponseSchema } from './documents';
 import { registerPaymentProofResponseSchema } from './payment-proofs';
 import { inquiryListResponseSchema, inquirySchema } from './inquiries';
 import { myReportListResponseSchema } from './my-reports';
-import { publicHolidayListResponseSchema, weddingForecastResponseSchema } from './public-calendar';
+import {
+  publicHolidayListResponseSchema,
+  regionWeatherResponseSchema,
+  weddingForecastResponseSchema,
+} from './public-calendar';
 import { categoryRecommendationsResponseSchema } from './recommendations';
 import { myMonthlyDrawResponseSchema, myRewardPayoutResponseSchema, myRewardsResponseSchema } from './rewards';
-import { loungeReviewListResponseSchema, reportReasonListResponseSchema, reviewCommentListResponseSchema, reviewListResponseSchema } from './reviews';
+import { loungeReviewListResponseSchema, reportReasonListResponseSchema, reviewCommentListResponseSchema, reviewFormSchema, reviewListResponseSchema } from './reviews';
 import { settingsSchema } from './settings';
 import { signupStateSchema } from './signup';
 import {
@@ -103,6 +107,7 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/weddings/:weddingId/events', weddingEventListResponseSchema],
   ['GET /v1/weddings/:weddingId/forecast', weddingForecastResponseSchema],
   ['GET /v1/public-holidays', publicHolidayListResponseSchema],
+  ['GET /v1/weather/today', regionWeatherResponseSchema],
   ['GET /v1/weddings/:weddingId/expenses', expenseSummaryResponseSchema],
   ['GET /v1/weddings/:weddingId/tasks', weddingTaskListResponseSchema],
   ['GET /v1/vendors/regions', vendorRegionsResponseSchema],
@@ -112,6 +117,7 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/vendors/:vendorId/images', vendorPhotosResponseSchema],
   ['GET /v1/vendors/:vendorId/conditions', conditionStatsSchema],
   ['GET /v1/vendors/:vendorId/reviews', reviewListResponseSchema],
+  ['GET /v1/vendors/:vendorId/review-form', reviewFormSchema],
   ['GET /v1/faq', faqListResponseSchema],
   ['GET /v1/wedding-feed', weddingFeedListResponseSchema],
   ['GET /v1/wedding-feed/:id', weddingFeedDetailSchema],

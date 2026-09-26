@@ -1,11 +1,18 @@
 /**
  * 웨딩노트 — v3.29.1 `docs/design/React_Native/note.jsx` WP-NOTE-001/004/006.
  * 일정 · 상담 · 예산 세 탭과 헤더 추가 액션을 둔다.
- * 항목별 예산은 API buckets에 없으므로 항목별 수정·삭제는 연결하지 않는다.
+ * 업종별 «예산» 값은 없다(2026-09-26 지웠다) — 수정 · 삭제는 업종 줄 아래 지출 건마다 둔다.
  * 예식 뒤 화면은 별도 WeddingCompleteView가 맡는다.
  * 일정 탭의 «할 일» 섹션과 그 추가 시트는 뺐다(2026-09-25 대표 지시 — 정본 note.jsx에는 있다).
  * 할 일 서버 API · DB는 그대로 둔다.
  * 대신 할 일은 타임라인에 예식일에서 역산한 임시 날짜 줄로 선다(2026-09-26 대표 지시 · `note-plan.ts`).
+ *
+ * 2026-09-26 대표 지시 셋:
+ *   - 타임라인 줄(직접 넣은 일정 · 상담 일정 · 할 일 · 임시 날짜 줄)마다 수정 · 삭제 아이콘. 수정은 일정
+ *     추가 시트(`events/new?eventId=` · `?taskId=`)를 값이 채워진 채 열고, 삭제는 OS 확인창(`timeline-delete.ts`)
+ *   - 지출내역 풀팝업을 예산현황 목록에 통합했다 — 업종 줄 아래 그 업종의 지출 건이 서고 건마다 수정 ·
+ *     삭제(`budget-category-list.tsx`). 줄은 서버 세 묶음이 아니라 고른 업종으로 묶는다(`budget-lines.ts`)
+ *   - `/wedding/[id]/expenses/list`는 예산 탭으로 돌려보낸다(저장된 링크 보존)
  */
 import { FullScreenError } from '@/features/errors/full-screen-error';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
@@ -13,6 +20,7 @@ import type {
   ConsultationRecord,
   CurrentUser,
   ExpenseSummaryResponse,
+  MyReport,
   WeddingEvent,
   WeddingForecast,
   WeddingTask,
@@ -55,6 +63,7 @@ import {
   getWeddingForecast,
   listConsultations,
   listDecisions,
+  listMyReports,
   listWeddingEvents,
   listWeddingTasks,
   setBudget,
@@ -66,11 +75,18 @@ import { formatDateDot } from '@/features/common/format-date';
 import { noteMonthDayWeekdayTime } from '@/features/wedding/note-format';
 import { useSession } from '@/features/auth/use-session';
 import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
+import { inStack } from '@/features/navigation/stack-alias';
 import { WeddingCompleteView } from '@/features/wedding/complete-view';
 import { forecastLine } from '@/features/wedding/public-calendar-lines';
 import { buildUpcomingTimelineGroups, type TimelineItem } from '@/features/wedding/timeline-groups';
 import { ConsultUploadPrompt } from '@/features/wedding/consult-upload-prompt';
+import { BudgetCategoryList } from '@/features/wedding/budget-category-list';
+import { budgetCategoryRows } from '@/features/wedding/budget-lines';
+import { pendingProofs } from '@/features/wedding/expense-auto-register';
+import { confirmDeleteExpense } from '@/features/wedding/expense-delete';
+import { ExpenseRowActions } from '@/features/wedding/expense-row-actions';
 import { notePlanEntries } from '@/features/wedding/note-plan';
+import { confirmDeleteTimelineItem, timelineEditHref, type TimelineTarget } from '@/features/wedding/timeline-delete';
 import { TimelinePlanRow } from '@/features/wedding/timeline-plan-row';
 
 import { ourWedding as copy } from '../../../../../../spec/strings.ko.json';
@@ -83,10 +99,6 @@ const TABS: readonly { key: Tab; label: string }[] = [
   { key: 'consult', label: '상담기록' },
   { key: 'budget', label: '예산현황' },
 ];
-/* note.js `bd()` — 항목별 막대 아래 왼쪽 줄. */
-const UNPAID = '아직 안 냈어요';
-/* note.js `spendGoRow` — 예산 카드 맨 아래에서 지출 목록(WP-OUR-014b)으로 간다. */
-const SPEND_LINK = '지출내역';
 const CONSULT_SAVED = '저장됨';
 /* note.js `consults` — 정리가 끝났고 아직 저장하지 않은 기록. */
 const CONSULT_DONE = '정리 완료';
@@ -95,8 +107,6 @@ const ADD_LABEL: Record<Tab, string> = { calendar: '일정 추가', budget: '예
 const DECIDED_LINK = '예약현황';
 const PAST_EVENTS_SHOW = '보기';
 const PAST_EVENTS_HIDE = '접기';
-
-const BAR_HEIGHT = 6;
 
 function parseTab(value: string | undefined): Tab | null {
   return value === 'calendar' || value === 'consult' || value === 'budget' ? value : null;
@@ -114,8 +124,15 @@ export default function WeddingScreen({
   const { state, refresh } = useSession();
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [events, setEvents] = useState<WeddingEvent[] | null>(null);
-  /* 웨딩일정 탭의 임시 날짜 줄(2026-09-26 대표 지시) — 읽기만 한다. 못 읽으면 기본 열셋으로 대신한다. */
-  const [tasks, setTasks] = useState<WeddingTask[]>([]);
+  /*
+   * 웨딩일정 탭의 임시 날짜 줄(2026-09-26 대표 지시). null은 아직 못 읽은 것 — 그때만 기본 열셋으로
+   * 대신한다. 읽었는데 비었으면 사용자가 다 지운 것이라 기본 줄을 되살리지 않는다.
+   */
+  const [tasks, setTasks] = useState<WeddingTask[] | null>(null);
+  /* 예산 추가 «자동 등록»으로 올렸는데 아직 못 읽은 Pick 인증 — 예산 목록 맨 위 «확인 중» 줄. */
+  const [pending, setPending] = useState<MyReport[]>([]);
+  /* 지우는 중 — 그동안 다른 줄의 아이콘도 잠근다(두 번 눌러 두 번 지우지 않게). */
+  const [deleting, setDeleting] = useState(false);
   const [expenses, setExpenses] = useState<ExpenseSummaryResponse | null>(null);
   const [expensesError, setExpensesError] = useState(false);
   const [consults, setConsults] = useState<ConsultationRecord[] | null>(null);
@@ -162,6 +179,8 @@ export default function WeddingScreen({
           });
         void listConsultations(weddingId).then((r) => { if (active) setConsults(r.records); }).catch(failed);
         void listDecisions(weddingId).then((r) => { if (active) setDecidedCount(r.decisions.length); }).catch(failed);
+        // «확인 중» 줄은 보조다 — 못 읽으면 그 줄만 빠진다(지출 목록은 그대로).
+        void listMyReports().then((r) => { if (active) setPending(pendingProofs(r.reports)); }).catch(() => undefined);
         // 예보는 보조 줄이다 — 못 받으면 줄을 그리지 않을 뿐 화면을 막지 않는다.
         void getWeddingForecast(weddingId).then((r) => { if (active) setForecast(r.forecast); }).catch(() => undefined);
       })
@@ -262,7 +281,7 @@ export default function WeddingScreen({
         <SafeAreaView style={styles.safeArea} edges={['top']}>
           <EmptyNoteView
             expenses={expenses}
-            onConfirmDate={() => router.push('/my/wedding-settings' as never)}
+            onConfirmDate={() => router.push(inStack('/wedding', '/my/wedding-settings') as never)}
             refreshControl={pull.refreshControl}
           />
         </SafeAreaView>
@@ -277,6 +296,47 @@ export default function WeddingScreen({
       router.push(`/wedding/${weddingId}/events/new` as never);
     } else if (tab === 'budget') router.push(`/wedding/${weddingId}/expenses/add` as never);
     else router.push(`/wedding/${weddingId}/consultations/upload` as never);
+  }
+
+  /* 타임라인 줄 · 예산 목록 건의 수정 · 삭제(2026-09-26 대표 지시). 지운 뒤에는 목록을 다시 읽는다. */
+  function editTimeline(target: TimelineTarget, date?: string) {
+    if (!weddingId) return;
+    router.push(timelineEditHref(weddingId, target, date) as never);
+  }
+
+  function deleteTimeline(target: TimelineTarget) {
+    if (!weddingId || deleting) return;
+    confirmDeleteTimelineItem({
+      weddingId,
+      target,
+      onStart: () => setDeleting(true),
+      onDeleted: () => {
+        setToast(copy['event.deleted']);
+        load(true);
+      },
+      onError: setToast,
+      onSettled: () => setDeleting(false),
+    });
+  }
+
+  function editExpense(expenseId: string) {
+    if (!weddingId) return;
+    router.push(`/wedding/${weddingId}/expenses/add?expenseId=${expenseId}` as never);
+  }
+
+  function deleteExpense(expense: ExpenseSummaryResponse['expenses'][number]) {
+    if (!weddingId || deleting) return;
+    confirmDeleteExpense({
+      weddingId,
+      expense,
+      onStart: () => setDeleting(true),
+      onDeleted: () => {
+        setToast(copy['expense.deleted']);
+        load(true);
+      },
+      onError: setToast,
+      onSettled: () => setDeleting(false),
+    });
   }
 
   const budgetManwon = Number(budgetDraft.replace(/[^\d]/g, ''));
@@ -398,17 +458,22 @@ export default function WeddingScreen({
               weddingDate={me?.weddingDate ?? null}
               decidedCount={decidedCount}
               forecast={forecast}
+              busy={deleting}
+              onEdit={editTimeline}
+              onDelete={deleteTimeline}
               onOpenDecided={() => (weddingId ? router.push(`/wedding/${weddingId}/decided` as never) : null)}
             />
           ) : tab === 'budget' ? (
             <BudgetPanel
               expenses={expenses}
               error={expensesError}
+              pending={pending}
+              busy={deleting}
               onEditBudget={openBudgetEditor}
               onRetry={retryExpenses}
-              onOpenSpend={() =>
-                weddingId ? router.push(`/wedding/${weddingId}/expenses/list` as never) : null
-              }
+              onEditExpense={(expense) => editExpense(expense.id)}
+              onDeleteExpense={deleteExpense}
+              onMessage={setToast}
             />
           ) : (
             <ConsultPanel
@@ -557,13 +622,19 @@ function CalendarPanel({
   weddingDate,
   decidedCount,
   forecast,
+  busy,
+  onEdit,
+  onDelete,
   onOpenDecided,
 }: {
   events: WeddingEvent[];
-  tasks: WeddingTask[];
+  tasks: WeddingTask[] | null;
   weddingDate: string | null;
   decidedCount: number | null;
   forecast: WeddingForecast | null;
+  busy: boolean;
+  onEdit: (target: TimelineTarget, date?: string) => void;
+  onDelete: (target: TimelineTarget) => void;
   onOpenDecided: () => void;
 }) {
   const theme = useTheme();
@@ -640,10 +711,20 @@ function CalendarPanel({
         </Pressable>
       ) : null}
 
-      {showPast && past.length > 0 ? <TimelineGroupView title="지난 일정" range="" items={past.map((event) => ({ event, kind: 'event' as const }))} dimmed /> : null}
+      {showPast && past.length > 0 ? (
+        <TimelineGroupView
+          title="지난 일정"
+          range=""
+          items={past.map((event) => ({ event, kind: 'event' as const }))}
+          dimmed
+          busy={busy}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
+      ) : null}
 
       {upcomingGroups.map((group) => (
-        <TimelineGroupView key={group.title} {...group} />
+        <TimelineGroupView key={group.title} {...group} busy={busy} onEdit={onEdit} onDelete={onDelete} />
       ))}
 
     </View>
@@ -655,11 +736,17 @@ function TimelineGroupView({
   range,
   items,
   dimmed = false,
+  busy,
+  onEdit,
+  onDelete,
 }: {
   title: string;
   range: string;
   items: TimelineItem[];
   dimmed?: boolean;
+  busy: boolean;
+  onEdit: (target: TimelineTarget, date?: string) => void;
+  onDelete: (target: TimelineTarget) => void;
 }) {
   const theme = useTheme();
   return (
@@ -695,7 +782,16 @@ function TimelineGroupView({
         }
 
         if (item.kind === 'plan') {
-          return <TimelinePlanRow key={`plan-${item.id}`} plan={item} />;
+          return (
+            <TimelinePlanRow
+              key={`plan-${item.id}`}
+              plan={item}
+              busy={busy}
+              /* 임시 날짜 줄은 그 날짜를 채워 연다 — 저장하면 진짜 날짜가 된다. */
+              onEdit={(plan) => onEdit({ kind: 'task', id: plan.id, title: plan.title }, plan.date)}
+              onDelete={(plan) => onDelete({ kind: 'task', id: plan.id, title: plan.title })}
+            />
+          );
         }
 
         const event = item.event;
@@ -706,23 +802,39 @@ function TimelineGroupView({
               <View style={[styles.timelineDot, { backgroundColor: done ? theme.track : theme.tint }]} />
               <View style={[styles.timelineLine, { backgroundColor: theme.border }]} />
             </View>
-            {/* 일정 상세(WP-OUR-005)는 2026-09-25 삭제 — 행은 보기만 한다. */}
-            <View style={[styles.eventRow, { backgroundColor: done ? theme.backgroundElement : theme.backgroundSelected }]}>
-              <ThemedText type="f12" themeColor="textAssistive" numeric style={styles.bold}>
-                {noteMonthDayWeekdayTime(event.startsAt)}
-              </ThemedText>
-              <ThemedText
-                type="f15"
-                numberOfLines={1}
-                themeColor={done ? 'textAssistive' : undefined}
-                style={[styles.bold, done ? styles.strike : null]}>
-                {event.title}
-              </ThemedText>
-              {event.memo ? (
-                <ThemedText type="f13" themeColor="textSecondary" numberOfLines={1}>
-                  {event.memo}
+            {/*
+              * 일정 상세(WP-OUR-005)는 2026-09-25 삭제 — 줄 자체는 누르지 않는다. 대신 오른쪽 수정 · 삭제
+              * 아이콘(2026-09-26 대표 지시 · 지출 줄과 같은 `ExpenseRowActions`). 직접 넣은 일정과 상담 일정
+              * 둘 다 같은 `wedding_events` 행이라 같은 PATCH · DELETE를 쓴다. 정본 `tlItem`에 아이콘은 없다 —
+              * `DESIGN_UNRESOLVED`.
+              */}
+            <View style={[styles.eventRow, styles.eventRowActions, { backgroundColor: done ? theme.backgroundElement : theme.backgroundSelected }]}>
+              <View style={styles.eventText}>
+                <ThemedText type="f12" themeColor="textAssistive" numeric style={styles.bold}>
+                  {noteMonthDayWeekdayTime(event.startsAt)}
                 </ThemedText>
-              ) : null}
+                <ThemedText
+                  type="f15"
+                  numberOfLines={1}
+                  themeColor={done ? 'textAssistive' : undefined}
+                  style={[styles.bold, done ? styles.strike : null]}>
+                  {event.title}
+                </ThemedText>
+                {event.memo ? (
+                  <ThemedText type="f13" themeColor="textSecondary" numberOfLines={1}>
+                    {event.memo}
+                  </ThemedText>
+                ) : null}
+              </View>
+              <View style={styles.eventActions}>
+                <ExpenseRowActions
+                  label={event.title}
+                  disabled={busy}
+                  testIDPrefix="timeline-row"
+                  onEdit={() => onEdit({ kind: 'event', id: event.id, title: event.title })}
+                  onDelete={() => onDelete({ kind: 'event', id: event.id, title: event.title })}
+                />
+              </View>
             </View>
           </View>
         );
@@ -737,15 +849,23 @@ function TimelineGroupView({
 function BudgetPanel({
   expenses,
   error,
+  pending,
+  busy,
   onEditBudget,
   onRetry,
-  onOpenSpend,
+  onEditExpense,
+  onDeleteExpense,
+  onMessage,
 }: {
   expenses: ExpenseSummaryResponse | null;
   error: boolean;
+  pending: MyReport[];
+  busy: boolean;
   onEditBudget: () => void;
   onRetry: () => void;
-  onOpenSpend: () => void;
+  onEditExpense: (expense: ExpenseSummaryResponse['expenses'][number]) => void;
+  onDeleteExpense: (expense: ExpenseSummaryResponse['expenses'][number]) => void;
+  onMessage: (message: string) => void;
 }) {
   const theme = useTheme();
 
@@ -773,7 +893,7 @@ function BudgetPanel({
   const spent = set?.spent ?? expenses?.paidTotal ?? 0;
   const percentage = total > 0 ? Math.round((spent / total) * 100) : 0;
   const progress = Math.max(0, Math.min(100, percentage));
-  const buckets = expenses?.buckets ?? [];
+  const rows = budgetCategoryRows(expenses);
 
   return (
     <View style={[styles.panel, { backgroundColor: theme.background, borderColor: theme.border }]}>
@@ -820,47 +940,19 @@ function BudgetPanel({
       )}
 
       <View style={[styles.divider, { backgroundColor: theme.border }]} />
-      {buckets.map((bucket) => {
-        const pct = Math.min(100, Math.round(bucket.ratio * 100));
-        const full = pct >= 100;
-        return (
-          <View key={bucket.bucket} style={styles.bucketRow}>
-            <View style={styles.bucketHead}>
-              <ThemedText type="f15" numberOfLines={1} style={[styles.bold, styles.grow]}>
-                {bucket.label}
-              </ThemedText>
-              <ThemedText type="f13" themeColor="textAssistive" numeric>
-                {manwon(bucket.amount)}
-              </ThemedText>
-            </View>
-            <View style={[styles.bar, { backgroundColor: theme.backgroundSelected }]}>
-              {/* 정본 `bd()` — 다 쓴(100%) 항목만 코랄, 나머지는 옅은 코랄(`#ffb3ab` → 차트 2계열 토큰). */}
-              <View style={[styles.barFill, { width: `${pct}%`, backgroundColor: full ? theme.tint : theme.chartSeries2 }]} />
-            </View>
-            <View style={styles.bucketFoot}>
-              <ThemedText type="f12" themeColor="textAssistive" numeric>
-                {bucket.amount > 0 ? `${manwon(bucket.amount)} 냈어요` : UNPAID}
-              </ThemedText>
-              <ThemedText type="f12" themeColor={full ? 'tint' : 'textAssistive'} numeric style={styles.bold}>
-                {`${pct}%`}
-              </ThemedText>
-            </View>
-          </View>
-        );
-      })}
-
-      <View style={[styles.divider, { backgroundColor: theme.border }]} />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={SPEND_LINK}
-        onPress={onOpenSpend}
-        style={({ pressed }) => [styles.spendLink, pressed ? styles.pressed : null]}>
-        <ThemedText type="f14" style={styles.bold}>
-          {SPEND_LINK}
-        </ThemedText>
-        <ProductSymbol name="chevronRight" size={Layout.iconInline} color={theme.textAssistive} />
-      </Pressable>
-
+      {/*
+        * 업종 목록 = 예전 지출내역(2026-09-26 대표 지시 「지출내역을 예산현황 목록과 통/폐합한다」).
+        * 정본 `spendGoRow` «지출내역 ›»는 그 풀팝업과 함께 지웠다.
+        */}
+      <BudgetCategoryList
+        rows={rows}
+        pending={pending}
+        busy={busy}
+        onEdit={onEditExpense}
+        onDelete={onDeleteExpense}
+        onLocked={(expense) => onMessage(copy['expense.lockedSource'].replace('{source}', expense.sourceLabel))}
+        onPending={(proof) => onMessage(proof.note ?? copy['expense.autoPendingNote'])}
+      />
     </View>
   );
 }
@@ -1101,6 +1193,10 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     gap: 3,
   },
+  /* 일정 줄 — 글자 칸과 오른쪽 수정 · 삭제 아이콘(`timeline-plan-row.tsx`와 같은 자리). */
+  eventRowActions: { flexDirection: 'row', alignItems: 'center', gap: 0 },
+  eventText: { flex: 1, minWidth: 0, gap: 3 },
+  eventActions: { marginRight: -15, marginVertical: -Spacing.two },
   /* note.js `tlItem(…'wed')` — `box-shadow:inset 0 0 0 1.5px P`. */
   weddingRow: { borderWidth: 1.5 },
 
@@ -1119,23 +1215,6 @@ const styles = StyleSheet.create({
   budgetSummaryNote: { marginTop: Spacing.two },
   /* note.js `divider` — `margin:20px 0;height:1px;background:BORDER`. */
   divider: { marginVertical: Layout.listGap, height: Border.hairline },
-  /* note.js `bRow` — `flex-direction:column;gap:6px;padding-bottom:16px`. */
-  bucketRow: { gap: Layout.menuGroupGap, paddingBottom: Spacing.three },
-  /* note.js `bTop` — `gap:8px`. */
-  bucketHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  /* note.js `trackSm` — 6px · pill · SEC. */
-  bar: { height: BAR_HEIGHT, borderRadius: Radius.pill, overflow: 'hidden' },
-  barFill: { height: '100%', borderRadius: Radius.pill },
-  /* note.js `bFoot` — `align-items:baseline;justify-content:space-between`. */
-  bucketFoot: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
-  /* note.js `spendGoRow` — 최소 높이 44 · 양끝 정렬 · 14/700. 선은 위 `divider`. */
-  spendLink: {
-    minHeight: Layout.touchTarget,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Layout.inlineGap,
-  },
 
   // ── 상담기록 ──
   /* note.js `cListHead` — `gap:3px`. */

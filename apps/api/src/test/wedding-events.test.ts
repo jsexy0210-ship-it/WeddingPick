@@ -262,4 +262,73 @@ describeWithDb('일정', () => {
 
     expect((await events(stranger.headers, weddingId)).statusCode).toBe(403);
   });
+
+  /* 웨딩노트 타임라인의 수정 · 삭제 아이콘(2026-09-26) — 남의 일정은 고치지도 지우지도 못한다. */
+  it('남의 웨딩 일정은 고치지도 지우지도 못한다', async () => {
+    const { headers, weddingId } = await mine();
+    const created = await test.app.inject({
+      method: 'POST',
+      url: `/v1/weddings/${weddingId}/events`,
+      headers,
+      payload: { title: '리엔헤어메이크업 상담', startsAt: at(30) },
+    });
+    const eventId = created.json<{ eventId: string }>().eventId;
+    const stranger = await signInAs(test, 'apple-stranger');
+
+    const patched = await test.app.inject({
+      method: 'PATCH',
+      url: `/v1/weddings/${weddingId}/events/${eventId}`,
+      headers: stranger.headers,
+      payload: { title: '바꿔치기' },
+    });
+    const removed = await test.app.inject({
+      method: 'DELETE',
+      url: `/v1/weddings/${weddingId}/events/${eventId}`,
+      headers: stranger.headers,
+    });
+
+    expect(patched.statusCode).toBe(403);
+    expect(removed.statusCode).toBe(403);
+
+    /* 자기 웨딩 id로 남의 일정을 가리켜도 404 — 일정은 웨딩에 매달려 있다. */
+    const strangerWedding = await createWedding(test, stranger.headers);
+    const crossed = await test.app.inject({
+      method: 'DELETE',
+      url: `/v1/weddings/${strangerWedding}/events/${eventId}`,
+      headers: stranger.headers,
+    });
+
+    expect(crossed.statusCode).toBe(404);
+
+    const body = (await events(headers, weddingId)).json<{ events: { title: string }[] }>();
+
+    expect(body.events.map((row) => row.title)).toEqual(['리엔헤어메이크업 상담']);
+  });
+
+  it('제목 · 시각 · 알림을 한 번에 고친다', async () => {
+    const { headers, weddingId } = await mine();
+    const created = await test.app.inject({
+      method: 'POST',
+      url: `/v1/weddings/${weddingId}/events`,
+      headers,
+      payload: { title: '드레스 피팅', startsAt: at(24), notifyEnabled: true },
+    });
+    const eventId = created.json<{ eventId: string }>().eventId;
+    const next = at(96);
+
+    const patched = await test.app.inject({
+      method: 'PATCH',
+      url: `/v1/weddings/${weddingId}/events/${eventId}`,
+      headers,
+      payload: { title: '드레스 피팅 2차', startsAt: next, notifyEnabled: false },
+    });
+
+    expect(patched.statusCode).toBe(200);
+
+    const row = (await events(headers, weddingId)).json<{
+      events: { id: string; title: string; startsAt: string; notifyEnabled: boolean }[];
+    }>().events.find((event) => event.id === eventId)!;
+
+    expect(row).toMatchObject({ title: '드레스 피팅 2차', startsAt: next, notifyEnabled: false });
+  });
 });

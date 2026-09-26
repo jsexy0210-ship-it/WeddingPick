@@ -8,7 +8,7 @@ import { DefaultTheme, ThemeProvider, router, usePathname } from 'expo-router';
 import Head from 'expo-router/head';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Platform } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
 import { useTheme } from '@weddingpick/ui';
 import { AppStack } from '@/features/navigation/app-stack';
@@ -21,7 +21,9 @@ import { entryAfterSignIn, rememberSignedIn } from '@/features/auth/finish-sign-
 import { completeAuthPopup, isAuthPopup } from '@/features/auth/is-auth-popup';
 import { completeKakaoRedirect, hasKakaoReturn } from '@/features/auth/providers';
 import { claimSigningInMessageForBoot, setPendingSignInError } from '@/features/auth/sign-in-handoff';
-import { SigningInView } from '@/features/auth/signing-in-view';
+import { SigningInView, removeStaticAuthReturn } from '@/features/auth/signing-in-view';
+import { beginAuthProgress } from '@/features/loading/auth-progress';
+import { listAuthProviders } from '@/api/client';
 import { ConfirmationDialogHost } from '@/components/confirmation-dialog-host';
 import { FullScreenError } from '@/features/errors/full-screen-error';
 import { escapeInAppBrowser } from '@/features/inapp-browser/escape';
@@ -63,6 +65,17 @@ SplashScreen.preventAutoHideAsync();
  * 곳에서 매번 소개가 먼저 떴다.
  */
 type Entry = SessionEntry;
+
+/**
+ * 첫 화면을 정한 뒤, 그 화면에 실제로 닿을 때까지 덮개(스플래시 · 로그인하는 중)를 걷지 않는다 —
+ * 다만 이만큼 지나도 닿지 않으면 걷는다(주소가 예상과 다르게 적힌 경우의 안전판).
+ */
+const COVER_FALLBACK_MS = 1500;
+
+/** 로그인 화면이 곧 부를 제공자 목록을 스플래시 동안 미리 받는다 — 같은 주소는 캐시가 합친다. */
+function prefetchLoginProviders(): void {
+  void listAuthProviders().catch(() => undefined);
+}
 
 const ENTRY_ROUTE = {
   login: '/login',
@@ -160,6 +173,20 @@ function RootLayoutContent({ browserReady }: { browserReady: boolean }) {
    * 없다).
    */
   const [inAppNotice, setInAppNotice] = useState<ReturnType<typeof escapeInAppBrowser>>({ kind: 'none' });
+  /*
+   * 첫 화면에 **닿았는가**(2026-09-26 대표 지시 — 「로더 써클만 돌도록 통합한다」).
+   *
+   * 전에는 첫 화면을 정하자마자 덮개(스플래시 · 로그인하는 중)를 걷고 스택을 그렸다. 스택은
+   * 지금 주소(`/`, 카카오 복귀면 `/setup`)부터 그리고, 옮기는 것은 그 뒤 effect다 — 그래서
+   * 로그인으로 갈 사람에게 **홈 뼈대가 한 번 스쳤고**, 카카오에서 돌아온 사람에게는 빈 온보딩이
+   * 스친 뒤 약관 동의가 섰다(웹 연속 캡처로 확인). 로더가 모양을 바꿔 두 번 선 것으로 보였다.
+   *
+   * 이제 덮개는 옮긴 화면에 닿을 때까지 스택 **위에** 그대로 선다 — 같은 자리 같은 요소라
+   * 스플래시 애니메이션도, 로그인 고리도 다시 시작하지 않는다.
+   */
+  const [landed, setLanded] = useState(false);
+  /** 옮긴 주소 — 이 주소가 되면 닿은 것이다. */
+  const [awaiting, setAwaiting] = useState<string | null>(null);
   const redirected = useRef(false);
   /** 웹 OAuth 복귀에서 pending Pick을 끝낸 뒤 돌아갈 실제 제품 화면. */
   const postSignInRoute = useRef<string | null>(null);
@@ -180,12 +207,21 @@ function RootLayoutContent({ browserReady }: { browserReady: boolean }) {
     const returning = hasKakaoReturn();
 
     if (returning) {
+      /*
+       * «로그인하는 중»의 700ms는 이 페이지가 열린 순간(웹 시계 0)부터 센다 — 첫 HTML이 그린
+       * 같은 판(`+html.tsx`)도 그 시계로 돈다. 그래서 판이 React 화면으로 갈아 끼워져도
+       * 고리가 다시 서지 않는다(2026-09-26 대표 지시 「로더 써클만 돌도록 통합한다」).
+       */
+      beginAuthProgress(0);
       claimSigningInMessageForBoot();
       // eslint-disable-next-line react-hooks/set-state-in-effect -- OAuth query는 hydration 뒤에만 상태로 승격한다
       setSigningIn(true);
       // OAuth 복귀는 스플래시 최소 노출을 다시 기다리지 않는다.
       // eslint-disable-next-line react-hooks/set-state-in-effect -- 같은 bootstrap 전환의 최소 노출 상태다
       setMinimumShown(true);
+    } else {
+      /* 카카오 복귀가 아니면 첫 HTML의 «로그인하는 중» 판은 쓸 일이 없다(원래 숨어 있다). */
+      removeStaticAuthReturn();
     }
 
     // userAgent/window.location도 hydration 뒤에만 읽는다.
@@ -267,10 +303,14 @@ function RootLayoutContent({ browserReady }: { browserReady: boolean }) {
             setPendingSignInError(caught instanceof Error ? caught.message : '로그인하지 못했어요.');
           }
 
+          prefetchLoginProviders();
           return 'login';
         }
 
-        return resolveSessionEntry();
+        const next = await resolveSessionEntry();
+        /* 로그인으로 갈 사람 — 스플래시가 도는 동안 로그인 단추에 쓸 목록을 받아 둔다. */
+        if (next === 'login') prefetchLoginProviders();
+        return next;
       })();
 
       boot.current = { attempt: entryAttempt, promise };
@@ -330,6 +370,8 @@ function RootLayoutContent({ browserReady }: { browserReady: boolean }) {
 
     if (entry !== 'app') {
       router.replace(ENTRY_ROUTE[entry]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 옮긴 주소는 라우터를 부른 이 자리에서만 안다
+      setAwaiting(ENTRY_ROUTE[entry]);
 
       return;
     }
@@ -338,6 +380,7 @@ function RootLayoutContent({ browserReady }: { browserReady: boolean }) {
     if (pendingRoute) {
       postSignInRoute.current = null;
       dismissToOrReplace(pendingRoute);
+      setAwaiting(pendingRoute);
 
       return;
     }
@@ -349,8 +392,29 @@ function RootLayoutContent({ browserReady }: { browserReady: boolean }) {
      */
     if (Platform.OS === 'web' && /^\/(login|setup)(\/|$)/.test(window.location.pathname)) {
       dismissToOrReplace('/');
+      setAwaiting('/');
+
+      return;
     }
+
+    setLanded(true);
   }, [entry, minimumShown, isAdminPath]);
+
+  useEffect(() => {
+    /* 옮긴 화면에 닿았다 — 덮개를 걷는다. 닿지 않아도 `COVER_FALLBACK_MS` 뒤에는 걷는다. */
+    if (landed || awaiting === null) return;
+
+    if (samePath(pathname, awaiting)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 라우터가 주소를 바꾼 뒤에만 알 수 있다
+      setLanded(true);
+
+      return;
+    }
+
+    const timer = setTimeout(() => setLanded(true), COVER_FALLBACK_MS);
+
+    return () => clearTimeout(timer);
+  }, [awaiting, landed, pathname]);
 
   /*
    * 첫 화면을 정할 때까지, 그리고 스플래시를 충분히 보여줄 때까지 덮어둔다.
@@ -363,12 +427,12 @@ function RootLayoutContent({ browserReady }: { browserReady: boolean }) {
     }} />;
   }
 
-  if (!isAdminPath && (!browserReady || entry === null || !minimumShown)) {
-    return signingIn ? <SigningInView /> : <SplashView />;
-  }
+  const stackReady = isAdminPath || (browserReady && entry !== null && minimumShown);
+  /* 덮개 — 첫 화면을 정할 때까지 + 옮긴 화면에 닿을 때까지. 관리자는 덮지 않는다. */
+  const covering = !isAdminPath && (!stackReady || (!landed && !samePath(pathname, awaiting)));
 
   /* 항상 라이트 — 기기 다크 모드를 따르지 않는다(packages/ui use-color-scheme 참고). */
-  return (
+  const stack = stackReady ? (
     <ThemeProvider value={navigationTheme}>
       {/*
         웹 문서 제목. `+html.tsx`의 <title>보다 Expo Router의 head(`<title data-rh>`)가 앞에 찍혀서
@@ -405,8 +469,38 @@ function RootLayoutContent({ browserReady }: { browserReady: boolean }) {
       <HomeHandoffHost />
       <ResultToastHost />
     </ThemeProvider>
+  ) : null;
+
+  /*
+   * 덮개는 늘 **둘째 자리**에 선다 — 스택이 그 밑(첫째 자리)에 붙어도 덮개 요소가 그대로라
+   * 스플래시 애니메이션 · 로그인 고리가 다시 시작하지 않는다.
+   */
+  return (
+    <View style={rootStyles.root}>
+      {stack}
+      {covering ? (
+        <View style={StyleSheet.absoluteFill}>{signingIn ? <SigningInView /> : <SplashView />}</View>
+      ) : null}
+    </View>
   );
 }
+
+/** 주소가 같은가 — 라우터가 돌려주는 경로는 풀린 글자라 옮길 때 적은 인코딩을 풀어 견준다. */
+function samePath(pathname: string, target: string | null): boolean {
+  if (target === null) return false;
+  let decoded = target;
+  try {
+    decoded = decodeURIComponent(target);
+  } catch {
+    /* 잘못 적힌 인코딩이면 적힌 그대로 견준다. */
+  }
+
+  return pathname === target || pathname === decoded;
+}
+
+const rootStyles = StyleSheet.create({
+  root: { flex: 1 },
+});
 
 /**
  * 앱 전체의 오류 경계. expo-router가 이 이름의 export를 찾아 쓴다.

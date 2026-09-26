@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { NavigationContext } from 'expo-router/build/react-navigation/core';
+import { NavigationContext, NavigationRouteContext } from 'expo-router/build/react-navigation/core';
 
 import {
   FontSize,
@@ -35,6 +35,9 @@ import {
 } from '@weddingpick/ui';
 
 import { KeyboardAvoid } from './keyboard-avoid';
+import { stackTransitionFor } from '@/features/navigation/stack-routes';
+
+import { useBrowserBackClose } from './sheet-browser-back';
 
 export type BottomSheetProps = {
   visible: boolean;
@@ -45,6 +48,16 @@ export type BottomSheetProps = {
    * 일정 · 지출)는 취소 버튼으로만 닫는다 — 실수로 딤을 눌러 쓰던 내용을 잃지 않게.
    */
   dismissible?: boolean;
+  /**
+   * 웹 브라우저 뒤로가기도 시트만 닫는다(`sheet-browser-back.ts`). **기본으로 켜져 있다**(2026-09-26 대표
+   * 「진행해」 — 모든 상태형 시트). 시트형 «라우트»(일정 추가 등 — `stack-motion.ts`의 `sheet`)가 처음부터
+   * 띄운 자기 시트는 저절로 빠진다 — 뒤로가기가 이미 라우트째 닫으므로 켜면 한 칸이 겹친다. 그 라우트
+   * 안에서 나중에 여는 시트(날짜 휠 등)는 켜진다. 닫을 수 없는 시트(`dismissible=false`)는 뒤로가기에도
+   * 닫히지 않는다 — 화면째 떠나지도 않는다. 끄려면 false. 시트형 라우트의 자기 시트라도 `true`를 주면 켠다
+   * (뒤로가기가 라우트째 닫지 않고 `onRequestClose` — 입력 중 확인 — 를 먼저 타게 할 때. 확인창에서
+   * «계속 쓰기»로 남으면 칸을 저절로 다시 쥔다 — `useBrowserBackClose`).
+   */
+  closeOnBrowserBack?: boolean;
   children: ReactNode;
   /** 패널 컨테이너에 얹는 스타일. 배경·둥글기·패딩은 호출하는 쪽이 정한다. */
   style?: StyleProp<ViewStyle>;
@@ -94,6 +107,7 @@ export function BottomSheet({
   visible,
   onRequestClose,
   dismissible = true,
+  closeOnBrowserBack,
   children,
   style,
   testID,
@@ -105,6 +119,14 @@ export function BottomSheet({
   useEffect(() => {
     visibleRef.current = visible;
   }, [visible]);
+  /*
+   * 웹 — 열린 동안 브라우저 뒤로가기가 시트만 닫는다(`closeOnBrowserBack`). 시트형 라우트가 처음부터 띄운
+   * 자기 시트(마운트 때 이미 visible)는 라우트의 뒤로가기가 닫으므로 빠진다.
+   */
+  const route = useContext(NavigationRouteContext);
+  const [openedAtMount] = useState(visible);
+  const routeOwnSheet = openedAtMount && route != null && stackTransitionFor(route.name) === 'sheet';
+  useBrowserBackClose(visible && (closeOnBrowserBack ?? !routeOwnSheet), onRequestClose, { sticky: !dismissible });
 
   const [mounted, setMounted] = useState(visible);
   const [scrim] = useState(() => new Animated.Value(0));
@@ -478,6 +500,11 @@ export type SheetHeaderProps = {
   closeLabel?: string;
   /** 제목이 업체 이름처럼 길 수 있을 때 줄 수를 묶는다. */
   titleLines?: number;
+  /**
+   * X 왼쪽에 두는 글자 단추 하나(필터 «전체 해제» — 정본 `search.js:505` `resetBtn`). 시트의 보조 동작이
+   * 머리 오른쪽에 있던 자리를 그대로 지키고 X와 한 줄에 선다. Primary CTA가 아니다.
+   */
+  action?: ReactNode;
 };
 
 /**
@@ -496,6 +523,7 @@ export function SheetHeader({
   closeDisabled = false,
   closeLabel = '닫기',
   titleLines,
+  action,
 }: SheetHeaderProps) {
   const theme = useTheme();
   const drag = useContext(SheetDragContext);
@@ -505,6 +533,7 @@ export function SheetHeader({
       <ThemedText type="t4" style={styles.headTitle} accessibilityRole="header" numberOfLines={titleLines}>
         {title}
       </ThemedText>
+      {action}
       {onClose ? (
         <Pressable
           accessibilityRole="button"

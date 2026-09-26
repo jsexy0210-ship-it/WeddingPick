@@ -14,7 +14,15 @@ import { daysUntil, formatDday } from '@weddingpick/domain';
  * (`tentative: true`, 2026-09-26 대표 지시). 정본 `tlGroups`의 「웨딩홀 계약금 입금」 ·
  * 「드레스 투어 3곳 예약하기」처럼 일정 사이에 같은 모양으로 선다. `date`는 `YYYY-MM-DD`.
  */
-export type TimelinePlan = { id: string; date: string; title: string; meta: string; tentative: boolean };
+export type TimelinePlan = {
+  id: string;
+  date: string;
+  title: string;
+  meta: string;
+  tentative: boolean;
+  /** 서버에 할 일 행이 있어 고치고 지울 수 있는가 — 못 읽어 기본 열셋으로 대신 세운 줄은 false. */
+  editable: boolean;
+};
 
 export type TimelineItem =
   | { event: WeddingEvent; kind: 'event' }

@@ -1,5 +1,7 @@
 import { PREPARATION_GROUPS } from '@weddingpick/domain';
 
+import { inStack } from './stack-alias';
+
 /**
  * Depth Back — 화면 계층에서 **한 단계 위**로 가는 fallback 규칙. 앱 전체가 이 파일
  * 하나만 쓴다.
@@ -76,10 +78,18 @@ export const ROUTES: readonly string[] = [
   '/admin/wedding-feed',
   '/community',
   '/community/expo',
+  '/community/expo/[expoId]',
+  '/community/expo/[expoId]/calendar',
   '/community/feed',
   '/community/feed/[id]',
   '/community/review',
   '/community/review/write',
+  '/community/vendor/[vendorId]',
+  '/community/vendor/[vendorId]/fix-report',
+  '/community/vendor/[vendorId]/images',
+  '/community/vendor/[vendorId]/write-review',
+  '/contact',
+  '/contact/[inquiryId]',
   '/feed/[id]',
   /* 배우자 초대 안내 주소 — 화면 없이 /wedding/join으로 보낸다(2026-09-25). */
   '/invite',
@@ -91,14 +101,30 @@ export const ROUTES: readonly string[] = [
   '/my/contact/[inquiryId]',
   '/my/guide',
   '/my/notifications',
+  '/my/partner',
+  '/my/partner/join',
   '/my/privacy-policy',
   '/my/profile',
   '/my/reports',
   '/my/reviews',
   '/my/taste',
+  '/my/vendor/[vendorId]',
+  '/my/vendor/[vendorId]/fix-report',
+  '/my/vendor/[vendorId]/images',
+  '/my/vendor/[vendorId]/write-review',
   '/my/wedding-settings',
   '/my/withdrawal',
+  '/partner',
+  '/partner/join',
+  '/notifications',
   '/pick',
+  '/pick/compare',
+  '/pick/vendor/[vendorId]',
+  '/pick/vendor/[vendorId]/consult',
+  '/pick/vendor/[vendorId]/consult-done',
+  '/pick/vendor/[vendorId]/fix-report',
+  '/pick/vendor/[vendorId]/images',
+  '/pick/vendor/[vendorId]/write-review',
   '/search',
   '/search/[vendorId]',
   '/search/[vendorId]/booking',
@@ -108,6 +134,8 @@ export const ROUTES: readonly string[] = [
   '/search/[vendorId]/images',
   '/search/[vendorId]/write-review',
   '/search/compare',
+  '/search/contact',
+  '/search/contact/[inquiryId]',
   '/search/expo/[expoId]',
   '/search/expo/[expoId]/calendar',
   '/+not-found',
@@ -123,6 +151,12 @@ export const ROUTES: readonly string[] = [
   '/wedding/[id]/consultations/upload',
   '/wedding/join',
   '/wedding/partner',
+  '/wedding/vendor/[vendorId]',
+  '/wedding/vendor/[vendorId]/fix-report',
+  '/wedding/vendor/[vendorId]/images',
+  '/wedding/vendor/[vendorId]/write-review',
+  '/wedding/wedding-settings',
+  '/wedding-settings',
 ];
 
 /** Root 5탭(SPEC §12.2 · 05-root). 여기에는 뒤로가기를 두지 않는다 — 위가 없다. */
@@ -144,6 +178,12 @@ export const TAB_ROOTS: readonly string[] = ['/', '/search', '/pick', '/wedding'
 export const HISTORY_BACK_ROUTES: readonly string[] = [
   '/feed/[id]',
   '/community/feed/[id]',
+  /*
+   * 웨딩노트 지도(`/wedding/[id]/map`) → 업체 상세(웨딩노트 스택 별칭 · `stack-alias.ts`). 지도는 웨딩 id를
+   * 주소에 들고 있어 출처 값으로 되살리기보다 스택의 바로 아래(지도)로 돌아가는 편이 정확하다. 직접
+   * 진입이면 예외표의 `/wedding`으로 간다.
+   */
+  '/wedding/vendor/[vendorId]',
 ];
 
 /**
@@ -180,6 +220,10 @@ export const DEPTH_BACK_EXCEPTIONS: Readonly<Record<string, string>> = {
   '/community/feed': '/',
   '/community/feed/[id]': '/community/feed',
   '/community/review': '/',
+  /* 출처 스택 별칭(`stack-alias.ts`) — 출처(`from`)가 없는 직접 진입의 부모. 계층대로 올라가면 목록이 아닌 탭 뿌리로 간다. */
+  '/community/vendor/[vendorId]': '/community/review',
+  '/my/vendor/[vendorId]': '/my/reviews',
+  '/wedding/vendor/[vendorId]': '/wedding',
   '/search/compare': '/pick',
   // 박람회 목록(`/search/expo`)은 2026-09-25 삭제 — 상세는 라운지 박람회 탭에서 연다.
   // 계층대로 올라가면 `/search/expo`가 업체 상세(`/search/[vendorId]`)로 잘못 잡힌다.
@@ -217,8 +261,26 @@ const ORIGIN_AWARE_ROUTES: readonly string[] = [
   '/search/[vendorId]/booking',
   '/search/[vendorId]/consult',
   '/search/[vendorId]/write-review',
+  /*
+   * 출처 스택 별칭(`stack-alias.ts`) — 같은 화면을 들어온 탭의 스택 안에서 연다. 출처가 같은 스택에
+   * 있으니 Back은 탭을 건너지 않고 스택을 꺼낸다(`stackPopCount`). 출처 값은 켜진 칩(`pick/sdm`) ·
+   * 비교 목록 · 리얼후기 앞의 MY처럼 스택만으로는 모르는 상태를 잇는다.
+   */
+  '/pick/vendor/[vendorId]',
+  '/pick/vendor/[vendorId]/consult',
+  '/community/vendor/[vendorId]',
+  '/my/vendor/[vendorId]',
+  '/my/vendor/[vendorId]/write-review',
   '/wedding/join',
   '/wedding/partner',
+  /*
+   * MY 스택 별칭(2026-09-26 — `features/partner/routes.ts`). 계층대로면 `/my`·`/my/partner`로 가고,
+   * 알림에서 들어온 것만 `from`으로 알림 목록까지 되짚는다.
+   */
+  '/my/partner',
+  '/my/partner/join',
+  /* 홈 하위 스택 별칭 — 알림이 홈 스택에 설 때 `from=notifications`로 들어온다. */
+  '/partner',
 ];
 
 /**
@@ -237,10 +299,15 @@ const ORIGIN_ALIASES: Readonly<Record<string, string>> = {
   reports: '/my/reports',
   /* MY → 내가 쓴 후기(WP-MY-006) → 업체 상세 · 후기 작성. */
   reviews: '/my/reviews',
-  /* MY → 알림 → 배우자 알림 → 연결관리. */
+  /*
+   * 알림 → 배우자 알림 → 연결관리. 원래 주소로 적고 스택 안 주소는 `inStack`이 고른다 — 홈 스택
+   * (`/partner`)이면 `/notifications`, MY 스택(`/my/partner`)이면 `/my/notifications`.
+   */
   notifications: '/my/notifications',
   /* 연결관리 → 초대 수락(WP-CPL-002). */
   partner: '/wedding/partner',
+  /* MY 연결관리(별칭) → 초대 수락. `mypartner.notifications`로 이어 알림 목록까지 돌아간다. */
+  mypartner: '/my/partner',
 };
 
 /** `from` 연결 깊이 한도 — `community.my`처럼 한 번 이어진 것까지만 받는다. */
@@ -426,7 +493,12 @@ function originTarget(route: string, pathname: string): string | null {
   const from = queryValue(pathname, 'from');
   if (!from) return null;
 
-  return resolveOrigin(from);
+  const target = resolveOrigin(from);
+  /*
+   * 출처 화면도 지금 스택 안의 주소로 — Pick 스택의 상담 예약(`/pick/vendor/<업체>/consult`)이 비교
+   * 출처(`compare/…`)로 닫히면 검색 스택의 `/search/compare`가 아니라 Pick 스택의 `/pick/compare`다.
+   */
+  return target ? inStack(pathname, target) : null;
 }
 
 /** `/wedding/partner?x` → `wedding`, `/` → ``. 탭 한 칸(=스택 하나)을 가르는 첫 조각. */

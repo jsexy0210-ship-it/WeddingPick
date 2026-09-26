@@ -965,13 +965,16 @@ export const Layout = {
    * (시안이 적은 값이다 — 실제로 그리는 색은 `tint`라 지금은 `#ff6f61`다).
    * 지름은 순회 로더와 같은 자리 이름(20·28·40)을 쓰고, 두께는 시안의 32:3을
    * 정수 px로 반올림했다(20→2 · 28→3 · 40→4).
+   *
+   * **2026-09-26 — 40은 RN 정본 `common.js:244` `spinBig`(40 · 테두리 3 · 900ms)에 맞췄다.**
+   * 위 핸드오프는 이미 파기된 판이다. 20 · 28은 정본에 수치가 없어 그대로 둔다.
    */
   loaderCircleSmall: 20,
   loaderCircleMedium: 28,
   loaderCircleLarge: 40,
   loaderCircleStrokeSmall: 2,
   loaderCircleStrokeMedium: 3,
-  loaderCircleStrokeLarge: 4,
+  loaderCircleStrokeLarge: 3,
   /**
    * 인라인 토스트 좌우 안여백. component.toast.paddingX.
    *
@@ -1147,9 +1150,10 @@ export const Motion = {
   loaderThreshold: 700,
   /**
    * 기본 로더 · 써클이 한 바퀴 도는 시간. motion.loaderCircleSpin —
-   * 시안의 `animation:wpSpin 800ms linear infinite`와 같다.
+   * RN 정본 `common.js:244` `spinBig`의 `animation:wpSpin 900ms linear infinite`(2026-09-26 —
+   * 옛 핸드오프 800에서 맞췄다).
    */
-  loaderCircleSpin: 800,
+  loaderCircleSpin: 900,
   /** 뼈대 숨쉬기 한 사이클(1 → .45 → 1). motion.skeletonPulse. */
   skeleton: { duration: 1400, minOpacity: 0.45 },
 } as const;

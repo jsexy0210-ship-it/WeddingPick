@@ -31,6 +31,9 @@ jest.mock('./option-row', () => ({ OptionRow: 'OptionRow' }));
 jest.mock('./question-head', () => ({ QuestionHead: 'QuestionHead' }));
 jest.mock('./region-picker-sheet', () => ({ RegionPickerSheet: 'RegionPickerSheet' }));
 jest.mock('./step-frame', () => ({ StepFrame: 'StepFrame' }));
+/* 로그인 · 온보딩 사이의 원형 고리 화면(2026-09-26) — 이 시험은 화면 흐름만 본다. */
+jest.mock('@/features/auth/signing-in-view', () => ({ SigningInView: 'SigningInView', SigningInOverlay: () => null }));
+jest.mock('@/features/loading/auth-progress', () => ({ beginAuthProgress: jest.fn() }));
 jest.mock('@weddingpick/ui', () => ({
   Border: { selected: 1.5 },
   CanonGray: {},

@@ -48,3 +48,37 @@ export async function publishedVersionId(
 
   return rows[0]?.id ?? null;
 }
+
+/**
+ * 여러 동의 항목의 «공개된 판»을 **한 번에** 찾는다(2026-09-26 대표 지시 — 약관 동의 → 온보딩
+ * 대기 감축). 뜻은 항목마다 `publishedVersionId`를 부르는 것과 같다 — 글이 없는 항목과
+ * 공개된 판이 없는 항목은 `null`이다.
+ *
+ * 약관 동의 제출은 여덟 항목을 받는다. 항목마다 따로 물으면 DB 왕복이 여섯 번 더 들고,
+ * 앱은 그동안 온보딩으로 넘어가지 못한다.
+ */
+export async function publishedVersionIds(
+  db: Queryable,
+  items: readonly ConsentItem[]
+): Promise<Map<ConsentItem, string | null>> {
+  const docs = [...new Set(items.map(consentDocKind).filter((doc): doc is NonNullable<typeof doc> => doc !== null))];
+  const byDoc = new Map<string, string>();
+
+  if (docs.length > 0) {
+    const { rows } = await db.query<{ doc: string; id: string }>(
+      `SELECT DISTINCT ON (doc) doc::text AS doc, id
+       FROM structured.terms_versions
+       WHERE doc = ANY($1::terms_doc_kind[]) AND published_at IS NOT NULL
+       ORDER BY doc, published_at DESC`,
+      [docs]
+    );
+
+    for (const row of rows) byDoc.set(row.doc, row.id);
+  }
+
+  return new Map(items.map((item) => {
+    const doc = consentDocKind(item);
+
+    return [item, doc === null ? null : byDoc.get(doc) ?? null];
+  }));
+}

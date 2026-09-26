@@ -99,9 +99,33 @@ async function assertManualExpenseWithinBudget(
  * 기본 열넷을 깔아준다.
  *
  * **처음 목록을 볼 때 한 번만.** 사용자가 지운 항목을 다시 깔면, 지우는 일이
- * 아무 뜻이 없어진다. 그래서 "비어 있으면"이 조건이지 "빠진 것이 있으면"이 아니다.
+ * 아무 뜻이 없어진다. 그래서 "비어 있으면"이 조건이지 "빠진 것이 있으면"이 아니다 —
+ * 그리고 다 지워서 비었을 때도 다시 깔지 않는다(`tasks_seeded_at`).
  */
+/** 칸이 아직 없다(0444를 운영에 올리기 전 — DB 마이그레이션은 배포와 따로 돈다). */
+function isMissingColumn(error: unknown): boolean {
+  return Boolean(error && typeof error === 'object' && (error as { code?: unknown }).code === '42703');
+}
+
 async function seedPresets(pool: Pool, weddingId: string): Promise<void> {
+  /*
+   * «깐 적이 있다»를 웨딩에 적는다(0444 · 2026-09-26). 전에는 «비어 있으면» 깔아서 마지막
+   * 하나까지 지우면 다음에 열 때 열셋이 전부 되살아났다. 표시는 처음 한 번만 선다 — 동시에
+   * 두 요청이 와도 RETURNING을 받는 쪽은 하나다. 칸이 아직 없으면 예전처럼 «비어 있으면»으로 본다.
+   */
+  try {
+    const claimed = await pool.query(
+      `UPDATE structured.weddings SET tasks_seeded_at = now()
+       WHERE id = $1 AND tasks_seeded_at IS NULL
+       RETURNING id`,
+      [weddingId]
+    );
+
+    if (claimed.rows.length === 0) return;
+  } catch (error) {
+    if (!isMissingColumn(error)) throw error;
+  }
+
   const existing = await pool.query('SELECT 1 FROM structured.wedding_tasks WHERE wedding_id = $1', [
     weddingId,
   ]);
@@ -212,6 +236,7 @@ export function registerWeddingPlanRoutes(app: FastifyInstance, context: AppCont
        */
       const { rowCount } = await context.pool.query(
         `UPDATE structured.wedding_tasks SET
+           label = CASE WHEN $11 THEN $12::text ELSE label END,
            due_date = CASE WHEN $3 THEN $4::date ELSE due_date END,
            vendor_id = CASE WHEN $5 THEN $6::uuid ELSE vendor_id END,
            vendor_label = CASE WHEN $7 THEN $8::text ELSE vendor_label END,
@@ -228,6 +253,8 @@ export function registerWeddingPlanRoutes(app: FastifyInstance, context: AppCont
           body.vendorLabel ?? null,
           body.state !== undefined,
           body.state ?? null,
+          body.label !== undefined,
+          body.label ?? null,
         ]
       );
 

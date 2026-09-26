@@ -55,11 +55,14 @@ export function ReviewWriteSheet({
   onClose,
   onSubmitted,
   supportingText = '업체 정보를 보던 화면을 남겨둔 채 작성해요.',
+  closeOnBrowserBack = false,
 }: {
   vendorId: string;
   onClose: () => void;
   onSubmitted?: () => void;
   supportingText?: string;
+  /** 화면의 상태로 열 때(라운지 · 업체 상세) — 웹 뒤로가기가 시트만 닫는다. 라우트로 열면 끈다. */
+  closeOnBrowserBack?: boolean;
 }) {
   const theme = useTheme();
 
@@ -168,7 +171,11 @@ export function ReviewWriteSheet({
   }
 
   return (
-    <BottomSheet visible onRequestClose={requestClose} testID="review-write-sheet">
+    <BottomSheet
+      visible
+      onRequestClose={requestClose}
+      closeOnBrowserBack={closeOnBrowserBack}
+      testID="review-write-sheet">
         <SheetPanel>
           <View style={styles.sheetHead}>
               <SheetHeader title="후기 작성" onClose={requestClose} />

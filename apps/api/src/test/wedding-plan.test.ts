@@ -97,6 +97,106 @@ describeWithDb('우리웨딩', () => {
       expect(second.tasks).toHaveLength(TASK_PRESETS.length - 1);
     });
 
+    /* 웨딩노트 타임라인에서 할 일을 하나씩 다 지워도(2026-09-26) 다음에 열 때 열셋이 되살아나지 않는다. */
+    it('다 지워도 다시 깔지 않는다', async () => {
+      const { headers, weddingId } = await mine();
+      const first = (await tasks(headers, weddingId)).json<{ tasks: { id: string }[] }>();
+
+      for (const task of first.tasks) {
+        const removed = await test.app.inject({
+          method: 'DELETE',
+          url: `/v1/weddings/${weddingId}/tasks/${task.id}`,
+          headers,
+        });
+
+        expect(removed.statusCode).toBe(204);
+      }
+
+      const second = (await tasks(headers, weddingId)).json<{ tasks: unknown[] }>();
+
+      expect(second.tasks).toHaveLength(0);
+    });
+
+    it('0444 전(깐 표시 칸이 없을 때)에도 목록은 열린다 — 예전처럼 비어 있으면 깐다', async () => {
+      const { headers, weddingId } = await mine();
+
+      await test.pool.query('ALTER TABLE structured.weddings DROP COLUMN tasks_seeded_at');
+
+      try {
+        const first = (await tasks(headers, weddingId)).json<{ tasks: unknown[] }>();
+
+        expect(first.tasks).toHaveLength(TASK_PRESETS.length);
+      } finally {
+        await test.pool.query('ALTER TABLE structured.weddings ADD COLUMN tasks_seeded_at timestamptz');
+      }
+    });
+
+    it('이름과 날짜를 함께 고친다 — 임시 날짜 줄을 수정 시트로 저장', async () => {
+      const { headers, weddingId } = await mine();
+      const first = (await tasks(headers, weddingId)).json<{ tasks: { id: string }[] }>();
+      const id = first.tasks[0]!.id;
+
+      const patched = await test.app.inject({
+        method: 'PATCH',
+        url: `/v1/weddings/${weddingId}/tasks/${id}`,
+        headers,
+        payload: { label: '예복 맞춤 2차', dueDate: at(9) },
+      });
+
+      expect(patched.statusCode).toBe(200);
+
+      const row = (await tasks(headers, weddingId))
+        .json<{ tasks: { id: string; label: string; dueDate: string | null }[] }>()
+        .tasks.find((task) => task.id === id)!;
+
+      expect(row).toMatchObject({ label: '예복 맞춤 2차', dueDate: at(9) });
+
+      const blank = await test.app.inject({
+        method: 'PATCH',
+        url: `/v1/weddings/${weddingId}/tasks/${id}`,
+        headers,
+        payload: { label: '   ' },
+      });
+
+      expect(blank.statusCode).toBe(400);
+    });
+
+    it('남의 웨딩 할 일은 고치지도 지우지도 못한다', async () => {
+      const { headers, weddingId } = await mine();
+      const first = (await tasks(headers, weddingId)).json<{ tasks: { id: string; label: string }[] }>();
+      const target = first.tasks[0]!;
+      const stranger = await signInAs(test, 'apple-stranger');
+
+      const patched = await test.app.inject({
+        method: 'PATCH',
+        url: `/v1/weddings/${weddingId}/tasks/${target.id}`,
+        headers: stranger.headers,
+        payload: { label: '바꿔치기' },
+      });
+      const removed = await test.app.inject({
+        method: 'DELETE',
+        url: `/v1/weddings/${weddingId}/tasks/${target.id}`,
+        headers: stranger.headers,
+      });
+
+      expect(patched.statusCode).toBe(403);
+      expect(removed.statusCode).toBe(403);
+
+      const strangerWedding = await createWedding(test, stranger.headers);
+      const crossed = await test.app.inject({
+        method: 'PATCH',
+        url: `/v1/weddings/${strangerWedding}/tasks/${target.id}`,
+        headers: stranger.headers,
+        payload: { label: '바꿔치기' },
+      });
+
+      expect(crossed.statusCode).toBe(404);
+
+      const after = (await tasks(headers, weddingId)).json<{ tasks: { id: string; label: string }[] }>();
+
+      expect(after.tasks.find((task) => task.id === target.id)!.label).toBe(target.label);
+    });
+
     it('날짜를 넣으면 상태가 따라온다', async () => {
       const { headers, weddingId } = await mine();
       const first = (await tasks(headers, weddingId)).json<{ tasks: { id: string }[] }>();

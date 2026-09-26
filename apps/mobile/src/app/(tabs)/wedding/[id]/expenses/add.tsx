@@ -20,12 +20,12 @@ import { showResultToast } from '@/features/navigation/result-toast';
 import { todayDay } from '@/features/wedding/expense-day';
 import { ExpenseAddChooser } from '@/features/wedding/expense-add-chooser';
 import { confirmDeleteExpense } from '@/features/wedding/expense-delete';
+import { formatManWonDigits } from '@/features/onboarding/flow';
 import { Field } from '@/features/wedding/screen-kit';
 import { ActionButton, FilterChip, Spacing, ThemedText, Toast } from '@weddingpick/ui';
 
 import { ourWedding as copy } from '../../../../../../../../spec/strings.ko.json';
 import WeddingScreen from '../../index';
-import ExpenseListScreen from './list';
 
 /**
  * 예산 추가 시트 — WP-NOTE-007 · `docs/design/React_Native/note.jsx` frame-006.
@@ -49,11 +49,18 @@ import ExpenseListScreen from './list';
  *     정본에 한 단추 문구는 없다. 폭(한 개면 꽉 참 · 둘이면 1 : 1.4)은 공용 CTA 줄(`CtaRow`,
  *     my-orders 작업)이 이 `actions` 자리를 감싸 맞춘다 — 여기서 따로 폭을 고치지 않는다
  *
- * 수정 모드(`?expenseId=`) — 지출내역에서 직접 입력한 줄을 누르면 같은 시트가 값이 채워진 채
- * 열린다(2026-09-25 대표 지시 「등록된 예산정보 수정, 삭제 기능이 없다」). 저장은 PATCH, 시트 안
+ * 수정 모드(`?expenseId=`) — 예산현황 목록에서 직접 입력한 건(또는 그 수정 아이콘)을 누르면 같은 시트가
+ * 값이 채워진 채 열린다(2026-09-25 대표 지시 「등록된 예산정보 수정, 삭제 기능이 없다」). 지출내역 풀팝업은
+ * 2026-09-26에 예산현황 목록으로 통합해 지웠다 — 수정 시트 뒤에도 예산 탭이 깔리고 닫으면 그리로 간다. 저장은 PATCH, 시트 안
  * «삭제»는 무엇이 지워지는지 보여준 뒤 한 번 더 묻고 DELETE. 정본 note.jsx에 수정 · 삭제 프레임이
  * 없어 등록 시트를 그대로 쓴다 — `DESIGN_SOURCE_NOT_VERIFIED`. 날짜는 보내지 않아 그대로 남는다.
- * 결제인증 · 상담 정리 줄은 여기 오지 않는다(지출내역이 막는다). 주소로 직접 와도 칸을 잠근다.
+ * 결제인증 · 상담 정리 줄은 여기 오지 않는다(예산 목록이 막는다). 주소로 직접 와도 칸을 잠근다.
+ *
+ * 낸 금액은 **만원 단위**로 받는다(2026-09-26 대표 지시) — 숫자 키패드 · 칸 오른쪽 «만원», 저장할 때
+ * × 10,000(원)으로 바꿔 같은 API로 보낸다. 총예산 시트(웨딩노트 `budgetInputWrap`)와 같은 꼴이다.
+ * 수정 모드는 원래 금액 ÷ 10,000으로 채운다. 만원 아래 끝자리가 있는 금액(예: 1,500,500원 — 옛 원 단위
+ * 입력)은 칸에 만원 몫(150)만 보이고 **칸을 건드리지 않으면 원래 금액 그대로 둔다** — 칸 아래 한 줄에
+ * 실제 저장될 원 금액(«1,500,500원»)을 늘 적어, 고치면 만원 단위로 바뀌는 것을 저장 전에 보이게 한다.
  *
  * 총예산 한도(2026-09-25 대표 지시 「예산 추가는 총예산을 넘을 수 없다」) — 총예산이 있으면
  * 저장 전에 `manualExpenseOverBudget`(서버와 같은 판정)으로 보고, 넘으면 저장하지 않고 OS
@@ -92,9 +99,9 @@ export default function AddExpenseRoute() {
     : isVendorCategory(category)
       ? category
       : null;
-  const initialAmountText = original ? formatAmount(String(original.amount)) : '';
-
   const [amountText, setAmountText] = useState('');
+  /* 수정 모드에서 칸을 건드렸는가 — 안 건드렸으면 만원 아래 끝자리까지 원래 금액을 그대로 둔다. */
+  const [amountTouched, setAmountTouched] = useState(false);
   const [picked, setPicked] = useState<VendorCategory | null>(initialCategory);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -119,7 +126,7 @@ export default function AddExpenseRoute() {
           return;
         }
         setOriginal(row);
-        setAmountText(formatAmount(String(row.amount)));
+        setAmountText(manwonText(row.amount));
         setPicked(isVendorCategory(row.category ?? undefined) ? (row.category as VendorCategory) : null);
       })
       .catch((caught: Error) => {
@@ -133,7 +140,9 @@ export default function AddExpenseRoute() {
   /* 결제인증 · 상담 정리 줄은 금액이 자료에서 왔다 — 고치면 출처가 거짓이 된다. */
   const locked = editing && (original === null || original.source !== 'manual');
 
-  const amount = Number(amountText.replace(/[^\d]/g, ''));
+  const amountManwon = Number(amountText.replace(/[^\d]/g, ''));
+  /* 저장할 원 금액. 수정 모드에서 칸을 안 건드렸으면 원래 금액(만원 아래 끝자리 포함) 그대로. */
+  const amount = editing && original && !amountTouched ? original.amount : amountManwon * 10_000;
   /*
    * 줄 이름 — 업체에서 들어왔으면 그 이름, 아니면 고른 항목 이름. 수정 모드에서 항목을 안
    * 바꿨으면 원래 줄 이름을 그대로 둔다(업체 이름으로 넣은 줄이 업종 이름으로 바뀌지 않게).
@@ -142,17 +151,13 @@ export default function AddExpenseRoute() {
     editing && original && picked === initialCategory
       ? original.label
       : vendorName?.trim() || (picked ? VENDOR_CATEGORY_LABEL[picked] : '');
-  const dirty = amountText !== initialAmountText || picked !== initialCategory;
+  const dirty = (editing ? original !== null && amount !== original.amount : amountText.length > 0) || picked !== initialCategory;
 
   const reason =
     label.length === 0 ? '항목을 골라주세요' : !(amount > 0) ? '낸 금액을 숫자로 적어주세요' : null;
   const ready = reason === null && !locked && (!editing || dirty);
 
   function closeSheet() {
-    if (editing) {
-      dismissToOrReplace(`/wedding/${id}/expenses/list`);
-      return;
-    }
     dismissToOrReplace('/wedding?tab=budget');
   }
 
@@ -242,7 +247,7 @@ export default function AddExpenseRoute() {
 
   return (
     <View style={styles.host}>
-      {editing ? <ExpenseListScreen /> : <WeddingScreen initialTab="budget" suppressBudgetPrompt />}
+      <WeddingScreen initialTab="budget" suppressBudgetPrompt />
 
       <BottomSheet
         visible
@@ -294,12 +299,22 @@ export default function AddExpenseRoute() {
               <Field
                 label="낸 금액"
                 value={amountText}
-                onChangeText={(text) => setAmountText(formatAmount(text))}
+                onChangeText={(text) => {
+                  setAmountTouched(true);
+                  setAmountText(formatManwonInput(text));
+                }}
                 editable={!locked}
-                placeholder="예: 1,500,000"
+                placeholder="예: 150"
                 keyboardType="number-pad"
-                maxLength={15}
-                hint={amount > 0 ? manwon(amount) : null}
+                inputMode="numeric"
+                maxLength={MANWON_MAX_DIGITS + Math.floor((MANWON_MAX_DIGITS - 1) / 3)}
+                accessibilityHint="만원 단위"
+                trailing={
+                  <ThemedText type="t6" themeColor="textSecondary">
+                    만원
+                  </ThemedText>
+                }
+                hint={amount > 0 ? `${amount.toLocaleString('ko-KR')}원` : null}
               />
             </View>
 
@@ -357,12 +372,20 @@ export default function AddExpenseRoute() {
   );
 }
 
-/** 숫자만 남기고 세 자리마다 쉼표. 12자리까지. */
-function formatAmount(text: string): string {
-  return text
-    .replace(/[^0-9]/g, '')
-    .slice(0, 12)
-    .replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+/* 만원 단위 최대 7자리(9,999,999만원) — 온보딩 예산 칸(`BudgetAmount`)과 같은 한도. */
+const MANWON_MAX_DIGITS = 7;
+
+/** 입력 글자에서 숫자만 남겨 만원 칸 글자(«1,500»)로. 0은 빈 칸이다. */
+function formatManwonInput(text: string): string {
+  const digits = text.replace(/[^0-9]/g, '').slice(0, MANWON_MAX_DIGITS);
+  const value = Number(digits);
+  return digits.length === 0 || value <= 0 ? '' : formatManWonDigits(value);
+}
+
+/** 원 금액 → 만원 칸 글자. 만원 아래 끝자리는 버린다(칸을 안 건드리면 원래 금액이 그대로 저장된다). */
+function manwonText(amount: number): string {
+  const value = Math.floor(amount / 10_000);
+  return value > 0 ? formatManWonDigits(value) : '';
 }
 
 const styles = StyleSheet.create({

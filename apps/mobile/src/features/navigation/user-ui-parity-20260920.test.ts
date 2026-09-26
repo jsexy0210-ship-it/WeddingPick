@@ -32,10 +32,12 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(consent).toContain("동의하고 시작하기");
   });
 
-  it('Kakao 복귀는 기본 로더와 진행 문구를 같이 둔다', () => {
+  it('Kakao 복귀는 원형 고리(위)와 진행 문구(아래)를 한 덩어리로 둔다', () => {
+    /* 2026-09-26 대표 지시 「로더 써클만 돌도록 통합한다」 — 숨쉬는 원형 뼈대가 아니라 도는 고리다. */
     const s = mobile('features/auth/signing-in-view.tsx');
-    expect(s).toContain('<DelayedLoader size={40} shape="mark" />');
-    expect(s).toContain('{SIGNING_IN_MESSAGE}');
+    expect(s).toContain('<CircleLoader size={40} />');
+    expect(s).toContain('export const SIGNING_IN_MESSAGE');
+    expect(s).not.toContain('<DelayedLoader');
   });
   it('Android Back도 화면 계층을 따르고 홈에서만 2회 앱 종료를 쓴다', () => {
     /* 탭 레이아웃 한 곳이 정책 훅을 건다. 동작 자체는 hardware-back.test.tsx가 누른다. */
@@ -123,7 +125,8 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     /* 최종 결정 확인 시트는 2026-09-25 대표 결정(안 A)으로 지웠다 — 카드 CTA는 «상담 예약» 하나다. */
     expect(pick).not.toContain("'/pick/confirm'");
     expect(pick).not.toContain('결정하기');
-    expect(pick).toContain("pathname: '/search/compare'");
+    /* 비교(WP-PICK-006)는 Pick 스택 별칭으로 민다(stack-alias.ts). */
+    expect(pick).toContain("router.push(inStack('/pick', `/search/compare?ids=");
     expect(mobile('app/(tabs)/search/compare.tsx')).not.toContain('PickSectionTabs');
 
     const home = mobile('app/(tabs)/index.tsx');

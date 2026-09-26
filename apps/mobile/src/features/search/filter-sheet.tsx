@@ -6,6 +6,7 @@ import {
   WEDDING_STYLE_LABEL,
   WEDDING_STYLES,
 } from '@weddingpick/domain';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import {
@@ -19,7 +20,7 @@ import {
   ThemedText,
   useTheme,
 } from '@weddingpick/ui';
-import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
+import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
 import { SHEET_SORTS } from '@/features/search/sort-panel';
 
 /**
@@ -43,10 +44,16 @@ import { SHEET_SORTS } from '@/features/search/sort-panel';
  * 2026-09-24 RN 정본 대조로 정렬 묶음(`sortSec`)을 시트 맨 아래에 되살렸다 — 결과 위 정렬
  * 칩의 인라인 패널(WP-SRCH-003)과 같은 값을 본다. 예산 묶음 첫 칸 «전체»도 정본대로 둔다.
  *
- * **바텀시트다.** 그래버 → 제목 18 ↔ «전체 해제» 12 코랄 → 묶음(위 선 1 · 제목 14/700 · 칩 12/700)
- * → 정렬 줄 → CTA «{n}개 업체 보기». 제목부터 CTA까지 한 덩어리로 스크롤하고 닫기(X)는 없다
- * (2026-09-25 픽셀 대조 — 정본 `sheet`). 전체 화면이 아니다 — 뒤의 결과가 비쳐 보여야 무엇을
- * 좁히는 중인지 알 수 있다.
+ * **공통 바텀시트다**(2026-09-26 대표 지시 「검색 -> 필터도 공통 바텀시트 UX 적용한다」). 그래버 →
+ * 공통 머리(`SheetHeader` — 타이틀 «필터» + «전체 해제» 12 코랄 + 우측 X, 끌어 닫기 손잡이) → 묶음
+ * (위 선 1 · 제목 14/700 · 칩 12/700) → 정렬 줄 → CTA «{n}개 업체 보기». 본문만 굴러가고 머리와 CTA는
+ * 제자리다. 정본 WP-SRCH-002는 X 없이 제목 18/25와 «전체 해제»만 두고 CTA까지 한 덩어리로 굴렀다 —
+ * 공통 시트 규칙(CLAUDE.md v3.29 「바텀시트 = 타이틀 + 우측 X 닫기」)과 대표 지시가 이긴다
+ * (DESIGN_UNRESOLVED: 제목 22/30 · X · 고정 CTA는 정본과 다르다). 전체 화면이 아니다 — 뒤의 결과가
+ * 비쳐 보여야 무엇을 좁히는 중인지 알 수 있다.
+ *
+ * 닫는 길은 공통 시트의 것 그대로다 — X · 딤 · 끌어 내리기 · 안드로이드 뒤로가기 · 웹 브라우저
+ * 뒤로가기(`closeOnBrowserBack`). 모두 «적용 전 취소»다: 열 때 조건으로 되돌린다(`useFilterSheetSession`).
  *
  * CTA의 수는 **고르는 대로 바뀐다**(시안 «조건을 바꿀 때마다 하단 버튼의 결과 수가 함께
  * 바뀝니다»). 그 수는 시트가 스스로 세지 않고 부모가 넘긴다 — 결과 화면이 이미 같은
@@ -130,15 +137,17 @@ export function FilterSheet({
   const set = (patch: Partial<SearchFilterValue>) => onChange({ ...value, ...patch });
 
   return (
-    <BottomSheet visible={visible} onRequestClose={onDismiss}>
+    <BottomSheet visible={visible} onRequestClose={onDismiss} closeOnBrowserBack testID="search-filter-sheet">
       {/*
-       * 정본 `sheet`는 제목부터 CTA까지 한 덩어리로 스크롤한다 — 본문만 따로 자르고
-       * dock을 붙이는 구조가 아니다. 제목 줄에 닫기(X)도 없다(닫기는 딤 · 뒤로가기).
+       * 공통 바텀시트(2026-09-26 대표 지시 「검색 -> 필터도 공통 바텀시트 UX 적용한다」): 그래버 →
+       * 머리(타이틀 + 우측 X · 끌어 닫기 손잡이) → 본문 스크롤 → CTA. 머리와 CTA는 굴러가지 않는다 —
+       * 390×844에서 CTA가 스크롤 맨 아래에 묻혀 보이지 않았다(2026-09-26 캡처).
        */}
-      <SheetPanel style={styles.panel}>
-        <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-          <View style={styles.head}>
-            <ThemedText type="f18" style={styles.bold}>{S.title}</ThemedText>
+      <SheetPanel>
+        <SheetHeader
+          title={S.title}
+          onClose={onDismiss}
+          action={
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={S.reset}
@@ -148,8 +157,10 @@ export function FilterSheet({
                 {S.reset}
               </ThemedText>
             </Pressable>
-          </View>
+          }
+        />
 
+        <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} testID="search-filter-body">
           {/* 카테고리 — 정본 `groups[0]`. */}
           <View style={[styles.group, { borderTopColor: theme.border }]}>
             <ThemedText type="f14" style={[styles.bold, styles.label]}>
@@ -231,15 +242,64 @@ export function FilterSheet({
               ))}
             </ScrollView>
           </View>
-
-          {/* 정본 `sheetCta` — 화면당 Primary CTA 하나. 고른 조건으로 몇 곳인지 그대로 적는다. */}
-          <View style={styles.cta}>
-            <ActionButton variant="primary" size="xlarge" label={S.apply(count)} onPress={onApply} />
-          </View>
         </ScrollView>
+
+        {/* 정본 `sheetCta` — 화면당 Primary CTA 하나. 고른 조건으로 몇 곳인지 그대로 적는다. */}
+        <View style={styles.cta}>
+          <ActionButton variant="primary" size="xlarge" label={S.apply(count)} onPress={onApply} />
+        </View>
       </SheetPanel>
     </BottomSheet>
   );
+}
+
+/**
+ * 필터 시트 한 번 열림 — **적용 전 취소**를 지킨다(2026-09-26).
+ *
+ * 시트 안에서 칩을 누르면 부모 조건이 곧바로 바뀐다 — CTA의 수(«{n}개 업체 보기»)를 부모가 같은
+ * 조건으로 세기 때문이다(위 `FilterSheet` 머리말). 그래서 열 때의 조건을 적어 두고
+ *
+ *   CTA(적용)                          → 바뀐 조건을 그대로 둔다
+ *   X · 딤 · 끌어 닫기 · 뒤로가기(안드로이드 · 웹) → 열 때의 조건으로 되돌린다
+ *
+ * 무엇을 적어 두고 되돌릴지는 부르는 쪽이 정한다(`capture` · `restore`). 검색 화면은 시트가 만지는
+ * 칸(카테고리 · 지역 · 예산 · 정렬 — `pickFilterValue`)과 결과 보기 상태만 되돌리고 검색어는 건드리지 않는다.
+ */
+export function useFilterSheetSession<T>(capture: () => T, restore: (before: T) => void) {
+  const [visible, setVisible] = useState(false);
+  const snapshot = useRef<{ value: T } | null>(null);
+  const captureRef = useRef(capture);
+  const restoreRef = useRef(restore);
+  useEffect(() => {
+    captureRef.current = capture;
+    restoreRef.current = restore;
+  }, [capture, restore]);
+
+  const open = useCallback(() => {
+    snapshot.current = { value: captureRef.current() };
+    setVisible(true);
+  }, []);
+
+  /* X · 딤 · 끌기 · 뒤로가기 — 열 때로 되돌린다. 두 번 불려도 한 번만 되돌린다. */
+  const dismiss = useCallback(() => {
+    const before = snapshot.current;
+    snapshot.current = null;
+    setVisible(false);
+    if (before) restoreRef.current(before.value);
+  }, []);
+
+  /* CTA — 바뀐 조건을 그대로 둔다. */
+  const apply = useCallback(() => {
+    snapshot.current = null;
+    setVisible(false);
+  }, []);
+
+  return { visible, open, dismiss, apply };
+}
+
+/** 시트가 만지는 칸만 떼어 낸다. */
+export function pickFilterValue(value: SearchFilterValue): SearchFilterValue {
+  return { category: value.category, region: value.region, budget: value.budget, sort: value.sort };
 }
 
 /**
@@ -280,25 +340,12 @@ function OptChip({
   );
 }
 
-/**
- * 정본 `sheet` max-height 760 — 시트 전체(위 여백 · 그래버 · 아래 여백 포함)가 760을 넘으면 안에서 스크롤한다.
- * 패널 여백과 그래버는 SheetPanel이 그리므로 스크롤 칸에는 그만큼 뺀 높이를 준다.
- */
-const SHEET_MAX_HEIGHT = 760;
-const SCROLL_MAX_HEIGHT = SHEET_MAX_HEIGHT - Layout.sheetPaddingTop - Layout.sheetPaddingBottom - Layout.grabberHeight;
-
 const styles = StyleSheet.create({
-  scroll: { maxHeight: SCROLL_MAX_HEIGHT },
-  /* SheetPanel의 gap을 끄고 정본 간격을 줄마다 적는다. */
-  panel: { gap: 0 },
-  /* 정본 `sheetHead`: padding 20 0 · 양끝 정렬 · 위 맞춤. */
-  head: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: Layout.inlineGap,
-    paddingVertical: Spacing.three + Spacing.one,
-  },
+  /*
+   * 본문만 굴러간다 — 머리(끌기 손잡이 · X)와 CTA는 제자리다. 패널 높이는 공통 시트가 90%로 묶는다
+   * (정본 `sheet` max-height 760 — 844 화면의 90%와 같다). 줄 수 있는 만큼만 줄어든다.
+   */
+  scroll: { flexGrow: 0, flexShrink: 1 },
   /* 정본 `resetBtn` · `sortLabel` · `opt` 12/17. */
   small: { lineHeight: LineHeight.lh17 },
   /* 정본 `fLabel` 14/20. */
@@ -323,7 +370,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
   },
   pill: { paddingHorizontal: Spacing.three },
-  /* 정본 `sheetCta` margin-top 32. */
-  cta: { marginTop: Spacing.five },
+  /* 정본 `sheetCta` margin-top 32 — 공통 시트의 요소 간격 12가 이미 있어 그만큼 뺀다. 줄지 않는다. */
+  cta: { marginTop: Spacing.five - Layout.sheetGap, flexShrink: 0 },
   bold: { fontWeight: 700 },
 });

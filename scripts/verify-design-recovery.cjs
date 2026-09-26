@@ -92,7 +92,7 @@ function detailHarness(initialId='a', from) {
 }
 const post = (id, body='body') => ({ id, title:`title-${id}`, categoryLabel:'예산', summary:'summary', body, imageUri:null,publishedAt:null });
 function loungeHarness(kind='review', params={}) {
-  const h=hooks();const pushed=[];const replaced=[];
+  const h=hooks();const pushed=[];const replaced=[];const navigation={setParams:()=>{}};
   /* 칩 · 카테고리 목록은 domain 상수 하나다(2026-09-26) — 흉내 내지 않고 실제 파일을 싣는다. */
   const feedDomain=load('packages/domain/src/wedding-feed.ts');
   const loungeReviewHelpers=load('apps/mobile/src/features/community/lounge-reviews.ts',{
@@ -102,7 +102,7 @@ function loungeHarness(kind='review', params={}) {
   const feed={tabs:[{key:'all',label:'전체',categories:[]},{key:'budget',label:'예산',categories:['예산']}],items};
   const {LoungeScreen}=load('apps/mobile/src/features/community/lounge-screen.tsx',{
     '@weddingpick/domain':{daysUntil:()=>2,VENDOR_CATEGORY_LABEL:{},WEDDING_FEED_LOUNGE_LIMIT:feedDomain.WEDDING_FEED_LOUNGE_LIMIT},'expo-router':{Redirect:'Redirect',router:{push:x=>pushed.push(x),replace:x=>replaced.push(x)},
-      useFocusEffect:fn=>h.api.useEffect(fn,[fn]),useLocalSearchParams:()=>params},react:h.api,'react-native':native,
+      useFocusEffect:fn=>h.api.useEffect(fn,[fn]),useLocalSearchParams:()=>params,useNavigation:()=>navigation},react:h.api,'react-native':native,
     'react-native-safe-area-context':{SafeAreaView:'SafeAreaView'},'@weddingpick/ui':ui,
     '@/api/client':{listLoungeReviews:async()=>({reviews:[],caveat:''}),
       getWeddingFeed:async()=>feed,listExpos:async()=>({items:[]})},
@@ -116,6 +116,7 @@ function loungeHarness(kind='review', params={}) {
     '@/features/wedding/screen-kit':{NavBar:'NavBar'},'../../../../../spec/strings.ko.json':strings,
     '@/features/refresh/use-pull-refresh':pullRefresh,
     '@/features/navigation/depth-back':{chainOrigin:(alias,from)=>from?`${alias}.${from}`:alias},
+    '@/features/navigation/stack-alias':load('apps/mobile/src/features/navigation/stack-alias.ts'),
     '@/app/(tabs)/search/[vendorId]/write-review':{ReviewWriteSheet:'ReviewWriteSheet'},
     '@/app/(tabs)/community/review/write':{LoungeReviewVendorSheet:'LoungeReviewVendorSheet'},
   });
@@ -216,7 +217,9 @@ function splitFixture(script,role,missingAdmin=false) {
   });
   await check('lounge verified review action is restricted to review tab',async()=>{
     const l=loungeHarness();l.render();l.h.commit();await flush();const action=find(l.render(),'NavBar')[0].props.right;
-    assert.equal(action.label,'글쓰기');action.onPress();assert.equal(l.pushed[0],'/community/review?write=review');
+    /* 같은 화면 위의 오버레이로 연다 — 화면을 새로 push하지 않는다(2026-09-26 「바닥페이지가 두 번 로드된다」). */
+    assert.equal(action.label,'글쓰기');action.onPress();assert.equal(l.pushed.length,0);assert.equal(l.replaced.length,0);
+    assert.equal(find(l.render(),'LoungeReviewVendorSheet').length,1);
   });
   await check('lounge back defaults to home',async()=>{
     const l=loungeHarness();l.render();l.h.commit();await flush();

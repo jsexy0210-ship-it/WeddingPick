@@ -14,6 +14,7 @@ import { listRetentionAttention, sweepExpiredDocuments } from './retention/worke
 import type { Storage } from './storage/port';
 import { completeWithdrawals } from './withdrawal';
 import { runGeneration as runWeddingFeedGeneration } from './wedding-feed';
+import { collectRegionWeather } from './weather/region-weather';
 
 const RETENTION_SWEEP_MS = 10 * 60 * 1000;
 
@@ -33,6 +34,9 @@ const NUDGE_MS = 60 * 60 * 1000;
  * 봐서, 이미 목표를 채웠거나 초안이 쌓여 있으면 아무것도 쓰지 않고 지나간다.
  */
 const WEDDING_FEED_MS = 60 * 60 * 1000;
+
+/* 지역 오늘 날씨(0447) — 기상청 초단기예보가 매시 발표되므로 한 시간 간격이다. */
+const WEATHER_MS = 60 * 60 * 1000;
 
 export type WorkerDeps = {
   pool: Pool;
@@ -280,8 +284,32 @@ export function startWorkerLoops({ pool, storage, config, signal }: WorkerDeps):
       }, WEDDING_FEED_MS)
     : null;
 
+  /*
+   * 지역 오늘 날씨 — 홈 히어로 카드 오른쪽(2026-09-26 대표 지시). 공공데이터포털 인증키
+   * `DATA_GO_KR_MY_KEY`가 없으면 돌지 않고, 표가 비어 화면은 날씨 자리를 그리지 않는다.
+   * 모델 호출은 없다 — 기상청 값을 그대로 담는다.
+   */
+  const weatherKey = process.env.DATA_GO_KR_MY_KEY?.trim() ?? '';
+  console.log(
+    weatherKey
+      ? '지역 날씨 수집 켜짐 (한 시간 간격)'
+      : '지역 날씨 수집 꺼짐 — DATA_GO_KR_MY_KEY가 없다. 홈 날씨 자리는 그리지 않는다.'
+  );
+  const collectWeather = () => {
+    void collectRegionWeather({ pool, apiKey: weatherKey })
+      .then((result) => {
+        if (result.failed > 0) console.warn(`지역 날씨 ${result.stored}곳 담음 · ${result.failed}곳 실패`);
+      })
+      .catch((error) => {
+        console.error('지역 날씨 수집 실패:', error instanceof Error ? error.message : 'unknown');
+      });
+  };
+  if (weatherKey) collectWeather();
+  const weatherCollection = weatherKey ? setInterval(collectWeather, WEATHER_MS) : null;
+
   controller.signal.addEventListener('abort', () => {
     clearInterval(sweep);
+    if (weatherCollection) clearInterval(weatherCollection);
     clearInterval(nudges);
     if (feedGeneration) clearInterval(feedGeneration);
     if (expoSweep) clearInterval(expoSweep);

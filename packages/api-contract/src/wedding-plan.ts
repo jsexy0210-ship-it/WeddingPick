@@ -52,6 +52,8 @@ export const createWeddingTaskRequestSchema = z.object({
 });
 
 export const updateWeddingTaskRequestSchema = z.object({
+  /** 이름 — 웨딩노트 일정 수정 시트(2026-09-26). 만들 때와 같은 40자 한도. */
+  label: z.string().trim().min(1).max(40).optional(),
   dueDate: dateSchema.nullable().optional(),
   vendorId: idSchema.nullable().optional(),
   vendorLabel: z.string().trim().max(60).nullable().optional(),

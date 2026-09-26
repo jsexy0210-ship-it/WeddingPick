@@ -346,7 +346,7 @@ describe('예산 추가 — 고르는 시트 · 자동 등록', () => {
     ]);
   });
 
-  it('지출내역 «확인 중» 줄은 못 읽은 Pick 인증만 — 가격 제보 · 후기 · 읽은 결제는 빼고 합계에 넣지 않는다', () => {
+  it('예산 목록 «확인 중» 줄은 못 읽은 Pick 인증만 — 가격 제보 · 후기 · 읽은 결제는 빼고 합계에 넣지 않는다', () => {
     const base = { kindLabel: 'x', use: 'x', vendorId: null, amount: null, reportedAt: '2026-09-26T00:00:00.000Z', inUse: false, note: null };
     const reports = [
       { ...base, id: 'a', kind: 'payment_proof' as const, subject: '확인 중인 자료', needsCheck: true },
@@ -355,9 +355,11 @@ describe('예산 추가 — 고르는 시트 · 자동 등록', () => {
     ];
     expect(pendingProofs(reports).map((report) => report.id)).toEqual(['a']);
 
-    const list = readFileSync(join(__dirname, '..', '..', 'app', '(tabs)', 'wedding', '[id]', 'expenses', 'list.tsx'), 'utf8');
-    expect(list).toContain('listMyReports()');
-    expect(list).toContain('pendingProofs(result.reports)');
+    /* 지출내역 풀팝업은 예산현황 목록으로 통합됐다(2026-09-26) — «확인 중» 줄도 그리로 옮겼다. */
+    const screen = readFileSync(join(__dirname, '..', '..', 'app', '(tabs)', 'wedding', 'index.tsx'), 'utf8');
+    expect(screen).toContain('listMyReports()');
+    expect(screen).toContain('setPending(pendingProofs(r.reports))');
+    const list = readFileSync(join(__dirname, 'budget-category-list.tsx'), 'utf8');
     expect(list).toContain("testID=\"expense-pending-row\"");
   });
 

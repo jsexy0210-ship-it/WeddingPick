@@ -1,6 +1,6 @@
 import type { VendorCandidate } from '@weddingpick/api-contract';
 import { TERMS, regionLabel } from '@weddingpick/domain';
-import { router } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import {
@@ -12,6 +12,8 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
+import { dismissToOrReplace } from '@/features/navigation/depth-back';
+import { stackOf } from '@/features/navigation/stack-alias';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 
 /**
@@ -67,6 +69,7 @@ export function PickDoneSheet({
   visible: boolean;
   onDismiss: () => void;
 }) {
+  const pathname = usePathname();
   return (
     <BottomSheet visible={visible} onRequestClose={onDismiss}>
       <SheetPanel>
@@ -79,7 +82,12 @@ export function PickDoneSheet({
             flex={1.3}
             onPress={() => {
               onDismiss();
-              router.push('/pick');
+              /*
+               * Pick 스택 별칭(Pick → 업체 상세 · 비교, `stack-alias.ts`) 안이면 Pick 뿌리까지 꺼낸다 — 밀면
+               * Pick 스택에 Pick 뿌리가 한 장 더 쌓인다. 검색 스택이면 전처럼 Pick 탭으로 건너간다.
+               */
+              if (stackOf(pathname) === 'pick') dismissToOrReplace('/pick');
+              else router.push('/pick');
             }}
           />
         </View>

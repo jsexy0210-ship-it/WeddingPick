@@ -9,7 +9,7 @@ import {
   manwon,
   priceLine,
 } from '@weddingpick/domain';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, usePathname } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { compareVendors, getCurrentUser, recordComparison } from '@/api/client';
 import { DepthHeader } from '@/components/depth-header';
 import { compareOrigin, useDepthBack } from '@/features/navigation/depth-back';
+import { inStack } from '@/features/navigation/stack-alias';
 import { savePendingAction } from '@/features/auth/pending-action';
 import { PickDoneSheet } from '@/features/pick/pick-sheets';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
@@ -102,6 +103,7 @@ const CTA_CONSULT = '상담 예약';
 
 export default function CompareScreen() {
   const depthBack = useDepthBack();
+  const pathname = usePathname();
   const { ids } = useLocalSearchParams<{ ids?: string }>();
   const theme = useTheme();
   const [result, setResult] = useState<VendorComparisonResponse | null>(null);
@@ -201,7 +203,9 @@ export default function CompareScreen() {
      * 비교 목록째 출처로 넘긴다(`compareOrigin`). 목록이 업체 id 모양이 아니면 출처 없이(업체 상세).
      */
     const origin = compareOrigin((ids ?? '').split(',').filter(Boolean));
-    router.push({ pathname: '/search/[vendorId]/consult', params: origin ? { vendorId, from: origin } : { vendorId } });
+    const consult = `/search/${encodeURIComponent(vendorId)}/consult${origin ? `?from=${encodeURIComponent(origin)}` : ''}`;
+    /* Pick 스택의 비교(`/pick/compare`)면 상담 예약도 Pick 스택 안에서 민다(`stack-alias.ts`). */
+    router.push(inStack(pathname, consult) as never);
   }
 
   const vendors = result.vendors;

@@ -12,7 +12,7 @@ import {
   type WeddingStyle,
 } from '@weddingpick/domain';
 
-import { common } from '../../../../../spec/strings.ko.json';
+import { common, onboarding as onboardingCopy } from '../../../../../spec/strings.ko.json';
 
 /**
  * 초기 설정 **5개 질문**의 순서와 규칙 — v3.28 정본
@@ -55,8 +55,13 @@ export type Answers = {
    * 이미 정한 업종. 빈 배열은 «아직 시작 전» — 카드를 하나도 안 고르고 «다음»을 누른 것.
    * `vendors`는 카드마다 검색 시트로 고른 업체다(2026-09-26 대표 지시) — 없는 카드는
    * 업체를 안 고른 것이고, 옛 초안에는 칸 자체가 없다.
+   *
+   * `none`은 시트에서 «아직 정한 곳이 없어요»를 누른 카드다(2026-09-26 대표 지시 — 누른 뒤
+   * 목록 카드에도 «선택한 업체가 없다»가 보여야 한다). 화면 표시만 가르고 서버에는 가지
+   * 않는다 — 그 카드는 이미 꺼져 있고(`categories`에 없다) 업체도 없어서 저장 페이로드는
+   * 손대지 않은 카드와 같다. 다시 업체를 고르면 빠진다.
    */
-  prep: { categories: readonly PreparedCategory[]; vendors?: PrepVendors } | null;
+  prep: { categories: readonly PreparedCategory[]; vendors?: PrepVendors; none?: readonly PrepCard['key'][] } | null;
   /** 앞으로 쓸 예산(만원). null은 적지 않고 «다음»을 누른 것. */
   budget: { amount: number | null } | null;
   /** 고른 순서 그대로. 빈 배열은 «아직 답하지 않음»과 같다. */
@@ -184,7 +189,14 @@ function withChoice(prep: Answers['prep'], card: PrepCard, choice: PrepChoice): 
   const categories = prep?.categories ?? [];
   const on = isPrepCardSelected(card, categories) ? [...categories] : togglePrepCard(card, categories);
 
-  return { categories: on, vendors: { ...prep?.vendors, [card.key]: choice } };
+  const none = withoutNone(prep, card);
+
+  return { categories: on, vendors: { ...prep?.vendors, [card.key]: choice }, ...(none.length > 0 ? { none } : {}) };
+}
+
+/** «아직 정한 곳이 없어요» 표시에서 이 카드를 뺀 목록. */
+function withoutNone(prep: Answers['prep'], card: PrepCard): PrepCard['key'][] {
+  return (prep?.none ?? []).filter((key) => key !== card.key);
 }
 
 /**
@@ -221,6 +233,10 @@ export function choosePrepManual(prep: Answers['prep'], card: PrepCard, text: st
 /**
  * 시트의 «아직 정한 곳이 없어요» — 그 카드를 지금의 미정 상태(꺼짐)로 돌린다. 업체도
  * 지운다. Pick에는 아무것도 넣지 않는다.
+ *
+ * 그리고 그 카드를 «정한 곳 없음»으로 적어 둔다(`none`) — 목록 카드가 부제 자리에
+ * 그 상태를 보인다(`isPrepCardNone`). 전에는 누른 뒤에도 카드가 손대기 전과 똑같아
+ * 눌렀는지 알 수 없었다(2026-09-26 대표 지시).
  */
 export function clearPrepCard(prep: Answers['prep'], card: PrepCard): NonNullable<Answers['prep']> {
   const categories = (prep?.categories ?? []).filter((category) => !card.categories.includes(category));
@@ -228,8 +244,21 @@ export function clearPrepCard(prep: Answers['prep'], card: PrepCard): NonNullabl
 
   delete vendors[card.key];
 
-  return Object.keys(vendors).length > 0 ? { categories, vendors } : { categories };
+  const none = [...withoutNone(prep, card), card.key];
+
+  return Object.keys(vendors).length > 0 ? { categories, vendors, none } : { categories, none };
 }
+
+/**
+ * 이 카드에서 «아직 정한 곳이 없어요»를 골랐는가. 카드가 켜져 있으면(다른 길로 켜진
+ * 옛 초안) 아니다 — 켜진 카드는 «결정 완료»가 이긴다.
+ */
+export function isPrepCardNone(prep: Answers['prep'], card: PrepCard): boolean {
+  return (prep?.none ?? []).includes(card.key) && !isPrepCardSelected(card, prep?.categories ?? []);
+}
+
+/** «아직 정한 곳이 없어요»를 고른 카드의 부제 — 시트의 그 단추와 같은 말(`onboarding.prepVendor.none`). */
+export const PREP_NONE_LABEL = onboardingCopy['prepVendor.none'];
 
 /** 카드 줄에 적는 답(업체 · 직접 입력). 카드가 꺼져 있으면(답이 남아 있어도) 없다. */
 export function prepVendorOf(prep: Answers['prep'], card: PrepCard): PrepChoice | null {

@@ -113,3 +113,27 @@ export function hasFreshSignupPending(now: number = Date.now()): boolean {
 export function clearSignupPending(): void {
   signupPendingAt = 0;
 }
+
+/**
+ * 약관 동의 제출이 방금 가입을 마쳤다(`POST /v1/me/signup` 응답 `activated: true`) — 온보딩
+ * (`app/setup.tsx`)이 같은 것을 다시 묻지 않게 하는 손잡이(2026-09-26 대표 지시 「약관 동의 →
+ * 온보딩 이동 시 로딩 … 로딩 시간을 대폭 감축한다」).
+ *
+ * 온보딩은 들어서며 가입 상태(`GET /v1/me/signup`, 캐시하지 않는 주소)를 물은 **뒤에** 내 정보
+ * (`GET /v1/me`)를 물었다 — 방금 받은 답을 한 번 더 기다리는 직렬 왕복이었다. 이 깃발이 싱싱하면
+ * 가입 상태 물음을 건너뛴다. **저장(«완료»)할 때 다시 묻는 것은 그대로다** — 판정은 서버가 한다.
+ */
+let signupActivatedAt = 0;
+
+export function noteSignupActivated(now: number = Date.now()): void {
+  signupActivatedAt = now;
+}
+
+/** 한 번 쓰고 버린다. */
+export function takeFreshSignupActivated(now: number = Date.now()): boolean {
+  const fresh = signupActivatedAt > 0 && now - signupActivatedAt <= SIGNUP_PENDING_FRESH_MS;
+
+  signupActivatedAt = 0;
+
+  return fresh;
+}

@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import SetupScreen from '@/app/setup';
 import { completeSetup, completeSignup, getAppBootstrap, getCurrentUser, getSignupState } from '@/api/client';
 import { loadToken } from '@/api/session';
+import { noteSignupActivated } from '@/features/auth/sign-in-handoff';
 import { showResultToast } from '@/features/navigation/result-toast';
 import { EMPTY_ANSWERS, type Answers } from './flow';
 import { EXIT_BACK_WINDOW_MS, isSecondExitPress, resolveSetupBack } from './setup-back';
@@ -37,6 +38,9 @@ jest.mock('./option-row', () => ({ OptionRow: 'OptionRow' }));
 jest.mock('./question-head', () => ({ QuestionHead: 'QuestionHead' }));
 jest.mock('./region-picker-sheet', () => ({ RegionPickerSheet: 'RegionPickerSheet' }));
 jest.mock('./step-frame', () => ({ StepFrame: 'StepFrame' }));
+/* 로그인 · 온보딩 사이의 원형 고리 화면(2026-09-26) — 이 시험은 화면 흐름만 본다. */
+jest.mock('@/features/auth/signing-in-view', () => ({ SigningInView: 'SigningInView', SigningInOverlay: () => null }));
+jest.mock('@/features/loading/auth-progress', () => ({ beginAuthProgress: jest.fn() }));
 jest.mock('@weddingpick/ui', () => ({
   Border: { selected: 1.5 },
   CanonGray: {},
@@ -120,6 +124,23 @@ describe('초기 설정 화면의 안드로이드 뒤로가기', () => {
     jest.mocked(getAppBootstrap).mockResolvedValue({} as never);
   });
   afterEach(async () => { if (tree) await act(async () => tree.unmount()); });
+
+  it('약관 동의가 방금 가입을 마쳤으면 가입 상태를 다시 묻지 않고 바로 내 정보를 묻는다(2026-09-26 대기 감축)', async () => {
+    jest.mocked(getSignupState).mockClear();
+    jest.mocked(getCurrentUser).mockClear();
+    noteSignupActivated();
+    await mount(null);
+
+    expect(getSignupState).not.toHaveBeenCalled();
+    expect(getCurrentUser).toHaveBeenCalledTimes(1);
+  });
+
+  it('깃발이 없으면(재방문) 전처럼 가입 상태부터 묻는다', async () => {
+    jest.mocked(getSignupState).mockClear();
+    await mount(null);
+
+    expect(getSignupState).toHaveBeenCalledTimes(1);
+  });
 
   it('첫 질문에서 뒤로가기는 로그인으로 가지 않고, 한 번은 안내 · 두 번이면 앱을 닫는다', async () => {
     await mount(null);

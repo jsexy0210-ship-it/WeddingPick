@@ -20,46 +20,11 @@ import { Motion } from '@weddingpick/ui';
  *
  * Root 탭끼리의 전환은 여기가 아니라 `useTabScreenOptions()`가 정한다(밀지 않고 짧게 겹친다).
  */
-export type StackTransition = 'push' | 'modal' | 'sheet' | 'fade' | 'none';
-
-/**
- * 라우트 이름(각 레이아웃 기준 상대 이름) → 전환. 없으면 `push`.
- *
- * `modal`은 **머리가 풀팝업인 화면**이다 — 좌측 슬롯이 뒤로(‹)가 아니라 닫기(X)인 화면
- * (CLAUDE.md v3.29 「풀팝업」 행 · `FullPopupHeader` · `DepthHeader`/`NavBar`의 `variant="close"`).
- * 화면은 X로 닫히는데 옆으로 밀려 나가면 머리와 움직임이 서로 다른 말을 한다.
- * `stack-motion.test.ts`가 화면 파일을 읽어 이 목록과 X 머리가 어긋나지 않는지 센다.
+/*
+ * 라우트 → 전환 표는 `stack-routes.ts`에 있다 — 공통 바텀시트가 «시트형 라우트의 자기 시트»를 가리려고
+ * 읽는데, 여기(`Motion` 토큰을 읽는 모듈)를 들이면 토큰을 흉내 낸 시험들이 모듈을 못 읽었다.
  */
-export const STACK_ROUTE_TRANSITION: Readonly<Record<string, StackTransition>> = {
-  /* 루트 스택 — 로그인 · 온보딩 ↔ 앱 본체는 replace로 갈아끼운다. 밀면 뒤로 갈 곳이 있는 것처럼 보인다. */
-  '(tabs)': 'fade',
-  login: 'fade',
-  setup: 'fade',
-  admin: 'none',
-  /* 검색 스택의 풀팝업. `booking`은 `consult`를 그대로 다시 내보내는 옛 주소다. */
-  '[vendorId]/consult': 'modal',
-  '[vendorId]/booking': 'modal',
-  '[vendorId]/images': 'modal',
-  compare: 'modal',
-  /* 검색 스택의 시트형 라우트. */
-  '[vendorId]/write-review': 'sheet',
-  'expo/[expoId]/calendar': 'sheet',
-  /* 웨딩노트 스택의 풀팝업. */
-  '[id]/changelog': 'modal',
-  '[id]/decided': 'modal',
-  '[id]/expenses/list': 'modal',
-  /* 웨딩노트 스택의 시트형 라우트. */
-  '[id]/events/new': 'sheet',
-  '[id]/expenses/add': 'sheet',
-  '[id]/consultations/upload': 'sheet',
-  '[id]/consultations/[recordId]': 'sheet',
-  /* 라운지 스택의 시트형 라우트. */
-  'review/write': 'sheet',
-};
-
-export function stackTransitionFor(routeName: string): StackTransition {
-  return STACK_ROUTE_TRANSITION[routeName] ?? 'push';
-}
+export { STACK_ROUTE_TRANSITION, stackTransitionFor, type StackTransition } from './stack-routes';
 
 /**
  * 전환 시간(ms). **RN 정본(`docs/design/React_Native`)에는 화면 전환 값이 없다** — 정본의

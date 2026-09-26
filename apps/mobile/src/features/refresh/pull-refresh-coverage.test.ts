@@ -37,8 +37,7 @@ const WIRED = [
   'app/(tabs)/search/[vendorId]/index.tsx',
   'app/(tabs)/search/expo/[expoId]/index.tsx',
   'app/(tabs)/search/compare.tsx',
-  // 웨딩노트
-  'app/(tabs)/wedding/[id]/expenses/list.tsx',
+  // 웨딩노트 — 지출내역 풀팝업(`expenses/list`)은 2026-09-26 예산현황 목록으로 통합돼 예산 탭(위 `wedding/index`)이 맡는다.
   'app/(tabs)/wedding/[id]/changelog.tsx',
   'app/(tabs)/wedding/[id]/decided.tsx',
   'app/(tabs)/wedding/[id]/map.tsx',

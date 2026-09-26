@@ -1,8 +1,9 @@
 import type { AuthProvider } from '@weddingpick/api-contract';
-import { StyleSheet } from 'react-native';
+import { useEffect } from 'react';
+import { Platform, StyleSheet, View } from 'react-native';
 
-import { Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
-import { DelayedLoader } from '@/features/loading/delayed-loader';
+import { CircleLoader, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
+import { useAuthProgressVisible } from '@/features/loading/auth-progress';
 
 /**
  * «카카오로 로그인하는 중이에요»는 **이 파일에만 있다.**
@@ -33,73 +34,70 @@ export function signingInMessage(provider: AuthProvider | null | undefined): str
 }
 
 /**
- * 이 자리가 무엇 **하나**를 보여줄 것인가.
+ * 로그인 · 약관 동의 · 온보딩 사이의 기다림 화면 — **원형 고리 하나**(2026-09-26 대표 지시 —
+ * 「스플래시 → 카카오 로그인 → 로더가 두 번 돈다. 로더 써클만 돌도록 통합한다」).
  *
- * ```
- * 'message'   문구 한 줄만
- * 'loader'    기본 로더 · 써클만
- * ```
+ *   고리 40 — RN 정본 `docs/design/React_Native/common.js:244` `spinBig`(40 · 테두리 3 ·
+ *            #EAEBEE 트랙 · 스킨 색 머리 · 900ms) = `CircleLoader size={40}`
+ *   문구    — 고리 **아래** 한 줄(CLAUDE.md 「로그인은 기본 로더 위·문구 아래로 한 덩어리」).
+ *            `message={null}`이면 고리만(약관 동의 제출 · 온보딩 첫 읽기)
+ *
+ * **전에는 모양이 둘이었다.** 부팅의 카카오 복귀는 숨쉬는 원형 뼈대(`DelayedLoader
+ * shape="mark"`), 로그인 화면은 문구만, 스플래시 뒤에는 홈 뼈대가 한 번 스쳤다 — 한 번의
+ * 로그인에 로더가 모양을 바꿔 가며 두 번 섰다. 이제 이 화면 하나가 로그인 단추를 누른
+ * 순간(웹은 카카오에서 돌아온 새 페이지의 첫 HTML부터 — `app/+html.tsx`)부터 약관 동의 폼이
+ * 설 때까지 같은 자리에 선다.
+ *
+ * **고리 자리는 처음부터 잡아 둔다.** 700ms 규칙(`features/loading/auth-progress`)으로 고리가
+ * 늦게 나타나도 문구가 밀려 내려가지 않는다 — 2026-09-11 「문구가 먼저 자리를 잡았다가 로더가
+ * 나타나면서 아래로 밀린다」가 다시 생기지 않게.
+ *
+ * 700ms는 이 화면이 뜬 때가 아니라 **흐름이 시작된 때**부터 센다 — 화면이 갈아 끼워져도
+ * 이미 보인 고리는 그대로 보이고, 각도도 이어 돈다(`spinPhaseMs`).
  */
-export type SigningInShow = 'message' | 'loader';
+export function SigningInView({ message = SIGNING_IN_MESSAGE }: { message?: string | null }) {
+  const visible = useAuthProgressVisible();
 
-/**
- * 로그인 진행 표시. **로더와 문구 중 하나만 세운다.**
- *
- * 2026-09-11 대표 지시 — 「로그인 → 온보딩 진입 사이 카카오로 로그인 관련 텍스트가
- * 중첩되어 나온다. 하나만 나오도록 하라. 단순 텍스트만 나오던지 기본 로더만 나오던지」.
- *
- * 예전에는 이 컴포넌트가 로더와 문구를 **항상 함께** 세웠다. 그런데 문구는 즉시
- * 그려지고 로더는 700ms 규칙 때문에 늦게 끼어든다 — 문구가 먼저 자리를 잡았다가
- * 로더가 나타나면서 아래로 밀린다. 한 자리에 두 개가 겹쳐 나오는 것으로 읽힌다.
- *
- * 그래서 `show`로 하나만 고른다. 둘을 함께 넘길 방법을 두지 않는다 — 값이 두 개뿐인
- * 것이 「하나만」을 타입으로 지키는 방법이다.
- *
- * `size`는 자리에 따라 다르다 — 화면 전체는 40, 로그인 화면 버튼 자리는 28.
- *
- * `message`를 주면 그 문장을 쓴다 — 제공자가 둘이라 로그인 화면이
- * `signingInMessage(busyProvider)`로 골라 넘긴다. 안 주면 카카오 문장이다.
- */
-export function SigningInBody({
-  size,
-  show,
-  message = SIGNING_IN_MESSAGE,
-}: {
-  size: 28 | 40;
-  show: SigningInShow;
-  message?: string;
-}) {
-  if (show === 'loader') return <DelayedLoader size={size} shape="mark" />;
+  useEffect(() => {
+    /* 웹 첫 HTML이 그려 둔 같은 모양(`+html.tsx` `AUTH_RETURN_STATIC_ID`)은 이 화면이 서면 걷는다. */
+    removeStaticAuthReturn();
+  }, []);
 
   return (
-    <ThemedText type="small" themeColor="textAssistive">
-      {message}
-    </ThemedText>
+    <ThemedView style={styles.container}>
+      <View style={styles.circleSlot}>{visible ? <CircleLoader size={40} /> : null}</View>
+      {message ? (
+        <ThemedText type="small" themeColor="textAssistive">
+          {message}
+        </ThemedText>
+      ) : null}
+    </ThemedView>
   );
 }
 
 /**
- * 카카오에서 같은 창으로 돌아온 직후, 코드를 세션으로 바꾸는 동안 보이는 화면.
- *
- * 스플래시가 아니다 — 스플래시는 앱이 켜지는 신호라, 카카오 동의를 마치고 돌아온
- * 사람이 그걸 다시 보면 «처음부터 다시 시작하나» 하고 읽는다(2026-09-08 보고).
- * 로그인 화면의 진행 표시와 같은 모양으로, 이어지는 한 단계라는 것만 보인다.
- * 끝나면 온보딩/홈으로 곧장 간다.
- *
- * **문구 쪽을 남긴다.** 로더만 두면 700ms 동안 아무것도 없는 흰 화면이 되는데,
- * 카카오 동의를 막 마치고 돌아온 사람에게 빈 화면은 «끊겼나»로 읽힌다. 문구는
- * 즉시 그려지고 기다림이 끝날 때까지 자리를 지킨다.
+ * 화면 위에 덮는 같은 기다림 — **700ms가 지나기 전에는 아무것도 그리지 않는다**(빈 흰 판으로
+ * 폼을 가리지 않는다). 약관 동의 «동의하고 시작하기»를 누른 뒤 서버 답을 기다리는 자리가 쓴다.
  */
-export function SigningInView() {
+export function SigningInOverlay({ active }: { active: boolean }) {
+  const visible = useAuthProgressVisible();
+
+  if (!active || !visible) return null;
+
   return (
-    <ThemedView style={styles.container}>
-      {/* 2026-09-25 「스켈레톤으로 해」 — 원형 로더 자리를 돌지 않는 원형 블록으로. 문구는 그대로. */}
-      <DelayedLoader size={40} shape="mark" />
-      <ThemedText type="small" themeColor="textAssistive">
-        {SIGNING_IN_MESSAGE}
-      </ThemedText>
-    </ThemedView>
+    <View style={StyleSheet.absoluteFill}>
+      <SigningInView message={null} />
+    </View>
   );
+}
+
+/** 웹 첫 HTML의 «로그인하는 중» 판(`app/+html.tsx`). 한 곳에서 이름을 정한다. */
+export const AUTH_RETURN_STATIC_ID = 'wp-auth-return';
+
+/** 웹 첫 HTML이 그려 둔 판을 걷는다. 없거나 네이티브면 아무것도 안 한다. */
+export function removeStaticAuthReturn(): void {
+  if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+  document.getElementById(AUTH_RETURN_STATIC_ID)?.remove();
 }
 
 const styles = StyleSheet.create({
@@ -109,4 +107,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.three,
   },
+  circleSlot: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
 });

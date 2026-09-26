@@ -1,6 +1,6 @@
 import type { Notification } from '@weddingpick/api-contract';
 import { NOTIFICATIONS_EMPTY, hasUnread } from '@weddingpick/domain';
-import { router } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -8,8 +8,10 @@ import { ErrorView, Layout, Radius, Spacing, ThemedText, Toast, readWebInteracti
 import { listNotifications, readAllNotifications, readNotification } from '@/api/client';
 import { formatDateDot } from '@/features/common/format-date';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
+import { inStack } from '@/features/navigation/stack-alias';
 import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import { EmptyBox, NavAction, Section, SubScreen, SubScreenStatus } from '@/features/settings/my-kit';
+import { partnerRouteFor } from '@/features/partner/routes';
 
 const S = {
   title: '알림',
@@ -25,14 +27,21 @@ const S = {
  * 2026-09-25 되살리면서: 반론(`/my/rebuttals`)과 Pick 인증 결과(`/capture/result`) 화면은 #535에서
  * 지워져 없다 — 그 알림은 목록에서 읽기만 한다. 문의 답변은 문의 상세(`/my/contact/[inquiryId]`)로 간다.
  */
-function go(notification: Notification): void {
+/**
+ * `pathname` — 이 화면이 선 자리. 홈 알림 종에서 열면 홈 스택 별칭(`/notifications`)이라 문의 상세도
+ * 홈 스택 안에서 민다(`stack-alias.ts`).
+ */
+function go(notification: Notification, pathname: string): void {
   switch (notification.kind) {
     case 'partner':
-      /* 연결관리는 웨딩노트 스택에 있다 — 출처를 넘겨야 Back이 이 목록으로 돌아온다. */
-      router.push('/wedding/partner?from=notifications');
+      /*
+       * 알림이 선 스택 안의 연결관리로 쌓는다(`partnerRouteFor` — MY면 `/my/partner`, 홈이면 `/partner`).
+       * 탭이 바뀌지 않아 밀어넣기가 탄다(2026-09-26). 출처를 넘겨야 Back이 이 목록으로 돌아온다.
+       */
+      router.push(`${partnerRouteFor(pathname)}?from=notifications` as never);
       return;
     case 'inquiry':
-      router.push(notification.targetId ? `/my/contact/${notification.targetId}` : '/my/contact');
+      router.push(inStack(pathname, notification.targetId ? `/my/contact/${notification.targetId}` : '/my/contact') as never);
       return;
     case 'rebuttal':
     case 'verification':
@@ -48,6 +57,7 @@ function go(notification: Notification): void {
  * (DESIGN_SOURCE_NOT_VERIFIED) — #535 직전 구현을 그대로 가져왔다.
  */
 export default function NotificationsScreen() {
+  const pathname = usePathname();
   const theme = useTheme();
   const [notifications, setNotifications] = useState<Notification[] | null>(null);
   const [unread, setUnread] = useState(0);
@@ -76,7 +86,7 @@ export default function NotificationsScreen() {
 
   function open(notification: Notification) {
     // 읽음 저장이 느리거나 실패해도 사용자가 누른 내용은 바로 연다.
-    go(notification);
+    go(notification, pathname);
     if (notification.readAt || reading.current.has(notification.id) || readingAll.current) return;
     reading.current.add(notification.id);
     setReadBusy(true);

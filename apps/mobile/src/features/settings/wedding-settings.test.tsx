@@ -7,7 +7,6 @@ import WeddingSettingsScreen from '@/app/(tabs)/my/wedding-settings';
 
 import {
   PREP_NONE_KEY,
-  budgetOptions,
   prepCategoriesFromKey,
   prepComboKeyOf,
   prepOptions,
@@ -65,7 +64,7 @@ beforeEach(() => {
   jest.mocked(completeSetup).mockImplementation(async (body) => ({ ...me, ...body }) as never);
 });
 
-/** 다섯 행 — 라벨 순서대로. */
+/** 네 행 — 라벨 순서대로. */
 function rows() {
   return tree.root.findAll(
     (node) => node.props.accessibilityRole === 'button' && typeof node.props.onPress === 'function' && typeof node.type !== 'string'
@@ -83,18 +82,19 @@ function visibleSheets(): string[] {
 }
 
 describe('내 웨딩설정 — 행마다 휠 바텀시트', () => {
-  it('다섯 행이 각자 시트를 연다 — 한 번에 하나만', async () => {
+  it('네 행이 각자 시트를 연다 — 한 번에 하나만(예산 행은 없다)', async () => {
     await mount();
 
     const labels = rows().map((row) => row.props.accessibilityLabel as string);
-    expect(labels.map((label) => label.split(' ')[0])).toEqual(['예식일', '지역', '준비', '예산', '스타일']);
+    /* 2026-09-26 대표 지시 「MY 내 웨딩설정에서 예산은 삭제한다」. */
+    expect(labels.map((label) => label.split(' ')[0])).toEqual(['예식일', '지역', '준비', '스타일']);
+    expect(labels.some((label) => label.startsWith('예산'))).toBe(false);
     expect(visibleSheets()).toEqual([]);
 
     const expected = [
       'DateWheelSheet:예식일 선택',
       'RegionPickerSheet:',
       'OptionWheelSheet:준비 현황 선택',
-      'OptionWheelSheet:예산 선택',
       'StylePickSheet:스타일 선택',
     ];
     for (const [index, row] of rows().entries()) {
@@ -118,18 +118,18 @@ describe('내 웨딩설정 — 행마다 휠 바텀시트', () => {
     expect(sheet('DateWheelSheet').props.value).toBe('2027-05-16');
     expect(sheet('RegionPickerSheet').props.value).toEqual({ region: '서울', district: '강남구' });
     expect(sheet('OptionWheelSheet', '준비 현황 선택').props.value).toBe('hall');
-    expect(sheet('OptionWheelSheet', '예산 선택').props.value).toBe('20m_30m');
+    expect(tree.root.findAll((node) => node.props.title === '예산 선택')).toHaveLength(0);
     expect(sheet('StylePickSheet').props.value).toEqual(['ROMANTIC', 'URBAN']);
   });
 
-  it('「확인」을 누른 항목 하나만 저장한다 — 예식일 · 지역은 지금 값을 돌려보낸다', async () => {
+  it('「확인」을 누른 항목 하나만 저장한다 — 예식일 · 지역은 지금 값을 돌려보내고 예산 키는 보내지 않는다', async () => {
     await mount();
 
-    await act(async () => sheet('OptionWheelSheet', '예산 선택').props.onConfirm('over_30m'));
+    await act(async () => sheet('StylePickSheet').props.onConfirm(['URBAN']));
     expect(completeSetup).toHaveBeenLastCalledWith({
       weddingDate: '2027-05-16',
       region: '서울특별시 강남구',
-      budgetBracket: 'over_30m',
+      styleTags: ['URBAN'],
     });
 
     /* 개수 한도 없음(2026-09-26) — 셋 이상도 그대로 보낸다. */
@@ -147,12 +147,17 @@ describe('내 웨딩설정 — 행마다 휠 바텀시트', () => {
     await act(async () => sheet('DateWheelSheet').props.onConfirm('2027-10-09'));
     expect(jest.mocked(completeSetup).mock.calls.at(-1)?.[0]).toMatchObject({ weddingDate: '2027-10-09' });
     expect(visibleSheets()).toEqual([]);
+
+    /* 어떤 저장도 예산 키를 싣지 않는다 — 서버는 키가 없으면 적어 둔 예산을 그대로 둔다. */
+    for (const [body] of jest.mocked(completeSetup).mock.calls) {
+      expect(body).not.toHaveProperty('budgetBracket');
+    }
   });
 
   it('닫기(✕ · 바깥)는 아무것도 저장하지 않는다', async () => {
     await mount();
-    await act(async () => rows()[3]!.props.onPress());
-    await act(async () => sheet('OptionWheelSheet', '예산 선택').props.onDismiss());
+    await act(async () => rows()[2]!.props.onPress());
+    await act(async () => sheet('OptionWheelSheet', '준비 현황 선택').props.onDismiss());
 
     expect(visibleSheets()).toEqual([]);
     expect(completeSetup).not.toHaveBeenCalled();
@@ -160,17 +165,6 @@ describe('내 웨딩설정 — 행마다 휠 바텀시트', () => {
 });
 
 describe('1열 휠 보기 — 온보딩 답 그대로', () => {
-  it('예산 — 온보딩 여섯 구간', () => {
-    expect(budgetOptions().map((option) => option.label)).toEqual([
-      '500만원 이하',
-      '500~1,000만원',
-      '1,000~2,000만원',
-      '2,000~3,000만원',
-      '3,000만원 이상',
-      '아직 모르겠어요',
-    ]);
-  });
-
   it('준비 현황 — «아직 시작 전이에요» + 카드 넷의 조합 열다섯', () => {
     const options = prepOptions();
 

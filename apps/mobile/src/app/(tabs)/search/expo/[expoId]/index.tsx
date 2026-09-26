@@ -1,11 +1,12 @@
 import { daysUntil } from '@weddingpick/domain';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, usePathname } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { getExpo, type ExpoDetail } from '@/api/client';
 import { openExternal } from '@/features/open-external';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { inStack } from '@/features/navigation/stack-alias';
 import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import { Dock, Section, SubScreen } from '@/features/settings/my-kit';
 import {
@@ -67,6 +68,8 @@ function ExpoDetailSkeleton() {
  */
 export default function ExpoDetailScreen() {
   const depthBack = useDepthBack();
+  /* 라운지 박람회 탭에서 열면 라운지 스택 별칭(`/community/expo/<박람회>` · `stack-alias.ts`)이다. */
+  const pathname = usePathname();
   const theme = useTheme();
   const { expoId } = useLocalSearchParams<{ expoId: string }>();
   const [expo, setExpo] = useState<ExpoDetail | null>(null);
@@ -209,7 +212,7 @@ export default function ExpoDetailScreen() {
         </ThemedText>
         {/* CLAUDE.md 예외 — 달력 앱으로 넘기는 자리는 지우지 않는다. 정본에 자리가 없어 안내 아래 한 줄로 둔다. */}
         {!isClosed ? (
-          <Pressable accessibilityRole="link" onPress={() => router.push(`/search/expo/${expoId}/calendar`)}>
+          <Pressable accessibilityRole="link" onPress={() => router.push(inStack(pathname, `/search/expo/${expoId}/calendar`) as never)}>
             <ThemedText type="f13" themeColor="tint" style={styles.bold}>
               {S.calendar}
             </ThemedText>

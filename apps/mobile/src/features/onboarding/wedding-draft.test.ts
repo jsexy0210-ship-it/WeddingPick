@@ -120,4 +120,13 @@ describe('onboarding draft storage mutation order', () => {
       vendors: { hall: { manual: true, name: '우리동네 웨딩컨벤션' } },
     });
   });
+
+  it('«아직 정한 곳이 없어요»를 고른 카드도 다시 열면 그대로 읽는다 · 모르는 카드 키는 버린다', async () => {
+    values.set(
+      'weddingpick.onboardingAnswers.v1',
+      JSON.stringify({ prep: { categories: [], none: ['sdm', 'planner', 'hall', 3] } })
+    );
+
+    expect((await loadOnboardingAnswers())?.prep).toEqual({ categories: [], none: ['hall', 'sdm'] });
+  });
 });

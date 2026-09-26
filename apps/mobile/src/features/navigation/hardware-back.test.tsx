@@ -157,6 +157,32 @@ describe('안드로이드 하드웨어 Back', () => {
     expect(landedOn()).toBe(origin);
   });
 
+  /*
+   * 출처 스택 별칭(`stack-alias.ts`) — 들어온 탭의 스택 안에 섰으니 탭을 건너지 않고 그 스택에서 접는다
+   * (navigate가 아니라 dismissTo). 헤더 Back과 같은 목적지다.
+   */
+  it.each([
+    [withBackOrigin('/pick/vendor/v-101', 'pick/sdm'), '/pick?group=sdm'],
+    [withBackOrigin('/pick/vendor/v-101/consult', 'pick'), '/pick'],
+    ['/pick/compare?ids=v-1,v-2', '/pick'],
+    [withBackOrigin('/community/vendor/v-101', 'community.my'), '/community/review?from=my'],
+    ['/community/expo/e-1', '/community/expo'],
+    [withBackOrigin('/my/vendor/v-101', 'reviews'), '/my/reviews'],
+    ['/wedding/wedding-settings', '/wedding'],
+    ['/search/contact', '/search'],
+  ])('별칭 %s → %s (같은 스택에서 접는다)', async (path, parent) => {
+    await mount(path);
+    expect(press()).toBe(true);
+    expect(router.dismissTo).toHaveBeenCalledWith(parent);
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
+
+  it('홈 스택 별칭 /notifications → 홈(탭 전환 · 피드 상세와 같은 길)', async () => {
+    await mount('/notifications');
+    expect(press()).toBe(true);
+    expect(router.navigate).toHaveBeenCalledWith('/');
+  });
+
   it('Pick → 업체 상세(from=pick/sdm) → 사진 → Back은 업체 상세를 꺼낸다 — 출처가 지워지지 않는다', async () => {
     /* 탭 → 검색 스택 [검색 · 업체 상세(from=pick/sdm) · 사진]. */
     mockRootState = {

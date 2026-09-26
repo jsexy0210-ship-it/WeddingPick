@@ -1418,6 +1418,33 @@ const routes = {
     nextCursor: null,
     count: VENDOR_REVIEWS[0].comments.count,
   },
+  /* 후기 작성 시트(DLG-D) — 리얼후기 · 업체 상세 위에 뜨는 폼을 캡처한다. */
+  'GET /v1/vendors/:vendorId/review-form': ({ params } = {}) => {
+    const vendor = VENDORS.find((v) => v.id === params?.vendorId) ?? VENDORS[0];
+
+    return {
+      vendorId: vendor.id,
+      vendorName: vendor.name,
+      evaluationMode: 'rating',
+      checklist: [],
+      roles: [
+        {
+          value: 'contractor',
+          label: '계약자',
+          aspects: [
+            { key: 'progress', label: '진행' },
+            { key: 'result', label: '결과물' },
+            { key: 'extra_cost', label: '추가비용' },
+          ],
+        },
+        { value: 'guest', label: '하객', aspects: [{ key: 'food', label: '식사' }] },
+      ],
+      verification: { value: 'reported', label: '상담제보', note: '계약서나 결제 증빙을 올리면 Pick 인증 후기가 돼요.' },
+      alreadyWritten: false,
+      minimumBodyLength: 50,
+      packageSiblings: [],
+    };
+  },
   'GET /v1/vendors/:vendorId/reviews': {
     reviews: VENDOR_REVIEWS,
     nextCursor: null,
@@ -2039,6 +2066,45 @@ if (process.env.FIXTURE_DAYS_LEFT !== undefined || process.env.FIXTURE_PREPARED 
   };
 }
 
+/**
+ * 홈 히어로 — 배우자 연결 현황 · 날씨(2026-09-26 대표 지시). 켤 때만 덮는다.
+ *
+ *   FIXTURE_PARTNER=linked|invited|none   연결됨(두 사람 이름) · 초대 보냄 · 아직 초대 안 함
+ *   FIXTURE_WEATHER=clear|clear_night|cloudy|rain|snow|none|fail
+ *                                          오늘 날씨. none = 값 없음(null), fail = 조회 실패(모양이 틀린 답)
+ *
+ * 날씨를 주지 않으면 `GET /v1/weather/today`는 null이다 — 다른 홈 캡처가 날씨 면으로 바뀌지 않게.
+ */
+routes['GET /v1/weather/today'] = { weather: null };
+if (process.env.FIXTURE_PARTNER !== undefined) {
+  const partner = process.env.FIXTURE_PARTNER;
+  const patch = {
+    displayName: '지윤',
+    spouseLinked: partner === 'linked',
+    partnerDisplayName: partner === 'linked' ? '준혁' : null,
+  };
+  const me = routes['GET /v1/me'];
+  routes['GET /v1/me'] = () => ({ ...me(), ...patch });
+  routes['GET /v1/app/bootstrap'] = {
+    ...routes['GET /v1/app/bootstrap'],
+    member: { ...routes['GET /v1/app/bootstrap'].member, ...patch },
+    partnerInvitePending: partner === 'invited',
+  };
+}
+if (process.env.FIXTURE_WEATHER !== undefined) {
+  const kind = process.env.FIXTURE_WEATHER;
+  /* 05:00Z = 14시(낮) · 12:00Z = 21시(밤) 관측. */
+  const day = '2026-09-26T05:00:00.000Z';
+  const weather = {
+    clear: { region: '서울', temperature: 24, condition: 'clear', observedAt: day },
+    clear_night: { region: '서울', temperature: 17, condition: 'clear', observedAt: '2026-09-26T12:00:00.000Z' },
+    cloudy: { region: '서울', temperature: 19, condition: 'cloudy', observedAt: day },
+    rain: { region: '서울', temperature: 16, condition: 'rain', observedAt: day },
+    snow: { region: '서울', temperature: -2, condition: 'snow', observedAt: day },
+  }[kind];
+  routes['GET /v1/weather/today'] = kind === 'fail' ? { broken: true } : { weather: weather ?? null };
+}
+
 if (process.env.FIXTURE_WEDDING_FEED_FILE) {
   const items = JSON.parse(require('fs').readFileSync(process.env.FIXTURE_WEDDING_FEED_FILE, 'utf8'));
 
@@ -2189,6 +2255,12 @@ routes['PUT /v1/consultations/:consultationId/audio'] = {
  * 업체 상세 «정보» 탭의 출처 줄(2026-09-26 「공공데이터」 통일). 서버가 공공데이터 업체에 주는
  * 문장(`vendorSourceNote`) 그대로 — 화면은 이 문장 대신 «공공데이터» 한 이름을 적어야 한다.
  */
+/* 배우자 미연결(2026-09-26) — 연결관리가 «배우자 초대»(WP-CPL-001 · 「코드 받았어요」 링크)로 그려진다. */
+if (process.env.FIXTURE_SPOUSE_UNLINKED === 'true') {
+  ME.spouseLinked = false;
+  ME.partnerDisplayName = null;
+}
+
 if (process.env.FIXTURE_VENDOR_PUBLIC === 'true') {
   routes['GET /v1/vendors/:vendorId'] = { ...routes['GET /v1/vendors/:vendorId'], sourceNote: '지방행정 인허가 데이터 · 공공데이터포털' };
 }
@@ -2213,6 +2285,67 @@ if (process.env.FIXTURE_TASKS_UNDATED === 'true') {
       task('97777777-7777-4777-8777-777777777777', '웨딩홀 잔금 납부', '2027-04-01', '청담 E 웨딩홀'),
     ],
     progress: { done: 0, total: 7 },
+  };
+}
+
+/*
+ * 웨딩노트 수정 · 삭제(2026-09-26) — 대표님 캡처와 같은 꼴: 상담 일정 «리엔헤어메이크업 상담»(20:50),
+ * 날짜 없는 할 일 «예복 맞춤»(예식일 기준 임시 날짜), 그리고 예산 추가로 넣은 여러 업종의 지출
+ * (드레스 둘 · 본식스냅 · 부케 · 웨딩홀 Pick 인증 · 스튜디오 상담 정리). 예전 카드는 이것을 웨딩홀 ·
+ * 스드메 · 기타 셋으로 접어 고른 업종이 안 보였다.
+ */
+if (process.env.FIXTURE_NOTE_EDIT === 'true') {
+  const today = new Date();
+  const at = (dayOffset, hour, minute = 0) =>
+    new Date(today.getFullYear(), today.getMonth(), today.getDate() + dayOffset, hour, minute, 0).toISOString();
+  routes['GET /v1/weddings/:weddingId/events'] = {
+    events: [
+      {
+        id: '3a111111-1111-4111-8111-111111111111', title: '리엔헤어메이크업 상담', startsAt: at(7, 20, 50), location: null,
+        vendorId: 'c1111111-1111-4111-8111-111111111111', vendorLabel: '리엔헤어메이크업', memo: null, notifyEnabled: true,
+        source: 'manual', status: 'upcoming',
+      },
+      {
+        id: '3a222222-2222-4222-8222-222222222222', title: '드레스 피팅', startsAt: at(12, 14), location: '청담',
+        vendorId: null, vendorLabel: null, memo: '가족 2명 같이 가요', notifyEnabled: true, source: 'manual', status: 'upcoming',
+      },
+    ],
+  };
+  const task = (id, label, dueDate = null, vendorLabel = null) => ({
+    id, label, dueDate, vendorId: null, vendorLabel, state: 'upcoming', stateLabel: '예정', manualState: false,
+  });
+  routes['GET /v1/weddings/:weddingId/tasks'] = {
+    tasks: [
+      task('9a111111-1111-4111-8111-111111111111', '예복 맞춤'),
+      task('9a222222-2222-4222-8222-222222222222', '드레스 투어'),
+      task('9a333333-3333-4333-8333-333333333333', '청첩장 시안'),
+    ],
+    progress: { done: 0, total: 3 },
+  };
+  const line = (id, label, amount, category, source, spentOn) => ({
+    id, label, amount, category, bucket: 'etc', status: 'paid', statusLabel: '지출완료', spentOn, source,
+    sourceLabel: { manual: '직접 입력', payment_proof: 'Pick 인증 자료', consultation: '상담 정리' }[source],
+    refundStatus: 'normal', refundStatusLabel: '정상',
+  });
+  const expenses = [
+    line('eb111111-1111-4111-8111-111111111111', '드레스 예약금', 500000, 'dress', 'manual', '2026-09-24'),
+    line('eb222222-2222-4222-8222-222222222222', '드레스 잔금', 4500000, 'dress', 'manual', '2026-09-20'),
+    line('eb333333-3333-4333-8333-333333333333', '본식스냅', 1200000, 'snap', 'manual', '2026-09-18'),
+    line('eb444444-4444-4444-8444-444444444444', '부케', 300000, 'bouquet', 'manual', '2026-09-15'),
+    line('eb555555-5555-4555-8555-555555555555', '청담 E 웨딩홀', 10000000, 'hall', 'payment_proof', '2026-09-05'),
+    line('eb666666-6666-4666-8666-666666666666', '블루밍 스튜디오', 1500000, 'studio', 'consultation', '2026-09-14'),
+  ];
+  const paid = expenses.reduce((sum, row) => sum + row.amount, 0);
+  routes['GET /v1/weddings/:weddingId/expenses'] = {
+    ...routes['GET /v1/weddings/:weddingId/expenses'],
+    paidTotal: paid,
+    buckets: [
+      { bucket: 'hall', label: '웨딩홀', amount: 10000000, ratio: 10000000 / paid },
+      { bucket: 'sdm', label: '스드메', amount: 6500000, ratio: 6500000 / paid },
+      { bucket: 'etc', label: '기타', amount: 1500000, ratio: 1500000 / paid },
+    ],
+    budget: { set: true, budget: 30000000, spent: paid, remaining: 30000000 - paid, over: false },
+    expenses,
   };
 }
 

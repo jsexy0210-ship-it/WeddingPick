@@ -1,7 +1,11 @@
 import { z, type ZodType } from 'zod';
 
 import { analysisSchema } from './analyses';
-import { publicHolidayListResponseSchema, weddingForecastResponseSchema } from './public-calendar';
+import {
+  publicHolidayListResponseSchema,
+  regionWeatherResponseSchema,
+  weddingForecastResponseSchema,
+} from './public-calendar';
 import {
   consultationListResponseSchema,
   consultationRecordSchema,
@@ -565,6 +569,13 @@ export const ENDPOINTS = {
     method: 'GET',
     path: '/v1/weddings/{weddingId}/forecast',
     response: weddingForecastResponseSchema,
+  },
+
+  /** 지역 오늘 날씨 — 홈 히어로 카드 오른쪽. `region`은 온보딩 짧은 꼴. 없으면 `weather`가 null. */
+  getRegionWeather: {
+    method: 'GET',
+    path: '/v1/weather/today',
+    response: regionWeatherResponseSchema,
   },
 
   addWeddingEvent: {

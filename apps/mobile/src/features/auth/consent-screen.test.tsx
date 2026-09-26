@@ -4,7 +4,12 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import ConsentScreen from '@/app/login/consent';
 import { completeSignup, getSignupState } from '@/api/client';
 import { loadToken } from '@/api/session';
-import { clearSignupPending, hasFreshSignupPending, noteSignupPending } from '@/features/auth/sign-in-handoff';
+import {
+  clearSignupPending,
+  hasFreshSignupPending,
+  noteSignupPending,
+  takeFreshSignupActivated,
+} from '@/features/auth/sign-in-handoff';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
 
 /**
@@ -28,11 +33,13 @@ jest.mock('@/api/client', () => ({
 }));
 jest.mock('@/features/navigation/depth-back', () => ({ dismissToOrReplace: jest.fn() }));
 jest.mock('@/features/auth/terms-detail-modal', () => ({ TermsDetailModal: 'TermsDetailModal' }));
-jest.mock('@/features/loading/delayed-loader', () => ({ DelayedLoader: 'DelayedLoader' }));
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaView: 'SafeAreaView',
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
+/* 로그인 · 온보딩 사이의 원형 고리 화면(2026-09-26) — 이 시험은 화면 흐름만 본다. */
+jest.mock('@/features/auth/signing-in-view', () => ({ SigningInView: 'SigningInView', SigningInOverlay: 'SigningInOverlay' }));
+jest.mock('@/features/loading/auth-progress', () => ({ beginAuthProgress: jest.fn() }));
 jest.mock('@weddingpick/ui', () => ({
   ActionButton: 'ActionButton',
   CanonGray: {},
@@ -95,7 +102,7 @@ it('가입 상태를 못 읽은 뒤 «다시 시도»는 서버에 다시 묻고
 
   expect(getSignupState).toHaveBeenCalledTimes(2);
   expect(tree.root.findAllByType('ErrorView' as never)).toHaveLength(0);
-  expect(tree.root.findAllByType('DelayedLoader' as never)).toHaveLength(0);
+  expect(tree.root.findAllByType('SigningInView' as never)).toHaveLength(0);
   expect(tree.root.findByType('ActionButton' as never).props.label).toBe('동의하고 시작하기');
 });
 
@@ -163,14 +170,14 @@ describe('로그인 직후(감사 4 — 로더를 두 번 세우지 않는다)',
     await act(async () => { tree = create(<ConsentScreen />); });
 
     /* 서버 답이 아직인데 폼이 서 있다 — 로더가 없다. */
-    expect(tree.root.findAllByType('DelayedLoader' as never)).toHaveLength(0);
+    expect(tree.root.findAllByType('SigningInView' as never)).toHaveLength(0);
     expect(tree.root.findByType('ActionButton' as never).props.label).toBe('동의하고 시작하기');
     /* 다시 묻기는 한다 — 판정은 서버가 한다. 깃발은 한 번 쓰고 버렸다. */
     expect(getSignupState).toHaveBeenCalledTimes(1);
     expect(hasFreshSignupPending()).toBe(false);
 
     await act(async () => state.resolve(pendingState()));
-    expect(tree.root.findAllByType('DelayedLoader' as never)).toHaveLength(0);
+    expect(tree.root.findAllByType('SigningInView' as never)).toHaveLength(0);
   });
 
   it('깃발이 없으면(재방문 · 직접 진입) 전처럼 서버 답을 기다리며 로더를 세운다', async () => {
@@ -178,10 +185,10 @@ describe('로그인 직후(감사 4 — 로더를 두 번 세우지 않는다)',
     jest.mocked(getSignupState).mockReturnValue(state.promise as never);
 
     await act(async () => { tree = create(<ConsentScreen />); });
-    expect(tree.root.findAllByType('DelayedLoader' as never)).toHaveLength(1);
+    expect(tree.root.findAllByType('SigningInView' as never)).toHaveLength(1);
 
     await act(async () => state.resolve(pendingState()));
-    expect(tree.root.findAllByType('DelayedLoader' as never)).toHaveLength(0);
+    expect(tree.root.findAllByType('SigningInView' as never)).toHaveLength(0);
   });
 
   it('로그인 직후 다시 묻기가 실패해도 그린 폼을 거두지 않는다', async () => {
@@ -197,6 +204,38 @@ describe('로그인 직후(감사 4 — 로더를 두 번 세우지 않는다)',
 
     /* 서버가 아는 항목을 못 읽었으면 체크한 칸을 전부 보낸다. */
     expect(completeSignup).toHaveBeenCalledWith({ consents: ALL_SERVER_ITEMS });
+  });
+
+  it('동의 제출 — 기다리는 동안 원형 고리 덮개가 켜지고, 넘어가는 동안 걷지 않는다 · 온보딩에 «가입 완료»를 넘긴다', async () => {
+    jest.mocked(getSignupState).mockResolvedValue(pendingState() as never);
+    const signup = deferred<{ activated: boolean }>();
+    jest.mocked(completeSignup).mockReturnValue(signup.promise as never);
+    noteSignupPending();
+
+    await act(async () => { tree = create(<ConsentScreen />); });
+    expect(tree.root.findByType('SigningInOverlay' as never).props.active).toBe(false);
+
+    await act(async () => { tree.root.findByProps({ accessibilityLabel: '전체 동의' }).props.onPress(); });
+    await act(async () => { tree.root.findByType('ActionButton' as never).props.onPress(); });
+    expect(tree.root.findByType('SigningInOverlay' as never).props.active).toBe(true);
+
+    await act(async () => signup.resolve({ activated: true }));
+    expect(dismissToOrReplace).toHaveBeenCalledWith('/setup');
+    expect(tree.root.findByType('SigningInOverlay' as never).props.active).toBe(true);
+    expect(takeFreshSignupActivated()).toBe(true);
+  });
+
+  it('동의 제출이 실패하면 덮개를 걷고 폼 아래 오류를 세운다', async () => {
+    jest.mocked(getSignupState).mockResolvedValue(pendingState() as never);
+    jest.mocked(completeSignup).mockRejectedValue(new Error('저장하지 못했어요'));
+    noteSignupPending();
+
+    await act(async () => { tree = create(<ConsentScreen />); });
+    await act(async () => { tree.root.findByProps({ accessibilityLabel: '전체 동의' }).props.onPress(); });
+    await act(async () => { tree.root.findByType('ActionButton' as never).props.onPress(); });
+
+    expect(tree.root.findByType('SigningInOverlay' as never).props.active).toBe(false);
+    expect(takeFreshSignupActivated()).toBe(false);
   });
 
   it('로그인 직후라도 이미 활성화된 계정이면 초기 설정으로 넘긴다', async () => {

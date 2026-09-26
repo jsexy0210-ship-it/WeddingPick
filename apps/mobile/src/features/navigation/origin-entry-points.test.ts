@@ -20,11 +20,13 @@ const read = (path: string): string => readFileSync(join(src, path), 'utf8');
 
 describe('다른 탭 스택으로 들어가는 자리는 출처를 넘긴다', () => {
   it.each([
-    ['app/(tabs)/my/index.tsx', "guestPush('/wedding/partner?from=my')", '/wedding/partner?from=my', '/my'],
-    ['app/(tabs)/my/notifications.tsx', "router.push('/wedding/partner?from=notifications')", '/wedding/partner?from=notifications', '/my/notifications'],
-    ['app/(tabs)/index.tsx', "router.push('/wedding/partner?from=home')", '/wedding/partner?from=home', '/'],
-    ['app/(tabs)/my/reviews.tsx', 'router.push(`/search/${report.vendorId}?from=reviews`)', '/search/v-1?from=reviews', '/my/reviews'],
-    ['app/(tabs)/my/reviews.tsx', 'router.push(`/search/${report.vendorId}/write-review?from=reviews`)', '/search/v-1/write-review?from=reviews', '/my/reviews'],
+    /* 연결관리는 2026-09-26부터 들어오는 스택 안의 별칭으로 연다(`features/partner/routes.ts`). */
+    ['app/(tabs)/my/index.tsx', 'guestPush(MY_PARTNER_ROUTE)', '/my/partner', '/my'],
+    ['app/(tabs)/my/notifications.tsx', 'router.push(`${partnerRouteFor(pathname)}?from=notifications` as never)', '/my/partner?from=notifications', '/my/notifications'],
+    ['app/(tabs)/index.tsx', 'router.push(HOME_PARTNER_ROUTE as never)', '/partner', '/'],
+    /* MY 내가 쓴 후기 → 업체 상세 · 후기 쓰기는 MY 스택 별칭(`/my/vendor/…` · stack-alias.ts)으로 민다. */
+    ['app/(tabs)/my/reviews.tsx', "router.push(inStack('/my', `/search/${report.vendorId}?from=reviews`) as never)", '/my/vendor/v-1?from=reviews', '/my/reviews'],
+    ['app/(tabs)/my/reviews.tsx', "router.push(inStack('/my', `/search/${report.vendorId}/write-review?from=reviews`) as never)", '/my/vendor/v-1/write-review?from=reviews', '/my/reviews'],
   ])('%s — %s', (file, call, sample, origin) => {
     expect(read(file)).toContain(call);
     expect(depthBackTarget(sample)).toBe(origin);
@@ -33,7 +35,11 @@ describe('다른 탭 스택으로 들어가는 자리는 출처를 넘긴다', (
   it('리얼후기 카드 → 업체 상세는 리얼후기(와 그 앞의 MY)를 넘긴다', () => {
     const lounge = read('features/community/lounge-screen.tsx');
     expect(lounge).toContain("vendorOrigin={chainOrigin('community', from === 'my' ? 'my' : null)}");
-    expect(lounge).toContain('router.push(`/search/${encodeURIComponent(review.vendor.id)}?from=${vendorOrigin}` as never)');
+    expect(lounge).toContain("router.push(inStack('/community', `/search/${encodeURIComponent(review.vendor.id)}?from=${vendorOrigin}`) as never)");
+    // 라운지 스택 별칭 — 같은 스택이라 탭을 건너지 않고 꺼낸다(iOS 스와이프도 산다).
+    expect(depthBackTarget('/community/vendor/v-1?from=community.my')).toBe('/community/review?from=my');
+    expect(crossesStackOnBack('/community/vendor/v-1?from=community.my')).toBe(false);
+    expect(depthBackTarget('/community/vendor/v-1')).toBe('/community/review');
     expect(depthBackTarget('/search/v-1?from=community.my')).toBe('/community/review?from=my');
     expect(depthBackTarget('/community/review?from=my')).toBe('/my');
     expect(depthBackTarget('/search/v-1?from=community')).toBe('/community/review');
@@ -41,8 +47,12 @@ describe('다른 탭 스택으로 들어가는 자리는 출처를 넘긴다', (
 
   it('연결관리 → 초대 수락은 연결관리의 출처를 잇는다', () => {
     const partner = read('app/(tabs)/wedding/partner.tsx');
-    expect(partner).toContain("router.push(`/wedding/join?from=${chainOrigin('partner', from)}` as never)");
+    expect(partner).toContain('partnerJoinHref(pathname,');
+    expect(partner).toContain('router.push(joinHref as never)');
     expect(depthBackTarget('/wedding/join?from=partner.my')).toBe('/wedding/partner?from=my');
+    expect(depthBackTarget('/my/partner/join')).toBe('/my/partner');
+    expect(depthBackTarget('/my/partner/join?from=mypartner.notifications')).toBe('/my/partner?from=notifications');
+    expect(depthBackTarget('/partner/join')).toBe('/partner');
   });
 
   it('후기 작성 시트를 닫으면 Depth Back — 출처가 있으면 MY 후기로', () => {
@@ -58,7 +68,11 @@ describe('다른 탭 스택으로 들어가는 자리는 출처를 넘긴다', (
   it('Pick → «내 조건에 맞는 곳» → 업체 상세는 Pick(과 켜진 칩)을 넘긴다(2026-09-26 대표 감사)', () => {
     const pick = read('app/(tabs)/pick/index.tsx');
     expect(pick).toContain("const origin = pickOrigin(filter === 'all' ? null : filter);");
-    expect(pick).toContain("router.push({ pathname: '/search/[vendorId]', params: { vendorId: vendor.id, from: origin } })");
+    expect(pick).toContain("router.push(inStack('/pick', `/search/${encodeURIComponent(vendor.id)}?from=${encodeURIComponent(origin)}`) as never)");
+    // Pick 스택 별칭(stack-alias.ts) — 같은 Pick 스택 안이라 건너지 않는다.
+    expect(depthBackTarget('/pick/vendor/v-1?from=pick%2Fsdm')).toBe('/pick?group=sdm');
+    expect(depthBackTarget('/pick/vendor/v-1')).toBe('/pick');
+    expect(crossesStackOnBack('/pick/vendor/v-1?from=pick')).toBe(false);
     expect(pickOrigin(null)).toBe('pick');
     expect(pickOrigin('sdm')).toBe('pick/sdm');
     expect(pickOrigin('bogus')).toBe('pick');
@@ -75,7 +89,10 @@ describe('다른 탭 스택으로 들어가는 자리는 출처를 넘긴다', (
 
   it('Pick 카드 → 상담 예약은 Pick을 넘기고, 닫으면 Pick으로', () => {
     const pick = read('app/(tabs)/pick/index.tsx');
-    expect(pick).toContain("params: { vendorId: candidate.vendorId, from: origin }");
+    expect(pick).toContain("router.push(inStack('/pick', `/search/${encodeURIComponent(candidate.vendorId)}/consult?from=${encodeURIComponent(origin)}`) as never)");
+    expect(depthBackTarget('/pick/vendor/v-1/consult?from=pick%2Fgoods')).toBe('/pick?group=goods');
+    expect(crossesStackOnBack('/pick/vendor/v-1/consult?from=pick%2Fgoods')).toBe(false);
+    expect(depthBackTarget('/pick/vendor/v-1/consult')).toBe('/pick/vendor/v-1');
     const consult = read('app/(tabs)/search/[vendorId]/consult.tsx');
     expect(consult).toContain('backTo(depthBackTarget(closePath), closePath, readStackState(navigation));');
     expect(consult).toContain('requestDirtySheetClose(dirty, closeSheet);');
@@ -89,7 +106,10 @@ describe('다른 탭 스택으로 들어가는 자리는 출처를 넘긴다', (
   it('비교 → 상담 예약은 같은 업체를 견주던 그 비교로 돌아온다(비교 목록째 출처로)', () => {
     const compare = read('app/(tabs)/search/compare.tsx');
     expect(compare).toContain("const origin = compareOrigin((ids ?? '').split(',').filter(Boolean));");
-    expect(compare).toContain("params: origin ? { vendorId, from: origin } : { vendorId }");
+    expect(compare).toContain('router.push(inStack(pathname, consult) as never);');
+    // Pick 스택의 비교에서 연 상담 예약은 Pick 스택의 그 비교로 닫힌다.
+    expect(depthBackTarget(`/pick/vendor/v-1/consult?from=${encodeURIComponent('compare/v-1,v-2')}`)).toBe('/pick/compare?ids=v-1,v-2');
+    expect(crossesStackOnBack(`/pick/vendor/v-1/consult?from=${encodeURIComponent('compare/v-1,v-2')}`)).toBe(false);
     expect(compareOrigin(['v-1', 'v-2'])).toBe('compare/v-1,v-2');
     expect(compareOrigin(['v-1', 'v-2', 'v-3'])).toBe('compare/v-1,v-2,v-3');
     // 한 곳 · 넷 이상 · id 모양이 아닌 값은 출처를 만들지 않는다.

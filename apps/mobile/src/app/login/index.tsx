@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Border,
   CanonGray,
+  CircleLoader,
   Layout,
   LetterSpacing,
   LineHeight,
@@ -15,6 +16,7 @@ import {
   ThemedText,
   ThemedView,
   WeddingMark,
+  useDelayedVisible,
   useTheme,
 } from '@weddingpick/ui';
 import { AgeConfirmSheet } from '@/features/auth/age-confirm-sheet';
@@ -25,8 +27,8 @@ import {
   providerTone,
   useAuthProviders,
 } from '@/features/auth/providers';
-import { bootOwnsSigningInMessage, takePendingSignInError } from '@/features/auth/sign-in-handoff';
-import { SigningInBody, signingInMessage } from '@/features/auth/signing-in-view';
+import { takePendingSignInError } from '@/features/auth/sign-in-handoff';
+import { SigningInView, signingInMessage } from '@/features/auth/signing-in-view';
 import { useSignIn } from '@/features/auth/use-sign-in';
 
 /**
@@ -86,6 +88,8 @@ export default function LoginScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- 마운트 때 한 번만
   }, []);
 
+  const providersLoading = useDelayedVisible(providers === null);
+
   /* 서버 목록 그대로 — 순서(카카오 · 애플 · 개발용)와 거르기는 `usableProviders`가 정한다. */
   const options = providers ?? [];
   const primary = options.find((provider) => provider.provider === 'kakao' && !provider.isDevelopmentStandIn)
@@ -119,12 +123,12 @@ export default function LoginScreen() {
 
           <View style={styles.authBlock}>
             {providers === null || busy ? (
+              /*
+               * 단추 자리 — 제공자 목록을 읽는 동안(700ms 넘으면) 원형 고리 28. 누른 뒤(`busy`)는
+               * 이 자리가 아니라 화면 전체의 «로그인하는 중»이 맡는다(아래 덮개).
+               */
               <ThemedView style={styles.busy}>
-                <SigningInBody
-                  size={28}
-                  show={busy && !bootOwnsSigningInMessage() ? 'message' : 'loader'}
-                  message={signingInMessage(busyProvider)}
-                />
+                {providers === null && providersLoading ? <CircleLoader size={28} /> : null}
               </ThemedView>
             ) : (
               <>
@@ -163,6 +167,17 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </SafeAreaView>
+
+      {/*
+        누른 뒤 — 화면 전체에 «로그인하는 중» 하나(원형 고리 위 · 문구 아래). 카카오에서 돌아온
+        부팅(`app/_layout.tsx`)과 **같은 화면 · 같은 자리**라, 단추를 누른 때부터 약관 동의가 설
+        때까지 로더가 한 번만 선다(2026-09-26 대표 지시 「로더 써클만 돌도록 통합한다」).
+      */}
+      {busy ? (
+        <View style={StyleSheet.absoluteFill}>
+          <SigningInView message={signingInMessage(busyProvider)} />
+        </View>
+      ) : null}
 
       <LoginFailureSheet visible={error !== null} onRetry={retry} onDismiss={dismissError} />
       {/* 카카오가 연령대를 안 준 드문 경우만(`needsAgeConfirm`) — RN 정본 home.jsx에 없는 상태다. */}

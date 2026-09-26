@@ -1,30 +1,32 @@
 import React from 'react';
-import { ScrollView } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
-import { getExpenses, listMyReports, refreshReads } from '@/api/client';
+import { listMyReports, refreshReads } from '@/api/client';
 import { showResultToast } from '@/features/navigation/result-toast';
 import MyReportsScreen from '@/app/(tabs)/my/reports';
-import ExpenseListScreen from '@/app/(tabs)/wedding/[id]/expenses/list';
+import ExpenseListRedirect from '@/app/(tabs)/wedding/[id]/expenses/list';
 
 /**
  * 화면에 실제로 붙었는가 — 두 화면을 그려 스크롤의 `refreshControl`을 당긴다.
  *
  *   MY › Pick 인증내역   SubScreen 껍데기(목록 화면 공통)
- *   웨딩노트 › 지출내역   ScrollView를 직접 쓰는 화면
+ *
+ * 웨딩노트 › 지출내역 풀팝업은 2026-09-26 예산현황 목록으로 통합돼 지웠다 — 그 주소는 예산 탭으로
+ * 돌려보내고, 당겨서 새로 고침은 웨딩노트 한 스크롤(`wedding/index.tsx`)이 맡는다(붙은 자리 시험).
  *
  * 당기면 캐시를 건너뛰는 창(`refreshReads`) 안에서 그 화면의 읽기가 다시 돌고, 실패해도 보이던
  * 내용은 오류 화면으로 바뀌지 않고 한 줄 토스트만 뜬다.
  */
 jest.mock('@/api/client', () => ({
   listMyReports: jest.fn(),
-  getExpenses: jest.fn(),
   refreshReads: jest.fn(),
 }));
 jest.mock('expo-router', () => {
   const { useEffect } = jest.requireActual<typeof import('react')>('react');
   return {
     router: { push: jest.fn() },
+    Redirect: ({ href }: { href: string }) =>
+      jest.requireActual<typeof import('react')>('react').createElement('Redirect', { href }),
     useLocalSearchParams: () => ({ id: 'wedding-1' }),
     useFocusEffect: (effect: () => void | (() => void)) => useEffect(effect, [effect]),
   };
@@ -76,12 +78,6 @@ afterEach(async () => {
 });
 
 const EMPTY_REPORTS = { reports: [] } as unknown as Awaited<ReturnType<typeof listMyReports>>;
-const PAGE = {
-  expenses: [
-    { id: 'e1', label: '웨딩홀 계약금', amount: 1_000_000, status: 'paid', source: 'manual', sourceLabel: '직접 입력', spentOn: null },
-  ],
-} as unknown as Awaited<ReturnType<typeof getExpenses>>;
-
 describe('당겨서 새로 고침 — 화면 연결', () => {
   it('MY › Pick 인증내역: 당기면 캐시를 건너뛰는 창에서 다시 읽는다', async () => {
     jest.mocked(listMyReports).mockResolvedValue(EMPTY_REPORTS);
@@ -104,19 +100,9 @@ describe('당겨서 새로 고침 — 화면 연결', () => {
     expect(showResultToast).toHaveBeenCalledWith('정보를 불러오지 못했어요');
   });
 
-  it('웨딩노트 › 지출내역: 스크롤에 붙어 있고 당기면 다시 읽는다 · 실패해도 줄이 남는다', async () => {
-    jest.mocked(listMyReports).mockResolvedValue(EMPTY_REPORTS);
-    jest.mocked(getExpenses).mockResolvedValueOnce(PAGE).mockRejectedValueOnce(new Error('끊김'));
-    await mount(<ExpenseListScreen />);
-    expect(getExpenses).toHaveBeenCalledWith('wedding-1');
-
-    const scroll = tree.root.findByType(ScrollView) as unknown as Pullable;
-    await pull(scroll);
-
-    expect(refreshReads).toHaveBeenCalledTimes(1);
-    expect(getExpenses).toHaveBeenCalledTimes(2);
-    expect(tree.root.findAllByType(ScrollView)).toHaveLength(1);
-    expect(tree.root.findAll((node) => node.props.accessibilityLabel === '웨딩홀 계약금 100만원')).not.toHaveLength(0);
-    expect(showResultToast).toHaveBeenCalledWith('정보를 불러오지 못했어요');
+  it('웨딩노트 › 지출내역: 풀팝업은 지웠고 저장된 주소는 예산 탭으로 돌려보낸다', async () => {
+    await mount(<ExpenseListRedirect />);
+    const redirect = tree.root.findByType('Redirect' as never) as unknown as { props: { href: string } };
+    expect(redirect.props.href).toBe('/wedding?tab=budget');
   });
 });

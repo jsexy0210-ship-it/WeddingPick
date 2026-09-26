@@ -51,7 +51,7 @@ function event(title: string, startsAt: string): WeddingEvent {
 /** 2026-09-26 대표 지시 — 웨딩노트 «웨딩일정»은 할 일을 예식일에서 역산한 임시 날짜로 보여 준다. */
 describe('웨딩노트 웨딩일정 — 임시 날짜 줄', () => {
   it('할 일을 못 읽었으면 기본 열셋 중 아직 안 지난 것을 모두 임시 날짜로 세운다', () => {
-    const plans = notePlanEntries([], [], WEDDING, NOW);
+    const plans = notePlanEntries(null, [], WEDDING, NOW);
     const expected = TASK_PRESETS.map((preset) => ({ label: preset.label, due: tentativeDueDate(WEDDING, preset.label)! }))
       .filter((row) => row.due >= '2026-09-26');
 
@@ -61,6 +61,8 @@ describe('웨딩노트 웨딩일정 — 임시 날짜 줄', () => {
       expect(plan.tentative).toBe(true);
       expect(plan.meta).toBe(TENTATIVE);
       expect(plan.date).toBe(tentativeDueDate(WEDDING, plan.title));
+      /* 서버에 행이 없는 대신 세운 줄이라 고치거나 지울 수 없다. */
+      expect(plan.editable).toBe(false);
     }
     expect(plans.map((plan) => plan.date)).toEqual([...plans.map((plan) => plan.date)].sort());
   });
@@ -78,8 +80,8 @@ describe('웨딩노트 웨딩일정 — 임시 날짜 줄', () => {
     );
 
     expect(plans).toEqual([
-      { id: 'task-웨딩홀 잔금 납부', date: '2027-05-01', title: '웨딩홀 잔금 납부', meta: '청담 E 웨딩홀', tentative: false },
-      { id: 'task-드레스 투어', date: tentativeDueDate(WEDDING, '드레스 투어'), title: '드레스 투어', meta: TENTATIVE, tentative: true },
+      { id: 'task-웨딩홀 잔금 납부', date: '2027-05-01', title: '웨딩홀 잔금 납부', meta: '청담 E 웨딩홀', tentative: false, editable: true },
+      { id: 'task-드레스 투어', date: tentativeDueDate(WEDDING, '드레스 투어'), title: '드레스 투어', meta: TENTATIVE, tentative: true, editable: true },
     ]);
   });
 
@@ -93,13 +95,17 @@ describe('웨딩노트 웨딩일정 — 임시 날짜 줄', () => {
     expect(plans.map((plan) => plan.title)).toEqual(['예복 맞춤']);
   });
 
+  it('할 일을 다 지웠으면(읽었는데 비었으면) 기본 열셋을 다시 세우지 않는다', () => {
+    expect(notePlanEntries([], [], WEDDING, NOW)).toEqual([]);
+  });
+
   it('예식일을 모르면 역산하지 않는다', () => {
     expect(notePlanEntries([task('드레스 투어')], [], null, NOW)).toEqual([]);
   });
 
   it('홈과 같은 함수를 쓴다 — 홈은 다섯 줄, 웨딩노트는 전부', () => {
     const all = tentativePlanItems([], WEDDING, NOW, { fallbackLabels: TASK_PRESETS.map((p) => p.label) });
-    expect(all.length).toBe(notePlanEntries([], [], WEDDING, NOW).length);
+    expect(all.length).toBe(notePlanEntries(null, [], WEDDING, NOW).length);
     expect(tentativeScheduleRows([], WEDDING, NOW).length).toBeLessThanOrEqual(5);
     /* 홈 기본 다섯 줄 이름은 그대로 쓴다. */
     expect(tentativeScheduleRows([], WEDDING, NOW).every((row) => row.kind === 'dated' && row.meta === TENTATIVE)).toBe(true);
@@ -119,7 +125,7 @@ describe('웨딩노트 웨딩일정 — 임시 날짜 줄', () => {
     let view!: ReactTestRenderer;
     act(() => {
       view = create(
-        <TimelinePlanRow plan={{ id: 'p', date: '2026-11-17', title: '드레스 투어', meta: TENTATIVE, tentative: true }} />
+        <TimelinePlanRow plan={{ id: 'p', date: '2026-11-17', title: '드레스 투어', meta: TENTATIVE, tentative: true, editable: false }} />
       );
     });
     const texts = view.root

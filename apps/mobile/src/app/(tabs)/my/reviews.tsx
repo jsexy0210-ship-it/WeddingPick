@@ -16,6 +16,7 @@ import {
 } from '@weddingpick/ui';
 import { listMyReports } from '@/api/client';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
+import { inStack } from '@/features/navigation/stack-alias';
 import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import { EmptyBox, Section, SubScreen, SubScreenStatus } from '@/features/settings/my-kit';
 
@@ -121,7 +122,7 @@ export default function MyReviewsScreen() {
                 onPress={
                   report.vendorId === null
                     ? undefined
-                    : () => router.push(`/search/${report.vendorId}?from=reviews`)
+                    : () => router.push(inStack('/my', `/search/${report.vendorId}?from=reviews`) as never)
                 }
               />
             ))}
@@ -141,7 +142,7 @@ export default function MyReviewsScreen() {
                 meta={`${S.verified} · ${monthDay(report.reportedAt)}`}
                 write
                 last={index === writable.length - 1}
-                onPress={() => router.push(`/search/${report.vendorId}/write-review?from=reviews`)}
+                onPress={() => router.push(inStack('/my', `/search/${report.vendorId}/write-review?from=reviews`) as never)}
                 accessibilityLabel={`${report.subject} 후기 쓰기`}
               />
             ))}

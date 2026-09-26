@@ -41,7 +41,12 @@ import {
   loadRecentSearches,
   removeRecentSearch,
 } from '@/features/search/recent-searches';
-import { FilterSheet, type SearchFilterValue } from '@/features/search/filter-sheet';
+import {
+  FilterSheet,
+  pickFilterValue,
+  useFilterSheetSession,
+  type SearchFilterValue,
+} from '@/features/search/filter-sheet';
 import { SORT_LABEL, SortPanel } from '@/features/search/sort-panel';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import {
@@ -66,6 +71,7 @@ import {
   ListSkeleton,
 } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
+import { inStack } from '@/features/navigation/stack-alias';
 
 /**
  * 검색은 자주 쓰는 분류부터 보여준다. 사업계획서 6번의 확장 순서와 같다.
@@ -218,7 +224,13 @@ export default function SearchScreen() {
    * **화면을 옮기지 않는다.** 시안이 바텀시트라서이기도 하지만, 조건을 바꿀 때마다 결과
    * 수가 따라 바뀌려면 결과를 들고 있는 이 화면 위에 떠 있어야 한다.
    */
-  const [filterOpen, setFilterOpen] = useState(false);
+  const filterSheet = useFilterSheetSession(
+    () => ({ filter: pickFilterValue(filters), viewState }),
+    ({ filter, viewState: before }) => {
+      setFilters((current) => ({ ...current, ...filter }));
+      setViewState(before);
+    }
+  );
   /** 최근 검색. 자동완성 화면과 같은 저장소(`features/search/recent-searches`)를 본다. */
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
@@ -835,10 +847,13 @@ export default function SearchScreen() {
             size="large"
             label={EMPTY_REPORT_CTA}
             onPress={() =>
-              router.push({
-                pathname: '/my/contact',
-                params: { category: 'data_correction', subjectKind: 'vendor', subjectName: trimmedQ },
-              })
+              /* 문의하기는 검색 스택 안에서 민다(`stack-alias.ts` — `/search/contact`). MY 탭으로 건너가지 않는다. */
+              router.push(
+                inStack(
+                  '/search',
+                  `/my/contact?category=data_correction&subjectKind=vendor&subjectName=${encodeURIComponent(trimmedQ)}`
+                ) as never
+              )
             }
           />
         </View>
@@ -988,7 +1003,7 @@ export default function SearchScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={activeFilterCount > 0 ? `필터 ${formatCount(activeFilterCount)}개 적용됨` : '필터'}
-                onPress={() => setFilterOpen(true)}
+                onPress={filterSheet.open}
                 style={[styles.headerFilterBtn, { backgroundColor: theme.backgroundElement }]}>
                 {/* 정본 WP-SRCH-001 `icoSliders` = ICO('more-horiz', 16, INK) — search.js. */}
                 <SeedIcon name="moreHorizRegular" size={Layout.iconField} color={theme.text} />
@@ -1006,9 +1021,10 @@ export default function SearchScreen() {
         {/*
           필터 시트 — WP-SRCH-002. 고르는 즉시 조건이 걸려 결과와 CTA의 수가 함께 바뀐다.
           «{n}개 업체 보기»를 누르면 시트만 닫힌다 — 이미 그 조건으로 보고 있다.
+          X · 딤 · 끌기 · 뒤로가기로 닫으면 열 때 조건으로 되돌린다(적용 전 취소 — `useFilterSheetSession`).
         */}
         <FilterSheet
-          visible={filterOpen}
+          visible={filterSheet.visible}
           value={{
             category: filters.category,
             region: filters.region,
@@ -1021,8 +1037,8 @@ export default function SearchScreen() {
             setFilters((current) => ({ ...current, ...next }));
             setViewState('results');
           }}
-          onApply={() => setFilterOpen(false)}
-          onDismiss={() => setFilterOpen(false)}
+          onApply={filterSheet.apply}
+          onDismiss={filterSheet.dismiss}
         />
         <PickDoneSheet visible={pickDoneOpen} onDismiss={() => setPickDoneOpen(false)} />
         <UnpickSheet

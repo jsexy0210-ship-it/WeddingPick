@@ -3,11 +3,21 @@ import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 
-import { addWeddingEvent, getCurrentUser, listPublicHolidays } from '@/api/client';
+import {
+  addWeddingEvent,
+  getCurrentUser,
+  listPublicHolidays,
+  listWeddingEvents,
+  listWeddingTasks,
+  updateWeddingEvent,
+  updateWeddingTask,
+} from '@/api/client';
+import { CtaRow } from '@/features/common/cta-row';
 import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
 import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
 import { OsDateField, OsTimeField } from '@/features/common/os-picker-field';
 import { dayOf } from '@/features/common/os-picker-field.shared';
+import { confirmDeleteTimelineItem, type TimelineTarget } from '@/features/wedding/timeline-delete';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { showResultToast } from '@/features/navigation/result-toast';
 import { combineDayTime } from '@/features/wedding/event-form';
@@ -15,6 +25,7 @@ import { holidayLine, monthRange } from '@/features/wedding/public-calendar-line
 import { CheckBox, Field, ListRow, ToggleSwitch } from '@/features/wedding/screen-kit';
 import { ActionButton, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 
+import { ourWedding as copy } from '../../../../../../../../spec/strings.ko.json';
 import WeddingScreen from '../../index';
 
 const DEFAULT_TIME = '14:00';
@@ -38,9 +49,31 @@ const DEFAULT_TIME = '14:00';
  *
  * /events/new 딥링크는 유지하되 별도 전체 화면은 만들지 않는다. 부모 일정 화면을 그대로
  * 남기고 시트만 올린다.
+ *
+ * 수정 모드(2026-09-26 대표 지시 — 웨딩일정 타임라인 줄의 수정 아이콘). 같은 시트를 값이 채워진 채 연다:
+ *   `?eventId=`  일정(직접 넣은 일정 · 상담 일정 — 같은 `wedding_events` 행) — 날짜 · 제목 · 시간 · 알림.
+ *                저장은 PATCH /events/:id
+ *   `?taskId=`   할 일(날짜를 넣은 할 일 · 예식일 기준 임시 날짜 줄) — 날짜 · 제목만. 할 일에는 시간 ·
+ *                알림 값이 서버에 없어 그 칸을 그리지 않는다(없는 값을 칸으로 그리지 않는다). 임시 날짜
+ *                줄은 `?date=`(보이던 임시 날짜)로 채우고, 저장하면 그 날짜가 진짜 날짜가 된다(PATCH /tasks/:id)
+ * 제목 «일정 수정», 아래는 «삭제 · 변경 내용 저장» 두 단추(지출 수정 시트와 같은 `CtaRow` 1 : 1.4). 삭제는
+ * OS 확인창(`confirmDeleteTimelineItem`). 정본 note.jsx에 수정 프레임은 없다 — `DESIGN_UNRESOLVED`
+ * (등록 시트 WP-NOTE-002를 그대로 쓴다). 지난 일정도 고칠 수 있어 수정 모드는 날짜 하한을 두지 않는다.
  */
 export default function AddWeddingEventRoute() {
-  const { id, date } = useLocalSearchParams<{ id: string; date?: string }>();
+  const { id, date, eventId, taskId } = useLocalSearchParams<{
+    id: string;
+    date?: string;
+    eventId?: string;
+    taskId?: string;
+  }>();
+  const target: TimelineTarget | null = eventId
+    ? { kind: 'event', id: eventId, title: '' }
+    : taskId
+      ? { kind: 'task', id: taskId, title: '' }
+      : null;
+  const editing = target !== null;
+  const isTask = target?.kind === 'task';
   const { height } = useWindowDimensions();
   const theme = useTheme();
 
@@ -52,6 +85,51 @@ export default function AddWeddingEventRoute() {
   const [notifyEnabled, setNotifyEnabled] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  /* 수정 모드에서 처음 채운 값 — 바뀐 것이 있을 때만 저장 단추가 켜진다. 못 읽었으면 null. */
+  const [initial, setInitial] = useState<{ title: string; day: string | null; time: string; notify: boolean } | null>(
+    null
+  );
+
+  useEffect(() => {
+    if (!eventId && !taskId) return;
+    let active = true;
+    const fill = (next: { title: string; day: string | null; time: string; notify: boolean }) => {
+      if (!active) return;
+      setInitial(next);
+      setTitle(next.title);
+      setDay(next.day);
+      setTime(next.time);
+      setNotifyEnabled(next.notify);
+    };
+    const missing = () => {
+      if (active) setError('일정을 찾지 못했어요. 목록에서 다시 골라주세요.');
+    };
+    if (eventId) {
+      listWeddingEvents(id)
+        .then(({ events }) => {
+          const row = events.find((event) => event.id === eventId);
+          if (!row) return missing();
+          const at = new Date(row.startsAt);
+          const pad = (value: number) => String(value).padStart(2, '0');
+          fill({
+            title: row.title,
+            day: dayOf(at),
+            time: `${pad(at.getHours())}:${pad(at.getMinutes())}`,
+            notify: row.notifyEnabled,
+          });
+        })
+        .catch((caught: Error) => { if (active) setError(caught.message); });
+    } else if (taskId) {
+      listWeddingTasks(id)
+        .then(({ tasks }) => {
+          const row = tasks.find((task) => task.id === taskId);
+          if (!row) return missing();
+          fill({ title: row.label, day: row.dueDate ?? date ?? null, time: DEFAULT_TIME, notify: true });
+        })
+        .catch((caught: Error) => { if (active) setError(caught.message); });
+    }
+    return () => { active = false; };
+  }, [id, eventId, taskId, date]);
 
   useEffect(() => {
     getCurrentUser()
@@ -77,9 +155,24 @@ export default function AddWeddingEventRoute() {
 
   const startsAt = combineDayTime(day, time);
   const reason =
-    title.trim().length === 0 ? '제목을 적어주세요' : startsAt === null ? '날짜와 시간을 골라주세요' : null;
-  const ready = reason === null;
-  const dirty = title.length > 0 || day !== (date ?? null) || time !== DEFAULT_TIME || notifyEnabled !== true;
+    title.trim().length === 0
+      ? '제목을 적어주세요'
+      : isTask
+        ? day === null
+          ? '날짜를 골라주세요'
+          : null
+        : startsAt === null
+          ? '날짜와 시간을 골라주세요'
+          : null;
+  const dirty = editing
+    ? initial !== null &&
+      (title !== initial.title || day !== initial.day || (!isTask && (time !== initial.time || notifyEnabled !== initial.notify)))
+    : title.length > 0 || day !== (date ?? null) || time !== DEFAULT_TIME || notifyEnabled !== true;
+  /*
+   * 임시 날짜 줄은 날짜가 서버에 없다 — 보이던 날짜 그대로 저장해도 «진짜 날짜로 정하기»라 바뀐 것으로 본다.
+   */
+  const tentativeTask = isTask && initial !== null && date !== undefined && initial.day === date;
+  const ready = reason === null && (!editing || dirty || tentativeTask);
 
   function closeSheet() {
     dismissToOrReplace('/wedding?tab=calendar');
@@ -91,20 +184,47 @@ export default function AddWeddingEventRoute() {
   }
 
   async function save() {
-    if (!ready || startsAt === null || saving) return;
+    if (!ready || saving) return;
+    if (!isTask && startsAt === null) return;
 
     setSaving(true);
     setError(null);
 
     try {
-      await addWeddingEvent(id, { title: title.trim(), startsAt, notifyEnabled });
-      showResultToast('일정을 추가했어요');
+      if (eventId) {
+        await updateWeddingEvent(id, eventId, { title: title.trim(), startsAt: startsAt!, notifyEnabled });
+        showResultToast(copy['event.saved']);
+      } else if (taskId) {
+        await updateWeddingTask(id, taskId, { label: title.trim(), dueDate: day });
+        showResultToast(copy['event.saved']);
+      } else {
+        await addWeddingEvent(id, { title: title.trim(), startsAt: startsAt!, notifyEnabled });
+        showResultToast('일정을 추가했어요');
+      }
       closeSheet();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '넣지 못했어요. 다시 시도해주세요.');
     } finally {
       setSaving(false);
     }
+  }
+
+  function requestDelete() {
+    if (!target || saving || initial === null) return;
+    confirmDeleteTimelineItem({
+      weddingId: id,
+      target: { ...target, title: initial.title },
+      onStart: () => {
+        setSaving(true);
+        setError(null);
+      },
+      onDeleted: () => {
+        showResultToast(copy['event.deleted']);
+        closeSheet();
+      },
+      onError: setError,
+      onSettled: () => setSaving(false),
+    });
   }
 
   const partner = me?.spouseLinked ? (me.partnerDisplayName ?? '배우자') : null;
@@ -115,7 +235,7 @@ export default function AddWeddingEventRoute() {
 
       <BottomSheet visible onRequestClose={requestClose} style={styles.sheetHost} testID="event-add-sheet">
         <SheetPanel>
-          <SheetHeader title="일정 추가" onClose={requestClose} />
+          <SheetHeader title={editing ? copy['event.editTitle'] : '일정 추가'} onClose={requestClose} closeDisabled={saving} />
 
           <ScrollView
             style={[styles.scroll, { maxHeight: Math.max(280, height * 0.62) }]}
@@ -128,7 +248,7 @@ export default function AddWeddingEventRoute() {
                 label="날짜"
                 value={day}
                 placeholder="날짜를 골라주세요"
-                min={dayOf(new Date())}
+                min={editing ? undefined : dayOf(new Date())}
                 accent
                 onChange={setDay}
               />
@@ -142,14 +262,17 @@ export default function AddWeddingEventRoute() {
                 value={title}
                 onChangeText={setTitle}
                 placeholder="예: 드레스 투어 2차"
-                maxLength={60}
+                maxLength={isTask ? 40 : 60}
                 returnKeyType="next"
               />
-              <OsTimeField label="시간" value={time} placeholder={DEFAULT_TIME} onChange={setTime} />
+              {isTask ? null : (
+                <OsTimeField label="시간" value={time} placeholder={DEFAULT_TIME} onChange={setTime} />
+              )}
             </View>
 
-            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+            {isTask ? null : <View style={[styles.divider, { backgroundColor: theme.border }]} />}
 
+            {isTask ? null : (
             <View style={styles.alarms}>
               <ListRow
                 title="하루 전에 알려주기"
@@ -166,6 +289,7 @@ export default function AddWeddingEventRoute() {
                 <ListRow left={<CheckBox checked />} title={`${partner}님에게도 알려주기`} divider={false} />
               ) : null}
             </View>
+            )}
 
             {error ? (
               <ThemedText type="t7" themeColor="negative">
@@ -179,13 +303,29 @@ export default function AddWeddingEventRoute() {
               {reason}
             </ThemedText>
           ) : null}
-          <ActionButton
-            variant="primary"
-            size="xlarge"
-            label={saving ? '넣는 중…' : '일정 넣기'}
-            disabled={!ready || saving}
-            onPress={() => void save()}
-          />
+          {editing ? (
+            <CtaRow gap={Spacing.two}>
+              <ActionButton
+                label={copy['expense.delete']}
+                disabled={saving || initial === null}
+                onPress={requestDelete}
+              />
+              <ActionButton
+                variant="primary"
+                label={saving ? '저장하는 중…' : copy['expense.save']}
+                disabled={!ready || saving}
+                onPress={() => void save()}
+              />
+            </CtaRow>
+          ) : (
+            <ActionButton
+              variant="primary"
+              size="xlarge"
+              label={saving ? '넣는 중…' : '일정 넣기'}
+              disabled={!ready || saving}
+              onPress={() => void save()}
+            />
+          )}
         </SheetPanel>
       </BottomSheet>
     </View>

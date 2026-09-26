@@ -17,7 +17,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { currentUserId, requireSignup } from '../auth/plugin';
 import type { AppContext } from '../context';
-import { publishedVersionId } from '../legal-version';
+import { publishedVersionIds } from '../legal-version';
 import { ApiError } from '../errors';
 
 /**
@@ -156,29 +156,33 @@ export function registerSignupRoutes(app: FastifyInstance, context: AppContext):
        * 필수 다섯 중 하나라도 빠지면 아래 `canActivate`가 거절한다(2026-09-26 대표 결정
        * 「강제한다」). 받은 동의는 그래도 남긴다 — 사용자가 한 동의다.
        */
-      for (const item of new Set(body.consents as ConsentItem[])) {
-        const definition = CONSENT_ITEMS.find((candidate) => candidate.key === item);
+      /*
+       * **한 번에 적는다**(2026-09-26 대표 지시 — 약관 동의 → 온보딩 대기 감축). 전에는 항목마다
+       * «공개된 판» 조회 + INSERT를 차례로 해 여덟 항목에 왕복 열네 번이었다. 앱은 이 응답을
+       * 받아야 온보딩으로 넘어가므로 그 왕복이 그대로 화면 대기였다. 뜻은 같다 — 항목마다
+       * 판 · 필수 여부 · 가리키는 공개 판이 한 줄씩 남고, 이미 있는 줄은 그대로 둔다.
+       */
+      const definitions = [...new Set(body.consents as ConsentItem[])]
+        .map((item) => CONSENT_ITEMS.find((candidate) => candidate.key === item))
+        .filter((definition): definition is (typeof CONSENT_ITEMS)[number] => definition !== undefined);
 
-        if (!definition) continue;
-
-        /*
-         * **어느 판에 동의했는지를 «가리키게» 한다**(0422). 공개된 판이 있으면 그
-         * 행을 가리키고, 없으면 비워 둔다 — 없는 연결을 지어내지 않는다.
-         *
-         * **판 이름(`terms_version`)은 손대지 않는다.** 이 글자는 아래 `loadState`와
-         * `missingRequiredConsents`가 `consentVersion(item)`과 맞춰 보는 값이라,
-         * 여기서 표의 판 이름(`v0.1`)으로 바꾸면 **방금 동의한 사람이 동의하지 않은
-         * 것으로 읽힌다** — 가입 화면이 같은 자리를 되풀이한다. 두 이름을 하나로
-         * 합치는 것은 출시 게이트(`release-gate.ts`)까지 걸린 일이라 따로 정한다.
-         */
-        const versionId = await publishedVersionId(client, item);
+      if (definitions.length > 0) {
+        const versionIds = await publishedVersionIds(client, definitions.map((definition) => definition.key));
 
         await client.query(
           `INSERT INTO structured.user_consents
              (user_id, item, terms_version, is_required, terms_version_id)
-           VALUES ($1, $2, $3, $4, $5)
+           SELECT $1, rows.item, rows.terms_version, rows.is_required, rows.terms_version_id
+           FROM unnest($2::text[], $3::text[], $4::boolean[], $5::uuid[])
+             AS rows(item, terms_version, is_required, terms_version_id)
            ON CONFLICT DO NOTHING`,
-          [userId, item, definition.version, definition.required, versionId]
+          [
+            userId,
+            definitions.map((definition) => definition.key),
+            definitions.map((definition) => definition.version),
+            definitions.map((definition) => definition.required),
+            definitions.map((definition) => versionIds.get(definition.key) ?? null),
+          ]
         );
       }
 

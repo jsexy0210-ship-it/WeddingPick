@@ -32,9 +32,10 @@ import {
 } from '@weddingpick/ui';
 import { ApiError, completeSignup, getSignupState } from '@/api/client';
 import { loadToken } from '@/api/session';
-import { clearSignupPending, hasFreshSignupPending } from '@/features/auth/sign-in-handoff';
+import { clearSignupPending, hasFreshSignupPending, noteSignupActivated } from '@/features/auth/sign-in-handoff';
+import { SigningInOverlay, SigningInView } from '@/features/auth/signing-in-view';
 import { TermsDetailModal } from '@/features/auth/terms-detail-modal';
-import { DelayedLoader } from '@/features/loading/delayed-loader';
+import { beginAuthProgress } from '@/features/loading/auth-progress';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
 
 /**
@@ -138,6 +139,12 @@ export default function ConsentScreen() {
   async function submit() {
     if (submitting || !allRequiredChecked) return;
 
+    /*
+     * 누른 순간부터 온보딩 첫 질문이 설 때까지가 기다림 하나다(2026-09-26 대표 지시 — 「약관 동의 →
+     * 온보딩 이동 시 로딩이 발생한다. 로더를 넣거나 …」). 서버 답이 700ms를 넘기면 로그인과 같은
+     * 원형 고리 화면이 선다(`SigningInOverlay`) — 그 전에는 폼 그대로다(빈 화면을 띄우지 않는다).
+     */
+    beginAuthProgress();
     setSubmitting(true);
     setError(null);
 
@@ -145,25 +152,27 @@ export default function ConsentScreen() {
     const consents = signupConsentsFor(checked, accepted);
 
     try {
-      await completeSignup({ consents });
+      const state = await completeSignup({ consents });
+      /* 방금 받은 «가입 완료»를 온보딩이 다시 묻지 않게 넘긴다(`sign-in-handoff`). */
+      if (state.activated) noteSignupActivated();
+      /*
+       * 넘어가는 동안 `submitting`을 풀지 않는다 — 풀면 고리가 걷히고 동의 폼이 전환 동안 한 번 더
+       * 비친 뒤 온보딩이 선다(웹 연속 캡처로 확인). 이 화면은 곧 내려간다.
+       */
       dismissToOrReplace('/setup');
     } catch (caught) {
+      setSubmitting(false);
       if (caught instanceof ApiError && caught.status === 401) {
         router.replace('/login');
         return;
       }
       setError(caught instanceof Error ? caught.message : '동의를 저장하지 못했어요.');
-    } finally {
-      setSubmitting(false);
     }
   }
 
   if (status === 'loading') {
-    return (
-      <ThemedView style={styles.loading}>
-        <DelayedLoader size={40} />
-      </ThemedView>
-    );
+    /* 로그인 · 온보딩 사이의 같은 원형 고리(2026-09-26 「로더 써클만 돌도록 통합한다」). */
+    return <SigningInView message={null} />;
   }
 
   if (status === 'error') {
@@ -233,6 +242,8 @@ export default function ConsentScreen() {
           />
         </ThemedView>
       </SafeAreaView>
+
+      <SigningInOverlay active={submitting} />
 
       <TermsDetailModal
         visible={detailKey !== null}
@@ -355,7 +366,6 @@ function PermissionCell({ item }: { item: AppPermissionItem }) {
 const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
-  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: { paddingHorizontal: Layout.gutter, paddingTop: 40, paddingBottom: Spacing.four, gap: 28 },
   /* `permTitle` 24/33 두 줄 = 66. 줄높이 33 토큰이 없어 상자 높이로 맞춘다. */
   head: { gap: 8, minHeight: 66 },

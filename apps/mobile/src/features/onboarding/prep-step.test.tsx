@@ -171,10 +171,26 @@ describe('준비 현황 카드 → 업체 검색 시트', () => {
     press(tree, '웨딩홀. 강남 A 웨딩홀');
     pressText(tree, '아직 정한 곳이 없어요');
 
-    expect(latest).toEqual({ categories: [] });
+    expect(latest).toEqual({ categories: [], none: ['hall'] });
     expect(preparedVendorIds(latest)).toEqual([]);
-    expect(pressable(tree, '웨딩홀. 예식장 · 식대 · 대관').props.accessibilityState).toEqual({ checked: false });
+    expect(preparedChoicesPayload(latest)).toEqual({});
+    /* 카드는 꺼진 채로, 부제 자리에 고른 것 «아직 정한 곳이 없어요»가 선다(2026-09-26 대표 지시). */
+    expect(pressable(tree, '웨딩홀. 아직 정한 곳이 없어요').props.accessibilityState).toEqual({ checked: false });
+    expect(texts(tree)).not.toContain('예식장 · 식대 · 대관');
     expect(search).not.toHaveBeenCalled();
+  });
+
+  it('«정한 곳 없음» 카드에서 다시 업체를 고르면 표시가 빠지고 업체 이름이 선다', async () => {
+    const tree = render({ categories: [], none: ['hall'] });
+
+    press(tree, '웨딩홀. 아직 정한 곳이 없어요');
+    await type(tree, '강남');
+    pressText(tree, '강남 A 웨딩홀');
+
+    expect(latest?.none).toBeUndefined();
+    expect(preparedChoicesPayload(latest)).toEqual({ preparedVendorIds: ['v-hall'] });
+    /* 카드 부제가 업체 이름으로 바뀐다 — 닫히는 시트의 단추 글자는 남아 있을 수 있어 카드 이름으로 본다. */
+    expect(pressable(tree, '웨딩홀. 강남 A 웨딩홀').props.accessibilityState).toEqual({ checked: true });
   });
 
   it('X로 닫으면 아무것도 바꾸지 않는다', () => {

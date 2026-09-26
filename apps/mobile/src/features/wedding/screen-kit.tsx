@@ -419,6 +419,8 @@ export type FieldProps = Omit<TextInputProps, 'style'> & {
   /** 값 아래 한 줄 — 읽은 표기 · 오류(`hintColor="negative"`면 오류로 그린다). */
   hint?: string | null;
   hintColor?: ThemeColor;
+  /** 칸 오른쪽 끝 — 단위 «만원» 등(공용 `TextField`의 `trailing`을 그대로 넘긴다). */
+  trailing?: ReactNode;
   /** 더 이상 쓰지 않는다 — 공용 `TextField`가 높이 · 여러 줄 정렬을 정한다. 옛 호출을 깨지 않으려고 받기만 한다. */
   style?: unknown;
 };

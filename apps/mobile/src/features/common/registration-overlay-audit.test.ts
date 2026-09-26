@@ -50,6 +50,11 @@ describe('registration routes use canonical overlays', () => {
     const candidates = filesUnder(APP)
       .filter((path) => path.endsWith('.tsx'))
       .map(route)
+      /*
+       * 출처 스택 별칭(`features/navigation/stack-alias.ts`) — 원래 화면을 한 줄로 다시 내보낼 뿐이라
+       * 시트 여부는 원래 화면이 정한다. 대신 다시 내보내는 대상이 이 목록 안의 화면인지 본다.
+       */
+      .filter((path) => !/^\/\*\*[^\n]*\*\/\nexport \{ default \} from '[^']+';\n$/.test(source(path)))
       .filter((path) => {
         const name = basename(path);
         return (
@@ -114,6 +119,7 @@ describe('registration routes use canonical overlays', () => {
     }
 
     const calendar = source('(tabs)/search/expo/[expoId]/calendar.tsx');
-    expect(calendar).toContain('dismissToOrReplace(`/search/expo/${expoId}`)');
+    /* 라운지 스택 별칭(`/community/expo/<박람회>/calendar`)이면 그 스택의 박람회 상세로 접는다. */
+    expect(calendar).toContain('dismissToOrReplace(inStack(pathname, `/search/expo/${expoId}`))');
   });
 });

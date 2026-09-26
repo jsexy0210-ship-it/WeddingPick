@@ -1,7 +1,7 @@
 import React from 'react';
 import { act, create, type ReactTestRenderer, type ReactTestRendererJSON } from 'react-test-renderer';
 import { MyWeddingPrep, HomeBudget } from './home-summary';
-import { ceremonyLine } from './hero';
+import { formatWeddingDate, partnerLine, weatherLines } from './hero';
 import { homePrepCards } from './prep-groups';
 
 jest.mock('./category-image', () => ({ CategoryImage: () => null }));
@@ -21,11 +21,27 @@ function renderedText(node: ReactTestRendererJSON | ReactTestRendererJSON[] | st
 const text = (view: ReactTestRenderer) => renderedText(view.toJSON());
 
 describe('최신 홈·추천 연결', () => {
-  it('히어로 예식 정보 줄은 RN 정본 home.jsx WP-HOME-001~003 세 상태를 따른다', () => {
-    expect(ceremonyLine('2027-04-17', '테스트 웨딩홀')).toBe('2027년 4월 17일 (토) · 테스트 웨딩홀');
-    expect(ceremonyLine('2027-01-15', null)).toBe('2027년 1월 15일 (금) · 장소는 아직이에요');
-    expect(ceremonyLine('2027-01-15', null, true)).toBe('예식일만 정했어요 · 장소는 아직이에요');
-    expect(ceremonyLine(null, null)).toBe('예식일 · 예식장 미정');
+  it('히어로 예식 줄은 예식일만 적는다 — 웨딩홀 정보는 뺐다(2026-09-26 대표 지시)', () => {
+    expect(formatWeddingDate('2027-04-17')).toBe('2027년 4월 17일 (토)');
+    expect(formatWeddingDate('2027-01-15')).toBe('2027년 1월 15일 (금)');
+  });
+
+  it('히어로 배우자 연결 현황은 세 상태다 — 연결됨은 정본 coupleText 꼴', () => {
+    const me = { displayName: '지윤', partnerDisplayName: '준혁', spouseLinked: true } as never;
+    expect(partnerLine(me, false)).toBe('지윤 · 준혁 · 함께 준비 중');
+    const solo = { displayName: '지윤', partnerDisplayName: null, spouseLinked: false } as never;
+    expect(partnerLine(solo, true)).toBe('초대 수락을 기다리고 있어요');
+    expect(partnerLine(solo, false)).toBe('함께 준비할 사람을 초대해보세요');
+  });
+
+  it('히어로 날씨는 기온 · 「지역 · 날씨」 · 관측 시각이다 — 예보가 아니라 관측이다', () => {
+    // 05:00Z = 14시(한국 시각) 관측
+    expect(
+      weatherLines({ region: '서울', temperature: 18, condition: 'partly_cloudy', observedAt: '2026-09-26T05:00:00.000Z' })
+    ).toEqual({ temperature: '18°', line: '서울 · 구름많음', observed: '14시 기준' });
+    expect(
+      weatherLines({ region: '부산', temperature: -2, condition: 'snow', observedAt: '2026-09-26T05:00:00.000Z' }).line
+    ).toBe('부산 · 눈');
   });
 
   it('별점 검사는 SVG 좌표를 제외하되 실제 표시된 별점은 탐지한다', () => {

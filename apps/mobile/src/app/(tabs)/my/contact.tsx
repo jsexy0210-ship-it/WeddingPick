@@ -5,7 +5,7 @@ import {
   canSubmitInquiry,
   type InquiryCategory,
 } from '@weddingpick/domain';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, usePathname } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,6 +14,7 @@ import { createInquiry, listMyInquiries } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { useDepthBack } from '@/features/navigation/depth-back';
 import { showResultToast } from '@/features/navigation/result-toast';
+import { inStack } from '@/features/navigation/stack-alias';
 import { INQUIRY_STATUS_TEXT, inquiryBadgeTone, inquiryMonthDay } from '@/features/settings/inquiry-status';
 import { Dock, Hero, NoteBox, Section, SubScreen } from '@/features/settings/my-kit';
 import { BackBar } from '@/components/back-bar';
@@ -72,6 +73,8 @@ export default function ContactScreen() {
   const [mine, setMine] = useState<Inquiry[]>([]);
   // 완료 화면의 「돌아가기」도 Depth Back이다 — 알림·링크로 곧장 들어와도 MY로 올라간다.
   const depthBack = useDepthBack();
+  /* 검색 · 홈 스택 별칭(`/search/contact` · `/contact`)에서도 선다 — 지난 문의도 같은 스택 안에서 민다. */
+  const pathname = usePathname();
 
   const subject =
     params.subjectKind && params.subjectId
@@ -164,7 +167,7 @@ export default function ContactScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={`${inquiry.body} ${INQUIRY_STATUS_TEXT[inquiry.status]}`}
                   /* 행을 누르면 문의 상세(답변 포함)로 간다 — 2026-09-25 대표 지시 「지난 문의 상세 화면이 없다」. */
-                  onPress={() => router.push(`/my/contact/${inquiry.id}`)}
+                  onPress={() => router.push(inStack(pathname, `/my/contact/${inquiry.id}`) as never)}
                   style={({ pressed }) => [
                     styles.pastRow,
                     index < mine.length - 1 ? { borderBottomWidth: Border.hairline, borderBottomColor: theme.border } : null,

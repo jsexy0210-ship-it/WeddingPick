@@ -4,8 +4,8 @@ import type {
   WeddingFeedListResponse,
 } from '@weddingpick/api-contract';
 import { WEDDING_FEED_LOUNGE_LIMIT, daysUntil } from '@weddingpick/domain';
-import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { Redirect, router, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -42,6 +42,7 @@ import {
 import { feedDetailHref } from '@/features/community/feed-href';
 import { CatChipBar } from '@/features/settings/my-kit';
 import { chainOrigin } from '@/features/navigation/depth-back';
+import { inStack } from '@/features/navigation/stack-alias';
 import { NavBar } from '@/features/wedding/screen-kit';
 import strings from '../../../../../spec/strings.ko.json';
 import { ReviewWriteSheet } from '@/app/(tabs)/search/[vendorId]/write-review';
@@ -51,6 +52,9 @@ const S = strings.community;
 const R = strings.review;
 
 export type LoungeKind = 'review' | 'feed' | 'expo';
+/** 딥링크 인자 지우기를 다시 부르는 간격 · 횟수(최대 2초). 지워지면 곧바로 멈춘다. */
+const DEEP_LINK_CLEAR_INTERVAL_MS = 100;
+const DEEP_LINK_CLEAR_TRIES = 20;
 /* 정본 my.jsx frame-008 · 010 · 012 — 화면마다 자기 제목(리얼후기 · 웨딩정보 · 박람회). */
 const TITLE: Record<LoungeKind, string> = {
   review: S['tab.review'],
@@ -100,8 +104,65 @@ export function LoungeScreen({ kind: tab }: { kind: LoungeKind }) {
   const reviewLoadingMore = useRef(false);
   const categoryRef = useRef<CategoryLabel>('전체');
   const isSignedIn = state.status === 'signedIn';
-  const communityReviewHref = `/community/review${from === 'my' ? '?from=my' : ''}`;
-  const communityWriteHref = `${communityReviewHref}${from === 'my' ? '&' : '?'}write=review`;
+  /**
+   * 글쓰기 시트 — **같은 화면 위의 오버레이**다(2026-09-26 대표 제보 「리얼후기 → 글쓰기 클릭 시
+   * 바닥페이지가 두 번 로드된다」). 예전에는 같은 후기 화면을 `?write=review`로 새로 push하고
+   * 업체 선택 · 닫기마다 `router.replace`로 갈아끼워, 바닥 목록이 한 장 더 마운트되고 다시 읽혔다.
+   * 이제 화면의 상태로 열고 닫는다 — 라우트가 바뀌지 않으니 바닥은 그대로다.
+   *
+   *   null            닫힘
+   *   { vendorId? }   열림 — 업체를 고르기 전(업체 선택 시트) · 고른 뒤(후기 작성 시트)
+   *
+   * 브라우저 뒤로가기는 시트만 닫는다(`BottomSheet` `closeOnBrowserBack`) · 안드로이드 Back은
+   * 시트 `Modal`의 `onRequestClose`가 받는다.
+   */
+  const [writeSheet, setWriteSheet] = useState<{ vendorId?: string } | null>(null);
+
+  /*
+   * 저장된 딥링크 `?write=review(&vendorId=)` — 주소에서 인자를 먼저 지우고, 지워진 뒤에 시트를 연다.
+   * 예전 `/community/review/write`도 이 인자로 넘어온다.
+   *
+   *   지우는 이유   남겨 두면 새로 고침마다 닫은 시트가 다시 열린다. `setParams`는 기록을 쌓지 않고
+   *                 화면을 다시 마운트하지 않는다.
+   *   이 화면의 것  전역 `router.setParams`는 내비게이션 루트의 맨 위 라우트(탭 묶음)에 인자를 얹어
+   *                 이 화면의 주소가 그대로 남았다(웹 빌드 실측).
+   *   다시 부른다   첫 진입 직후(웹 hydration 중)의 `setParams`는 내비게이터가 받지 않고 흘렸다 —
+   *                 인자가 실제로 지워질 때까지 짧게 다시 부른다(웹 빌드 실측: 첫 호출 유실 · 1초 뒤 호출 반영).
+   *   지운 뒤 연다  시트의 브라우저 뒤로가기 칸(`sheet-browser-back.ts`)이 주소 갈아쓰기보다 먼저
+   *                 얹히면 그 칸이 지운 주소로 덮이고 아래 칸에 옛 주소가 남는다 — 뒤로가기가 옛 주소로
+   *                 돌아가 시트가 다시 열린다.
+   */
+  const navigation = useNavigation();
+  const deepLink = tab === 'review' && write === 'review' ? `review|${writeVendorId ?? ''}` : null;
+  const [seenDeepLink, setSeenDeepLink] = useState<string | null>(null);
+  const [pendingWrite, setPendingWrite] = useState<{ vendorId?: string } | null>(null);
+  if (deepLink !== seenDeepLink) {
+    setSeenDeepLink(deepLink);
+    if (deepLink !== null) {
+      setPendingWrite(writeVendorId ? { vendorId: writeVendorId } : {});
+    } else if (pendingWrite) {
+      setWriteSheet(pendingWrite);
+      setPendingWrite(null);
+    }
+  }
+  useEffect(() => {
+    if (deepLink === null) return;
+    const clear = () => navigation.setParams({ write: undefined, vendorId: undefined } as never);
+    clear();
+    let tries = 0;
+    const timer = setInterval(() => {
+      tries += 1;
+      if (tries <= DEEP_LINK_CLEAR_TRIES) {
+        clear();
+        return;
+      }
+      /* 끝내 못 지웠다 — 주소는 남아도 시트는 연다. */
+      clearInterval(timer);
+      setPendingWrite(null);
+      setWriteSheet(writeVendorId ? { vendorId: writeVendorId } : {});
+    }, DEEP_LINK_CLEAR_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [deepLink, navigation, writeVendorId]);
 
   /** `keep` — 당겨서 새로 고침. 보이던 후기는 비우지 않고 실패는 토스트로만 알린다. */
   const loadReviews = useCallback((label: CategoryLabel, cursor?: string, keep?: boolean) => {
@@ -209,7 +270,7 @@ export function LoungeScreen({ kind: tab }: { kind: LoungeKind }) {
               ? {
                   label: S.write,
                   brand: true,
-                  onPress: () => router.push(communityWriteHref as never),
+                  onPress: () => setWriteSheet({}),
                 }
               : undefined
           }
@@ -259,23 +320,23 @@ export function LoungeScreen({ kind: tab }: { kind: LoungeKind }) {
           )}
         </ScrollView>
       </SafeAreaView>
-      {write === 'review' ? (
-        writeVendorId ? (
+      {tab === 'review' && writeSheet ? (
+        writeSheet.vendorId ? (
           <ReviewWriteSheet
-            vendorId={writeVendorId}
+            vendorId={writeSheet.vendorId}
             supportingText="라운지 후기에 머물러 작성해요."
-            onClose={() => router.replace(communityReviewHref as never)}
+            closeOnBrowserBack
+            onClose={() => setWriteSheet(null)}
             onSubmitted={() => {
-              loadReviews(categoryRef.current);
-              router.replace(communityReviewHref as never);
+              setWriteSheet(null);
+              /* 새 후기를 담으려고 목록을 **한 번만** 다시 읽는다. 보이던 목록은 그대로 두고 바꿔 끼운다. */
+              loadReviews(categoryRef.current, undefined, true);
             }}
           />
         ) : (
           <LoungeReviewVendorSheet
-            onClose={() => router.replace(communityReviewHref as never)}
-            onChoose={(vendorId) =>
-              router.replace(`${communityWriteHref}&vendorId=${encodeURIComponent(vendorId)}` as never)
-            }
+            onClose={() => setWriteSheet(null)}
+            onChoose={(vendorId) => setWriteSheet({ vendorId })}
           />
         )
       ) : null}
@@ -355,10 +416,10 @@ function ReviewList({
               accessibilityRole="button"
               accessibilityLabel={`${review.vendor.name} 후기`}
               /*
-               * 후기 상세는 2026-09-25 삭제 — 그 업체 상세로 연다. 업체 상세는 검색 스택에 있으니
-               * 출처(리얼후기 · 그 앞의 MY)를 넘긴다 — 없으면 Back이 검색 홈으로 간다.
+               * 후기 상세는 2026-09-25 삭제 — 그 업체 상세로 연다. 라운지 스택 안에서 민다(`stack-alias.ts`
+               * — `/community/vendor/<업체>`). 출처(리얼후기 · 그 앞의 MY)를 넘겨 Back이 그 목록으로 온다.
                */
-              onPress={() => router.push(`/search/${encodeURIComponent(review.vendor.id)}?from=${vendorOrigin}` as never)}
+              onPress={() => router.push(inStack('/community', `/search/${encodeURIComponent(review.vendor.id)}?from=${vendorOrigin}`) as never)}
               style={({ pressed }) => [styles.reviewTap, pressed ? styles.pressed : null]}>
             <View style={styles.reviewHead}>
               <View style={[styles.reviewAvatar, { backgroundColor: theme.backgroundSelected }]}>
@@ -580,7 +641,7 @@ function ExpoList({ state, onRetry }: { state: Loaded<ExpoItem[]>; onRetry: () =
             key={expo.id}
             accessibilityRole="button"
             accessibilityLabel={expo.title}
-            onPress={() => router.push(`/search/expo/${expo.id}` as never)}
+            onPress={() => router.push(inStack('/community', `/search/expo/${expo.id}`) as never)}
             style={({ pressed }) => [
               styles.expoCard,
               past

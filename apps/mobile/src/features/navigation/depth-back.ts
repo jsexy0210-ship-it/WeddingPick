@@ -226,6 +226,22 @@ function focusedTabName(navigation: { getParent?: () => unknown }): string | nul
 }
 
 /**
+ * 완료 · 안내 CTA가 **Root 탭 뿌리**(`/` · `/pick` · `/wedding`)로 보낼 때. 목적지가 지금 스택의 뿌리면
+ * 그 스택을 꺼내 내려가고(Pick 스택 별칭의 상담 예약 → «나의 Pick 보기»), 다른 탭이면 그 탭으로 건너간
+ * 뒤 떠난 스택을 접는다(`backTo` — 화면이 `useCrossStackBack`을 걸어 둬야 접힌다). 접지 않으면 그 탭을
+ * 다시 눌렀을 때 방금 끝낸 완료 화면이 그대로 떠 있다.
+ *
+ * `router.replace('/pick')`를 스택 별칭 안에서 부르면 Pick 스택에 Pick 뿌리가 한 장 더 쌓인다.
+ */
+export function leaveToTabRoot(root: string, currentPathname: string): void {
+  if (!crossesStack(currentPathname, root)) {
+    dismissToOrReplace(root);
+    return;
+  }
+  backTo(root, currentPathname);
+}
+
+/**
  * 완료 CTA처럼 목적지가 이미 정해진 자리에서 History를 되짚지 않고 그 화면으로 끝낸다.
  * 대상이 스택에 있으면 거기까지 접고, 직접 진입이라 대상이 없으면 현재 화면을 교체한다.
  */

@@ -13,6 +13,8 @@ jest.mock('expo-router', () => ({
   router: { push: jest.fn() },
   Redirect: 'Redirect',
   useLocalSearchParams: () => ({ q: '검수', vendorId: 'vendor-1' }),
+  /* 알림 화면이 선 자리 — MY 스택(원래 주소). 홈 알림 종에서 열면 `/notifications`(stack-alias.ts). */
+  usePathname: () => '/my/notifications',
 }));
 jest.mock('@/api/client', () => ({
   listNotifications: jest.fn(), readNotification: jest.fn(), readAllNotifications: jest.fn(),
@@ -75,8 +77,8 @@ describe('알림 이동과 읽음 복구', () => {
     await mount(<NotificationsScreen />);
     const press = tree.root.findAll((node) => node.props.accessibilityRole === 'button' && typeof node.props.onPress === 'function')[0]!.props.onPress;
     await act(async () => { press(); press(); });
-    /* 연결관리는 웨딩노트 스택에 있다 — 출처(알림)를 넘겨야 Back이 알림 목록으로 온다. */
-    expect(router.push).toHaveBeenCalledWith('/wedding/partner?from=notifications');
+    /* 연결관리는 MY 스택 안의 별칭(`/my/partner`)으로 쌓는다 — 출처(알림)를 넘겨야 Back이 알림 목록으로 온다. */
+    expect(router.push).toHaveBeenCalledWith('/my/partner?from=notifications');
     expect(readNotification).toHaveBeenCalledTimes(1);
     await act(async () => pending.resolve({ unread: 6, total: 7 }));
   });

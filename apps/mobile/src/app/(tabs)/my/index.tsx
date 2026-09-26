@@ -49,6 +49,7 @@ import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull
 import { useSession } from '@/features/auth/use-session';
 import { DelayedLoader, DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { AVATAR_MY, Avatar } from '@/features/settings/my-kit';
+import { MY_PARTNER_ROUTE } from '@/features/partner/routes';
 import strings from '../../../../../../spec/strings.ko.json';
 import { APP_VERSION } from '@/features/settings/version';
 
@@ -173,7 +174,7 @@ export default function MyScreen() {
     {
       title: S['group.together'],
       rows: [
-        { key: 'partner', label: S['item.partner'], icon: 'community', tail: data.couple ? COUPLE_LABEL[data.couple] : undefined, onPress: () => guestPush('/wedding/partner?from=my') },
+        { key: 'partner', label: S['item.partner'], icon: 'community', tail: data.couple ? COUPLE_LABEL[data.couple] : undefined, onPress: () => guestPush(MY_PARTNER_ROUTE) },
       ],
     },
     /*

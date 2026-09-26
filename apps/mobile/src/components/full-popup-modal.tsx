@@ -1,9 +1,12 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Animated, Easing, Modal, Platform, StyleSheet, useWindowDimensions } from 'react-native';
 
 import { Motion, USE_NATIVE_DRIVER, useReduceMotion, useTheme } from '@weddingpick/ui';
 
+import { NavigationRouteContext } from 'expo-router/build/react-navigation/core';
+
 import { KeyboardAvoid } from '@/features/common/keyboard-avoid';
+import { useBrowserBackClose } from '@/features/common/sheet-browser-back';
 
 export type FullPopupModalProps = {
   visible: boolean;
@@ -138,6 +141,15 @@ function WebFullPopup({ visible, onRequestClose, onShow, children }: FullPopupMo
   }, [visible, mounted]);
 
   useEffect(() => () => running.current?.stop(), []);
+
+  /*
+   * 브라우저 뒤로가기는 풀팝업만 닫는다 — 공통 바텀시트와 같은 장치(`sheet-browser-back.ts`).
+   * 라우트가 처음부터 띄운 풀팝업(`my/privacy-policy` — 닫기가 곧 라우트 뒤로)은 빠진다. 뒤로가기가 이미
+   * 라우트째 닫으므로 켜면 두 칸이 빠진다.
+   */
+  const route = useContext(NavigationRouteContext);
+  const [openedAtMount] = useState(visible);
+  useBrowserBackClose(visible && !(openedAtMount && route != null), onRequestClose);
 
   if (!mounted) return null;
 

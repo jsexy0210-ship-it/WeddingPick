@@ -101,15 +101,13 @@ describe('지출내역 줄 수정 · 삭제 아이콘', () => {
     expect(remove).not.toHaveBeenCalled();
   });
 
-  it('지출내역은 직접 넣은 줄에만 아이콘을 그리고, 수정은 같은 수정 시트를 연다', () => {
-    const list = readFileSync(
-      join(__dirname, '..', '..', 'app', '(tabs)', 'wedding', '[id]', 'expenses', 'list.tsx'),
-      'utf8'
-    );
+  it('예산 목록은 직접 넣은 건에만 아이콘을 그리고, 수정은 같은 수정 시트를 연다', () => {
+    const list = readFileSync(join(__dirname, 'budget-category-list.tsx'), 'utf8');
     expect(list).toContain('const editable = isUserExpense(expense);');
     expect(list).toMatch(/\{editable \? \(\s*<ExpenseRowActions/);
-    expect(list).toContain('/expenses/add?expenseId=${expenseId}');
-    expect(list).toContain('confirmDeleteExpense({');
+    const screen = readFileSync(join(__dirname, '..', '..', 'app', '(tabs)', 'wedding', 'index.tsx'), 'utf8');
+    expect(screen).toContain('/expenses/add?expenseId=${expenseId}');
+    expect(screen).toContain('confirmDeleteExpense({');
     const sheet = readFileSync(
       join(__dirname, '..', '..', 'app', '(tabs)', 'wedding', '[id]', 'expenses', 'add.tsx'),
       'utf8'

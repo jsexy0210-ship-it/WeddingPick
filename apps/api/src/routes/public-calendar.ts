@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { assertWeddingAccess } from '../access';
 import { currentUserId, requireUser } from '../auth/plugin';
 import type { AppContext } from '../context';
+import { readRegionWeather } from '../weather/region-weather';
 
 /**
  * 공휴일 · 예식일 예보 — 서버가 받아 둔 공공 자료를 읽기만 한다(0437).
@@ -84,5 +85,16 @@ export function registerPublicCalendarRoutes(app: FastifyInstance, context: AppC
       : null;
 
     return { forecast };
+  });
+
+  /*
+   * 지역 오늘 날씨 — 홈 히어로 카드 오른쪽(2026-09-26 대표 지시, 0447). 공공 자료라 누구의
+   * 웨딩인지 묻지 않는다. 모르는 지역 · 「그 외」 · 값 없음 · 오래된 값은 모두 null이다.
+   */
+  const weatherQuerySchema = z.object({ region: z.string().trim().max(10).optional() });
+  app.get('/v1/weather/today', auth, async (request) => {
+    const { region } = weatherQuerySchema.parse(request.query);
+
+    return { weather: await readRegionWeather(context.pool, region) };
   });
 }

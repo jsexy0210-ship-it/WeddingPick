@@ -24,8 +24,8 @@ import { useTheme } from './use-theme';
  * ```
  *
  * 트랙은 `theme.line`(= line.divider #EAEBEE, 시안의 `#eaebee`와 같은 값), 도는 쪽은
- * 스킨 색(기본 coral)이다. 한 바퀴 800ms
- * linear 무한 — 시안의 `@keyframes wpSpin`과 같다.
+ * 스킨 색(기본 coral)이다. 한 바퀴 900ms linear 무한 — RN 정본 `common.js:244` `spinBig`
+ * («width:40px;border:3px solid #eaebee;animation:wpSpin 900ms linear infinite»)과 같다.
  *
  * **왜 있는가.** 핸드오프 v3.20(`30-loading.dc.html`)은 «원형 스피너를 쓰지 않아요 —
  * 로더는 업종 아이콘이 도는 것 하나뿐»이라고 적는다. 2026-09-11 대표 지시가 그 규칙을
@@ -99,6 +99,30 @@ export function CircleLoader({ size = 40, style }: CircleLoaderProps) {
 
 type SpinProps = { ring: ViewStyle };
 
+// ─── 모든 고리가 같은 각도로 돈다 ─────────────────────────────────────────────
+
+/**
+ * 지금 한 바퀴 중 몇 ms째인가 — **문서(앱) 시계에 맞춘 각도**(2026-09-26 대표 지시 —
+ * 「로더 써클만 돌도록 통합한다」).
+ *
+ * 고리마다 제 마운트 순간을 0°로 삼으면, 화면이 바뀌며 고리가 새로 설 때마다 각도가
+ * 튀어 «로더가 새로 선다»로 보인다(로그인 → 약관 동의 사이에 실제로 그랬다). 모든 고리를
+ * 같은 시계(웹 `performance.now()` — 페이지가 열린 순간이 0, 네이티브 `Date.now()`)에
+ * 맞추면 고리가 갈아 끼워져도 같은 자리에서 이어 돈다. 웹의 첫 HTML(`+html.tsx`)이 그리는
+ * CSS 고리도 같은 시계로 맞춘다.
+ */
+export function spinPhaseMs(now: number = currentClock()): number {
+  const period = Motion.loaderCircleSpin;
+
+  return ((now % period) + period) % period;
+}
+
+function currentClock(): number {
+  if (Platform.OS === 'web' && typeof performance !== 'undefined') return performance.now();
+
+  return Date.now();
+}
+
 // ─── 웹 · CSS 키프레임 ────────────────────────────────────────────────────────
 
 const KEYFRAMES_STYLE_ID = 'wp-spin-keyframes';
@@ -127,7 +151,7 @@ function WebSpin({ ring }: SpinProps) {
 
   const attach = useCallback((node: View | null) => {
     const el = node as unknown as { style?: { animation: string } } | null;
-    if (el?.style) el.style.animation = `wpSpin ${Motion.loaderCircleSpin}ms linear infinite`;
+    if (el?.style) el.style.animation = `wpSpin ${Motion.loaderCircleSpin}ms linear ${-spinPhaseMs()}ms infinite`;
   }, []);
 
   return <View ref={attach} style={ring} />;
@@ -139,17 +163,33 @@ function NativeSpin({ ring }: SpinProps) {
   const [t] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
-    t.setValue(0);
-    const loop = Animated.loop(
-      Animated.timing(t, {
-        toValue: 1,
-        duration: Motion.loaderCircleSpin,
-        easing: Easing.linear,
-        useNativeDriver: USE_NATIVE_DRIVER,
-      })
-    );
-    loop.start();
-    return () => loop.stop();
+    /* 같은 시계에 맞춘 각도에서 출발한다 — 새로 선 고리가 앞 고리를 이어 돈다(`spinPhaseMs`). */
+    const phase = spinPhaseMs() / Motion.loaderCircleSpin;
+    t.setValue(phase);
+    let loop: Animated.CompositeAnimation | null = null;
+    const first = Animated.timing(t, {
+      toValue: 1,
+      duration: Motion.loaderCircleSpin * (1 - phase),
+      easing: Easing.linear,
+      useNativeDriver: USE_NATIVE_DRIVER,
+    });
+    first.start(({ finished }) => {
+      if (!finished) return;
+      t.setValue(0);
+      loop = Animated.loop(
+        Animated.timing(t, {
+          toValue: 1,
+          duration: Motion.loaderCircleSpin,
+          easing: Easing.linear,
+          useNativeDriver: USE_NATIVE_DRIVER,
+        })
+      );
+      loop.start();
+    });
+    return () => {
+      first.stop();
+      loop?.stop();
+    };
   }, [t]);
 
   const rotate = t.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });

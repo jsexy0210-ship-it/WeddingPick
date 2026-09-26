@@ -17,6 +17,7 @@ import {
 } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { inStack } from '@/features/navigation/stack-alias';
 import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import { openExternal } from '@/features/open-external';
 import { getMapVendors } from '@/api/client';
@@ -146,7 +147,7 @@ export default function WeddingMapScreen() {
                         <ActionButton
                           size="large"
                           label="업체 상세 보기"
-                          onPress={() => router.push(`/search/${vendor.vendorId}`)}
+                          onPress={() => router.push(inStack('/wedding', `/search/${vendor.vendorId}`) as never)}
                         />
                       </View>
                     )}

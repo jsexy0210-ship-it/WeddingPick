@@ -17,11 +17,12 @@ function screen(...parts: string[]): string {
 }
 
 describe('라운지 후기 작성 복귀', () => {
-  it('글쓰기는 숨은 하위 탭으로 이동하지 않고 라운지 후기 URL에서 직접 연다', () => {
+  it('글쓰기는 같은 라운지 후기 화면 위의 오버레이로 연다 — 화면을 새로 push하지 않는다', () => {
     const lounge = readFileSync(join(__dirname, 'lounge-screen.tsx'), 'utf8');
 
-    expect(lounge).toContain("const communityWriteHref = `${communityReviewHref}${from === 'my' ? '&' : '?'}write=review`");
-    expect(lounge).toContain('router.push(communityWriteHref as never)');
+    /* 2026-09-26 대표 제보 「바닥페이지가 두 번 로드된다」 — 같은 화면을 ?write=review로 push했었다. */
+    expect(lounge).toContain('onPress: () => setWriteSheet({})');
+    expect(lounge).not.toContain('communityWriteHref');
     expect(lounge).toContain('<LoungeReviewVendorSheet');
     expect(lounge).toContain('<ReviewWriteSheet');
     expect(lounge).not.toContain("router.push('/community/review/write");
@@ -37,12 +38,12 @@ describe('라운지 후기 작성 복귀', () => {
     expect(legacyWrite).not.toContain('<VendorDetailScreen');
   });
 
-  it('업체 선택과 폼 닫기 뒤에도 라운지 후기 URL을 복원한다', () => {
+  it('업체 선택 · 닫기는 화면을 갈아끼우지 않고 상태만 바꾼다 · 딥링크 인자는 기록 없이 지운다', () => {
     const lounge = readFileSync(join(__dirname, 'lounge-screen.tsx'), 'utf8');
 
-    expect(lounge).toContain("router.replace(communityReviewHref as never)");
-    expect(lounge).toContain(
-      'router.replace(`${communityWriteHref}&vendorId=${encodeURIComponent(vendorId)}` as never)'
-    );
+    expect(lounge).toContain('onChoose={(vendorId) => setWriteSheet({ vendorId })}');
+    expect(lounge).toContain('onClose={() => setWriteSheet(null)}');
+    expect(lounge).not.toContain('router.replace(communityReviewHref');
+    expect(lounge).toContain('navigation.setParams({ write: undefined, vendorId: undefined } as never)');
   });
 });

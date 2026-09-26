@@ -1,7 +1,9 @@
 import { withParticle } from '@weddingpick/domain';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, usePathname } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { leaveToTabRoot, useCrossStackBack } from '@/features/navigation/depth-back';
 
 import {
   Layout,
@@ -43,6 +45,12 @@ import {
  *             17/700) + «웨딩노트 보기»(flex 1.4 · 코랄 · 흰 글자).
  */
 export default function ConsultDoneScreen() {
+  /*
+   * 두 CTA는 Root 탭(홈 · 웨딩노트)으로 건너간다. 건너간 뒤 이 스택(검색 · Pick)을 뿌리로 접는다 —
+   * 접지 않으면 Pick 탭을 다시 눌렀을 때 이 완료 화면이 떠 있다(`leaveToTabRoot`).
+   */
+  const pathname = usePathname();
+  useCrossStackBack(pathname, pathname);
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { vendorName, when, partnerName } = useLocalSearchParams<{
@@ -103,7 +111,7 @@ export default function ConsultDoneScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="홈으로"
-            onPress={() => router.replace('/(tabs)')}
+            onPress={() => leaveToTabRoot('/', pathname)}
             style={({ pressed }) => [
               styles.button,
               styles.ghost,
@@ -116,7 +124,7 @@ export default function ConsultDoneScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="웨딩노트 보기"
-            onPress={() => router.replace('/wedding')}
+            onPress={() => leaveToTabRoot('/wedding', pathname)}
             style={({ pressed }) => [
               styles.button,
               styles.primary,

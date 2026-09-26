@@ -67,7 +67,7 @@ export type { LoadingViewProps, SkeletonViewProps, RecommendingViewProps, Recomm
  *
  * 화면이 직접 부르지 않고 `DelayedLoader`를 쓴다.
  */
-export { CircleLoader, buildSpinKeyframes, type CircleLoaderProps, type CircleLoaderSize } from './circle-loader';
+export { CircleLoader, buildSpinKeyframes, spinPhaseMs, type CircleLoaderProps, type CircleLoaderSize } from './circle-loader';
 export { LoaderSkeleton, type LoaderSkeletonProps, type LoaderSkeletonShape, type LoaderSkeletonSize } from './loader-skeleton';
 export { useDelayedVisible } from './use-delayed-visible';
 export { useReduceMotion } from './use-reduce-motion';

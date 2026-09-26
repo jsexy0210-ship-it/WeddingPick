@@ -18,7 +18,7 @@ import {
   regionLabel,
   type WeddingStyle,
 } from '@weddingpick/domain';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, usePathname } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -33,12 +33,17 @@ import {
 import { isServerConfigured } from '@/api/config';
 import { DepthHeader } from '@/components/depth-header';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { inStack } from '@/features/navigation/stack-alias';
 import { savePendingAction } from '@/features/auth/pending-action';
 import { readCurrentUserSnapshot } from '@/features/loading/current-user-snapshot';
 import { PickDoneSheet, UnpickSheet } from '@/features/pick/pick-sheets';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
 import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import { VendorLocationSection } from '@/features/search/vendor-location';
+/*
+ * 서로 부른다(이 화면 ↔ `/write-review`의 배경) — 둘 다 그릴 때만 쓰므로 적재 순서와 무관하다.
+ */
+import { ReviewWriteSheet } from './write-review';
 import { VENDOR_SOURCE_LABEL, vendorSourceValue } from '@/features/search/vendor-source';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import {
@@ -126,6 +131,11 @@ function formatYearMonth(iso: string): string {
  */
 export default function VendorDetailScreen() {
   const depthBack = useDepthBack();
+  /*
+   * 이 화면은 Pick · 라운지 · MY · 웨딩노트 스택에도 선다(`stack-alias.ts`). 사진 · 후기 쓰기 · 정보
+   * 오류 제보는 **지금 스택 안에서** 민다 — `/pick/vendor/<업체>`에서는 `/pick/vendor/<업체>/images`.
+   */
+  const pathname = usePathname();
   const params = useLocalSearchParams<{ vendorId: string; reasons?: string }>();
   const vendorId = params.vendorId;
   const theme = useTheme();
@@ -143,6 +153,13 @@ export default function VendorDetailScreen() {
   const [toast, setToast] = useState<string | null>(null);
   /** Pick 완료 시트(WP-SHT-002) · 해제 시트(WP-SHT-003). */
   const [pickDoneOpen, setPickDoneOpen] = useState(false);
+  /**
+   * 첫 후기 쓰기 — **이 화면 위의 오버레이**로 연다(2026-09-26 대표 제보 「바닥페이지가 두 번
+   * 로드된다」). `/write-review`로 push하면 그 라우트가 배경으로 업체 상세를 한 장 더 그려 상세 ·
+   * 사진 · 후기를 다시 읽었다. 딥링크(`/search/[id]/write-review` · MY «내가 쓴 후기»)는 그 라우트가
+   * 그대로 받는다 — 그때는 바닥이 처음 그려지는 것이라 한 번이다.
+   */
+  const [writeOpen, setWriteOpen] = useState(false);
   const [unpickTarget, setUnpickTarget] = useState<VendorCandidate | null>(null);
   /**
    * «나». 고른 스타일과 업체 태그의 일치를 그리려고 읽는다(SPEC §13.6).
@@ -164,6 +181,21 @@ export default function VendorDetailScreen() {
   const reasons: string[] =
     params.reasons ? params.reasons.split(',').filter(Boolean) : [];
 
+  const loadReviews = useCallback(() => {
+    listVendorReviews(vendorId)
+      .then((res) => {
+        /*
+         * Pick 인증 후기(payment / contract / usage 확인)를 앞에, 일반 후기(상담제보)를
+         * 뒤에 둔다. 어떤 근거로 쓴 글인지는 머리의 배지가 말한다.
+         */
+        const verified = res.reviews.filter((r) => countsTowardScore(r.verification));
+        const regular = res.reviews.filter((r) => !countsTowardScore(r.verification));
+        setReviews([...verified, ...regular]);
+        setReviewsLoaded(true);
+      })
+      .catch(() => undefined);
+  }, [vendorId]);
+
   /** `keep` — 당겨서 새로 고침. 보이던 상세 · 사진은 그대로 두고 실패는 토스트로만 알린다. */
   const load = useCallback((keep?: boolean) => {
     getVendor(vendorId)
@@ -183,19 +215,8 @@ export default function VendorDetailScreen() {
         if (keep !== true) setPhotos([]);
       });
 
-    listVendorReviews(vendorId)
-      .then((res) => {
-        /*
-         * Pick 인증 후기(payment / contract / usage 확인)를 앞에, 일반 후기(상담제보)를
-         * 뒤에 둔다. 어떤 근거로 쓴 글인지는 머리의 배지가 말한다.
-         */
-        const verified = res.reviews.filter((r) => countsTowardScore(r.verification));
-        const regular = res.reviews.filter((r) => !countsTowardScore(r.verification));
-        setReviews([...verified, ...regular]);
-        setReviewsLoaded(true);
-      })
-      .catch(() => undefined);
-  }, [vendorId]);
+    loadReviews();
+  }, [loadReviews, vendorId]);
 
   useEffect(() => {
     load();
@@ -349,7 +370,7 @@ export default function VendorDetailScreen() {
                 accessibilityRole={photos.length > 0 ? 'button' : undefined}
                 accessibilityLabel={photos.length > 0 ? `사진 ${photos.length}장 보기` : undefined}
                 disabled={photos.length === 0}
-                onPress={() => router.push(`/search/${vendor.id}/images`)}
+                onPress={() => router.push(inStack(pathname, `/search/${vendor.id}/images`) as never)}
                 style={styles.hero}>
                 <VendorImage
                   source={photos[0] ? { uri: photos[0].url } : undefined}
@@ -495,7 +516,7 @@ export default function VendorDetailScreen() {
                         key={photo.url}
                         accessibilityRole="button"
                         accessibilityLabel={`포트폴리오 ${index + 1}`}
-                        onPress={() => router.push(`/search/${vendor.id}/images?index=${index}` as never)}>
+                        onPress={() => router.push(inStack(pathname, `/search/${vendor.id}/images?index=${index}`) as never)}>
                         <VendorImage
                           source={{ uri: photo.url }}
                           category={vendorImageCategory(vendor.category)}
@@ -649,7 +670,7 @@ export default function VendorDetailScreen() {
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={NO_REVIEWS_YET}
-                  onPress={() => router.push(`/search/${vendor.id}/write-review`)}
+                  onPress={() => setWriteOpen(true)}
                   style={[styles.revItem, { borderBottomColor: theme.border }]}>
                   <ThemedText type="t6" themeColor="textSecondary">{NO_REVIEWS_YET}</ThemedText>
                 </Pressable>
@@ -689,7 +710,7 @@ export default function VendorDetailScreen() {
               accessibilityRole="button"
               accessibilityLabel={REPORT_ERROR}
               /* WP-VEND-008 정보 오류 제보 — 무엇이 틀렸는지 고르는 화면. 범용 문의로 보내지 않는다. */
-              onPress={() => router.push(`/search/${vendor.id}/fix-report`)}>
+              onPress={() => router.push(inStack(pathname, `/search/${vendor.id}/fix-report`) as never)}>
               {/* 정본 `fixRow`: 최소 52 · 위 6 · 14 보조색 + 꺾쇠 18 흐린색. */}
               <View style={styles.fixRow}>
                 <ThemedText type="f14" themeColor="textAssistive" style={styles.rowGrow}>{REPORT_ERROR}</ThemedText>
@@ -745,6 +766,18 @@ export default function VendorDetailScreen() {
       <Toast message={toast} onHidden={() => setToast(null)} />
 
       <PickDoneSheet visible={pickDoneOpen} onDismiss={() => setPickDoneOpen(false)} />
+      {writeOpen ? (
+        <ReviewWriteSheet
+          vendorId={vendor.id}
+          closeOnBrowserBack
+          onClose={() => setWriteOpen(false)}
+          onSubmitted={() => {
+            setWriteOpen(false);
+            /* 새 후기를 담으려고 후기만 **한 번** 다시 읽는다 — 상세 · 사진은 그대로다. */
+            loadReviews();
+          }}
+        />
+      ) : null}
       <UnpickSheet
         candidate={unpickTarget}
         partnerName={candidates.partnerName}

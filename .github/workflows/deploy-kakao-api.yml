@@ -51,6 +51,8 @@ jobs:
         env:
           ENV_FILE: /home/ubuntu/WeddingPick/.env.kakao-prod
           PUBLIC_HEALTH_URL: https://210.109.82.212/health
+          # 홈 날씨(0447) — 공공데이터포털 인증키. 비어 있으면 환경 파일을 건드리지 않는다.
+          DATA_GO_KR_MY_KEY: ${{ secrets.DATA_GO_KR_MY_KEY }}
         run: |
           set -euo pipefail
           umask 077
@@ -138,6 +140,8 @@ jobs:
           trap 'exit 143' TERM
 
           bash scripts/set-kakao-gemini-model.sh "$ENV_FILE" "gemini-3.5-flash-lite"
+          bash scripts/set-kakao-public-data-key.sh "$ENV_FILE"
+          unset DATA_GO_KR_MY_KEY
 
           deploy_revision_is_current || { echo 'A newer API-relevant main commit exists; deployment stopped.' >&2; exit 1; }
           OLD_ID="$(sudo -n docker inspect -f '{{.Id}}' "$PROD_CONTAINER")"

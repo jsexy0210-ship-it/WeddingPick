@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 
 import { finishSignIn } from '@/features/auth/finish-sign-in';
+import { beginAuthProgress } from '@/features/loading/auth-progress';
 import { startSignIn } from '@/features/auth/providers';
 import {
   AGE_REQUIRED_ROUTE,
@@ -50,6 +51,12 @@ export function useSignIn() {
 
   async function signIn(provider: AuthProvider, options: { ageAcknowledged?: boolean } = {}) {
     if (busy) return;
+    /*
+     * 누른 순간부터 약관 동의 폼이 설 때까지가 기다림 하나다 — 700ms도 여기서부터 센다
+     * (`features/loading/auth-progress`). 화면 전체 «로그인하는 중»이 서기 **전에** 연다 —
+     * 그 화면이 마운트하며 앞 흐름을 이어 쓰지 않게.
+     */
+    beginAuthProgress();
     setBusy(true);
     setError(null);
     setNeedsAgeConfirm(false);
