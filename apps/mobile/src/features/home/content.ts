@@ -1,3 +1,5 @@
+import { WEDDING_FEED_STAGE_ORDER } from '@weddingpick/api-contract';
+
 import { getWeddingFeed, getWeddingFeedPost } from '@/api/client';
 
 /**
@@ -41,11 +43,11 @@ export type WeddingContentDetail = WeddingContentItem & {
 };
 
 /**
- * 피드 화면이 그릴 탭 하나.
+ * 칩 하나 — 서버가 domain `WEDDING_FEED_TABS`(정본 my.js `cats`)를 그대로 싣는다.
  *
- * **서버가 준다**(2026-09-16 대표 지시 — 「탭별 카테고리별로 다 설정 가능해야한다」).
- * 탭과 카테고리는 관리자가 표에서 고치고, 앱은 받은 것을 그대로 그린다.
- * `categories`가 빈 것이 「전체」이고 아무것도 거르지 않는다.
+ * 2026-09-16~26에는 관리자 탭 표에서 왔는데, 그 탭을 그리는 앱 화면이 없어 관리자와
+ * 앱의 카테고리가 갈라졌다(2026-09-26 대표 지적). 라운지 칩은 같은 domain 상수를 직접
+ * 읽는다(`features/community/lounge-reviews.ts`). `categories`가 빈 것이 「전체」다.
  */
 export type WeddingFeedTabItem = {
   key: string;
@@ -59,11 +61,14 @@ export type WeddingFeedTabItem = {
  * 따로 부르면 목록이 먼저 그려지고 탭 줄이 나중에 끼어들어 본문이 손가락 아래에서
  * 밀린다. 한 응답이면 둘이 같이 나타나거나 같이 안 나타난다.
  */
-export async function listWeddingFeed(limit?: number): Promise<{
+export async function listWeddingFeed(
+  limit?: number,
+  options: { order?: typeof WEDDING_FEED_STAGE_ORDER } = {}
+): Promise<{
   items: readonly WeddingContentItem[];
   tabs: readonly WeddingFeedTabItem[];
 }> {
-  const { items, tabs } = await getWeddingFeed(limit);
+  const { items, tabs } = await getWeddingFeed(limit, options);
 
   return {
     items: items.map((item) => ({
@@ -99,10 +104,15 @@ export async function getWeddingFeedDetail(id: string): Promise<WeddingContentDe
 }
 
 /**
- * 글만 필요한 자리. 홈이 쓴다 — 홈의 웨딩피드는 3건 미리보기라 탭이 없다.
+ * 글만 필요한 자리. 홈 「웨딩 준비 팁」이 쓴다 — 미리보기라 탭이 없다.
+ *
+ * **준비 단계 순서로 받는다**(2026-09-26 대표 오더 「준비단계에 맞춰 콘텐츠를 추천한다」).
+ * 무엇이 앞에 서는지는 서버가 정한다(domain `preparationStage` · `rankFeedForStage`) —
+ * 예식일 · 업종별 상태 · 임시 일정을 서버가 이미 들고 있고, 기기마다 따로 매기면 같은
+ * 사람의 두 기기가 다른 팁을 보여준다. 단계를 모르면(웨딩 없음) 서버가 최신 순서로 준다.
  */
 export async function listWeddingContent(limit?: number): Promise<readonly WeddingContentItem[]> {
-  const { items } = await listWeddingFeed(limit);
+  const { items } = await listWeddingFeed(limit, { order: WEDDING_FEED_STAGE_ORDER });
 
   return items;
 }

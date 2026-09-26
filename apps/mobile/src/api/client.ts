@@ -3,6 +3,8 @@ import {
   decisionListResponseSchema,
   expenseSummaryResponseSchema,
   weddingEventListResponseSchema,
+  publicHolidayListResponseSchema,
+  weddingForecastResponseSchema,
   weddingNoteListResponseSchema,
   weddingTaskListResponseSchema,
   authProvidersResponseSchema,
@@ -22,7 +24,7 @@ import {
   myReportListResponseSchema,
   notificationListResponseSchema,
   notificationSummaryResponseSchema,
-  createReviewMediaUploadTargetResponseSchema,
+  uploadReviewMediaResponseSchema,
   createReviewResponseSchema,
   reviewFormSchema,
   reviewHelpfulSchema,
@@ -69,14 +71,15 @@ import {
   type CreateConsultationEventRequest,
   type CreateWeddingEventRequest,
   type WeddingEventListResponse,
+  type PublicHolidayListResponse,
+  type WeddingForecastResponse,
   type AuthProvidersResponse,
   type FaqListResponse,
   type ErrorCode,
   type CreateInquiryRequest,
   type RegisterDeviceRequest,
   type RegisterDeviceResponse,
-  type CreateReviewMediaUploadTargetRequest,
-  type CreateReviewMediaUploadTargetResponse,
+  type UploadReviewMediaResponse,
   type CreateReviewRequest,
   type CreateReviewResponse,
   type ReviewHelpful,
@@ -118,8 +121,13 @@ import {
   type WeddingFeedDetail,
   weddingFeedListResponseSchema,
   type WeddingFeedListResponse,
-  weddingFeedScrapStateSchema,
-  type WeddingFeedScrapState,
+  WEDDING_FEED_STAGE_ORDER,
+  createUploadResponseSchema,
+  type CreateUploadRequest,
+  type CreateUploadResponse,
+  registerPaymentProofResponseSchema,
+  type RegisterPaymentProofRequest,
+  type RegisterPaymentProofResponse,
 } from '@weddingpick/api-contract';
 import { z, type ZodType } from 'zod';
 
@@ -352,6 +360,93 @@ async function send<T>(
   return parsed.data;
 }
 
+/** 올리기가 정한 시간 안에 끝나지 않았다. 화면이 «연결을 확인하고 다시» 문장으로 바꾼다. */
+export class UploadTimeoutError extends Error {
+  constructor() {
+    super('올리는 시간이 너무 길어졌어요.');
+    this.name = 'UploadTimeoutError';
+  }
+}
+
+/** 올리기 진행 — 0~1. 본문 크기를 모르는 동안은 부르지 않는다. */
+export type UploadProgress = (fraction: number) => void;
+
+/**
+ * 파일 본문을 **같은 출처 API 경로에 그대로** 올린다(2026-09-26).
+ *
+ * 카카오 Object Storage 서명 URL로 바로 올리던 길은 브라우저 CORS preflight에서 막혔다
+ * (e66dec7e). 이제 상담 녹음 · 후기 사진 · 결제 사진이 모두 API를 지난다 — 웹과 네이티브가 같은 길.
+ *
+ * **fetch가 아니라 XMLHttpRequest다.** fetch는 «얼마나 올라갔나»를 알려 주지 않는다 — 100MB
+ * 녹음을 올리는 동안 화면이 멈춘 것처럼 보이지 않게 비율을 넘긴다(RN의 XHR도 `upload.onprogress`를
+ * 준다). 본문이 Blob이면 브라우저 · RN이 Content-Length를 붙인다 — 서버가 그 길이로 저장소에
+ * 흘려 보낸다(`routes/stream-upload.ts`).
+ *
+ * 실패는 `send`와 같은 얼굴로 던진다: 서버가 답했으면 `ApiError`(상태 포함 — 운영 Nginx의 413은
+ * 본문이 HTML이라 서버 문장이 없다), 닿지 못했으면 상태 `null`, 시간이 넘으면 `UploadTimeoutError`.
+ */
+async function sendFile<T>(
+  path: string,
+  schema: ZodType<T>,
+  init: {
+    method: 'PUT' | 'POST';
+    body: Blob;
+    contentType: string;
+    timeoutMs: number;
+    onProgress?: UploadProgress;
+  }
+): Promise<T> {
+  const token = await loadToken();
+
+  try {
+    const { status, text } = await new Promise<{ status: number; text: string }>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open(init.method, `${requireBaseUrl()}${path}`);
+      xhr.timeout = init.timeoutMs;
+      xhr.setRequestHeader('content-type', init.contentType);
+      if (token) xhr.setRequestHeader('authorization', `Bearer ${token}`);
+      if (init.onProgress && xhr.upload) {
+        const onProgress = init.onProgress;
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable && event.total > 0) onProgress(Math.min(1, event.loaded / event.total));
+        };
+      }
+      xhr.onload = () => resolve({ status: xhr.status, text: xhr.responseText ?? '' });
+      xhr.onerror = () => reject(new ApiError('internal', '서버와 연결하지 못했습니다.', null));
+      xhr.onabort = () => reject(new ApiError('internal', '서버와 연결하지 못했습니다.', null));
+      xhr.ontimeout = () => reject(new UploadTimeoutError());
+      xhr.send(init.body);
+    });
+
+    if (token !== await loadToken()) {
+      throw new ApiError('internal', '계정이 변경되어 요청을 다시 확인해야 합니다.', 401);
+    }
+
+    let json: unknown = null;
+    try {
+      json = text ? JSON.parse(text) : null;
+    } catch {
+      json = null;
+    }
+
+    if (status < 200 || status >= 300) {
+      const body = errorResponseSchema.safeParse(json);
+      if (status === 401 || (body.success && body.data.error.code === 'unauthenticated')) {
+        await clearToken();
+        clearReadCache();
+      }
+      if (body.success) throw new ApiError(body.data.error.code, body.data.error.message, status);
+      throw new ApiError('internal', '서버와 통신하지 못했습니다.', status);
+    }
+
+    const parsed = schema.safeParse(status === 204 ? null : json);
+    if (!parsed.success) throw new ApiError('internal', '서버 응답을 이해하지 못했습니다.');
+    return parsed.data;
+  } finally {
+    invalidateAfterWrite(path);
+  }
+}
+
 /** 서버에 한 번만 가고, 받은 답을 캐시에 적어둔다. 같은 주소가 겹치면 하나로 합친다. */
 function startRead<T>(
   path: string,
@@ -385,7 +480,73 @@ function startRead<T>(
 }
 
 /**
+ * 당겨서 새로 고침(2026-09-26 대표 지시 「화면 자체를 밑으로 내리면 새로고침 진행한다」).
+ *
+ * `run`(화면의 load)이 여는 동안 떠나는 읽기는 **캐시를 건너뛰고 서버에 다시 묻는다.** 화면마다 읽는
+ * 함수가 여럿이고 앞 답을 받은 뒤에 떠나는 읽기도 있어서(홈 bootstrap → 일정, Pick 나 → 후보 · 추천)
+ * 함수마다 `force`를 넘기지 않고 «이 창이 열린 동안 떠난 GET»을 통째로 새로 받는다. 받은 답은
+ * 캐시에 다시 적혀 다음에 여는 화면도 새 값을 본다. 이미 서버에 가 있는 같은 주소는 그 답을 같이
+ * 기다린다(방금 떠난 요청이라 새 값이다).
+ *
+ * 창은 `run`이 끝나고, 그 안에서 떠난 읽기가 전부 돌아오고, 뒤이어 떠나는 읽기 없이
+ * `FRESH_READ_QUIET_MS`가 지나면 닫힌다 — 돌아오는 시점이 당김 표시가 사라지는 시점이다.
+ * 실패는 여기서 삼킨다: 오류를 보여주는 것은 화면의 load가 하던 그대로다.
+ */
+let freshReadWindows = 0;
+let freshReadsPending = 0;
+const FRESH_READ_QUIET_MS = 150;
+const FRESH_READ_POLL_MS = 25;
+const FORCE_FRESH: ReadRefresh<unknown> = {
+  force: true,
+  onValue: () => undefined,
+  onError: () => undefined,
+  onRefreshing: () => undefined,
+};
+
+export async function refreshReads(run: () => unknown): Promise<void> {
+  freshReadWindows += 1;
+  const deadline = Date.now() + REQUEST_TIMEOUT_MS + FRESH_READ_QUIET_MS;
+  try {
+    try {
+      await run();
+    } catch {
+      /* 화면의 load가 자기 오류 UI로 보여준다. */
+    }
+    let quietSince = Date.now();
+    while (Date.now() < deadline) {
+      await new Promise((done) => setTimeout(done, FRESH_READ_POLL_MS));
+      if (freshReadsPending > 0) quietSince = Date.now();
+      else if (Date.now() - quietSince >= FRESH_READ_QUIET_MS) break;
+    }
+  } finally {
+    freshReadWindows -= 1;
+  }
+}
+
+/**
  * 서버에 묻는다. 읽기는 캐시를 거치고, 쓰기는 거치지 않는다.
+ *
+ * 당겨서 새로 고치는 창(`refreshReads`)이 열려 있으면 GET은 캐시를 건너뛴다.
+ */
+async function request<T>(
+  path: string,
+  schema: ZodType<T>,
+  init: RequestInit & { auth?: boolean } = {},
+  refresh?: ReadRefresh<T>
+): Promise<T> {
+  if (freshReadWindows === 0 || (init.method ?? 'GET').toUpperCase() !== 'GET') {
+    return cachedRequest(path, schema, init, refresh);
+  }
+  freshReadsPending += 1;
+  try {
+    return await cachedRequest(path, schema, init, { ...(refresh ?? (FORCE_FRESH as ReadRefresh<T>)), force: true });
+  } finally {
+    freshReadsPending -= 1;
+  }
+}
+
+/**
+ * 캐시를 거치는 몸통.
  *
  * **화면을 다시 열 때 처음부터 다시 받지 않는다.** 탭을 옮길 때마다 같은 주소를
  * 새로 물어서 화면이 비었다가 채워지던 것을(2026-09-09 감사: `/v1/me`만 한 번의
@@ -396,7 +557,7 @@ function startRead<T>(
  * 실패하든 지운다 — 실패한 줄 알았는데 서버에는 남는 경우가 있고, 그때 옛 목록을
  * 계속 보여주면 사람이 같은 일을 두 번 한다.
  */
-async function request<T>(
+async function cachedRequest<T>(
   path: string,
   schema: ZodType<T>,
   init: RequestInit & { auth?: boolean } = {},
@@ -537,7 +698,7 @@ export async function signOut(): Promise<void> {
 
 /**
  * 초기 설정 — 5개 질문(예식일 · 지역 · 준비 현황 · 예산 · 스타일)을 한 번에 보낸다
- * (핸드오프 v3.19~v3.22 · SPEC §13.6). 5/5 스타일은 `styleTags`(최소 1 · 최대 2)로
+ * (핸드오프 v3.19~v3.22 · SPEC §13.6). 5/5 스타일은 `styleTags`(최소 1 · 개수 제한 없음, 2026-09-26)로
  * 같이 가고, MY «스타일 다시 고르기»도 예식일 · 지역을 그대로 돌려보내며 이 경로를 쓴다.
  *
  * 이름은 보내지 않는다 — 닉네임은 최초 필수입력에서 빠졌고 MY에서 정한다.
@@ -571,33 +732,28 @@ export async function getAppBootstrap(): Promise<AppBootstrapResponse> {
   return request('/v1/app/bootstrap', appBootstrapResponseSchema);
 }
 
-/** 웨딩피드 — 공개된 글만. 로그인 여부와 무관해 bootstrap과 따로 부른다. */
-export async function getWeddingFeed(limit?: number): Promise<WeddingFeedListResponse> {
-  return request(
-    `/v1/wedding-feed${limit ? `?limit=${limit}` : ''}`,
-    weddingFeedListResponseSchema
-  );
+/**
+ * 웨딩피드 — 공개된 글만. 로그인 여부와 무관해 bootstrap과 따로 부른다.
+ *
+ * `order: 'stage'`(홈 「웨딩 준비 팁」)면 서버가 로그인한 사람의 준비 단계에 맞는 글을 앞에
+ * 세운다(2026-09-26 대표 오더). 주소가 달라 라운지 목록과 캐시를 나눠 쓰고, 토큰이 바뀌면
+ * 캐시째 버려지므로 다른 사람의 순서가 남지 않는다.
+ */
+export async function getWeddingFeed(
+  limit?: number,
+  options: { order?: typeof WEDDING_FEED_STAGE_ORDER } = {}
+): Promise<WeddingFeedListResponse> {
+  const query = [
+    ...(limit ? [`limit=${limit}`] : []),
+    ...(options.order ? [`order=${options.order}`] : []),
+  ].join('&');
+
+  return request(`/v1/wedding-feed${query ? `?${query}` : ''}`, weddingFeedListResponseSchema);
 }
 
 /** 웨딩피드 글 하나. 목록에 없는 본문이 여기 있다 — 공개된 글이 아니면 404다. */
 export async function getWeddingFeedPost(id: string): Promise<WeddingFeedDetail> {
   return request(`/v1/wedding-feed/${encodeURIComponent(id)}`, weddingFeedDetailSchema);
-}
-
-export async function getWeddingFeedScrapState(postId: string): Promise<WeddingFeedScrapState> {
-  return request(`/v1/me/scraps/${encodeURIComponent(postId)}`, weddingFeedScrapStateSchema);
-}
-
-export async function saveWeddingFeedScrap(postId: string): Promise<WeddingFeedScrapState> {
-  return request(`/v1/me/scraps/${encodeURIComponent(postId)}`, weddingFeedScrapStateSchema, {
-    method: 'PUT',
-  });
-}
-
-export async function removeWeddingFeedScrap(postId: string): Promise<WeddingFeedScrapState> {
-  return request(`/v1/me/scraps/${encodeURIComponent(postId)}`, weddingFeedScrapStateSchema, {
-    method: 'DELETE',
-  });
 }
 
 /**
@@ -789,11 +945,70 @@ export async function removeExpense(weddingId: string, expenseId: string): Promi
   await request(`/v1/weddings/${weddingId}/expenses/${expenseId}`, z.null(), { method: 'DELETE' });
 }
 
+/*
+ * ---------------------------------------------------------------------------
+ * 예산 추가 «자동 등록(Pick 인증)» — 사진 한 장(2026-09-26 대표 지시)
+ *
+ * 앱의 Pick 인증 촬영 · 제출 화면은 2026-09-25에 지웠고(#535) 서버 길은 그대로 남았다.
+ * 같은 세 단계를 예산 추가 시트가 다시 쓴다: 원본 자리 받기(`kind: payment_proof` —
+ * 24시간 뒤 지워진다) → 사진 올리기 → 등록(서버가 읽고 지출로 넣는다).
+ * ---------------------------------------------------------------------------
+ */
+
+/** Pick 인증 동의 — 최초 1회. 두 번 불러도 한 번만 남는다(서버 부분 유니크 색인). */
+export async function grantPaymentConsent(): Promise<Settings> {
+  return request('/v1/me/payment-consent', settingsSchema, { method: 'POST' });
+}
+
+/** 원본 자리를 받는다. 동의가 없으면 서버가 403으로 막는다 — 바이트가 기기를 떠나기 전에. */
+export async function createUpload(input: CreateUploadRequest): Promise<CreateUploadResponse> {
+  return request('/v1/documents/uploads', createUploadResponseSchema, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+/** 한 장을 인증된 API 경로로 올린다. 카카오 Object Storage의 브라우저 CORS 경로에 기대지 않는다. */
+export async function uploadDocumentPage(uploadPath: string, body: Blob): Promise<void> {
+  await request(uploadPath, z.null(), {
+    method: 'PUT',
+    headers: { 'content-type': 'application/octet-stream' },
+    body,
+    signal: AbortSignal.timeout(60_000),
+  });
+}
+
+/**
+ * 결제 사진 한 장을 등록한다 — 읽기는 서버가 한다(`gemini-payment-reader`). 읽었으면
+ * `accepted`로 지출(`payment_proof`)에 바로 들어가고, 못 읽었으면 `pending_review`로 남는다.
+ * 읽는 데 시간이 걸려 기본 45초보다 길게 기다린다.
+ */
+export async function registerPaymentProof(
+  body: RegisterPaymentProofRequest
+): Promise<RegisterPaymentProofResponse> {
+  return request('/v1/payment-proofs', registerPaymentProofResponseSchema, {
+    method: 'POST',
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(90_000),
+  });
+}
+
 export async function setBudget(weddingId: string, budget: number | null): Promise<void> {
   await request(`/v1/weddings/${weddingId}/budget`, z.object({ budget: z.number().nullable() }), {
     method: 'PUT',
     body: JSON.stringify({ budget }),
   });
+}
+
+/** 공휴일 — 일정 등록 날짜 칸(WP-NOTE-002) 아래 한 줄. 날짜는 YYYY-MM-DD. */
+export async function listPublicHolidays(from: string, to: string): Promise<PublicHolidayListResponse> {
+  const query = new URLSearchParams({ from, to });
+  return request(`/v1/public-holidays?${query.toString()}`, publicHolidayListResponseSchema);
+}
+
+/** 예식일 예보 — D-day 카드(WP-NOTE-001) 한 줄. 4~10일 전에만 값이 온다. */
+export async function getWeddingForecast(weddingId: string): Promise<WeddingForecastResponse> {
+  return request(`/v1/weddings/${weddingId}/forecast`, weddingForecastResponseSchema);
 }
 
 /** 웨딩 스케줄(체크리스트)과 다른 개념이다 — 일시·장소가 있는 캘린더 이벤트. */
@@ -904,12 +1119,22 @@ export async function getReviewForm(vendorId: string): Promise<ReviewForm> {
 }
 
 /** 후기 사진을 올릴 서명 URL. 파일 본체는 API 서버를 지나지 않는다. */
-export async function createReviewMediaUploadTarget(
-  body: CreateReviewMediaUploadTargetRequest
-): Promise<CreateReviewMediaUploadTargetResponse> {
-  return request('/v1/reviews/media/upload-target', createReviewMediaUploadTargetResponseSchema, {
+/**
+ * 후기 사진 한 장을 같은 출처로 올린다(`POST /v1/reviews/media` · 본문은 사진 그대로).
+ * 받은 `storageKey`를 후기 쓰기에 싣는다. 옛 서명 URL 길(`…/media/upload-target`)은 브라우저
+ * CORS에서 막혀 앱이 더 부르지 않는다 — 서버는 이미 배포된 옛 앱을 위해 남겨 둔다.
+ */
+export async function uploadReviewMediaFile(
+  body: Blob,
+  mimeType: UploadReviewMediaResponse['mimeType'],
+  options: { onProgress?: UploadProgress } = {}
+): Promise<UploadReviewMediaResponse> {
+  return sendFile('/v1/reviews/media', uploadReviewMediaResponseSchema, {
     method: 'POST',
-    body: JSON.stringify(body),
+    body,
+    contentType: mimeType,
+    timeoutMs: 2 * 60_000,
+    onProgress: options.onProgress,
   });
 }
 
@@ -1311,10 +1536,10 @@ export async function getConsultation(consultationId: string): Promise<Consultat
 }
 
 /**
- * 올릴 자리를 받는다.
+ * 올릴 자리를 받는다 — 기록 한 줄과 올릴 경로(`uploadPath`).
  *
- * **파일 본체는 이 요청에 싣지 않는다.** 서명 URL을 받아 스토리지로 바로 올린다 —
- * 100MB짜리가 API 서버를 지나갈 이유가 없다.
+ * **파일 본체는 이 요청에 싣지 않는다.** 형식 · 길이 · 크기 · 동의를 먼저 보고 막을 것은
+ * 여기서 막는다. 본체는 `uploadConsultationAudioFile`로 같은 경로에 올린다.
  */
 export async function createConsultationUpload(
   body: CreateConsultationUploadRequest
@@ -1326,15 +1551,25 @@ export async function createConsultationUpload(
 }
 
 /**
- * 올리기가 끝났음을 알린다. **여기부터 판정이 시작된다.**
+ * 녹음 본문을 올린다 — `PUT /v1/consultations/:id/audio`(같은 출처, 2026-09-26).
  *
- * 서명 URL로 올린 것만으로는 서버가 파일이 다 왔는지 모른다 — 알려줘야 읽는다.
+ * 서버가 본문을 저장소로 흘려 보내고 도착까지 적는다 — 서명 URL 시절의 `POST …/complete`를 따로
+ * 부르지 않는다(서버는 옛 앱을 위해 그 경로를 남겨 둔다). 100MB를 느린 망으로 올리면 오래 걸려 기다리는 시간을 넉넉히 둔다(20분).
  */
-export async function completeConsultationUpload(
-  consultationId: string
+export const CONSULTATION_UPLOAD_TIMEOUT_MS = 20 * 60_000;
+
+export async function uploadConsultationAudioFile(
+  uploadPath: string,
+  body: Blob,
+  mimeType: string,
+  options: { onProgress?: UploadProgress } = {}
 ): Promise<ConsultationRecord> {
-  return request(`/v1/consultations/${consultationId}/complete`, consultationRecordSchema, {
-    method: 'POST',
+  return sendFile(uploadPath, consultationRecordSchema, {
+    method: 'PUT',
+    body,
+    contentType: mimeType,
+    timeoutMs: CONSULTATION_UPLOAD_TIMEOUT_MS,
+    onProgress: options.onProgress,
   });
 }
 

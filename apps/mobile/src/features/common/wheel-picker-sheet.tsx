@@ -225,6 +225,114 @@ function TimeBody({
   );
 }
 
+/** 1열 휠의 보기 하나 — 저장 값과 휠에 적는 글자. */
+export type WheelOption<T extends string> = { value: T; label: string };
+
+/**
+ * 1열 휠 시트 — 날짜 · 시간이 아닌 값 하나를 고른다(2026-09-26 대표 지시 「내 웨딩설정은
+ * 모든 항목이 휠 바텀시트 · 날짜 외에는 1열 휠」).
+ *
+ *   ━━
+ *   예산 선택                      ✕
+ *   ┌───────────────────────────┐
+ *   │      500~1,000만원        │  ← 흐림
+ *   │     1,000~2,000만원       │  ← 밴드
+ *   │     2,000~3,000만원       │  ← 흐림
+ *   └───────────────────────────┘
+ *   [            확인            ]
+ *
+ * 규격은 날짜 휠과 같다 — RN 정본 `home.js:701~714` `wheelSheet`(간격 14) · `wheelWrap` 240 ·
+ * `wheelBand` 48 · `sheetDock` 「확인」 ctaFull. 열만 하나(`wheelCol` flex 1)다. 휠 부품은
+ * 온보딩과 같은 `wheel.tsx`다.
+ *
+ * `value`가 보기에 없으면(아직 안 골랐거나 옛 값) 첫 보기에서 시작한다 — 짐작으로 정하지
+ * 않는다(지역 시트와 같다). 「확인」을 눌러야 저장된다 — 굴리기만 하고 닫으면 그대로다.
+ */
+export function OptionWheelSheet<T extends string>({
+  visible,
+  title,
+  accessibilityLabel,
+  options,
+  value,
+  onConfirm,
+  onDismiss,
+}: {
+  visible: boolean;
+  title: string;
+  /** 휠 열의 이름(스크린 리더). */
+  accessibilityLabel: string;
+  options: readonly WheelOption<T>[];
+  value: T | null;
+  onConfirm: (value: T) => void;
+  onDismiss: () => void;
+}) {
+  return (
+    <BottomSheet visible={visible} onRequestClose={onDismiss}>
+      <OptionBody
+        title={title}
+        accessibilityLabel={accessibilityLabel}
+        options={options}
+        value={value}
+        onConfirm={onConfirm}
+        onDismiss={onDismiss}
+      />
+    </BottomSheet>
+  );
+}
+
+function OptionBody<T extends string>({
+  title,
+  accessibilityLabel,
+  options,
+  value,
+  onConfirm,
+  onDismiss,
+}: {
+  title: string;
+  accessibilityLabel: string;
+  options: readonly WheelOption<T>[];
+  value: T | null;
+  onConfirm: (value: T) => void;
+  onDismiss: () => void;
+}) {
+  const values = useMemo(() => options.map((option) => option.value), [options]);
+  const labels = useMemo(() => new Map(options.map((option) => [option.value, option.label])), [options]);
+  const [picked, setPicked] = useState<T | null>(() =>
+    value !== null && values.includes(value) ? value : (values[0] ?? null)
+  );
+
+  return (
+    <SheetPanel style={styles.sheet}>
+      <SheetHeader title={title} onClose={onDismiss} />
+
+      {picked !== null ? (
+        <WheelGroup>
+          <Wheel<T>
+            accessibilityLabel={accessibilityLabel}
+            flex={1}
+            items={values}
+            format={(item) => labels.get(item) ?? item}
+            value={picked}
+            onChange={setPicked}
+          />
+        </WheelGroup>
+      ) : null}
+
+      <View style={styles.cta}>
+        <ActionButton
+          variant="primary"
+          size="sheet"
+          label={S.confirm}
+          disabled={picked === null}
+          onPress={() => {
+            if (picked !== null) onConfirm(picked);
+          }}
+        />
+      </View>
+    </SheetPanel>
+  );
+}
+
 /** 시간을 아직 안 골랐을 때 휠이 가리키는 자리 — 일정 폼의 기본 시각과 같다. */
 const DEFAULT_TIME = '14:00';
 

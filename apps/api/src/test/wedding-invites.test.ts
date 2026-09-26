@@ -1,4 +1,11 @@
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+import { INVITE_CODE_SPACE, inviteGuessCeiling } from '@weddingpick/domain';
+
 import {
+  INVITE_ATTEMPT_WINDOW_MINUTES,
   INVITE_FAILURES_PER_IP,
   INVITE_FAILURES_PER_USER,
   generateInviteCode,
@@ -6,6 +13,9 @@ import {
 import { createTestApp, createWedding, resetDatabase, signInAs, type TestApp } from './helpers';
 
 let test: TestApp;
+
+/** 저장소의 마이그레이션 폴더 — 0439의 UPDATE를 시험에서 그대로 다시 돌린다. */
+const MIGRATIONS = join(__dirname, '..', '..', '..', '..', 'packages', 'db', 'migrations');
 
 const describeWithDb = process.env.DATABASE_URL ? describe : describe.skip;
 
@@ -307,24 +317,79 @@ describeWithDb('배우자 초대', () => {
 
   it('없는 코드는 있는 척하지 않는다', async () => {
     const partner = await signInAs(test, 'partner');
-    const body = (await preview(partner.headers, '999999')).json();
+    const body = (await preview(partner.headers, '9999')).json();
 
     expect(body).toMatchObject({ usable: false, reason: 'not_found' });
   });
 
-  it('초대 코드는 6자리 숫자다', async () => {
+  it('초대 코드는 4자리 숫자다(2026-09-26 대표 지시)', async () => {
     const owner = await signInAs(test, 'owner');
     const weddingId = await createWedding(test, owner.headers);
     const { code } = await invite(owner.headers, weddingId);
 
-    expect(code).toMatch(/^\d{6}$/);
+    expect(code).toMatch(/^\d{4}$/);
   });
 
-  it('6자리 숫자가 아닌 코드는 받지 않는다', async () => {
+  it('4자리 숫자가 아닌 코드는 받지 않는다 — 옛 6자리도', async () => {
     const partner = await signInAs(test, 'partner');
 
     expect((await preview(partner.headers, 'made-up-code')).statusCode).toBe(400);
+    expect((await accept(partner.headers, '123')).statusCode).toBe(400);
     expect((await accept(partner.headers, '12345')).statusCode).toBe(400);
+    expect((await preview(partner.headers, '123456')).statusCode).toBe(400);
+  });
+
+  it('실패 제한이 4자리의 1만 가지를 기한 안에 다 훑지 못하게 막는다', () => {
+    const perUser = inviteGuessCeiling(INVITE_FAILURES_PER_USER, INVITE_ATTEMPT_WINDOW_MINUTES);
+    const perIp = inviteGuessCeiling(INVITE_FAILURES_PER_IP, INVITE_ATTEMPT_WINDOW_MINUTES);
+
+    expect(perUser).toBe(1_440);
+    expect(perUser).toBeLessThan(INVITE_CODE_SPACE * 0.15);
+    expect(perIp).toBeLessThan(INVITE_CODE_SPACE);
+  });
+
+  it('0439 — 대기 중인 옛 6자리 초대는 취소하고 4자리 초대는 그대로 둔다', async () => {
+    const owner = await signInAs(test, 'owner');
+    const weddingId = await createWedding(test, owner.headers);
+    const { code } = await invite(owner.headers, weddingId);
+
+    // 다른 웨딩에 옛 6자리 코드로 만든 대기 줄을 하나 둔다(0439 이전 API가 낸 것).
+    const other = await signInAs(test, 'other-owner');
+    const otherWedding = await createWedding(test, other.headers);
+    const oldHash = createHash('sha256').update('482913').digest('hex');
+    await test.pool.query(
+      `INSERT INTO structured.wedding_invites (wedding_id, invited_by, code_hash, expires_at)
+       VALUES ($1, $2, $3, now() + interval '1 day')`,
+      [otherWedding, other.userId, oldHash]
+    );
+
+    // 마이그레이션의 UPDATE를 그대로 다시 돌린다 — 배포 순서와 무관하게 같은 결과여야 한다.
+    const sql = readFileSync(join(MIGRATIONS, '0439_partner_invite_four_digit.sql'), 'utf8');
+    const update = sql.slice(sql.indexOf('UPDATE structured.wedding_invites'), sql.indexOf(';', sql.indexOf('UPDATE structured.wedding_invites')) + 1);
+    await test.pool.query(update);
+
+    const { rows } = await test.pool.query<{ wedding_id: string; status: string }>(
+      'SELECT wedding_id, status FROM structured.wedding_invites WHERE wedding_id = ANY($1::uuid[])',
+      [[weddingId, otherWedding]]
+    );
+    expect(rows.find((row) => row.wedding_id === otherWedding)?.status).toBe('revoked');
+    expect(rows.find((row) => row.wedding_id === weddingId)?.status).toBe('pending');
+
+    const partner = await signInAs(test, 'partner');
+    expect((await preview(partner.headers, code)).json().usable).toBe(true);
+  });
+
+  it('0439 — 코드 해시는 SHA-256 꼴만 받는다', async () => {
+    const owner = await signInAs(test, 'owner');
+    const weddingId = await createWedding(test, owner.headers);
+
+    await expect(
+      test.pool.query(
+        `INSERT INTO structured.wedding_invites (wedding_id, invited_by, code_hash, expires_at)
+         VALUES ($1, $2, '1234', now() + interval '1 day')`,
+        [weddingId, owner.userId]
+      )
+    ).rejects.toMatchObject({ code: '23514' });
   });
 
   it('틀린 코드를 계정 한도만큼 넣으면 맞는 코드도 잠시 받지 않는다', async () => {
@@ -332,7 +397,7 @@ describeWithDb('배우자 초대', () => {
     const weddingId = await createWedding(test, owner.headers);
     const { code } = await invite(owner.headers, weddingId);
     const partner = await signInAs(test, 'partner');
-    const wrong = code === '000000' ? '000001' : '000000';
+    const wrong = code === '0000' ? '0001' : '0000';
 
     for (let i = 0; i < INVITE_FAILURES_PER_USER; i += 1) {
       expect((await accept(partner.headers, wrong)).statusCode).toBe(400);
@@ -351,7 +416,7 @@ describeWithDb('배우자 초대', () => {
     const owner = await signInAs(test, 'owner');
     const weddingId = await createWedding(test, owner.headers);
     const { code } = await invite(owner.headers, weddingId);
-    const wrong = code === '000000' ? '000001' : '000000';
+    const wrong = code === '0000' ? '0001' : '0000';
 
     for (let i = 0; i < INVITE_FAILURES_PER_IP; i += 1) {
       const guesser = await signInAs(test, `guesser-${Math.floor(i / INVITE_FAILURES_PER_USER)}`);
@@ -385,9 +450,9 @@ describeWithDb('배우자 초대', () => {
 });
 
 describe('초대 코드 생성', () => {
-  it('1만 번 뽑아도 전부 6자리 숫자다', () => {
+  it('1만 번 뽑아도 전부 4자리 숫자다', () => {
     for (let i = 0; i < 10_000; i += 1) {
-      expect(generateInviteCode()).toMatch(/^\d{6}$/);
+      expect(generateInviteCode()).toMatch(/^\d{4}$/);
     }
   });
 });

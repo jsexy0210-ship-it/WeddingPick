@@ -100,7 +100,8 @@ export default function LoginScreen() {
             <View style={[styles.markBox, { backgroundColor: theme.tintSurface }]}>
               <WeddingMark size={MARK} color={theme.tint} />
             </View>
-            <ThemedText type="f32" style={styles.title}>
+            {/* 화면의 제목 — 웹에서 role="heading"으로 나간다(2026-09-26 대표 감사). 모양은 그대로다. */}
+            <ThemedText type="f32" accessibilityRole="header" style={styles.title}>
               {HERO_TITLE}
             </ThemedText>
 

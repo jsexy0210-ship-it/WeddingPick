@@ -21,7 +21,7 @@ import { confirmAlert } from '@/components/confirm-alert';
 import { useSession } from '@/features/auth/use-session';
 import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
-import { Avatar, Row, Rows, Section, SubScreen, Toggle } from '@/features/settings/my-kit';
+import { Avatar, Row, Rows, Section, SubScreen, SubScreenStatus, Toggle } from '@/features/settings/my-kit';
 
 /** 정본 `docs/design/React_Native/my.jsx` 프로필 프레임 · WP-MY-002. */
 const S = {
@@ -191,8 +191,8 @@ export default function ProfileScreen() {
       });
   }
 
-  if (loadError && !me) return <ErrorView message={loadError} onRetry={load} />;
-  if (!me) return <DelayedLoadingView />;
+  if (loadError && !me) return <SubScreenStatus title={S.title}><ErrorView message={loadError} onRetry={load} /></SubScreenStatus>;
+  if (!me) return <SubScreenStatus title={S.title}><DelayedLoadingView /></SubScreenStatus>;
 
   return (
     <SubScreen title={S.title}>

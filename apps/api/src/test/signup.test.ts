@@ -41,9 +41,14 @@ describeWithDb('가입 연령과 약관 동의', () => {
         // 나이는 로그인이 이미 확인했다. 남은 것은 동의뿐이다.
         ageVerified: true,
         minimumAge: MINIMUM_AGE,
-        // 계정을 살리는 관문은 terms · privacy 둘이다(옛 앱 호환 — domain signup.ts).
-        missingRequired: ACTIVATION_CONSENTS,
+        /*
+         * 계정을 살리는 관문은 필수 다섯 전부다(2026-09-26 대표 결정 「강제한다」).
+         * `missingRequired`는 옛 앱이 아는 항목만 담고(옛 앱 zod 호환), 전부는 `missingAgreements`다.
+         */
+        missingRequired: ['terms', 'privacy'],
+        missingAgreements: ACTIVATION_CONSENTS,
       });
+      expect(ACTIVATION_CONSENTS).toEqual(REQUIRED_CONSENTS);
     });
 
     it('대기 계정은 다른 화면을 열 수 없다', async () => {
@@ -482,18 +487,88 @@ describeWithDb('가입 연령과 약관 동의', () => {
       }
     });
 
-    it('옛 앱이 보내는 terms · privacy만으로도 가입이 끝난다', async () => {
+    /*
+     * 2026-09-26 대표 결정 「강제한다」 — 필수 다섯이 모두 관문이다. 옛 앱이 보내는
+     * terms · privacy(· marketing)만으로는 가입이 끝나지 않는다. 받은 동의는 남기고
+     * 활성화만 하지 않는다.
+     */
+    it('옛 앱이 보내는 terms · privacy · marketing만으로는 가입이 끝나지 않는다(400)', async () => {
       const session = await pending('kakao-legacy');
 
       const response = await test.app.inject({
         method: 'POST',
         url: '/v1/me/signup',
         headers: session.headers,
-        payload: { consents: ['terms', 'privacy'] },
+        payload: { consents: ['terms', 'privacy', 'marketing'] },
+      });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json()).toMatchObject({
+        error: { code: 'invalid_request', message: '필수 항목에 동의해야 가입이 끝나요' },
+      });
+
+      /* 활성화되지 않았다 — 보호된 화면은 여전히 닫혀 있다. */
+      const me = await test.app.inject({ method: 'GET', url: '/v1/me', headers: session.headers });
+      expect(me.statusCode).toBe(403);
+
+      /* 받은 동의는 남긴다. 빠진 필수 셋이 가입 상태에 보인다. */
+      const state = await test.app.inject({ method: 'GET', url: '/v1/me/signup', headers: session.headers });
+      expect(state.json()).toMatchObject({
+        activated: false,
+        missingRequired: [],
+        missingAgreements: ['age', 'pick_certification', 'consultation_recording'],
+      });
+    });
+
+    it.each(['age', 'terms', 'privacy', 'pick_certification', 'consultation_recording'])(
+      '필수 %s 하나만 빠져도 400이고 활성화하지 않는다',
+      async (missing) => {
+        const session = await pending(`kakao-missing-${missing}`);
+
+        const response = await test.app.inject({
+          method: 'POST',
+          url: '/v1/me/signup',
+          headers: session.headers,
+          payload: { consents: ALL.filter((item) => item !== missing) },
+        });
+
+        expect(response.statusCode).toBe(400);
+        expect(response.json()).toMatchObject({ error: { message: '필수 항목에 동의해야 가입이 끝나요' } });
+
+        const state = await test.app.inject({ method: 'GET', url: '/v1/me/signup', headers: session.headers });
+        expect(state.json()).toMatchObject({ activated: false, missingAgreements: [missing] });
+      }
+    );
+
+    it('선택 셋은 빼도 필수 다섯이면 가입이 끝난다', async () => {
+      const session = await pending('kakao-required-only');
+
+      const response = await test.app.inject({
+        method: 'POST',
+        url: '/v1/me/signup',
+        headers: session.headers,
+        payload: { consents: REQUIRED_CONSENTS },
       });
 
       expect(response.statusCode).toBe(200);
-      expect(response.json()).toMatchObject({ activated: true, missingRequired: [] });
+      expect(response.json()).toMatchObject({ activated: true, missingRequired: [], missingAgreements: [] });
+    });
+
+    it('가입 전 상태 응답은 옛 앱의 계약으로도 읽힌다 — 배포 사이 옛 화면이 멈추지 않게', async () => {
+      const session = await pending('kakao-legacy-read');
+
+      const state = await test.app.inject({ method: 'GET', url: '/v1/me/signup', headers: session.headers });
+      const legacy = z.object({
+        activated: z.boolean(),
+        items: z.array(z.object({ item: z.enum(['terms', 'privacy', 'marketing']) })),
+        missingRequired: z.array(z.enum(['terms', 'privacy', 'marketing'])),
+      });
+
+      expect(legacy.safeParse(state.json()).success).toBe(true);
+      /* 새 앱은 서버가 알려 주는 여덟 칸으로 필수 다섯을 모두 보낸다(`acceptedSignupItems`). */
+      expect(state.json<{ agreements: { item: string }[] }>().agreements.map((item) => item.item)).toEqual(
+        expect.arrayContaining(REQUIRED_CONSENTS)
+      );
     });
 
     it('계약에 없는 항목은 거절한다', async () => {

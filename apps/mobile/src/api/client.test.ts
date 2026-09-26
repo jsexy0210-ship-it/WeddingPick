@@ -4,17 +4,20 @@ import {
   ApiError,
   clearReadCache,
   completeSetup,
+  refreshReads,
   listVendorRegions,
   setDisplayName,
   searchVendors,
   getCurrentUser,
   getAppBootstrap,
   getSignupState,
+  getWeddingFeed,
   updateSettings,
 } from '@/api/client';
 import { clearToken, loadToken, saveToken } from '@/api/session';
 import { readCurrentUserSnapshot } from '@/features/loading/current-user-snapshot';
 import { prefetchHomeBootstrap } from '@/features/home/home-handoff';
+import { listWeddingContent } from '@/features/home/content';
 
 // EXPO_PUBLIC_* 값은 빌드 시점에 박히므로 테스트에서는 설정 모듈을 갈아 끼운다.
 jest.mock('@/api/config', () => ({
@@ -58,6 +61,36 @@ describe('서버 응답 검사', () => {
 
     await expect(getCurrentUser()).rejects.toThrow('로그인이 필요합니다.');
     expect(await loadToken()).toBeNull();
+  });
+});
+
+/**
+ * 홈 「웨딩 준비 팁」은 준비 단계 순서로 묻는다(2026-09-26 대표 오더). 순서는 서버가 로그인한
+ * 사람의 단계로 매기므로 토큰을 싣고, 라운지 목록과는 주소가 달라 캐시를 섞지 않는다.
+ */
+describe('웨딩피드 순서', () => {
+  const FEED = { items: [], tabs: [{ key: 'all', label: '전체', categories: [] }] };
+
+  it('홈 미리보기는 준비 단계 순서를 토큰과 함께 묻는다', async () => {
+    respondWith(FEED);
+
+    await listWeddingContent(2);
+
+    const [url, init] = jest.mocked(globalThis.fetch).mock.calls[0]!;
+    expect(url).toBe('http://localhost:3000/v1/wedding-feed?limit=2&order=stage');
+    expect((init as RequestInit).headers).toMatchObject({ authorization: 'Bearer token' });
+  });
+
+  it('라운지 목록은 순서를 묻지 않는다 — 홈 미리보기와 캐시를 나눠 쓴다', async () => {
+    respondWith(FEED);
+
+    await listWeddingContent(2);
+    await getWeddingFeed();
+
+    expect(jest.mocked(globalThis.fetch).mock.calls.map(([url]) => url)).toEqual([
+      'http://localhost:3000/v1/wedding-feed?limit=2&order=stage',
+      'http://localhost:3000/v1/wedding-feed',
+    ]);
   });
 });
 
@@ -409,5 +442,75 @@ describe('온보딩 저장 뒤 홈 bootstrap', () => {
     await getAppBootstrap();
 
     expect(bootstrapCalls()).toBe(1);
+  });
+});
+
+/**
+ * 당겨서 새로 고침(2026-09-26 대표 지시 「화면 자체를 밑으로 내리면 새로고침 진행한다」).
+ * 창이 열린 동안 떠난 읽기는 캐시를 건너뛰고, 창은 그 읽기가 — 앞 답을 받고 이어 떠난 것까지 —
+ * 전부 돌아와야 닫힌다. 받은 답은 캐시에 다시 적혀 다음 화면도 새 값을 본다.
+ */
+describe('당겨서 새로 고침 — 캐시 우회', () => {
+  const REGIONS = { regions: [{ name: '서울', vendorCount: 3 }] };
+  const UPDATED = { regions: [{ name: '서울', vendorCount: 4 }] };
+
+  it('5분 캐시 안의 주소도 창 안에서는 서버에 다시 묻고, 새 답을 캐시에 적는다', async () => {
+    respondWith(REGIONS);
+    await listVendorRegions();
+    await listVendorRegions();
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+
+    respondWith(UPDATED);
+    let seen: unknown = null;
+    await refreshReads(async () => {
+      seen = await listVendorRegions();
+    });
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    expect(seen).toEqual(UPDATED);
+
+    // 창이 닫히면 다시 캐시 — 방금 받은 새 값이다.
+    await expect(listVendorRegions()).resolves.toEqual(UPDATED);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('앞 답을 받고 이어 떠나는 읽기(bootstrap → 일정 같은)까지 기다리고, 그것도 새로 받는다', async () => {
+    respondWith(REGIONS);
+    await listVendorRegions();
+    respondWith(MEMBER);
+    await getCurrentUser();
+
+    const fetch = jest.fn()
+      .mockResolvedValueOnce(response(MEMBER))
+      .mockResolvedValueOnce(response(UPDATED));
+    globalThis.fetch = fetch as unknown as typeof globalThis.fetch;
+    const chained = jest.fn();
+
+    // load가 약속을 돌려주지 않아도(화면의 load는 대개 void) 창이 끝까지 기다린다.
+    await refreshReads(() => {
+      void getCurrentUser().then(() => listVendorRegions()).then(chained);
+    });
+
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(String(fetch.mock.calls[0][0])).toContain('/v1/me');
+    expect(String(fetch.mock.calls[1][0])).toContain('/v1/vendors/regions');
+    expect(chained).toHaveBeenCalledWith(UPDATED);
+  });
+
+  it('창 밖의 읽기는 그대로 캐시를 쓴다 — 새로 고침이 다른 화면의 캐시를 버리지 않는다', async () => {
+    respondWith(REGIONS);
+    await listVendorRegions();
+    await refreshReads(() => undefined);
+    await listVendorRegions();
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('load가 던져도 창은 닫힌다 — 오류는 화면이 보여준다', async () => {
+    await expect(refreshReads(() => {
+      throw new Error('화면 오류');
+    })).resolves.toBeUndefined();
+    respondWith(REGIONS);
+    await listVendorRegions();
+    await listVendorRegions();
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
   });
 });

@@ -209,7 +209,9 @@
     "nav.pick": "Pick",
     "nav.lounge": "라운지",
     "nav.my": "MY",
-    "nav.search": "검색"
+    "nav.search": "검색",
+
+    "back.exitConfirm": "뒤로가기를 한 번 더 누르면 앱이 종료돼요"
   },
 
   "data": {
@@ -368,6 +370,8 @@
     "rebuttal.label": "업체 반론",
     "guide.provided": "업체가 제공한 정보예요 · {date} 확인",
     "official.lastCheck": "마지막 확인",
+    "official.source": "출처",
+    "official.sourcePublic": "공공데이터",
     "reportError": "정보가 틀렸나요? 제보하기",
     "moreCases": "Pick 인증하면 조건이 비슷한 사례 {n}건을 볼 수 있어요"
   },
@@ -417,7 +421,8 @@
     "unpickBody": "{partner}님 목록에서도 함께 사라져요",
     "empty.title": "아직 Pick한 곳이 없어요",
     "empty.body": "마음에 드는 곳을 담아두면 여기서 비교할 수 있어요",
-    "empty.cta": "{category} 둘러보기"
+    "empty.cta": "{category} 둘러보기",
+    "card.manual": "직접 입력한 곳"
   },
 
   "lounge": {
@@ -478,6 +483,8 @@
     "calendar.hint": "빈 날짜를 누르면 일정을 바로 추가해요",
     "calendar.addForDay": "이 날짜에 일정을 추가해요",
     "calendar.done": "완료",
+    "calendar.forecast": "예식일 예보 · 비 올 확률 {rain}% · {min}~{max}℃",
+    "calendar.holiday": "{month}월 {day}일 {name}",
     "calendar.prev": "이전 달",
     "calendar.next": "다음 달",
     "calendar.edit": "수정",
@@ -500,12 +507,28 @@
     "expense.editTitle": "예산 수정",
     "expense.save": "변경 내용 저장",
     "expense.saved": "지출을 바꿨어요",
+    "expense.addCta": "지출 넣기",
+    "expense.edit": "수정",
     "expense.delete": "삭제",
     "expense.deleteTitle": "지출을 삭제할까요?",
     "expense.deleteBody": "\"{label}\" {amount} 지출을 삭제합니다.",
     "expense.deleted": "지출을 삭제했어요",
     "expense.lockedSource": "{source}에서 온 금액은 자료 그대로 보여드려요",
     "expense.overBudget": "총예산을 넘을 수 없어요. 남은 예산은 {remaining}이에요",
+    "expense.chooseAuto": "자동 등록(Pick 인증)",
+    "expense.chooseAutoSub": "사진 한 장이면 돼요",
+    "expense.chooseManual": "직접 입력",
+    "expense.chooseManualSub": "금액을 적어요",
+    "expense.consentTitle": "자료를 올리기 전에",
+    "expense.consentCta": "동의하고 계속",
+    "expense.autoAdded": "지출에 넣었어요",
+    "expense.autoPending": "확인 중이에요",
+    "expense.autoPendingNote": "올려주신 자료를 확인하고 있어요",
+    "expense.autoPendingValue": "확인하고 있어요",
+    "expense.autoDone": "확인",
+    "expense.pendingBadge": "확인 중",
+    "expense.budgetRaised": "총예산을 {amount} 늘렸어요",
+    "expense.budgetRaisedBody": "Pick 인증한 지출이 총예산을 넘어서 총예산을 {budget}으로 맞췄어요",
     "budget.clear": "총예산 지우기",
     "budget.clearTitle": "총예산을 지울까요?",
     "budget.clearBody": "{amount} 총예산을 지우면 남은 금액과 사용률도 함께 사라져요.",
@@ -695,10 +718,10 @@
 
   "inviteShare": {
     "metaTitle": "웨딩픽에서 같이 준비해요",
-    "metaDescription": "초대한 분께 받은 코드 6자리를 넣으면 Pick한 곳 · 일정 · 지출을 함께 봐요",
+    "metaDescription": "초대한 분께 받은 코드 4자리를 넣으면 Pick한 곳 · 일정 · 지출을 함께 봐요",
     "imageAlt": "웨딩픽 — 같이 준비할 사람을 초대해요",
     "pageTitle": "초대를 받으셨나요?",
-    "pageBody": "초대한 분께 받은 코드 6자리를 넣으면 연결돼요",
+    "pageBody": "초대한 분께 받은 코드 4자리를 넣으면 연결돼요",
     "pageCta": "코드 넣기"
   },
 
@@ -729,7 +752,8 @@
     "sub": "두 분의 준비에 맞는 이야기를 골라드려요.",
     "detail.error": "글을 불러오지 못했어요",
     "detail.emptyBody": "본문이 아직 없어요",
-    "detail.back": "돌아가기"
+    "detail.back": "돌아가기",
+    "detail.list": "목록"
   },
 
   "benefit": {
@@ -842,6 +866,18 @@
     "region.sub": "선택한 지역을 기준으로 찾아드릴게요",
     "prep.title": "준비는 어디까지 했나요?",
     "prep.sub": "이미 정한 건 빼고 필요한 것만 챙겨드릴게요",
+    "prepVendor.title": "{name} 검색",
+    "prepVendor.placeholder": "업체 이름 검색",
+    "prepVendor.none": "아직 정한 곳이 없어요",
+    "prepVendor.hint": "업체 이름을 입력하면 바로 찾을게요",
+    "prepVendor.failed": "업체를 불러오지 못했어요. 다시 입력해주세요",
+    "prepVendor.empty": "해당 이름의 업체가 아직 없어요",
+    "prepVendor.close": "닫기",
+    "prepVendor.manualRow": "직접 입력",
+    "prepVendor.manualTitle": "{name} 직접 입력",
+    "prepVendor.manualPlaceholder": "업체 이름 입력",
+    "prepVendor.manualHint": "목록에 없는 곳은 이름으로 남겨둘게요 · {max}자까지",
+    "prepVendor.manualCta": "이 이름으로 정하기",
     "budget.title": "앞으로 쓸 예산은 얼마인가요?",
     "budget.sub": "예산에 맞는 선택지를 먼저 보여드릴게요",
     "budget.unknown": "아직 모르겠어요",

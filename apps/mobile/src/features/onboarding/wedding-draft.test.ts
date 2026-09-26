@@ -68,4 +68,56 @@ describe('onboarding draft storage mutation order', () => {
     expect(removeItem).toHaveBeenCalledWith('weddingpick.onboardingAnswers.v1');
     expect(await loadOnboardingAnswers()).toBeNull();
   });
+
+  it('준비 현황 카드에서 고른 업체를 다시 열어도 그대로 읽는다 · 모양이 틀린 업체는 버린다', async () => {
+    await saveOnboardingAnswers({
+      ...EMPTY_ANSWERS,
+      prep: {
+        categories: ['hall'],
+        vendors: { hall: { id: 'v-hall', name: '강남 A 웨딩홀', category: 'hall' } },
+      },
+    });
+
+    expect((await loadOnboardingAnswers())?.prep).toEqual({
+      categories: ['hall'],
+      vendors: { hall: { id: 'v-hall', name: '강남 A 웨딩홀', category: 'hall' } },
+    });
+
+    // 카드 밖 업종 · 이름 없는 업체 · 모르는 카드 키는 걸러진다.
+    values.set(
+      'weddingpick.onboardingAnswers.v1',
+      JSON.stringify({
+        prep: {
+          categories: ['hall'],
+          vendors: {
+            hall: { id: 'v-x', name: '스튜디오', category: 'studio' },
+            sdm: { id: 'v-y', name: '' , category: 'studio' },
+            planner: { id: 'v-z', name: '대행', category: 'hall' },
+          },
+        },
+      })
+    );
+
+    expect((await loadOnboardingAnswers())?.prep).toEqual({ categories: ['hall'] });
+  });
+
+  it('직접 입력한 카드도 다시 열면 그대로 읽는다 · 이름 규칙에 안 맞으면 버린다', async () => {
+    values.set(
+      'weddingpick.onboardingAnswers.v1',
+      JSON.stringify({
+        prep: {
+          categories: ['hall', 'studio', 'dress', 'makeup', 'hair'],
+          vendors: {
+            hall: { manual: true, name: ' 우리동네 웨딩컨벤션 ' },
+            sdm: { manual: true, name: '가'.repeat(31) },
+          },
+        },
+      })
+    );
+
+    expect((await loadOnboardingAnswers())?.prep).toEqual({
+      categories: ['hall', 'studio', 'dress', 'makeup', 'hair'],
+      vendors: { hall: { manual: true, name: '우리동네 웨딩컨벤션' } },
+    });
+  });
 });

@@ -39,7 +39,7 @@ const ui = new Proxy({
 const native = { Platform: { OS: 'web' }, View: 'View', ScrollView: 'ScrollView',
   Pressable: 'Pressable', StyleSheet: { create: x => x } };
 const strings = {
-  weddingFeed: { 'detail.error': '글을 불러오지 못했어요', 'detail.back': '돌아가기', 'detail.emptyBody': '본문이 아직 없어요' },
+  weddingFeed: { 'detail.error': '글을 불러오지 못했어요', 'detail.back': '돌아가기', 'detail.list': '목록', 'detail.emptyBody': '본문이 아직 없어요' },
   community: { title: '라운지', 'tab.review': '리얼후기', 'tab.feed': '웨딩정보', 'tab.expo': '박람회',
     write: '글쓰기', 'review.empty.title': '후기', 'review.empty.body': '아직 없어요', 'review.empty.cta': 'Pick 인증하기',
     'feed.empty.title': '웨딩정보', 'feed.empty.body': '아직 없어요', 'expo.empty.title': '박람회',
@@ -72,32 +72,37 @@ function hooks() {
   return { api, render(fn) { cursor=0;return fn(); }, commit() { const tasks=pending;pending=[];tasks.forEach(f=>f()); },
     unmount() { slots.forEach(s=>s.cleanup?.());pending=[]; }, get writes(){return writes;} };
 }
-function detailHarness(initialId='a') {
-  let id=initialId, backs=0; const h=hooks(), calls=[];
+/* 당겨서 새로 고침 훅은 화면 조회 회귀와 무관하다 — 몸짓 · 캐시 우회는 apps/mobile/src/features/refresh 시험이 본다. */
+const pullRefresh={usePullRefresh:()=>({refreshing:false,onRefresh:()=>{},refreshControl:'RefreshControl'}),notifyRefreshFailed:()=>{}};
+function detailHarness(initialId='a', from) {
+  let id=initialId, backs=0; const h=hooks(), calls=[], lists=[];
   const back=()=>{backs++;};
   const screen=load('apps/mobile/src/app/(tabs)/(home)/feed/[id].tsx',{
-    'expo-router':{useLocalSearchParams:()=>({id})},react:h.api,'react-native':native,
+    'expo-router':{useLocalSearchParams:()=>({id,from})},react:h.api,'react-native':native,
     'react-native-safe-area-context':{SafeAreaView:'SafeAreaView'},'@weddingpick/ui':ui,
     '@/components/back-bar':{BackBar:'BackBar'},'@/features/home/category-image':{CategoryImage:'CategoryImage'},
-    '@/api/client':{getWeddingFeedScrapState:async()=>({saved:false}),removeWeddingFeedScrap:async()=>({saved:false}),saveWeddingFeedScrap:async()=>({saved:true})},
-    '@/features/auth/use-session':{useSession:()=>({state:{status:'signedOut'}})},
+    '@/features/community/feed-href':load('apps/mobile/src/features/community/feed-href.ts'),
     '@/features/home/content':{getWeddingFeedDetail:key=>{const d=deferred();calls.push({key,...d});return d.promise;}},
     '@/features/common/format-date':{formatDateDot:x=>x},'@/features/loading/delayed-loader':{DelayedLoadingView:'Loading'},
-    '@/features/navigation/depth-back':{useDepthBack:()=>back},'../../../../../../../spec/strings.ko.json':strings,
+    '@/features/navigation/depth-back':{useDepthBack:()=>back,dismissToOrReplace:target=>{lists.push(target);}},
+    '../../../../../../../spec/strings.ko.json':strings,
+    '@/features/refresh/use-pull-refresh':pullRefresh,
   }).default;
-  return { h,calls,render:()=>h.render(screen),setId:value=>{id=value;},get backs(){return backs;} };
+  return { h,calls,lists,render:()=>h.render(screen),setId:value=>{id=value;},get backs(){return backs;} };
 }
 const post = (id, body='body') => ({ id, title:`title-${id}`, categoryLabel:'예산', summary:'summary', body, imageUri:null,publishedAt:null });
-function loungeHarness(kind='review') {
+function loungeHarness(kind='review', params={}) {
   const h=hooks();const pushed=[];const replaced=[];
+  /* 칩 · 카테고리 목록은 domain 상수 하나다(2026-09-26) — 흉내 내지 않고 실제 파일을 싣는다. */
+  const feedDomain=load('packages/domain/src/wedding-feed.ts');
   const loungeReviewHelpers=load('apps/mobile/src/features/community/lounge-reviews.ts',{
-    '@weddingpick/domain':{VENDOR_CATEGORY_LABEL:{},PREPARATION_GROUPS:[{key:'start',categories:['hall']}]}});
+    '@weddingpick/domain':{...feedDomain,PREPARATION_GROUPS:[{key:'start',categories:['hall']}]}});
   const items=[{id:'post/a?b',title:'첫 글',summary:'summary',imageUrl:null,categoryLabel:'예산'},
     {id:'second',title:'둘째 글',summary:'summary',imageUrl:null,categoryLabel:'체크리스트'}];
   const feed={tabs:[{key:'all',label:'전체',categories:[]},{key:'budget',label:'예산',categories:['예산']}],items};
   const {LoungeScreen}=load('apps/mobile/src/features/community/lounge-screen.tsx',{
-    '@weddingpick/domain':{daysUntil:()=>2,VENDOR_CATEGORY_LABEL:{}},'expo-router':{Redirect:'Redirect',router:{push:x=>pushed.push(x),replace:x=>replaced.push(x)},
-      useFocusEffect:fn=>h.api.useEffect(fn,[fn]),useLocalSearchParams:()=>({})},react:h.api,'react-native':native,
+    '@weddingpick/domain':{daysUntil:()=>2,VENDOR_CATEGORY_LABEL:{},WEDDING_FEED_LOUNGE_LIMIT:feedDomain.WEDDING_FEED_LOUNGE_LIMIT},'expo-router':{Redirect:'Redirect',router:{push:x=>pushed.push(x),replace:x=>replaced.push(x)},
+      useFocusEffect:fn=>h.api.useEffect(fn,[fn]),useLocalSearchParams:()=>params},react:h.api,'react-native':native,
     'react-native-safe-area-context':{SafeAreaView:'SafeAreaView'},'@weddingpick/ui':ui,
     '@/api/client':{listLoungeReviews:async()=>({reviews:[],caveat:''}),
       getWeddingFeed:async()=>feed,listExpos:async()=>({items:[]})},
@@ -105,9 +110,12 @@ function loungeHarness(kind='review') {
     '@/features/errors/full-screen-error':{FullScreenError:'FullScreenError'},
     '@/features/home/category-image':{CategoryImage:'CategoryImage'},
     '@/features/community/lounge-reviews':loungeReviewHelpers,
-    '@/features/settings/my-kit':{CatChip:'CatChip'},'react-native-svg':{default:'Svg',Path:'Path'},
+    '@/features/community/feed-href':load('apps/mobile/src/features/community/feed-href.ts'),
+    '@/features/settings/my-kit':{CatChipBar:'CatChipBar'},'react-native-svg':{default:'Svg',Path:'Path'},
     '@/features/loading/delayed-loader':{DelayedLoader:'Loader',DelayedLoadingView:'Loading'},
     '@/features/wedding/screen-kit':{NavBar:'NavBar'},'../../../../../spec/strings.ko.json':strings,
+    '@/features/refresh/use-pull-refresh':pullRefresh,
+    '@/features/navigation/depth-back':{chainOrigin:(alias,from)=>from?`${alias}.${from}`:alias},
     '@/app/(tabs)/search/[vendorId]/write-review':{ReviewWriteSheet:'ReviewWriteSheet'},
     '@/app/(tabs)/community/review/write':{LoungeReviewVendorSheet:'LoungeReviewVendorSheet'},
   });
@@ -141,7 +149,9 @@ function splitFixture(script,role,missingAdmin=false) {
     ['community','/community'],['capture','/capture'],['(home)','/feed/id'],['my','/myth'],
     ['my','/search'],[undefined,'/'],['index','/feed/id']])
     await check(`non-root hidden: ${url}`,()=>assert.equal(visible(url,route),false));
-  const barMocks={'react-native':native,'@weddingpick/ui':ui,'./root-tabs':tabs,'./root-tab-visibility':{isRootTabPath:visible}};
+  const barMocks={'react-native':native,'@weddingpick/ui':ui,'./root-tabs':tabs,'./root-tab-visibility':{isRootTabPath:visible},
+    /* 키패드가 떠 있을 때만 숨긴다 — 이 검사는 경로 판정만 본다(키패드는 keyboard-avoid.test.tsx). */
+    '@/features/common/keyboard-inset':{useKeyboardInset:()=>({inset:0,visible:false})}};
   function renderBar(url,route,index=0){
     const bar=load('apps/mobile/src/features/navigation/tab-bar.tsx',{...barMocks,'expo-router':{usePathname:()=>url}}).RootTabBar;
     return bar({state:{index:0,routes:[{key:'r',name:route,state:{index}}]},descriptors:{r:{options:{}}},navigation:{},insets:{bottom:0}});
@@ -156,10 +166,16 @@ function splitFixture(script,role,missingAdmin=false) {
     const d=detailHarness(id===undefined?'temporary':id);if(id===undefined)d.setId(undefined);
     d.render();d.h.commit();assert.equal(d.calls.length,0);assert.equal(d.render().type,'ErrorView');
   });
-  await check('detail success, empty body and shared back action',async()=>{
+  await check('detail success, empty body and list action',async()=>{
     const d=detailHarness();assert.equal(d.render().type,'Loading');d.h.commit();d.calls[0].resolve(post('a',''));await flush();
     const tree=d.render();assert.ok(text(tree).includes('title-a'));assert.ok(text(tree).includes('본문이 아직 없어요'));
-    find(tree,'ActionButton')[0].props.onPress();assert.equal(d.backs,1);
+    /* 2026-09-26 — 스크랩 단추 삭제 · 하단은 「목록」 하나(웨딩정보 목록으로, 기록을 쌓지 않는다). */
+    const buttons=find(tree,'ActionButton');assert.equal(buttons.length,1);assert.equal(buttons[0].props.label,'목록');
+    buttons[0].props.onPress();assert.deepEqual(d.lists,['/community/feed']);assert.equal(d.backs,0);
+  });
+  await check('detail list action keeps entry origin',async()=>{
+    const d=detailHarness('a','my');d.render();d.h.commit();d.calls[0].resolve(post('a'));await flush();
+    find(d.render(),'ActionButton')[0].props.onPress();assert.deepEqual(d.lists,['/community/feed?from=my']);
   });
   await check('id transition never renders previous ready post',async()=>{
     const d=detailHarness();d.render();d.h.commit();d.calls[0].resolve(post('a'));await flush();assert.ok(text(d.render()).includes('title-a'));
@@ -188,9 +204,14 @@ function splitFixture(script,role,missingAdmin=false) {
     assert.equal(l.pushed[0],'/community/feed/post%2Fa%3Fb');
     assert.equal(find(tree,'NavBar')[0].props.right,undefined);
   });
+  await check('lounge feed row carries entry origin into detail',async()=>{
+    const l=loungeHarness('feed',{from:'my'});l.render();l.h.commit();await flush();
+    find(l.render(),'Pressable')[0].props.onPress();assert.equal(l.pushed[0],'/community/feed/post%2Fa%3Fb?from=my');
+  });
   await check('lounge category filters preserve clickable detail',async()=>{
     const l=loungeHarness('feed');l.render();l.h.commit();await flush();
-    find(l.render(),'CatChip').find(chip=>chip.props.label==='예산').props.onPress();const buttons=find(l.render(),'Pressable');
+    /* 칩은 공용 칩바(CatChipBar · 2026-09-26)가 그린다 — 화면은 고른 이름만 받는다. */
+    find(l.render(),'CatChipBar')[0].props.onSelect('예산');const buttons=find(l.render(),'Pressable');
     assert.equal(buttons.length,1);assert.equal(buttons[0].props.accessibilityLabel,'첫 글');
   });
   await check('lounge verified review action is restricted to review tab',async()=>{

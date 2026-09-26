@@ -107,6 +107,76 @@ describeWithDb('후기 미디어와 상호작용', () => {
     expect(parsed.reviews[0]?.media[0]).not.toHaveProperty('storageKey');
   });
 
+  describe('같은 출처 사진 올리기 — POST /v1/reviews/media', () => {
+    /*
+     * 서명 URL로 저장소에 바로 올리던 길은 브라우저 CORS preflight에서 막힌다(e66dec7e).
+     * 사진 본문을 API가 받아 저장소로 흘려 보내고, 받은 열쇠로 후기를 쓴다.
+     */
+    const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x01, 0x02]);
+
+    function postMedia(headers: Record<string, string>, body: Buffer = PNG, extra: Record<string, string> = {}) {
+      return test.app.inject({
+        method: 'POST',
+        url: '/v1/reviews/media',
+        headers: { ...headers, 'content-type': 'image/png', ...extra },
+        payload: body,
+      });
+    }
+
+    it('사진이 내 열쇠로 그 형식 그대로 저장되고, 그 열쇠로 후기를 쓴다', async () => {
+      const vendorId = await createVendor();
+      const author = await signInAs(test, 'same-origin-media');
+
+      const uploaded = await postMedia(author.headers);
+      expect(uploaded.statusCode).toBe(201);
+      const media = uploaded.json<{ storageKey: string; mimeType: string }>();
+      expect(media.storageKey).toMatch(new RegExp(`^reviews/${author.userId}/[0-9a-f-]+\\.png$`));
+      expect(media.mimeType).toBe('image/png');
+
+      const storage = test.context.storage as LocalStorage;
+      expect((await storage.download(media.storageKey)).equals(PNG)).toBe(true);
+      expect(storage.mimeTypeOf(media.storageKey)).toBe('image/png');
+
+      const written = await test.app.inject({
+        method: 'POST',
+        url: `/v1/vendors/${vendorId}/reviews`,
+        headers: author.headers,
+        payload: {
+          role: 'contractor',
+          overall: 4,
+          title: '같은 출처로 올린 사진',
+          body: BODY,
+          aspects: [{ key: 'food_taste', rating: 4 }],
+          media: [{ storageKey: media.storageKey, mimeType: 'image/png', rightsConfirmed: true }],
+        },
+      });
+      expect(written.statusCode).toBe(201);
+    });
+
+    it('비로그인은 막는다', async () => {
+      expect((await postMedia({})).statusCode).toBe(401);
+    });
+
+    it('JPG · PNG · WebP가 아니면 415', async () => {
+      const author = await signInAs(test, 'media-wrong-type');
+
+      for (const type of ['image/gif', 'image/heic', 'video/mp4', 'application/pdf']) {
+        const response = await postMedia(author.headers, PNG, { 'content-type': type });
+        expect(response.statusCode).toBe(415);
+      }
+    });
+
+    it('10MB를 넘는다고 알리면 본문을 읽기 전에 413', async () => {
+      const author = await signInAs(test, 'media-too-large');
+      const response = await postMedia(author.headers, PNG, {
+        'content-length': String(10 * 1024 * 1024 + 1),
+      });
+
+      expect(response.statusCode).toBe(413);
+      expect(response.json().error.message).toBe('후기 사진은 10MB 이하만 올릴 수 있어요.');
+    });
+  });
+
   it('도움돼요 PUT/DELETE는 중복 요청에도 사용자당 한 번만 센다', async () => {
     const { reviewId } = await createReview('help-author');
     const member = await signInAs(test, 'help-member');

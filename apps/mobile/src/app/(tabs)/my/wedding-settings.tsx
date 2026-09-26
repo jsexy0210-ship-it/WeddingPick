@@ -1,9 +1,7 @@
 import type { CurrentUser } from '@weddingpick/api-contract';
 import {
   BUDGET_BRACKET_LABEL,
-  PREPARATION_NOT_STARTED_LABEL,
   WEDDING_REGIONS,
-  VENDOR_CATEGORY_LABEL,
   WEDDING_STYLE_LABEL,
   combineRegion,
   formatDateDot,
@@ -11,6 +9,7 @@ import {
   type VendorCategory,
   type WeddingBudgetBracket,
   type WeddingRegion,
+  type WeddingStyle,
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -30,13 +29,19 @@ import {
 import { ApiError, completeSetup, getCurrentUser } from '@/api/client';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { useDepthBack } from '@/features/navigation/depth-back';
-import { BudgetGrid } from '@/features/onboarding/budget-grid';
-import { DateWheelSheet } from '@/features/common/wheel-picker-sheet';
+import { DateWheelSheet, OptionWheelSheet } from '@/features/common/wheel-picker-sheet';
 import { firstSelectable, toIso, YEAR_SPAN } from '@/features/onboarding/calendar';
-import { UNDECIDED_LABEL, type Answers } from '@/features/onboarding/flow';
-import { PrepStatus } from '@/features/onboarding/prep-status';
-import { RegionPicker } from '@/features/onboarding/region-picker';
-import { NoteBox, Section, SubScreen } from '@/features/settings/my-kit';
+import { UNDECIDED_LABEL } from '@/features/onboarding/flow';
+import { RegionPickerSheet, type PickedRegion } from '@/features/onboarding/region-picker-sheet';
+import { NoteBox, Section, SubScreen, SubScreenStatus } from '@/features/settings/my-kit';
+import { StylePickSheet } from '@/features/settings/style-pick-sheet';
+import {
+  budgetOptions,
+  prepCategoriesFromKey,
+  prepComboKeyOf,
+  prepOptions,
+  prepValueLabel,
+} from '@/features/settings/wedding-setting-options';
 
 /** 준비 현황이 받는 업종 — 계약이 «기타»를 받지 않는다(`preparationCategorySchema`). */
 type PreparedCategory = Exclude<VendorCategory, 'etc'>;
@@ -45,12 +50,19 @@ type PreparedCategory = Exclude<VendorCategory, 'etc'>;
 const S = {
   title: '내 웨딩설정',
   date: '예식일',
-  dateTitle: '예식일 선택',
   region: '지역',
   /* 정본 weddingSet k «예산». */
   budget: '예산',
   style: '스타일',
   prepared: '준비 현황',
+  /*
+   * 휠 시트 제목 — 예식일 · 지역은 이미 쓰던 것(지역은 정본 home.jsx:247 「지역 선택」),
+   * 나머지 셋은 같은 꼴로 지었다(정본에 이 화면의 시트 그림이 없다 — DESIGN_UNRESOLVED).
+   */
+  dateTitle: '예식일 선택',
+  prepTitle: '준비 현황 선택',
+  budgetTitle: '예산 선택',
+  styleTitle: '스타일 선택',
   /** 예식일이 지난 상태(운영 데이터 상태). */
   passed: '지났어요',
   none: '아직 안 골랐어요',
@@ -62,8 +74,8 @@ const S = {
   saveError: '바꾸지 못했어요',
 } as const;
 
-/** 지금 펼쳐 놓은 편집기. 한 번에 하나만 연다 — «한 항목씩 고친다»가 이 화면의 규칙이다. */
-type Editing = 'region' | 'budget' | 'prepared' | null;
+/** 지금 열린 휠 시트. 한 번에 하나만 연다 — «한 항목씩 고친다»가 이 화면의 규칙이다. */
+type Sheet = 'date' | 'region' | 'prepared' | 'budget' | 'style' | null;
 
 /**
  * 내 웨딩설정 · WP-MY-003 · `docs/design/React_Native/my.jsx` 프레임 3. 한 카드에 다섯 행
@@ -72,24 +84,22 @@ type Editing = 'region' | 'budget' | 'prepared' | null;
  * 이 화면이 생기기 전에는 MY의 «내 웨딩 설정»이 온보딩 5문항(`/setup`)을 통째로 다시 열었다 —
  * 예식일 하나 고치러 다섯 질문을 다시 지나야 했다. 여기서는 행을 눌러 그 항목만 고친다.
  *
- * 고른 즉시 저장한다(`/v1/me/setup`). 저장 버튼을 따로 두지 않는 이유는 항목이 서로 얽히지
- * 않기 때문이다 — 예식일만 바꾸고 나가도 남길 것이 없다. 요청은 `queue`로 줄을 세워
- * 연달아 누른 순서대로 나간다.
+ * **행을 누르면 전부 휠 바텀시트가 뜬다**(2026-09-26 대표 지시 「모든 항목 휠 바텀시트 ·
+ * 날짜 외에는 1열 휠」). 그 전에는 지역 · 준비 현황 · 예산이 행 아래에 온보딩 부품을 펼쳤고,
+ * 스타일은 `/my/taste`로 넘어갔다.
  *
- * **예식일은 로그인 이후 공용 날짜 휠 시트(`DateWheelSheet`)를 쓴다** — 온보딩 시트와는 떼어
- * 냈다(2026-09-25 대표 지시 「로그인 이후 날짜 … 수정 등은 OS 피커로」). 지역 · 예산 · 준비 현황은
- * 온보딩 2/5 · 4/5 · 3/5와 같은 부품을 행 아래에 펼친다 — 같은 질문을 다른 모양으로 두 번
- * 만들지 않는다.
+ *   예식일     공용 날짜 휠(`DateWheelSheet` · 년 · 월 · 일 3열) — 그대로
+ *   지역       온보딩 지역 휠(`RegionPickerSheet`) — 정본 home.js:712~714 `wheels`가 시/도 ·
+ *              시/군/구 **두 열**이다. 1열로 줄이면 구를 고를 길이 없어 적어 둔 구가 사라진다.
+ *   준비 현황 · 예산   1열 휠(`OptionWheelSheet`) — 보기는 `wedding-setting-options.ts`
+ *   스타일     휠이 아니다 — 다중 선택 시트(`StylePickSheet`). 2026-09-26 대표 지시 「개수제한
+ *              없다」로 1~4개를 고르는데, 1열 휠은 하나만 가리킨다.
  *
- * **스타일 행은 `/my/taste`(스타일 다시 고르기)로 연결된다** — 00-ia가 가리키던
- * «취향 다시 고르기»와 같은 화면이다 — 정본 WP-MY-014(my.jsx frame-016)(v3.24가 취향을 스타일 4종으로 합치면서
- * 하나가 됐다). 같은 화면을 두 줄로 세우지 않는다.
+ * 저장은 시트의 「확인」을 누를 때 한 번 한다(`/v1/me/setup`) — 굴리기만 하고 닫으면 그대로다.
+ * 저장 버튼을 화면에 따로 두지 않는 이유는 항목이 서로 얽히지 않기 때문이다. 요청은 `queue`로
+ * 줄을 세워 연달아 고친 순서대로 나간다.
  *
- * **예산 행 라벨은 시안 원문(«예산»)을 그대로 옮기지 않고 「준비 예산」을 유지했다** —
- * `BUDGET_BRACKET_FIELD_LABEL`(`packages/domain/budget-bracket.ts`)이 v3.19부터 MY의 이
- * 자리를 「준비 예산」으로 못 박았고(전체 예산이 아니라 앞으로 쓸 예산이라는 뜻), 같은 이름의
- * 시험(`budget-bracket.test.ts`)이 그 값을 센다. 시안의 압축 표기와 기존 확정 용어가 부딪혀
- * 임의로 바꾸지 않았다 — 대표님·MASTER 판단이 필요하다.
+ * `/my/taste`(WP-MY-014 스타일 다시 고르기)는 지우지 않는다 — 저장된 링크가 열 수 있다.
  */
 /** 예식일로 고를 수 있는 범위 — 온보딩과 같다. 과거는 안 되고(내일부터) 올해부터 5년 뒤 12월 31일까지. */
 function weddingDateRange(today: Date): { min: string; max: string } {
@@ -104,8 +114,7 @@ export default function WeddingSettingsScreen() {
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [dateOpen, setDateOpen] = useState(false);
-  const [editing, setEditing] = useState<Editing>(null);
+  const [sheet, setSheet] = useState<Sheet>(null);
 
   /** 저장 요청 줄. 연달아 누른 것이 순서대로 나가고, 앞의 것이 끝나야 뒤의 것이 나간다. */
   const queue = useRef<Promise<unknown>>(Promise.resolve());
@@ -120,8 +129,8 @@ export default function WeddingSettingsScreen() {
       .catch((caught: Error) => setError(caught.message ?? S.loadError));
   }, []);
 
-  if (error) return <ErrorView message={error} onBack={depthBack} />;
-  if (me === null) return <DelayedLoadingView />;
+  if (error) return <SubScreenStatus title={S.title}><ErrorView message={error} onBack={depthBack} /></SubScreenStatus>;
+  if (me === null) return <SubScreenStatus title={S.title}><DelayedLoadingView /></SubScreenStatus>;
 
   const current = me;
 
@@ -134,6 +143,7 @@ export default function WeddingSettingsScreen() {
     region?: string | null;
     budgetBracket?: WeddingBudgetBracket;
     preparedCategories?: PreparedCategory[];
+    styleTags?: WeddingStyle[];
   }) {
     /* 화면을 먼저 바꾼다 — 눌렀는데 아무 일도 안 일어나는 순간을 만들지 않는다. */
     const next = { ...(optimistic.current ?? current), ...patch };
@@ -149,6 +159,7 @@ export default function WeddingSettingsScreen() {
           ...(patch.preparedCategories !== undefined && {
             preparedCategories: patch.preparedCategories,
           }),
+          ...(patch.styleTags !== undefined && { styleTags: patch.styleTags }),
         })
       )
       .then((saved) => {
@@ -178,19 +189,12 @@ export default function WeddingSettingsScreen() {
       });
   }
 
-  function toggle(next: Exclude<Editing, null>) {
-    setEditing((now) => (now === next ? null : next));
-  }
-
   const today = new Date().toISOString().slice(0, 10);
   const dateValue = current.weddingDate
     ? `${formatDateDot(current.weddingDate)}${current.weddingDate < today ? ` · ${S.passed}` : ''}`
     : UNDECIDED_LABEL;
-  const preparedValue =
-    current.preparedCategories.length > 0
-      /* 정본 weddingSet v «웨딩홀» — 정한 업종 이름을 그대로 잇는다. */
-      ? current.preparedCategories.map((category) => VENDOR_CATEGORY_LABEL[category as VendorCategory]).join(' · ')
-      : PREPARATION_NOT_STARTED_LABEL;
+  /* 정본 weddingSet v «웨딩홀» — 온보딩 3/5 카드 이름으로 적는다(휠 칸과 같은 글자). */
+  const preparedValue = prepValueLabel(onlyPrepared(current.preparedCategories as VendorCategory[]));
   const styleValue =
     current.styleTags.length > 0
       ? current.styleTags.map((tag) => WEDDING_STYLE_LABEL[tag]).join(' · ')
@@ -200,72 +204,15 @@ export default function WeddingSettingsScreen() {
     <SubScreen title={S.title}>
       <Section>
         <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.border }]}>
-          <SettingRow
-            label={S.date}
-            value={dateValue}
-            onPress={() => {
-              setEditing(null);
-              setDateOpen(true);
-            }}
-          />
-
-          <SettingRow
-            label={S.region}
-            value={current.region ?? UNDECIDED_LABEL}
-            onPress={() => toggle('region')}
-          />
-          {editing === 'region' ? (
-            <View style={styles.editor}>
-              <RegionPicker
-                value={splitRegion(current.region)}
-                onChange={(next) =>
-                  save({
-                    region: next.region === null ? null : combineRegion(next.region, next.district),
-                  })
-                }
-              />
-            </View>
-          ) : null}
-
-          <SettingRow
-            label={S.prepared}
-            value={preparedValue}
-            onPress={() => toggle('prepared')}
-          />
-          {editing === 'prepared' ? (
-            <View style={styles.editor}>
-              <PrepStatus
-                selected={current.preparedCategories}
-                notStarted={current.preparedCategories.length === 0}
-                onChange={(next) => save({ preparedCategories: onlyPrepared(next) })}
-                onNotStarted={() => save({ preparedCategories: [] })}
-              />
-            </View>
-          ) : null}
-
+          <SettingRow label={S.date} value={dateValue} onPress={() => setSheet('date')} />
+          <SettingRow label={S.region} value={current.region ?? UNDECIDED_LABEL} onPress={() => setSheet('region')} />
+          <SettingRow label={S.prepared} value={preparedValue} onPress={() => setSheet('prepared')} />
           <SettingRow
             label={S.budget}
             value={current.budgetBracket ? BUDGET_BRACKET_LABEL[current.budgetBracket] : S.none}
-            onPress={() => toggle('budget')}
+            onPress={() => setSheet('budget')}
           />
-          {editing === 'budget' ? (
-            <View style={styles.editor}>
-              <BudgetGrid
-                value={current.budgetBracket}
-                onChange={(bracket) => {
-                  save({ budgetBracket: bracket });
-                  setEditing(null);
-                }}
-              />
-            </View>
-          ) : null}
-
-          <SettingRow
-            label={S.style}
-            value={styleValue}
-            last
-            onPress={() => router.push('/my/taste' as never)}
-          />
+          <SettingRow label={S.style} value={styleValue} last onPress={() => setSheet('style')} />
         </View>
       </Section>
 
@@ -275,21 +222,77 @@ export default function WeddingSettingsScreen() {
 
       {/* 예식일 — 로그인 이후 공용 날짜 휠. 범위는 온보딩과 같다: 내일부터 올해+5년 12월 31일. */}
       <DateWheelSheet
-        visible={dateOpen}
+        visible={sheet === 'date'}
         title={S.dateTitle}
         {...weddingDateRange(new Date())}
         value={current.weddingDate}
         onConfirm={(iso) => {
-          setDateOpen(false);
+          setSheet(null);
           save({ weddingDate: iso });
         }}
-        onDismiss={() => setDateOpen(false)}
+        onDismiss={() => setSheet(null)}
+      />
+
+      {/* 지역 — 온보딩 2/5와 같은 시/도 · 시/군/구 휠(정본 home.js wheelSheet). */}
+      <RegionPickerSheet
+        visible={sheet === 'region'}
+        value={splitRegion(current.region)}
+        onConfirm={(picked: PickedRegion) => {
+          setSheet(null);
+          save({ region: combineRegion(picked.region, picked.district) });
+        }}
+        onDismiss={() => setSheet(null)}
+      />
+
+      <OptionWheelSheet
+        visible={sheet === 'prepared'}
+        title={S.prepTitle}
+        accessibilityLabel={S.prepared}
+        options={PREP_OPTIONS}
+        value={prepComboKeyOf(onlyPrepared(current.preparedCategories as VendorCategory[]))}
+        onConfirm={(key) => {
+          setSheet(null);
+          save({ preparedCategories: prepCategoriesFromKey(key) });
+        }}
+        onDismiss={() => setSheet(null)}
+      />
+
+      <OptionWheelSheet
+        visible={sheet === 'budget'}
+        title={S.budgetTitle}
+        accessibilityLabel={S.budget}
+        options={BUDGET_OPTIONS}
+        value={current.budgetBracket}
+        onConfirm={(bracket) => {
+          setSheet(null);
+          save({ budgetBracket: bracket });
+        }}
+        onDismiss={() => setSheet(null)}
+      />
+
+      {/*
+        스타일 — 휠이 아니라 다중 선택 시트(2026-09-26 대표 지시 「개수제한 없다」 · 최소 1).
+        1열 휠은 하나만 가리켜 여럿을 못 고른다 — 같은 공용 바텀시트에 온보딩 5/5 보기를 둔다.
+      */}
+      <StylePickSheet
+        visible={sheet === 'style'}
+        title={S.styleTitle}
+        value={current.styleTags}
+        onConfirm={(styles) => {
+          setSheet(null);
+          save({ styleTags: styles });
+        }}
+        onDismiss={() => setSheet(null)}
       />
 
       <Toast message={toast} onHidden={() => setToast(null)} />
     </SubScreen>
   );
 }
+
+/** 휠 보기 — 온보딩 답 그대로(`wedding-setting-options.ts`). 화면이 그릴 때마다 새로 만들지 않는다. */
+const PREP_OPTIONS = prepOptions();
+const BUDGET_OPTIONS = budgetOptions();
 
 /** 4-3 정본: 작은 라벨 위에 현재 값을 놓는 64px 2단 행. */
 function SettingRow({
@@ -333,13 +336,12 @@ function SettingRow({
 
 /**
  * 서버는 지역을 한 문자열로 들고 있다 — 시/도만 고르면 «서울», 구까지 고르면 공식 이름으로
- * «서울특별시 강남구»(`combineRegion`). 온보딩 부품은 둘을 나눠 받으므로 여기서 되돌린다.
+ * «서울특별시 강남구»(`combineRegion`). 지역 휠은 둘을 나눠 받으므로 여기서 되돌린다.
  *
- * 아홉 칩에 없는 문자열이면 `null`을 준다 — «미정을 골랐다»(`{ region: null }`)와
- * «아직 답하지 않았다»(`null`)는 다른 상태다(`features/onboarding/flow.ts`).
+ * 비었거나 아홉 시/도에 없는 문자열이면 `null` — 휠은 첫 시/도에서 시작한다(짐작하지 않는다).
  */
-function splitRegion(stored: string | null): Answers['region'] {
-  if (stored === null) return { region: null, district: null };
+function splitRegion(stored: string | null): PickedRegion | null {
+  if (stored === null) return null;
 
   const tokens = regionTokens(stored);
   const head = tokens[0] ?? '';
@@ -373,23 +375,4 @@ const styles = StyleSheet.create({
   settingText: { flex: 1, minWidth: 0, gap: Layout.cardNameGap },
   settingValue: { fontWeight: '700' },
   pressed: { opacity: 0.6 },
-  /* 펼친 편집기 — 행 아래 · 아래 여백만 준다. 부품이 제 여백을 갖고 있다. */
-  /*
-   * 펼쳐지는 편집기(`RegionPicker` · `BudgetGrid` · `PrepStatus`)는 **온보딩에서 그대로
-   * 가져다 쓴다.** 그 셋은 시안 `padSec`(`0 24 24`)를 **자기가** 그리는 부품이라
-   * `paddingHorizontal: Layout.gutter`를 안에 들고 있다. 그런데 여기서는 그것을
-   * `Section` 안에 넣는데, `Section`도 같은 거터를 준다 — 좌우가 **24 + 24 = 48**이
-   * 되어, 바로 위의 행들보다 한 칸 더 안으로 들어간 채 그려졌다. 대표님이 「중첩」이라
-   * 부른 모양이 이것이다(2026-09-11).
-   *
-   * `Section`의 거터를 여기서 되돌린다. 그러면 안쪽 부품이 제 `padSec`를 그대로
-   * 그려 행과 같은 24에 앉는다. 아래 여백도 부품이 이미 24를 들고 있어 여기서
-   * 더하지 않는다.
-   *
-   * 부품 쪽을 고치지 않는 이유 — 온보딩(`app/setup.tsx`)은 거터를 주지 않는
-   * `StepFrame` 안에서 같은 부품을 쓴다. 거기서 거터를 빼면 온보딩이 벽에 붙는다.
-   */
-  editor: {
-    marginHorizontal: -Layout.gutter,
-  },
 });

@@ -10,7 +10,7 @@ import {
   type ConsentAgreementItem,
   type ConsentAgreementKey,
 } from '@weddingpick/domain';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -73,9 +73,17 @@ export default function ConsentScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [detailKey, setDetailKey] = useState<ConsentAgreementKey | null>(null);
+  const navigation = useNavigation();
 
   useEffect(() => {
     let alive = true;
+    /*
+     * 기다린 뒤 옮기기 전에 **이 화면이 아직 앞에 있는지** 본다. 웹 JS 스택은 갈아끼워진 카드를
+     * 전환이 끝날 때까지 그려 두므로(언마운트가 늦다) `alive`만으로는 못 막는다 — 온보딩을 마친
+     * 사용자가 옛 주소로 `/login/consent`를 열면 루트가 홈으로 갈아끼우는 사이 이 확인이 끝나
+     * `/setup`으로 되돌려 보냈다(2026-09-26 검수 반례).
+     */
+    const current = () => alive && navigation.isFocused();
 
     /* 깃발은 한 번 쓰고 버린다 — «다시 시도» · 재방문은 서버 답을 기다린다. */
     clearSignupPending();
@@ -83,7 +91,7 @@ export default function ConsentScreen() {
     void (async () => {
       const token = await loadToken();
       if (!token) {
-        router.replace('/login');
+        if (current()) router.replace('/login');
         return;
       }
 
@@ -93,7 +101,7 @@ export default function ConsentScreen() {
 
         if (state.activated) {
           // 이미 동의를 마친 계정(다시 들어온 경우) — 초기 설정으로 바로 넘긴다.
-          dismissToOrReplace('/setup');
+          if (current()) dismissToOrReplace('/setup');
           return;
         }
 
@@ -109,7 +117,7 @@ export default function ConsentScreen() {
     })();
 
     return () => { alive = false; };
-  }, [attempt, hinted]);
+  }, [attempt, hinted, navigation]);
 
   const allRequiredChecked = REQUIRED_AGREEMENT_ITEMS.every((item) => checked.has(item.key));
   const allChecked = CONSENT_AGREEMENT_ITEMS.every((item) => checked.has(item.key));

@@ -2,7 +2,6 @@ import {
   WEDDING_FEED_LIMITS,
   WEDDING_FEED_SOURCES,
   WEDDING_FEED_STATUSES,
-  WEDDING_FEED_TAXONOMY_LIMITS,
 } from '@weddingpick/domain';
 import { z } from 'zod';
 
@@ -88,10 +87,11 @@ export const adminWeddingFeedResponseSchema = z.object({
 export type AdminWeddingFeedResponse = z.infer<typeof adminWeddingFeedResponseSchema>;
 
 /**
- * 앱이 그릴 탭 하나.
+ * 칩 하나 — domain `WEDDING_FEED_TABS`(정본 my.js `cats`)를 그대로 싣는다.
  *
  * `categories`는 **이름 배열**이다 — 글이 들고 있는 것이 `categoryLabel` 문자열이라
- * 앱은 그 이름으로 거른다. 「전체」는 빈 배열이고 아무것도 거르지 않는다.
+ * 그 이름으로 거른다. 「전체」는 빈 배열이고 아무것도 거르지 않는다. 지금 앱은 같은
+ * 상수를 직접 읽지만, 이미 깔린 앱이 이 칸을 필수로 읽어서 남긴다.
  */
 export const weddingFeedTabSchema = z.object({
   key: z.string(),
@@ -117,11 +117,23 @@ export const weddingFeedListResponseSchema = z.object({
       imageUrl: true,
     })
   ),
-  /** 맨 앞은 언제나 「전체」다. 카테고리가 하나도 없는 탭은 빠진다. */
+  /** 맨 앞은 언제나 「전체」다. 정본 칩 여섯 그대로다. */
   tabs: z.array(weddingFeedTabSchema),
 });
 
 export type WeddingFeedListResponse = z.infer<typeof weddingFeedListResponseSchema>;
+
+/**
+ * `GET /v1/wedding-feed?order=stage` — 홈 「웨딩 준비 팁」이 부르는 순서.
+ *
+ * 2026-09-26 대표 오더(「준비단계에 맞춰 콘텐츠를 추천한다」). 로그인한 사람의 준비 단계
+ * (domain `preparationStage` — 예식일 · 업종별 상태 · 임시 일정)에 맞는 글을 **서버가** 앞에
+ * 세운다. 응답 모양은 같다 — 글을 빼지 않고 순서만 바꾼다. 단계를 모르면(비회원 · 웨딩 없음)
+ * 원래 순서다.
+ *
+ * 라운지 피드처럼 이 값을 안 붙인 목록은 운영자 순서 그대로다.
+ */
+export const WEDDING_FEED_STAGE_ORDER = 'stage';
 
 /**
  * 글 하나. 카드를 눌러 들어가는 자리.
@@ -155,6 +167,11 @@ export const weddingFeedGenerateResponseSchema = z.object({
 /** 새 글 팝업에서 카테고리를 고른 뒤 Gemini에 초안만 요청한다. DB에는 아직 쓰지 않는다. */
 export const weddingFeedDraftRequestSchema = z.object({
   categoryLabel: trimmed(WEDDING_FEED_LIMITS.categoryLabel).min(1),
+  /**
+   * 이 팝업에서 방금 받은 초안 제목들 — 다시 누르면 그것과도 다른 글을 쓴다(2026-09-26
+   * 대표 지시 「중첩되지 않는 내용으로 생성한다」). 저장 전 초안은 표에 없어서 서버가 모른다.
+   */
+  avoidTitles: z.array(trimmed(WEDDING_FEED_LIMITS.title)).max(10).default([]),
 });
 
 export const weddingFeedDraftResponseSchema = z.object({
@@ -163,57 +180,8 @@ export const weddingFeedDraftResponseSchema = z.object({
   body: z.string().max(WEDDING_FEED_LIMITS.body),
 });
 
-/**
- * ── 탭과 카테고리 ─────────────────────────────────────────────────────────
- *
- * 2026-09-16 대표 지시 — 「웨딩피드는 탭별 카테고리별로 다 설정 가능해야한다」.
- * 값은 표(0421)에 있고 관리자가 고친다.
+/*
+ * 탭·카테고리 편집 계약(`adminWeddingFeedTaxonomySchema` · 그룹/카테고리 입력)은 걷었다
+ * (2026-09-26). 목록은 domain `WEDDING_FEED_CHIPS` · `WEDDING_FEED_CATEGORIES` 하나이고
+ * 관리자 화면 · 서버 검사 · 앱 칩이 그것을 직접 본다 — 오가는 값이 아니다.
  */
-
-export const weddingFeedGroupSchema = z.object({
-  id: z.string().uuid(),
-  name: z.string(),
-  sortOrder: z.number().int(),
-  active: z.boolean(),
-});
-
-export const weddingFeedCategorySchema = z.object({
-  id: z.string().uuid(),
-  name: z.string(),
-  /** 어느 탭인가. 탭이 지워지면 null이 된다. */
-  groupId: z.string().uuid().nullable(),
-  sortOrder: z.number().int(),
-  active: z.boolean(),
-  /** 이 카테고리로 쌓인 글이 몇 편인가. 지우기를 막는 근거이자 화면에 보여줄 수다. */
-  postCount: z.number().int(),
-});
-
-export const weddingFeedGroupInputSchema = z.object({
-  name: trimmed(WEDDING_FEED_TAXONOMY_LIMITS.groupName).min(1),
-  sortOrder: z.number().int().default(0),
-  active: z.boolean().default(true),
-});
-
-export const weddingFeedCategoryInputSchema = z.object({
-  name: trimmed(WEDDING_FEED_TAXONOMY_LIMITS.categoryName).min(1),
-  groupId: z.string().uuid().nullable().default(null),
-  sortOrder: z.number().int().default(0),
-  active: z.boolean().default(true),
-});
-
-export type WeddingFeedGroupInputPayload = z.input<typeof weddingFeedGroupInputSchema>;
-export type WeddingFeedCategoryInputPayload = z.input<typeof weddingFeedCategoryInputSchema>;
-
-/**
- * 관리자가 받는 분류표.
- *
- * `ungrouped`를 **서버가 세어 준다** — 어느 탭에도 안 든 카테고리다. 화면이 직접
- * 세게 두면 화면마다 세는 법이 갈린다(꺼진 것을 셀 것인가 같은 자리에서).
- */
-export const adminWeddingFeedTaxonomySchema = z.object({
-  groups: z.array(weddingFeedGroupSchema),
-  categories: z.array(weddingFeedCategorySchema),
-  ungrouped: z.array(z.string()),
-});
-
-export type AdminWeddingFeedTaxonomy = z.infer<typeof adminWeddingFeedTaxonomySchema>;

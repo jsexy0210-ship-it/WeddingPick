@@ -5,6 +5,7 @@
  * 예식 뒤 화면은 별도 WeddingCompleteView가 맡는다.
  * 일정 탭의 «할 일» 섹션과 그 추가 시트는 뺐다(2026-09-25 대표 지시 — 정본 note.jsx에는 있다).
  * 할 일 서버 API · DB는 그대로 둔다.
+ * 대신 할 일은 타임라인에 예식일에서 역산한 임시 날짜 줄로 선다(2026-09-26 대표 지시 · `note-plan.ts`).
  */
 import { FullScreenError } from '@/features/errors/full-screen-error';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
@@ -13,6 +14,8 @@ import type {
   CurrentUser,
   ExpenseSummaryResponse,
   WeddingEvent,
+  WeddingForecast,
+  WeddingTask,
 } from '@weddingpick/api-contract';
 import {
   PREPARATION_CATEGORIES,
@@ -22,10 +25,12 @@ import {
   isBeforeWedding,
   lifecycle,
   manwon,
+  formatDday,
+  formatRemainingUntilWedding,
 } from '@weddingpick/domain';
 import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
+import { Pressable, type RefreshControlProps, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -47,19 +52,26 @@ import {
   ensureWedding,
   getCurrentUser,
   getExpenses,
+  getWeddingForecast,
   listConsultations,
   listDecisions,
   listWeddingEvents,
+  listWeddingTasks,
   setBudget,
 } from '@/api/client';
 import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
 import { confirmAlert } from '@/components/confirm-alert';
-import { RootTabHeader } from '@/components/root-tab-header';
+import { ROOT_TAB_GUTTER, RootTabHeader } from '@/components/root-tab-header';
 import { formatDateDot } from '@/features/common/format-date';
 import { noteMonthDayWeekdayTime } from '@/features/wedding/note-format';
 import { useSession } from '@/features/auth/use-session';
+import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import { WeddingCompleteView } from '@/features/wedding/complete-view';
+import { forecastLine } from '@/features/wedding/public-calendar-lines';
 import { buildUpcomingTimelineGroups, type TimelineItem } from '@/features/wedding/timeline-groups';
+import { ConsultUploadPrompt } from '@/features/wedding/consult-upload-prompt';
+import { notePlanEntries } from '@/features/wedding/note-plan';
+import { TimelinePlanRow } from '@/features/wedding/timeline-plan-row';
 
 import { ourWedding as copy } from '../../../../../../spec/strings.ko.json';
 
@@ -75,8 +87,6 @@ const TABS: readonly { key: Tab; label: string }[] = [
 const UNPAID = '아직 안 냈어요';
 /* note.js `spendGoRow` — 예산 카드 맨 아래에서 지출 목록(WP-OUR-014b)으로 간다. */
 const SPEND_LINK = '지출내역';
-const CONSULT_EMPTY_TITLE = '녹음 파일을 올려주세요';
-const CONSULT_EMPTY_BODY = '휴대폰 녹음앱에서 저장한 파일이면 돼요';
 const CONSULT_SAVED = '저장됨';
 /* note.js `consults` — 정리가 끝났고 아직 저장하지 않은 기록. */
 const CONSULT_DONE = '정리 완료';
@@ -104,10 +114,13 @@ export default function WeddingScreen({
   const { state, refresh } = useSession();
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [events, setEvents] = useState<WeddingEvent[] | null>(null);
+  /* 웨딩일정 탭의 임시 날짜 줄(2026-09-26 대표 지시) — 읽기만 한다. 못 읽으면 기본 열셋으로 대신한다. */
+  const [tasks, setTasks] = useState<WeddingTask[]>([]);
   const [expenses, setExpenses] = useState<ExpenseSummaryResponse | null>(null);
   const [expensesError, setExpensesError] = useState(false);
   const [consults, setConsults] = useState<ConsultationRecord[] | null>(null);
   const [decidedCount, setDecidedCount] = useState<number | null>(null);
+  const [forecast, setForecast] = useState<WeddingForecast | null>(null);
   const [tab, setTab] = useState<Tab>(initialTab ?? parseTab(params.tab) ?? 'calendar');
   const [toast, setToast] = useState<string | null>(null);
   const [budgetOpen, setBudgetOpen] = useState(false);
@@ -117,9 +130,16 @@ export default function WeddingScreen({
 
   const isSignedIn = state.status === 'signedIn';
 
-  const load = useCallback(() => {
+  /** `keep` — 당겨서 새로 고침. 받아 둔 목록은 비우지 않고 실패는 한 번만 토스트로 알린다. */
+  const load = useCallback((keep = false) => {
     if (!isSignedIn) return;
     let active = true;
+    let told = false;
+    const failed = () => {
+      if (!keep || told || !active) return;
+      told = true;
+      notifyRefreshFailed();
+    };
     void getCurrentUser()
       .then(async (first) => {
         const current = first.weddingId ? first : await ensureWedding().then(() => getCurrentUser());
@@ -128,7 +148,8 @@ export default function WeddingScreen({
         if (!current.weddingId) return;
         const weddingId = current.weddingId;
         // 다섯 목록은 따로 도착한다 — 가장 느린 것이 나머지를 가리지 않게 각각 반영한다.
-        void listWeddingEvents(weddingId).then((r) => { if (active) setEvents(r.events); }).catch(() => undefined);
+        void listWeddingEvents(weddingId).then((r) => { if (active) setEvents(r.events); }).catch(failed);
+        void listWeddingTasks(weddingId).then((r) => { if (active) setTasks(r.tasks); }).catch(failed);
         void getExpenses(weddingId)
           .then((r) => {
             if (!active) return;
@@ -136,17 +157,23 @@ export default function WeddingScreen({
             setExpensesError(false);
           })
           .catch(() => {
-            if (active) setExpensesError(true);
+            if (keep) failed();
+            else if (active) setExpensesError(true);
           });
-        void listConsultations(weddingId).then((r) => { if (active) setConsults(r.records); }).catch(() => undefined);
-        void listDecisions(weddingId).then((r) => { if (active) setDecidedCount(r.decisions.length); }).catch(() => undefined);
+        void listConsultations(weddingId).then((r) => { if (active) setConsults(r.records); }).catch(failed);
+        void listDecisions(weddingId).then((r) => { if (active) setDecidedCount(r.decisions.length); }).catch(failed);
+        // 예보는 보조 줄이다 — 못 받으면 줄을 그리지 않을 뿐 화면을 막지 않는다.
+        void getWeddingForecast(weddingId).then((r) => { if (active) setForecast(r.forecast); }).catch(() => undefined);
       })
-      .catch(() => undefined);
+      .catch(failed);
     return () => { active = false; };
   }, [isSignedIn]);
 
   /* 일정 · 지출 화면에서 돌아오면 목록이 바뀌어 있다 — 화면에 올 때마다 다시 읽는다. */
   useFocusEffect(load);
+
+  /* 당겨서 새로 고침 — 세 탭이 한 스크롤이라 어느 탭에서 당겨도 다섯 목록을 함께 다시 받는다. */
+  const pull = usePullRefresh(useCallback(() => { load(true); }, [load]));
 
   useEffect(() => {
     if (initialTab !== undefined) return;
@@ -233,7 +260,11 @@ export default function WeddingScreen({
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea} edges={['top']}>
-          <EmptyNoteView expenses={expenses} onConfirmDate={() => router.push('/my/wedding-settings' as never)} />
+          <EmptyNoteView
+            expenses={expenses}
+            onConfirmDate={() => router.push('/my/wedding-settings' as never)}
+            refreshControl={pull.refreshControl}
+          />
         </SafeAreaView>
         <Toast message={toast} onHidden={() => setToast(null)} />
       </ThemedView>
@@ -335,7 +366,11 @@ export default function WeddingScreen({
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         {header}
 
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={pull.refreshControl}>
           {/* 세 칸 탭 — React_Native/note.jsx tabNav/seg(WP-NOTE-001): 밑줄형, 배경 없음. */}
           <View accessibilityRole="tablist" style={[styles.tabs, { borderBottomColor: theme.border }]}>
             {TABS.map((item) => {
@@ -359,8 +394,10 @@ export default function WeddingScreen({
           {tab === 'calendar' ? (
             <CalendarPanel
               events={events ?? []}
+              tasks={tasks}
               weddingDate={me?.weddingDate ?? null}
               decidedCount={decidedCount}
+              forecast={forecast}
               onOpenDecided={() => (weddingId ? router.push(`/wedding/${weddingId}/decided` as never) : null)}
             />
           ) : tab === 'budget' ? (
@@ -376,6 +413,9 @@ export default function WeddingScreen({
           ) : (
             <ConsultPanel
               records={consults ?? []}
+              weddingId={weddingId}
+              onUploaded={load}
+              onMessage={setToast}
               onOpen={(record) =>
                 weddingId
                   ? router.push(`/wedding/${weddingId}/consultations/${record.id}` as never)
@@ -454,9 +494,11 @@ export default function WeddingScreen({
 function EmptyNoteView({
   expenses,
   onConfirmDate,
+  refreshControl,
 }: {
   expenses: ExpenseSummaryResponse;
   onConfirmDate: () => void;
+  refreshControl: ReactElement<RefreshControlProps>;
 }) {
   const theme = useTheme();
   const rows = [
@@ -467,7 +509,7 @@ function EmptyNoteView({
   return (
     <>
       <RootTabHeader title={TERMS.ourWedding} style={[styles.emptyNav, { borderBottomColor: theme.border }]} />
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} refreshControl={refreshControl}>
         <View style={styles.emptySection}>
           <ThemedText type="f18" style={styles.bold}>일정</ThemedText>
           <View style={[styles.emptyCard, { backgroundColor: theme.backgroundElement }]}>
@@ -511,13 +553,17 @@ function EmptyNoteView({
 ──────────────────────────────────────────── */
 function CalendarPanel({
   events,
+  tasks,
   weddingDate,
   decidedCount,
+  forecast,
   onOpenDecided,
 }: {
   events: WeddingEvent[];
+  tasks: WeddingTask[];
   weddingDate: string | null;
   decidedCount: number | null;
+  forecast: WeddingForecast | null;
   onOpenDecided: () => void;
 }) {
   const theme = useTheme();
@@ -528,10 +574,19 @@ function CalendarPanel({
   const past = events
     .filter((event) => new Date(event.startsAt) < today)
     .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
-  const upcomingGroups = buildUpcomingTimelineGroups(events, weddingDate, now);
+  const upcomingGroups = buildUpcomingTimelineGroups(
+    events,
+    weddingDate,
+    now,
+    notePlanEntries(tasks, events, weddingDate, now)
+  );
 
   const days = weddingDate !== null ? daysUntil(weddingDate, now) : null;
-  const ddayText = days === null ? null : days > 0 ? `D-${days}` : days === 0 ? 'D-DAY' : `D+${-days}`;
+  /* 부호 · 당일 · 주/일 단위는 domain `formatDday` · `formatRemainingUntilWedding` 한 곳이 정한다. */
+  const ddayText = days === null ? null : formatDday(days);
+  const remaining = days === null ? null : formatRemainingUntilWedding(days);
+  /* 예식일 예보 한 줄(A안 · 정본 밖) — ddayNote와 같은 13px · textSecondary. 값이 없으면 줄이 없다. */
+  const forecastText = forecastLine(forecast);
   return (
     <View style={styles.calendarStack}>
       {weddingDate !== null ? (
@@ -544,11 +599,16 @@ function CalendarPanel({
               {ddayText}
             </ThemedText>
           </View>
-          <ThemedText type="f13" themeColor="textSecondary" numeric>
-            {days !== null && days > 0
-              ? `남은 ${Math.max(1, Math.ceil(days / 7))}주`
-              : '예식이 곧이에요'}
-          </ThemedText>
+          {remaining !== null ? (
+            <ThemedText type="f13" themeColor="textSecondary" numeric>
+              {remaining}
+            </ThemedText>
+          ) : null}
+          {forecastText ? (
+            <ThemedText type="f13" themeColor="textSecondary" numeric>
+              {forecastText}
+            </ThemedText>
+          ) : null}
           {decidedCount !== null ? (
             <Pressable
               accessibilityRole="button"
@@ -632,6 +692,10 @@ function TimelineGroupView({
               </View>
             </View>
           );
+        }
+
+        if (item.kind === 'plan') {
+          return <TimelinePlanRow key={`plan-${item.id}`} plan={item} />;
         }
 
         const event = item.event;
@@ -806,9 +870,15 @@ function BudgetPanel({
 ──────────────────────────────────────────── */
 function ConsultPanel({
   records,
+  weddingId,
+  onUploaded,
+  onMessage,
   onOpen,
 }: {
   records: ConsultationRecord[];
+  weddingId: string | null;
+  onUploaded: () => void;
+  onMessage: (message: string) => void;
   onOpen: (record: ConsultationRecord) => void;
 }) {
   const theme = useTheme();
@@ -861,17 +931,9 @@ function ConsultPanel({
         </View>
       ) : null}
 
-      {/* 빈 상태 — note.js `uploadBox`. 등록 진입점은 헤더 «상담 추가» 하나뿐이라 누를 수 없는 안내다. */}
+      {/* 빈 상태 — note.js `uploadBox`. 누르면 OS 파일 선택기를 바로 연다(2026-09-26 대표 지시). 첫 녹음이 올라가면 사라진다. */}
       {records.length === 0 ? (
-        <View style={[styles.consultEmpty, { borderColor: theme.track }]}>
-          <ProductSymbol name="mic" size={22} color={theme.textAssistive} />
-          <ThemedText type="f15" style={styles.bold}>
-            {CONSULT_EMPTY_TITLE}
-          </ThemedText>
-          <ThemedText type="f13" themeColor="textAssistive" style={styles.center}>
-            {CONSULT_EMPTY_BODY}
-          </ThemedText>
-        </View>
+        <ConsultUploadPrompt weddingId={weddingId} onUploaded={onUploaded} onMessage={onMessage} />
       ) : null}
     </View>
   );
@@ -932,7 +994,7 @@ const styles = StyleSheet.create({
    * 예전 규격서의 회색 필 세그먼트(둥근 흰 활성 칸)는 정본에 없다 — 지웠다.
    */
   tabs: {
-    paddingHorizontal: Layout.cardPadding,
+    paddingHorizontal: ROOT_TAB_GUTTER,
     marginBottom: Spacing.three,
     borderBottomWidth: Border.hairline,
     flexDirection: 'row',
@@ -948,9 +1010,9 @@ const styles = StyleSheet.create({
     marginBottom: -Border.hairline,
   },
 
-  /* WP-NOTE-004/006 카드: 좌우 24 · 안쪽 20 · radius 10. */
+  /* WP-NOTE-004/006 카드: 좌우 20(Root 거터) · 안쪽 20 · radius 10. */
   panel: {
-    marginHorizontal: Layout.pageX,
+    marginHorizontal: ROOT_TAB_GUTTER,
     borderRadius: Radius.medium,
     borderWidth: Border.hairline,
     padding: Layout.cardPadding,
@@ -963,7 +1025,7 @@ const styles = StyleSheet.create({
    */
   emptyNav: { borderBottomWidth: Border.hairline },
   /* `wrapStyle` — `padding:0 20px 24px;gap:12px`. */
-  emptySection: { paddingHorizontal: Layout.cardPadding, paddingBottom: Spacing.four, gap: Layout.inlineGap },
+  emptySection: { paddingHorizontal: ROOT_TAB_GUTTER, paddingBottom: Spacing.four, gap: Layout.inlineGap },
   /* `emptyCard` — `border-radius:12px;background:REC;padding:32px 20px;gap:6px`, 가운데 정렬. */
   emptyCard: {
     borderRadius: 12,
@@ -993,9 +1055,9 @@ const styles = StyleSheet.create({
 
   // ── 캘린더 — v3.29 주 단위 흐름 ──
   calendarStack: { gap: 0 },
-  /* WP-NOTE-001 D-day: margin 4px 24px 0 · padding 18px 20px · radius 12. */
+  /* WP-NOTE-001 D-day: margin 4px 20px 0(Root 거터) · padding 18px 20px · radius 12. */
   ddayCard: {
-    marginHorizontal: Layout.pageX,
+    marginHorizontal: ROOT_TAB_GUTTER,
     marginTop: Spacing.one,
     paddingVertical: Layout.cardPaddingCompactY,
     paddingHorizontal: Layout.cardPadding,
@@ -1014,16 +1076,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  /* WP-NOTE-001 지난 일정: 좌우 24 · 최소 46 · 아래 구분선. */
+  /* WP-NOTE-001 지난 일정: 좌우 20(Root 거터) · 최소 46 · 아래 구분선. */
   pastRow: {
-    marginHorizontal: Layout.pageX,
+    marginHorizontal: ROOT_TAB_GUTTER,
     minHeight: 46,
     borderBottomWidth: Border.hairline,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  timelineGroup: { marginHorizontal: Layout.pageX },
+  timelineGroup: { marginHorizontal: ROOT_TAB_GUTTER },
   timelineGroupHead: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.two, paddingTop: 18, paddingBottom: 10 },
   /* note.js `tlRow` — `gap:12px;padding-bottom:8px`. */
   timelineRow: { flexDirection: 'row', gap: Layout.inlineGap, paddingBottom: Spacing.two },
@@ -1079,17 +1141,6 @@ const styles = StyleSheet.create({
   /* note.js `cListHead` — `gap:3px`. */
   consultHead: { gap: 3 },
   center: { textAlign: 'center' },
-  /* note.js `uploadBox` — `margin-top:8px;padding:28px 20px;border-radius:10px;border:1px dashed #dcdee3;gap:6px`. */
-  consultEmpty: {
-    marginTop: Spacing.two,
-    borderRadius: Radius.medium,
-    borderWidth: Border.hairline,
-    borderStyle: 'dashed',
-    paddingVertical: 28,
-    paddingHorizontal: Layout.cardPadding,
-    alignItems: 'center',
-    gap: Layout.menuGroupGap,
-  },
   /* note.js `cRow` — `gap:12px;min-height:60px;padding:14px 0;border-bottom:1px solid SEC`(마지막 행 포함). */
   consultRow: {
     flexDirection: 'row',

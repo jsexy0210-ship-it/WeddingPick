@@ -38,9 +38,11 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(s).toContain('{SIGNING_IN_MESSAGE}');
   });
   it('Android Back도 화면 계층을 따르고 홈에서만 2회 앱 종료를 쓴다', () => {
-    const s = mobile('app/(tabs)/_layout.tsx');
+    /* 탭 레이아웃 한 곳이 정책 훅을 건다. 동작 자체는 hardware-back.test.tsx가 누른다. */
+    expect(mobile('app/(tabs)/_layout.tsx')).toContain('useHardwareBackPolicy(backPathname, setExitToast)');
+    const s = mobile('features/navigation/hardware-back.ts');
     expect(s).toContain("BackHandler.addEventListener('hardwareBackPress'");
-    expect(s).toContain("setExitToast('뒤로가기를 한 번 더 누르면 앱이 종료돼요')");
+    expect(s).toContain("strings.common['back.exitConfirm']");
     expect(s).toContain('BackHandler.exitApp()');
     expect(s).toContain('resolveBackAction(backPathname, router.canGoBack())');
     expect(s).toContain("action.kind === 'depth'");
@@ -60,16 +62,16 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
       expect(mobile(path)).not.toContain('<BackButton');
     }
   });
-  it('온보딩 지역 전체값을 만들지 않고 스타일은 최대 2개로 제한한다', () => {
+  it('온보딩 지역 전체값을 만들지 않고 스타일은 최소 1 · 개수 제한 없음이다', () => {
     const region = mobile('features/onboarding/region-picker-sheet.tsx');
     const style = root('packages/domain/src/style.ts');
     const setup = mobile('app/setup.tsx');
     const taste = mobile('app/(tabs)/my/taste.tsx');
     expect(region).not.toContain("const WHOLE = '전체'");
-    expect(style).toContain('STYLE_PICK_MAX = 2');
-    expect(style).toContain('STYLE_PICK_LIMIT_TOAST');
-    expect(setup).toContain('STYLE_PICK_LIMIT_TOAST');
-    expect(taste).toContain('STYLE_PICK_LIMIT_TOAST');
+    /* 스타일은 최소 1 · 개수 제한 없음(2026-09-26 대표 결정 「개수제한 없다」). 3번째 토스트는 걷었다. */
+    expect(style).toContain('STYLE_PICK_MIN = 1');
+    expect(style).not.toContain('STYLE_PICK_MAX');
+    for (const source of [style, setup, taste]) expect(source).not.toContain('STYLE_PICK_LIMIT_TOAST');
   });
   it('setup 저장 중과 홈 첫 진입에 같은 홈 스켈레톤을 쓴다', () => {
     /*

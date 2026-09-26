@@ -27,7 +27,8 @@ export const consultationStatusSchema = z.enum(CONSULTATION_STATUSES);
  * 올리기 전에 말하는 것.
  *
  * 형식과 길이를 **미리** 받는다 — 거절당한 호출도 과금되므로 서버가 부르기 전에
- * 막는다. 파일 본체는 서명 URL로 스토리지에 바로 올린다(문서 업로드와 같은 길).
+ * 막는다. 파일 본체는 응답의 `uploadPath`(`PUT /v1/consultations/:id/audio`)로 API에 올린다 —
+ * 서명 URL로 저장소에 바로 올리던 길은 브라우저 CORS에서 막혔다(2026-09-26, 문서 업로드와 같은 길).
  */
 export const createConsultationUploadRequestSchema = z.object({
   weddingId: idSchema,
@@ -53,7 +54,17 @@ export const createConsultationUploadRequestSchema = z.object({
 
 export const createConsultationUploadResponseSchema = z.object({
   consultationId: idSchema,
+  /**
+   * @deprecated 저장소 서명 URL. 브라우저에서 CORS preflight로 막힌다 — 이미 배포된 옛 앱이
+   * 쓰는 동안만 남긴다. 새 앱은 `uploadPath`를 쓴다.
+   */
   uploadUrl: z.url(),
+  /**
+   * 녹음 본문을 올릴 같은 출처 API 경로(`PUT`, 본문은 파일 그대로 · `content-type`은 알린 형식).
+   * 올리면 서버가 도착을 적는다 — 옛 `POST …/complete`를 따로 부르지 않는다. 응답은
+   * `consultationRecordSchema`다.
+   */
+  uploadPath: z.string().startsWith('/v1/consultations/'),
   storageKey: z.string().min(1),
   expiresAt: timestampSchema,
 });

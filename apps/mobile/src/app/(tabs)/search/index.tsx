@@ -29,11 +29,12 @@ import Svg, { Path } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ApiError, listVendorRegions, searchVendors } from '@/api/client';
-import { RootTabHeader } from '@/components/root-tab-header';
+import { ROOT_TAB_GUTTER, RootTabHeader } from '@/components/root-tab-header';
 import { isServerConfigured } from '@/api/config';
 import { savePendingAction } from '@/features/auth/pending-action';
 import { PickDoneSheet, UnpickSheet } from '@/features/pick/pick-sheets';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
+import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import {
   addRecentSearch,
   clearRecentSearches,
@@ -292,7 +293,8 @@ export default function SearchScreen() {
       .catch(() => undefined);
   }, []);
 
-  const runSearch = useCallback((force = false) => {
+  /** `keep` — 당겨서 새로 고침. 보이던 결과는 비우지 않고, 실패하면 토스트만 띄운다. */
+  const runSearch = useCallback((force = false, keep = false) => {
     const id = (requestId.current += 1);
     const query = JSON.stringify(filters);
     let revalidated = false;
@@ -340,6 +342,10 @@ export default function SearchScreen() {
       .then((response) => { if (!revalidated) apply(response); })
       .catch((caught: Error) => {
         if (id !== requestId.current) return;
+        if (keep && displayedQuery.current === query) {
+          notifyRefreshFailed();
+          return;
+        }
         setVendors([]);
         setSponsored([]);
         setNextCursor(null);
@@ -446,6 +452,16 @@ export default function SearchScreen() {
       if (id === requestId.current) setLoadingMore(false);
     }
   }, [filters, nextCursor, loadingMore, refreshing]);
+
+  /*
+   * 당겨서 새로 고침 — 같은 조건으로 결과와 담은 후보를 다시 받는다. 목록의 `refreshing`(뒤에서 고치는
+   * 중)과는 따로 돈다: 그쪽은 결과 수 옆 작은 뼈대가 말하고, 당김 표시는 사람이 당겼을 때만 뜬다.
+   */
+  const { reload: reloadCandidates } = candidates;
+  const pull = usePullRefresh(useCallback(() => {
+    runSearch(true, true);
+    void reloadCandidates().catch(() => undefined);
+  }, [reloadCandidates, runSearch]));
 
   /**
    * 검색 제출. 홈 → 결과 전환.
@@ -862,7 +878,8 @@ export default function SearchScreen() {
             <ThemedText type="f14" numeric style={styles.bold}>
               {formatCount(total)}개 업체
             </ThemedText>
-            <DelayedLoader active={refreshing} size={20} />
+            {/* 당겨서 새로 고침 중에는 위의 당김 표시가 말한다 — 결과 수 옆 뼈대를 겹쳐 띄우지 않는다. */}
+            <DelayedLoader active={refreshing && !pull.refreshing} size={20} />
           </View>
           <View style={styles.sortChip}>
             <DropdownChip
@@ -904,8 +921,7 @@ export default function SearchScreen() {
         ) : (
           <FlatList
             data={vendors}
-            refreshing={refreshing}
-            onRefresh={() => runSearch(true)}
+            refreshControl={pull.refreshControl}
             accessibilityState={{ busy: refreshing }}
             keyExtractor={(item) => item.id}
             contentContainerStyle={[styles.resultList, styles.resultListGrow]}
@@ -1241,12 +1257,12 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.three,
     borderBottomWidth: Border.hairline,
   },
-  /* 검색창과 필터 단추 `flex gap-2` · 좌우 24. */
+  /* 검색창과 필터 단추 `flex gap-2` · 좌우 20(Root 5탭 공통 `ROOT_TAB_GUTTER`). */
   headerSearchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
-    paddingHorizontal: Layout.pageX,
+    paddingHorizontal: ROOT_TAB_GUTTER,
   },
   /* 필터 단추 `h-12 w-12 rounded-2xl bg-secondary` — 48 정사각 · radius 16. */
   headerFilterBtn: {
@@ -1277,10 +1293,10 @@ const styles = StyleSheet.create({
   },
 
   // 자동완성 · 시안 #16b: 그룹 padding 0 24 20 · 제목→목록 8 · 행 56 · padding 12 0 · 행 사이 2
-  /* 정본 `acSec`: 위 16 · 좌우 20(전역 거터 24) · 아래 4 · 사이 2. */
+  /* 정본 `acSec`: 위 16 · 좌우 20(Root 5탭 공통 `ROOT_TAB_GUTTER`) · 아래 4 · 사이 2. */
   acSec: {
     paddingTop: Spacing.three,
-    paddingHorizontal: Layout.pageX,
+    paddingHorizontal: ROOT_TAB_GUTTER,
     paddingBottom: Spacing.one,
     gap: Spacing.half,
   },
@@ -1324,7 +1340,7 @@ const styles = StyleSheet.create({
    * 섹션 아래 28은 밴드/다음 섹션이 잡는다.
    */
   section: {
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: ROOT_TAB_GUTTER,
     gap: Layout.sectionHeadGapCompact,
   },
   /* 밴드 뒤·섹션 뒤 28. 목업: 밴드 margin 28 0, 마지막 섹션 padding-top 28. */
@@ -1470,13 +1486,13 @@ const styles = StyleSheet.create({
   dropChevronOpen: {
     transform: [{ rotate: '180deg' }],
   },
-  /* 전역 24px 좌우 거터 · 결과 수 왼쪽 · 정렬 칩 오른쪽. */
+  /* Root 5탭 공통 좌우 20(`ROOT_TAB_GUTTER`) · 결과 수 왼쪽 · 정렬 칩 오른쪽. */
   countRow: {
     minHeight: Layout.chip,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Layout.pageX,
+    paddingHorizontal: ROOT_TAB_GUTTER,
     paddingTop: Layout.inlineGap,
     marginBottom: Layout.inlineGap,
   },
@@ -1488,7 +1504,7 @@ const styles = StyleSheet.create({
   /* 정본 `sortPanel` right 20 · top 52 — 칩 오른쪽 끝(pageX)에 맞추고 칩 바로 아래 4. */
   sortPanel: {
     position: 'absolute',
-    right: Layout.pageX,
+    right: ROOT_TAB_GUTTER,
     top: Layout.inlineGap + Layout.chip + Spacing.one,
   },
   sortDismiss: {
@@ -1497,7 +1513,7 @@ const styles = StyleSheet.create({
   },
   /* 목록 `px-5 space-y-3` + 바깥 `pb-4` — 카드 사이 12 · 아래 16. */
   resultList: {
-    paddingHorizontal: Layout.pageX,
+    paddingHorizontal: ROOT_TAB_GUTTER,
     paddingBottom: Spacing.three,
     gap: Layout.inlineGap,
   },
@@ -1619,7 +1635,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   /* 정본 `nearWrap` 아래 24 · 사이 10 · `nearRow` 행 60 · 아래 선 1 · `nearCol` 사이 3. */
-  /* 좌우는 목록(`resultList`)의 24가 이미 준다. */
+  /* 좌우는 목록(`resultList`)의 20이 이미 준다. */
   nearWrap: {
     paddingBottom: Layout.gutter,
     gap: Layout.cardGap,

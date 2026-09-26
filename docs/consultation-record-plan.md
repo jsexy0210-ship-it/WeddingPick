@@ -170,8 +170,9 @@ structured.consultation_records
 ## 5. API 변경
 
 ```
-POST   /v1/consultations/uploads      서명 URL 발급 + 동의 기록
-POST   /v1/consultations/:id/complete 업로드 완료 → 1차 분류 시작
+POST   /v1/consultations/uploads      올릴 자리(uploadPath) + 동의 기록 — uploadUrl(서명 URL)은 옛 앱용
+PUT    /v1/consultations/:id/audio    녹음 본문(같은 출처 · 100MB) → 저장소로 흘려 보냄 + 도착 기록 (2026-09-26)
+POST   /v1/consultations/:id/complete 업로드 완료 — 서명 URL로 올리던 옛 앱만 부른다
 GET    /v1/consultations/:id          진행 상태 · 결과
 PATCH  /v1/consultations/:id          사용자 수정
 POST   /v1/consultations/:id/confirm  확정 저장 + 원본 삭제
@@ -209,7 +210,8 @@ DELETE /v1/consultations/:id
 ## 9. 파일 저장/삭제
 
 ```
-서명 URL로 스토리지 직행 → 임시 보관 → 1차 → 2차 → 구조화
+같은 출처 API(PUT …/audio)가 스토리지로 흘려 보냄 → 임시 보관 → 1차 → 2차 → 구조화
+(2026-09-26: 서명 URL 직행은 브라우저 CORS preflight에서 막혀 바꿨다 — docs/deployment.md «파일 저장소»)
 → 사용자 확인 → 원본 삭제 → metadata.original_deleted = true
 ```
 

@@ -86,8 +86,17 @@ export function registerCandidateRoutes(app: FastifyInstance, context: AppContex
        * 다음 준비에서 건너뛴다(v3.19).
        */
       const [decisions, wedding] = await Promise.all([
-        context.pool.query<{ category: VendorCategory; vendor_id: string }>(
-          'SELECT category, vendor_id FROM structured.category_decisions WHERE wedding_id = $1',
+        /* 직접 입력한 결정(0440)은 업체가 없다 — vendor_id가 NULL이고 manual_name이 이름이다. */
+        context.pool.query<{
+          category: VendorCategory;
+          vendor_id: string | null;
+          manual_name: string | null;
+          decided_at: Date;
+          decided_by: string | null;
+        }>(
+          `SELECT category, vendor_id, manual_name, decided_at, decided_by
+           FROM structured.category_decisions WHERE wedding_id = $1
+           ORDER BY decided_at DESC`,
           [request.params.weddingId]
         ),
         context.pool.query<{ prepared_categories: VendorCategory[] }>(
@@ -97,6 +106,7 @@ export function registerCandidateRoutes(app: FastifyInstance, context: AppContex
         ),
       ]);
 
+      /* 업종 → 결정한 업체. 직접 입력한 결정은 업체가 없어 null이지만 «결정 완료»다. */
       const decidedBy = new Map(decisions.rows.map((row) => [row.category, row.vendor_id]));
       const prepared = new Set(wedding.rows[0]?.prepared_categories ?? []);
       const grouped = groupByCategory(rows);
@@ -113,7 +123,11 @@ export function registerCandidateRoutes(app: FastifyInstance, context: AppContex
           category,
           label: VENDOR_CATEGORY_LABEL[category],
           state:
-            decided || prepared.has(category) ? 'decided' : picks.length > 0 ? 'picking' : 'before',
+            decidedBy.has(category) || prepared.has(category)
+              ? 'decided'
+              : picks.length > 0
+                ? 'picking'
+                : 'before',
           pickCount: picks.length,
           // 앱 밖에서 정한 업종은 업체가 없다 — 결정 완료인데 decidedVendorId가 null이다.
           decidedVendorId: decided,
@@ -151,6 +165,19 @@ export function registerCandidateRoutes(app: FastifyInstance, context: AppContex
         limit: MAX_CANDIDATES,
         progress: preparationProgress(progress),
         nextCategory: nextCategory(progress),
+        /*
+         * 업체 없이 이름으로만 정한 곳(0440). 후보가 아니라 `groups`에 없다 — Pick이 그
+         * 묶음의 결정 카드로 그리고, 홈이 «계약 완료 · 이름»에 쓴다.
+         */
+        manualDecisions: decisions.rows
+          .filter((row) => row.manual_name !== null)
+          .map((row) => ({
+            category: row.category,
+            categoryLabel: VENDOR_CATEGORY_LABEL[row.category],
+            name: row.manual_name!,
+            decidedAt: row.decided_at.toISOString(),
+            decidedByPartner: row.decided_by !== null && row.decided_by !== userId,
+          })),
       };
     }
   );
@@ -277,6 +304,8 @@ export function registerCandidateRoutes(app: FastifyInstance, context: AppContex
          VALUES ($1, $2::vendor_category, $3, $4)
          ON CONFLICT (wedding_id, category)
          DO UPDATE SET vendor_id = EXCLUDED.vendor_id,
+                       /* 직접 입력한 결정(0440)을 Pick한 곳으로 바꾸면 적어 둔 이름은 지운다. */
+                       manual_name = NULL,
                        decided_at = now(),
                        decided_by = EXCLUDED.decided_by`,
         [request.params.weddingId, body.category, body.vendorId, userId]

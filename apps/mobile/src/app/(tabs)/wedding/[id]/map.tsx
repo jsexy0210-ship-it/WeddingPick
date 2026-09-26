@@ -17,6 +17,7 @@ import {
 } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import { openExternal } from '@/features/open-external';
 import { getMapVendors } from '@/api/client';
 import { BackBar } from '@/components/back-bar';
@@ -50,22 +51,27 @@ export default function WeddingMapScreen() {
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const load = useCallback(() => {
-    setError(null);
+  /** `keep` — 당겨서 새로 고침. 보이던 목록은 두고 실패는 토스트로만 알린다. */
+  const load = useCallback((keep?: boolean) => {
+    if (keep !== true) setError(null);
     getMapVendors(id)
       .then((res) => setPinned(res.vendors))
-      .catch((e: Error) => setError(e.message));
+      .catch((e: Error) => {
+        if (keep === true) notifyRefreshFailed();
+        else setError(e.message);
+      });
   }, [id]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(load, [load]);
+  useEffect(() => load(), [load]);
+  const pull = usePullRefresh(useCallback(() => load(true), [load]));
 
   if (error) {
     return (
       <ErrorView
         title="지도를 불러오지 못했어요"
         message={error}
-        onRetry={load}
+        onRetry={() => load()}
         retryLabel="다시 시도"
         onBack={depthBack}
         backLabel="돌아가기"
@@ -89,7 +95,7 @@ export default function WeddingMapScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         <BackBar />
-        <ScrollView contentContainerStyle={styles.scroll}>
+        <ScrollView contentContainerStyle={styles.scroll} refreshControl={pull.refreshControl}>
           <ThemedView style={styles.header}>
             <ThemedText type="t5">Pick한 업체 위치</ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">

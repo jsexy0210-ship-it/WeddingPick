@@ -37,6 +37,7 @@ node scripts/screenshot-screens.mjs --build
 | `--wait <ms>` | 렌더를 기다리는 시간. 기본 1500 |
 | `--tap <이름>` | 찍기 전에 누른다. 여러 번 줄 수 있고 준 순서대로 누른다 — 아래 |
 | `--viewport WxH` | 창 크기. 기본은 경로를 보고 정한다 — 아래 |
+| `--file <경로>` | 파일 · 카메라 입력이 열리면 이 파일을 넣는다 — OS 선택 창 뒤 화면(예산 추가 «자동 등록» 결과 · 상담 녹음 올리기)을 찍을 때. 열렸는지와 `accept` · `capture` 값을 같이 적는다 |
 | `--storage 키=값` | 페이지가 뜨기 전에 localStorage에 심는다. 여러 번 줄 수 있다 — 아래 |
 
 ## 눌러야 나오는 화면
@@ -46,6 +47,37 @@ node scripts/screenshot-screens.mjs --build
 
 ```bash
 node scripts/screenshot-screens.mjs --route "/(tabs)/my/wedding-settings" --tap "예식일"
+```
+
+쳐야 나오는 화면(검색 시트)은 `--tap "fill:<입력칸 이름>=<글자>"`로 글자를 넣는다. 누르기와
+섞어 준 순서대로 한다.
+
+```bash
+FIXTURE_SETUP_COMPLETE=false node scripts/screenshot-screens.mjs --route "/setup" \
+  --tap "아직 정하지 않았어요" --tap "다음" --tap "지역 선택" --tap "확인" --tap "다음" \
+  --tap "웨딩홀. 예식장 · 식대 · 대관" --tap "fill:업체 이름 검색=웨딩홀"
+```
+
+온보딩 «완료» 뒤 Pick 담은 곳까지 한 번에 찍으려면 같은 실행 안에서 끝까지 누른다 —
+fixture는 `POST /v1/me/setup`에 보낸 업체를 **그 실행 안에서만** 기억한다. 5/5는
+fixture 사용자에게 «도시적인»이 미리 골라져 있어 누르면 도리어 꺼진다(누르지 않는다).
+
+```bash
+FIXTURE_SETUP_COMPLETE=false node scripts/screenshot-screens.mjs --route "/setup" \
+  --tap "아직 정하지 않았어요" --tap "다음" --tap "지역 선택" --tap "확인" --tap "다음" \
+  --tap "웨딩홀. 예식장 · 식대 · 대관" --tap "fill:업체 이름 검색=강남" --tap "강남 A 웨딩홀" \
+  --tap "다음" --tap "다음" --tap "다음" --tap "웨딩픽 시작하기" --tap "Pick"
+```
+
+직접 입력(목록에 없는 곳)은 검색어를 넣고 결과 아래 «직접 입력» 줄을 누른 뒤 «이 이름으로
+정하기»를 누른다. fixture는 검색어를 보지 않고 카드 업종의 업체를 다 돌려주므로 «결과가
+없을 때»는 fixture 업체가 없는 «본식» 카드로 찍는다.
+
+```bash
+FIXTURE_SETUP_COMPLETE=false node scripts/screenshot-screens.mjs --route "/setup" \
+  --tap "아직 정하지 않았어요" --tap "다음" --tap "지역 선택" --tap "확인" --tap "다음" \
+  --tap "웨딩홀. 예식장 · 식대 · 대관" --tap "fill:업체 이름 검색=우리동네 웨딩컨벤션" \
+  --tap "직접 입력" --tap "이 이름으로 정하기"
 ```
 
 **못 찾으면 멈춘다.** 조용히 넘어가지 않는 쪽으로 만들었다 — 「눌렀다고 치고」 찍은 그림은

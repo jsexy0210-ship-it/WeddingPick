@@ -128,7 +128,21 @@ function scanFile(file) {
  * 없었다. 두 곳에 적으면 반드시 갈린다.
  */
 function isExempt(line, b) {
-  return (b.allow ?? []).some((phrase) => line.includes(phrase));
+  return !maskAllowed(line, b).includes(b.term);
+}
+
+/**
+ * 허용된 말을 같은 길이의 자리표시자로 덮는다 — **그 낱말만 풀고 줄 전체는 풀지 않는다.**
+ *
+ * 2026-09-26 대표 지시로 업체 상세의 정보 출처를 「공공데이터」로 적는다. `데이터`는 그대로
+ * 금지어라, 전처럼 «허용된 말이 줄에 있으면 줄째 통과»로 두면 `공공데이터 · 데이터 많은 순`
+ * 같은 줄의 뒤쪽 `데이터`까지 함께 빠진다. `copy-rules.ts`의 `maskExempt`와 같은 방식이다.
+ */
+function maskAllowed(line, b) {
+  return (b.allow ?? []).reduce(
+    (masked, phrase) => masked.split(phrase).join('\u0000'.repeat(phrase.length)),
+    line
+  );
 }
 
 function walk(target) {

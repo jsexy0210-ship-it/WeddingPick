@@ -6,7 +6,16 @@ import {
 } from '@weddingpick/domain';
 import { z } from 'zod';
 
-import { callGemini } from './gemini-call';
+import { callGemini, callGeminiImage } from './gemini-call';
+import { coveredListText, type FeedImagePlan, type FeedTextSample } from './wedding-feed-diversity';
+import {
+  buildFeedImagePrompt,
+  feedImageAspectRatio,
+  readFeedImage,
+  weddingFeedImageModel,
+  type FeedImageRequest,
+  type WeddingFeedImage,
+} from './wedding-feed-image';
 
 /**
  * 웨딩피드 글을 쓴다.
@@ -76,11 +85,28 @@ export const SYSTEM_PROMPT = `너는 한국의 결혼 준비 정보 글을 쓴�
    ~일 것으로 보임. 모르면 「확인해보세요」라고 적는다.
 6. 「~하지 않아요」 · 「~못해요」로 끝내지 마라. **무엇이 되는지**를 말한다.
 7. 존댓말로 쓴다. 문장은 짧게.
-8. 본문은 문단 셋에서 다섯. 각 문단은 세 문장 안쪽.`;
+8. 본문은 문단 셋에서 다섯. 각 문단은 세 문장 안쪽.
+9. **「이미 쓴 글」 목록이 오면 그 글들과 겹치지 않는 세부 주제와 관점을 골라라.** 같은
+   질문을 말만 바꾼 글, 같은 항목을 같은 순서로 정리한 글은 겹친 것이다. 목록의 제목과
+   같은 핵심어 조합으로 제목을 짓지 마라. 「쓰지 말 제목」도 같다.`;
+
+/**
+ * 글을 쓸 때의 온도. 0이면 같은 요청에 같은 글이 나온다 — 관리자 「자동 작성」이 카테고리마다
+ * 같은 글을 돌려준 원인 가운데 하나였다(2026-09-26). 숫자를 지어낼 틈은 서버 검사
+ * (`findUnlistedNumbers`)가 막는다.
+ */
+export const FEED_WRITER_TEMPERATURE = 0.8;
+
+export type FeedWriteOptions = {
+  /** 같은 카테고리의 최근 글. 모델에게 「이미 쓴 것」으로 넘긴다. */
+  covered?: readonly FeedTextSample[];
+  /** 이번에 쓰지 말 제목 — 방금 나왔거나 겹쳐서 버린 초안. */
+  avoidTitles?: readonly string[];
+};
 
 export type FeedWriter = {
   /** `stats`는 통계 주제(`topic.statKeys`)일 때만 온다. */
-  write(topic: WeddingFeedTopic, stats?: readonly PublicStat[]): Promise<{
+  write(topic: WeddingFeedTopic, stats?: readonly PublicStat[], options?: FeedWriteOptions): Promise<{
     draft: FeedDraft;
     usage: { inputTokens: number; outputTokens: number };
   }>;
@@ -116,23 +142,26 @@ export function createGeminiFeedWriter(options: { apiKey: string; model: string 
   }
 
   return {
-    async write(topic, stats = []) {
+    async write(topic, stats = [], writeOptions = {}) {
       const facts =
         stats.length > 0
           ? `공공 통계(이 숫자만 쓴다):\n${stats.map((stat) => `- ${formatStatFact(stat)}`).join('\n')}\n\n`
           : '';
+      const covered = coveredListText(writeOptions.covered ?? [], writeOptions.avoidTitles ?? []);
 
       const { value, usage } = await callGemini({
         apiKey: options.apiKey,
         model: options.model,
         systemPrompt: SYSTEM_PROMPT,
         schema: feedDraftSchema,
+        temperature: FEED_WRITER_TEMPERATURE,
         parts: [
           {
             text:
               `주제: ${topic.brief}\n` +
               `묶음: ${topic.categoryLabel}\n\n` +
               facts +
+              (covered ? `${covered}\n\n` : '') +
               '이 주제로 한 편을 쓰고 스키마대로 채워라.',
           },
         ],
@@ -144,4 +173,31 @@ export function createGeminiFeedWriter(options: { apiKey: string; model: string 
       };
     },
   };
+}
+
+/**
+ * 웨딩피드 그림 한 장을 만든다 — **관리자 피드 자동생성**의 그림 쪽이다.
+ *
+ * 2026-09-25 대표 지시 「이미지 생성 가능하도록 한다」로 생긴 기능이다. 전에는
+ * `wedding-feed-image.ts`가 `fetch`로 직접 불렀고 `gemini-scope.test.ts`에 안 잡혔다
+ * (2026-09-26 확인). Gemini를 부르는 파일을 늘리지 않으려고 이 파일로 옮겼다 — 허용 목록
+ * 다섯은 그대로이고, 그림 호출(`callGeminiImage`)을 부르는 파일은 여기 하나뿐이다(시험이 센다).
+ *
+ * 무엇을 그릴지는 부르는 쪽이 고른 계획(`plan`)이 정한다(`wedding-feed-generation.ts`).
+ */
+export async function generateWeddingFeedImage(
+  apiKey: string,
+  input: FeedImageRequest,
+  plan: FeedImagePlan,
+  options: { timeoutMs?: number } = {}
+): Promise<WeddingFeedImage> {
+  const raw = await callGeminiImage({
+    apiKey,
+    model: weddingFeedImageModel(),
+    prompt: buildFeedImagePrompt(input, plan),
+    aspectRatio: feedImageAspectRatio(input.kind),
+    timeoutMs: options.timeoutMs ?? 50_000,
+  });
+
+  return readFeedImage(raw);
 }

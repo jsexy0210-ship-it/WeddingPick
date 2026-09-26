@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   PREPARATION_CATEGORIES,
-  STYLE_PICK_MAX,
   WEDDING_BUDGET_BRACKETS,
   WEDDING_REGIONS,
   isWeddingStyle,
@@ -11,7 +10,7 @@ import {
   type WeddingStyle,
 } from '@weddingpick/domain';
 
-import type { Answers, PreparedCategory } from './flow';
+import { PREP_CARDS, manualPrepName, type Answers, type PreparedCategory, type PrepVendors } from './flow';
 
 const STORAGE_KEY = 'weddingpick.weddingDraft.v1';
 const ANSWERS_KEY = 'weddingpick.onboardingAnswers.v1';
@@ -170,8 +169,9 @@ function readCategories(value: unknown): PreparedCategory[] | undefined {
 }
 
 /**
- * undefined = 칸이 없음(옛 초안 · 배열이 아님). 네 스타일 밖의 값은 버리고, 중복을 걷고,
- * 최대 4개(`STYLE_PICK_MAX`)까지만 — 옛 형식을 억지로 읽어 서버가 거절할 값을 만들지 않는다.
+ * undefined = 칸이 없음(옛 초안 · 배열이 아님). 네 스타일 밖의 값은 버리고, 중복을 걷는다 —
+ * 옛 형식을 억지로 읽어 서버가 거절할 값을 만들지 않는다. 개수는 자르지 않는다(최대 없음 ·
+ * 2026-09-26 대표 결정). 넷 밖을 버리고 겹친 것을 걷으면 넷을 넘을 수 없다.
  */
 function readStyleTags(value: unknown): WeddingStyle[] | undefined {
   if (!Array.isArray(value)) return undefined;
@@ -182,7 +182,7 @@ function readStyleTags(value: unknown): WeddingStyle[] | undefined {
     if (isWeddingStyle(item) && !styles.includes(item)) styles.push(item);
   }
 
-  return styles.slice(0, STYLE_PICK_MAX);
+  return styles;
 }
 
 function readDateAnswer(value: unknown): Answers['date'] {
@@ -196,13 +196,53 @@ function readDateAnswer(value: unknown): Answers['date'] {
   return null;
 }
 
-/** `{ categories: [...] }`만 읽는다. 준비 순서 밖의 업종은 걷어낸다. */
+/**
+ * `{ categories: [...], vendors?: {카드: 업체 | 직접 입력} }`만 읽는다. 준비 순서 밖의 업종은 걷어낸다.
+ * 업체는 카드 키 · id · 이름 · 카드 안 업종이 다 맞는 것만 남긴다 — 모양이 틀린 업체를
+ * 억지로 살리면 서버가 거절할 id를 보내게 된다.
+ */
 function readPrepAnswer(value: unknown): Answers['prep'] {
   if (value === null || typeof value !== 'object') return null;
 
   const categories = readCategories((value as { categories?: unknown }).categories);
 
-  return categories === undefined ? null : { categories };
+  if (categories === undefined) return null;
+
+  const vendors = readPrepVendors((value as { vendors?: unknown }).vendors);
+
+  return Object.keys(vendors).length > 0 ? { categories, vendors } : { categories };
+}
+
+function readPrepVendors(value: unknown): PrepVendors {
+  const vendors: PrepVendors = {};
+
+  if (value === null || typeof value !== 'object') return vendors;
+
+  for (const card of PREP_CARDS) {
+    const raw = (value as Record<string, unknown>)[card.key];
+
+    if (raw === null || typeof raw !== 'object') continue;
+
+    const { id, name, category, manual } = raw as { id?: unknown; name?: unknown; category?: unknown; manual?: unknown };
+
+    /* 직접 입력(2026-09-26) — 이름 규칙(앞뒤 공백 · 30자)을 다시 거친다. */
+    if (manual === true) {
+      const kept = typeof name === 'string' ? manualPrepName(name) : null;
+
+      if (kept !== null) vendors[card.key] = { manual: true, name: kept };
+      continue;
+    }
+
+    if (
+      typeof id === 'string' && id.length > 0 &&
+      typeof name === 'string' && name.length > 0 &&
+      card.categories.includes(category as PreparedCategory)
+    ) {
+      vendors[card.key] = { id, name, category: category as PreparedCategory };
+    }
+  }
+
+  return vendors;
 }
 
 /** `{ amount: 만원 | null }`만 읽는다. 0 이하 · 정수가 아닌 값은 적지 않은 것으로 본다. */

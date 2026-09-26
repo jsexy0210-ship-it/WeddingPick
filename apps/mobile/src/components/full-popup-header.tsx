@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { CanonGray, Layout, ProductSymbol, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { CanonGray, Layout, PRESS_TRANSITION, ProductSymbol, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 
 import { CLOSE_ICON_SIZE, TOUCH_SLOT_SIZE } from '@/components/back-button';
 
@@ -40,6 +40,7 @@ export function FullPopupHeader({
         onPress={onClose}
         style={({ pressed }) => [
           styles.close,
+          PRESS_TRANSITION,
           { backgroundColor: CanonGray.gray100 },
           (pressed || closeDisabled) && styles.pressed,
         ]}>

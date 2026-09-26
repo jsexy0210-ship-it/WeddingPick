@@ -6,6 +6,7 @@ import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { getExpo, type ExpoDetail } from '@/api/client';
 import { openExternal } from '@/features/open-external';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import { Dock, Section, SubScreen } from '@/features/settings/my-kit';
 import {
   Border,
@@ -71,25 +72,33 @@ export default function ExpoDetailScreen() {
   const [expo, setExpo] = useState<ExpoDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(() => {
+  /** `keep` — 당겨서 새로 고침. 보이던 상세는 비우지 않고 실패는 토스트로만 알린다. */
+  const load = useCallback((keep?: boolean) => {
     if (!expoId) return;
-    setError(null);
-    setExpo(null);
+    const kept = keep === true;
+    if (!kept) {
+      setError(null);
+      setExpo(null);
+    }
     getExpo(expoId)
       .then(setExpo)
-      .catch(() => setError('박람회 정보를 불러오지 못했어요'));
+      .catch(() => {
+        if (kept) notifyRefreshFailed();
+        else setError('박람회 정보를 불러오지 못했어요');
+      });
   }, [expoId]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
+  const pull = usePullRefresh(useCallback(() => load(true), [load]));
 
   if (error) {
     return (
       <ErrorView
         title={error}
-        onRetry={load}
+        onRetry={() => load()}
         retryLabel="다시 시도"
         onBack={depthBack}
         backLabel="돌아가기"
@@ -117,6 +126,7 @@ export default function ExpoDetailScreen() {
   return (
     <SubScreen
       title={S.title}
+      refreshControl={pull.refreshControl}
       contentStyle={styles.content}
       dock={
         <Dock

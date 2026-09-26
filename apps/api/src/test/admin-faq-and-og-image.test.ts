@@ -222,6 +222,55 @@ describe('카드 그림', () => {
     });
   });
 
+  /*
+   * 같은 origin으로 받는 길(2026-09-26). 이름표(Content-Type)가 그림이어도 내용이
+   * 그림이 아니면 저장소에도 DB에도 닿기 전에 막는다.
+   */
+  it('그림 본문 올리기는 이름표와 내용이 같은 그림만 받는다', async () => {
+    const upload = jest.fn();
+    const instance = app(registerSiteMetaRoutes, { storage: { ...storage, upload } } as unknown as AppContext);
+
+    const html = await instance.inject({
+      method: 'PUT',
+      url: '/v1/admin/site-meta/og-image/file?kind=app',
+      headers: { 'content-type': 'image/png' },
+      payload: Buffer.from('<html><script>alert(1)</script></html>'),
+    });
+    expect(html.statusCode).toBe(400);
+
+    const svg = await instance.inject({
+      method: 'PUT',
+      url: '/v1/admin/site-meta/og-image/file?kind=app',
+      headers: { 'content-type': 'image/svg+xml' },
+      payload: '<svg xmlns="http://www.w3.org/2000/svg"/>',
+    });
+    expect(svg.statusCode).toBe(415);
+
+    const unknownKind = await instance.inject({
+      method: 'PUT',
+      url: '/v1/admin/site-meta/og-image/file?kind=landing',
+      headers: { 'content-type': 'image/png' },
+      payload: Buffer.from('89504e470d0a1a0a', 'hex'),
+    });
+    expect(unknownKind.statusCode).toBe(400);
+
+    expect(upload).not.toHaveBeenCalled();
+    expect(pool.query).not.toHaveBeenCalled();
+  });
+
+  /* 저장 실패 문장은 모달에 그대로 뜬다 — zod 기본 영문이 나가지 않게 한다. */
+  it('문구가 너무 길면 DB에 닿기 전에 한국어 문장으로 거절한다', async () => {
+    const response = await app(registerSiteMetaRoutes, { storage } as unknown as AppContext).inject({
+      method: 'PUT',
+      url: '/v1/admin/site-meta?kind=app',
+      payload: { ogTitle: '가'.repeat(121) },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({ error: { message: '제목은 120자 안쪽으로 적어주세요.' } });
+    expect(pool.query).not.toHaveBeenCalled();
+  });
+
   it('올려 둔 그림이 없으면 공개 조회가 404다 — 빈 그림을 내보내지 않는다', async () => {
     pool.query.mockResolvedValue({ rows: [{ og_image_key: null }] });
 

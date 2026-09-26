@@ -98,8 +98,13 @@ describe('registration routes use canonical overlays', () => {
     const routes = [
       ['(tabs)/wedding/[id]/events/new.tsx', "dismissToOrReplace('/wedding?tab=calendar')"],
       ['(tabs)/wedding/[id]/expenses/add.tsx', "dismissToOrReplace('/wedding?tab=budget')"],
-      ['(tabs)/search/[vendorId]/write-review.tsx', 'dismissToOrReplace(`/search/${vendorId}`)'],
-      ['(tabs)/search/[vendorId]/consult.tsx', 'dismissToOrReplace(`/search/${vendorId}`)'],
+      /* 출처가 없으면 업체 상세, MY 후기에서 왔으면 그 목록 — Depth Back 규칙이 정한다(depth-back.test.ts). */
+      ['(tabs)/search/[vendorId]/write-review.tsx', 'const closeSheet = useDepthBack();'],
+      /*
+       * 출처가 없으면 업체 상세, Pick 카드에서 왔으면 그 Pick, 비교에서 왔으면 그 비교 — 같은 Depth Back
+       * 규칙(origin-entry-points.test.ts). 스택 아래 목적지는 꺼내서(POP) 그 화면의 출처를 지우지 않는다.
+       */
+      ['(tabs)/search/[vendorId]/consult.tsx', 'backTo(depthBackTarget(closePath), closePath, readStackState(navigation));'],
     ] as const;
 
     for (const [path, parentClose] of routes) {

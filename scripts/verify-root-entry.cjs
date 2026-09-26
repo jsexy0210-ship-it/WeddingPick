@@ -45,8 +45,11 @@ function render(route, {
       router: { replace: () => { counters.redirects++; } },
     },
     'expo-splash-screen': { preventAutoHideAsync: () => {}, hideAsync: () => {} },
+    'expo-router/head': { default: 'Head' },
     '@weddingpick/ui': { useTheme: () => ({}) },
     '@/features/navigation/screen-options': { useStackScreenOptions: () => ({}) },
+    // 스택은 레이아웃 공용 `AppStack`(웹은 JS 스택)으로 그린다 — 진입 분기와 무관하니 같은 대역을 쓴다.
+    '@/features/navigation/app-stack': { AppStack: Object.assign(() => null, { Screen: 'Screen' }) },
     '@/components/confirmation-dialog-host': { ConfirmationDialogHost: 'ConfirmationDialogHost' },
     '@/features/navigation/result-toast-host': { ResultToastHost: 'ResultToastHost' },
     '@/features/home/home-handoff': { HomeHandoffHost: 'HomeHandoffHost' },
@@ -66,6 +69,8 @@ function render(route, {
     '@/features/inapp-browser/escape': {
       escapeInAppBrowser: () => { counters.escapeChecks++; return { kind: 'none' }; },
     },
+    // 키패드가 뜨면 앱 뿌리를 줄이는 훅 — 진입 분기와 무관하다(웹은 effect 안에서만 창을 읽는다).
+    '@/features/common/keyboard-inset': { useKeyboardAvoidingRoot: () => {} },
     '@/features/in-app-web/in-app-web-shell': { InAppWebShell: 'InAppWebShell' },
     '@/features/inapp-browser/in-app-browser-notice': { InAppBrowserNotice: 'InAppBrowserNotice' },
     '@/features/auth/session-recovery': {
@@ -76,6 +81,7 @@ function render(route, {
       stripLegacyUrlToken: () => { counters.strip++; },
     },
     '@/features/splash/splash-view': { SPLASH_MINIMUM_MS: 0, SplashView: 'SplashView' },
+    '@/features/social-meta': { SHARE_TITLE: '웨딩픽' },
     '@weddingpick/ui/tokens.css': {}, '@/global.css': {},
   };
   const module = { exports: {} };

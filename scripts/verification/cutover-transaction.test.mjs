@@ -543,8 +543,47 @@ shellTest('app-web proxy does not trust client-supplied X-Forwarded-For values',
   assert.doesNotMatch(appInstallSource, /X-Forwarded-For \\\$proxy_add_x_forwarded_for/);
   const xff = appInstallSource.match(/proxy_set_header X-Forwarded-For \\\$remote_addr;/g) ?? [];
   const real = appInstallSource.match(/proxy_set_header X-Real-IP \\\$remote_addr;/g) ?? [];
-  assert.equal(xff.length, 2);
-  assert.equal(real.length, 2);
+  /*
+   * API로 넘기는 자리마다(/health · /v1/documents/ · /v1/consultations/ · = /v1/reviews/media · /v1/)
+   * 둘 다 우리 값으로 덮는다. 자리 수를 숫자로 박지 않고 proxy_pass 수와 맞춘다 — 2026-09-26 같은 출처
+   * 올리기(결제 사진 10MB · 상담 녹음 100MB · 후기 사진 10MB)가 자리를 늘렸다.
+   */
+  const upstreams = appInstallSource.match(/proxy_pass http:\/\/127\.0\.0\.1:3001;/g) ?? [];
+  assert.ok(upstreams.length >= 2);
+  assert.equal(xff.length, upstreams.length);
+  assert.equal(real.length, upstreams.length);
+});
+
+shellTest('app-web proxy opens same-origin upload body limits that match the API caps', () => {
+  /*
+   * 2026-09-26 — 브라우저 → Object Storage 서명 URL PUT이 CORS에서 막혀 파일 본문이 API를 지난다.
+   * Nginx 기본 본문 상한(1MB)이면 서버에 닿기 전에 413이다. 경로별 상한을 API 상한과 같게 연다 —
+   * 한쪽만 바꾸면 «API는 받는데 Nginx가 막는» 틈이 생긴다.
+   */
+  const block = (head) => {
+    const start = appInstallSource.indexOf(`    location ${head} {`);
+    assert.notEqual(start, -1, `missing nginx location ${head}`);
+    return appInstallSource.slice(start, appInstallSource.indexOf('\n    }', start));
+  };
+  const api = (file) => readFileSync(path.join(repoRoot, 'apps/api/src/routes', file), 'utf8');
+
+  const consultations = block('^~ /v1/consultations/');
+  assert.match(consultations, /client_max_body_size 100m;/);
+  assert.match(consultations, /proxy_request_buffering on;/);
+  assert.match(consultations, /proxy_read_timeout 300s;/);
+  assert.match(consultations, /proxy_send_timeout 300s;/);
+  assert.match(api('consultations.ts'), /const MAX_BYTES = 100 \* 1024 \* 1024;/);
+
+  const reviewMedia = block('= /v1/reviews/media');
+  assert.match(reviewMedia, /client_max_body_size 10m;/);
+  assert.match(api('reviews.ts'), /const REVIEW_IMAGE_MAX_BYTES = 10 \* 1024 \* 1024;/);
+
+  const documents = block('^~ /v1/documents/');
+  assert.match(documents, /client_max_body_size 10m;/);
+  assert.match(api('documents.ts'), /const MAX_FILE_SIZE = 10 \* 1024 \* 1024;/);
+
+  /* 나머지 /v1/는 기본 상한(1MB) 그대로 — 큰 본문을 받는 자리는 위 셋뿐이다. */
+  assert.doesNotMatch(block('^~ /v1/'), /client_max_body_size/);
 });
 
 shellTest('workflow rollback ownership prevents double rollback after a successful local cutover', () => {

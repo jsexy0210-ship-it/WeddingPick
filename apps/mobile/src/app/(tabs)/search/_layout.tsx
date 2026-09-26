@@ -1,8 +1,7 @@
-import { Stack } from 'expo-router';
-
+import { AppStack } from '@/features/navigation/app-stack';
 import { useStackScreenOptions } from '@/features/navigation/screen-options';
 
 export default function SearchLayout() {
-  // 배경색을 깔지 않으면 밀려나는 화면이 비쳐 보인다(features/navigation/screen-options).
-  return <Stack screenOptions={useStackScreenOptions()} />;
+  // 배경 · 전환(push · 풀팝업 올라오기)은 features/navigation/screen-options가 라우터 단위로 정한다.
+  return <AppStack screenOptions={useStackScreenOptions()} />;
 }

@@ -1,5 +1,5 @@
 import type { WeddingTask } from '@weddingpick/api-contract';
-import { daysUntil, formatCount, tentativeDueDate } from '@weddingpick/domain';
+import { daysUntil, formatDday, tentativeDueDate } from '@weddingpick/domain';
 
 import strings from '../../../../../spec/strings.ko.json';
 
@@ -31,10 +31,9 @@ function monthDay(dateIso: string): { month: string; day: string } {
   return { month: `${month}월`, day: String(day).padStart(2, '0') };
 }
 
-/** Hero의 D-day 표기와 같은 규칙 — 0이면 D-DAY, 지났으면 +. */
+/** Hero의 D-day 표기와 같은 규칙 — domain `formatDday` 하나를 쓴다. */
 function ddayLabel(daysLeft: number): string {
-  if (daysLeft === 0) return 'D-DAY';
-  return `D${daysLeft > 0 ? '-' : '+'}${formatCount(Math.abs(daysLeft))}`;
+  return formatDday(daysLeft);
 }
 
 function taskMeta(task: WeddingTask): string {
@@ -91,44 +90,72 @@ export function presetScheduleRows(tasks: readonly WeddingTask[]): ScheduleRow[]
   }));
 }
 
-const TENTATIVE_META = S['schedule.tentative'];
+export const TENTATIVE_META = S['schedule.tentative'];
+
+/** 예식일에서 역산한 임시 날짜 한 줄 — 저장하지 않는다. `due`는 `YYYY-MM-DD`. */
+export type TentativePlanItem = { id: string; label: string; due: string; daysLeft: number };
+
+/**
+ * 날짜를 아직 안 넣은 할 일에 예식일에서 역산한 **임시 날짜**를 붙인다 — 홈 「웨딩일정」과
+ * 웨딩노트 «웨딩일정» 탭이 같이 쓴다(2026-09-25 · 2026-09-26 대표 지시). 저장하지 않고
+ * 보여 줄 때만 계산한다(`tentativeDueDate`).
+ *
+ *   - 날짜를 넣은 할 일(`dueDate`)과 끝낸 할 일은 뺀다 — 진짜 날짜가 이긴다
+ *   - 이미 지난 임시 날짜는 빼고 가까운 순
+ *   - 할 일 목록이 비면 `fallbackLabels`(홈은 기본 다섯 줄, 웨딩노트는 기본 열셋)로 대신한다
+ *   - 예식일을 모르면 빈 배열 — 역산할 기준이 없다
+ */
+export function tentativePlanItems(
+  tasks: readonly WeddingTask[],
+  weddingDate: string | null,
+  now: Date = new Date(),
+  {
+    limit = Number.POSITIVE_INFINITY,
+    fallbackLabels = HOME_DEFAULT_ORDER,
+  }: { limit?: number; fallbackLabels?: readonly string[] } = {}
+): TentativePlanItem[] {
+  if (weddingDate === null) return [];
+  const labels = tasks.length > 0
+    ? tasks
+        .filter((task) => task.state !== 'done' && task.dueDate === null)
+        .map((task) => ({ id: task.id, label: task.label }))
+    : fallbackLabels.map((label, index) => ({ id: `schedule-preset-${index}`, label }));
+
+  return labels
+    .map((item) => ({ ...item, due: tentativeDueDate(weddingDate, item.label) }))
+    .filter((row): row is { id: string; label: string; due: string } => row.due !== null)
+    .map((row) => ({ ...row, daysLeft: daysUntil(row.due, now) }))
+    .filter((row) => row.daysLeft >= 0)
+    .sort((a, b) => a.daysLeft - b.daysLeft)
+    .slice(0, limit);
+}
 
 /**
  * 날짜를 넣은 일정이 하나도 없을 때 — 기본 줄에 예식일에서 역산한 **임시 날짜**를 붙인다
  * (2026-09-25 대표 지시 「기본 날짜는 결혼식 예정일을 역산해서 임시로 넣어놓는다」).
- * 저장하지 않고 보여 줄 때만 계산한다(`tentativeDueDate`). 이미 지난 날짜는 빼고, 남은 것을
- * 가까운 순으로 최대 다섯 줄. 예식일을 모르거나 남는 줄이 없으면 빈 배열 — 번호 줄로 대신한다.
+ * 이미 지난 날짜는 빼고, 남은 것을 가까운 순으로 최대 다섯 줄. 예식일을 모르거나 남는 줄이
+ * 없으면 빈 배열 — 번호 줄로 대신한다.
  */
 export function tentativeScheduleRows(
   tasks: readonly WeddingTask[],
   weddingDate: string | null,
   now: Date = new Date()
 ): ScheduleRow[] {
-  if (weddingDate === null) return [];
-  const labels = tasks.length > 0
-    ? tasks.filter((task) => task.state !== 'done').map((task) => ({ id: task.id, label: task.label }))
-    : HOME_DEFAULT_ORDER.map((label, index) => ({ id: `schedule-preset-${index}`, label }));
-
-  return labels
-    .map((item) => ({ item, due: tentativeDueDate(weddingDate, item.label) }))
-    .filter((row): row is { item: { id: string; label: string }; due: string } => row.due !== null)
-    .map((row) => ({ ...row, daysLeft: daysUntil(row.due, now) }))
-    .filter((row) => row.daysLeft >= 0)
-    .sort((a, b) => a.daysLeft - b.daysLeft)
-    .slice(0, DEFAULT_ROWS_MAX)
-    .map(({ item, due, daysLeft }, index) => {
+  return tentativePlanItems(tasks, weddingDate, now, { limit: DEFAULT_ROWS_MAX }).map(
+    ({ id, label, due, daysLeft }, index) => {
       const { month, day } = monthDay(due);
       return {
         kind: 'dated' as const,
-        id: item.id,
+        id,
         month,
         day,
-        title: item.label,
+        title: label,
         meta: TENTATIVE_META,
         dday: ddayLabel(daysLeft),
         near: index === 0,
       };
-    });
+    }
+  );
 }
 
 export function scheduleRows(

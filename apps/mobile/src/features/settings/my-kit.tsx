@@ -1,5 +1,5 @@
 import { Children, cloneElement, isValidElement, type ReactElement, type ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, type RefreshControlProps, ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -20,6 +20,7 @@ import {
   type ThemeColor,
 } from '@weddingpick/ui';
 import { DepthHeader } from '@/components/depth-header';
+import { KeyboardAvoid } from '@/features/common/keyboard-avoid';
 
 /**
  * MY 하위 · 혜택 화면 공통 부품. 디자인 핸드오프 `13-my-sub` · `15-events` · `13b-withdrawal`의
@@ -54,6 +55,7 @@ export function SubScreen({
   children,
   dock,
   contentStyle,
+  refreshControl,
 }: {
   title: string;
   /** 오른쪽 글자 액션(«저장» · «참여 내역»). */
@@ -63,19 +65,26 @@ export function SubScreen({
   children: ReactNode;
   dock?: ReactNode;
   contentStyle?: StyleProp<ViewStyle>;
+  /** 당겨서 새로 고침(`usePullRefresh().refreshControl`). 목록 화면만 넘긴다 — 입력 화면은 넘기지 않는다. */
+  refreshControl?: ReactElement<RefreshControlProps>;
 }) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
 
+  /*
+   * 껍데기째 키패드를 피한다 — 키패드가 뜨면 가운데 스크롤이 줄고 dock이 키패드 바로 위로 온다
+   * (문의 · 수정 제보). 바탕색은 `ThemedView`가 칠하던 그대로다.
+   */
   return (
-    <ThemedView style={styles.container}>
+    <KeyboardAvoid style={[styles.container, { backgroundColor: theme.background }]}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         <DepthHeader title={title} right={right} onBack={onBack} />
 
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={[styles.content, contentStyle]}
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+          refreshControl={refreshControl}>
           {children}
         </ScrollView>
 
@@ -89,6 +98,26 @@ export function SubScreen({
             {dock}
           </View>
         ) : null}
+      </SafeAreaView>
+    </KeyboardAvoid>
+  );
+}
+
+/**
+ * MY 하위 화면의 «불러오는 중» · «불러오기 실패». 본문 자리에 `ErrorView` · `DelayedLoadingView`를
+ * 받고 **헤더(제목 + Depth Back)는 본 화면과 같은 것**을 그린다.
+ *
+ * 전에는 화면마다 `return <ErrorView … />`로 헤더 없이 통째로 바꿔 그려서, 불러오기가 실패하면
+ * 알림 · 프로필 · Pick 인증내역 · 내가 쓴 후기 · 문의 내역에 **나갈 길이 없었다**(웹은 브라우저
+ * 뒤로뿐, 네이티브는 스와이프뿐 — 2026-09-26 대표 감사). 정본(`React_Native/common.js`)에는
+ * 불러오기 실패 화면 전용 «돌아가기»가 없어 새 단추를 만들지 않고 헤더 Back을 남긴다.
+ */
+export function SubScreenStatus({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <ThemedView style={styles.container}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <DepthHeader title={title} />
+        <View style={styles.scroll}>{children}</View>
       </SafeAreaView>
     </ThemedView>
   );
@@ -260,6 +289,37 @@ export function CatChip({ label, selected, onPress }: { label: string; selected:
         {label}
       </ThemedText>
     </Pressable>
+  );
+}
+
+/**
+ * 카테고리 칩바 — 헤더 바로 아래 가로 스크롤 한 줄. 라운지(리얼후기 · 웨딩정보)가 쓴다.
+ *
+ * 정본 my.js:180 `chipBar`는 `padding:0 20px 14px` — **위 0**이라 칩이 헤더 선에 붙는다.
+ * 2026-09-26 대표 지시 「카테고리 칩이 헤더에 너무 붙어 있다」로 위 여백만 정본의 다른
+ * 칩바 값을 따른다: search.js:461 `chipBar` `padding:12px 20px`(헤더 아래 칩바, 위 12 =
+ * `Layout.rowPaddingY`). 아래 14(`Layout.sectionHeadGap`) · 칩 사이 8(`Layout.chipGap`) ·
+ * 좌우는 공통 24(`Layout.gutter`)는 그대로다.
+ */
+export function CatChipBar<T extends string>({
+  items,
+  selected,
+  onSelect,
+}: {
+  items: readonly T[];
+  selected: T;
+  onSelect: (label: T) => void;
+}) {
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={styles.catBarScroll}
+      contentContainerStyle={styles.catBar}>
+      {items.map((label) => (
+        <CatChip key={label} label={label} selected={selected === label} onPress={() => onSelect(label)} />
+      ))}
+    </ScrollView>
   );
 }
 
@@ -658,6 +718,13 @@ const styles = StyleSheet.create({
   },
   knob: { width: 20, height: 20, borderRadius: Radius.pill },
   /* 정본 cat — 34 · 0 14 · pill. */
+  catBarScroll: { flexGrow: 0 },
+  catBar: {
+    gap: Layout.chipGap,
+    paddingHorizontal: Layout.gutter,
+    paddingTop: Layout.rowPaddingY,
+    paddingBottom: Layout.sectionHeadGap,
+  },
   cat: {
     height: 34,
     paddingHorizontal: Layout.chipPaddingX,

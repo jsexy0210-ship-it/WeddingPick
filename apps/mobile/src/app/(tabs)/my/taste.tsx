@@ -1,5 +1,4 @@
 import {
-  STYLE_PICK_LIMIT_TOAST,
   STYLE_PICK_MIN,
   WEDDING_STYLES,
   WEDDING_STYLE_LABEL,
@@ -12,11 +11,10 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ApiError, completeSetup, getCurrentUser } from '@/api/client';
 import { STEP_DESCRIPTION, STEP_TITLE_LINES, STYLE_DESCRIPTION } from '@/features/onboarding/flow';
-import { InlineToast, useInlineToast } from '@/features/onboarding/inline-toast';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { useDepthBack } from '@/features/navigation/depth-back';
 import { showResultToast } from '@/features/navigation/result-toast';
-import { Dock, Hero, NoteBox, Section, SubScreen } from '@/features/settings/my-kit';
+import { Dock, Hero, NoteBox, Section, SubScreen, SubScreenStatus } from '@/features/settings/my-kit';
 import { ErrorView, Layout, LineHeight, ProductSymbol, Radius, ThemedText, useTheme } from '@weddingpick/ui';
 
 /** `spec/strings.ko.json` `my.item.taste` · 정본 WP-MY-014(docs/design/React_Native/my.jsx frame-016). */
@@ -37,7 +35,8 @@ type Loaded = {
 
 /**
  * 스타일 다시 고르기 · WP-MY-014. 지금 고른 것을 먼저 보여주고 바꾸게 한다. 저장은 하단 고정
- * «저장하기» 한 개다(시안 dockSingle). 규칙은 온보딩 3/3과 같다 — 최소 1개, 최대 2개.
+ * «저장하기» 한 개다(시안 dockSingle). 규칙은 온보딩 5/5와 같다 — 최소 1개, 개수 제한 없음
+ * (2026-09-26 대표 결정 — 정본 WP-MY-014의 「최대 2개, 3개째는 토스트」를 걷었다).
  *
  * **보기는 온보딩 3/3과 같은 `OptionRow` 넷이다**(2026-09-15 대표 지시 「타일로 하지마
  * 버튼으로 통일한다」). 사진 2×2 타일을 쓰던 자리다 — 피그마 규격서에 타일이 없고,
@@ -56,7 +55,6 @@ export default function StyleScreen() {
   const [saving, setSaving] = useState(false);
   // 저장 완료·불러오기 실패에서 나가는 길은 Depth Back이다 — 딥링크로 들어와도 MY로 간다.
   const depthBack = useDepthBack();
-  const limitToast = useInlineToast();
 
   useEffect(() => {
     void getCurrentUser()
@@ -88,7 +86,11 @@ export default function StyleScreen() {
   }
 
   if (!loaded) {
-    return error ? <ErrorView message={error} onBack={depthBack} /> : <DelayedLoadingView />;
+    return (
+      <SubScreenStatus title={S.title}>
+        {error ? <ErrorView message={error} onBack={depthBack} /> : <DelayedLoadingView />}
+      </SubScreenStatus>
+    );
   }
 
   const count = loaded.chosen.length;
@@ -115,12 +117,7 @@ export default function StyleScreen() {
             label={WEDDING_STYLE_LABEL[style]}
             description={STYLE_DESCRIPTION[style]}
             selected={loaded.chosen.includes(style)}
-            onPress={() => {
-              const { next, limited } = toggleStyle(loaded.chosen, style);
-
-              if (limited) limitToast.show(STYLE_PICK_LIMIT_TOAST);
-              else setLoaded({ ...loaded, chosen: next });
-            }}
+            onPress={() => setLoaded({ ...loaded, chosen: toggleStyle(loaded.chosen, style) })}
           />
         ))}
       </View>
@@ -130,8 +127,6 @@ export default function StyleScreen() {
           <NoteBox title={error} />
         </Section>
       ) : null}
-
-      <InlineToast toast={limitToast.toast} onHidden={limitToast.hide} />
 
     </SubScreen>
   );

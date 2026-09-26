@@ -61,8 +61,18 @@ export const signupStateSchema = z.object({
    * 항목 이름은 앞으로 늘 수 있어 문자열로 받는다 — 모르는 항목 하나로 응답을 버리지 않는다.
    */
   agreements: z.array(consentItemSchema.extend({ item: z.string() })).default([]),
-  /** 아직 받지 못한 필수 항목. 빈 배열이면 활성화할 수 있다. */
+  /**
+   * 아직 받지 못한 필수 항목 중 **옛 앱이 아는 것만**(`LEGACY_SIGNUP_ITEMS` 안). 옛 앱은 이 칸을
+   * `z.enum(['terms','privacy','marketing'])`으로 읽어서, 새 필수 항목(만 14세 · Pick 인증 ·
+   * 상담 녹음)이 섞이면 가입 상태 응답 전체를 버린다 — 로그인 복구까지 멈춘다.
+   * 필수 다섯 전부는 `missingAgreements`를 본다.
+   */
   missingRequired: z.array(z.enum(consentKeys)),
+  /**
+   * 아직 받지 못한 필수 항목 전부(2026-09-26 대표 결정 「강제한다」 — 필수 다섯이 모두 관문).
+   * 빈 배열이면 활성화할 수 있다. 옛 서버에는 이 칸이 없어 비어 온다.
+   */
+  missingAgreements: z.array(z.string()).default([]),
 });
 
 export type CompleteSignupRequest = z.infer<typeof completeSignupRequestSchema>;

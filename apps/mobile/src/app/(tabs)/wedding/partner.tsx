@@ -1,6 +1,6 @@
 import type { CurrentUser, WeddingInvite } from '@weddingpick/api-contract';
-import { TERMS, inviteShareUrl } from '@weddingpick/domain';
-import { router, useFocusEffect } from 'expo-router';
+import { INVITE_CODE_LENGTH, TERMS, inviteShareUrl } from '@weddingpick/domain';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 
@@ -16,9 +16,10 @@ import strings from '../../../../../../spec/strings.ko.json';
 import { shareOrCopy } from '@/components/share-or-copy';
 import { formatDateTimeDot } from '@/features/common/format-date';
 import { APP_WEB_ORIGIN } from '@/features/social-meta';
-import { useDepthBack } from '@/features/navigation/depth-back';
+import { chainOrigin, useDepthBack } from '@/features/navigation/depth-back';
 import { ActionButton, Border, ErrorView, Layout, Radius, SocialColors, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
+import { usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import { Badge, Dock, Hero, ListRow, NavBar, NoteCard, Screen, Section } from '@/features/wedding/screen-kit';
 
 /**
@@ -118,6 +119,8 @@ function InfoList({ items }: { items: { label: string; sub: string }[] }) {
  */
 export default function PartnerScreen() {
   const depthBack = useDepthBack();
+  /* 초대 수락으로 넘어가도 이 화면의 출처(MY · 알림 · 홈)를 이어 준다 — 돌아온 뒤 Back이 그리로 간다. */
+  const { from } = useLocalSearchParams<{ from?: string | string[] }>();
   const theme = useTheme();
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [weddingId, setWeddingId] = useState<string | null>(null);
@@ -152,6 +155,8 @@ export default function PartnerScreen() {
       void load();
     }, [load])
   );
+  /* 당겨서 새로 고침 — 배우자가 초대를 받았는지 다시 본다. 실패는 원래처럼 화면 안 오류 줄이 말한다. */
+  const pull = usePullRefresh(load);
 
   const makeInvite = useCallback(async () => {
     if (busy || !weddingId) return;
@@ -298,7 +303,10 @@ export default function PartnerScreen() {
     return (
       <Screen>
         <NavBar title={S.linkedNav} />
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          refreshControl={pull.refreshControl}>
           <Hero title={`${partner}님과 함께 준비하고 있어요`} sub={`${TERMS.picked} · 일정 · 지출이 함께 보여요 · 메모도 함께 써요`} />
           <Section label="같이 보고 있어요">
             {SHARE_SCOPE.map((item) => (
@@ -333,7 +341,10 @@ export default function PartnerScreen() {
     <Screen>
       <NavBar title={S.inviteNav} />
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={pull.refreshControl}>
         <View style={styles.qBlock}>
           <ThemedText type="t2">{S.qTitle}</ThemedText>
         </View>
@@ -344,7 +355,7 @@ export default function PartnerScreen() {
               {S.inviteCode}
             </ThemedText>
             <ThemedText type="f32" themeColor={code ? 'text' : 'textDisabled'} numeric numberOfLines={1} style={styles.bold}>
-              {code ?? (invite ? '••••••' : '—')}
+              {code ?? (invite ? '•'.repeat(INVITE_CODE_LENGTH) : '—')}
             </ThemedText>
             <ThemedText type="f13" themeColor={copied ? 'tint' : 'textAssistive'} numeric>
               {codeMeta}
@@ -394,7 +405,7 @@ export default function PartnerScreen() {
           type="t7"
           themeColor="textAssistive"
           style={styles.haveCodeLink}
-          onPress={() => router.push('/wedding/join' as never)}>
+          onPress={() => router.push(`/wedding/join?from=${chainOrigin('partner', from)}` as never)}>
           {S.haveCode}
         </ThemedText>
       </ScrollView>

@@ -64,23 +64,45 @@ export function inviteState(input: {
 }
 
 /**
- * 초대 코드 — 6자리 숫자(2026-09-25 대표 지시 「초대 코드는 6자리 난수로만 생성한다」).
+ * 초대 코드 — 4자리 숫자(2026-09-26 대표 지시 「초대 코드 6자리 → 4자리」. 그 전
+ * 2026-09-25 「초대 코드는 6자리 난수로만 생성한다」를 자리 수만 바꿨다).
  *
  * 서버가 `crypto.randomInt`로 뽑고 앞자리 0을 채운다. 입력칸은 숫자 키패드로 받는다.
- * 100만 가지뿐이라 맞혀 보기 쉬우므로 서버가 입력 실패 횟수를 센다
- * (`apps/api/src/routes/wedding-invites.ts`).
+ *
+ * **1만 가지뿐이다.** 그래서 두 겹으로 막는다 — 코드는 72시간(`INVITE_TTL_HOURS`) 뒤
+ * 스스로 죽고, 서버가 입력 실패를 15분 창마다 계정 5번 · IP 20번까지만 받는다
+ * (`apps/api/src/routes/wedding-invites.ts`). 한 계정이 72시간 동안 넣어 볼 수 있는
+ * 것은 최대 5 × 288 = 1,440번(`inviteGuessCeiling`)이다.
+ *
+ * **숫자를 읽는 법 두 가지.** (1) 초대 «하나»를 노리면 72시간 안에 맞힐 확률은
+ * 1,440 / 10,000 = 14.4%다. (2) 아무 초대나 맞으면 되는 사람에게는 한 번 찍을 때마다
+ * «지금 대기 중인 초대 수 / 10,000»이 맞을 확률이다 — 대기 중인 초대가 10건이면 한 계정이
+ * 72시간에 기대 1.44건을 맞힌다. 맞히면 남의 웨딩에 배우자로 들어간다. 계정 · IP를
+ * 여럿 쓰면 그만큼 늘어난다. **4자리의 안전은 이 제한에 기대고 있다** — 제한을 풀거나
+ * 기한을 늘리면 그만큼 약해진다(대표님께 보고한 판단 필요 항목 · 2026-09-26).
  */
-export const INVITE_CODE_LENGTH = 6;
+export const INVITE_CODE_LENGTH = 4;
 
-export const INVITE_CODE_PATTERN = /^\d{6}$/;
+export const INVITE_CODE_PATTERN = /^\d{4}$/;
+
+/** 뽑을 수 있는 코드의 수 — 10^자리 수. */
+export const INVITE_CODE_SPACE = 10 ** INVITE_CODE_LENGTH;
 
 export function isInviteCode(value: string): boolean {
   return INVITE_CODE_PATTERN.test(value);
 }
 
-/** 붙여 넣은 글에서 숫자만 남긴다(「123 456」·「123-456」). 6자리를 넘는 뒷부분은 버린다. */
+/** 붙여 넣은 글에서 숫자만 남긴다(「12 34」·「12-34」). 4자리를 넘는 뒷부분은 버린다. */
 export function normalizeInviteCode(value: string): string {
   return value.replace(/\D/g, '').slice(0, INVITE_CODE_LENGTH);
+}
+
+/**
+ * 계정 하나가 초대 기한 안에 넣어 볼 수 있는 최대 횟수 — 실패 한도 × (기한 ÷ 창).
+ * 서버의 한도 값을 받아 계산만 한다(시험이 4자리의 여유를 센다).
+ */
+export function inviteGuessCeiling(failuresPerWindow: number, windowMinutes: number): number {
+  return failuresPerWindow * Math.floor((INVITE_TTL_HOURS * 60) / windowMinutes);
 }
 
 /**

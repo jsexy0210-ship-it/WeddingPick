@@ -1,16 +1,17 @@
 import type { CandidateListResponse, VendorDetail } from '@weddingpick/api-contract';
 import { withInstrument } from '@weddingpick/domain';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useNavigation, usePathname } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { BackHandler, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { BackHandler, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ApiError, addConsultationEvent, getCurrentUser, getVendor, listCandidates } from '@/api/client';
 import { FullPopupHeader } from '@/components/full-popup-header';
 import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
+import { KeyboardAvoid } from '@/features/common/keyboard-avoid';
 import { OsDateField, OsTimeField } from '@/features/common/os-picker-field';
 import { dateOfDay, dayOf } from '@/features/common/os-picker-field.shared';
-import { dismissToOrReplace } from '@/features/navigation/depth-back';
+import { backTo, depthBackTarget, readStackState, useCrossStackBack, withBackOrigin } from '@/features/navigation/depth-back';
 import { showResultToast } from '@/features/navigation/result-toast';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
@@ -80,7 +81,15 @@ function isPickedVendor(page: CandidateListResponse, vendorId: string): boolean 
 export default function ConsultRoute() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { vendorId } = useLocalSearchParams<{ vendorId: string }>();
+  const { vendorId, from } = useLocalSearchParams<{ vendorId: string; from?: string | string[] }>();
+  const pathname = usePathname();
+  /*
+   * 닫으면 갈 곳 — 출처(`from`)가 있으면 그리로(Pick 카드 → Pick · 비교 → 그 비교), 없으면 업체 상세.
+   * 헤더 Back이 아니라 자기 닫기라 `useDepthBack`의 뒷정리를 따로 건다.
+   */
+  const closePath = withBackOrigin(pathname, from);
+  const navigation = useNavigation();
+  useCrossStackBack(closePath, pathname);
   const candidates = useMyCandidates();
   const [vendor, setVendor] = useState<VendorDetail | null>(null);
   const [range] = useState(() => {
@@ -141,7 +150,8 @@ export default function ConsultRoute() {
   const dirty = selectedDay !== null || selectedTime !== null || note.length > 0;
 
   function closeSheet() {
-    dismissToOrReplace(`/search/${vendorId}`);
+    /* 목적지가 스택 아래에 있으면(업체 상세 · 비교) 꺼내서 그 화면의 출처 · 비교 목록을 그대로 둔다. */
+    backTo(depthBackTarget(closePath), closePath, readStackState(navigation));
   }
 
   function requestClose() {
@@ -153,11 +163,13 @@ export default function ConsultRoute() {
   useEffect(() => {
     if (Platform.OS !== 'android') return;
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (!sending) requestDirtySheetClose(dirty, () => dismissToOrReplace(`/search/${vendorId}`));
+      if (!sending) requestDirtySheetClose(dirty, closeSheet);
       return true;
     });
     return () => subscription.remove();
-  }, [dirty, sending, vendorId]);
+    // closeSheet은 closePath · navigation만 읽는다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dirty, sending, closePath, navigation]);
 
   async function confirm() {
     if (!vendor || !chosen || !selectedTime || sending || submitLock.current) return;
@@ -242,8 +254,9 @@ export default function ConsultRoute() {
         <FullPopupHeader title={TITLE} onClose={requestClose} closeDisabled={sending} />
 
         {/* 메모 칸에서 키보드가 올라오면 본문 · 도크를 그만큼 밀어 올린다 — 시트일 때 BottomSheet가
-            하던 일이다. 안드로이드는 창 크기 조절을 시스템이 해서 따로 밀지 않는다. */}
-        <KeyboardAvoidingView style={styles.body} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+            하던 일이다. 공통 `KeyboardAvoid`(iOS padding · 안드로이드 height · 웹은 앱 뿌리가 줄어든다).
+            안드로이드도 edge-to-edge라 창이 저절로 줄지 않는다 — 전에는 안드로이드만 비워 두었다. */}
+        <KeyboardAvoid style={styles.body}>
           {vendor === null || decisionState === 'loading' ? (
             <View style={styles.loading}>
               <DelayedLoader size={40} />
@@ -358,7 +371,7 @@ export default function ConsultRoute() {
               </Pressable>
             </ThemedView>
           ) : null}
-        </KeyboardAvoidingView>
+        </KeyboardAvoid>
       </SafeAreaView>
 
       <Toast message={toast} onHidden={() => setToast(null)} />

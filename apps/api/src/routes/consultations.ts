@@ -14,6 +14,13 @@ import { currentUserId, requireUser } from '../auth/plugin';
 import type { AppContext } from '../context';
 import { withTransaction } from '../db';
 import { ApiError, notFound } from '../errors';
+import {
+  UploadRejected,
+  essenceOf,
+  receiveUpload,
+  registerUploadScope,
+  storeUpload,
+} from './stream-upload';
 
 /**
  * 상담기록 — 녹음을 올리고, 읽어낸 것을 확인하고, 저장한다.
@@ -23,6 +30,7 @@ import { ApiError, notFound } from '../errors';
  * 통째로 들어 있다.
  */
 
+/** 옛 앱이 쓰는 서명 URL의 유효 시간. 새 앱은 `PUT /v1/consultations/:id/audio`로 올린다. */
 const UPLOAD_URL_TTL_SECONDS = 600;
 
 /** 원본을 늦어도 이때까지는 지운다. 처리방침 제2항에 적은 값이다. */
@@ -122,6 +130,25 @@ export function registerConsultationRoutes(app: FastifyInstance, context: AppCon
   }
 
   /**
+   * 파일이 도착했다고 적는다 — **24시간 시계를 여기서 다시 잡는다.** 서명 URL을 받은 시각이
+   * 아니라 파일이 실제로 온 시각부터 센다. URL만 받고 안 올린 줄이 24시간 뒤에 「파기 대상」으로
+   * 잡히면 지울 파일이 없는 것을 지우려 든다.
+   *
+   * 같은 출처 올리기(`PUT …/audio`)는 저장이 끝나면 스스로 부르고, 옛 앱은 `…/complete`로 부른다.
+   */
+  async function markArrived(consultationId: string) {
+    const { rows } = await context.pool.query<Row>(
+      `UPDATE structured.consultation_records
+          SET audio_delete_by = now() + ($2 || ' hours')::interval
+        WHERE id = $1
+      RETURNING ${RETURNING}`,
+      [consultationId, String(AUDIO_MAX_RETENTION_HOURS)]
+    );
+
+    return toRecord(rows[0]!);
+  }
+
+  /**
    * 올릴 자리를 준다.
    *
    * **부르기 전에 막는다.** 형식·길이·크기는 보내기 전에 알 수 있고, 거절당한
@@ -217,18 +244,67 @@ export function registerConsultationRoutes(app: FastifyInstance, context: AppCon
 
     return {
       consultationId,
+      /** @deprecated 브라우저에서 CORS로 막힌다. 이미 배포된 앱이 쓰는 동안만 남긴다. */
       uploadUrl: target.uploadUrl,
+      uploadPath: `/v1/consultations/${consultationId}/audio`,
       storageKey: target.storageKey,
       expiresAt: target.expiresAt.toISOString(),
     };
   });
 
   /**
-   * 올리기가 끝났음을 알린다.
+   * 녹음 본문을 받는다 — **같은 출처 올리기**(2026-09-26). 웹과 네이티브가 같이 쓴다.
    *
-   * **24시간 시계를 여기서 다시 잡는다.** 서명 URL을 받은 시각이 아니라 파일이
-   * 실제로 온 시각부터 센다 — URL만 받고 안 올린 줄이 24시간 뒤에 「파기 대상」으로
-   * 잡히면 지울 파일이 없는 것을 지우려 든다.
+   * 서명 URL로 카카오 Object Storage에 바로 올리던 길은 브라우저 CORS preflight에서 막혔다
+   * (e66dec7e — 결제 증빙에서 먼저 드러났다). 여기서 주인 · 형식 · 크기를 보고 본문을
+   * **메모리에 담지 않고** 저장소로 흘려 보낸 뒤, 옛 `…/complete`가 하던 일(24시간 시계)까지
+   * 한 번에 한다. 앱은 이 한 번으로 끝난다.
+   *
+   *   415  녹음 형식이 아니거나, 올릴 자리를 받을 때 알린 형식과 다르다
+   *   411  크기를 모른다(Content-Length 없음) — S3가 길이 모르는 흐름을 한 번에 안 받는다
+   *   413  100MB를 넘는다. 운영 Nginx도 같은 값으로 막는다(`install-kakao-app-web.sh`)
+   */
+  registerUploadScope(app, /^audio\//, MAX_BYTES, (scope) => {
+    scope.put<{ Params: { consultationId: string } }>(
+      '/v1/consultations/:consultationId/audio',
+      auth,
+      async (request) => {
+        const userId = currentUserId(request);
+        const row = await mine(userId, request.params.consultationId);
+
+        if (!row.audio_key || row.confirmed_at) {
+          throw new ApiError('invalid_request', '이미 정리가 끝난 기록이에요.');
+        }
+
+        /*
+         * 저장 열쇠의 확장자는 올릴 자리를 받을 때 알린 형식으로 정해졌다. 다른 형식의 본문을
+         * 그 열쇠에 담으면 이름과 내용이 어긋난다 — `audio/mpeg`와 `audio/mp3`처럼 같은 확장자면
+         * 받는다. 본문을 읽기 시작하기 전에 본다.
+         */
+        const extension = EXTENSION[essenceOf(request.headers['content-type'])];
+        if (extension && !row.audio_key.endsWith(`.${extension}`)) {
+          throw new UploadRejected(415, '처음 고른 녹음과 형식이 달라요. 다시 골라주세요.');
+        }
+
+        const upload = receiveUpload(request, {
+          allowed: Object.keys(EXTENSION),
+          maxBytes: MAX_BYTES,
+          wrongType: '이 형식의 녹음은 읽을 수 없어요.',
+          tooLarge: `파일이 너무 커요. ${Math.floor(MAX_BYTES / 1024 / 1024)}MB까지 올릴 수 있어요.`,
+        });
+
+        await storeUpload(context.storage, row.audio_key, upload);
+
+        return markArrived(row.id);
+      }
+    );
+  });
+
+  /**
+   * 올리기가 끝났음을 알린다 — **서명 URL로 올리는 옛 앱의 길**이다. 새 앱은
+   * `PUT …/audio` 한 번으로 끝나고 이 호출을 하지 않는다. 옛 앱이 남아 있는 동안 지우지 않는다.
+   *
+   * 24시간 시계를 다시 잡는다(`markArrived`).
    *
    * **읽기는 아직 시작하지 않는다.** 개인정보처리방침에 Google LLC가 수탁자·국외
    * 이전 받는 자로 올라가고 시행일이 지나기 전에는 첫 호출을 내보내지 않는다
@@ -245,15 +321,7 @@ export function registerConsultationRoutes(app: FastifyInstance, context: AppCon
         throw new ApiError('invalid_request', '이미 정리가 끝난 기록이에요.');
       }
 
-      const { rows } = await context.pool.query<Row>(
-        `UPDATE structured.consultation_records
-            SET audio_delete_by = now() + ($2 || ' hours')::interval
-          WHERE id = $1
-        RETURNING ${RETURNING}`,
-        [row.id, String(AUDIO_MAX_RETENTION_HOURS)]
-      );
-
-      return toRecord(rows[0]!);
+      return markArrived(row.id);
     }
   );
 

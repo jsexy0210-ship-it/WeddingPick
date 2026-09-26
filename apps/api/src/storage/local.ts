@@ -3,6 +3,8 @@ import type { Storage, UploadTarget } from './port';
 export type LocalStorage = Storage & {
   /** 테스트에서 파일 내용을 직접 넣는다. */
   put(storageKey: string, bytes: Buffer): void;
+  /** 올릴 때 적은 형식. 시험이 «무엇으로 저장됐나»를 본다 — S3의 ContentType 자리다. */
+  mimeTypeOf(storageKey: string): string | undefined;
 };
 
 /**
@@ -14,6 +16,7 @@ export type LocalStorage = Storage & {
  */
 export function createLocalStorage(baseUrl = 'http://localhost:3000/dev-storage'): LocalStorage {
   const files = new Map<string, Buffer>();
+  const mimeTypes = new Map<string, string>();
 
   return {
     async createUploadTarget({ storageKey, expiresInSeconds }): Promise<UploadTarget> {
@@ -24,8 +27,23 @@ export function createLocalStorage(baseUrl = 'http://localhost:3000/dev-storage'
       };
     },
 
-    async upload(storageKey, bytes) {
+    async upload(storageKey, bytes, mimeType) {
       files.set(storageKey, bytes);
+      mimeTypes.set(storageKey, mimeType);
+    },
+
+    /* 개발 · 시험용이라 모아서 담는다. 운영(s3)은 흘려 보낸다. 길이가 다르면 S3처럼 실패한다. */
+    async uploadStream(storageKey, body, { mimeType, contentLength }) {
+      const chunks: Buffer[] = [];
+      for await (const chunk of body) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      const bytes = Buffer.concat(chunks);
+
+      if (bytes.length !== contentLength) {
+        throw new Error(`본문 길이가 다르다: ${bytes.length} ≠ ${contentLength}`);
+      }
+
+      files.set(storageKey, bytes);
+      mimeTypes.set(storageKey, mimeType);
     },
 
     async download(storageKey) {
@@ -44,10 +62,15 @@ export function createLocalStorage(baseUrl = 'http://localhost:3000/dev-storage'
 
     async delete(storageKey) {
       files.delete(storageKey);
+      mimeTypes.delete(storageKey);
     },
 
     put(storageKey, bytes) {
       files.set(storageKey, bytes);
+    },
+
+    mimeTypeOf(storageKey) {
+      return mimeTypes.get(storageKey);
     },
   };
 }

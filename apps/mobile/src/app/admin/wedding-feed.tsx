@@ -18,23 +18,38 @@
  * 값을 다시 적으면 화면과 서버가 다른 길이를 막게 된다.
  *
  * 사용자 홈에 바로 나가는 콘텐츠라 관리자 사이드바의 독립 메뉴에서 연다.
+ *
+ * **카테고리 목록은 앱과 하나다**(2026-09-26 대표 지적 — 「관리자 웨딩피드 카테고리와
+ * 앱웹 카테고리와 정보가 전혀 다르다」). 전에는 여기서 탭·카테고리를 표로 고쳤는데
+ * 그 탭을 그리는 앱 화면이 없었다 — 앱 라운지 「웨딩정보」는 정본 칩을 그린다. 이제
+ * 고르는 목록과 칩은 domain `WEDDING_FEED_CATEGORIES` · `WEDDING_FEED_CHIPS`에서 오고,
+ * 글마다 «앱 칩» 칸이 앱 라운지에서 어느 칩에 뜨는지를 앱과 같은 함수로 적는다.
  */
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import {
-  WEDDING_FEED_ALL_TAB,
+  WEDDING_FEED_CATEGORIES,
   WEDDING_FEED_LIMITS,
   WEDDING_FEED_SOURCE_LABEL,
   WEDDING_FEED_STATUSES,
   WEDDING_FEED_STATUS_LABEL,
-  WEDDING_FEED_TAXONOMY_LIMITS,
+  isWeddingFeedCategoryLabel,
+  weddingFeedChipLabel,
+  weddingFeedChipOf,
+  withObject,
   type WeddingFeedStatus,
 } from '@weddingpick/domain';
 import { Colors, FontSize, LineHeight, Radius, Spacing } from '@weddingpick/ui';
 
-import { formatDateTimeDot } from '@/features/common/format-date';
+import {
+  ADMIN_IMAGE_TYPES,
+  ADMIN_UPLOAD_MAX_BYTES,
+  fitImageForUpload,
+  readableAdminError,
+} from '@/features/admin/fit-image-upload';
+import { formatDateDot, formatDateTimeDot } from '@/features/common/format-date';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { WritePressable } from './_role';
@@ -92,49 +107,31 @@ type FeedData = {
 };
 
 /**
- * 탭과 카테고리 — 2026-09-16 대표 지시 「탭별 카테고리별로 다 설정 가능해야한다」.
- *
- * 전에는 둘 다 코드에 있었고 카테고리 칸은 자유 입력이었다. 「웨딩홀 」(뒤 공백)처럼
- * 적으면 그 글은 어느 탭에도 안 뜨는데 **오류도 안 나고 목록에서는 멀쩡해 보였다.**
+ * 앱 라운지 「웨딩정보」에서 이 카테고리의 글이 어디에 뜨는가 — 앱 칩(`loungeFeedMatches`)과
+ * 같은 domain 함수로 센다. 칩이 없는 카테고리는 «전체»에만, 목록 밖 이름도 «전체»에만 뜬다.
  */
-type Group = { id: string; name: string; sortOrder: number; active: boolean };
+function appChipText(categoryLabel: string): string {
+  if (!isWeddingFeedCategoryLabel(categoryLabel)) return '전체만 · 목록 밖';
+  const chip = weddingFeedChipOf(categoryLabel);
 
-type Category = {
-  id: string;
-  name: string;
-  groupId: string | null;
-  sortOrder: number;
-  active: boolean;
-  /** 이 카테고리로 쌓인 글 수. 지우기를 막는 근거다. */
-  postCount: number;
-};
-
-type Taxonomy = { groups: Group[]; categories: Category[]; ungrouped: string[] };
-
-type GroupForm = { name: string; sortOrder: string; active: boolean };
-type CategoryForm = GroupForm & { groupId: string | null };
-
-const BLANK_GROUP: GroupForm = { name: '', sortOrder: '0', active: true };
-const BLANK_CATEGORY: CategoryForm = { name: '', groupId: null, sortOrder: '0', active: true };
-
-const GROUP_COLS: Col[] = [
-  { key: 'name', label: '탭 이름', width: 160, grow: true },
-  { key: 'categories', label: '카테고리', width: 90, align: 'right' },
-  { key: 'order', label: '순서', width: 60, align: 'right' },
-  { key: 'active', label: '노출', width: 70 },
-  { key: 'edit', label: '', width: 60 },
-  { key: 'delete', label: '', width: 60 },
-];
+  return chip === null ? '전체만' : `${weddingFeedChipLabel(chip)} · 전체`;
+}
 
 const CATEGORY_COLS: Col[] = [
   { key: 'name', label: '카테고리', width: 140, grow: true },
-  { key: 'group', label: '탭', width: 130 },
-  { key: 'posts', label: '글', width: 70, align: 'right' },
-  { key: 'order', label: '순서', width: 60, align: 'right' },
-  { key: 'active', label: '노출', width: 70 },
-  { key: 'edit', label: '', width: 60 },
-  { key: 'delete', label: '', width: 60 },
+  { key: 'chip', label: '앱 칩', width: 160 },
+  { key: 'published', label: '공개 글', width: 90, align: 'right' },
+  { key: 'total', label: '전체 글', width: 90, align: 'right' },
 ];
+
+type AutoStep = 'text' | 'thumbnail' | 'body';
+
+/** 「자동 작성」 진행 표시. `name`은 실패 문장에 들어간다(「…을/를 만들지 못했어요」). */
+const AUTO_STEP_LABEL: Record<AutoStep, { order: number; progress: string; name: string }> = {
+  text: { order: 1, progress: '글을 쓰는 중이에요', name: '글' },
+  thumbnail: { order: 2, progress: '대표 썸네일을 만드는 중이에요', name: '대표 썸네일' },
+  body: { order: 3, progress: '본문 이미지를 만드는 중이에요', name: '본문 이미지' },
+};
 
 type FormState = {
   categoryLabel: string;
@@ -183,9 +180,11 @@ function toForm(post: Post): FormState {
 const COLS: Col[] = [
   { key: 'status', label: '상태', width: 70 },
   { key: 'category', label: '카테고리', width: 100 },
+  { key: 'chip', label: '앱 칩', width: 140 },
   { key: 'title', label: '제목', width: 320, grow: true },
   { key: 'source', label: '출처', width: 90 },
   { key: 'order', label: '순서', width: 60, align: 'right' },
+  { key: 'published', label: '공개일', width: 110 },
   { key: 'updated', label: '수정일', width: 150 },
   { key: 'edit', label: '', width: 60 },
   { key: 'delete', label: '', width: 60 },
@@ -199,24 +198,21 @@ const STATUS_KIND: Record<WeddingFeedStatus, 'ok' | 'warn' | 'dim'> = {
 
 export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
   const [data, setData] = useState<FeedData | null>(null);
-  const [taxonomy, setTaxonomy] = useState<Taxonomy | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rev, setRev] = useState(0);
 
   /*
-   * 글과 분류표를 **함께** 받는다. 따로 받으면 글 목록이 먼저 그려지고 카테고리
-   * 고르는 칸이 뒤늦게 채워져, 그 사이에 「새 글」을 누르면 고를 것이 없는 칸이 뜬다.
+   * 글만 받는다. 카테고리 목록은 domain 상수라 기다릴 것이 없다 — 앱 칩과 같은 값이다.
    */
   useEffect(() => {
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
-    Promise.all([apiFetch('/v1/admin/wedding-feed'), apiFetch('/v1/admin/wedding-feed/taxonomy')])
-      .then(([feed, tax]) => {
+    apiFetch('/v1/admin/wedding-feed')
+      .then((feed) => {
         if (cancelled) return;
         setData(feed as FeedData);
-        setTaxonomy(tax as Taxonomy);
         setError(null);
         setLoading(false);
       })
@@ -248,42 +244,34 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
 
   /** 새 글 팝업 안에서만 쓰는 Gemini 초안과 이미지 업로드 상태. */
   const [draftGenerating, setDraftGenerating] = useState(false);
+  /** 「자동 작성」이 지금 무엇을 만드는 중인가 — 글 → 대표 썸네일 → 본문 이미지. */
+  const [autoStep, setAutoStep] = useState<AutoStep | null>(null);
   const [draftError, setDraftError] = useState<string | null>(null);
+  /**
+   * 이 팝업에서 받은 초안 제목. 다시 누르면 서버가 이것과도 다른 글을 쓴다 — 저장 전
+   * 초안은 표에 없어서 서버가 모른다(2026-09-26 대표 지시 「중첩되지 않는 내용으로 생성한다」).
+   */
+  const draftTitles = useRef<string[]>([]);
   const [uploadingImage, setUploadingImage] = useState<'thumbnail' | 'body' | null>(null);
   const [generatingImage, setGeneratingImage] = useState<'thumbnail' | 'body' | null>(null);
   const [previewing, setPreviewing] = useState(false);
   /** 늦게 끝난 Gemini/업로드가 새로 연 다른 폼을 덮지 못하게 편집 세션을 구분한다. */
   const formRevision = useRef(0);
 
-  // ── 탭과 카테고리 ──
-  const [editingGroup, setEditingGroup] = useState<Group | 'new' | null>(null);
-  const [groupForm, setGroupForm] = useState<GroupForm>(BLANK_GROUP);
-  const [editingCategory, setEditingCategory] = useState<Category | 'new' | null>(null);
-  const [categoryForm, setCategoryForm] = useState<CategoryForm>(BLANK_CATEGORY);
-  const [taxonomySaving, setTaxonomySaving] = useState(false);
-  const [taxonomyError, setTaxonomyError] = useState<string | null>(null);
-  const [deletingGroup, setDeletingGroup] = useState<Group | null>(null);
-  const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
-
   const posts = data?.posts ?? [];
-  const groups = taxonomy?.groups ?? [];
-  const categories = taxonomy?.categories ?? [];
-  const activeCategories = categories.filter((c) => c.active);
   /**
    * 지금 폼의 카테고리가 고를 수 있는 값인가.
    *
    * 옛 글은 목록에 없는 값을 들고 있을 수 있다 — 목록이 생기기 전에 손으로 적었거나
-   * 방금 꺼 둔 카테고리다. **그 값을 지우지 않고 보여주되 저장은 막는다.** 보여주는
+   * 2026-09-16~26 사이 관리자 표에서 따로 만든 카테고리다. **그 값을 지우지 않고 보여주되 저장은 막는다.** 보여주는
    * 것은 무엇이 적혀 있었는지를 남기기 위해서고, 막는 것은 잘못된 값이 그대로 다시
    * 저장되지 않게 하기 위해서다.
    */
-  const needsPick =
-    editing !== null && !activeCategories.some((c) => c.name === form.categoryLabel);
-  const groupName = (id: string | null) =>
-    id === null ? '없음' : (groups.find((g) => g.id === id)?.name ?? '없음');
+  const needsPick = editing !== null && !isWeddingFeedCategoryLabel(form.categoryLabel);
 
   function openNew() {
     formRevision.current += 1;
+    draftTitles.current = [];
     setForm({ ...BLANK_FORM, sortOrder: String(data?.nextSortOrder ?? 1) });
     setEditing('new');
     setPreviewing(false);
@@ -293,6 +281,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
 
   function openEdit(post: Post) {
     formRevision.current += 1;
+    draftTitles.current = [];
     setForm(toForm(post));
     setEditing(post);
     setPreviewing(false);
@@ -355,10 +344,21 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
     }
   }
 
+  /**
+   * 「자동 작성」 — 글과 이미지를 한 번에 만든다(2026-09-26 대표 지시 「자동 작성 버튼 클릭 시
+   * 내용과 이미지가 자동으로 생성되게 한다」).
+   *
+   * 글 → 대표 썸네일 → 본문 이미지 순서로 요청 셋을 잇는다. 한 요청에 몰면 운영 Nginx의
+   * 60초 한도를 넘는다. 이미지는 방금 쓴 글을 보고 만들고, 서버가 같은 카테고리의 최근
+   * 글 · 이미지와 겹치지 않게 만든다(`wedding-feed-generation.ts`).
+   *
+   * **저장은 하지 않는다.** 폼에 채워 두고 운영자가 읽고 고친 뒤 「저장」한다. 중간에
+   * 실패하면 거기서 멈추고, 이미 채운 것과 원래 폼의 값은 그대로 둔다.
+   */
   async function generateDraft() {
     setDraftError(null);
 
-    if (!activeCategories.some((c) => c.name === form.categoryLabel)) {
+    if (!isWeddingFeedCategoryLabel(form.categoryLabel)) {
       setDraftError('카테고리를 먼저 선택해주세요.');
       return;
     }
@@ -369,14 +369,22 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
 
     const revision = formRevision.current;
     const requestedCategory = form.categoryLabel;
+    const stale = () => formRevision.current !== revision;
+    let step: AutoStep = 'text';
     setDraftGenerating(true);
+    setAutoStep(step);
     try {
       const draft = (await apiFetch('/v1/admin/wedding-feed/draft', {
         method: 'POST',
-        body: JSON.stringify({ categoryLabel: requestedCategory }),
+        body: JSON.stringify({ categoryLabel: requestedCategory, avoidTitles: draftTitles.current.slice(-10) }),
       })) as { title: string; summary: string; body: string };
 
-      if (formRevision.current !== revision) return;
+      if (stale()) return;
+      draftTitles.current = [...draftTitles.current, draft.title];
+      /*
+       * 카테고리 칩은 자동 작성 중에 잠겨 있다(`disabled={draftGenerating}`). 그래도 늦게 온
+       * 응답이 다른 카테고리 폼을 덮지 않게 한 번 더 본다.
+       */
       setForm((current) =>
         current.categoryLabel === requestedCategory
           ? {
@@ -388,15 +396,52 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
             }
           : current
       );
+
+      for (const kind of ['thumbnail', 'body'] as const) {
+        step = kind;
+        setAutoStep(kind);
+        const image = (await apiFetch('/v1/admin/wedding-feed/image/generate', {
+          method: 'POST',
+          body: JSON.stringify({
+            kind,
+            title: draft.title,
+            summary: draft.summary,
+            body: draft.body,
+            categoryLabel: requestedCategory,
+          }),
+        })) as { storageKey: string; imageUrl: string };
+
+        if (stale()) return;
+        setForm((current) =>
+          current.categoryLabel !== requestedCategory
+            ? current
+            : kind === 'thumbnail'
+              ? { ...current, imageKey: image.storageKey, imageUrl: image.imageUrl }
+              : { ...current, bodyImageKey: image.storageKey, bodyImageUrl: image.imageUrl }
+        );
+      }
     } catch (e) {
-      if (formRevision.current === revision) {
-        setDraftError(e instanceof Error ? e.message : '자동 작성에 실패했어요.');
+      if (!stale()) {
+        const reason = readableAdminError(e, '잠시 후 다시 시도해주세요.');
+        setDraftError(
+          step === 'text'
+            ? `자동 작성에 실패했어요. ${reason}`
+            : `글은 채웠어요. ${withObject(AUTO_STEP_LABEL[step].name)} 만들지 못했어요 — ${reason} 「이미지 생성」으로 다시 만들 수 있어요.`
+        );
       }
     } finally {
       setDraftGenerating(false);
+      setAutoStep(null);
     }
   }
 
+  /**
+   * 관리자가 고른 그림을 올린다 — **같은 origin의 API로**(`PUT /v1/admin/wedding-feed/image/file`).
+   *
+   * 전에는 서명 URL로 저장소에 브라우저가 직접 `PUT`했는데, 운영 저장소(카카오 Object
+   * Storage)가 그 요청을 CORS로 막는다(e66dec7e · `docs/deployment.md` 「파일 저장소」).
+   * 1MB(운영 Nginx 기본 상한)를 넘으면 먼저 줄인다.
+   */
   async function uploadFeedImage(kind: 'thumbnail' | 'body') {
     setDraftError(null);
     const revision = formRevision.current;
@@ -409,32 +454,37 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
     if (picked.canceled || !picked.assets[0]) return;
 
     const asset = picked.assets[0];
-    const mimeType = asset.mimeType ?? 'image/png';
+    const declared = (asset.mimeType ?? asset.file?.type ?? '').toLowerCase();
+
+    if (!ADMIN_IMAGE_TYPES.has(declared)) {
+      setDraftError('PNG · JPG · WebP 이미지만 올릴 수 있어요.');
+      return;
+    }
 
     setUploadingImage(kind);
     try {
-      const blob = await fetch(asset.uri).then((response) => response.blob());
-      const target = (await apiFetch('/v1/admin/wedding-feed/image/upload-target', {
-        method: 'POST',
-        body: JSON.stringify({ mimeType, kind }),
-      })) as { storageKey: string; uploadUrl: string };
+      const original: Blob = asset.file ?? (await fetch(asset.uri).then((response) => response.blob()));
+      const fitted = await fitImageForUpload(original, declared);
 
-      const put = await fetch(target.uploadUrl, {
+      if (fitted.blob.size > ADMIN_UPLOAD_MAX_BYTES) {
+        throw new Error('이미지가 너무 커요. 1MB 안쪽으로 줄여 다시 골라주세요.');
+      }
+
+      const uploaded = (await apiFetch(`/v1/admin/wedding-feed/image/file?kind=${kind}`, {
         method: 'PUT',
-        headers: { 'content-type': mimeType },
-        body: blob,
-      });
-      if (!put.ok) throw new Error(`이미지를 올리지 못했어요 (${put.status})`);
+        headers: { 'Content-Type': fitted.mimeType },
+        body: fitted.blob,
+      })) as { storageKey: string; imageUrl: string };
       if (formRevision.current !== revision) return;
 
       setForm((current) =>
         kind === 'thumbnail'
-          ? { ...current, imageKey: target.storageKey, imageUrl: asset.uri }
-          : { ...current, bodyImageKey: target.storageKey, bodyImageUrl: asset.uri }
+          ? { ...current, imageKey: uploaded.storageKey, imageUrl: uploaded.imageUrl }
+          : { ...current, bodyImageKey: uploaded.storageKey, bodyImageUrl: uploaded.imageUrl }
       );
     } catch (e) {
       if (formRevision.current === revision) {
-        setDraftError(e instanceof Error ? e.message : '이미지를 올리지 못했어요.');
+        setDraftError(readableAdminError(e, '이미지를 올리지 못했어요.'));
       }
     } finally {
       setUploadingImage(null);
@@ -457,7 +507,13 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
     try {
       const result = (await apiFetch('/v1/admin/wedding-feed/image/generate', {
         method: 'POST',
-        body: JSON.stringify({ kind, title: form.title, summary: form.summary, body: form.body }),
+        body: JSON.stringify({
+          kind,
+          title: form.title,
+          summary: form.summary,
+          body: form.body,
+          ...(form.categoryLabel ? { categoryLabel: form.categoryLabel } : {}),
+        }),
       })) as { storageKey: string; imageUrl: string };
       if (formRevision.current !== revision) return;
       setForm((current) => kind === 'thumbnail'
@@ -465,7 +521,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
         : { ...current, bodyImageKey: result.storageKey, bodyImageUrl: result.imageUrl });
     } catch (e) {
       if (formRevision.current === revision) {
-        setDraftError(e instanceof Error ? e.message : '이미지를 만들지 못했어요.');
+        setDraftError(readableAdminError(e, '이미지를 만들지 못했어요.'));
       }
     } finally {
       setGeneratingImage(null);
@@ -480,226 +536,61 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
     );
   }
 
-  function openGroup(group: Group | 'new') {
-    setGroupForm(
-      group === 'new'
-        ? { ...BLANK_GROUP, sortOrder: String(groups.length + 1) }
-        : { name: group.name, sortOrder: String(group.sortOrder), active: group.active }
-    );
-    setEditingGroup(group);
-    setEditingCategory(null);
-    setTaxonomyError(null);
-  }
-
-  function openCategory(category: Category | 'new') {
-    setCategoryForm(
-      category === 'new'
-        ? { ...BLANK_CATEGORY, sortOrder: String(categories.length + 1) }
-        : {
-            name: category.name,
-            groupId: category.groupId,
-            sortOrder: String(category.sortOrder),
-            active: category.active,
-          }
-    );
-    setEditingCategory(category);
-    setEditingGroup(null);
-    setTaxonomyError(null);
-  }
-
-  /** 순서 칸은 글자로 받고 숫자로 보낸다. 비거나 깨진 값은 0이다. */
-  const toOrder = (raw: string) => {
-    const n = Number.parseInt(raw, 10);
-
-    return Number.isNaN(n) ? 0 : n;
-  };
-
-  async function saveGroup() {
-    if (!editingGroup) return;
-    setTaxonomySaving(true);
-    setTaxonomyError(null);
-    try {
-      const payload = {
-        name: groupForm.name,
-        sortOrder: toOrder(groupForm.sortOrder),
-        active: groupForm.active,
-      };
-      const path =
-        editingGroup === 'new'
-          ? '/v1/admin/wedding-feed/groups'
-          : `/v1/admin/wedding-feed/groups/${editingGroup.id}`;
-
-      await apiFetch(path, {
-        method: editingGroup === 'new' ? 'POST' : 'PUT',
-        body: JSON.stringify(payload),
-      });
-      setEditingGroup(null);
-      reload();
-    } catch (e) {
-      setTaxonomyError(e instanceof Error ? e.message : '저장 실패');
-    } finally {
-      setTaxonomySaving(false);
-    }
-  }
-
-  async function saveCategory() {
-    if (!editingCategory) return;
-    setTaxonomySaving(true);
-    setTaxonomyError(null);
-    try {
-      const payload = {
-        name: categoryForm.name,
-        groupId: categoryForm.groupId,
-        sortOrder: toOrder(categoryForm.sortOrder),
-        active: categoryForm.active,
-      };
-      const path =
-        editingCategory === 'new'
-          ? '/v1/admin/wedding-feed/categories'
-          : `/v1/admin/wedding-feed/categories/${editingCategory.id}`;
-
-      await apiFetch(path, {
-        method: editingCategory === 'new' ? 'POST' : 'PUT',
-        body: JSON.stringify(payload),
-      });
-      setEditingCategory(null);
-      reload();
-    } catch (e) {
-      setTaxonomyError(e instanceof Error ? e.message : '저장 실패');
-    } finally {
-      setTaxonomySaving(false);
-    }
-  }
-
-  /**
-   * 켬·끔만 바로 바꾼다.
-   *
-   * **끄기는 지우기가 아니라서 되돌릴 수 있다** — 그래서 한 번 더 묻지 않는다.
-   * 쌓인 글은 그대로 있고 다시 켜면 돌아온다.
-   */
-  async function toggleGroup(group: Group) {
-    setActionMsg(null);
-    try {
-      await apiFetch(`/v1/admin/wedding-feed/groups/${group.id}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          name: group.name,
-          sortOrder: group.sortOrder,
-          active: !group.active,
-        }),
-      });
-      reload();
-    } catch (e) {
-      setActionMsg(e instanceof Error ? e.message : '변경 실패');
-    }
-  }
-
-  async function toggleCategory(category: Category) {
-    setActionMsg(null);
-    try {
-      await apiFetch(`/v1/admin/wedding-feed/categories/${category.id}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          name: category.name,
-          groupId: category.groupId,
-          sortOrder: category.sortOrder,
-          active: !category.active,
-        }),
-      });
-      reload();
-    } catch (e) {
-      setActionMsg(e instanceof Error ? e.message : '변경 실패');
-    }
-  }
-
-  async function commitDeleteGroup() {
-    if (!deletingGroup) return;
-    setDeleteBusy(true);
-    try {
-      await apiFetch(`/v1/admin/wedding-feed/groups/${deletingGroup.id}`, { method: 'DELETE' });
-      setDeletingGroup(null);
-      reload();
-    } catch (e) {
-      setActionMsg(e instanceof Error ? e.message : '삭제 실패');
-      setDeletingGroup(null);
-    } finally {
-      setDeleteBusy(false);
-    }
-  }
-
-  /**
-   * 카테고리를 지운다.
-   *
-   * **글이 딸려 있으면 서버가 거절한다.** 지우면 그 글들이 어느 탭에도 안 뜨는데
-   * 화면은 멀쩡해 보인다 — 이 기능이 없애려던 바로 그 상태다. 거절 문구를 그대로
-   * 띄우고 끄기를 권한다.
-   */
-  async function commitDeleteCategory() {
-    if (!deletingCategory) return;
-    setDeleteBusy(true);
-    try {
-      await apiFetch(`/v1/admin/wedding-feed/categories/${deletingCategory.id}`, {
-        method: 'DELETE',
-      });
-      setDeletingCategory(null);
-      reload();
-    } catch (e) {
-      setActionMsg(e instanceof Error ? e.message : '삭제 실패');
-      setDeletingCategory(null);
-    } finally {
-      setDeleteBusy(false);
-    }
-  }
-
   const rows: TableRow[] = posts.map((post) => ({
     key: post.id,
     cells: [
       { v: WEDDING_FEED_STATUS_LABEL[post.status], badge: STATUS_KIND[post.status] },
       { v: post.categoryLabel },
+      {
+        v:
+          post.status === 'published'
+            ? appChipText(post.categoryLabel)
+            : isWeddingFeedCategoryLabel(post.categoryLabel)
+              ? '안 보임'
+              : '안 보임 · 목록 밖',
+        badge: isWeddingFeedCategoryLabel(post.categoryLabel) ? undefined : 'warn',
+      },
       { v: post.title, bold: true },
       { v: WEDDING_FEED_SOURCE_LABEL[post.source] },
       { v: String(post.sortOrder) },
+      /* 앱 글 상세가 찍는 날짜와 같은 값·같은 꼴이다(`formatDateDot(publishedAt)`). */
+      { v: post.publishedAt ? formatDateDot(post.publishedAt) : '—' },
       { v: formatDateTimeDot(post.updatedAt) },
       { v: '수정', kind: 'brand', write: true, onPress: () => openEdit(post) },
       { v: '삭제', kind: 'bad', write: true, onPress: () => setDeleting(post) },
     ],
   }));
 
-  const groupRows: TableRow[] = groups.map((group) => ({
-    key: group.id,
-    cells: [
-      { v: group.name, bold: true },
-      { v: `${categories.filter((c) => c.groupId === group.id).length}개` },
-      { v: String(group.sortOrder) },
-      {
-        v: group.active ? '켬' : '끔',
-        kind: group.active ? 'ok' : 'dim',
-        write: true, onPress: () => void toggleGroup(group),
-      },
-      { v: '수정', kind: 'brand', write: true, onPress: () => openGroup(group) },
-      { v: '삭제', kind: 'bad', write: true, onPress: () => setDeletingGroup(group) },
-    ],
-  }));
+  /*
+   * 카테고리 표 — 고칠 수 없다. 목록과 칩 배정은 domain 상수(정본 my.js `cats`)라
+   * 여기서 바꾸면 앱과 다시 갈라진다. 목록 밖 이름을 단 글이 있으면 끝에 따로 적는다.
+   */
+  const countOf = (label: string) => ({
+    published: posts.filter((p) => p.categoryLabel === label && p.status === 'published').length,
+    total: posts.filter((p) => p.categoryLabel === label).length,
+  });
+  const unlisted = [...new Set(posts.map((p) => p.categoryLabel))].filter(
+    (label) => !isWeddingFeedCategoryLabel(label)
+  );
+  const categoryRows: TableRow[] = [
+    ...WEDDING_FEED_CATEGORIES.map((category) => category.label),
+    ...unlisted,
+  ].map((label) => {
+    const count = countOf(label);
 
-  const categoryRows: TableRow[] = categories.map((category) => ({
-    key: category.id,
-    cells: [
-      { v: category.name, bold: true },
-      {
-        v: groupName(category.groupId),
-        badge: category.groupId === null && category.active ? 'warn' : undefined,
-      },
-      { v: `${category.postCount.toLocaleString('ko-KR')}편` },
-      { v: String(category.sortOrder) },
-      {
-        v: category.active ? '켬' : '끔',
-        kind: category.active ? 'ok' : 'dim',
-        write: true, onPress: () => void toggleCategory(category),
-      },
-      { v: '수정', kind: 'brand', write: true, onPress: () => openCategory(category) },
-      { v: '삭제', kind: 'bad', write: true, onPress: () => setDeletingCategory(category) },
-    ],
-  }));
+    return {
+      key: `category-${label}`,
+      cells: [
+        { v: label, bold: true },
+        {
+          v: appChipText(label),
+          badge: isWeddingFeedCategoryLabel(label) ? undefined : ('warn' as const),
+        },
+        { v: `${count.published.toLocaleString('ko-KR')}편` },
+        { v: `${count.total.toLocaleString('ko-KR')}편` },
+      ],
+    };
+  });
 
   return (
     <Page
@@ -750,236 +641,13 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
             </Card>
 
             <Card
-              title="탭과 카테고리"
-              sub="피드 화면 위쪽 탭과 그 안에 드는 카테고리 — 앱은 여기 있는 것을 그린다"
-              action={{ label: '+ 새 탭', write: true, onPress: () => openGroup('new'), kind: 'brand' }}
+              title="카테고리와 앱 칩"
+              sub="글 작성에서 고르는 값과 앱 라운지 칩. 정본 칩이라 여기서 바꾸지 않는다"
               full
             >
-              <DataTable cols={GROUP_COLS} rows={groupRows} empty="등록된 탭이 없어요" />
-            </Card>
-
-            <Card
-              title="카테고리"
-              sub="글 작성에서 고르는 값. 끄면 고를 수 없고 쌓인 글은 그대로 남는다"
-              action={{ label: '+ 새 카테고리', write: true, onPress: () => openCategory('new'), kind: 'brand' }}
-              full
-            >
-              <DataTable
-                cols={CATEGORY_COLS}
-                rows={categoryRows}
-                empty="등록된 카테고리가 없어요"
-              />
+              <DataTable cols={CATEGORY_COLS} rows={categoryRows} empty="등록된 카테고리가 없어요" />
             </Card>
           </CardGrid>
-
-          <AdminFormModal
-            visible={editingGroup !== null}
-            title={editingGroup === 'new' ? '새 탭' : '탭 수정'}
-            onClose={() => setEditingGroup(null)}
-          >
-            {editingGroup ? (
-              <View style={styles.form}>
-                <Text style={styles.fieldLabel}>탭 이름</Text>
-                <TextInput
-                  style={styles.input}
-                  value={groupForm.name}
-                  onChangeText={(v) => setGroupForm((f) => ({ ...f, name: v }))}
-                  placeholder="준비·예산"
-                  maxLength={WEDDING_FEED_TAXONOMY_LIMITS.groupName}
-                />
-                <Text style={styles.fieldLabel}>노출 순서</Text>
-                <TextInput
-                  style={styles.input}
-                  value={groupForm.sortOrder}
-                  onChangeText={(v) => setGroupForm((f) => ({ ...f, sortOrder: v }))}
-                  keyboardType="numeric"
-                />
-                <Text style={styles.fieldLabel}>노출</Text>
-                <View style={styles.statusRow}>
-                  <Pressable
-                    onPress={() => setGroupForm((f) => ({ ...f, active: true }))}
-                    style={[styles.statusChip, groupForm.active && styles.statusChipActive]}
-                  >
-                    <Text
-                      style={[
-                        styles.statusChipLabel,
-                        groupForm.active && styles.statusChipLabelActive,
-                      ]}
-                    >
-                      켬
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => setGroupForm((f) => ({ ...f, active: false }))}
-                    style={[styles.statusChip, !groupForm.active && styles.statusChipActive]}
-                  >
-                    <Text
-                      style={[
-                        styles.statusChipLabel,
-                        !groupForm.active && styles.statusChipLabelActive,
-                      ]}
-                    >
-                      끔
-                    </Text>
-                  </Pressable>
-                </View>
-
-                {taxonomyError ? <Text style={styles.error}>{taxonomyError}</Text> : null}
-
-                <View style={styles.formActions}>
-                  <Pressable
-                    style={styles.btnGhost}
-                    onPress={() => setEditingGroup(null)}
-                    disabled={taxonomySaving}
-                  >
-                    <Text style={styles.btnGhostLabel}>취소</Text>
-                  </Pressable>
-                  <WritePressable
-                    style={[styles.btnPrimary, taxonomySaving && styles.btnDisabled]}
-                    onPress={() => void saveGroup()}
-                    disabled={taxonomySaving}
-                  >
-                    <Text style={styles.btnPrimaryLabel}>
-                      {taxonomySaving ? '저장 중…' : '저장'}
-                    </Text>
-                  </WritePressable>
-                </View>
-              </View>
-            ) : null}
-          </AdminFormModal>
-
-          <AdminFormModal
-            visible={editingCategory !== null}
-            title={editingCategory === 'new' ? '새 카테고리' : '카테고리 수정'}
-            onClose={() => setEditingCategory(null)}
-          >
-            {editingCategory ? (
-              <View style={styles.form}>
-                {editingCategory !== 'new' && editingCategory.postCount > 0 ? (
-                  <Text style={styles.hint}>
-                    이름을 고치면 이 카테고리로 쓴 글 {editingCategory.postCount.toLocaleString('ko-KR')}편의 카드 위 줄도 함께 바뀌어요.
-                  </Text>
-                ) : null}
-                <Text style={styles.fieldLabel}>카테고리 이름</Text>
-                <TextInput
-                  style={styles.input}
-                  value={categoryForm.name}
-                  onChangeText={(v) => setCategoryForm((f) => ({ ...f, name: v }))}
-                  placeholder="예산"
-                  maxLength={WEDDING_FEED_TAXONOMY_LIMITS.categoryName}
-                />
-
-                <Text style={styles.fieldLabel}>어느 탭</Text>
-                <View style={styles.pickRow}>
-                  {groups.map((group) => (
-                    <Pressable
-                      key={group.id}
-                      onPress={() => setCategoryForm((f) => ({ ...f, groupId: group.id }))}
-                      style={[
-                        styles.statusChip,
-                        categoryForm.groupId === group.id && styles.statusChipActive,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.statusChipLabel,
-                          categoryForm.groupId === group.id && styles.statusChipLabelActive,
-                        ]}
-                      >
-                        {group.name}
-                      </Text>
-                    </Pressable>
-                  ))}
-                  {/*
-                    탭 없이 두는 것을 «고를 수 있게» 한다. 막아 두면 탭을 지웠을 때
-                    떨어져 나온 카테고리를 저장할 수 없게 되고, 그 상태를 되돌릴
-                    자리가 사라진다. 고른 뒤에는 맨 위 경고줄에 뜬다.
-                  */}
-                  <Pressable
-                    onPress={() => setCategoryForm((f) => ({ ...f, groupId: null }))}
-                    style={[
-                      styles.statusChip,
-                      categoryForm.groupId === null && styles.statusChipActive,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.statusChipLabel,
-                        categoryForm.groupId === null && styles.statusChipLabelActive,
-                      ]}
-                    >
-                      정하지 않음
-                    </Text>
-                  </Pressable>
-                </View>
-                {categoryForm.groupId === null && categoryForm.active ? (
-                  <Text style={styles.hint}>
-                    탭을 정하지 않으면 이 카테고리로 쓴 글은 「{WEDDING_FEED_ALL_TAB.label}」에서만
-                    보여요.
-                  </Text>
-                ) : null}
-
-                <Text style={styles.fieldLabel}>노출 순서</Text>
-                <TextInput
-                  style={styles.input}
-                  value={categoryForm.sortOrder}
-                  onChangeText={(v) => setCategoryForm((f) => ({ ...f, sortOrder: v }))}
-                  keyboardType="numeric"
-                />
-
-                <Text style={styles.fieldLabel}>노출</Text>
-                <View style={styles.statusRow}>
-                  <Pressable
-                    onPress={() => setCategoryForm((f) => ({ ...f, active: true }))}
-                    style={[styles.statusChip, categoryForm.active && styles.statusChipActive]}
-                  >
-                    <Text
-                      style={[
-                        styles.statusChipLabel,
-                        categoryForm.active && styles.statusChipLabelActive,
-                      ]}
-                    >
-                      켬
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => setCategoryForm((f) => ({ ...f, active: false }))}
-                    style={[styles.statusChip, !categoryForm.active && styles.statusChipActive]}
-                  >
-                    <Text
-                      style={[
-                        styles.statusChipLabel,
-                        !categoryForm.active && styles.statusChipLabelActive,
-                      ]}
-                    >
-                      끔
-                    </Text>
-                  </Pressable>
-                </View>
-
-                {taxonomyError ? <Text style={styles.error}>{taxonomyError}</Text> : null}
-
-                <View style={styles.formActions}>
-                  <Pressable
-                    style={styles.btnGhost}
-                    onPress={() => setEditingCategory(null)}
-                    disabled={taxonomySaving}
-                  >
-                    <Text style={styles.btnGhostLabel}>취소</Text>
-                  </Pressable>
-                  <WritePressable
-                    style={[styles.btnPrimary, taxonomySaving && styles.btnDisabled]}
-                    onPress={() => void saveCategory()}
-                    disabled={taxonomySaving}
-                  >
-                    <Text style={styles.btnPrimaryLabel}>
-                      {taxonomySaving ? '저장 중…' : '저장'}
-                    </Text>
-                  </WritePressable>
-                </View>
-              </View>
-            ) : null}
-          </AdminFormModal>
 
           <AdminFormModal
             visible={editing !== null && !previewing}
@@ -995,37 +663,37 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                   멀쩡해서 알아챌 방법이 없었다. 목록에서 고르면 그 문제가 뿌리에서 없어진다.
                 */}
                 <Text style={styles.fieldLabel}>카테고리</Text>
-                {activeCategories.length === 0 ? (
-                  <Text style={styles.hint}>
-                    고를 카테고리가 없어요. 위 「카테고리」에서 먼저 하나 만들어 주세요.
-                  </Text>
-                ) : (
-                  <View style={styles.pickRow}>
-                    {activeCategories.map((category) => (
-                      <Pressable
-                        key={category.id}
-                        disabled={draftGenerating}
-                        onPress={() => {
-                          setForm((f) => ({ ...f, categoryLabel: category.name }));
-                          setDraftError(null);
-                        }}
+                <View style={styles.pickRow}>
+                  {WEDDING_FEED_CATEGORIES.map((category) => (
+                    <Pressable
+                      key={category.key}
+                      accessibilityRole="button"
+                      accessibilityLabel={`카테고리 ${category.label}`}
+                      accessibilityState={{ selected: form.categoryLabel === category.label, disabled: draftGenerating }}
+                      disabled={draftGenerating}
+                      onPress={() => {
+                        setForm((f) => ({ ...f, categoryLabel: category.label }));
+                        setDraftError(null);
+                      }}
+                      style={[
+                        styles.statusChip,
+                        form.categoryLabel === category.label && styles.statusChipActive,
+                      ]}
+                    >
+                      <Text
                         style={[
-                          styles.statusChip,
-                          form.categoryLabel === category.name && styles.statusChipActive,
+                          styles.statusChipLabel,
+                          form.categoryLabel === category.label && styles.statusChipLabelActive,
                         ]}
                       >
-                        <Text
-                          style={[
-                            styles.statusChipLabel,
-                            form.categoryLabel === category.name && styles.statusChipLabelActive,
-                          ]}
-                        >
-                          {category.name}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                )}
+                        {category.label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+                {!needsPick ? (
+                  <Text style={styles.hint}>앱 라운지 칩: {appChipText(form.categoryLabel)}</Text>
+                ) : null}
                 {/*
                   **옛 글의 값이 목록에 없을 수 있다.** 목록이 생기기 전에 손으로 적은
                   값이거나 방금 꺼 둔 카테고리다. 지우지 않고 **그대로 보여준다** —
@@ -1043,9 +711,11 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                 {editing === 'new' ? (
                   <View style={styles.inlineActions}>
                     <WritePressable
+                      accessibilityRole="button"
+                      accessibilityLabel="글과 이미지 자동 작성"
                       style={[styles.btnPrimary, draftGenerating && styles.btnDisabled]}
                       onPress={() => void generateDraft()}
-                      disabled={draftGenerating}
+                      disabled={draftGenerating || uploadingImage !== null || generatingImage !== null}
                     >
                       {draftGenerating ? (
                         <ActivityIndicator color={C.onTint} />
@@ -1053,7 +723,11 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                         <Text style={styles.btnPrimaryLabel}>자동 작성</Text>
                       )}
                     </WritePressable>
-                    <Text style={styles.hint}>선택한 카테고리로 제목 · 한 줄 요약 · 본문을 Gemini가 채워요.</Text>
+                    <Text style={styles.hint} accessibilityLiveRegion="polite">
+                      {autoStep
+                        ? `${AUTO_STEP_LABEL[autoStep].progress} (${AUTO_STEP_LABEL[autoStep].order}/3)`
+                        : '선택한 카테고리로 글과 썸네일 · 본문 이미지를 한 번에 채워요. 이전 글 · 이미지와 겹치지 않게 만들어요.'}
+                    </Text>
                   </View>
                 ) : null}
                 {draftError ? <Text style={styles.error}>{draftError}</Text> : null}
@@ -1085,7 +759,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                     <WritePressable
                       style={styles.btnGhost}
                       onPress={() => void uploadFeedImage('thumbnail')}
-                      disabled={uploadingImage !== null || generatingImage !== null}
+                      disabled={draftGenerating || uploadingImage !== null || generatingImage !== null}
                     >
                       {uploadingImage === 'thumbnail' ? (
                         <ActivityIndicator />
@@ -1096,13 +770,13 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                     <WritePressable
                       style={styles.btnGhost}
                       onPress={() => void generateFeedImage('thumbnail')}
-                      disabled={uploadingImage !== null || generatingImage !== null}
+                      disabled={draftGenerating || uploadingImage !== null || generatingImage !== null}
                     >
                       {generatingImage === 'thumbnail' ? <ActivityIndicator /> :
                         <Text style={styles.btnGhostLabel}>이미지 생성</Text>}
                     </WritePressable>
                     {form.imageKey ? (
-                      <Pressable style={styles.btnGhost} onPress={() => clearFeedImage('thumbnail')} disabled={uploadingImage !== null || generatingImage !== null}>
+                      <Pressable style={styles.btnGhost} onPress={() => clearFeedImage('thumbnail')} disabled={draftGenerating || uploadingImage !== null || generatingImage !== null}>
                         <Text style={styles.btnGhostLabel}>삭제</Text>
                       </Pressable>
                     ) : null}
@@ -1133,7 +807,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                     <WritePressable
                       style={styles.btnGhost}
                       onPress={() => void uploadFeedImage('body')}
-                      disabled={uploadingImage !== null || generatingImage !== null}
+                      disabled={draftGenerating || uploadingImage !== null || generatingImage !== null}
                     >
                       {uploadingImage === 'body' ? (
                         <ActivityIndicator />
@@ -1144,13 +818,13 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                     <WritePressable
                       style={styles.btnGhost}
                       onPress={() => void generateFeedImage('body')}
-                      disabled={uploadingImage !== null || generatingImage !== null}
+                      disabled={draftGenerating || uploadingImage !== null || generatingImage !== null}
                     >
                       {generatingImage === 'body' ? <ActivityIndicator /> :
                         <Text style={styles.btnGhostLabel}>이미지 생성</Text>}
                     </WritePressable>
                     {form.bodyImageKey ? (
-                      <Pressable style={styles.btnGhost} onPress={() => clearFeedImage('body')} disabled={uploadingImage !== null || generatingImage !== null}>
+                      <Pressable style={styles.btnGhost} onPress={() => clearFeedImage('body')} disabled={draftGenerating || uploadingImage !== null || generatingImage !== null}>
                         <Text style={styles.btnGhostLabel}>삭제</Text>
                       </Pressable>
                     ) : null}
@@ -1245,66 +919,6 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
               </Pressable>
             </View>
           </AdminFormModal>
-
-          {deletingGroup ? (
-            <ConfirmCard
-              title="이 탭을 지울까요?"
-              body="탭만 사라져요. 딸린 카테고리와 글은 그대로 남지만 어느 탭에도 들지 않게 되어, 그 글은 「전체」에서만 보여요."
-              items={[
-                `탭 ${deletingGroup.name}`,
-                `딸린 카테고리 ${categories.filter((c) => c.groupId === deletingGroup.id).length}개 → 탭 없음`,
-                `글 ${categories
-                  .filter((c) => c.groupId === deletingGroup.id)
-                  .reduce((sum, c) => sum + c.postCount, 0)
-                  .toLocaleString('ko-KR')}편 → 「전체」에서만 보임`,
-              ]}
-              cta={deleteBusy ? '지우는 중…' : '삭제'}
-              danger
-              onConfirm={() => void commitDeleteGroup()}
-              onCancel={() => setDeletingGroup(null)}
-            />
-          ) : null}
-
-          {/*
-            **쓰는 카테고리는 지우지 못한다.** 지우면 그 글들이 어느 탭에도 안 뜨는데
-            화면은 멀쩡해 보인다 — 이 기능이 없애려던 바로 그 상태다. 몇 편이 딸려
-            있는지 보여주고, 지우는 대신 «끄기»를 권한다. 서버도 같은 것을 거절한다.
-          */}
-          {deletingCategory ? (
-            deletingCategory.postCount > 0 ? (
-              <ConfirmCard
-                title="이 카테고리는 지울 수 없어요"
-                body="이 카테고리로 쓴 글이 있어요. 지우면 그 글들이 어느 탭에도 뜨지 않아요. 글을 다른 카테고리로 옮기거나 지운 뒤에 다시 시도해 주세요. 당장 감추려면 「끔」으로 두세요."
-                items={[
-                  `카테고리 ${deletingCategory.name}`,
-                  `딸린 글 ${deletingCategory.postCount.toLocaleString('ko-KR')}편`,
-                  `지금 상태 ${deletingCategory.active ? '켬' : '끔'}`,
-                ]}
-                cta="끄기"
-                onConfirm={() => {
-                  const target = deletingCategory;
-
-                  setDeletingCategory(null);
-                  if (target.active) void toggleCategory(target);
-                }}
-                onCancel={() => setDeletingCategory(null)}
-              />
-            ) : (
-              <ConfirmCard
-                title="이 카테고리를 지울까요?"
-                body="지우면 되돌릴 수 없어요. 딸린 글이 없어서 사라지는 글은 없어요."
-                items={[
-                  `카테고리 ${deletingCategory.name}`,
-                  `탭 ${groupName(deletingCategory.groupId)}`,
-                  '딸린 글 0편',
-                ]}
-                cta={deleteBusy ? '지우는 중…' : '삭제'}
-                danger
-                onConfirm={() => void commitDeleteCategory()}
-                onCancel={() => setDeletingCategory(null)}
-              />
-            )
-          ) : null}
 
           {deleting ? (
             <ConfirmCard

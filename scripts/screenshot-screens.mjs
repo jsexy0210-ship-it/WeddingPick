@@ -83,8 +83,13 @@ function parseArgs(argv) {
     guest: false,
     expand: false,
     homeLoading: false,
-    /** 이 경로로 시작하는 GET 응답을 붙잡아 둔다 — 로딩 뼈대(WP-LOAD-004)를 찍는다. 여러 번 줄 수 있다. */
+    /** 이 경로로 시작하는 응답을 붙잡아 둔다 — 로딩 뼈대(WP-LOAD-004) · 보낸 뒤 기다리는 화면을 찍는다. 여러 번 줄 수 있다. */
     slow: [],
+    /**
+     * 파일 · 카메라 입력이 열리면 이 파일을 넣는다 — 예산 추가 «자동 등록»처럼 **OS 선택 창 뒤의
+     * 화면**을 찍는다. 없으면 선택 창은 열리기만 하고 아무것도 들어가지 않는다(헤드리스 브라우저).
+     */
+    file: null,
     /**
      * 페이지가 뜨기 전에 기기 저장소(localStorage)에 심어 둘 값 `키=값`. 여러 번 줄 수 있다.
      * 서버가 아니라 기기에 적힌 상태(온보딩 답 · 초안)로만 닿는 화면을 찍는다 — 예:
@@ -107,6 +112,7 @@ function parseArgs(argv) {
     else if (arg === '--guest') opts.guest = true;
     else if (arg === '--home-loading') opts.homeLoading = true;
     else if (arg === '--slow') opts.slow.push(argv[++i]);
+    else if (arg === '--file') opts.file = resolve(argv[++i]);
     else if (arg === '--storage') {
       const pair = argv[++i];
       const at = pair.indexOf('=');
@@ -238,7 +244,16 @@ async function installFixtures(page, missing, blocked, opts) {
       }
 
       const { value, params } = matched;
-      const body = typeof value === 'function' ? value({ url, method, params }) : value;
+      /* 보낸 본문 — 상태를 기억하는 fixture(온보딩 «완료» → Pick)가 읽는다. JSON이 아니면 null. */
+      let sent = null;
+
+      try {
+        sent = request.postDataJSON();
+      } catch {
+        sent = null;
+      }
+
+      const body = typeof value === 'function' ? value({ url, method, params, body: sent }) : value;
 
       // 홈 첫 진입 스켈레톤을 찍을 때만 데이터 응답을 늦춘다. 인증 응답은 그대로 둔다.
       if (opts.homeLoading && method === 'GET'
@@ -246,7 +261,8 @@ async function installFixtures(page, missing, blocked, opts) {
         await new Promise((resolve) => setTimeout(resolve, 5_000));
       }
 
-      if (method === 'GET' && opts.slow.some((prefix) => url.pathname.startsWith(prefix))) {
+      /* 쓰기도 붙잡는다 — «읽고 있어요»처럼 보낸 뒤 기다리는 화면을 찍는다(예산 추가 자동 등록). */
+      if (opts.slow.some((prefix) => url.pathname.startsWith(prefix))) {
         await new Promise((resolve) => setTimeout(resolve, 30_000));
       }
 
@@ -315,6 +331,19 @@ async function captureRoute(context, origin, route, opts) {
 
   await installFixtures(page, missing, blocked, opts);
 
+  /* 파일 · 카메라 입력 — 열리면 준 파일을 넣고, 열렸다는 사실을 남긴다(열리지 않았는데 찍지 않게). */
+  const fileChoosers = [];
+  if (opts.file) {
+    page.on('filechooser', async (chooser) => {
+      const input = chooser.element();
+      fileChoosers.push({
+        accept: await input.getAttribute('accept'),
+        capture: await input.getAttribute('capture'),
+      });
+      await chooser.setFiles(opts.file);
+    });
+  }
+
   /*
    * 토큰을 먼저 심는다. 로그인 가드(`_layout.tsx`)는 그대로 둔다 — 제품 코드에
    * 「캡처일 때는 통과」를 넣으면 그 구멍이 운영에 나간다.
@@ -369,6 +398,20 @@ async function captureRoute(context, origin, route, opts) {
      * "빼기"를 찾을 때 뒤에 깔린 "강남 A 웨딩홀 빼기"까지 잡아, 열린 dialog 대신
      * 배경 버튼을 다시 누르는 거짓 캡처를 만들었다.
      */
+    /*
+     * `fill:<이름>=<글자>` — 누르는 대신 입력칸에 글자를 넣는다(검색 시트처럼 **쳐야
+     * 나오는 화면**). 이름은 입력칸의 `accessibilityLabel`이다.
+     */
+    if (label.startsWith('fill:')) {
+      const [name, ...rest] = label.slice('fill:'.length).split('=');
+      const field = page.getByLabel(name, { exact: true }).first();
+
+      await field.waitFor({ state: 'attached', timeout: 8000 });
+      await field.fill(rest.join('='));
+      await page.waitForTimeout(opts.wait);
+      continue;
+    }
+
     const target = page
       .getByRole('button', { name: label, exact: true })
       .or(page.getByLabel(label, { exact: true }))
@@ -485,7 +528,7 @@ async function captureRoute(context, origin, route, opts) {
 
   await page.close();
 
-  return { route, file, missing: [...missing], blocked: [...blocked], errors, edges };
+  return { route, file, missing: [...missing], blocked: [...blocked], errors, edges, fileChoosers };
 }
 
 
@@ -555,6 +598,7 @@ const HELP = `화면을 실제로 렌더해 PNG로 찍는다.
                    적힌 상태(온보딩 답 등)로만 닿는 화면을 찍을 때.
                    눌러야 나오는 화면(바텀시트 · 펼침)을 찍을 때 쓴다. 못 찾으면 멈춘다.
   --home-loading   홈 데이터 응답을 5초 늦춰 첫 진입 스켈레톤을 찍는다.
+  --file <경로>    파일 · 카메라 입력이 열리면 이 파일을 넣는다(OS 선택 창 뒤 화면을 찍을 때).
   --viewport WxH   창 크기. 기본은 경로를 보고 정한다 — /admin은 1920x1080, 나머지 390x844.
   --edges          좌우 끝선을 재서 같이 적는다. 한 화면 안에서 제목 · 본문 · 카드 ·
                    버튼의 시작선과 끝선이 갈라지는 자리를 숫자로 잡는다.
@@ -637,6 +681,14 @@ async function main() {
 
       if (result.blocked.length) {
         process.stdout.write(`  바깥으로 나가려다 막힌 요청:\n${result.blocked.map((b) => `    ${b}\n`).join('')}`);
+      }
+
+      if (opts.file) {
+        process.stdout.write(
+          result.fileChoosers.length
+            ? `  파일 입력 ${result.fileChoosers.length}번 열림: ${result.fileChoosers.map((c) => `accept=${c.accept} capture=${c.capture}`).join(' · ')}\n`
+            : '  !! 파일 입력이 열리지 않았다 — --file을 줬는데 넣을 자리가 없었다\n'
+        );
       }
 
       if (result.errors.length) {

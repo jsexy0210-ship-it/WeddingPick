@@ -1,3 +1,5 @@
+import { PREPARATION_GROUPS } from '@weddingpick/domain';
+
 /**
  * Depth Back — 화면 계층에서 **한 단계 위**로 가는 fallback 규칙. 앱 전체가 이 파일
  * 하나만 쓴다.
@@ -193,15 +195,67 @@ export const DEPTH_BACK_EXCEPTIONS: Readonly<Record<string, string>> = {
   '/wedding/[id]/map': '/wedding',
 };
 
-/** SPEC §14.5에서 진입 출처를 `from`으로 넘기라고 정한 공유 화면. */
+/**
+ * SPEC §14.5에서 진입 출처를 `from`으로 넘기라고 정한 공유 화면.
+ *
+ * `/wedding/partner` · `/wedding/join` — 연결관리(WP-CPL-001 · 002)는 파일이 웨딩노트 스택에
+ * 있지만 정본(`React_Native/my.jsx` 14 «배우자 초대» — 「연결관리에서 들어옵니다」)은 MY 아래다.
+ * 계층대로 올라가면 `/wedding`으로 떨어진다(2026-09-26 대표 감사 — MY → 연결관리 → Back이
+ * 웨딩노트로 갔다). 들어온 자리를 `from`으로 받아 그리로 돌아간다.
+ */
 const ORIGIN_AWARE_ROUTES: readonly string[] = [
   '/community',
   '/community/expo',
   '/community/feed',
   '/community/review',
   '/search/[vendorId]',
+  /*
+   * 상담 예약(WP-PICK-009) — Pick 카드(`pick/index.tsx` «카드를 누르면 상담 예약으로 바로»)에서
+   * 곧장 열린다. 출처 없이 닫으면 업체 상세(검색 스택)로 떨어진다(2026-09-26 대표 감사 — Pick에서
+   * 들어간 화면의 Back이 검색으로 갔다). `/booking`은 같은 화면의 옛 주소다.
+   */
+  '/search/[vendorId]/booking',
+  '/search/[vendorId]/consult',
   '/search/[vendorId]/write-review',
+  '/wedding/join',
+  '/wedding/partner',
 ];
+
+/**
+ * `from` 값 → 돌아갈 화면. **여기 적힌 것만** 받는다 — 주소를 그대로 받으면 바깥 주소나
+ * 관리자 경로로 튀게 만들 수 있다. 모르는 값은 추측하지 않고 계층 규칙으로 떨어진다.
+ */
+const ORIGIN_ALIASES: Readonly<Record<string, string>> = {
+  home: '/',
+  my: '/my',
+  search: '/search',
+  /* `pick/<묶음>`(`pick/sdm`)은 아래 `aliasTarget`이 `/pick?group=<묶음>`으로 푼다. */
+  pick: '/pick',
+  wedding: '/wedding',
+  budget: '/wedding?tab=budget',
+  community: '/community/review',
+  reports: '/my/reports',
+  /* MY → 내가 쓴 후기(WP-MY-006) → 업체 상세 · 후기 작성. */
+  reviews: '/my/reviews',
+  /* MY → 알림 → 배우자 알림 → 연결관리. */
+  notifications: '/my/notifications',
+  /* 연결관리 → 초대 수락(WP-CPL-002). */
+  partner: '/wedding/partner',
+};
+
+/** `from` 연결 깊이 한도 — `community.my`처럼 한 번 이어진 것까지만 받는다. */
+const MAX_ORIGIN_CHAIN = 1;
+
+/**
+ * 출처가 자기 출처를 가진 화면일 때 두 겹을 한 값으로 잇는다 — `community` + `my` →
+ * `community.my`. MY → 리얼후기 → 업체 상세 → Back이 리얼후기로, 거기서 다시 Back이
+ * MY로 가야 한다(2026-09-26 대표 감사 — 업체 상세 Back이 검색으로 갔다).
+ */
+export function chainOrigin(alias: string, from?: string | string[] | null): string {
+  const inner = Array.isArray(from) ? from[0] : from;
+
+  return inner ? `${alias}.${inner}` : alias;
+}
 
 /** `/a/b/?x=1#y` → `['a','b']`. 쿼리·해시·끝 슬래시를 떨군다. */
 function segmentsOf(path: string): string[] {
@@ -295,6 +349,76 @@ function fill(target: string, route: string, pathname: string): string {
   return query ? `${path}?${query}` : path;
 }
 
+/**
+ * Pick 화면의 출처 값 — 칩이 «전체»면 `pick`, 준비 묶음이 켜져 있으면 `pick/<묶음>`.
+ * Pick → «내 조건에 맞는 곳» → 업체 상세 → Back이 **그 칩이 켜진 Pick**으로 돌아간다
+ * (2026-09-26 대표 감사 — 업체 상세 Back이 검색으로 갔다). 모르는 묶음은 `pick`으로 떨군다.
+ */
+export function pickOrigin(group?: string | null): string {
+  return group && PREPARATION_GROUPS.some((item) => item.key === group) ? `pick/${group}` : 'pick';
+}
+
+/** `pick/<묶음>` → `/pick?group=<묶음>`. 준비 묶음 넷(`PREPARATION_GROUPS`)만 받는다. */
+function pickGroupTarget(alias: string): string | null {
+  const match = alias.match(/^pick\/([a-z]+)$/);
+  const group = match?.[1];
+
+  return group && PREPARATION_GROUPS.some((item) => item.key === group) ? `/pick?group=${group}` : null;
+}
+
+/** 비교(WP-CMP-002)가 한 번에 견주는 업체 수의 상한 — `features/pick/canonical-rules` `PICK_COMPARE_MAX`와 같다. */
+const COMPARE_ORIGIN_MAX = 3;
+
+/**
+ * 비교 화면의 출처 값 — `compare/<업체>,<업체>`. 비교 → 상담 예약 → 닫기가 **같은 업체를 견주던 그
+ * 비교**로 돌아간다(2026-09-26 대표 감사 — Pick에서 들어간 화면의 Back 출처 보존). 비교 목록은 주소
+ * 말고는 다시 만들 길이 없어 목록째 넘긴다. 업체 id 모양(영문·숫자·`-`)이 아니면 값을 만들지 않는다.
+ */
+export function compareOrigin(ids: readonly string[]): string | null {
+  const valid = ids.length >= 2 && ids.length <= COMPARE_ORIGIN_MAX && ids.every((id) => /^[A-Za-z0-9-]+$/.test(id));
+
+  return valid ? `compare/${ids.join(',')}` : null;
+}
+
+/** `compare/<업체>,<업체>` → `/search/compare?ids=<업체>,<업체>`. 두 곳 이상 · 상한 이하만 받는다. */
+function compareTarget(alias: string): string | null {
+  const match = alias.match(/^compare\/([A-Za-z0-9-]+(?:,[A-Za-z0-9-]+)+)$/);
+  const ids = match?.[1]?.split(',') ?? [];
+
+  return ids.length >= 2 && ids.length <= COMPARE_ORIGIN_MAX ? `/search/compare?ids=${ids.join(',')}` : null;
+}
+
+/** 출처 한 조각(`my` · `vendor/v-1` · `pick/sdm` · `compare/a,b`) → 실재하는 화면 주소. 모르면 null. */
+function aliasTarget(alias: string): string | null {
+  const vendor = alias.match(/^vendor\/([^/?#.]+)$/);
+  const target = ORIGIN_ALIASES[alias] ?? (vendor ? `/search/${vendor[1]}` : pickGroupTarget(alias) ?? compareTarget(alias));
+
+  return target && matchRoute(target) ? target : null;
+}
+
+/**
+ * `from` 값 → 돌아갈 주소. `a.b`는 «`a` 화면에 `from=b`를 붙인 것»이다(`chainOrigin`).
+ * 안쪽 값은 바깥 화면이 출처를 받는 화면이고, 한 겹이고, 허용된 값이고, 자기 자신이 아닐 때만
+ * 잇는다 — 그 밖에는 바깥 화면까지만 간다.
+ */
+function resolveOrigin(from: string): string | null {
+  const [head = '', ...rest] = from.split('.');
+  const base = aliasTarget(head);
+
+  if (!base) return null;
+  if (rest.length === 0) return base;
+
+  const inner = rest.join('.');
+  const innerTarget = rest.length > MAX_ORIGIN_CHAIN ? null : aliasTarget(inner);
+  const baseRoute = matchRoute(base);
+
+  if (!innerTarget || innerTarget === base || base.includes('?') || !baseRoute || !ORIGIN_AWARE_ROUTES.includes(baseRoute)) {
+    return base;
+  }
+
+  return `${base}?from=${encodeURIComponent(inner)}`;
+}
+
 /** 공유 화면의 `from` 값을 실재하는 논리 부모로 바꾼다. 모르는 값은 추측하지 않는다. */
 function originTarget(route: string, pathname: string): string | null {
   if (!ORIGIN_AWARE_ROUTES.includes(route)) return null;
@@ -302,20 +426,34 @@ function originTarget(route: string, pathname: string): string | null {
   const from = queryValue(pathname, 'from');
   if (!from) return null;
 
-  const aliases: Readonly<Record<string, string>> = {
-    home: '/',
-    my: '/my',
-    search: '/search',
-    pick: '/pick',
-    wedding: '/wedding',
-    budget: '/wedding?tab=budget',
-    community: '/community/review',
-    reports: '/my/reports',
-  };
-  const vendor = from.match(/^vendor\/([^/?#]+)$/);
-  const target = aliases[from] ?? (vendor ? `/search/${vendor[1]}` : null);
+  return resolveOrigin(from);
+}
 
-  return target && matchRoute(target) ? target : null;
+/** `/wedding/partner?x` → `wedding`, `/` → ``. 탭 한 칸(=스택 하나)을 가르는 첫 조각. */
+function rootSegment(path: string): string {
+  return segmentsOf(path)[0] ?? '';
+}
+
+/**
+ * 두 주소가 서로 다른 탭(= 다른 스택)에 있는가. 첫 조각으로 가른다 — `/my/reviews`와 `/my`는
+ * 같은 스택, `/wedding/partner`와 `/my`는 다른 스택이다.
+ */
+export function crossesStack(fromPath: string, toPath: string): boolean {
+  return rootSegment(fromPath) !== rootSegment(toPath);
+}
+
+/**
+ * 뒤로가 **다른 탭의 스택**으로 건너가는가 — 출처가 있어 논리 부모가 현재 스택 밖에 있을 때다.
+ * 이때 네이티브 스택의 되돌리기 제스처(iOS 가장자리 스와이프)는 **현재 스택의 아래 화면**을
+ * 드러낼 뿐 출처로 가지 못한다. 화면은 이 값으로 제스처를 끄고 헤더 Back만 남긴다.
+ */
+export function crossesStackOnBack(pathname: string): boolean {
+  const route = matchRoute(pathname);
+  if (!route) return false;
+
+  const origin = originTarget(route, pathname);
+
+  return origin !== null && crossesStack(pathname, origin);
 }
 
 /**
@@ -377,4 +515,93 @@ export function resolveBackAction(pathname: string, canGoBack: boolean): BackAct
   if (hasHistoryBack(pathname) && canGoBack) return { kind: 'history' };
 
   return { kind: 'depth', target: depthBackTarget(pathname) };
+}
+
+/** 스택 내비게이터 상태에서 이 계산이 읽는 부분 — React Navigation `StackNavigationState`의 일부. */
+export type StackStateLike = {
+  index: number;
+  routes: readonly { name: string; params?: object }[];
+};
+
+function decodeSegment(segment: string): string {
+  return decodeQueryPart(segment) ?? segment;
+}
+
+/**
+ * 스택 한 장의 주소를 **그 스택 안에서의 조각**으로 되살린다 — 라우트 이름(`[vendorId]/images`)의
+ * `[param]` 자리를 그 화면의 params로 채우고, `index` · `(group)` 조각은 주소에 안 나오니 뺀다.
+ * 값이 비어 되살릴 수 없으면 null.
+ */
+function stackRouteSegments(route: { name: string; params?: object }): string[] | null {
+  const params = (route.params ?? {}) as Record<string, unknown>;
+  const segments: string[] = [];
+
+  for (const slot of route.name.split('/')) {
+    if (slot === '' || slot === 'index' || (slot.startsWith('(') && slot.endsWith(')'))) continue;
+    if (!isDynamic(slot)) {
+      segments.push(slot);
+      continue;
+    }
+
+    const value = params[paramName(slot)];
+    if (Array.isArray(value) && value.every((item) => typeof item === 'string')) {
+      segments.push(...(value as string[]));
+    } else if (typeof value === 'string' && value.length > 0) {
+      segments.push(value);
+    } else {
+      return null;
+    }
+  }
+
+  return segments;
+}
+
+/**
+ * Depth Back의 목적지가 **지금 스택 아래에 이미 있으면** 몇 장을 내려야 그 화면인가. 없으면 null.
+ *
+ * `dismissTo`(POP_TO)는 목적지 화면을 찾아도 그 화면의 params를 **목적지 주소의 값으로 갈아끼운다**
+ * (React Navigation StackRouter — merge 없음). 업체 상세에 붙어 있던 출처(`from=pick` ·
+ * `from=reviews` · `from=community.my`)가 사진 보기 · 후기 작성 · 정보 수정 제안에서 돌아오는 순간
+ * 지워져, 그다음 Back이 검색으로 떨어졌다(2026-09-26 대표 감사 — Pick → 내 조건에 맞는 곳 → 업체
+ * 상세). 이미 있는 화면으로는 **꺼내기(POP)**로 내려가 그 화면이 들고 있던 출처와 상태를 그대로 둔다.
+ *
+ * 목적지 주소에 쿼리가 있으면(`/wedding?tab=budget`) 그 값이 그 화면의 params와 같을 때만 센다 —
+ * 다르면 null이라 `dismissTo`가 값을 새로 넣는다. `currentPathname`은 지금 화면의 주소(쿼리 무관)다.
+ */
+export function stackPopCount(state: StackStateLike | null | undefined, currentPathname: string, target: string): number | null {
+  if (!state || !Array.isArray(state.routes) || state.index <= 0 || state.index >= state.routes.length) return null;
+
+  const currentRoute = state.routes[state.index];
+  const currentRelative = currentRoute ? stackRouteSegments(currentRoute) : null;
+  if (!currentRelative) return null;
+
+  const currentSegments = segmentsOf(currentPathname).map(decodeSegment);
+  const baseLength = currentSegments.length - currentRelative.length;
+  if (baseLength < 0 || currentSegments.slice(baseLength).join('/') !== currentRelative.join('/')) return null;
+
+  const base = currentSegments.slice(0, baseLength);
+  const targetPath = segmentsOf(target).map(decodeSegment).join('/');
+  const targetQuery = (target.split('?')[1]?.split('#')[0] ?? '')
+    .split('&')
+    .filter((pair) => pair.length > 0)
+    .map((pair) => {
+      const [key = '', value = ''] = pair.split('=');
+      return [decodeQueryPart(key) ?? key, decodeQueryPart(value) ?? value] as const;
+    });
+
+  for (let i = state.index - 1; i >= 0; i -= 1) {
+    const route = state.routes[i]!;
+    const relative = stackRouteSegments(route);
+    if (!relative || [...base, ...relative].join('/') !== targetPath) continue;
+
+    const params = (route.params ?? {}) as Record<string, unknown>;
+    const sameQuery = targetQuery.every(([key, value]) => {
+      const actual = params[key];
+      return (Array.isArray(actual) ? actual[0] : actual) === value;
+    });
+
+    return sameQuery ? state.index - i : null;
+  }
+
+  return null;
 }

@@ -221,9 +221,10 @@ export async function detail(pool: Pool, userId: string): Promise<MemberDetail |
     weddingIds.length === 0
       ? Promise.resolve({ rows: [] })
       : pool.query<{ category: string; vendor_name: string; decided_at: Date }>(
-          `SELECT cd.category::text AS category, v.name AS vendor_name, cd.decided_at
+          /* 직접 입력한 결정(0440)은 업체가 없다 — 적어 둔 이름을 쓴다. */
+          `SELECT cd.category::text AS category, coalesce(v.name, cd.manual_name) AS vendor_name, cd.decided_at
              FROM structured.category_decisions cd
-             JOIN structured.vendors v ON v.id = cd.vendor_id
+             LEFT JOIN structured.vendors v ON v.id = cd.vendor_id
             WHERE cd.wedding_id = ANY($1::uuid[])
             ORDER BY cd.decided_at DESC`,
           [weddingIds]

@@ -5,18 +5,24 @@ import {
 } from '@weddingpick/api-contract';
 import {
   MEMBER_TIER_LABEL,
+  PREPARATION_CATEGORIES,
+  PREPARATION_GROUPS,
   WEDDING_DATE_HINT,
   allMissionsDone,
   budgetBracketCeiling,
+  canAddCandidate,
   checkDisplayName,
   isSelectableWeddingDate,
+  manualDecisionCategory,
   tierOf,
   type MembershipFacts,
+  type PreparationGroupKey,
   type VendorCategory,
   type WeddingBudgetBracket,
   isWeddingStyle,
 } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
+import type { PoolClient } from 'pg';
 
 import { assertWeddingAccess } from '../access';
 import { currentUserId, requireUser } from '../auth/plugin';
@@ -213,6 +219,138 @@ async function loadCurrentUser(context: AppContext, userId: string) {
   };
 }
 
+/**
+ * 준비 현황(3/5)에서 고른 곳을 Pick에 담고 그 업종의 **결정**으로 남긴다.
+ *
+ * - 2026-09-26 대표 지시 「3/5에서 업체를 선택했다면 Pick 담은 곳에도 들어가야 한다」 —
+ *   목록에서 고른 업체는 `vendor_candidates`에 담는다.
+ * - 같은 날 두 번째 지시 「결정으로 넣는다」 — 그 업체를 업체의 업종 결정
+ *   (`category_decisions`)으로도 남긴다. 결정은 Pick한 곳이어야 하므로(0041
+ *   `decision_is_a_pick`) 담기가 먼저다.
+ * - 같은 날 「직접입력하는 방법 고안하라」 — 우리 목록에 없어 이름을 적은 곳은 업체가 없어
+ *   담기 없이 결정만 남긴다(0440 `manual_name`). 카드가 업종 여럿을 덮으므로 묶음의 첫
+ *   업종에 한 번만 적는다(`manualDecisionCategory`).
+ *
+ * **설정 저장과 같은 트랜잭션이다.** 앱이 저장 뒤에 담기 · 결정을 따로 부르면 둘 사이에서
+ * 끊겼을 때 «설정은 끝났는데 Pick은 비어 있는» 상태가 남고, 온보딩은 다시 열리지 않으니
+ * 사용자가 되돌릴 길이 없다. 새 계정은 이 요청이 웨딩을 만들기 전까지 웨딩 id도 없다.
+ * 그래서 여기서 한 번에 하고, 하나라도 못 하면 설정까지 통째로 되돌린다.
+ *
+ * - **다시 보내도 겹치지 않는다** — 담기는 `(wedding_id, vendor_id)`, 결정은
+ *   `(wedding_id, category)` 유일 제약에 `DO NOTHING`.
+ * - **이미 있는 결정은 덮지 않는다.** 배우자가 먼저 정한 업종이면 그 결정이 남고, 고른
+ *   업체는 후보로만 담긴다. 담은 사람도 바꾸지 않는다.
+ * - 업종은 업체가 정한다. 준비 순서 밖(«기타» · 더는 고르지 않는 업종)은 받지 않는다 —
+ *   Pick 묶음(웨딩홀 · 스드메 · 본식 · 예물 · 신혼)에 들어갈 자리가 없다.
+ * - 같은 요청에 준비 현황(`preparedCategories`)을 보냈으면 고른 곳의 업종이 그 안에 있어야
+ *   한다. 골랐는데 그 카드가 «결정 완료»가 아니면 홈과 Pick이 서로 다른 말을 한다.
+ * - 카드 하나(묶음 하나)에 한 곳 — 업체 둘, 업체와 직접 입력이 한 묶음에 오면 받지 않는다.
+ * - 상한(30곳)은 담기 경로와 같은 말로 막는다. 트리거 예외는 사람이 읽을 말이 아니다.
+ *   직접 입력은 후보가 아니라 상한에 들지 않는다.
+ */
+async function recordPreparedChoices(
+  client: PoolClient,
+  weddingId: string,
+  userId: string,
+  vendorIds: readonly string[],
+  manual: readonly { group: PreparationGroupKey; name: string }[],
+  /** 같은 요청의 준비 현황. 안 보냈으면 null — 그때는 업종이 준비 순서 안인지만 본다. */
+  prepared: readonly VendorCategory[] | null
+): Promise<void> {
+  if (vendorIds.length === 0 && manual.length === 0) return;
+
+  const vendors = await client.query<{ id: string; category: VendorCategory }>(
+    `SELECT id, category::text AS category FROM structured.vendors WHERE id = ANY($1::uuid[])`,
+    [vendorIds]
+  );
+
+  if (vendors.rows.length !== vendorIds.length) {
+    throw notFound('업체');
+  }
+
+  if (vendors.rows.some((row) => !PREPARATION_CATEGORIES.includes(row.category))) {
+    throw new ApiError('invalid_request', '준비 현황에 넣을 수 없는 업체예요.');
+  }
+
+  const manualRows = manual.map((one) => ({ ...one, category: manualDecisionCategory(one.group) }));
+  const chosen = [
+    ...vendors.rows.map((row) => row.category),
+    ...manualRows.map((row) => row.category),
+  ];
+
+  if (prepared !== null && chosen.some((category) => !prepared.includes(category))) {
+    throw new ApiError('invalid_request', '고른 업체의 업종이 준비 현황에 없어요.');
+  }
+
+  /* 카드 하나에 한 곳 — 묶음이 겹치면 어느 쪽이 그 카드의 결정인지 말할 수 없다. */
+  const groupOf = (category: VendorCategory) =>
+    PREPARATION_GROUPS.find((group) => group.categories.includes(category))?.key;
+  const groups = chosen.map(groupOf);
+
+  if (new Set(groups).size !== groups.length) {
+    throw new ApiError('invalid_request', '준비 현황 카드 하나에는 한 곳만 고를 수 있어요.');
+  }
+
+  if (vendorIds.length > 0) {
+    const counted = await client.query<{ total: string; fresh: string }>(
+      `SELECT (SELECT count(*) FROM structured.vendor_candidates WHERE wedding_id = $1) AS total,
+              (SELECT count(*) FROM unnest($2::uuid[]) AS picked(vendor_id)
+                WHERE NOT EXISTS (
+                  SELECT 1 FROM structured.vendor_candidates c
+                  WHERE c.wedding_id = $1 AND c.vendor_id = picked.vendor_id)) AS fresh`,
+      [weddingId, vendorIds]
+    );
+    const total = Number(counted.rows[0]!.total);
+    const fresh = Number(counted.rows[0]!.fresh);
+
+    /* 마지막 한 곳을 담기 직전의 수로 묻는다 — 담기 경로(`canAddCandidate`)와 같은 판정이다. */
+    const check = canAddCandidate({ currentCount: total + fresh - 1 });
+
+    if (fresh > 0 && !check.ok) {
+      throw new ApiError('invalid_request', check.reason);
+    }
+
+    /*
+     * 이미 담긴 곳은 아예 INSERT에 넣지 않는다. 상한 트리거(`enforce_candidate_limit`)는
+     * BEFORE INSERT라 `ON CONFLICT DO NOTHING`으로 걸러질 행에도 먼저 돈다 — 29곳 담긴
+     * 웨딩이 이미 담은 곳을 다시 보내도 막히게 된다. `ON CONFLICT`는 배우자와 동시에
+     * 담는 경합만 받는다.
+     */
+    await client.query(
+      `INSERT INTO structured.vendor_candidates (wedding_id, vendor_id, added_by)
+       SELECT $1, picked.vendor_id, $3 FROM unnest($2::uuid[]) AS picked(vendor_id)
+       WHERE NOT EXISTS (
+         SELECT 1 FROM structured.vendor_candidates c
+         WHERE c.wedding_id = $1 AND c.vendor_id = picked.vendor_id)
+       ON CONFLICT (wedding_id, vendor_id) DO NOTHING`,
+      [weddingId, vendorIds, userId]
+    );
+  }
+
+  /*
+   * 결정 — 업체는 업체의 업종에, 직접 입력은 묶음의 첫 업종에. 그 업종에 결정이 이미
+   * 있으면(배우자가 먼저 정했거나 같은 요청을 다시 보냈거나) 그대로 둔다.
+   */
+  const decisions = [
+    ...vendors.rows.map((row) => ({ category: row.category, vendorId: row.id, name: null })),
+    ...manualRows.map((row) => ({ category: row.category, vendorId: null, name: row.name })),
+  ];
+
+  await client.query(
+    `INSERT INTO structured.category_decisions (wedding_id, category, vendor_id, manual_name, decided_by)
+     SELECT $1, d.category::vendor_category, d.vendor_id, d.manual_name, $5
+     FROM unnest($2::text[], $3::uuid[], $4::text[]) AS d(category, vendor_id, manual_name)
+     ON CONFLICT (wedding_id, category) DO NOTHING`,
+    [
+      weddingId,
+      decisions.map((one) => one.category),
+      decisions.map((one) => one.vendorId),
+      decisions.map((one) => one.name),
+      userId,
+    ]
+  );
+}
+
 export function registerWeddingRoutes(app: FastifyInstance, context: AppContext): void {
   const auth = { preHandler: requireUser(context) };
 
@@ -240,6 +378,10 @@ export function registerWeddingRoutes(app: FastifyInstance, context: AppContext)
    *
    * 웨딩이 없으면 여기서 만든다. "먼저 웨딩을 만드세요"라고 할 자리가 아니다 —
    * 사용자에게 웨딩은 만드는 것이 아니라 이미 있는 것이다.
+   *
+   * 준비 현황에서 업체까지 골랐으면(`preparedVendorIds`) 같은 트랜잭션에서 Pick에 담고
+   * 결정으로 남긴다. 직접 입력한 곳(`preparedManualVendors`)은 결정만 남긴다
+   * (`recordPreparedChoices`). 안 보내면 Pick도 결정도 그대로다.
    */
   app.post('/v1/me/setup', auth, async (request) => {
     const userId = currentUserId(request);
@@ -258,9 +400,13 @@ export function registerWeddingRoutes(app: FastifyInstance, context: AppContext)
     /* 준비 현황도 같다 — 안 보내면 그대로, 빈 배열은 «아직 시작 전이에요». 같은 업종을 두 번 보내도 한 번만 적는다. */
     const preparedGiven = body.preparedCategories !== undefined;
     const prepared = [...new Set(body.preparedCategories ?? [])];
-    /* 스타일(5/5 · v3.22)도 같다 — 안 보내면 그대로. 최소 1 · 최대 2는 계약이 지킨다. */
+    /* 스타일(5/5 · v3.22)도 같다 — 안 보내면 그대로. 최소 1 · 개수 제한 없음(2026-09-26)은 계약이 지킨다. */
     const stylesGiven = body.styleTags !== undefined;
     const styles = [...new Set(body.styleTags ?? [])];
+    /* 준비 현황에서 고른 업체(2026-09-26). 같은 곳을 두 번 보내도 한 번만 담는다. */
+    const preparedVendorIds = [...new Set(body.preparedVendorIds ?? [])];
+    /* 준비 현황에서 직접 입력한 곳(2026-09-26). 계약이 앞뒤 공백을 뗐다. */
+    const preparedManual = body.preparedManualVendors ?? [];
 
     await withTransaction(context.pool, async (client) => {
       const existing = await client.query<{ id: string }>(
@@ -270,7 +416,7 @@ export function registerWeddingRoutes(app: FastifyInstance, context: AppContext)
         [userId]
       );
 
-      const weddingId = existing.rows[0]?.id;
+      let weddingId = existing.rows[0]?.id;
 
       if (weddingId) {
         await client.query(
@@ -285,15 +431,25 @@ export function registerWeddingRoutes(app: FastifyInstance, context: AppContext)
            WHERE id = $1`,
           [weddingId, body.weddingDate, region, bracketGiven, bracket, budget, preparedGiven, prepared, stylesGiven, styles]
         );
+      } else {
+        const created = await client.query<{ id: string }>(
+          `INSERT INTO structured.weddings
+             (owner_user_id, wedding_date, region, budget_bracket, budget_amount, prepared_categories, style_tags, setup_completed_at)
+           VALUES ($1, $2, $3, $4::wedding_budget_bracket, $5::bigint, $6::vendor_category[], $7::wedding_style[], now())
+           RETURNING id`,
+          [userId, body.weddingDate, region, bracket, budget, prepared, styles]
+        );
 
-        return;
+        weddingId = created.rows[0]!.id;
       }
 
-      await client.query(
-        `INSERT INTO structured.weddings
-           (owner_user_id, wedding_date, region, budget_bracket, budget_amount, prepared_categories, style_tags, setup_completed_at)
-         VALUES ($1, $2, $3, $4::wedding_budget_bracket, $5::bigint, $6::vendor_category[], $7::wedding_style[], now())`,
-        [userId, body.weddingDate, region, bracket, budget, prepared, styles]
+      await recordPreparedChoices(
+        client,
+        weddingId,
+        userId,
+        preparedVendorIds,
+        preparedManual,
+        preparedGiven ? prepared : null
       );
     });
 
@@ -383,7 +539,8 @@ export function registerWeddingRoutes(app: FastifyInstance, context: AppContext)
           [weddingId]
         ),
         context.pool.query<{ vendor_id: string }>(
-          'SELECT vendor_id FROM structured.category_decisions WHERE wedding_id = $1',
+          /* 직접 입력한 결정(0440)은 업체가 없어 지도에 설 자리가 없다. */
+          'SELECT vendor_id FROM structured.category_decisions WHERE wedding_id = $1 AND vendor_id IS NOT NULL',
           [weddingId]
         ),
       ]);

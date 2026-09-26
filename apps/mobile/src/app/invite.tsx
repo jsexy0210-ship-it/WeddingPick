@@ -9,7 +9,7 @@ import { Redirect } from 'expo-router';
  * (`scripts/apply-app-og-meta.mjs`가 export 뒤에 싣는다).
  *
  * 화면은 따로 그리지 않는다 — 앱 정본(`docs/design/React_Native`)에 초대 안내 화면이 없어
- * (`DESIGN_SOURCE_NOT_VERIFIED`) 새로 짓지 않고, 받은 코드 6자리를 넣는 기존 화면
+ * (`DESIGN_SOURCE_NOT_VERIFIED`) 새로 짓지 않고, 받은 코드 4자리를 넣는 기존 화면
  * (`/wedding/join`)으로 보낸다. 로그인하지 않았으면 루트가 로그인으로 먼저 보낸다.
  */
 export default function InviteLanding() {

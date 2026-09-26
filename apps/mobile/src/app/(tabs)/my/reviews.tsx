@@ -1,6 +1,6 @@
 import type { MyReport } from '@weddingpick/api-contract';
-import { router } from 'expo-router';
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import {
@@ -16,7 +16,8 @@ import {
 } from '@weddingpick/ui';
 import { listMyReports } from '@/api/client';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
-import { EmptyBox, Section, SubScreen } from '@/features/settings/my-kit';
+import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
+import { EmptyBox, Section, SubScreen, SubScreenStatus } from '@/features/settings/my-kit';
 
 /** 정본 `docs/design/React_Native/my.jsx` 프레임 6 «내가 쓴 후기 · WP-MY-006». */
 const S = {
@@ -73,19 +74,25 @@ export default function MyReviewsScreen() {
   const [reports, setReports] = useState<MyReport[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(() => {
+  /** `keep` — 당겨서 새로 고침. 보이던 목록은 두고 실패는 토스트로만 알린다. */
+  const load = useCallback((keep?: boolean) => {
     void listMyReports()
       .then((response) => {
         setError(null);
         setReports(response.reports);
       })
-      .catch((caught: Error) => setError(caught.message ?? S.loadError));
+      .catch((caught: Error) => {
+        if (keep === true) notifyRefreshFailed();
+        else setError(caught.message ?? S.loadError);
+      });
   }, []);
 
-  useEffect(load, [load]);
+  /* 후기 작성 · 업체 상세에서 돌아오면 다시 센다 — 방금 쓴 후기가 «쓴 후기»로 옮겨 가야 한다. */
+  useFocusEffect(useCallback(() => load(), [load]));
+  const pull = usePullRefresh(useCallback(() => load(true), [load]));
 
-  if (error) return <ErrorView message={error} onRetry={load} />;
-  if (reports === null) return <DelayedLoadingView />;
+  if (error) return <SubScreenStatus title={S.title}><ErrorView message={error} onRetry={() => load()} /></SubScreenStatus>;
+  if (reports === null) return <SubScreenStatus title={S.title}><DelayedLoadingView /></SubScreenStatus>;
 
   const written = reports.filter((report) => report.kind === 'review');
   /* 이미 후기를 쓴 업체는 «쓸 수 있는 곳»에서 뺀다 — 한 사람이 한 업체에 하나다(reviews 계약). */
@@ -99,7 +106,7 @@ export default function MyReviewsScreen() {
   );
 
   return (
-    <SubScreen title={S.title}>
+    <SubScreen title={S.title} refreshControl={pull.refreshControl}>
       <Section title={`${S.written} ${written.length}개`}>
         {written.length > 0 ? (
           <ListCard>
@@ -114,7 +121,7 @@ export default function MyReviewsScreen() {
                 onPress={
                   report.vendorId === null
                     ? undefined
-                    : () => router.push(`/search/${report.vendorId}`)
+                    : () => router.push(`/search/${report.vendorId}?from=reviews`)
                 }
               />
             ))}
@@ -134,7 +141,7 @@ export default function MyReviewsScreen() {
                 meta={`${S.verified} · ${monthDay(report.reportedAt)}`}
                 write
                 last={index === writable.length - 1}
-                onPress={() => router.push(`/search/${report.vendorId}/write-review`)}
+                onPress={() => router.push(`/search/${report.vendorId}/write-review?from=reviews`)}
                 accessibilityLabel={`${report.subject} 후기 쓰기`}
               />
             ))}

@@ -23,7 +23,7 @@ import { Avatar, Dock, Field, Hero, NavBar, NoteCard, Screen } from '@/features/
 const S = {
   nav: '초대 받음',
   codeTitle: '초대 코드를 넣어주세요',
-  codeSub: '배우자에게 받은 숫자 6자리를 넣어주세요',
+  codeSub: `배우자에게 받은 숫자 ${INVITE_CODE_LENGTH}자리를 넣어주세요`,
   codeField: '초대 코드',
   check: '확인하기',
   /* WP-CPL-002 avatarSec — 초대자 이름 · 예식일은 서버가 안 준다(개인정보). 아래 참고. */
@@ -65,7 +65,7 @@ export default function JoinScreen() {
   const theme = useTheme();
   const params = useLocalSearchParams<{ code?: string }>();
   const [typed, setTyped] = useState<string | null>(null);
-  /* 초대 코드는 숫자 6자리다(2026-09-25 대표 지시). 숫자 밖의 글자는 입력칸에 남기지 않는다. */
+  /* 초대 코드는 숫자 4자리다(2026-09-26 대표 지시 · 그 전 6자리). 숫자 밖의 글자는 입력칸에 남기지 않는다. */
   const code = typed ?? normalizeInviteCode(params.code?.trim() ?? '');
   const [preview, setPreview] = useState<InvitePreviewResponse | null>(null);
   const [busy, setBusy] = useState(false);
@@ -224,19 +224,16 @@ export default function JoinScreen() {
           ) : null}
         </ScrollView>
 
+        {/* 정본 dockPair — 나중에 flex 1 · 수락하기 flex 1.4. 비율은 공용 Dock(CtaRow)이 준다. */}
         <Dock>
-          <View style={styles.dockGhost}>
-            <ActionButton variant="ghost" size="sheet" label={S.later} onPress={depthBack} />
-          </View>
-          <View style={styles.dockPrimary}>
-            <ActionButton
-              variant="primary"
-              size="sheet"
-              label={busy ? '연결 중…' : S.accept}
-              disabled={busy}
-              onPress={() => void join()}
-            />
-          </View>
+          <ActionButton variant="ghost" size="sheet" label={S.later} onPress={depthBack} />
+          <ActionButton
+            variant="primary"
+            size="sheet"
+            label={busy ? '연결 중…' : S.accept}
+            disabled={busy}
+            onPress={() => void join()}
+          />
         </Dock>
       </Screen>
     );
@@ -254,7 +251,7 @@ export default function JoinScreen() {
             label={S.codeField}
             value={code}
             onChangeText={(text) => {
-              // 옛 링크를 통째로 붙여넣어도 코드를 꺼내 쓴다. 남는 것은 숫자 6자리뿐이다.
+              // 옛 링크를 통째로 붙여넣어도 코드를 꺼내 쓴다. 남는 것은 숫자 4자리뿐이다.
               setTyped(normalizeInviteCode(inviteCodeFromLink(text.trim()) ?? text));
               setPreview(null);
             }}
@@ -264,7 +261,7 @@ export default function JoinScreen() {
             inputMode="numeric"
             maxLength={INVITE_CODE_LENGTH}
             textContentType="oneTimeCode"
-            placeholder="000000"
+            placeholder={'0'.repeat(INVITE_CODE_LENGTH)}
             hint={preview && !preview.usable ? preview.message : null}
             hintColor="negative"
           />
@@ -342,6 +339,4 @@ const styles = StyleSheet.create({
   avatarOverlap: { marginLeft: -12 },
   coupleCol: { flex: 1, minWidth: 0, gap: Spacing.one },
 
-  dockGhost: { flex: 1 },
-  dockPrimary: { flex: 1.4 },
 });

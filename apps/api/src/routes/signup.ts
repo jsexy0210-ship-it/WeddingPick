@@ -57,6 +57,7 @@ export function registerSignupRoutes(app: FastifyInstance, context: AppContext):
     );
 
     const granted = consents.rows.map((row) => ({ item: row.item, version: row.terms_version }));
+    const missing = missingRequiredConsents(granted);
 
     const agreements = CONSENT_ITEMS.map((item) => {
       const match = consents.rows.find(
@@ -81,7 +82,9 @@ export function registerSignupRoutes(app: FastifyInstance, context: AppContext):
         (LEGACY_SIGNUP_ITEMS as readonly string[]).includes(item.item)
       ),
       agreements,
-      missingRequired: missingRequiredConsents(granted),
+      /* 옛 앱이 아는 항목만 — 새 항목이 섞이면 옛 앱이 응답 전체를 거절한다(api-contract signup.ts). */
+      missingRequired: missing.filter((item) => (LEGACY_SIGNUP_ITEMS as readonly string[]).includes(item)),
+      missingAgreements: missing,
     };
   }
 
@@ -150,7 +153,8 @@ export function registerSignupRoutes(app: FastifyInstance, context: AppContext):
        *
        * v3.29 약관 동의 여덟 칸이 전부 여기로 온다(2026-09-26 대표 감사 8). 항목마다
        * 판(`terms_version`) · 필수 여부 · 공개된 글(`terms_version_id`)이 한 줄씩 남는다.
-       * 옛 앱이 보내는 `terms` · `privacy` · `marketing`만 온 요청도 그대로 받는다.
+       * 필수 다섯 중 하나라도 빠지면 아래 `canActivate`가 거절한다(2026-09-26 대표 결정
+       * 「강제한다」). 받은 동의는 그래도 남긴다 — 사용자가 한 동의다.
        */
       for (const item of new Set(body.consents as ConsentItem[])) {
         const definition = CONSENT_ITEMS.find((candidate) => candidate.key === item);

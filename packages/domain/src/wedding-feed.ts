@@ -12,6 +12,8 @@
  * 어디서나 「자동 작성」이다.
  */
 
+import type { VendorCategory } from './vendor';
+
 export const WEDDING_FEED_STATUSES = ['draft', 'published', 'archived'] as const;
 export type WeddingFeedStatus = (typeof WEDDING_FEED_STATUSES)[number];
 
@@ -44,6 +46,115 @@ export const WEDDING_FEED_LIMITS = {
 } as const;
 
 /**
+ * ── 칩과 카테고리 — 관리자와 앱이 함께 보는 목록 하나 ─────────────────────
+ *
+ * 2026-09-26 대표 지적 — 「관리자 웨딩피드 카테고리와 앱웹 카테고리와 정보가 전혀 다르다」.
+ *
+ * **왜 달랐나.** 2026-09-16부터 탭·카테고리는 표(0421)에 있었고 관리자가 고쳤다(탭
+ * 준비·예산 · 업체·서비스 · 계약·여행). 그 탭을 그리던 앱 화면 `(home)/feed.tsx`는
+ * 2026-09-25 정본에 없는 화면이라 지워졌고(#535), 남은 앱 목록 — 라운지 「웨딩정보」
+ * (WP-LNG-002) — 은 정본 칩을 코드에 박아 그렸다(#537). 그 뒤로 관리자에서 탭을
+ * 고쳐도 앱은 아무것도 바뀌지 않았고, 관리자 화면만 「앱은 여기 있는 것을 그린다」고
+ * 적고 있었다.
+ *
+ * **칩은 정본이 정한다.** `docs/design/React_Native/my.js` `cats` — 전체 · 웨딩홀 ·
+ * 스드메 · 본식 · 예물 · 신혼 · 예산. 앱 화면의 정본은 이 폴더 하나라(CLAUDE.md
+ * 2026-09-24 절대 지침) 관리자가 바꿀 수 있는 값이 아니다. 그래서 표가 아니라 여기
+ * 상수로 두고 서버 검사 · 관리자 화면 · 앱 칩이 전부 이것을 본다.
+ *
+ * **칩 키는 준비 현황 그룹 키와 같다**(`PREPARATION_GROUPS` — start · sdm · ceremony ·
+ * goods). 라운지 후기 칩이 같은 줄을 쓰고 업종 묶음도 같다. «예산»만 업종이 아니다.
+ */
+export const WEDDING_FEED_CHIPS = [
+  { key: 'all', label: '전체' },
+  { key: 'start', label: '웨딩홀' },
+  { key: 'sdm', label: '스드메' },
+  { key: 'ceremony', label: '본식' },
+  { key: 'goods', label: '예물 · 신혼' },
+  { key: 'budget', label: '예산' },
+] as const;
+
+export type WeddingFeedChipKey = (typeof WEDDING_FEED_CHIPS)[number]['key'];
+export type WeddingFeedChipLabel = (typeof WEDDING_FEED_CHIPS)[number]['label'];
+
+/**
+ * 글 한 편이 고르는 카테고리 — 카드 위 작은 줄(배지)에 그대로 나간다.
+ *
+ * **칩과 다른 층이다.** 칩은 추리는 도구이고 배지는 무엇에 관한 글인지를 말한다 —
+ * 정본도 칩은 «스드메»인데 카드 배지는 «드레스» · «스튜디오»다(my.js `guides`).
+ *
+ * `chip`이 null이면 어느 칩에도 안 들고 «전체»에서만 보인다. 정본 칩 다섯에 맞는
+ * 자리가 없는 넷(체크리스트 · 일정 · 하객 · 계약)이 그렇다 — 정본 카드도 «일정» ·
+ * «체크리스트» 배지를 달지만 그 이름의 칩은 없다.
+ *
+ * 이름은 정본을 따른다. 업종은 `VENDOR_CATEGORY_LABEL`과 같은 글자다(본식스냅 ·
+ * 헤어변형 — CLAUDE.md 2026-09-11). **«준비 순서»는 «일정»으로 바꿨다** — 같은 자리
+ * («무엇부터 정하나»)를 정본은 «일정»으로 적는다(my.js `guides` lg-3 · `relGuides`
+ * rl-2 · 스크랩 sv-3 세 번, «준비 순서» 0번). 표와 쌓인 글은 0442가 옮긴다.
+ *
+ * **결정사는 없다** — 2026-09-24 대표 지시(0433). 다시 넣지 않는다.
+ */
+export type WeddingFeedCategoryDef = {
+  /** 바뀌지 않는 이름표. 자동 작성 주제 · 준비 단계가 이 키로 가리킨다. */
+  key: string;
+  /** 배지 글자 = 표의 `category_label`. */
+  label: string;
+  /** 어느 칩에 드는가. null이면 «전체»에서만. */
+  chip: Exclude<WeddingFeedChipKey, 'all'> | null;
+  /** 업종 이야기면 그 업종. 준비 단계가 업종으로 글을 찾을 때 쓴다. */
+  vendorCategory: VendorCategory | null;
+};
+
+export const WEDDING_FEED_CATEGORIES = [
+  { key: 'hall', label: '웨딩홀', chip: 'start', vendorCategory: 'hall' },
+  { key: 'studio', label: '스튜디오', chip: 'sdm', vendorCategory: 'studio' },
+  { key: 'dress', label: '드레스', chip: 'sdm', vendorCategory: 'dress' },
+  { key: 'makeup', label: '메이크업', chip: 'sdm', vendorCategory: 'makeup' },
+  { key: 'hair', label: '헤어변형', chip: 'sdm', vendorCategory: 'hair' },
+  { key: 'snap', label: '본식스냅', chip: 'ceremony', vendorCategory: 'snap' },
+  { key: 'honeymoon', label: '허니문', chip: 'goods', vendorCategory: 'honeymoon' },
+  { key: 'budget', label: '예산', chip: 'budget', vendorCategory: null },
+  { key: 'checklist', label: '체크리스트', chip: null, vendorCategory: null },
+  { key: 'schedule', label: '일정', chip: null, vendorCategory: null },
+  { key: 'guest', label: '하객', chip: null, vendorCategory: null },
+  { key: 'contract', label: '계약', chip: null, vendorCategory: null },
+] as const satisfies readonly WeddingFeedCategoryDef[];
+
+export type WeddingFeedCategoryEntry = (typeof WEDDING_FEED_CATEGORIES)[number];
+export type WeddingFeedCategoryKey = WeddingFeedCategoryEntry['key'];
+export type WeddingFeedCategoryLabel = WeddingFeedCategoryEntry['label'];
+
+/** 고를 수 있는 카테고리 이름. 서버 검사 · 관리자 고르기가 이것을 본다. */
+export const WEDDING_FEED_CATEGORY_LABELS: readonly WeddingFeedCategoryLabel[] =
+  WEDDING_FEED_CATEGORIES.map((category) => category.label);
+
+/**
+ * 이름으로 카테고리를 찾는다. **글자가 정확히 같을 때만이다** — 「웨딩홀 」(뒤 공백)을
+ * 웨딩홀로 봐주면 무엇이 잘못 적혀 있었는지가 사라진다. 없으면 null.
+ */
+export function weddingFeedCategoryOf(label: string): WeddingFeedCategoryEntry | null {
+  return WEDDING_FEED_CATEGORIES.find((category) => category.label === label) ?? null;
+}
+
+export function isWeddingFeedCategoryLabel(label: string): label is WeddingFeedCategoryLabel {
+  return weddingFeedCategoryOf(label) !== null;
+}
+
+/** 이 이름의 글이 드는 칩. null이면 «전체»에서만 보인다(칩 없는 카테고리 · 목록 밖 이름). */
+export function weddingFeedChipOf(label: string): Exclude<WeddingFeedChipKey, 'all'> | null {
+  return weddingFeedCategoryOf(label)?.chip ?? null;
+}
+
+export function weddingFeedChipLabel(key: WeddingFeedChipKey): WeddingFeedChipLabel {
+  return WEDDING_FEED_CHIPS.find((chip) => chip.key === key)!.label;
+}
+
+/** 칩을 눌렀을 때 이 글이 남는가. «전체»는 모두 남긴다. */
+export function weddingFeedMatchesChip(chip: WeddingFeedChipKey, categoryLabel: string): boolean {
+  return chip === 'all' || weddingFeedChipOf(categoryLabel) === chip;
+}
+
+/**
  * 자동 작성이 고르는 주제.
  *
  * **자유롭게 쓰게 두지 않는다.** 주제를 모델이 정하면 같은 이야기가 다른 제목으로
@@ -58,8 +169,8 @@ export const WEDDING_FEED_LIMITS = {
  */
 export type WeddingFeedTopic = {
   key: string;
-  /** 카드 위 작은 줄에 그대로 들어간다. */
-  categoryLabel: string;
+  /** 카드 위 작은 줄에 그대로 들어간다. 위 목록의 이름만 쓸 수 있다. */
+  categoryLabel: WeddingFeedCategoryLabel;
   /** 모델에게 주는 한 줄. 무엇을 쓸 글인지. */
   brief: string;
   /**
@@ -86,11 +197,11 @@ export const WEDDING_FEED_TOPICS: readonly WeddingFeedTopic[] = [
   { key: 'hair-change', categoryLabel: '헤어변형', brief: '헤어변형이 무엇이고 언제 정하나' },
   { key: 'honeymoon-plan', categoryLabel: '허니문', brief: '허니문 일정을 짜는 순서' },
   { key: 'contract-check', categoryLabel: '계약', brief: '계약 전에 확인할 조건' },
-  { key: 'schedule-order', categoryLabel: '준비 순서', brief: '무엇부터 정하는 것이 좋은가' },
+  { key: 'schedule-order', categoryLabel: '일정', brief: '무엇부터 정하는 것이 좋은가' },
   { key: 'guest-count', categoryLabel: '하객', brief: '하객 수를 가늠하는 법' },
   {
     key: 'stats-marriage-seoul',
-    categoryLabel: '준비 순서',
+    categoryLabel: '일정',
     brief: '서울 혼인 건수로 보는 결혼 준비 흐름',
     statKeys: ['seoul.marriage.count'],
   },
@@ -110,29 +221,6 @@ export function topicsMissingStats(availableStatKeys: readonly string[]): string
     (topic.statKeys ?? []).some((key) => !available.has(key))
   ).map((topic) => topic.key);
 }
-
-/**
- * 화면 위 탭 — **전체 · 준비·예산 · 업체·서비스 · 계약·여행**(2026-09-16 대표 지시).
- *
- * **값은 더 이상 여기 없다.** 2026-09-16까지 `WEDDING_FEED_GROUPS` 상수가 탭 넷을
- * 들고 있었고, 바꾸려면 코드를 고쳐 배포해야 했다. 같은 날 대표 지시 「웨딩피드는
- * 탭별 카테고리별로 다 설정 가능해야한다」로 표(0421)로 옮겼다 — 씨앗값이 그 상수와
- * 글자 하나까지 같아서 옮긴 직후 화면이 그대로다.
- *
- * 옮기면서 남긴 판단은 그대로 유효하다. **웨딩홀 · 스튜디오 · 드레스를 각각 위로
- * 올리지 않는다** — 일곱이 전부 「어느 업체를 고르나」 하나라서 묶으면 하나로 읽히고,
- * 풀면 탭 줄이 넘친다(대표님 말씀 — 「카테고리가 너무 많다 … 사용자가 웨딩 준비보다
- * 탭 읽다가 지칩니다」). 이제는 그것이 규칙이 아니라 **운영자가 표에서 정하는 값**이다.
- *
- * **카드의 배지는 원래 카테고리명 그대로다.** 탭은 추리는 도구이고 배지는 무엇에 관한
- * 글인지를 말한다 — 배지까지 「업체·서비스」로 바꾸면 카드 세 장이 같은 말을 달게 된다.
- * 그래서 탭은 `categoryLabel`을 대체하지 않고 그 위에 한 겹 얹는다.
- *
- * 아래 `WEDDING_FEED_ALL_TAB` · `buildFeedTabs` · `findUngroupedCategories`가 그
- * 모양과 규칙을 잇는다. **「모든 카테고리가 어느 탭에 드는가」를 세던 시험도 옮겼다** —
- * 상수를 세는 것은 늘 맞고, 틀릴 수 있는 것은 운영자가 고친 뒤의 표다
- * (`packages/db/src/wedding-feed-taxonomy.test.ts`).
- */
 
 /**
  * 공개된 글이 이보다 적으면 자동 작성이 돈다.
@@ -175,6 +263,15 @@ export function checkWeddingFeedInput(input: WeddingFeedInput): WeddingFeedProbl
   for (const [field, value, max] of required) {
     if (value.trim() === '') problems.push({ field, message: '비어 있어요' });
     else if (value.length > max) problems.push({ field, message: `${max}자를 넘겨요` });
+  }
+
+  /*
+   * **목록 밖 이름은 받지 않는다.** 받으면 그 글은 어느 칩에도 안 들고 «전체»에서만
+   * 보이는데 오류도 안 나고 관리자 표에서는 멀쩡해 보인다. 자동 작성도 이 검사를
+   * 거친다 — 화면의 고르기만으로는 화면을 안 거치는 길을 못 막는다.
+   */
+  if (input.categoryLabel.trim() !== '' && !isWeddingFeedCategoryLabel(input.categoryLabel)) {
+    problems.push({ field: 'categoryLabel', message: '목록에 없는 카테고리예요' });
   }
 
   if (input.summary.length > WEDDING_FEED_LIMITS.summary) {
@@ -225,105 +322,34 @@ export function shouldGenerate(input: {
 }
 
 /**
- * ── 탭과 카테고리 ─────────────────────────────────────────────────────────
+ * ── 공개 목록 응답의 `tabs` ─────────────────────────────────────────────
  *
- * 2026-09-16 대표 지시 — 「웨딩피드는 탭별 카테고리별로 다 설정 가능해야한다」.
+ * `/v1/wedding-feed`가 글과 함께 내려주는 칩 줄. **위 상수에서 만든다** — 표에서 읽던
+ * 시절(0421 · 2026-09-16~26)에는 관리자가 고친 탭이 여기로 나갔는데, 그 값을 그리는
+ * 앱 화면은 이미 없었다. 이제 앱 칩과 같은 줄이 나간다. 이미 깔린 앱이 이 칸을
+ * 필수로 읽으므로 칸은 남긴다.
  *
- * **값은 여기 없다.** 탭과 카테고리는 `structured.wedding_feed_groups` ·
- * `structured.wedding_feed_categories`에 있고(0421) 관리자가 고친다. 여기 남는
- * 것은 값이 아니라 **모양과 규칙**이다 — 서버 · 관리자 · 앱이 같은 것을 본다.
- */
-
-/**
- * 「전체」 탭.
- *
- * **표에 넣지 않고 여기 둔다.** 다른 탭은 「이 카테고리들을 보여준다」인데 이것은
- * 「거르지 않는다」라서 담을 카테고리가 없다. 순서를 바꾸거나 꺼야 할 이유도 없다 —
- * 끄면 사용자가 글 전체를 볼 방법이 사라지고, 그것은 설정이 아니라 고장이다.
- *
- * 표에 두면 「모든 카테고리는 어느 탭에 드는가」를 볼 때마다 이 한 줄만 빼고 세야
- * 한다. 규칙에 예외를 하나 만드는 것보다 규칙 밖에 두는 편이 낫다.
- */
-export const WEDDING_FEED_ALL_TAB = { key: 'all', label: '전체' } as const;
-
-export type WeddingFeedGroup = {
-  id: string;
-  name: string;
-  sortOrder: number;
-  active: boolean;
-};
-
-export type WeddingFeedCategory = {
-  id: string;
-  name: string;
-  /** 어느 탭인가. 탭이 지워지면 null이 된다 — 그 상태를 보이게 두는 것이 요점이다. */
-  groupId: string | null;
-  sortOrder: number;
-  active: boolean;
-};
-
-/** 탭 이름·카테고리 이름의 한도. 탭 줄에 들어가는 길이라 카테고리와 같이 둔다. */
-export const WEDDING_FEED_TAXONOMY_LIMITS = {
-  groupName: 20,
-  categoryName: WEDDING_FEED_LIMITS.categoryLabel,
-} as const;
-
-/**
- * 어느 탭에도 안 든 카테고리.
- *
- * **이것이 이 파일에서 가장 중요한 함수다.** 카테고리가 탭에서 떨어지면 그 값으로
- * 쌓인 글은 「전체」에서만 보인다 — 오류도 안 나고 목록에서는 멀쩡해 보여서,
- * 운영자가 「왜 이 글이 탭에 안 뜨지」를 묻기 전까지 아무도 모른다. 관리자 화면이
- * 이 목록을 경고로 띄운다.
- *
- * **꺼진 카테고리는 세지 않는다.** 꺼 둔 것은 애초에 앱에 안 나가므로 탭이 없어도
- * 달라지는 것이 없다 — 그것까지 경고하면 경고가 늘 켜져 있고, 늘 켜져 있는 경고는
- * 아무도 읽지 않는다.
- */
-export function findUngroupedCategories(
-  categories: readonly WeddingFeedCategory[]
-): readonly WeddingFeedCategory[] {
-  return categories.filter((category) => category.active && category.groupId === null);
-}
-
-/**
- * 탭 하나에 붙는 카테고리 이름들. 꺼진 것은 빠지고 순서대로 나온다.
- *
- * 앱은 이 이름으로 글을 거른다 — 글이 들고 있는 것이 `categoryLabel` 문자열이라서다.
- */
-export function categoryNamesOfGroup(
-  group: WeddingFeedGroup,
-  categories: readonly WeddingFeedCategory[]
-): readonly string[] {
-  return categories
-    .filter((category) => category.active && category.groupId === group.id)
-    .slice()
-    .sort((a, b) => a.sortOrder - b.sortOrder)
-    .map((category) => category.name);
-}
-
-/**
- * 앱이 그릴 탭 줄.
- *
- * **카테고리가 하나도 없는 탭은 뺀다.** 눌렀는데 늘 비어 있는 탭은 있는 것이
- * 없는 것보다 나쁘다. 「전체」는 언제나 맨 앞이고 언제나 있다.
+ * 「전체」가 맨 앞이고 `categories`가 빈 배열이다 — 거르지 않는다는 뜻이다.
  */
 export type WeddingFeedTab = { key: string; label: string; categories: readonly string[] };
 
-export function buildFeedTabs(
-  groups: readonly WeddingFeedGroup[],
-  categories: readonly WeddingFeedCategory[]
-): readonly WeddingFeedTab[] {
-  const tabs = groups
-    .filter((group) => group.active)
-    .slice()
-    .sort((a, b) => a.sortOrder - b.sortOrder)
-    .map((group) => ({
-      key: group.id,
-      label: group.name,
-      categories: categoryNamesOfGroup(group, categories),
-    }))
-    .filter((tab) => tab.categories.length > 0);
+export const WEDDING_FEED_TABS: readonly WeddingFeedTab[] = WEDDING_FEED_CHIPS.map((chip) => ({
+  key: chip.key,
+  label: chip.label,
+  categories:
+    chip.key === 'all'
+      ? []
+      : WEDDING_FEED_CATEGORIES.filter((category) => category.chip === chip.key).map(
+          (category) => category.label
+        ),
+}));
 
-  return [{ key: WEDDING_FEED_ALL_TAB.key, label: WEDDING_FEED_ALL_TAB.label, categories: [] }, ...tabs];
-}
+/**
+ * 라운지 「웨딩정보」가 한 번에 받는 공개 글 수.
+ *
+ * **여덟에서 늘렸다.** 라운지가 수를 안 적고 부르면 서버 기본값(자동 작성 목표
+ * `WEDDING_FEED_TARGET_PUBLISHED` = 8)이 걸려, 관리자가 아홉째 글을 공개해도 앱
+ * 목록에는 안 나왔다 — 관리자 표에는 «공개»로 떠 있는데. 목록 화면은 공개된 글을
+ * 전부 보여주는 자리라 넉넉히 받는다.
+ */
+export const WEDDING_FEED_LOUNGE_LIMIT = 100;

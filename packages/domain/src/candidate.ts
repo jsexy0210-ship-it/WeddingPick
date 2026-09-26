@@ -1,4 +1,4 @@
-import type { VendorCategory } from './vendor';
+import { PREPARATION_GROUPS, type PreparationGroupKey, type VendorCategory } from './vendor';
 
 /**
  * 후보 업체.
@@ -63,3 +63,24 @@ export function comparableWithin(count: number): boolean {
 
 /** 담을 때 함께 남기는 말의 길이. 길면 목록이 읽히지 않는다. */
 export const MAX_CANDIDATE_NOTE_LENGTH = 200;
+
+/**
+ * 직접 입력한 결정의 이름 길이(2026-09-26 대표 지시 「직접입력하는 방법 고안하라」).
+ *
+ * 우리 목록에 없는 곳으로 이미 정했을 때 온보딩 3/5 시트에서 이름을 적는다. 예식장 ·
+ * 업체 이름이라 짧다 — 한 줄 카드(3/5 · 홈 · Pick)에서 넘치지 않을 만큼만 받는다.
+ * DB 제약(0440 `decision_manual_name_shape`)과 같은 수다.
+ */
+export const MANUAL_DECISION_NAME_MAX = 30;
+
+/**
+ * 준비 묶음에서 결정이 들어갈 업종 — 그 묶음의 첫 업종이다.
+ *
+ * 온보딩 3/5 카드 하나가 업종 여럿을 덮는다(스드메 = 스튜디오 · 드레스 · 메이크업 ·
+ * 헤어변형). 결정은 업종마다 하나라(0041) 직접 입력한 이름은 **묶음의 첫 업종**에
+ * 한 번만 남긴다 — 넷 모두에 같은 이름을 적으면 «드레스를 ○○ 스튜디오로 정했다»는
+ * 거짓 결정이 생긴다. 목록에서 고른 업체는 업체의 업종이 정하므로 이 함수를 쓰지 않는다.
+ */
+export function manualDecisionCategory(group: PreparationGroupKey): VendorCategory {
+  return PREPARATION_GROUPS.find((one) => one.key === group)!.categories[0]!;
+}

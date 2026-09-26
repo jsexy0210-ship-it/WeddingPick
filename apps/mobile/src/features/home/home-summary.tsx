@@ -17,6 +17,7 @@ import strings from '../../../../../spec/strings.ko.json';
 import { budgetProgress } from './canon-state';
 import type { HomePrepCard } from './prep-groups';
 import { PrepCheckFill, PrepGroupIcon } from './prep-icons';
+import { HOME_PAGE_X } from '@/features/home/home-layout';
 
 const S = strings.home;
 
@@ -204,7 +205,8 @@ const styles = StyleSheet.create({
    * `heading.marginBottom`에 둔다). `section` 자체는 더 안 벌리므로 gap 없음.
    */
   section: {
-    paddingHorizontal: Layout.gutter,
+    /* `hsec` · `prepGridPad` 좌우 20 — 홈 전용 여백(home-layout). */
+    paddingHorizontal: HOME_PAGE_X,
     marginBottom: 24,
   },
   heading: {

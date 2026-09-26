@@ -92,8 +92,17 @@ const setup = read('apps/mobile/src/app/setup.tsx');
 const paymentProofRoute = read('apps/api/src/routes/payment-proofs.ts');
 const search = read('apps/mobile/src/app/(tabs)/search/index.tsx');
 
-if (!style.includes('STYLE_PICK_MAX = 2')) fail('스타일 최대 2개 계약이 아님');
-if (!setup.includes('STYLE_PICK_LIMIT_TOAST')) fail('온보딩 3번째 선택 토스트가 없음');
+/*
+ * 스타일은 최소 1개 · 개수 제한 없음(2026-09-26 대표 결정 「개수제한 없다」 — 정본 WP-AUTH-006
+ * `React_Native/home.jsx:328` 「개수 제한 없이 원하는 만큼」과 같다). 전의 「최대 2 · 3번째 토스트」
+ * 계약이 되살아나면 막는다.
+ */
+const taste = read('apps/mobile/src/app/(tabs)/my/taste.tsx');
+if (!style.includes('STYLE_PICK_MIN = 1')) fail('스타일 최소 1개 계약이 아님');
+if (/STYLE_PICK_MAX/.test(style)) fail('스타일 최대 개수가 되살아남 — 2026-09-26 대표 결정은 개수 제한 없음');
+for (const [name, source] of [['setup.tsx', setup], ['my/taste.tsx', taste]]) {
+  if (source.includes('STYLE_PICK_LIMIT_TOAST')) fail(`${name}에 스타일 개수 제한 토스트가 남아 있음`);
+}
 /* 앱의 Pick 인증 촬영 화면은 2026-09-25 대표 지시로 삭제했다 — 서버 쪽 한 장 계약만 남는다. */
 if (!paymentProofRoute.includes('images.length !== 1')) fail('API가 Pick 인증 사진 한 장 계약을 강제하지 않음');
 /*

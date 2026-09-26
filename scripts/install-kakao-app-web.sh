@@ -207,6 +207,55 @@ server {
         proxy_read_timeout 60s;
     }
 
+    # 문서 원본 한 장(예산 추가 «자동 등록» 결제 사진 · PUT /v1/documents/:id/pages/:n) — 서버
+    # bodyLimit(documents.ts MAX_FILE_SIZE 10MB)과 같게. 기본 1MB면 휴대폰 사진이 서버에 닿기 전에
+    # 413으로 막힌다(웹은 앱이 950KB 안으로 줄이지만 네이티브는 원본을 보낸다). /v1/보다 긴 접두라 이쪽이 이긴다.
+    location ^~ /v1/documents/ {
+        client_max_body_size 10m;
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$remote_addr;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_connect_timeout 10s;
+        proxy_read_timeout 60s;
+    }
+
+    # 상담 녹음 원본(PUT /v1/consultations/:id/audio · 2026-09-26 같은 출처 올리기) — 서버 상한
+    # (consultations.ts MAX_BYTES 100MB)과 같게. 브라우저 → Object Storage 서명 URL은 CORS에서 막혀
+    # 녹음 본문이 이 길로 API를 지난다. 본문은 Nginx가 다 받은 뒤(임시 파일) API로 넘긴다 — 느린 휴대폰
+    # 망은 Nginx가 받아 주고(client_body_timeout은 읽기 사이 간격), API는 받는 즉시 저장소로 흘려
+    # 보내며 100MB를 저장소에 다 쓸 때까지 답을 기다린다(proxy_read_timeout). /v1/보다 긴 접두라 이긴다.
+    location ^~ /v1/consultations/ {
+        client_max_body_size 100m;
+        client_body_timeout 120s;
+        proxy_request_buffering on;
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$remote_addr;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_connect_timeout 10s;
+        proxy_send_timeout 300s;
+        proxy_read_timeout 300s;
+    }
+
+    # 후기 사진 한 장(POST /v1/reviews/media · 2026-09-26 같은 출처 올리기) — 서버 상한
+    # (reviews.ts REVIEW_IMAGE_MAX_BYTES 10MB)과 같게. 정확히 이 주소만 연다(= 이 /v1/보다 먼저다).
+    location = /v1/reviews/media {
+        client_max_body_size 10m;
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$remote_addr;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_connect_timeout 10s;
+        proxy_read_timeout 120s;
+    }
+
     location ^~ /v1/ {
         proxy_pass http://127.0.0.1:3001;
         proxy_http_version 1.1;

@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import SetupScreen from '@/app/setup';
 import { ApiError, completeSetup, completeSignup, getAppBootstrap, getCurrentUser, getSignupState } from '@/api/client';
 import { endHomeHandoff, isHomeHandoffActive } from '@/features/home/home-handoff';
+import { clearSignupPending, hasFreshSignupPending } from '@/features/auth/sign-in-handoff';
 import { loadToken } from '@/api/session';
 import { clearOnboardingAnswers, clearWeddingDraft, loadOnboardingAnswers, saveOnboardingAnswers, saveWeddingDraft } from './wedding-draft';
 import type { Answers } from './flow';
@@ -26,7 +27,6 @@ jest.mock('./wedding-draft', () => ({
 jest.mock('@/features/home/home-skeleton', () => ({ HomeSkeleton: 'HomeSkeleton' }));
 jest.mock('./budget-amount', () => ({ BudgetAmount: 'BudgetAmount' }));
 jest.mock('./date-picker-sheet', () => ({ OnboardingDatePickerSheet: 'OnboardingDatePickerSheet' }));
-jest.mock('./inline-toast', () => ({ InlineToast: 'InlineToast', useInlineToast: () => ({ toast: null, show: jest.fn(), hide: jest.fn() }) }));
 jest.mock('./option-row', () => ({ OptionRow: 'OptionRow' }));
 jest.mock('./question-head', () => ({ QuestionHead: 'QuestionHead' }));
 jest.mock('./region-picker-sheet', () => ({ RegionPickerSheet: 'RegionPickerSheet' }));
@@ -104,34 +104,43 @@ beforeEach(() => {
 });
 afterEach(async () => { if (tree) await act(async () => tree.unmount()); });
 
-it('첫 가입 상태 조회가 늦어도 완료 시 재확인하고 가입 저장 뒤 초기 설정을 저장한다', async () => {
+/*
+ * 2026-09-26 대표 결정 「강제한다」 — 필수 다섯이 모두 가입 관문이다. 초기 설정은 가입 전
+ * 계정의 동의를 사용자 대신 보내지 않는다(전에는 terms · privacy를 대신 보냈다). 약관
+ * 동의로 보내고, 적어 둔 답은 지우지 않는다.
+ */
+it('완료 시 가입 상태를 다시 읽어 가입 전이면 동의를 대신 보내지 않고 약관 동의로 보낸다', async () => {
   jest.useFakeTimers();
   try {
+    clearSignupPending();
     const first = deferred<Awaited<ReturnType<typeof getSignupState>>>();
-    const signup = deferred<Awaited<ReturnType<typeof completeSignup>>>();
     jest.mocked(getSignupState).mockReturnValueOnce(first.promise).mockResolvedValue(pendingSignup);
-    jest.mocked(completeSignup).mockReturnValue(signup.promise);
     await mount();
     await finish();
     expect(getSignupState).toHaveBeenCalledTimes(2);
-    expect(completeSignup).toHaveBeenCalledWith({ consents: ['terms', 'privacy'] });
+    expect(completeSignup).not.toHaveBeenCalled();
     expect(completeSetup).not.toHaveBeenCalled();
-    await act(async () => signup.resolve(activeSignup));
-    expect(completeSetup).toHaveBeenCalledTimes(1);
-    expect(router.replace).toHaveBeenCalledWith('/');
+    expect(clearOnboardingAnswers).not.toHaveBeenCalled();
+    expect(router.replace).toHaveBeenCalledWith('/login/consent');
+    /* 약관 동의가 로더 없이 폼부터 서게 깃발을 넘긴다. 골격은 걷었다. */
+    expect(hasFreshSignupPending()).toBe(true);
+    expect(isHomeHandoffActive()).toBe(false);
     await act(async () => first.resolve(pendingSignup));
+    clearSignupPending();
   } finally {
     jest.useRealTimers();
   }
 });
 
-it('첫 조회가 실패했어도 완료 시 가입 상태를 다시 읽어 누락된 가입을 마친다', async () => {
+it('첫 조회가 실패했어도 완료 시 가입 상태를 다시 읽어 가입 전이면 약관 동의로 보낸다', async () => {
   jest.mocked(getSignupState).mockRejectedValueOnce(new Error('offline')).mockResolvedValue(pendingSignup);
   await mount();
   await finish();
   expect(getSignupState).toHaveBeenCalledTimes(2);
-  expect(completeSignup).toHaveBeenCalledTimes(1);
-  expect(completeSetup).toHaveBeenCalledTimes(1);
+  expect(completeSignup).not.toHaveBeenCalled();
+  expect(completeSetup).not.toHaveBeenCalled();
+  expect(router.replace).toHaveBeenCalledWith('/login/consent');
+  clearSignupPending();
 });
 
 it('완료 시 가입 상태 조회가 500이면 초기 설정을 보내지 않고 답과 오류를 남긴다', async () => {
@@ -145,15 +154,6 @@ it('완료 시 가입 상태 조회가 500이면 초기 설정을 보내지 않�
   expect(frame().props.error).toBe('가입 상태를 확인하지 못했어요');
   /* 답은 그대로 두고 결과 화면에 머문다 — "완료"를 다시 누르면 그 자리에서 재시도한다. */
   expect(frame().props.stepKey).toBe('done');
-});
-
-it('가입 저장이 실패하면 초기 설정을 보내거나 가입 완료로 표시하지 않는다', async () => {
-  jest.mocked(completeSignup).mockRejectedValue(new Error('가입을 저장하지 못했어요'));
-  await mount();
-  await finish();
-  expect(completeSetup).not.toHaveBeenCalled();
-  expect(clearOnboardingAnswers).not.toHaveBeenCalled();
-  expect(frame().props.error).toBe('가입을 저장하지 못했어요');
 });
 
 it('이미 활성화된 계정은 가입 동의를 다시 저장하지 않고 초기 설정만 저장한다', async () => {
@@ -205,16 +205,6 @@ it('세션이 끝나 로그인으로 돌려보낼 때도 홈 골격을 걷는다
 it('가입 미완료 계정의 스타일 복원은 보호된 내 정보 API를 호출하지 않는다', async () => {
   await mount();
   expect(getCurrentUser).not.toHaveBeenCalled();
-});
-
-it('가입 저장이 200이어도 활성화되지 않았으면 초기 설정이나 완료 처리를 하지 않는다', async () => {
-  jest.mocked(completeSignup).mockResolvedValue(pendingSignup);
-  await mount();
-  await finish();
-  expect(completeSetup).not.toHaveBeenCalled();
-  expect(clearOnboardingAnswers).not.toHaveBeenCalled();
-  expect(frame().props.error).toBeTruthy();
-  expect(frame().props.stepKey).toBe('done');
 });
 
 it('완료 중 가입 상태를 기다리다 계정이 바뀌면 다른 계정에 동의와 설정을 저장하지 않는다', async () => {

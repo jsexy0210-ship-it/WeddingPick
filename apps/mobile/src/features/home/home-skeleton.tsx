@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Layout, MaxContentWidth, Radius, Skeleton, Spacing, ThemedView, useTheme } from '@weddingpick/ui';
 
 import { RootTabHeader } from '@/components/root-tab-header';
+import { HOME_PAGE_X } from '@/features/home/home-layout';
 
 /** 온보딩 저장부터 홈 첫 자료가 준비될 때까지 같은 홈 골격을 보여준다. */
 export function HomeSkeleton() {
@@ -12,6 +13,7 @@ export function HomeSkeleton() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
+        {/* 뼈대는 실제 홈 구조를 따른다 — 좌우 20(home-layout). */}
         <RootTabHeader title="웨딩픽" right={<Skeleton width={24} height={24} radius={Radius.pill} />} />
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={[styles.hero, { backgroundColor: theme.tint }]}>
@@ -55,14 +57,14 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
   content: { paddingBottom: Spacing.three },
   hero: {
-    marginHorizontal: Layout.gutter,
+    marginHorizontal: HOME_PAGE_X,
     minHeight: 172,
     borderRadius: 14,
     padding: 18,
     justifyContent: 'center',
     gap: Spacing.two,
   },
-  section: { paddingHorizontal: Layout.gutter, marginTop: Layout.sectionGap, gap: Spacing.three },
+  section: { paddingHorizontal: HOME_PAGE_X, marginTop: Layout.sectionGap, gap: Spacing.three },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   prepCard: {
     width: '48%',

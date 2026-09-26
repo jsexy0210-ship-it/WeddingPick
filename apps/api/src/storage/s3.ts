@@ -60,6 +60,22 @@ export function createS3Storage(options: {
       );
     },
 
+    async uploadStream(storageKey, body, { mimeType, contentLength }) {
+      /*
+       * 길이를 알려 주면 SDK가 흐름을 그대로 한 번의 PUT으로 보낸다(서명은 UNSIGNED-PAYLOAD —
+       * TLS 위라 본문 해시 없이 보낸다). 길이를 빼면 SDK가 거절한다.
+       */
+      await client.send(
+        new PutObjectCommand({
+          Bucket: options.bucket,
+          Key: storageKey,
+          Body: body,
+          ContentType: mimeType,
+          ContentLength: contentLength,
+        })
+      );
+    },
+
     async download(storageKey) {
       const result = await client.send(
         new GetObjectCommand({ Bucket: options.bucket, Key: storageKey })

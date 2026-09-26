@@ -215,6 +215,75 @@ const ME = {
  *
  * 값이 함수면 `({ url, method, params })`를 받아 본문을 돌려준다.
  */
+/**
+ * 공개된 웨딩피드 넷. 관리자 fixture(`GET /v1/admin/wedding-feed`)의 «공개» 글과 같은
+ * id · 카테고리 · 제목이다 — 관리자 표와 앱 목록을 나란히 찍었을 때 같은 글이어야 한다.
+ * «드레스»는 스드메 칩, «일정»은 칩 없이 «전체»에서만 보이는 예다.
+ */
+const PUBLISHED_FEED = [
+  {
+    id: '00000000-0000-4000-8000-0000000000f1',
+    categoryLabel: '예산',
+    title: '예산을 넘기지 않는 스드메 조합 3가지',
+    summary: '항목별로 먼저 상한을 정해두면 흔들리지 않아요.',
+    imageUrl: null,
+  },
+  {
+    id: '00000000-0000-4000-8000-0000000000f2',
+    categoryLabel: '웨딩홀',
+    title: '웨딩홀 투어에서 꼭 물어볼 것',
+    summary: '보증인원과 식대 인상 조건을 먼저 확인하세요.',
+    imageUrl: null,
+  },
+  {
+    id: '00000000-0000-4000-8000-0000000000f3',
+    categoryLabel: '드레스',
+    title: '첫 피팅 전에 물어볼 여섯 가지',
+    summary: '원하는 실루엣을 세 장만 정해 가면 빨라요.',
+    imageUrl: null,
+  },
+  {
+    id: '00000000-0000-4000-8000-0000000000f4',
+    categoryLabel: '일정',
+    title: '본식 4개월 전, 무엇부터 할까',
+    summary: '웨딩홀부터 정하고 나머지를 차례로 잡아요.',
+    imageUrl: null,
+  },
+];
+
+/*
+ * 칩은 글과 «같은 응답»으로 온다. 값은 domain `WEDDING_FEED_TABS` — 정본 my.js `cats`
+ * 그대로다(2026-09-26 — 관리자 탭 표에서 읽던 값을 걷었다). 「전체」가 맨 앞이다.
+ */
+const WEDDING_FEED_TABS = [
+  { key: 'all', label: '전체', categories: [] },
+  { key: 'start', label: '웨딩홀', categories: ['웨딩홀'] },
+  { key: 'sdm', label: '스드메', categories: ['스튜디오', '드레스', '메이크업', '헤어변형'] },
+  { key: 'ceremony', label: '본식', categories: ['본식스냅'] },
+  { key: 'goods', label: '예물 · 신혼', categories: ['허니문'] },
+  { key: 'budget', label: '예산', categories: ['예산'] },
+];
+
+/**
+ * 공개된 웨딩피드 목록 — 홈은 두 장(`HOME_FEED_PREVIEW_COUNT`), 라운지 「웨딩정보」는 전부
+ * (`WEDDING_FEED_LOUNGE_LIMIT`)를 묻는다. 서버처럼 `limit`을 지키고, 없으면 여덟이다.
+ *
+ * **함수에 `items` · `tabs`를 그대로 붙여 둔다.** 다른 스위치가 `{ ...routes[...], items }`로
+ * 목록만 덮어도 칩 줄(`tabs`)이 따라가게 — 함수만 두면 펼칠 칸이 없어 `tabs`가 빠지고,
+ * 계약 검사에 걸려 화면이 「연결이 불안정해요」로 찍힌다.
+ */
+const weddingFeedList = Object.assign(
+  ({ url }) => {
+    const limit = Number(url.searchParams.get('limit'));
+
+    return {
+      items: PUBLISHED_FEED.slice(0, Number.isFinite(limit) && limit > 0 ? limit : 8),
+      tabs: WEDDING_FEED_TABS,
+    };
+  },
+  { items: PUBLISHED_FEED, tabs: WEDDING_FEED_TABS }
+);
+
 const routes = {
   'GET /v1/me/signup': {
     activated: true,
@@ -299,55 +368,12 @@ const routes = {
       },
     ],
   },
-  /** 홈 아래쪽 웨딩피드 — 공개된 글만. 홈은 두 장만 보여준다(`HOME_FEED_PREVIEW_COUNT`). */
-  'GET /v1/wedding-feed': {
-    items: [
-      {
-        id: '00000000-0000-4000-8000-0000000000f1',
-        categoryLabel: '예산',
-        title: '예산을 넘기지 않는 스드메 조합 3가지',
-        summary: '항목별로 먼저 상한을 정해두면 흔들리지 않아요.',
-        imageUrl: null,
-      },
-      {
-        id: '00000000-0000-4000-8000-0000000000f2',
-        categoryLabel: '웨딩홀',
-        title: '웨딩홀 투어에서 꼭 물어볼 것',
-        summary: '보증인원과 식대 인상 조건을 먼저 확인하세요.',
-        imageUrl: null,
-      },
-    ],
-    /*
-     * 탭은 글과 «같은 응답»으로 온다(2026-09-16 대표 지시 — 「탭별 카테고리별로 다
-     * 설정 가능해야한다」). 값은 관리자가 표에서 고치고, 여기 있는 것은 0420의
-     * 씨앗값 그대로다. 「전체」는 표에 없고 언제나 맨 앞이다.
-     */
-    tabs: [
-      { key: 'all', label: '전체', categories: [] },
-      {
-        key: '00000000-0000-4000-8000-0000000000a1',
-        label: '준비·예산',
-        categories: ['예산', '체크리스트', '준비 순서', '하객'],
-      },
-      {
-        key: '00000000-0000-4000-8000-0000000000a2',
-        label: '업체·서비스',
-        categories: [
-          '웨딩홀',
-          '스튜디오',
-          '드레스',
-          '메이크업',
-          '본식스냅',
-          '헤어변형',
-        ],
-      },
-      {
-        key: '00000000-0000-4000-8000-0000000000a3',
-        label: '계약·여행',
-        categories: ['계약', '허니문'],
-      },
-    ],
-  },
+  /**
+   * 공개된 웨딩피드 — 홈은 두 장(`HOME_FEED_PREVIEW_COUNT`), 라운지 「웨딩정보」는 전부
+   * (`WEDDING_FEED_LOUNGE_LIMIT`)를 묻는다. 서버처럼 `limit`을 지키고, 없으면 여덟이다.
+   * 글은 아래 관리자 fixture의 «공개» 넷과 같은 줄이다 — 관리자와 앱이 같은 글을 본다.
+   */
+  'GET /v1/wedding-feed': weddingFeedList,
 
   /*
    * 글 하나 — 카드를 눌러 들어간 자리. 목록의 첫 글과 같은 id · 제목이라야
@@ -361,7 +387,8 @@ const routes = {
     body: '스드메는 세 가지를 한 번에 정하는 자리라 한쪽이 늘면 다른 쪽이 줄어요.\n\n먼저 항목별 상한을 적어두면 상담에서 흔들리지 않아요. 스튜디오는 원본 제공 조건, 드레스는 피팅 횟수와 추가 비용, 메이크업은 리허설 포함 여부를 함께 확인하세요.\n\n계약 전에 총액이 아니라 항목별 금액으로 받아 적으면 나중에 무엇이 늘었는지 바로 보여요.',
     imageUrl: null,
     bodyImageUrl: null,
-    publishedAt: '2026-09-15T02:00:00.000Z',
+    /* 관리자 fixture의 같은 글(f1)과 같은 공개일이다 — 관리자 «공개일» 칸과 앱 상세 날짜가 같게 찍힌다. */
+    publishedAt: '2026-09-11T00:00:00.000Z',
   },
   /** 라운지 후기 — 07-lounge-my의 Pick 인증 + 3축 populated 상태를 캡처한다. */
   'GET /v1/reviews': {
@@ -471,6 +498,23 @@ const routes = {
         audioDeletedAt: '2026-09-13T08:00:01.000Z',
         createdAt: '2026-09-13T07:40:00.000Z',
       },
+    ],
+  },
+
+  /*
+   * 예식일 예보 · 공휴일(0437) — D-day 카드와 일정 등록 날짜 칸 아래 한 줄을 찍으려고 값을
+   * 채운다. 공휴일은 기간을 가리지 않고 두 달 치를 준다 — 화면이 보고 있는 달 것만 고른다.
+   */
+  'GET /v1/weddings/:weddingId/forecast': {
+    forecast: { date: '2027-04-17', rainProbability: 30, tempMin: 12, tempMax: 21 },
+  },
+  'GET /v1/public-holidays': {
+    holidays: [
+      { date: '2026-09-24', name: '추석 연휴' },
+      { date: '2026-09-25', name: '추석' },
+      { date: '2026-09-26', name: '추석 연휴' },
+      { date: '2026-10-03', name: '개천절' },
+      { date: '2026-10-09', name: '한글날' },
     ],
   },
 
@@ -711,6 +755,52 @@ const routes = {
     spouseLinked: true,
     displayName: '우리',
   },
+  /*
+   * 예산 추가 «자동 등록(Pick 인증)»(2026-09-26) — 원본 자리 · 한 장 올리기 · 등록 · 동의.
+   * 캡처가 카메라 입력에 사진을 넣으면(`--file`) 이 셋을 차례로 부른다. 기본은 서버가 읽은 경우
+   * (`accepted`)이고 `FIXTURE_PROOF_PENDING=true`면 못 읽은 경우(`pending_review`)다 — 아래 스위치.
+   */
+  'POST /v1/documents/uploads': {
+    rawDocumentId: 'd1111111-1111-4111-8111-111111111111',
+    uploads: [
+      {
+        pageIndex: 0,
+        uploadUrl: 'https://upload.example.invalid/d1111111/1.jpg',
+        uploadPath: '/v1/documents/d1111111-1111-4111-8111-111111111111/pages/0',
+        storageKey: 'u1111111/d1111111/1.jpg',
+        expiresAt: '2026-09-26T01:00:00.000Z',
+      },
+    ],
+  },
+  /* 응답 본문이 없다(204 · z.null()). */
+  'PUT /v1/documents/:rawDocumentId/pages/:pageIndex': null,
+  /*
+   * 상담 녹음 올리기(2026-09-26 «녹음 파일을 올려주세요»가 OS 파일 선택기를 바로 연다) — 자리 받기 ·
+   * 같은 출처 경로(`uploadPath`)로 본문 올리기(`PUT …/audio`가 도착까지 적어 기록을 돌려준다 — 아래).
+   * `uploadUrl`은 옛 앱용 서명 주소라 앱이 부르지 않는다.
+   */
+  'POST /v1/consultations/uploads': {
+    consultationId: 'c9999999-9999-4999-8999-999999999999',
+    uploadUrl: 'https://upload.example.invalid/consultations/c9999999-9999-4999-8999-999999999999.m4a',
+    uploadPath: '/v1/consultations/c9999999-9999-4999-8999-999999999999/audio',
+    storageKey: 'u1111111/consultations/c9999999.m4a',
+    expiresAt: '2026-09-26T01:00:00.000Z',
+  },
+  'POST /v1/payment-proofs': {
+    paymentProofId: 'd2222222-2222-4222-8222-222222222222',
+    status: 'accepted',
+    pendingFields: [],
+    reviewNote: null,
+    merchantName: '청담 E 웨딩홀',
+    paidAmount: 5000000,
+    paidAt: '2026-09-20T05:00:00.000Z',
+    method: 'card',
+    maskedIdentifiers: ['card_number'],
+    matchedVendorId: null,
+    unmatchedNote: null,
+    deepData: false,
+    originalDeletedBy: '2026-09-27T05:00:00.000Z',
+  },
   'GET /v1/me/withdrawal': {
     lead: '배우자와 함께 만든 기록도 함께 사라져요',
     hasPartner: true,
@@ -729,10 +819,10 @@ const routes = {
     done: ['계정이 삭제됐어요', '로그인 정보가 지워졌어요'],
   },
   'GET /v1/weddings/:weddingId/invites': { invite: null },
-  /* 배우자 초대 코드 — 6자리 숫자(2026-09-25). */
+  /* 배우자 초대 코드 — 4자리 숫자(2026-09-26 · 그 전 6자리). */
   'POST /v1/weddings/:weddingId/invites': {
     inviteId: '00000000-0000-4000-8000-00000000c0de',
-    code: '482913',
+    code: '4829',
     expiresAt: '2026-09-28T09:00:00.000Z',
     shared: ['정리된 가격·조건 내용'],
     notShared: ['원본 문서 파일 자체 — 올린 사람만 가져요'],
@@ -1059,11 +1149,33 @@ const routes = {
       { tier: 'premium', state: 'withheld', decidedAt: '2026-09-10T00:00:00.000Z', placements: 0 },
     ],
   },
-  /** 관리자 — 웨딩피드(WP-ADM-053). 검토 대기 초안 하나 · 공개 하나 · 자동 작성 한 바퀴. */
+  /**
+   * 관리자 — 웨딩피드. 공개 넷은 앱 fixture(`PUBLISHED_FEED`)와 같은 글이고, 검토 대기
+   * 초안 하나 · 목록 밖 옛 이름(«준비 순서» — 0442 전 값)으로 내린 글 하나를 더 둔다.
+   */
   'GET /v1/admin/wedding-feed': {
     posts: [
+      ...PUBLISHED_FEED.map((item, index) => ({
+        id: item.id,
+        categoryLabel: item.categoryLabel,
+        title: item.title,
+        summary: item.summary,
+        body: `${item.summary}\n\n본문`,
+        imageKey: null,
+        imageUrl: null,
+        bodyImageKey: null,
+        bodyImageUrl: null,
+        status: 'published',
+        source: 'manual',
+        model: null,
+        topic: null,
+        sortOrder: index + 1,
+        publishedAt: `2026-09-1${index + 1}T00:00:00.000Z`,
+        createdAt: `2026-09-1${index + 1}T00:00:00.000Z`,
+        updatedAt: `2026-09-1${index + 1}T00:00:00.000Z`,
+      })),
       {
-        id: '00000000-0000-4000-8000-0000000000f1',
+        id: '00000000-0000-4000-8000-0000000000f5',
         categoryLabel: '예산',
         title: '스드메 예산을 넘기지 않게 짜는 방법',
         summary: '항목별로 먼저 상한을 정해두면 흔들리지 않아요.',
@@ -1076,29 +1188,29 @@ const routes = {
         source: 'generated',
         model: 'gemini-3.5-flash-lite',
         topic: 'budget-sdm',
-        sortOrder: 0,
+        sortOrder: 5,
         publishedAt: null,
         createdAt: '2026-09-15T01:00:00.000Z',
         updatedAt: '2026-09-15T01:00:00.000Z',
       },
       {
-        id: '00000000-0000-4000-8000-0000000000f2',
-        categoryLabel: '웨딩홀',
-        title: '웨딩홀 투어에서 꼭 물어볼 것',
-        summary: '보증인원과 식대 인상 조건을 먼저 확인하세요.',
-        body: '웨딩홀 투어에서는…',
+        id: '00000000-0000-4000-8000-0000000000f6',
+        categoryLabel: '준비 순서',
+        title: '무엇부터 정하는 것이 좋은가',
+        summary: '예식일에서 거꾸로 세어 봐요.',
+        body: '예식일에서 거꾸로…',
         imageKey: null,
         imageUrl: null,
         bodyImageKey: null,
         bodyImageUrl: null,
-        status: 'published',
+        status: 'archived',
         source: 'manual',
         model: null,
         topic: null,
-        sortOrder: 1,
-        publishedAt: '2026-09-14T09:00:00.000Z',
-        createdAt: '2026-09-14T09:00:00.000Z',
-        updatedAt: '2026-09-14T09:00:00.000Z',
+        sortOrder: 6,
+        publishedAt: null,
+        createdAt: '2026-09-10T01:00:00.000Z',
+        updatedAt: '2026-09-10T01:00:00.000Z',
       },
     ],
     runs: [
@@ -1115,36 +1227,39 @@ const routes = {
       },
     ],
     remainingTopics: 16,
-    nextSortOrder: 2,
+    nextSortOrder: 7,
     automation: {
       manualReady: true,
       scheduledEnabled: false,
     },
   },
-  'GET /v1/admin/wedding-feed/taxonomy': {
-    groups: [
-      { id: '00000000-0000-4000-8000-0000000000a1', name: '준비 가이드', sortOrder: 0, active: true },
-    ],
-    categories: [
-      {
-        id: '00000000-0000-4000-8000-0000000000b1',
-        name: '예산',
-        groupId: '00000000-0000-4000-8000-0000000000a1',
-        sortOrder: 0,
-        active: true,
-        postCount: 1,
-      },
-      {
-        id: '00000000-0000-4000-8000-0000000000b2',
-        name: '웨딩홀',
-        groupId: '00000000-0000-4000-8000-0000000000a1',
-        sortOrder: 1,
-        active: true,
-        postCount: 1,
-      },
-    ],
-    ungrouped: [],
+  /*
+   * 관리자 웨딩피드 「자동 작성」(2026-09-26 대표 지시 — 누르면 글과 이미지를 한 번에).
+   * 글 → 대표 썸네일 → 본문 이미지 순서로 부른다. 그림은 **가짜 자리 표시**다(색 판) —
+   * 실제 Gemini 그림이 아니다. 캡처에서 「두 칸이 채워졌다」만 본다.
+   */
+  'POST /v1/admin/wedding-feed/draft': {
+    title: '웨딩홀 조명 리허설에서 볼 것',
+    summary: '입장 동선과 단상 조명의 밝기를 먼저 확인해요.',
+    body: '예식 전 리허설에서는 입장 동선의 조명을 먼저 봐요. 문이 열릴 때 빛이 어디서 오는지 확인해요.\n\n단상 조명은 사진에 그대로 남아요. 본식스냅 작가와 함께 밝기를 맞춰 보세요.\n\n하객석 조명이 너무 어두우면 식사 시간이 길게 느껴져요. 연회 조명 순서도 같이 확인해보세요.',
   },
+  'POST /v1/admin/wedding-feed/image/generate': (() => {
+    /* 4×3 PNG를 늘려 그린다 — 색이 번진 판이 두 칸에 채워지는지만 본다. */
+    const images = [
+      {
+        storageKey: 'wedding-feed/thumbnail/capture.png',
+        imageUrl:
+          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAADCAIAAAA7ljmRAAAAMklEQVR4nAEnANj/AC46WXhabsmOa/bXpwEoM05CHBNHLv0nQDUC+/n28fXz6O/z4+bsSDQUpb5aq6IAAAAASUVORK5CYII=',
+      },
+      {
+        storageKey: 'wedding-feed/body/capture.png',
+        imageUrl:
+          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAADCAIAAAA7ljmRAAAAKklEQVR4nGO48+LSlrOr6hdV/fr1lXHL2VWnr16ojqh+9O4uE5x14+kNAAvoGt9cetPWAAAAAElFTkSuQmCC',
+      },
+    ];
+    let next = 0;
+    return () => images[next++ % images.length];
+  })(),
   /* WP-ADM 박람회 관리(admin/expos.tsx) — 검수 대기 한 건 · 정상 한 건을 함께 둔다. */
   'GET /v1/admin/expos': {
     collection: {
@@ -1887,6 +2002,270 @@ if (process.env.FIXTURE_PICK_EMPTY === 'true') {
     ...routes['GET /v1/weddings/:weddingId/candidates'],
     groups: [],
     total: 0,
+  };
+}
+
+/*
+ * 홈 「웨딩 준비 팁」 준비 단계 캡처 스위치(2026-09-26 대표 오더 「준비단계에 맞춰 콘텐츠를
+ * 추천한다」). 켤 때만 덮는다.
+ *
+ *   FIXTURE_DAYS_LEFT=120              예식일을 오늘(기기 날짜)에서 N일 뒤로 — 히어로 D-day
+ *   FIXTURE_PREPARED=hall              준비 현황에서 «이미 정했다»고 고른 업종(쉼표로 여럿)
+ *   FIXTURE_WEDDING_FEED_FILE=<경로>   웨딩피드 목록의 글(`items`)을 이 JSON 배열로 덮는다
+ *
+ * **단계 순서는 가짜 서버가 흉내 내지 않는다.** 순서를 매기는 것은 서버(domain
+ * `preparationStage` · `rankFeedForStage`)이고, 여기서 그 규칙을 다시 적으면 규칙이 두 벌이
+ * 된다. 캡처할 때는 domain 함수로 만든 결과를 파일로 넘긴다.
+ */
+if (process.env.FIXTURE_DAYS_LEFT !== undefined || process.env.FIXTURE_PREPARED !== undefined) {
+  const patch = {};
+
+  if (process.env.FIXTURE_DAYS_LEFT !== undefined) {
+    const today = new Date();
+    const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() + Number(process.env.FIXTURE_DAYS_LEFT));
+    const pad = (value) => String(value).padStart(2, '0');
+
+    patch.weddingDate = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  }
+  if (process.env.FIXTURE_PREPARED !== undefined) {
+    patch.preparedCategories = process.env.FIXTURE_PREPARED.split(',').filter(Boolean);
+  }
+
+  const me = routes['GET /v1/me'];
+  routes['GET /v1/me'] = () => ({ ...me(), ...patch });
+  routes['GET /v1/app/bootstrap'] = {
+    ...routes['GET /v1/app/bootstrap'],
+    member: { ...routes['GET /v1/app/bootstrap'].member, ...patch },
+  };
+}
+
+if (process.env.FIXTURE_WEDDING_FEED_FILE) {
+  const items = JSON.parse(require('fs').readFileSync(process.env.FIXTURE_WEDDING_FEED_FILE, 'utf8'));
+
+  routes['GET /v1/wedding-feed'] = { ...routes['GET /v1/wedding-feed'], items };
+}
+
+/*
+ * 온보딩 «완료» → Pick 담은 곳(2026-09-26 준비 현황 업체 검색 시트). 서버는
+ * `POST /v1/me/setup`의 `preparedVendorIds`를 같은 트랜잭션에서 `vendor_candidates`에
+ * 담는다 — 캡처도 그 흐름을 따라가게 **이 한 번의 실행 안에서만** 기억한다.
+ *
+ * 온보딩을 끝내기 전에는 아무것도 바꾸지 않는다(기존 캡처는 그대로다). 끝낸 뒤에는
+ * `GET /v1/me`가 설정 완료를 돌려주고(`FIXTURE_SETUP_COMPLETE=false`로 시작해도 홈으로
+ * 넘어간다), Pick 담은 곳은 방금 보낸 업체만 보여준다 — 막 가입한 사람의 Pick이다.
+ */
+const onboarded = { done: false, weddingDate: null, region: null, preparedCategories: [], vendorIds: [], manual: [] };
+
+/* 직접 입력한 카드(묶음)의 결정이 들어가는 업종 — 서버 `manualDecisionCategory`와 같다(묶음의 첫 업종). */
+const GROUP_FIRST_CATEGORY = { start: 'hall', sdm: 'studio', ceremony: 'snap', goods: 'goods' };
+const CATEGORY_LABEL = { hall: '웨딩홀', studio: '스튜디오', snap: '본식스냅', goods: '예물' };
+
+routes['POST /v1/me/setup'] = ({ body } = {}) => {
+  onboarded.done = true;
+  onboarded.weddingDate = body?.weddingDate ?? null;
+  onboarded.region = body?.region ?? null;
+  onboarded.preparedCategories = Array.isArray(body?.preparedCategories) ? body.preparedCategories : [];
+  onboarded.vendorIds = Array.isArray(body?.preparedVendorIds) ? body.preparedVendorIds : [];
+  onboarded.manual = Array.isArray(body?.preparedManualVendors) ? body.preparedManualVendors : [];
+
+  return {
+    ...ME,
+    weddingDate: body?.weddingDate ?? null,
+    region: body?.region ?? null,
+    preparedCategories: onboarded.preparedCategories,
+    styleTags: body?.styleTags ?? ME.styleTags,
+    setupComplete: true,
+    hasPick: onboarded.vendorIds.length > 0,
+  };
+};
+
+/*
+ * 온보딩 뒤의 후보 목록 — 서버처럼 고른 업체는 담기 + 그 업종의 결정, 직접 입력은 결정만
+ * (`manualDecisions`). 온보딩 전에는 원래 fixture 그대로다.
+ */
+function onboardedCandidates(base) {
+  const picked = onboarded.vendorIds.map((id) => VENDORS.find((v) => v.id === id)).filter(Boolean);
+  const categories = [...new Set(picked.map((v) => v.category))];
+
+  return {
+    ...base,
+    groups: categories.map((category) => {
+      const decided = picked.find((v) => v.category === category);
+
+      return {
+        category,
+        categoryLabel: CATEGORY_LABEL[category] ?? category,
+        candidates: picked
+          .filter((v) => v.category === category)
+          .map((v, index) => ({
+            id: `c${v.id.slice(1)}`,
+            vendorId: v.id,
+            vendorName: v.name,
+            category: v.category,
+            region: v.region,
+            imageUrl: null,
+            note: null,
+            addedAt: `2026-09-26T00:00:0${index}.000Z`,
+            addedByPartner: false,
+            rating: v.rating,
+          })),
+        comparable: false,
+        state: 'decided',
+        stateLabel: '결정 완료',
+        decidedVendorId: decided.id,
+      };
+    }),
+    total: picked.length,
+    manualDecisions: onboarded.manual.map((one, index) => {
+      const category = GROUP_FIRST_CATEGORY[one.group] ?? 'hall';
+
+      return {
+        category,
+        categoryLabel: CATEGORY_LABEL[category] ?? category,
+        name: one.name,
+        decidedAt: `2026-09-26T00:00:1${index}.000Z`,
+        decidedByPartner: false,
+      };
+    }),
+  };
+}
+
+{
+  const baseMe = routes['GET /v1/me'];
+  const onboardedMe = (me) => ({
+    ...me,
+    weddingDate: onboarded.weddingDate,
+    region: onboarded.region,
+    setupComplete: true,
+    preparedCategories: onboarded.preparedCategories,
+    hasPick: onboarded.vendorIds.length > 0,
+  });
+
+  routes['GET /v1/me'] = (input) => {
+    const me = typeof baseMe === 'function' ? baseMe(input) : baseMe;
+
+    return onboarded.done ? onboardedMe(me) : me;
+  };
+
+  const baseCandidates = routes['GET /v1/weddings/:weddingId/candidates'];
+
+  routes['GET /v1/weddings/:weddingId/candidates'] = (input) => {
+    const base = typeof baseCandidates === 'function' ? baseCandidates(input) : baseCandidates;
+
+    return onboarded.done ? onboardedCandidates(base) : base;
+  };
+
+  /* 홈도 같은 사람을 본다 — 온보딩을 끝냈으면 준비 현황 · 결정이 「내 웨딩 준비」에 선다. */
+  const baseBootstrap = routes['GET /v1/app/bootstrap'];
+
+  routes['GET /v1/app/bootstrap'] = (input) => {
+    const base = typeof baseBootstrap === 'function' ? baseBootstrap(input) : baseBootstrap;
+
+    if (!onboarded.done) return base;
+
+    const candidatesBase = typeof baseCandidates === 'function' ? baseCandidates(input) : baseCandidates;
+
+    return { ...base, member: onboardedMe(base.member ?? ME), candidates: onboardedCandidates(candidatesBase) };
+  };
+}
+
+/*
+ * 예산 추가 «자동 등록» 캡처 전용 스위치(2026-09-26). 기본 fixture는 건드리지 않는다.
+ *
+ *   FIXTURE_PAYMENT_CONSENT=false  Pick 인증 동의가 아직 없다 — 자동 등록이 동의 안내부터 보인다
+ *   FIXTURE_PROOF_PENDING=true     서버가 못 읽었다 — 결과 «확인 중이에요» · 지출내역 «확인 중» 줄
+ *   FIXTURE_PROOF_BUDGET_RAISED=true  총예산을 넘어 서버가 넘은 만큼 늘렸다 — 결과 «총예산을 N만원 늘렸어요»
+ *   FIXTURE_CONSULT_EMPTY=true     상담기록이 비었다 — 빈 상자 «녹음 파일을 올려주세요»
+ *   FIXTURE_TASKS_UNDATED=true     할 일이 날짜 없이 심겨 있다 — 웨딩일정 «예식일 기준 임시 날짜» 줄
+ *   FIXTURE_VENDOR_PUBLIC=true     공공데이터 업체 — 업체 상세 «정보» 탭 출처 «공공데이터»
+ */
+routes['PUT /v1/consultations/:consultationId/audio'] = {
+  ...routes['GET /v1/weddings/:weddingId/consultations'].records[0],
+  id: 'c9999999-9999-4999-8999-999999999999',
+  confirmedAt: null,
+};
+
+/*
+ * 업체 상세 «정보» 탭의 출처 줄(2026-09-26 「공공데이터」 통일). 서버가 공공데이터 업체에 주는
+ * 문장(`vendorSourceNote`) 그대로 — 화면은 이 문장 대신 «공공데이터» 한 이름을 적어야 한다.
+ */
+if (process.env.FIXTURE_VENDOR_PUBLIC === 'true') {
+  routes['GET /v1/vendors/:vendorId'] = { ...routes['GET /v1/vendors/:vendorId'], sourceNote: '지방행정 인허가 데이터 · 공공데이터포털' };
+}
+
+/*
+ * 웨딩일정 임시 날짜(2026-09-26). 서버는 새 웨딩에 기본 열셋을 **날짜 없이** 심는다
+ * (`seedPresets`) — 실제 사용자 대부분이 이 꼴이다. 기본 fixture는 셋 다 날짜가 있어 임시 줄이
+ * 안 보이므로, 켜면 날짜 없는 기본 할 일 여섯 + 날짜를 넣은 하나로 바꾼다(진짜 날짜가 이긴다).
+ */
+if (process.env.FIXTURE_TASKS_UNDATED === 'true') {
+  const task = (id, label, dueDate = null, vendorLabel = null) => ({
+    id, label, dueDate, vendorId: null, vendorLabel, state: 'upcoming', stateLabel: '예정', manualState: false,
+  });
+  routes['GET /v1/weddings/:weddingId/tasks'] = {
+    tasks: [
+      task('91111111-1111-4111-8111-111111111111', '드레스 투어'),
+      task('92222222-2222-4222-8222-222222222222', '스튜디오 촬영일'),
+      task('93333333-3333-4333-8333-333333333333', '예물·예단'),
+      task('94444444-4444-4444-8444-444444444444', '예복 맞춤'),
+      task('95555555-5555-4555-8555-555555555555', '청첩장 시안'),
+      task('96666666-6666-4666-8666-666666666666', '혼인신고 서류'),
+      task('97777777-7777-4777-8777-777777777777', '웨딩홀 잔금 납부', '2027-04-01', '청담 E 웨딩홀'),
+    ],
+    progress: { done: 0, total: 7 },
+  };
+}
+
+/* 상담기록 빈 상자(WP-NOTE-004 `uploadBox`) — 누르면 OS 파일 선택기가 열리는지 찍는다. */
+if (process.env.FIXTURE_CONSULT_EMPTY === 'true') {
+  routes['GET /v1/weddings/:weddingId/consultations'] = { records: [] };
+}
+
+if (process.env.FIXTURE_PAYMENT_CONSENT === 'false') {
+  routes['GET /v1/me/settings'] = { ...routes['GET /v1/me/settings'], paymentConsent: false, paymentConsentAt: null };
+}
+routes['POST /v1/me/payment-consent'] = { ...routes['GET /v1/me/settings'], paymentConsent: true, paymentConsentAt: '2026-09-26T00:00:00.000Z' };
+
+/*
+ * 총예산 3,000만원 · 낸 돈 1,200만원인 웨딩에 2,300만원짜리 Pick 인증 — 총예산을 넘은 500만원만큼
+ * 서버가 늘렸다(2026-09-26 대표 결정). 결과 화면 «총예산을 500만원 늘렸어요»를 찍는다.
+ */
+if (process.env.FIXTURE_PROOF_BUDGET_RAISED === 'true') {
+  routes['POST /v1/payment-proofs'] = {
+    ...routes['POST /v1/payment-proofs'],
+    paidAmount: 23000000,
+    budgetRaise: { weddingId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', before: 30000000, budget: 35000000, raisedBy: 5000000 },
+  };
+}
+
+if (process.env.FIXTURE_PROOF_PENDING === 'true') {
+  routes['POST /v1/payment-proofs'] = {
+    ...routes['POST /v1/payment-proofs'],
+    status: 'pending_review',
+    pendingFields: ['merchantName', 'paidAmount', 'paidAt'],
+    reviewNote: '사진에서 금액을 읽지 못했어요. 확인이 끝나면 알려드려요',
+    merchantName: null,
+    paidAmount: null,
+    paidAt: null,
+    maskedIdentifiers: [],
+  };
+  routes['GET /v1/me/reports'] = {
+    reports: [
+      {
+        id: 'd3333333-3333-4333-8333-333333333333',
+        kind: 'payment_proof',
+        kindLabel: 'Pick 인증',
+        use: '실 제보',
+        subject: '확인 중인 자료',
+        vendorId: null,
+        amount: null,
+        reportedAt: '2026-09-26T03:00:00.000Z',
+        inUse: false,
+        needsCheck: true,
+        note: '사진에서 금액을 읽지 못했어요. 확인이 끝나면 알려드려요',
+      },
+      ...routes['GET /v1/me/reports'].reports,
+    ],
   };
 }
 

@@ -1,5 +1,4 @@
 import {
-  STYLE_PICK_LIMIT_TOAST,
   WEDDING_STYLES,
   WEDDING_STYLE_LABEL,
   budgetBracketForAmount,
@@ -13,10 +12,10 @@ import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackHandler, Platform, Pressable, StyleSheet, View, type TextStyle } from 'react-native';
 
-import { ApiError, completeSetup, completeSignup, getCurrentUser, getSignupState } from '@/api/client';
+import { ApiError, completeSetup, getCurrentUser, getSignupState } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { loadToken } from '@/api/session';
-import { error as errorCopy, onboarding as onboardingCopy } from '../../../../spec/strings.ko.json';
+import { onboarding as onboardingCopy } from '../../../../spec/strings.ko.json';
 import {
   Border,
   CanonGray,
@@ -31,6 +30,7 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 
+import { noteSignupPending } from '@/features/auth/sign-in-handoff';
 import { beginHomeHandoff, endHomeHandoff, prefetchHomeBootstrap } from '@/features/home/home-handoff';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { showResultToast } from '@/features/navigation/result-toast';
@@ -44,27 +44,25 @@ import {
   EDIT_CTA,
   EMPTY_ANSWERS,
   NEXT_CTA,
-  PREP_CARDS,
   PREV_CTA,
   STEP_TITLE_LINES,
   STYLE_DESCRIPTION,
   UNDECIDED_LABEL,
   canAdvance,
   doneRows,
-  isPrepCardSelected,
   nextStep,
+  preparedChoicesPayload,
   prevStep,
   resumeStep,
   settleAnswer,
   stepDescription,
   stepProgress,
   stepsFor,
-  togglePrepCard,
   type Answers,
   type QuestionStep,
 } from '@/features/onboarding/flow';
-import { InlineToast, useInlineToast } from '@/features/onboarding/inline-toast';
 import { OptionRow } from '@/features/onboarding/option-row';
+import { PrepStep } from '@/features/onboarding/prep-step';
 import { QuestionHead } from '@/features/onboarding/question-head';
 import { RegionPickerSheet } from '@/features/onboarding/region-picker-sheet';
 import { isSecondExitPress, resolveSetupBack } from '@/features/onboarding/setup-back';
@@ -104,8 +102,8 @@ import {
  * **미정을 억지로 받지 않는다.** 예식일은 «아직 정하지 않았어요» 칩, 진행 상황 · 예산은
  * 아무것도 안 고르고 «다음»을 누르면 미정이다(`settleAnswer`). **지역은 필수다**(2026-09-25
  * 대표 지시 「지역 선택 필수값이다」) — 시/도를 골라야 «다음»이 켜진다. 스타일만 최소 1개 필수다 — 추천의 근거라 없으면 첫 화면에
- * 보여줄 것이 없다. 최대 2개이며 3번째 선택은 정본 토스트로 알린다(CLAUDE.md
- * v3.24 · 대조표 「4종 버튼 · 최대 2개」). 이미 고른 스타일이 서버에 있으면(다시
+ * 보여줄 것이 없다. 최대는 없다(2026-09-26 대표 결정 「개수제한 없다」 · 정본 WP-AUTH-006
+ * 「개수 제한 없이 원하는 만큼」) — 전의 최대 2개 · 3번째 토스트는 걷었다. 이미 고른 스타일이 서버에 있으면(다시
  * 들어온 계정) 초기화하지 않고 복원해서 보여준다.
  *
  * **스크롤은 화면 전체 하나다**(SPEC §13.5.5). 목록 전용 스크롤을 두지 않는다.
@@ -164,7 +162,6 @@ export default function SetupScreen() {
   const stepRef = useRef<QuestionStep | 'done'>('date');
   const [sheetOpen, setSheetOpen] = useState(false);
   const [regionSheetOpen, setRegionSheetOpen] = useState(false);
-  const limitToast = useInlineToast();
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -344,14 +341,14 @@ export default function SetupScreen() {
           return;
         }
         /*
-         * 가입을 먼저 끝낸다. 서버는 살아 있지 않은 계정의 다른 경로를 전부 막으므로
-         * 순서를 바꾸면 예식일 저장이 거절된다.
+         * 가입이 끝난 계정인지 먼저 본다. 서버는 살아 있지 않은 계정의 다른 경로를 전부
+         * 막으므로 순서를 바꾸면 예식일 저장이 거절된다.
          *
-         * **v3.29부터 필수 동의는 보통 이 화면에 오기 전에 끝나 있다** — 약관 동의 ·
-         * 권한 안내(WP-AUTH-010, `app/login/consent.tsx`)가 로그인 직후에 따로 서서
-         * `completeSignup`을 그때 부른다. 여기 남은 호출은 그 화면을 거치지 않은
-         * 옛 흐름 · 서버 미설정 개발 환경을 위한 안전장치다 — `signup.activated`가
-         * 이미 true면 아래 분기를 타지 않는다. 나이는 보내지 않는다(로그인이 판정했다).
+         * **동의를 대신 넣지 않는다**(2026-09-26 대표 결정 「강제한다」). 전에는 가입 전
+         * 계정이면 여기서 `terms` · `privacy`를 사용자 대신 보내 가입을 마쳤다. 이제
+         * 필수 다섯(만 14세 · Pick 인증 · 상담 녹음 포함)이 모두 관문이고, 사용자가 보지
+         * 않은 동의를 보낼 수는 없다 — 약관 동의(WP-AUTH-010)로 보낸다. 적어 둔 답은
+         * 기기에 남아 있어, 동의를 마치고 돌아오면 마지막 질문부터 이어서 한다.
          */
         // 화면 진입 시 조회가 늦거나 실패해도 가입 완료로 간주하지 않는다.
         const signup = await getSignupState();
@@ -360,8 +357,10 @@ export default function SetupScreen() {
           return;
         }
         if (!signup.activated) {
-          const completed = await completeSignup({ consents: ['terms', 'privacy'] });
-          if (!completed.activated) throw new Error(errorCopy['general.body']);
+          /* 방금 «가입 전»을 확인했다 — 약관 동의가 로더 없이 폼부터 서게(`sign-in-handoff`). */
+          noteSignupPending();
+          dismissToOrReplace('/login/consent');
+          return;
         }
 
         if (await loadToken() !== token) {
@@ -374,6 +373,8 @@ export default function SetupScreen() {
           region: draft.region,
           preparedCategories: draft.preparedCategories,
           budgetBracket: draft.budgetBracket,
+          /* 진행 상황 카드에서 고른 업체 · 직접 입력 — 서버가 같은 트랜잭션에서 Pick 담기 · 결정을 남긴다. */
+          ...preparedChoicesPayload(source.prep),
           /* 계약은 최소 1개를 받는다 — 5/5는 건너뛰지 않으므로 늘 있지만, 없으면 키를 아예 보내지 않는다. */
           ...(styleTags.length > 0 ? { styleTags } : {}),
         });
@@ -522,7 +523,6 @@ export default function SetupScreen() {
   const chosenStyles = answers.style ?? [];
   const date = answers.date?.value ?? null;
   const dateUndecided = answers.date !== null && date === null;
-  const preparedCategories = answers.prep?.categories ?? [];
   const remaining = date ? dDay(date) : null;
 
   return (
@@ -602,21 +602,9 @@ export default function SetupScreen() {
           </View>
         ) : null}
 
-        {/* 진행 상황 3/5 — 시안 PREP_CATS 카드 넷(이름 17/700 · 부제 13 · 체크). 여러 개 고른다. */}
+        {/* 진행 상황 3/5 — 시안 PREP_CATS 카드 넷. 카드를 누르면 업체 검색 시트가 열린다(2026-09-26). */}
         {step === 'prep' ? (
-          <View style={styles.prepOptions}>
-            {PREP_CARDS.map((card) => (
-              <OptionRow
-                key={card.key}
-                role="checkbox"
-                variant="prep"
-                label={card.name}
-                description={card.description}
-                selected={isPrepCardSelected(card, preparedCategories)}
-                onPress={() => update({ prep: { categories: togglePrepCard(card, preparedCategories) } })}
-              />
-            ))}
-          </View>
+          <PrepStep value={answers.prep} onChange={(prep) => update({ prep })} />
         ) : null}
 
         {/* 예산 4/5 — 만원 금액 직접 입력 + 빠른 입력 칩 + 안내 한 줄. */}
@@ -627,7 +615,7 @@ export default function SetupScreen() {
           />
         ) : null}
 
-        {/* 스타일 5/5 — 설명 한 줄이 붙은 4버튼. 최대 2개이며 사진 타일은 쓰지 않는다. */}
+        {/* 스타일 5/5 — 설명 한 줄이 붙은 4버튼. 개수 제한 없음(2026-09-26 대표 결정) · 사진 타일은 쓰지 않는다. */}
         {step === 'style' ? (
           <View style={styles.styleOptions}>
             {WEDDING_STYLES.map((style) => (
@@ -637,20 +625,9 @@ export default function SetupScreen() {
                 label={WEDDING_STYLE_LABEL[style]}
                 description={STYLE_DESCRIPTION[style]}
                 selected={chosenStyles.includes(style)}
-                onPress={() => {
-                  const { next, limited } = toggleStyle(chosenStyles, style);
-
-                  if (limited) limitToast.show(STYLE_PICK_LIMIT_TOAST);
-                  else update({ style: next });
-                }}
+                onPress={() => update({ style: toggleStyle(chosenStyles, style) })}
               />
             ))}
-          </View>
-        ) : null}
-
-        {step === 'style' ? (
-          <View style={styles.toastWrap}>
-            <InlineToast toast={limitToast.toast} onHidden={limitToast.hide} placement="inline" />
           </View>
         ) : null}
 
@@ -727,22 +704,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  /* 시안 prepSec — 좌우 24 · 아래 20 · 카드 사이 10. */
-  prepOptions: {
-    paddingHorizontal: Layout.gutter,
-    paddingBottom: Layout.listGap,
-    gap: Layout.iconTextGap,
-  },
   /* 시안 styleBtnWrap — 좌우 24 · 아래 16 · 카드 사이 10. */
   styleOptions: {
     paddingHorizontal: Layout.gutter,
     paddingBottom: Spacing.three,
     gap: Layout.iconTextGap,
-  },
-  toastWrap: {
-    paddingHorizontal: Layout.gutter,
-    paddingBottom: Layout.listGap,
-    alignItems: 'center',
   },
   bold: { fontWeight: 700 },
   pressed: { opacity: 0.8 },

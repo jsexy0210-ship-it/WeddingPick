@@ -7,8 +7,9 @@ import { StyleSheet, View } from 'react-native';
 import { ErrorView, Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import { listMyReports } from '@/api/client';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
+import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import { won } from '@/features/quotes/quote-result-view';
-import { Badge, EmptyBox, Hero, Section, SubScreen } from '@/features/settings/my-kit';
+import { Badge, EmptyBox, Hero, Section, SubScreen, SubScreenStatus } from '@/features/settings/my-kit';
 
 const S = {
   title: 'Pick 인증내역',
@@ -45,7 +46,8 @@ export default function MyReportsScreen() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const loadVersion = useRef(0);
 
-  const load = useCallback(() => {
+  /** `keep` — 당겨서 새로 고침. 보이던 내역은 두고 실패는 토스트로만 알린다. */
+  const load = useCallback((keep?: boolean) => {
     const version = ++loadVersion.current;
     void listMyReports()
       .then((response) => {
@@ -54,7 +56,9 @@ export default function MyReportsScreen() {
         setReports(response.reports);
       })
       .catch((caught: Error) => {
-        if (version === loadVersion.current) setLoadError(caught.message ?? 'Pick 인증내역을 불러오지 못했어요');
+        if (version !== loadVersion.current) return;
+        if (keep === true) notifyRefreshFailed();
+        else setLoadError(caught.message ?? 'Pick 인증내역을 불러오지 못했어요');
       });
   }, []);
 
@@ -62,9 +66,10 @@ export default function MyReportsScreen() {
     load();
     return () => { loadVersion.current += 1; };
   }, [load]));
+  const pull = usePullRefresh(useCallback(() => load(true), [load]));
 
-  if (loadError) return <ErrorView message={loadError} onRetry={load} />;
-  if (reports === null) return <DelayedLoadingView />;
+  if (loadError) return <SubScreenStatus title={S.title}><ErrorView message={loadError} onRetry={() => load()} /></SubScreenStatus>;
+  if (reports === null) return <SubScreenStatus title={S.title}><DelayedLoadingView /></SubScreenStatus>;
 
   const proofs = reports.filter((report) => report.kind !== 'review');
   const used = proofs.filter((report) => report.inUse).length;
@@ -77,7 +82,7 @@ export default function MyReportsScreen() {
 
   return (
     /* 하단 «새로 인증하기 · 첫 Pick 인증하기»는 Pick 인증 촬영 삭제(2026-09-25)로 뺐다. */
-    <SubScreen title={S.title}>
+    <SubScreen title={S.title} refreshControl={pull.refreshControl}>
       <Hero lines={empty ? S.heroEmpty : S.hero(proofs.length, used)} />
 
       {empty ? null : (

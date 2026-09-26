@@ -1,6 +1,5 @@
 import {
-  STYLE_PICK_LIMIT_TOAST,
-  STYLE_PICK_MAX,
+  STYLE_PICK_MIN,
   styleMatchReason,
   styleOverlap,
   toggleStyle,
@@ -12,15 +11,15 @@ describe('스타일 4종', () => {
     expect([...WEDDING_STYLES]).toEqual(['URBAN', 'NATURAL', 'ROMANTIC', 'GLAMOROUS']);
   });
 
-  it('재클릭은 해제하고 세 번째 선택은 정본 문구로 막는다', () => {
-    expect(toggleStyle([], 'URBAN').next).toEqual(['URBAN']);
-    expect(toggleStyle(['URBAN'], 'URBAN').next).toEqual([]);
-    const two = toggleStyle(['URBAN'], 'ROMANTIC');
-    const three = toggleStyle(two.next, 'NATURAL');
-    expect(three.next).toEqual(['URBAN', 'ROMANTIC']);
-    expect(three.limited).toBe(true);
-    expect(STYLE_PICK_MAX).toBe(2);
-    expect(STYLE_PICK_LIMIT_TOAST).toBe('스타일은 2개까지 고를 수 있어요');
+  it('재클릭은 해제하고, 개수 제한 없이 넷 다 고를 수 있다(2026-09-26 대표 결정)', () => {
+    expect(toggleStyle([], 'URBAN')).toEqual(['URBAN']);
+    expect(toggleStyle(['URBAN'], 'URBAN')).toEqual([]);
+    let chosen: readonly (typeof WEDDING_STYLES)[number][] = [];
+    for (const style of WEDDING_STYLES) chosen = toggleStyle(chosen, style);
+    /* 세 번째 · 네 번째도 막지 않는다 — 고른 순서 그대로. */
+    expect(chosen).toEqual(['URBAN', 'NATURAL', 'ROMANTIC', 'GLAMOROUS']);
+    expect(toggleStyle(chosen, 'NATURAL')).toEqual(['URBAN', 'ROMANTIC', 'GLAMOROUS']);
+    expect(STYLE_PICK_MIN).toBe(1);
   });
 
   it('교집합은 순서 가중치일 뿐 업체를 빼지 않는다', () => {

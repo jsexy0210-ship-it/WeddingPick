@@ -6,6 +6,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { listDecisions, listWeddingNotes } from '@/api/client';
 import { formatDateDot } from '@/features/common/format-date';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import { ActionButton, Border, ErrorView, Layout, LineHeight, Radius, SkeletonView, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import { Hero, NavBar, Screen } from '@/features/wedding/screen-kit';
 
@@ -36,20 +37,28 @@ export default function DecidedVendorsScreen() {
   const [notes, setNotes] = useState<WeddingNote[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(() => {
+  /** `keep` — 당겨서 새로 고침. 보이던 목록은 두고 실패는 토스트로만 알린다. */
+  const load = useCallback((keep?: boolean) => {
     listDecisions(id)
-      .then(setPage)
-      .catch((caught: Error) => setError(caught.message));
+      .then((next) => {
+        setPage(next);
+        setError(null);
+      })
+      .catch((caught: Error) => {
+        if (keep === true) notifyRefreshFailed();
+        else setError(caught.message);
+      });
     // 메모는 보조 줄이다 — 못 받아도 결정 목록은 그린다.
     listWeddingNotes(id)
       .then((result) => setNotes(result.notes))
       .catch(() => undefined);
   }, [id]);
 
-  useEffect(load, [load]);
+  useEffect(() => load(), [load]);
+  const pull = usePullRefresh(useCallback(() => load(true), [load]));
 
   if (error) {
-    return <ErrorView message={error} onBack={depthBack} onRetry={load} />;
+    return <ErrorView message={error} onBack={depthBack} onRetry={() => load()} />;
   }
 
   if (!page) {
@@ -67,7 +76,10 @@ export default function DecidedVendorsScreen() {
     <Screen>
       <NavBar title={S.title} variant="close" />
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={pull.refreshControl}>
         {page.decisions.length === 0 ? (
           <>
             <Hero title="아직 정한 곳이 없어요" sub="업종마다 마음에 드는 곳을 정하면 여기 모여요" />

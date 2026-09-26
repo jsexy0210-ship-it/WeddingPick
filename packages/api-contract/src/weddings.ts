@@ -1,14 +1,36 @@
 import {
+  INVITE_CODE_LENGTH,
+  INVITE_CODE_PATTERN,
+  MANUAL_DECISION_NAME_MAX,
   MAX_DISPLAY_NAME_LENGTH,
   MEMBER_TIERS,
-  STYLE_PICK_MAX,
+  PREPARATION_GROUPS,
   STYLE_PICK_MIN,
   WEDDING_BUDGET_BRACKETS,
+  WEDDING_STYLES,
+  type PreparationGroupKey,
 } from '@weddingpick/domain';
 import { z } from 'zod';
 
 import { dateSchema, idSchema, preparationCategorySchema, timestampSchema } from './common';
 import { weddingStyleSchema } from './vendors';
+
+/** 준비 현황(3/5) 카드 수 — 카드마다 업체 한 곳까지 고른다. */
+export const PREPARED_VENDOR_MAX = 4;
+
+/** 준비 묶음 키 — 온보딩 3/5 카드 넷 · Pick 칩 · `/pick?group=`이 같은 값을 쓴다. */
+export const preparationGroupKeySchema = z.enum(
+  PREPARATION_GROUPS.map((group) => group.key) as [PreparationGroupKey, ...PreparationGroupKey[]]
+);
+
+/**
+ * 준비 현황(3/5) 카드에서 **직접 입력한** 곳(2026-09-26 대표 지시 「직접입력하는 방법
+ * 고안하라」). 우리 목록에 없어 검색으로 못 고른 곳의 이름이다. 앞뒤 공백은 떼고 1~30자.
+ */
+export const preparedManualVendorSchema = z.object({
+  group: preparationGroupKeySchema,
+  name: z.string().trim().min(1).max(MANUAL_DECISION_NAME_MAX),
+});
 
 /** 온보딩 4/5 예산 스텝. 핸드오프 v3.19가 정한 여섯 구간 중 하나 — 자유 입력이 아니다. */
 export const budgetBracketSchema = z.enum(WEDDING_BUDGET_BRACKETS);
@@ -81,10 +103,11 @@ export const currentUserSchema = z.object({
    */
   setupComplete: z.boolean(),
   /**
-   * 스타일(온보딩 5/5 · v3.22). 도시적인 · 자연스러운 · 로맨틱한 · 화려한 중 최소 1 최대 2.
-   * 홈 조건 칩과 추천 정렬 · 업체 상세의 스타일 일치 표기가 이 값을 본다.
+   * 스타일(온보딩 5/5 · v3.22). 도시적인 · 자연스러운 · 로맨틱한 · 화려한 중 최소 1, 개수 제한
+   * 없음(2026-09-26 대표 결정). 홈 조건 칩과 추천 정렬 · 업체 상세의 스타일 일치 표기가 이 값을 본다.
+   * 넷보다 많을 수 없는 것은 종류가 넷뿐이라서다 — 상한이 아니다.
    */
-  styleTags: z.array(weddingStyleSchema).max(STYLE_PICK_MAX),
+  styleTags: z.array(weddingStyleSchema).max(WEDDING_STYLES.length),
 
   /** 배우자가 연결돼 있는가. 등급과 미션이 이 값을 본다. */
   spouseLinked: z.boolean(),
@@ -151,8 +174,27 @@ export const completeSetupRequestSchema = z.object({
   /** 준비 현황(3/5). 안 보내면 그대로, 빈 배열은 «아직 시작 전이에요». 새 웨딩의 기본은 빈 배열. */
   preparedCategories: preparedCategoriesSchema.optional(),
   budgetBracket: budgetBracketSchema.nullable().optional(),
-  /** 스타일(5/5). 안 보내면 그대로. 보내면 최소 1 · 최대 2 — 재클릭 해제, 3번째는 토스트. */
-  styleTags: z.array(weddingStyleSchema).min(STYLE_PICK_MIN).max(STYLE_PICK_MAX).optional(),
+  /**
+   * 스타일(5/5). 안 보내면 그대로. 보내면 최소 1, 개수 제한 없음(2026-09-26 대표 결정) — 넷 다
+   * 받는다. 겹친 값은 서버가 걷는다(`routes/weddings.ts`). 넷을 넘는 배열은 겹친 값뿐이라 거절한다.
+   */
+  styleTags: z.array(weddingStyleSchema).min(STYLE_PICK_MIN).max(WEDDING_STYLES.length).optional(),
+  /**
+   * 준비 현황(3/5)에서 검색 시트로 고른 업체(2026-09-26 대표 지시). 카드 넷(웨딩홀 · 스드메 ·
+   * 본식 · 예물 · 신혼)마다 최대 한 곳이라 넷까지다. 업체의 업종은 같이 보낸
+   * `preparedCategories` 안에 있어야 한다 — 업체를 골랐다는 것이 곧 그 카드가 «결정 완료»다.
+   * 서버는 **같은 트랜잭션 안에서** 이 업체들을 Pick(`vendor_candidates`)에 담는다 — 이미 담긴 곳은 그대로 두어 다시 보내도
+   * 겹치지 않는다. 안 보내거나 빈 배열이면 Pick을 건드리지 않는다(«아직 정한 곳이 없어요»).
+   */
+  preparedVendorIds: z.array(idSchema).max(PREPARED_VENDOR_MAX).optional(),
+  /**
+   * 목록에서 고른 업체(`preparedVendorIds`)는 Pick 담기와 함께 그 업종의 **결정**으로도
+   * 남는다(2026-09-26 대표 지시 「결정으로 넣는다」). 직접 입력한 곳(이 칸)은 업체가 없어
+   * 담기는 없고 결정만 남는다 — 묶음의 첫 업종에 이름으로(`manualDecisionCategory`).
+   * 카드 하나에 업체 · 직접 입력 중 하나만 온다. 이미 결정이 있는 업종(배우자가 먼저 정한
+   * 곳 포함)은 덮지 않는다.
+   */
+  preparedManualVendors: z.array(preparedManualVendorSchema).max(PREPARED_VENDOR_MAX).optional(),
 });
 
 /**
@@ -163,8 +205,8 @@ export const completeSetupRequestSchema = z.object({
  */
 export const createInviteResponseSchema = z.object({
   inviteId: idSchema,
-  /** 6자리 숫자(2026-09-25 대표 지시). 앞자리 0도 코드의 일부다. */
-  code: z.string().regex(/^\d{6}$/),
+  /** 4자리 숫자(2026-09-26 대표 지시 · `INVITE_CODE_PATTERN`). 앞자리 0도 코드의 일부다. */
+  code: z.string().regex(INVITE_CODE_PATTERN),
   expiresAt: timestampSchema,
   /** 초대받은 사람이 볼 안내. 무엇이 공유되고 무엇이 안 되는지. */
   shared: z.array(z.string().min(1)).min(1),
@@ -204,9 +246,12 @@ export const invitePreviewResponseSchema = z.discriminatedUnion('usable', [
   }),
 ]);
 
-/** 6자리 숫자만 받는다. 옛 긴 코드는 더 받지 않는다 — 72시간 안에 모두 만료된다. */
+/**
+ * 4자리 숫자만 받는다(2026-09-26 대표 지시). 옛 6자리 · 긴 코드는 더 받지 않는다 —
+ * 대기 중이던 것은 0439가 취소했고, 남은 줄도 72시간 안에 모두 만료된다.
+ */
 export const acceptInviteRequestSchema = z.object({
-  code: z.string().trim().regex(/^\d{6}$/, '초대 코드는 숫자 6자리예요.'),
+  code: z.string().trim().regex(INVITE_CODE_PATTERN, `초대 코드는 숫자 ${INVITE_CODE_LENGTH}자리예요.`),
 });
 
 export type Wedding = z.infer<typeof weddingSchema>;

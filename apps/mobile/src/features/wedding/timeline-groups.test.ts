@@ -75,6 +75,29 @@ describe('buildUpcomingTimelineGroups', () => {
     ]);
   });
 
+  /* 2026-09-26 대표 감사(운영에서 재현) — 예식이 이번 주 일요일이면 다음 주 구간이 「D--1」이었다. */
+  it('구간 시작이 예식 뒤면 D+N으로 적고 부호를 겹치지 않는다', () => {
+    const groups = buildUpcomingTimelineGroups(
+      [
+        event('today', new Date(2026, 8, 22, 18, 0).toISOString()),
+        event('after', new Date(2026, 8, 29, 11, 0).toISOString()),
+        event('month-after', new Date(2026, 10, 3, 11, 0).toISOString()),
+      ],
+      '2026-09-27',
+      NOW
+    );
+
+    expect(groups[0]!.range).toBe('9.22~9.27 · D-5');
+    expect(groups[1]!.range).toBe('9.28~10.4 · D+1');
+    expect(groups[2]).toMatchObject({ title: '11월', range: 'D+37 구간' });
+    for (const group of groups) expect(group.range).not.toContain('D--');
+  });
+
+  it('예식 당일이 구간 시작이면 D-DAY다', () => {
+    const groups = buildUpcomingTimelineGroups([event('today', new Date(2026, 8, 22, 18, 0).toISOString())], '2026-09-22', NOW);
+    expect(groups[0]!.range).toBe('9.22~9.27 · D-DAY');
+  });
+
   it('일정이 없으면 빈 배열이다', () => {
     expect(buildUpcomingTimelineGroups([], null, NOW)).toEqual([]);
   });

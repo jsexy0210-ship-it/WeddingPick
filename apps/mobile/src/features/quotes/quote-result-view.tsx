@@ -6,6 +6,7 @@ import type {
 } from '@weddingpick/api-contract';
 import { ANALYSIS_DISCLAIMER, formatCount, PRICE_JUDGEMENT_LABEL, needsAttention } from '@weddingpick/domain';
 import { formatDateDot } from '@/features/common/format-date';
+import { vendorSourceValue } from '@/features/search/vendor-source';
 import { ScrollView, StyleSheet, type ViewStyle } from 'react-native';
 
 import {
@@ -150,7 +151,7 @@ export function QuoteResultView({
         <VerificationBadge level={quote.verificationLevel} />
         {quote.vendor?.sourceNote ? (
           <ThemedText type="small" themeColor="textSecondary">
-            업체 정보 출처: {quote.vendor.sourceNote}
+            업체 정보 출처: {vendorSourceValue(quote.vendor.sourceNote)}
           </ThemedText>
         ) : null}
       </ThemedView>

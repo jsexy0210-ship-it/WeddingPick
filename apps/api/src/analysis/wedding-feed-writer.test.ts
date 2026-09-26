@@ -1,4 +1,4 @@
-import { createGeminiFeedWriter } from './wedding-feed-writer';
+import { FEED_WRITER_TEMPERATURE, SYSTEM_PROMPT, createGeminiFeedWriter } from './wedding-feed-writer';
 import type { WeddingFeedTopic } from '@weddingpick/domain';
 
 /**
@@ -112,6 +112,49 @@ describe('웨딩피드 제미나이 작성기', () => {
 
     expect(outcome.draft).toEqual(DRAFT);
     expect(outcome.usage).toEqual({ inputTokens: 900, outputTokens: 320 });
+  });
+
+  /*
+   * 2026-09-26 대표 지시 — 「같은 카테고리 이전 내용을 분석해서 중첩되지 않는 내용으로
+   * 생성한다」. 전에는 이전 글을 한 줄도 넘기지 않았고 온도가 0이라, 같은 카테고리에서
+   * 누를 때마다 같은 요청 · 같은 글이었다.
+   */
+  it('같은 카테고리의 이전 글과 피할 제목을 「이미 쓴 글」로 담아 보낸다', async () => {
+    callGemini.mockResolvedValue(okResponse());
+
+    await createGeminiFeedWriter({ apiKey: 'test-key', model: 'gemini-2.5-flash-lite' }).write(TOPIC, [], {
+      covered: [
+        { title: '스드메 예산을 넘기지 않게 짜는 방법', summary: '상한을 먼저 정해요.', body: '항목별 상한을 적어요.' },
+      ],
+      avoidTitles: ['스드메 예산 상한 정하기'],
+    });
+
+    const call = callGemini.mock.calls[0]?.[0] as { parts: { text?: string }[] };
+    const text = call.parts.map((part) => part.text ?? '').join('\n');
+
+    expect(text).toContain('이미 쓴 글(같은 묶음 · 최근 1편)');
+    expect(text).toContain('- 스드메 예산을 넘기지 않게 짜는 방법 — 상한을 먼저 정해요. (요점: 항목별 상한을 적어요.)');
+    expect(text).toContain('- 스드메 예산 상한 정하기');
+    expect(SYSTEM_PROMPT).toContain('겹치지 않는 세부 주제와 관점');
+  });
+
+  it('이전 글이 없으면 목록 줄을 넣지 않는다', async () => {
+    callGemini.mockResolvedValue(okResponse());
+
+    await createGeminiFeedWriter({ apiKey: 'test-key', model: 'gemini-2.5-flash-lite' }).write(TOPIC);
+
+    const call = callGemini.mock.calls[0]?.[0] as { parts: { text?: string }[] };
+
+    expect(call.parts.map((part) => part.text ?? '').join('\n')).not.toContain('이미 쓴 글');
+  });
+
+  it('글쓰기는 온도를 올려 부른다 — 0이면 같은 요청에 같은 글이 나온다', async () => {
+    callGemini.mockResolvedValue(okResponse());
+
+    await createGeminiFeedWriter({ apiKey: 'test-key', model: 'gemini-2.5-flash-lite' }).write(TOPIC);
+
+    expect(FEED_WRITER_TEMPERATURE).toBeGreaterThan(0);
+    expect(callGemini.mock.calls[0]?.[0]).toMatchObject({ temperature: FEED_WRITER_TEMPERATURE });
   });
 
   /*

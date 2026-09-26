@@ -48,14 +48,29 @@ export const reviewCommentsSchema = z.object({
   items: z.array(reviewCommentSchema),
 });
 
+/**
+ * @deprecated 서명 URL로 저장소에 바로 올리던 옛 길(`POST /v1/reviews/media/upload-target`).
+ * 브라우저에서 CORS preflight로 막힌다 — 이미 배포된 옛 앱이 쓰는 동안만 남긴다.
+ * 새 앱은 `POST /v1/reviews/media`에 사진 본문을 그대로 올린다(`uploadReviewMediaResponseSchema`).
+ */
 export const createReviewMediaUploadTargetRequestSchema = z.object({
   mimeType: reviewImageMimeTypeSchema,
 });
 
+/** @deprecated `createReviewMediaUploadTargetRequestSchema`와 같은 옛 길. */
 export const createReviewMediaUploadTargetResponseSchema = z.object({
   storageKey: z.string().min(1),
   uploadUrl: z.url(),
   expiresAt: timestampSchema,
+});
+
+/**
+ * 후기 사진 한 장을 같은 출처로 올린 결과 — `POST /v1/reviews/media`(본문은 사진 그대로 ·
+ * `content-type`은 JPG · PNG · WebP · 10MB까지). 받은 `storageKey`를 후기 쓰기의 `media`에 싣는다.
+ */
+export const uploadReviewMediaResponseSchema = z.object({
+  storageKey: z.string().min(1),
+  mimeType: reviewImageMimeTypeSchema,
 });
 
 export const createReviewCommentRequestSchema = z.object({
@@ -371,6 +386,7 @@ export type ReviewComment = z.infer<typeof reviewCommentSchema>;
 export type ReviewComments = z.infer<typeof reviewCommentsSchema>;
 export type CreateReviewMediaUploadTargetRequest = z.infer<typeof createReviewMediaUploadTargetRequestSchema>;
 export type CreateReviewMediaUploadTargetResponse = z.infer<typeof createReviewMediaUploadTargetResponseSchema>;
+export type UploadReviewMediaResponse = z.infer<typeof uploadReviewMediaResponseSchema>;
 export type CreateReviewCommentRequest = z.infer<typeof createReviewCommentRequestSchema>;
 export type ReviewCommentListResponse = z.infer<typeof reviewCommentListResponseSchema>;
 export type Review = z.infer<typeof reviewSchema>;

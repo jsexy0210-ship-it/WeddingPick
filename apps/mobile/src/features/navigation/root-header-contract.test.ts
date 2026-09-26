@@ -39,14 +39,15 @@ describe('Root 1Depth 제목 헤더', () => {
    * 화면마다 제목 크기 · 줄 높이 · 여백을 따로 들면 다시 갈라진다(운영에서 26/35 · 26/39 · 22/28 ·
    * 28/36+위 4 · 아래 24로 넷이 갈려 있었다).
    */
-  it('공통 제목 줄은 홈 기준 — 줄 66 · 좌우 gutter 24 · 위아래 0 · f26(26/39) · 700 · 자간 -0.52', () => {
+  it('공통 제목 줄은 홈 기준 — 줄 66 · 좌우 20 · 위아래 0 · f26(26/39) · 700 · 자간 -0.52', () => {
     const text = readFileSync(join(__dirname, '..', '..', 'components', 'root-tab-header.tsx'), 'utf8');
     const header = styleBlock(text, 'header');
 
     expect(text).toContain('export const ROOT_TAB_HEADER_HEIGHT = 66;');
     expect(header).toContain('minHeight: ROOT_TAB_HEADER_HEIGHT');
     expect(header).toContain("alignItems: 'center'");
-    expect(text).toContain('gutter = Layout.gutter');
+    expect(text).toContain('export const ROOT_TAB_GUTTER = 20;');
+    expect(text).toContain('gutter = ROOT_TAB_GUTTER');
     expect(text).toContain('{ paddingHorizontal: gutter }');
     expect(header).not.toMatch(/padding(?:Top|Bottom|Vertical)?:/);
     expect(text).toContain('type="f26"');
@@ -83,15 +84,50 @@ describe('Root 1Depth 제목 헤더', () => {
     expect(text).toMatch(/emptyNav: \{ borderBottomWidth: Border\.hairline \}/);
   });
 
-  it('홈 말고는 좌우 여백을 따로 넘기지 않는다', () => {
-    for (const path of ['search/index.tsx', 'pick/index.tsx', 'wedding/index.tsx', 'my/index.tsx']) {
+  it('다섯 탭 모두 제목 줄 좌우를 따로 넘기지 않는다 — 기본값 ROOT_TAB_GUTTER 하나', () => {
+    for (const path of ['index.tsx', 'search/index.tsx', 'pick/index.tsx', 'wedding/index.tsx', 'my/index.tsx']) {
       expect(source(path)).not.toContain('gutter=');
     }
   });
 
-  it('검색 Root는 제목 줄 아래 검색창 줄만 좌우 24를 갖는다', () => {
+  /*
+   * 2026-09-26 대표 지시 「통일해」 — Root 5탭은 제목 줄과 본문 좌우가 20 한 값이다(정본 home.js ·
+   * search.js · pick.js · my.js `padding:0 20px`). 전역 `Layout.gutter` · `Layout.pageX`(24)는 하위
+   * 화면 몫이라 Root 본문 컨테이너의 좌우 여백으로 다시 들이지 않는다.
+   */
+  it.each([
+    'index.tsx',
+    'search/index.tsx',
+    'pick/index.tsx',
+    'wedding/index.tsx',
+    'my/index.tsx',
+  ])('%s 본문 좌우는 ROOT_TAB_GUTTER(20)이다', (path) => {
+    const text = source(path);
+
+    expect(text).not.toMatch(/(?:padding|margin)(?:Horizontal|Left|Right): Layout\.(?:gutter|pageX)/);
+    expect(text).toMatch(/ROOT_TAB_GUTTER|HOME_PAGE_X/);
+  });
+
+  it('홈 전용 여백 HOME_PAGE_X는 ROOT_TAB_GUTTER를 다시 내보낼 뿐이다 — 20이 두 군데 적히지 않는다', () => {
+    const text = readFileSync(join(__dirname, '..', 'home', 'home-layout.ts'), 'utf8');
+    expect(text).toContain('export const HOME_PAGE_X = ROOT_TAB_GUTTER;');
+    expect(text).not.toMatch(/HOME_PAGE_X = \d/);
+  });
+
+  it('검색 Root는 제목 줄 아래 검색창 줄도 좌우 20이다', () => {
     const text = source('search/index.tsx');
-    expect(styleBlock(text, 'headerSearchRow')).toContain('paddingHorizontal: Layout.pageX');
+    expect(styleBlock(text, 'headerSearchRow')).toContain('paddingHorizontal: ROOT_TAB_GUTTER');
+  });
+
+  /* 2026-09-26 대표 지시 「고정으로 통일해」 — Pick 제목도 다른 네 탭처럼 스크롤 밖에 고정한다. */
+  it('Pick 제목 줄은 스크롤 밖에 고정된다', () => {
+    const text = source('pick/index.tsx');
+    const render = text.slice(text.indexOf('return (\n    <ThemedView style={styles.root}>'));
+    const header = render.indexOf('<Header />');
+
+    expect(header).toBeGreaterThan(0);
+    expect(render.indexOf('<ScrollView')).toBeGreaterThan(header);
+    expect(render.match(/<Header \/>/g)).toHaveLength(1);
   });
 
   /*

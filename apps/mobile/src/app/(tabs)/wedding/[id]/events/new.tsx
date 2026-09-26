@@ -1,9 +1,9 @@
-import type { CurrentUser } from '@weddingpick/api-contract';
+import type { CurrentUser, PublicHoliday } from '@weddingpick/api-contract';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 
-import { addWeddingEvent, getCurrentUser } from '@/api/client';
+import { addWeddingEvent, getCurrentUser, listPublicHolidays } from '@/api/client';
 import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
 import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
 import { OsDateField, OsTimeField } from '@/features/common/os-picker-field';
@@ -11,6 +11,7 @@ import { dayOf } from '@/features/common/os-picker-field.shared';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { showResultToast } from '@/features/navigation/result-toast';
 import { combineDayTime } from '@/features/wedding/event-form';
+import { holidayLine, monthRange } from '@/features/wedding/public-calendar-lines';
 import { CheckBox, Field, ListRow, ToggleSwitch } from '@/features/wedding/screen-kit';
 import { ActionButton, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 
@@ -29,6 +30,10 @@ const DEFAULT_TIME = '14:00';
  *              하나뿐이다 — 없는 값을 토글로 그리지 않는다([eventId].tsx의 같은 결정과
  *              동일). 「하루 전에 알려주기」만 실제 스위치로 두고, 배우자 몫은 연결된
  *              배우자가 있을 때만 안내 행(비활성 체크)으로 보여준다.
+ *   공휴일     날짜 칸 바로 아래 한 줄(f13 · textSecondary) — 고른 날짜가 든 달의 공휴일만
+ *              이어 쓴다(2026-09-24 대표 A안 「달력 아래 보고 있는 달 공휴일 한 줄」). 날짜 선택이
+ *              휠 시트로 바뀌어 «달력 아래» 자리가 없어져 날짜 칸 아래로 옮겼다 — 자리는
+ *              DESIGN_UNRESOLVED(대표님 확인 대기). 날짜가 없거나 못 받으면 줄을 그리지 않는다.
  *   CTA        Primary 1개 「일정 넣기」(sheetDock `btnPrimaryFull`) — 취소는 X 하나뿐이다.
  *
  * /events/new 딥링크는 유지하되 별도 전체 화면은 만들지 않는다. 부모 일정 화면을 그대로
@@ -42,6 +47,7 @@ export default function AddWeddingEventRoute() {
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [title, setTitle] = useState('');
   const [day, setDay] = useState<string | null>(date ?? null);
+  const [holidays, setHolidays] = useState<PublicHoliday[]>([]);
   const [time, setTime] = useState(DEFAULT_TIME);
   const [notifyEnabled, setNotifyEnabled] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +58,22 @@ export default function AddWeddingEventRoute() {
       .then(setMe)
       .catch(() => undefined);
   }, []);
+
+  /* 고른 날짜가 든 달 — 「YYYY-MM」. 달이 바뀔 때만 다시 묻는다. */
+  const dayMonth = day?.slice(0, 7) ?? null;
+  const shownMonth = dayMonth ? { year: Number(dayMonth.slice(0, 4)), month: Number(dayMonth.slice(5, 7)) - 1 } : null;
+
+  useEffect(() => {
+    if (!dayMonth) return;
+    let active = true;
+    const { from, to } = monthRange(Number(dayMonth.slice(0, 4)), Number(dayMonth.slice(5, 7)) - 1);
+    void listPublicHolidays(from, to)
+      .then((r) => { if (active) setHolidays(r.holidays); })
+      .catch(() => { if (active) setHolidays([]); });
+    return () => { active = false; };
+  }, [dayMonth]);
+
+  const holidayText = shownMonth ? holidayLine(holidays, shownMonth.year, shownMonth.month) : null;
 
   const startsAt = combineDayTime(day, time);
   const reason =
@@ -110,6 +132,11 @@ export default function AddWeddingEventRoute() {
                 accent
                 onChange={setDay}
               />
+              {holidayText ? (
+                <ThemedText type="f13" themeColor="textSecondary" numeric>
+                  {holidayText}
+                </ThemedText>
+              ) : null}
               <Field
                 label="제목"
                 value={title}

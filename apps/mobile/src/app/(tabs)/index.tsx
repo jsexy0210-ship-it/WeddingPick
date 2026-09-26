@@ -29,6 +29,7 @@ import {
 import { listWeddingContent, type WeddingContentItem } from '@/features/home/content';
 import { Hero } from '@/features/home/hero';
 import { HomeBudget, MORE_CHEVRON, MyWeddingPrep } from '@/features/home/home-summary';
+import { HOME_PAGE_X } from '@/features/home/home-layout';
 import { endHomeHandoff, useHomeHandoffActive } from '@/features/home/home-handoff';
 import { HomeSkeleton } from '@/features/home/home-skeleton';
 import { homePrepCards, homePrepSectionSub } from '@/features/home/prep-groups';
@@ -36,6 +37,7 @@ import { scheduleRows } from '@/features/home/schedule-view';
 import { categoryStatuses, currentCategory } from '@/features/home/state';
 import { UpcomingSchedule } from '@/features/home/wedding-schedule';
 import { WeddingContent } from '@/features/home/wedding-content';
+import { usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import strings from '../../../../../spec/strings.ko.json';
 
 const S = strings.home;
@@ -176,6 +178,9 @@ export default function HomeScreen() {
     if (firstPaintReady && handoffActive) endHomeHandoff();
   }, [firstPaintReady, handoffActive]);
 
+  /* 당겨서 새로 고침 — 한 번 받아 온 섹션은 비우지 않고, 실패는 아래 토스트(`loadFailed`)로 알린다. */
+  const pull = usePullRefresh(load);
+
   if (bootError) return <ErrorView message={strings.journey.loadFailed} onRetry={load} />;
 
   // 첫 진입에는 흩어진 원형 로더 대신 홈 전체의 자리를 한 번만 잡는다.
@@ -202,7 +207,10 @@ export default function HomeScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <Header />
 
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          refreshControl={pull.refreshControl}>
           <Hero
             me={data.me}
             daysLeft={daysLeft}
@@ -221,7 +229,7 @@ export default function HomeScreen() {
                   : '/wedding?tab=budget' as never
               )
             }
-            onPressPartner={() => router.push('/wedding/partner')}
+            onPressPartner={() => router.push('/wedding/partner?from=home')}
           />
 
           <MyWeddingPrep
@@ -344,7 +352,7 @@ const styles = StyleSheet.create({
 
   content: { paddingBottom: Spacing.three },
 
-  block: { paddingHorizontal: Layout.gutter, marginBottom: Layout.sectionGap },
+  block: { paddingHorizontal: HOME_PAGE_X, marginBottom: Layout.sectionGap },
   /* `secLast` — 마지막 섹션은 아래 여백이 없고 스크롤 끝 16(`hscroll`)만 남는다. */
   lastBlock: { marginBottom: 0 },
   sectionHead: {

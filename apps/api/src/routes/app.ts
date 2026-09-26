@@ -1,3 +1,4 @@
+import { WEDDING_FEED_STAGE_ORDER } from '@weddingpick/api-contract';
 import type { VendorCategory } from '@weddingpick/domain';
 import { WEDDING_FEED_TARGET_PUBLISHED } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
@@ -6,6 +7,7 @@ import { optionalUser, optionalUserId } from '../auth/plugin';
 import { recommendVendors } from './recommendations';
 import type { AppContext } from '../context';
 import { notificationSummary } from '../notify';
+import { loadPreparationStage } from '../preparation-stage';
 import * as weddingFeed from '../wedding-feed';
 
 /**
@@ -174,15 +176,33 @@ export function registerAppRoutes(app: FastifyInstance, context: AppContext): vo
    * 웨딩피드 — 홈 아래쪽 읽을거리. 공개된 글만 나간다. 로그인 여부와 무관해서
    * 홈은 이 자리를 `/v1/app/bootstrap`과 나란히, 기다리지 않고 부른다.
    */
-  app.get<{ Querystring: { limit?: string } }>('/v1/wedding-feed', async (request) => {
-    const limit = Number(request.query.limit ?? WEDDING_FEED_TARGET_PUBLISHED);
+  /*
+   * `order=stage`(홈 「웨딩 준비 팁」)면 로그인한 사람의 준비 단계에 맞춰 순서를 바꾼다 —
+   * 2026-09-26 대표 오더. 그때만 토큰을 본다(`optionalUser` — 틀린 토큰은 401). 라운지처럼
+   * 순서를 안 묻는 목록은 예전처럼 누구에게나 같은 목록이고 토큰을 보지 않는다.
+   */
+  const stageAuth = optionalUser(context);
 
-    return weddingFeed.listPublished(
-      context.pool,
-      context.storage,
-      Number.isFinite(limit) && limit > 0 ? limit : WEDDING_FEED_TARGET_PUBLISHED
-    );
-  });
+  app.get<{ Querystring: { limit?: string; order?: string } }>(
+    '/v1/wedding-feed',
+    {
+      preHandler: async (request, reply) => {
+        if (request.query.order === WEDDING_FEED_STAGE_ORDER) await stageAuth(request, reply);
+      },
+    },
+    async (request) => {
+      const limit = Number(request.query.limit ?? WEDDING_FEED_TARGET_PUBLISHED);
+      const userId = request.query.order === WEDDING_FEED_STAGE_ORDER ? optionalUserId(request) : null;
+      const stage = userId === null ? null : await loadPreparationStage(context.pool, userId);
+
+      return weddingFeed.listPublished(
+        context.pool,
+        context.storage,
+        Number.isFinite(limit) && limit > 0 ? limit : WEDDING_FEED_TARGET_PUBLISHED,
+        stage
+      );
+    }
+  );
 
   /*
    * 글 하나 — 카드를 눌러 들어간 자리(`(tabs)/(home)/feed/[id].tsx`).

@@ -15,9 +15,16 @@ import { authProvidersResponseSchema } from './auth';
 import { candidateListResponseSchema, decisionListResponseSchema } from './candidates';
 import { expoDetailSchema, expoListResponseSchema } from './expos';
 import { faqListResponseSchema } from './faq';
-import { consultationListResponseSchema } from './consultations';
+import {
+  consultationListResponseSchema,
+  consultationRecordSchema,
+  createConsultationUploadResponseSchema,
+} from './consultations';
+import { createUploadResponseSchema } from './documents';
+import { registerPaymentProofResponseSchema } from './payment-proofs';
 import { inquiryListResponseSchema, inquirySchema } from './inquiries';
 import { myReportListResponseSchema } from './my-reports';
+import { publicHolidayListResponseSchema, weddingForecastResponseSchema } from './public-calendar';
 import { categoryRecommendationsResponseSchema } from './recommendations';
 import { myMonthlyDrawResponseSchema, myRewardPayoutResponseSchema, myRewardsResponseSchema } from './rewards';
 import { loungeReviewListResponseSchema, reportReasonListResponseSchema, reviewCommentListResponseSchema, reviewListResponseSchema } from './reviews';
@@ -25,8 +32,8 @@ import { settingsSchema } from './settings';
 import { signupStateSchema } from './signup';
 import {
   adminWeddingFeedResponseSchema,
-  adminWeddingFeedTaxonomySchema,
   weddingFeedDetailSchema,
+  weddingFeedDraftResponseSchema,
   weddingFeedListResponseSchema,
 } from './wedding-feed';
 import { weddingEventListResponseSchema } from './wedding-events';
@@ -56,7 +63,8 @@ const { routes } = require('../../../scripts/fixtures/api.cjs');
 const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/me/signup', signupStateSchema],
   ['GET /v1/me', currentUserSchema],
-  ['POST /v1/me/setup', currentUserSchema],
+  /* 온보딩 «완료» — 응답은 `/v1/me`와 같은 모양이다(준비 현황 업체 → Pick 캡처). */
+  ['POST /v1/me/setup', ENDPOINTS.completeSetup.response],
   ['GET /v1/app/bootstrap', appBootstrapResponseSchema],
   ['GET /v1/me/recommendations', categoryRecommendationsResponseSchema],
   ['GET /v1/me/pick-recommendations', ENDPOINTS.getPickRecommendations.response],
@@ -68,6 +76,8 @@ const CONTRACTS = new Map<string, ZodType>([
   ['DELETE /v1/weddings/:weddingId/candidates/:candidateId', ENDPOINTS.removeCandidate.response],
   ['GET /v1/me/monthly-draw', myMonthlyDrawResponseSchema],
   ['POST /v1/weddings/:weddingId/comparisons', z.null()],
+  /* 관리자 웨딩피드 「자동 작성」 초안(2026-09-26) — 관리자 응답이지만 계약이 있다. */
+  ['POST /v1/admin/wedding-feed/draft', weddingFeedDraftResponseSchema],
   ['GET /v1/review-report-reasons', reportReasonListResponseSchema],
   ['GET /v1/reviews', loungeReviewListResponseSchema],
   ['GET /v1/reviews/:reviewId/comments', reviewCommentListResponseSchema],
@@ -79,10 +89,20 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/me/rewards', myRewardsResponseSchema],
   ['GET /v1/me/rewards/payout', myRewardPayoutResponseSchema],
   ['GET /v1/me/settings', settingsSchema],
+  /* 예산 추가 «자동 등록(Pick 인증)»(2026-09-26). */
+  ['POST /v1/me/payment-consent', settingsSchema],
+  ['POST /v1/documents/uploads', createUploadResponseSchema],
+  ['PUT /v1/documents/:rawDocumentId/pages/:pageIndex', z.null()],
+  ['POST /v1/payment-proofs', registerPaymentProofResponseSchema],
+  /* 상담기록 빈 상자 → OS 파일 선택기 → 올리기(2026-09-26). */
+  ['POST /v1/consultations/uploads', createConsultationUploadResponseSchema],
+  ['PUT /v1/consultations/:consultationId/audio', consultationRecordSchema],
   ['GET /v1/me/withdrawal', withdrawalNoticeSchema],
   ['GET /v1/weddings/:weddingId/invites', weddingInviteListResponseSchema],
   ['GET /v1/weddings/:weddingId/consultations', consultationListResponseSchema],
   ['GET /v1/weddings/:weddingId/events', weddingEventListResponseSchema],
+  ['GET /v1/weddings/:weddingId/forecast', weddingForecastResponseSchema],
+  ['GET /v1/public-holidays', publicHolidayListResponseSchema],
   ['GET /v1/weddings/:weddingId/expenses', expenseSummaryResponseSchema],
   ['GET /v1/weddings/:weddingId/tasks', weddingTaskListResponseSchema],
   ['GET /v1/vendors/regions', vendorRegionsResponseSchema],
@@ -96,7 +116,6 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/wedding-feed', weddingFeedListResponseSchema],
   ['GET /v1/wedding-feed/:id', weddingFeedDetailSchema],
   ['GET /v1/admin/wedding-feed', adminWeddingFeedResponseSchema],
-  ['GET /v1/admin/wedding-feed/taxonomy', adminWeddingFeedTaxonomySchema],
 ]);
 
 /**
@@ -142,6 +161,8 @@ const NO_CONTRACT = new Set([
   'GET /v1/admin/users/:id',
   /* 앱 회원 목록 — 관리자 전용, 같은 자리다(뷰어 캡처용, 2026-09-26). */
   'GET /v1/admin/users',
+  /* 웨딩피드 그림 생성(2026-09-26 자동 작성) — 관리자 전용, 같은 자리다. */
+  'POST /v1/admin/wedding-feed/image/generate',
   'GET /v1/weddings/:weddingId/candidates/removed',
 ]);
 

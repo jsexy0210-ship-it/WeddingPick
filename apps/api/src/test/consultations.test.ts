@@ -1,5 +1,6 @@
 import { VISIT_NOTE_AUDIO_CONSENT_VERSION } from '@weddingpick/domain';
 
+import type { LocalStorage } from '../storage/local';
 import { createTestApp, createWedding, resetDatabase, signInAs, type TestApp } from './helpers';
 
 let test: TestApp;
@@ -339,6 +340,168 @@ describeWithDb('상담기록', () => {
     });
 
     expect(response.statusCode).toBe(404);
+  });
+
+  describe('같은 출처 올리기 — PUT /v1/consultations/:id/audio', () => {
+    /*
+     * 브라우저 → 카카오 Object Storage 서명 URL PUT은 CORS preflight에서 막힌다(e66dec7e).
+     * 녹음 본문은 API가 받아 저장소로 흘려 보낸다 — 여기서 보는 것은 «정말 저장됐나 · 형식이
+     * 맞게 적혔나 · 남이 못 올리나 · 형식 · 크기가 막히나»다.
+     */
+    const AUDIO = Buffer.from('ftypM4A-녹음 본문 대신 쓰는 바이트');
+
+    function putAudio(
+      headers: Record<string, string>,
+      id: string,
+      body: Buffer = AUDIO,
+      extra: Record<string, string> = {}
+    ) {
+      return test.app.inject({
+        method: 'PUT',
+        url: `/v1/consultations/${id}/audio`,
+        headers: { ...headers, 'content-type': 'audio/m4a', ...extra },
+        payload: body,
+      });
+    }
+
+    async function created(headers: Record<string, string>, weddingId: string) {
+      const body = (await upload(headers, weddingId)).json();
+      return body as { consultationId: string; uploadPath: string; storageKey: string };
+    }
+
+    it('올릴 자리가 같은 출처 경로를 준다 — 옛 서명 URL도 옛 앱을 위해 남는다', async () => {
+      const { headers, weddingId } = await setUp();
+      const body = await created(headers, weddingId);
+
+      expect(body.uploadPath).toBe(`/v1/consultations/${body.consultationId}/audio`);
+      expect((await upload(headers, weddingId)).json().uploadUrl).toBeTruthy();
+    });
+
+    it('본문이 저장소에 그 형식으로 들어가고, 도착 시각부터 24시간 시계가 다시 잡힌다', async () => {
+      const { headers, weddingId } = await setUp();
+      const { consultationId, uploadPath, storageKey } = await created(headers, weddingId);
+
+      await test.context.pool.query(
+        `UPDATE structured.consultation_records SET audio_delete_by = now() - interval '1 hour'
+          WHERE id = $1`,
+        [consultationId]
+      );
+
+      const response = await test.app.inject({
+        method: 'PUT',
+        url: uploadPath,
+        headers: { ...headers, 'content-type': 'audio/m4a' },
+        payload: AUDIO,
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json().id).toBe(consultationId);
+      expect(response.json().confirmedAt).toBeNull();
+
+      const storage = test.context.storage as LocalStorage;
+      expect((await storage.download(storageKey)).equals(AUDIO)).toBe(true);
+      expect(storage.mimeTypeOf(storageKey)).toBe('audio/m4a');
+
+      const { rows } = await test.context.pool.query<{ due: Date }>(
+        'SELECT audio_delete_by AS due FROM structured.consultation_records WHERE id = $1',
+        [consultationId]
+      );
+      expect(rows[0]!.due.getTime()).toBeGreaterThan(Date.now());
+    });
+
+    it('형식 뒤 매개변수는 떼고 본다 · 같은 확장자의 다른 이름(audio/mp3 ↔ audio/mpeg)은 받는다', async () => {
+      const { headers, weddingId } = await setUp();
+      const { consultationId } = await created(headers, weddingId);
+
+      expect(
+        (await putAudio(headers, consultationId, AUDIO, { 'content-type': 'audio/m4a; codecs=mp4a' }))
+          .statusCode
+      ).toBe(200);
+
+      const mp3 = (await upload(headers, weddingId, { mimeType: 'audio/mp3' })).json();
+      const response = await putAudio(headers, mp3.consultationId, AUDIO, { 'content-type': 'audio/mpeg' });
+      expect(response.statusCode).toBe(200);
+      expect((test.context.storage as LocalStorage).mimeTypeOf(mp3.storageKey)).toBe('audio/mpeg');
+    });
+
+    it('비로그인은 막는다', async () => {
+      const { headers, weddingId } = await setUp();
+      const { consultationId } = await created(headers, weddingId);
+
+      expect((await putAudio({}, consultationId)).statusCode).toBe(401);
+    });
+
+    it('남의 기록에는 못 올린다 — 없는 것과 같은 말로 답한다', async () => {
+      const { headers, weddingId } = await setUp();
+      const { consultationId, storageKey } = await created(headers, weddingId);
+      const other = await signInAs(test, 'consult-other');
+
+      expect((await putAudio(other.headers, consultationId)).statusCode).toBe(404);
+      await expect(test.context.storage.download(storageKey)).rejects.toThrow();
+    });
+
+    it('녹음이 아닌 형식은 415로 막는다', async () => {
+      const { headers, weddingId } = await setUp();
+      const { consultationId, storageKey } = await created(headers, weddingId);
+
+      for (const type of ['video/mp4', 'text/plain', 'audio/webm']) {
+        const response = await putAudio(headers, consultationId, AUDIO, { 'content-type': type });
+        expect(response.statusCode).toBe(415);
+        /*
+         * 상한 안의 본문은 끝까지 받고 답한다 — 연결을 끊으면 본문을 쓰던 운영 Nginx가 EPIPE를
+         * 맞아 우리 415 대신 502를 낸다(렌더한 운영 설정으로 재 봤다).
+         */
+        expect(response.headers.connection).not.toBe('close');
+      }
+      await expect(test.context.storage.download(storageKey)).rejects.toThrow();
+    });
+
+    it('처음 알린 형식과 다른 녹음은 415로 막는다 — 열쇠의 확장자와 내용이 어긋나지 않게', async () => {
+      const { headers, weddingId } = await setUp();
+      const { consultationId } = await created(headers, weddingId);
+      const response = await putAudio(headers, consultationId, AUDIO, { 'content-type': 'audio/wav' });
+
+      expect(response.statusCode).toBe(415);
+      expect(response.json().error.message).toContain('형식');
+    });
+
+    it('100MB를 넘는다고 알리면 본문을 읽기 전에 413으로 막는다', async () => {
+      const { headers, weddingId } = await setUp();
+      const { consultationId } = await created(headers, weddingId);
+      const response = await putAudio(headers, consultationId, AUDIO, {
+        'content-length': String(100 * 1024 * 1024 + 1),
+      });
+
+      expect(response.statusCode).toBe(413);
+      expect(response.json().error.message).toBe('파일이 너무 커요. 100MB까지 올릴 수 있어요.');
+      /* 상한을 넘는 본문은 받아 버리지 않고 끊는다(운영에서는 Nginx가 같은 상한으로 먼저 막는다). */
+      expect(response.headers.connection).toBe('close');
+    });
+
+    it('알린 길이보다 긴 본문은 흐름 도중에 끊고 413 — 반쯤 저장된 파일이 남지 않는다', async () => {
+      const { headers, weddingId } = await setUp();
+      const { consultationId, storageKey } = await created(headers, weddingId);
+      const response = await putAudio(headers, consultationId, AUDIO, { 'content-length': '4' });
+
+      expect(response.statusCode).toBe(413);
+      await expect(test.context.storage.download(storageKey)).rejects.toThrow();
+    });
+
+    it('빈 파일은 400', async () => {
+      const { headers, weddingId } = await setUp();
+      const { consultationId } = await created(headers, weddingId);
+
+      expect((await putAudio(headers, consultationId, Buffer.alloc(0))).statusCode).toBe(400);
+    });
+
+    it('저장까지 마친 기록에는 다시 올리지 못한다', async () => {
+      const { headers, weddingId } = await setUp();
+      const { consultationId } = await created(headers, weddingId);
+
+      await test.app.inject({ method: 'POST', url: `/v1/consultations/${consultationId}/confirm`, headers });
+
+      expect((await putAudio(headers, consultationId)).statusCode).toBe(400);
+    });
   });
 
   it('녹취록을 담을 칸이 응답에 없다', async () => {

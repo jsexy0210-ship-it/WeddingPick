@@ -1,8 +1,12 @@
 import {
+  MANUAL_DECISION_NAME_MAX,
+  PREPARATION_GROUPS,
   PREPARATION_NOT_STARTED_LABEL,
   STYLE_PICK_MIN,
   WEDDING_STYLE_LABEL,
   formatDateDot,
+  formatDday,
+  type PreparationGroupKey,
   type VendorCategory,
   type WeddingRegion,
   type WeddingStyle,
@@ -47,8 +51,12 @@ export type QuestionStep = (typeof QUESTION_STEPS)[number];
 export type Answers = {
   date: { value: string | null } | null;
   region: { region: WeddingRegion | null; district: string | null } | null;
-  /** 이미 정한 업종. 빈 배열은 «아직 시작 전» — 카드를 하나도 안 고르고 «다음»을 누른 것. */
-  prep: { categories: readonly PreparedCategory[] } | null;
+  /**
+   * 이미 정한 업종. 빈 배열은 «아직 시작 전» — 카드를 하나도 안 고르고 «다음»을 누른 것.
+   * `vendors`는 카드마다 검색 시트로 고른 업체다(2026-09-26 대표 지시) — 없는 카드는
+   * 업체를 안 고른 것이고, 옛 초안에는 칸 자체가 없다.
+   */
+  prep: { categories: readonly PreparedCategory[]; vendors?: PrepVendors } | null;
   /** 앞으로 쓸 예산(만원). null은 적지 않고 «다음»을 누른 것. */
   budget: { amount: number | null } | null;
   /** 고른 순서 그대로. 빈 배열은 «아직 답하지 않음»과 같다. */
@@ -127,20 +135,143 @@ export type PrepCard = {
   key: 'hall' | 'sdm' | 'ceremony' | 'goods';
   name: string;
   description: string;
+  /**
+   * 이 카드가 들어가는 Pick 묶음 — `/pick?group=<group>`의 그 키다(`PREPARATION_GROUPS`).
+   * 카드에서 고른 업체는 업종이 이 묶음 안이라 Pick «담은 곳»의 같은 묶음에 선다.
+   */
+  group: PreparationGroupKey;
   categories: readonly PreparedCategory[];
 };
 
+/** 묶음의 업종 — 카드마다 손으로 다시 적지 않고 `PREPARATION_GROUPS` 하나에서 읽는다. */
+function groupCategories(group: PreparationGroupKey): readonly PreparedCategory[] {
+  return (PREPARATION_GROUPS.find((one) => one.key === group)?.categories ?? []) as readonly PreparedCategory[];
+}
+
 export const PREP_CARDS: readonly PrepCard[] = [
-  { key: 'hall', name: '웨딩홀', description: '예식장 · 식대 · 대관', categories: ['hall'] },
+  { key: 'hall', name: '웨딩홀', description: '예식장 · 식대 · 대관', group: 'start', categories: groupCategories('start') },
   {
     key: 'sdm',
     name: '스드메',
     description: '스튜디오 · 드레스 · 메이크업',
-    categories: ['studio', 'dress', 'makeup', 'hair'],
+    group: 'sdm',
+    categories: groupCategories('sdm'),
   },
-  { key: 'ceremony', name: '본식', description: '본식스냅 · 부케 · 청첩장', categories: ['snap', 'bouquet', 'invitation'] },
-  { key: 'goods', name: '예물 · 신혼', description: '예물 · 혼수 · 허니문', categories: ['goods', 'dowry', 'honeymoon'] },
+  { key: 'ceremony', name: '본식', description: '본식스냅 · 부케 · 청첩장', group: 'ceremony', categories: groupCategories('ceremony') },
+  { key: 'goods', name: '예물 · 신혼', description: '예물 · 혼수 · 허니문', group: 'goods', categories: groupCategories('goods') },
 ];
+
+/** 준비 현황 카드에서 목록으로 고른 업체 한 곳. 줄에 이름을 적고 저장할 때 id를 보낸다. */
+export type PrepVendor = { id: string; name: string; category: PreparedCategory };
+
+/**
+ * 목록에 없어 **직접 입력한** 곳(2026-09-26 대표 지시 「직접입력하는 방법 고안하라」).
+ * 업체가 없어 id가 없다 — 저장하면 서버가 그 묶음의 결정으로 이름만 남긴다.
+ */
+export type PrepManual = { manual: true; name: string };
+
+/** 카드 하나의 답 — 목록 업체 또는 직접 입력한 이름. */
+export type PrepChoice = PrepVendor | PrepManual;
+
+export type PrepVendors = Partial<Record<PrepCard['key'], PrepChoice>>;
+
+export function isPrepManual(choice: PrepChoice): choice is PrepManual {
+  return 'manual' in choice && choice.manual === true;
+}
+
+/** 카드를 켜고 그 카드의 답을 적는다. */
+function withChoice(prep: Answers['prep'], card: PrepCard, choice: PrepChoice): NonNullable<Answers['prep']> {
+  const categories = prep?.categories ?? [];
+  const on = isPrepCardSelected(card, categories) ? [...categories] : togglePrepCard(card, categories);
+
+  return { categories: on, vendors: { ...prep?.vendors, [card.key]: choice } };
+}
+
+/**
+ * 검색 시트에서 업체를 골랐다 — 그 카드를 켜고(업종 전부 «결정 완료») 업체를 적는다.
+ * 카드 밖 업종의 업체는 받지 않는다(시트가 카드 업종으로만 찾으므로 오지 않지만,
+ * 오면 Pick의 다른 묶음에 들어가 홈과 Pick이 어긋난다).
+ */
+export function choosePrepVendor(
+  prep: Answers['prep'],
+  card: PrepCard,
+  vendor: PrepVendor
+): NonNullable<Answers['prep']> {
+  if (!card.categories.includes(vendor.category)) return prep ?? { categories: [] };
+
+  return withChoice(prep, card, vendor);
+}
+
+/** 직접 입력한 이름 — 앞뒤 공백을 떼고, 비었거나 30자를 넘으면 null(저장 단추가 잠긴다). */
+export function manualPrepName(text: string): string | null {
+  const name = text.trim();
+
+  return name.length > 0 && name.length <= MANUAL_DECISION_NAME_MAX ? name : null;
+}
+
+/** 직접 입력으로 정했다 — 그 카드를 켜고 이름을 적는다. 이름이 맞지 않으면 그대로 둔다. */
+export function choosePrepManual(prep: Answers['prep'], card: PrepCard, text: string): NonNullable<Answers['prep']> {
+  const name = manualPrepName(text);
+
+  if (name === null) return prep ?? { categories: [] };
+
+  return withChoice(prep, card, { manual: true, name });
+}
+
+/**
+ * 시트의 «아직 정한 곳이 없어요» — 그 카드를 지금의 미정 상태(꺼짐)로 돌린다. 업체도
+ * 지운다. Pick에는 아무것도 넣지 않는다.
+ */
+export function clearPrepCard(prep: Answers['prep'], card: PrepCard): NonNullable<Answers['prep']> {
+  const categories = (prep?.categories ?? []).filter((category) => !card.categories.includes(category));
+  const vendors: PrepVendors = { ...prep?.vendors };
+
+  delete vendors[card.key];
+
+  return Object.keys(vendors).length > 0 ? { categories, vendors } : { categories };
+}
+
+/** 카드 줄에 적는 답(업체 · 직접 입력). 카드가 꺼져 있으면(답이 남아 있어도) 없다. */
+export function prepVendorOf(prep: Answers['prep'], card: PrepCard): PrepChoice | null {
+  const vendor = prep?.vendors?.[card.key];
+
+  if (!vendor || !isPrepCardSelected(card, prep?.categories ?? [])) return null;
+
+  return vendor;
+}
+
+/** 저장할 때 서버(`preparedVendorIds`)에 보낼 업체 id — 카드 순서대로, 켜진 카드만. 직접 입력은 없다. */
+export function preparedVendorIds(prep: Answers['prep']): string[] {
+  return PREP_CARDS.map((card) => prepVendorOf(prep, card))
+    .filter((choice): choice is PrepVendor => choice !== null && !isPrepManual(choice))
+    .map((vendor) => vendor.id);
+}
+
+/** 저장할 때 서버(`preparedManualVendors`)에 보낼 직접 입력 — 카드(묶음)와 이름. */
+export function preparedManualVendors(prep: Answers['prep']): { group: PreparationGroupKey; name: string }[] {
+  return PREP_CARDS.flatMap((card) => {
+    const choice = prepVendorOf(prep, card);
+
+    return choice !== null && isPrepManual(choice) ? [{ group: card.group, name: choice.name }] : [];
+  });
+}
+
+/**
+ * 온보딩 «완료» 요청에 얹는 준비 현황 답 — 빈 칸은 키째 보내지 않는다. 서버가 같은
+ * 트랜잭션에서 Pick 담기 · 결정을 남긴다(`POST /v1/me/setup`).
+ */
+export function preparedChoicesPayload(prep: Answers['prep']): {
+  preparedVendorIds?: string[];
+  preparedManualVendors?: { group: PreparationGroupKey; name: string }[];
+} {
+  const vendorIds = preparedVendorIds(prep);
+  const manual = preparedManualVendors(prep);
+
+  return {
+    ...(vendorIds.length > 0 ? { preparedVendorIds: vendorIds } : {}),
+    ...(manual.length > 0 ? { preparedManualVendors: manual } : {}),
+  };
+}
 
 /** 카드가 켜져 있는가 — 카드의 업종이 전부 고른 목록에 있어야 켜진 것이다. */
 export function isPrepCardSelected(card: PrepCard, categories: readonly PreparedCategory[]): boolean {
@@ -156,9 +287,18 @@ export function togglePrepCard(card: PrepCard, categories: readonly PreparedCate
   return [...categories.filter((category) => !card.categories.includes(category)), ...card.categories];
 }
 
-/** 진행 상황 요약 «웨딩홀 · 본식» — 카드 순서대로. 하나도 없으면 «아직 시작 전이에요». */
-export function summarizePrep(categories: readonly PreparedCategory[]): string {
-  const names = PREP_CARDS.filter((card) => isPrepCardSelected(card, categories)).map((card) => card.name);
+/**
+ * 진행 상황 요약 «웨딩홀 · 본식» — 카드 순서대로. 하나도 없으면 «아직 시작 전이에요».
+ * 카드에서 업체를 골랐거나 직접 입력했으면 그 이름을 괄호로 붙인다 «웨딩홀(○○홀) · 본식»
+ * (2026-09-26 대표 지시 — 직접 입력한 이름이 완료 요약에도 보여야 한다).
+ */
+export function summarizePrep(prep: Answers['prep']): string {
+  const categories = prep?.categories ?? [];
+  const names = PREP_CARDS.filter((card) => isPrepCardSelected(card, categories)).map((card) => {
+    const choice = prepVendorOf(prep, card);
+
+    return choice === null ? card.name : `${card.name}(${choice.name})`;
+  });
 
   return names.length > 0 ? names.join(' · ') : PREPARATION_NOT_STARTED_LABEL;
 }
@@ -265,7 +405,7 @@ export function summarizeStyles(styles: readonly WeddingStyle[]): string {
 
 /**
  * 답 줄과 완료 요약에 적는 값. 답하지 않았으면 null. 미정은 «미정»이고, 스타일은
- * 최대 두 가지라 고른 값을 순서대로 모두 적는다.
+ * 고른 값을 순서대로 모두 적는다(개수 제한 없음 — 넷이면 넷 다).
  */
 export function answerSummary(step: QuestionStep, answers: Answers): string | null {
   switch (step) {
@@ -283,7 +423,7 @@ export function answerSummary(step: QuestionStep, answers: Answers): string | nu
     case 'prep':
       if (answers.prep === null) return null;
 
-      return summarizePrep(answers.prep.categories);
+      return summarizePrep(answers.prep);
     case 'budget':
       if (answers.budget === null) return null;
 
@@ -318,9 +458,9 @@ export function ddayParts(days: number): { prefix: string; number: string; suffi
   return { prefix: '예식일까지', number: `${days}일`, suffix: '남았어요' };
 }
 
-/** 시트의 «D-250». 0이면 «D-DAY»(SPEC §13.6 «D-day 계산» 표). 음수는 고를 수 없어 오지 않는다. */
+/** 시트의 «D-250». 0이면 «D-DAY»(SPEC §13.6 «D-day 계산» 표) — domain `formatDday` 하나를 쓴다. */
 export function ddayLabel(days: number): string {
-  return days === 0 ? 'D-DAY' : `D-${days}`;
+  return formatDday(days);
 }
 
 /**

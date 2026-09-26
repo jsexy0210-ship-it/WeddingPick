@@ -68,8 +68,8 @@ const ALLOWED = new Map<string, string>([
     '웨딩피드 썸네일·본문 이미지의 서명 업로드 자리를 스토리지(`context.storage`)에 만든다. 글과 이미지 키는 뒤의 저장 요청에서 DB에 기록하므로 여기서는 DB를 보지 않는 것이 맞다.',
   ],
   [
-    'POST /v1/admin/wedding-feed/image/generate',
-    '관리자가 요청한 웨딩피드 이미지를 생성해 스토리지에 올린다. 글에 적용할지는 미리보기 뒤 저장 요청에서 정하므로 이 라우트는 DB에 쓰지 않는다.',
+    'PUT /v1/admin/wedding-feed/image/file',
+    '관리자가 고른 그림을 같은 origin으로 받아 스토리지(`context.storage`)에 올린다(2026-09-26 — 서명 URL 브라우저 PUT은 운영 CORS로 막힌다). 글에 붙일지는 뒤의 저장 요청이 DB에 기록한다.',
   ],
   [
     'POST /v1/admin/data/price-stats/:vendorId/recalc',

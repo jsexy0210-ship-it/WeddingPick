@@ -1,11 +1,12 @@
 import type { Notification } from '@weddingpick/api-contract';
 import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { listNotifications } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import { noteMonthDayTime } from '@/features/wedding/note-format';
 import { Border, ErrorView, Layout, SkeletonView, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import { Hero, NavBar, Screen } from '@/features/wedding/screen-kit';
@@ -28,19 +29,24 @@ export default function ChangelogScreen() {
   const [notifications, setNotifications] = useState<Notification[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  function load() {
+  /** `keep` — 당겨서 새로 고침. 보이던 내역은 두고 실패는 토스트로만 알린다. */
+  const load = useCallback((keep?: boolean) => {
     if (!isServerConfigured) return;
     listNotifications()
       .then((result) => {
         setNotifications(result.notifications);
         setError(null);
       })
-      .catch((caught: Error) => setError(caught.message));
-  }
+      .catch((caught: Error) => {
+        if (keep === true) notifyRefreshFailed();
+        else setError(caught.message);
+      });
+  }, []);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
+  const pull = usePullRefresh(useCallback(() => load(true), [load]));
 
   if (!isServerConfigured) {
     return (
@@ -72,7 +78,10 @@ export default function ChangelogScreen() {
     <Screen>
       <NavBar title="변경내역" variant="close" />
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={pull.refreshControl}>
         {notifications.length === 0 ? (
           <Hero title="아직 바뀐 것이 없어요" sub="일정 · 지출 · 메모가 바뀌면 여기에 쌓여요" />
         ) : (

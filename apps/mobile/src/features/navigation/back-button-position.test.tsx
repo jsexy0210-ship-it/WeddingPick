@@ -28,6 +28,7 @@ jest.mock('expo-router', () => ({
   router: { dismissTo: jest.fn(), replace: jest.fn() },
   usePathname: () => '/my/guide',
   useLocalSearchParams: () => ({}),
+  useNavigation: () => ({ setOptions: jest.fn(), addListener: () => () => undefined }),
 }));
 
 /** 화살표 왼쪽 끝이 화면 왼쪽에서 떨어진 거리 — 막대 좌측 패딩 + 36 상자 안에서 24 아이콘이 밀려난 만큼. */

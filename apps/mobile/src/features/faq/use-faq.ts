@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { listFaq } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
+import { notifyRefreshFailed } from '@/features/refresh/use-pull-refresh';
 
 /**
  * 자주 묻는 것 — 네 화면이 같은 것을 본다.
@@ -22,6 +23,8 @@ export type FaqState = {
   /** 받아오지 못했다. 화면이 「불러오지 못했어요」와 다시 시도를 그린다. */
   failed: boolean;
   reload: () => void;
+  /** 당겨서 새로 고침 — 보이던 질문은 그대로 두고 다시 받는다. 실패하면 토스트만 띄운다. */
+  refresh: () => void;
 };
 
 export function useFaq(): FaqState {
@@ -31,8 +34,17 @@ export function useFaq(): FaqState {
   const [failed, setFailed] = useState(false);
   const [rev, setRev] = useState(0);
   const alive = useRef(true);
+  /** 이번 다시 받기가 당겨서 새로 고침인가 — 목록을 비우지 않는다. */
+  const quiet = useRef(false);
 
-  const reload = useCallback(() => setRev((value) => value + 1), []);
+  const reload = useCallback(() => {
+    quiet.current = false;
+    setRev((value) => value + 1);
+  }, []);
+  const refresh = useCallback(() => {
+    quiet.current = true;
+    setRev((value) => value + 1);
+  }, []);
 
   useEffect(() => {
     alive.current = true;
@@ -46,17 +58,23 @@ export function useFaq(): FaqState {
       };
     }
 
-    setLoading(true);
-    setFailed(false);
+    const keep = quiet.current;
+    quiet.current = false;
+    if (!keep) {
+      setLoading(true);
+      setFailed(false);
+    }
 
     listFaq()
       .then((data) => {
         if (!alive.current) return;
         setItems(data.items);
+        setFailed(false);
         setLoading(false);
       })
       .catch(() => {
         if (!alive.current) return;
+        if (keep) notifyRefreshFailed();
         /* 받아온 것이 있으면 그것을 지우지 않는다 — 빈 화면보다 지난 답이 낫다. */
         setFailed(true);
         setLoading(false);
@@ -67,5 +85,5 @@ export function useFaq(): FaqState {
     };
   }, [rev]);
 
-  return { items, loading, failed, reload };
+  return { items, loading, failed, reload, refresh };
 }

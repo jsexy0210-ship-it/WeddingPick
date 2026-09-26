@@ -36,3 +36,9 @@ export function noteMonthDayWeekdayTime(value: string | Date): string {
   const minute = String(date.getMinutes()).padStart(2, '0');
   return `${noteMonthDay(date)}(${WEEKDAYS[date.getDay()]}) ${hour}:${minute}`;
 }
+
+/** `9.30(수)` — 시간 없는 할 일 줄(`tlItem('9.30(수)', '드레스 투어 3곳 예약하기')`). */
+export function noteMonthDayWeekday(value: string | Date): string {
+  const date = toDate(value);
+  return `${noteMonthDay(date)}(${WEEKDAYS[date.getDay()]})`;
+}

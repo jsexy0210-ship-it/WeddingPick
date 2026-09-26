@@ -1,5 +1,6 @@
 import { canRegisterPaymentProof, type PaymentProofField } from '@weddingpick/domain';
 
+import { raiseBudgetForAcceptedProof, type BudgetRaise } from './budget-raise';
 import { createPool, withTransaction } from './db';
 import { loadConfig } from './config';
 import { newEventId, recordDecision, requireOperator } from './decisions';
@@ -268,7 +269,7 @@ export async function resolve(
   proofId: string,
   input: ResolveInput,
   by: string
-): Promise<void> {
+): Promise<{ budgetRaise: BudgetRaise | null }> {
   await requireOperator(pool, by);
 
   const check = canRegisterPaymentProof({
@@ -281,8 +282,8 @@ export async function resolve(
     throw new Error(check.reason);
   }
 
-  await withTransaction(pool, async (client) => {
-    const { rowCount } = await client.query(
+  const budgetRaise = await withTransaction(pool, async (client) => {
+    const { rowCount, rows } = await client.query<{ reporter_user_id: string }>(
       `UPDATE structured.payment_proofs
           SET merchant_name = $2,
               paid_amount = $3,
@@ -292,7 +293,8 @@ export async function resolve(
               review_note = NULL,
               reviewed_at = now(),
               reviewed_by = $5
-        WHERE id = $1 AND review_state = 'pending_review'`,
+        WHERE id = $1 AND review_state = 'pending_review'
+        RETURNING reporter_user_id`,
       [proofId, input.merchantName.trim(), input.paidAmount, input.paidAt, by]
     );
 
@@ -318,9 +320,23 @@ export async function resolve(
       reasonCode: input.reasonCode,
       evidence: [{ kind: 'payment_proof', id: proofId }],
     });
+
+    /*
+     * 이 순간 처음으로 지출에 세어진다 — 사진을 올리자마자 읽힌 경우와 같은 규칙으로, 총예산을
+     * 넘었으면 넘은 만큼 늘린다(2026-09-26 대표 결정). 같은 트랜잭션이다.
+     */
+    return raiseBudgetForAcceptedProof(client, {
+      reporterUserId: rows[0]!.reporter_user_id,
+      paymentProofId: proofId,
+    });
   });
 
   console.log('검수를 마쳤다. 이제 이 업체의 금액 구간과 그 사람의 지출에 들어간다.');
+  if (budgetRaise) {
+    console.log(`지출이 총예산을 넘어 총예산을 ${budgetRaise.raisedBy}원 늘렸다(${budgetRaise.before} → ${budgetRaise.budget}).`);
+  }
+
+  return { budgetRaise };
 }
 
 export async function main(): Promise<void> {

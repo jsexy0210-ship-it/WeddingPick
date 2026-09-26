@@ -161,6 +161,29 @@ export function manualExpenseOverBudget(input: {
   return { over: true, remaining: Math.max(budget - others, 0) };
 }
 
+/**
+ * Pick 인증(결제인증)이 총예산을 넘기면 총예산을 넘은 만큼 늘린다 — 2026-09-26 대표 결정
+ * 「초과되는 금액만큼 총 예산도 늘려」. 직접 입력은 여전히 막고(`manualExpenseOverBudget`),
+ * 실제로 낸 영수증은 막지 않는 대신 총예산을 낸 돈에 맞춘다.
+ *
+ *   budget  총예산. 없거나 0 이하면 한도가 없다 — 늘릴 것도 없다(null).
+ *   spent   그 결제인증이 들어간 **뒤**의 낸 돈 합(`budgetView`의 spent와 같은 값).
+ *
+ * 넘었으면 새 총예산은 낸 돈 합과 같고(`budget`), 늘어난 금액이 `raisedBy`다. 서버가 결제인증이
+ * 지출로 세어지는 그 트랜잭션 안에서 부른다(`apps/api/src/budget-raise.ts`).
+ */
+export function budgetRaiseForProof(input: {
+  budget: number | null;
+  spent: number;
+}): { before: number; budget: number; raisedBy: number } | null {
+  const { budget, spent } = input;
+
+  if (budget === null || !(budget > 0)) return null;
+  if (spent <= budget) return null;
+
+  return { before: budget, budget: spent, raisedBy: spent - budget };
+}
+
 export const SCHEDULED_NOTE = '잔금은 예식 뒤에 내는 돈이라 아직 더하지 않았어요';
 
 /**

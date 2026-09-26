@@ -1,4 +1,6 @@
-import { create, update } from '../wedding-feed';
+import { WEDDING_FEED_CATEGORIES, WEDDING_FEED_CHIPS, weddingFeedChipLabel } from '@weddingpick/domain';
+
+import { create, listPublished, update } from '../wedding-feed';
 import { createTestApp, resetDatabase, type TestApp } from './helpers';
 
 /**
@@ -70,4 +72,55 @@ describeWithDb('웨딩피드 저장(실제 DB)', () => {
     );
     expect(rows[0]).toEqual({ title: '고친 제목', published: true });
   });
+
+  /**
+   * 표(0421 · 0442)가 domain 목록과 같은가(2026-09-26 대표 지적 — 「관리자 웨딩피드
+   * 카테고리와 앱웹 카테고리와 정보가 전혀 다르다」). 표는 글의 `category_id`를 잇는
+   * 자리로만 남았지만, 열어 본 사람이 옛 탭을 현행으로 읽지 않게 같은 모양이어야 한다.
+   */
+  it('표의 탭 · 카테고리가 domain 칩 · 카테고리와 같다', async () => {
+    const groups = await test.pool.query<{ name: string }>(
+      'SELECT name FROM structured.wedding_feed_groups WHERE active ORDER BY sort_order'
+    );
+    const categories = await test.pool.query<{ name: string; chip: string | null }>(
+      `SELECT c.name, g.name AS chip
+       FROM structured.wedding_feed_categories c
+       LEFT JOIN structured.wedding_feed_groups g ON g.id = c.group_id
+       WHERE c.active
+       ORDER BY c.sort_order`
+    );
+
+    expect(groups.rows.map((r) => r.name)).toEqual(
+      WEDDING_FEED_CHIPS.filter((chip) => chip.key !== 'all').map((chip) => chip.label)
+    );
+    expect(categories.rows).toEqual(
+      WEDDING_FEED_CATEGORIES.map((category) => ({
+        name: category.label,
+        chip: category.chip === null ? null : weddingFeedChipLabel(category.chip),
+      }))
+    );
+  });
+
+  it('관리자가 공개한 글은 앱 목록에 같은 카테고리 · 제목으로 나가고 표의 카테고리에 이어진다', async () => {
+    const saved = await create(
+      test.pool,
+      { ...INPUT, categoryLabel: '일정', title: '본식 4개월 전, 무엇부터 할까' } as never,
+      null,
+      null
+    );
+
+    const linked = await test.pool.query<{ name: string }>(
+      `SELECT c.name FROM structured.wedding_feed_posts p
+       JOIN structured.wedding_feed_categories c ON c.id = p.category_id
+       WHERE p.id = $1`,
+      [saved.id]
+    );
+    const listed = await listPublished(test.pool, null, 100);
+
+    expect(linked.rows[0]!.name).toBe('일정');
+    expect(listed.items).toEqual([
+      expect.objectContaining({ id: saved.id, categoryLabel: '일정', title: '본식 4개월 전, 무엇부터 할까' }),
+    ]);
+  });
 });
+

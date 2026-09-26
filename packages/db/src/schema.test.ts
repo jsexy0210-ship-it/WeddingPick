@@ -1040,6 +1040,47 @@ describeWithDb('DB 스키마', () => {
       expect(decided.rows[0]?.state).toBe('decided');
     });
 
+    const decideManually = (weddingId: string, category: string, name: string | null, vendorId: string | null = null) =>
+      client.query(
+        `INSERT INTO structured.category_decisions (wedding_id, category, vendor_id, manual_name)
+         VALUES ($1, $2::vendor_category, $3, $4)`,
+        [weddingId, category, vendorId, name]
+      );
+
+    it('우리 목록에 없는 곳은 이름으로 결정할 수 있고, 그 업종은 결정 완료다(0440)', async () => {
+      const { weddingId } = await aWeddingWithPick();
+
+      await decideManually(weddingId, 'studio', '청담 스튜디오');
+
+      const { rows } = await client.query<{ state: string; decided_vendor_id: string | null }>(
+        `SELECT state, decided_vendor_id FROM structured.wedding_preparation
+         WHERE wedding_id = $1 AND category = 'studio'`,
+        [weddingId]
+      );
+
+      expect(rows).toEqual([{ state: 'decided', decided_vendor_id: null }]);
+    });
+
+    it('업체도 이름도 없는 결정은 없다(0440)', async () => {
+      const { weddingId } = await aWeddingWithPick();
+
+      await expect(decideManually(weddingId, 'studio', null)).rejects.toThrow(/decision_vendor_or_manual/);
+    });
+
+    it('업체와 이름을 함께 적은 결정은 없다(0440)', async () => {
+      const { weddingId, vendorId } = await aWeddingWithPick();
+
+      await expect(decideManually(weddingId, 'hall', '다른 이름', vendorId)).rejects.toThrow(
+        /decision_vendor_or_manual/
+      );
+    });
+
+    it('직접 입력한 이름은 앞뒤 공백 없이 30자까지다(0440)', async () => {
+      const { weddingId } = await aWeddingWithPick();
+
+      await expect(decideManually(weddingId, 'studio', ' 청담 ')).rejects.toThrow(/decision_manual_name_shape/);
+    });
+
     it('손대지 않은 업종은 준비 전이다', async () => {
       const { weddingId } = await aWeddingWithPick();
 

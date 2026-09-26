@@ -3,7 +3,7 @@ import type {
   LoungeReviewListResponse,
   WeddingFeedListResponse,
 } from '@weddingpick/api-contract';
-import { daysUntil } from '@weddingpick/domain';
+import { WEDDING_FEED_LOUNGE_LIMIT, daysUntil } from '@weddingpick/domain';
 import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -30,6 +30,7 @@ import { useSession } from '@/features/auth/use-session';
 import { FullScreenError } from '@/features/errors/full-screen-error';
 import { CategoryImage } from '@/features/home/category-image';
 import { DelayedLoader, DelayedLoadingView } from '@/features/loading/delayed-loader';
+import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import {
   LOUNGE_CATEGORIES,
   appendLoungeReviewPage,
@@ -38,7 +39,9 @@ import {
   loungeVendorMatches,
   type LoungeCategory,
 } from '@/features/community/lounge-reviews';
-import { CatChip } from '@/features/settings/my-kit';
+import { feedDetailHref } from '@/features/community/feed-href';
+import { CatChipBar } from '@/features/settings/my-kit';
+import { chainOrigin } from '@/features/navigation/depth-back';
 import { NavBar } from '@/features/wedding/screen-kit';
 import strings from '../../../../../spec/strings.ko.json';
 import { ReviewWriteSheet } from '@/app/(tabs)/search/[vendorId]/write-review';
@@ -55,7 +58,7 @@ const TITLE: Record<LoungeKind, string> = {
   feed: S['tab.feed'],
   expo: S['tab.expo'],
 };
-/** 정본 my.js `cats` — 전체 · 웨딩홀 · 스드메 · 본식 · 예물 · 신혼 · 예산. */
+/** 정본 my.js `cats` — 전체 · 웨딩홀 · 스드메 · 본식 · 예물 · 신혼 · 예산(domain `WEDDING_FEED_CHIPS`). */
 const CATEGORIES = LOUNGE_CATEGORIES;
 type CategoryLabel = LoungeCategory;
 type Loaded<T> = { status: 'loading' } | { status: 'error' } | { status: 'ready'; value: T };
@@ -100,7 +103,8 @@ export function LoungeScreen({ kind: tab }: { kind: LoungeKind }) {
   const communityReviewHref = `/community/review${from === 'my' ? '?from=my' : ''}`;
   const communityWriteHref = `${communityReviewHref}${from === 'my' ? '&' : '?'}write=review`;
 
-  const loadReviews = useCallback((label: CategoryLabel, cursor?: string) => {
+  /** `keep` — 당겨서 새로 고침. 보이던 후기는 비우지 않고 실패는 토스트로만 알린다. */
+  const loadReviews = useCallback((label: CategoryLabel, cursor?: string, keep?: boolean) => {
     if (!isSignedIn) return;
     const append = Boolean(cursor);
     if (append && reviewLoadingMore.current) return;
@@ -114,7 +118,7 @@ export function LoungeScreen({ kind: tab }: { kind: LoungeKind }) {
       reviewLoadingMore.current = false;
       setReviewMoreLoading(false);
       setReviewMoreError(false);
-      setReviews({ status: 'loading' });
+      if (keep !== true) setReviews({ status: 'loading' });
     }
 
     void listLoungeReviews({
@@ -134,6 +138,7 @@ export function LoungeScreen({ kind: tab }: { kind: LoungeKind }) {
       .catch(() => {
         if (version !== reviewVersion.current) return;
         if (append) setReviewMoreError(true);
+        else if (keep === true) notifyRefreshFailed();
         else setReviews({ status: 'error' });
       })
       .finally(() => {
@@ -143,23 +148,31 @@ export function LoungeScreen({ kind: tab }: { kind: LoungeKind }) {
       });
   }, [isSignedIn]);
 
-  const load = useCallback(() => {
+  /** `keep` — 당겨서 새로 고침. 보이던 목록은 그대로 두고 실패는 토스트로만 알린다. */
+  const load = useCallback((keep?: boolean) => {
     const version = ++loadVersion.current;
     if (!isSignedIn) return;
+    const kept = keep === true;
+    const failed = (show: () => void) => () => {
+      if (version !== loadVersion.current) return;
+      if (kept) notifyRefreshFailed();
+      else show();
+    };
 
     /* 화면마다 자기 목록만 읽는다 — 셋이 이제 따로 열린다. */
     if (tab === 'review') {
-      loadReviews(categoryRef.current);
+      loadReviews(categoryRef.current, undefined, kept);
     } else if (tab === 'feed') {
-      setFeed({ status: 'loading' });
-      void getWeddingFeed()
+      if (!kept) setFeed({ status: 'loading' });
+      /* 수를 안 적으면 서버 기본값 8에서 잘려 관리자가 공개한 아홉째 글부터 안 보였다. */
+      void getWeddingFeed(WEDDING_FEED_LOUNGE_LIMIT)
         .then((response) => { if (version === loadVersion.current) setFeed({ status: 'ready', value: response }); })
-        .catch(() => { if (version === loadVersion.current) setFeed({ status: 'error' }); });
+        .catch(failed(() => setFeed({ status: 'error' })));
     } else {
-      setExpos({ status: 'loading' });
+      if (!kept) setExpos({ status: 'loading' });
       void listExpos({ sort: 'date' })
         .then((response) => { if (version === loadVersion.current) setExpos({ status: 'ready', value: response.items }); })
-        .catch(() => { if (version === loadVersion.current) setExpos({ status: 'error' }); });
+        .catch(failed(() => setExpos({ status: 'error' })));
     }
   }, [isSignedIn, loadReviews, tab]);
 
@@ -177,6 +190,7 @@ export function LoungeScreen({ kind: tab }: { kind: LoungeKind }) {
       reviewLoadingMore.current = false;
     };
   }, [load]));
+  const pull = usePullRefresh(useCallback(() => load(true), [load]));
 
   if (state.status === 'error') return <FullScreenError kind={state.kind} onRetry={() => void refresh()} />;
   if (state.status === 'loading') return <DelayedLoadingView />;
@@ -202,30 +216,22 @@ export function LoungeScreen({ kind: tab }: { kind: LoungeKind }) {
         />
 
         {hasCategoryChips ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.chipScroll}
-            contentContainerStyle={styles.chipBar}>
-            {CATEGORIES.map((label) => (
-              <CatChip
-                key={label}
-                label={label}
-                selected={category === label}
-                onPress={() => {
-                  categoryRef.current = label;
-                  setCategory(label);
-                  if (tab === 'review') loadReviews(label);
-                }}
-              />
-            ))}
-          </ScrollView>
+          <CatChipBar
+            items={CATEGORIES}
+            selected={category}
+            onSelect={(label) => {
+              categoryRef.current = label;
+              setCategory(label);
+              if (tab === 'review') loadReviews(label);
+            }}
+          />
         ) : null}
 
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          refreshControl={pull.refreshControl}
           scrollEventThrottle={160}
           onScroll={({ nativeEvent }) => {
             if (tab !== 'review') return;
@@ -244,11 +250,12 @@ export function LoungeScreen({ kind: tab }: { kind: LoungeKind }) {
               moreError={reviewMoreError}
               onRetryMore={loadMoreReviews}
               signedIn={isSignedIn}
+              vendorOrigin={chainOrigin('community', from === 'my' ? 'my' : null)}
             />
           ) : tab === 'feed' ? (
-            <FeedList state={feed} category={category} onRetry={load} />
+            <FeedList state={feed} category={category} from={from} onRetry={() => load()} />
           ) : (
-            <ExpoList state={expos} onRetry={load} />
+            <ExpoList state={expos} onRetry={() => load()} />
           )}
         </ScrollView>
       </SafeAreaView>
@@ -284,6 +291,7 @@ function ReviewList({
   moreError,
   onRetryMore,
   signedIn,
+  vendorOrigin,
 }: {
   state: Loaded<LoungeReviewListResponse>;
   category: CategoryLabel;
@@ -292,6 +300,8 @@ function ReviewList({
   moreError: boolean;
   onRetryMore: () => void;
   signedIn: boolean;
+  /** 업체 상세의 `from` — 리얼후기(그리고 그 앞의 MY)로 돌아오게 한다. */
+  vendorOrigin: string;
 }) {
   const theme = useTheme();
   const [helpfulOverrides, setHelpfulOverrides] = useState<
@@ -344,8 +354,11 @@ function ReviewList({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`${review.vendor.name} 후기`}
-              /* 후기 상세는 2026-09-25 삭제 — 그 업체 상세로 연다. */
-              onPress={() => router.push(`/search/${encodeURIComponent(review.vendor.id)}` as never)}
+              /*
+               * 후기 상세는 2026-09-25 삭제 — 그 업체 상세로 연다. 업체 상세는 검색 스택에 있으니
+               * 출처(리얼후기 · 그 앞의 MY)를 넘긴다 — 없으면 Back이 검색 홈으로 간다.
+               */
+              onPress={() => router.push(`/search/${encodeURIComponent(review.vendor.id)}?from=${vendorOrigin}` as never)}
               style={({ pressed }) => [styles.reviewTap, pressed ? styles.pressed : null]}>
             <View style={styles.reviewHead}>
               <View style={[styles.reviewAvatar, { backgroundColor: theme.backgroundSelected }]}>
@@ -505,10 +518,13 @@ function reviewMeta(review: LoungeReview): string {
 function FeedList({
   state,
   category,
+  from,
   onRetry,
 }: {
   state: Loaded<WeddingFeedListResponse>;
   category: CategoryLabel;
+  /** 목록의 진입 출처(`?from=`) — 글 상세로 그대로 넘긴다. */
+  from?: string;
   onRetry: () => void;
 }) {
   const theme = useTheme();
@@ -526,7 +542,8 @@ function FeedList({
           key={item.id}
           accessibilityRole="button"
           accessibilityLabel={item.title}
-          onPress={() => router.push(`/community/feed/${encodeURIComponent(item.id)}` as never)}
+          /* 진입 출처를 상세에도 싣는다 — 상세 하단 「목록」이 같은 목록(같은 from)으로 돌아간다. */
+          onPress={() => router.push(feedDetailHref(item.id, from) as never)}
           style={({ pressed }) => [styles.guideRow, { borderBottomColor: theme.border }, pressed ? styles.pressed : null]}>
           <View style={styles.guideThumb}>
             <CategoryImage uri={item.imageUrl} />
@@ -669,9 +686,6 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   /* 정본 scroll padding-top 16. */
   scrollContent: { paddingTop: Spacing.three, paddingBottom: Spacing.four },
-  /* 화면 바깥 여백은 공통 24px. */
-  chipScroll: { flexGrow: 0 },
-  chipBar: { gap: Layout.chipGap, paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionHeadGap },
 
   /* revCard: 위아래 18px, 바깥 좌우 24px. */
   reviewCard: {

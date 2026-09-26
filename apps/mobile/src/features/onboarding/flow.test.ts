@@ -1,3 +1,5 @@
+import { PREPARATION_GROUPS } from '@weddingpick/domain';
+
 import {
   BUDGET_QUICK_CHIPS,
   DONE_DESCRIPTION,
@@ -11,10 +13,18 @@ import {
   STYLE_DESCRIPTION,
   answerSummary,
   canAdvance,
+  choosePrepManual,
+  choosePrepVendor,
+  clearPrepCard,
   ddayLabel,
   doneRows,
   isPrepCardSelected,
   nextStep,
+  manualPrepName,
+  prepVendorOf,
+  preparedChoicesPayload,
+  preparedManualVendors,
+  preparedVendorIds,
   prevStep,
   resumeStep,
   settleAnswer,
@@ -160,8 +170,8 @@ describe('진행 상황 카드', () => {
   });
 
   it('요약은 카드 이름을 «·»로 잇고, 없으면 «아직 시작 전이에요»다', () => {
-    expect(summarizePrep(['hall', 'snap', 'bouquet', 'invitation'])).toBe('웨딩홀 · 본식');
-    expect(summarizePrep([])).toBe('아직 시작 전이에요');
+    expect(summarizePrep({ categories: ['hall', 'snap', 'bouquet', 'invitation'] })).toBe('웨딩홀 · 본식');
+    expect(summarizePrep({ categories: [] })).toBe('아직 시작 전이에요');
   });
 });
 
@@ -210,5 +220,95 @@ describe('완료 요약', () => {
     expect(ddayLabel(250)).toBe('D-250');
     expect(ddayLabel(1)).toBe('D-1');
     expect(ddayLabel(0)).toBe('D-DAY');
+  });
+});
+
+describe('준비 현황 카드 → 업체 검색 시트 (2026-09-26 대표 지시)', () => {
+  const hall = PREP_CARDS[0]!;
+  const sdm = PREP_CARDS[1]!;
+  const hallVendor = { id: 'v-hall', name: '강남 A 웨딩홀', category: 'hall' as const };
+  const studioVendor = { id: 'v-studio', name: '강남 E 스튜디오', category: 'studio' as const };
+
+  it('카드 넷은 Pick 묶음(/pick?group=) 넷과 같은 업종을 가리킨다', () => {
+    expect(PREP_CARDS.map((card) => card.group)).toEqual(['start', 'sdm', 'ceremony', 'goods']);
+
+    for (const card of PREP_CARDS) {
+      expect(card.categories).toEqual(PREPARATION_GROUPS.find((group) => group.key === card.group)!.categories);
+    }
+  });
+
+  it('업체를 고르면 카드가 켜지고 줄에 업체 이름이 선다', () => {
+    const picked = choosePrepVendor(null, hall, hallVendor);
+
+    expect(picked.categories).toEqual(['hall']);
+    expect(isPrepCardSelected(hall, picked.categories)).toBe(true);
+    expect(prepVendorOf(picked, hall)).toEqual(hallVendor);
+    expect(preparedVendorIds(picked)).toEqual(['v-hall']);
+
+    // 스드메 카드는 업종 넷을 전부 켠다.
+    const both = choosePrepVendor(picked, sdm, studioVendor);
+
+    expect(both.categories).toEqual(['hall', 'studio', 'dress', 'makeup', 'hair']);
+    expect(preparedVendorIds(both)).toEqual(['v-hall', 'v-studio']);
+  });
+
+  it('같은 카드에서 다시 고르면 업체만 바뀐다(한 카드 한 곳)', () => {
+    const again = choosePrepVendor(choosePrepVendor(null, hall, hallVendor), hall, { ...hallVendor, id: 'v-hall-2', name: '강남 B 웨딩홀' });
+
+    expect(again.categories).toEqual(['hall']);
+    expect(preparedVendorIds(again)).toEqual(['v-hall-2']);
+  });
+
+  it('카드 밖 업종의 업체는 받지 않는다', () => {
+    expect(choosePrepVendor(null, hall, studioVendor)).toEqual({ categories: [] });
+  });
+
+  it('«아직 정한 곳이 없어요»는 카드를 미정으로 돌리고 업체를 지운다', () => {
+    const both = choosePrepVendor(choosePrepVendor(null, hall, hallVendor), sdm, studioVendor);
+    const cleared = clearPrepCard(both, hall);
+
+    expect(cleared.categories).toEqual(['studio', 'dress', 'makeup', 'hair']);
+    expect(prepVendorOf(cleared, hall)).toBeNull();
+    expect(preparedVendorIds(cleared)).toEqual(['v-studio']);
+
+    // 업체 없이 켜 둔 적 없는 카드에서 눌러도 미정 그대로 — 보낼 업체가 없다.
+    expect(clearPrepCard(null, hall)).toEqual({ categories: [] });
+    expect(preparedVendorIds(clearPrepCard(null, hall))).toEqual([]);
+  });
+
+  it('카드가 꺼져 있으면 남은 업체를 보내지 않는다', () => {
+    expect(preparedVendorIds({ categories: [], vendors: { hall: hallVendor } })).toEqual([]);
+  });
+});
+
+describe('준비 현황 카드 → 직접 입력 (2026-09-26 대표 지시)', () => {
+  const hall = PREP_CARDS[0]!;
+  const sdm = PREP_CARDS[1]!;
+
+  it('이름은 앞뒤 공백을 떼고 1~30자만 받는다', () => {
+    expect(manualPrepName('  우리동네 웨딩컨벤션 ')).toBe('우리동네 웨딩컨벤션');
+    expect(manualPrepName('   ')).toBeNull();
+    expect(manualPrepName('가'.repeat(30))).toBe('가'.repeat(30));
+    expect(manualPrepName('가'.repeat(31))).toBeNull();
+  });
+
+  it('직접 입력하면 카드가 켜지고, 저장 때는 업체 id 없이 묶음과 이름이 간다', () => {
+    const both = choosePrepManual(choosePrepVendor(null, hall, { id: 'v-hall', name: '강남 A 웨딩홀', category: 'hall' }), sdm, ' 청담 스튜디오 ');
+
+    expect(both.categories).toEqual(['hall', 'studio', 'dress', 'makeup', 'hair']);
+    expect(prepVendorOf(both, sdm)).toEqual({ manual: true, name: '청담 스튜디오' });
+    expect(preparedVendorIds(both)).toEqual(['v-hall']);
+    expect(preparedManualVendors(both)).toEqual([{ group: 'sdm', name: '청담 스튜디오' }]);
+    expect(preparedChoicesPayload(both)).toEqual({
+      preparedVendorIds: ['v-hall'],
+      preparedManualVendors: [{ group: 'sdm', name: '청담 스튜디오' }],
+    });
+    // 완료 요약에 카드마다 정한 이름이 괄호로 붙는다.
+    expect(summarizePrep(both)).toBe('웨딩홀(강남 A 웨딩홀) · 스드메(청담 스튜디오)');
+  });
+
+  it('맞지 않는 이름은 카드를 바꾸지 않는다 · 아무것도 안 골랐으면 보낼 것이 없다', () => {
+    expect(choosePrepManual(null, hall, '   ')).toEqual({ categories: [] });
+    expect(preparedChoicesPayload({ categories: ['hall'] })).toEqual({});
   });
 });

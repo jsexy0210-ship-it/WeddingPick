@@ -1,18 +1,18 @@
 import { Client } from 'pg';
 
+import { migrate } from './migrate';
 import { resetSchema } from './reset';
 
 /**
- * 웨딩피드의 탭과 카테고리(0421).
+ * 웨딩피드의 탭과 카테고리 표(0421 → 0442).
  *
- * **이 시험이 여기 있는 이유.** 탭과 카테고리가 코드 상수였을 때는 「모든 카테고리가
- * 어느 그룹에 드는가」를 상수 배열을 세어 확인할 수 있었다. 값이 표로 옮겨 가면
- * 그 세기는 의미가 없어진다 — 상수는 늘 맞고, 틀릴 수 있는 것은 **운영자가 고친 뒤의
- * 표**다. 그래서 같은 성질을 DB에서 센다.
+ * **2026-09-26부터 목록은 domain 상수 하나다**(`WEDDING_FEED_CHIPS` · `WEDDING_FEED_CATEGORIES`
+ * — 정본 my.js `cats`). 대표 지적 「관리자 웨딩피드 카테고리와 앱웹 카테고리와 정보가 전혀
+ * 다르다」에서 나왔다 — 관리자가 표에서 고친 탭을 그리는 앱 화면이 없었다. 표는 글이
+ * `category_id`로 가리키는 자리라 남기고, 0442가 상수와 같은 모양으로 맞춘다.
  *
- * 지켜야 할 성질은 하나다 — **어느 탭에도 안 든 카테고리가 있으면 관리자가 알 수
- * 있어야 한다.** 그 카테고리로 쓴 글은 「전체」에서만 보이는데 오류도 안 나고
- * 목록에서는 멀쩡해 보인다. 알아챌 방법이 없는 것이 이 표를 만든 이유다.
+ * 이 패키지는 domain을 읽지 않아서 값을 여기 적는다. 상수와 표가 같은지는 api 쪽 실제 DB
+ * 시험(`apps/api/src/test/wedding-feed-db.test.ts`)이 domain을 읽어 한 번 더 센다.
  */
 
 const connectionString = process.env.DATABASE_URL;
@@ -24,15 +24,33 @@ if (!connectionString) {
 
 let client: Client;
 
-/** 관리자 화면 맨 위 경고줄이 세는 것과 같은 질의다. */
-async function ungroupedNames(): Promise<string[]> {
-  const { rows } = await client.query<{ name: string }>(
-    `SELECT name FROM structured.wedding_feed_categories
-     WHERE active AND group_id IS NULL
-     ORDER BY name`
+const CHIPS = ['웨딩홀', '스드메', '본식', '예물 · 신혼', '예산'];
+
+/** 카테고리 → 칩(없으면 null). domain `WEDDING_FEED_CATEGORIES`와 같은 줄이다. */
+const CATEGORY_CHIP: Record<string, string | null> = {
+  웨딩홀: '웨딩홀',
+  스튜디오: '스드메',
+  드레스: '스드메',
+  메이크업: '스드메',
+  헤어변형: '스드메',
+  본식스냅: '본식',
+  허니문: '예물 · 신혼',
+  예산: '예산',
+  체크리스트: null,
+  일정: null,
+  하객: null,
+  계약: null,
+};
+
+async function categories(): Promise<{ name: string; chip: string | null; active: boolean }[]> {
+  const { rows } = await client.query<{ name: string; chip: string | null; active: boolean }>(
+    `SELECT c.name, g.name AS chip, c.active
+     FROM structured.wedding_feed_categories c
+     LEFT JOIN structured.wedding_feed_groups g ON g.id = c.group_id
+     ORDER BY c.sort_order, c.name`
   );
 
-  return rows.map((row) => row.name);
+  return rows;
 }
 
 async function categoryId(name: string): Promise<string> {
@@ -44,7 +62,7 @@ async function categoryId(name: string): Promise<string> {
   return rows[0]!.id;
 }
 
-describeWithDb('웨딩피드 — 탭과 카테고리', () => {
+describeWithDb('웨딩피드 — 탭과 카테고리 표', () => {
   beforeAll(async () => {
     client = new Client({ connectionString });
     await client.connect();
@@ -56,136 +74,138 @@ describeWithDb('웨딩피드 — 탭과 카테고리', () => {
 
   beforeEach(() => resetSchema(client));
 
-  describe('초기값', () => {
-    it('탭 셋과 카테고리 열둘이 들어간다 — 결정사는 0433이 걷었다', async () => {
-      const groups = await client.query<{ name: string }>(
+  describe('0442 뒤 — 표가 정본 칩과 같다', () => {
+    it('탭은 정본 칩 다섯이다(«전체»는 표에 없다)', async () => {
+      const { rows } = await client.query<{ name: string }>(
         'SELECT name FROM structured.wedding_feed_groups ORDER BY sort_order'
       );
-      const categories = await client.query<{ n: string }>(
-        'SELECT count(*)::text AS n FROM structured.wedding_feed_categories'
-      );
 
-      expect(groups.rows.map((r) => r.name)).toEqual(['준비·예산', '업체·서비스', '계약·여행']);
-      expect(Number(categories.rows[0]!.n)).toBe(12);
+      expect(rows.map((r) => r.name)).toEqual(CHIPS);
     });
 
-    it('카테고리가 하나도 빠짐없이 어느 탭에 든다', async () => {
-      /*
-       * **이것이 핵심 시험이다.** 값이 코드에 있었을 때는 상수를 세어 확인했고, 이제는
-       * 표를 센다. 씨앗을 넣은 직후에는 떨어진 것이 하나도 없어야 한다.
-       */
-      expect(await ungroupedNames()).toEqual([]);
+    it('카테고리 열둘이 켜져 있고 칩 배정이 목록과 같다', async () => {
+      const rows = await categories();
+
+      expect(rows.every((r) => r.active)).toBe(true);
+      expect(Object.fromEntries(rows.map((r) => [r.name, r.chip]))).toEqual(CATEGORY_CHIP);
     });
 
-    it('탭 이름과 카테고리 이름은 겹치지 않는다', async () => {
-      // 같은 이름이 둘이면 고르는 화면에서 어느 쪽인지 구별할 수 없다.
-      await expect(
-        client.query(
-          `INSERT INTO structured.wedding_feed_categories (name) VALUES ('예산')`
-        )
-      ).rejects.toThrow();
-      await expect(
-        client.query(`INSERT INTO structured.wedding_feed_groups (name) VALUES ('계약·여행')`)
-      ).rejects.toThrow();
-    });
+    it('옛 이름 · 은퇴한 이름은 없다', async () => {
+      // «준비 순서»는 정본 이름 «일정»으로 옮겼다. 결정사는 2026-09-24에 걷었다(0433).
+      const names = (await categories()).map((r) => r.name);
 
-    it('한 카테고리는 탭 하나에만 든다', async () => {
-      /*
-       * 상수였을 때는 배열 셋에 같은 이름을 두 번 적을 수 있어서 **세어서** 막았다
-       * (「한 카테고리가 두 그룹에 들지 않는다 — 들면 같은 글이 탭 둘에 뜬다」).
-       * 표에서는 소속이 `group_id` 한 칸이라 두 번 적을 자리가 없다 — 세는 대신
-       * 그 칸이 하나뿐인 것을 확인한다.
-       */
-      const { rows } = await client.query<{ n: string }>(
-        `SELECT count(*)::text AS n
-         FROM information_schema.columns
-         WHERE table_schema = 'structured'
-           AND table_name = 'wedding_feed_categories'
-           AND column_name = 'group_id'`
-      );
-
-      expect(Number(rows[0]!.n)).toBe(1);
-    });
-
-    it('업종 이름은 정본을 쓴다', async () => {
-      // CLAUDE.md 2026-09-11 — 본식스냅 · 헤어변형. 결정사는 2026-09-24에 걷었다(0433).
-      const { rows } = await client.query<{ name: string }>(
-        'SELECT name FROM structured.wedding_feed_categories'
-      );
-      const names = rows.map((r) => r.name);
-
-      expect(names).toContain('본식스냅');
-      expect(names).toContain('헤어변형');
-      expect(names).not.toContain('결정사');
-      expect(names).not.toContain('스냅');
-      expect(names).not.toContain('헤메');
-      expect(names).not.toContain('플래너');
+      for (const gone of ['준비 순서', '결정사', '스냅', '헤메', '플래너']) {
+        expect(names).not.toContain(gone);
+      }
     });
   });
 
-  describe('어느 탭에도 안 든 카테고리를 관리자가 알 수 있다', () => {
-    it('탭을 지우면 딸린 카테고리가 남고 경고에 뜬다', async () => {
-      /*
-       * **딸린 카테고리를 함께 지우지 않는다**(`ON DELETE SET NULL`). 함께 지우면
-       * 그 카테고리로 쌓인 글이 가리키던 값이 사라진다. 소속만 떼어내고 남겨서
-       * 운영자가 어디로 옮길지 정할 때까지 눈에 남게 한다.
-       */
-      await client.query(`DELETE FROM structured.wedding_feed_groups WHERE name = '계약·여행'`);
+  describe('0442가 이미 쌓인 값을 옮긴다', () => {
+    /**
+     * 0442 전 운영 상태를 흉내 낸다 — 0421의 옛 탭 셋, «준비 순서» 카테고리와 그 글,
+     * 관리자가 따로 만든 탭 · 카테고리. 그다음 0442만 다시 돌린다.
+     */
+    async function rerun0442() {
+      await client.query(`DELETE FROM public.schema_migrations WHERE version LIKE '0442%'`);
+      await migrate(client);
+    }
 
-      expect(await ungroupedNames()).toEqual(['계약', '허니문']);
-
-      const { rows } = await client.query<{ n: string }>(
-        'SELECT count(*)::text AS n FROM structured.wedding_feed_categories'
+    beforeEach(async () => {
+      await client.query(`DELETE FROM structured.wedding_feed_groups`);
+      await client.query(
+        `INSERT INTO structured.wedding_feed_groups (name, sort_order)
+         VALUES ('준비·예산', 1), ('업체·서비스', 2), ('계약·여행', 3), ('운영자가 만든 탭', 4)`
       );
-
-      expect(Number(rows[0]!.n)).toBe(12);
-    });
-
-    it('꺼 둔 카테고리는 탭이 없어도 경고하지 않는다', async () => {
-      // 꺼 둔 것은 애초에 앱에 안 나간다. 늘 켜져 있는 경고는 아무도 읽지 않는다.
+      await client.query(
+        `UPDATE structured.wedding_feed_categories SET name = '준비 순서' WHERE name = '일정'`
+      );
       await client.query(
         `UPDATE structured.wedding_feed_categories
-         SET group_id = NULL, active = false
-         WHERE name = '하객'`
+         SET group_id = (SELECT id FROM structured.wedding_feed_groups WHERE name = '준비·예산')`
+      );
+      await client.query(
+        `INSERT INTO structured.wedding_feed_categories (name, group_id)
+         SELECT '웨딩 소식', id FROM structured.wedding_feed_groups WHERE name = '운영자가 만든 탭'`
+      );
+      await client.query(
+        `INSERT INTO structured.wedding_feed_posts (category_label, category_id, title, status, published_at)
+         VALUES
+           ('준비 순서', (SELECT id FROM structured.wedding_feed_categories WHERE name = '준비 순서'),
+            '무엇부터 정하나', 'published', now()),
+           ('웨딩 소식', (SELECT id FROM structured.wedding_feed_categories WHERE name = '웨딩 소식'),
+            '운영 소식', 'published', now()),
+           ('웨딩홀 ', NULL, '뒤에 공백이 붙은 글', 'draft', NULL)`
+      );
+    });
+
+    it('«준비 순서» 글과 카테고리는 «일정»으로 옮겨 가고 연결이 유지된다', async () => {
+      await rerun0442();
+
+      const { rows } = await client.query<{ category_label: string; name: string | null }>(
+        `SELECT p.category_label, c.name
+         FROM structured.wedding_feed_posts p
+         LEFT JOIN structured.wedding_feed_categories c ON c.id = p.category_id
+         WHERE p.title = '무엇부터 정하나'`
       );
 
-      expect(await ungroupedNames()).toEqual([]);
+      expect(rows[0]).toEqual({ category_label: '일정', name: '일정' });
+    });
+
+    it('옛 탭은 지우고 칩 다섯만 남긴다 · 칩 배정을 목록대로 다시 건다', async () => {
+      await rerun0442();
+
+      const groups = await client.query<{ name: string }>(
+        'SELECT name FROM structured.wedding_feed_groups ORDER BY sort_order'
+      );
+      const rows = (await categories()).filter((r) => r.name in CATEGORY_CHIP);
+
+      expect(groups.rows.map((r) => r.name)).toEqual(CHIPS);
+      expect(Object.fromEntries(rows.map((r) => [r.name, r.chip]))).toEqual(CATEGORY_CHIP);
+    });
+
+    it('목록 밖 카테고리는 지우지 않고 끈다 — 그 글도 그대로 남는다', async () => {
+      await rerun0442();
+
+      const extra = (await categories()).find((r) => r.name === '웨딩 소식');
+      const { rows } = await client.query<{ n: string }>(
+        `SELECT count(*)::text AS n FROM structured.wedding_feed_posts WHERE category_label = '웨딩 소식'`
+      );
+
+      expect(extra).toEqual({ name: '웨딩 소식', chip: null, active: false });
+      expect(Number(rows[0]!.n)).toBe(1);
+    });
+
+    it('이름이 어긋난 글은 추측해서 붙이지 않는다', async () => {
+      await rerun0442();
+
+      const { rows } = await client.query<{ category_id: string | null }>(
+        `SELECT category_id FROM structured.wedding_feed_posts WHERE title = '뒤에 공백이 붙은 글'`
+      );
+
+      expect(rows[0]!.category_id).toBeNull();
+    });
+
+    it('«일정»이 이미 따로 있었으면 이름은 두고 글만 옮겨 «일정»에 잇는다', async () => {
+      await client.query(`INSERT INTO structured.wedding_feed_categories (name) VALUES ('일정')`);
+
+      await rerun0442();
+
+      const { rows } = await client.query<{ name: string | null }>(
+        `SELECT c.name
+         FROM structured.wedding_feed_posts p
+         LEFT JOIN structured.wedding_feed_categories c ON c.id = p.category_id
+         WHERE p.title = '무엇부터 정하나'`
+      );
+      const old = (await categories()).find((r) => r.name === '준비 순서');
+
+      expect(rows[0]!.name).toBe('일정');
+      expect(old).toEqual({ name: '준비 순서', chip: null, active: false });
     });
   });
 
   describe('글과 카테고리의 연결', () => {
-    it('이름이 같은 기존 글은 마이그레이션이 붙여 준다', async () => {
-      /*
-       * 0421은 이미 쌓인 글을 이름으로 한 번 붙인다. 여기서는 그 뒤에 들어온 글이
-       * 아니라 **붙이는 질의 자체**를 확인한다 — 0340 시절의 글을 흉내 내어
-       * `category_id` 없이 넣고 같은 질의를 돌린다.
-       */
-      await client.query(
-        `INSERT INTO structured.wedding_feed_posts (category_label, title)
-         VALUES ('웨딩홀', '오래된 글'), ('웨딩홀 ', '뒤에 공백이 붙은 글')`
-      );
-      await client.query(
-        `UPDATE structured.wedding_feed_posts p
-         SET category_id = c.id
-         FROM structured.wedding_feed_categories c
-         WHERE p.category_label = c.name AND p.category_id IS NULL`
-      );
-
-      const { rows } = await client.query<{ title: string; category_id: string | null }>(
-        'SELECT title, category_id FROM structured.wedding_feed_posts ORDER BY title'
-      );
-
-      // 정확히 같은 것만 붙는다. 「웨딩홀 」은 **일부러 안 붙인다** —
-      // 여기서 추측해서 붙이면 무엇이 잘못 적혀 있었는지가 사라진다.
-      expect(rows.find((r) => r.title === '오래된 글')!.category_id).not.toBeNull();
-      expect(rows.find((r) => r.title === '뒤에 공백이 붙은 글')!.category_id).toBeNull();
-    });
-
     it('쓰는 카테고리는 지워지지 않는다', async () => {
-      /*
-       * 지우면 그 글들이 어느 탭에도 안 뜨는데 화면은 멀쩡해 보인다 — 이 표가
-       * 없애려던 바로 그 상태다. 화면이 막고 `ON DELETE RESTRICT`가 한 겹 더 막는다.
-       */
+      // 글이 `category_id`로 가리키는 동안은 `ON DELETE RESTRICT`가 막는다.
       const id = await categoryId('웨딩홀');
 
       await client.query(
@@ -199,16 +219,10 @@ describeWithDb('웨딩피드 — 탭과 카테고리', () => {
       ).rejects.toThrow();
     });
 
-    it('딸린 글이 없으면 지워진다', async () => {
-      const id = await categoryId('하객');
-
-      await client.query('DELETE FROM structured.wedding_feed_categories WHERE id = $1', [id]);
-
-      const { rows } = await client.query<{ n: string }>(
-        'SELECT count(*)::text AS n FROM structured.wedding_feed_categories'
-      );
-
-      expect(Number(rows[0]!.n)).toBe(11);
+    it('카테고리 이름은 겹치지 않는다', async () => {
+      await expect(
+        client.query(`INSERT INTO structured.wedding_feed_categories (name) VALUES ('예산')`)
+      ).rejects.toThrow();
     });
   });
 });

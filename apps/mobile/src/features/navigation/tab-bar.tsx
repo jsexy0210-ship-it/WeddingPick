@@ -4,6 +4,8 @@ import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { Border, Layout, SeedIcon, ThemedText, WeddingMark, useTheme } from '@weddingpick/ui';
 
+import { useKeyboardInset, type KeyboardInset } from '@/features/common/keyboard-inset';
+
 import { rootTab, type RootTabSpec } from './root-tabs';
 import { isRootTabPath } from './root-tab-visibility';
 
@@ -22,9 +24,11 @@ import { isRootTabPath } from './root-tab-visibility';
 export function RootTabBar({ state, descriptors, navigation, insets }: BottomTabBarProps) {
   const theme = useTheme();
   const pathname = usePathname();
+  const keyboard = useKeyboardInset();
   const bottom = Math.max(insets.bottom, 0);
   const focused = state.routes[state.index];
   if (!isRootTabPath(pathname, focused?.name)) return null;
+  if (hideTabBarForKeyboard(Platform.OS, keyboard)) return null;
 
   return (
     <View
@@ -67,6 +71,20 @@ export function RootTabBar({ state, descriptors, navigation, insets }: BottomTab
       })}
     </View>
   );
+}
+
+/**
+ * 키패드가 떠 있으면 탭 바를 숨긴다(2026-09-26 대표 지시 「키패드 출력 시 화면을 위로」) — 탭 바가
+ * 키패드 위로 떠오르면 검색 결과 같은 본문 자리를 72만큼 먹는다.
+ *
+ *   웹        앱 뿌리가 키패드 위로 줄어들어서(`useKeyboardAvoidingRoot`) 숨기지 않으면 탭 바가
+ *             키패드 바로 위에 붙는다. 창째 줄이는 인앱 브라우저도 같다.
+ *   Android   창이 줄어드는 기기에서는 같은 일이 생긴다 — 줄지 않아도 키패드 밑에 가려질 뿐이다.
+ *   iOS       창이 줄지 않아 키패드가 탭 바를 그대로 덮는다. 숨기면 키패드가 오르는 동안 탭 바가
+ *             먼저 사라져 아래가 깜빡인다 — 그대로 둔다.
+ */
+export function hideTabBarForKeyboard(platform: string, keyboard: KeyboardInset): boolean {
+  return platform !== 'ios' && keyboard.visible;
 }
 
 /** Pick은 기존 전용 마크, 나머지는 SEED의 선택/비선택 아이콘을 사용한다. */

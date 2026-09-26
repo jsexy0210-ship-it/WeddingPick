@@ -4,12 +4,14 @@ import '@weddingpick/ui/tokens.css';
 // 브라우저가 입력칸에 얹는 자기 규칙(자동완성 배경 등) 보정. 네이티브에서는 무시된다.
 import '@/global.css';
 
-import { DefaultTheme, Stack, ThemeProvider, router, usePathname } from 'expo-router';
+import { DefaultTheme, ThemeProvider, router, usePathname } from 'expo-router';
+import Head from 'expo-router/head';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 
 import { useTheme } from '@weddingpick/ui';
+import { AppStack } from '@/features/navigation/app-stack';
 import { useStackScreenOptions } from '@/features/navigation/screen-options';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { ResultToastHost } from '@/features/navigation/result-toast-host';
@@ -23,11 +25,13 @@ import { SigningInView } from '@/features/auth/signing-in-view';
 import { ConfirmationDialogHost } from '@/components/confirmation-dialog-host';
 import { FullScreenError } from '@/features/errors/full-screen-error';
 import { escapeInAppBrowser } from '@/features/inapp-browser/escape';
+import { useKeyboardAvoidingRoot } from '@/features/common/keyboard-inset';
 import { InAppWebShell } from '@/features/in-app-web/in-app-web-shell';
 import { InAppBrowserNotice } from '@/features/inapp-browser/in-app-browser-notice';
 import { resolveSessionEntry, sessionErrorKind, type SessionEntry } from '@/features/auth/session-recovery';
 import { stripLegacyUrlToken } from '@/api/session';
 import { SPLASH_MINIMUM_MS, SplashView } from '@/features/splash/splash-view';
+import { SHARE_TITLE } from '@/features/social-meta';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -75,6 +79,11 @@ export default function RootLayout() {
    */
   const [browserReady, setBrowserReady] = useState(Platform.OS !== 'web');
   const [authPopup, setAuthPopup] = useState(false);
+  /*
+   * 키패드가 뜨면 앱 뿌리(`#root`)를 키패드 위로 줄인다(웹 — 네이티브는 화면 껍데기가 맡는다).
+   * 화면 · 고정 dock · 탭 화면이 전부 이 한 줄로 올라간다(`features/common/keyboard-inset.web.ts`).
+   */
+  useKeyboardAvoidingRoot();
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
@@ -361,6 +370,16 @@ function RootLayoutContent({ browserReady }: { browserReady: boolean }) {
   /* 항상 라이트 — 기기 다크 모드를 따르지 않는다(packages/ui use-color-scheme 참고). */
   return (
     <ThemeProvider value={navigationTheme}>
+      {/*
+        웹 문서 제목. `+html.tsx`의 <title>보다 Expo Router의 head(`<title data-rh>`)가 앞에 찍혀서
+        그 값이 비면 **모든 화면의 탭 제목이 빈 칸**이었다(2026-09-26 대표 감사 — /login 문서 제목 없음).
+        공유 카드와 같은 `SHARE_TITLE` 한 값을 쓴다 — 새 문구를 짓지 않는다. 네이티브에는 없다.
+      */}
+      {Platform.OS === 'web' ? (
+        <Head>
+          <title>{SHARE_TITLE}</title>
+        </Head>
+      ) : null}
       <InAppBrowserNotice notice={inAppNotice} />
       <ConfirmationDialogHost />
       {/*
@@ -370,18 +389,18 @@ function RootLayoutContent({ browserReady }: { browserReady: boolean }) {
         않는다 — 거기서는 expo-web-browser의 시스템 시트가 앱 위에 뜬다.
       */}
       <InAppWebShell />
-      <Stack screenOptions={stackScreenOptions}>
-        <Stack.Screen name="(tabs)" />
+      <AppStack screenOptions={stackScreenOptions}>
+        <AppStack.Screen name="(tabs)" />
         {/*
           가입이 끝나기 전에는 나갈 곳이 없다. 제스처로 빠져나가면 서버가
           전부 막아둔 계정으로 앱을 헤매게 된다(v3.13 §N-2).
         */}
         {/* 예식일·지역 없이는 개인화가 없다. 제스처로도 나갈 수 없게 한다. */}
-        <Stack.Screen name="setup" options={{ gestureEnabled: false }} />
+        <AppStack.Screen name="setup" options={{ gestureEnabled: false }} />
         {/* 로그인 없이는 앱을 쓸 수 없다. 제스처로 빠져나가면 뒤에 아무것도 없다. */}
-        <Stack.Screen name="login" options={{ gestureEnabled: false }} />
-        <Stack.Screen name="admin" options={{ headerShown: false }} />
-      </Stack>
+        <AppStack.Screen name="login" options={{ gestureEnabled: false }} />
+        <AppStack.Screen name="admin" options={{ headerShown: false }} />
+      </AppStack>
       {/* 온보딩 저장 → 홈 첫 자료까지 한 장으로 이어지는 홈 골격(features/home/home-handoff). */}
       <HomeHandoffHost />
       <ResultToastHost />

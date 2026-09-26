@@ -24,6 +24,7 @@ import {
   regionChipLabel,
   type CategoryStatus,
 } from './state';
+import { homePrepCards } from './prep-groups';
 
 /* 시안 네 장(0개 · 3/11 · 3/11 정보 부족 · 9/11)을 되살리는 최소한의 자료만 만든다. */
 
@@ -142,6 +143,27 @@ describe('1층 · 진행 구간', () => {
     });
 
     expect(statuses[0]?.decidedName).toBe('hall 1');
+  });
+
+  it('직접 입력한 결정도 정한 것으로 세고, 적어 둔 이름이 남는다(2026-09-26 · 0440)', () => {
+    const list = {
+      ...candidates([], null),
+      manualDecisions: [
+        { category: 'hall', categoryLabel: '웨딩홀', name: '우리동네 웨딩컨벤션', decidedAt: '2026-09-26T00:00:00.000Z', decidedByPartner: false },
+        { category: 'studio', categoryLabel: '스튜디오', name: '청담 스튜디오', decidedAt: '2026-09-26T00:00:00.000Z', decidedByPartner: false },
+      ],
+    } as unknown as CandidateListResponse;
+    const statuses = categoryStatuses({ candidates: list, preparedCategories: ['hall', 'studio', 'dress', 'makeup', 'hair'] });
+
+    expect(statuses.find((row) => row.category === 'hall')).toMatchObject({ state: 'decided', decidedName: '우리동네 웨딩컨벤션' });
+    expect(statuses.find((row) => row.category === 'studio')).toMatchObject({ state: 'decided', decidedName: '청담 스튜디오' });
+
+    // 홈 「내 웨딩 준비」 — 웨딩홀 · 스드메 칸이 «계약 완료 · 이름».
+    const cards = homePrepCards({ statuses, venueName: statuses[0]!.decidedName });
+
+    expect(cards.find((card) => card.key === 'start')?.detail).toBe('계약 완료 · 우리동네 웨딩컨벤션');
+    expect(cards.find((card) => card.key === 'sdm')?.detail).toBe('계약 완료 · 청담 스튜디오');
+    expect(cards.find((card) => card.key === 'ceremony')?.state).toBe('todo');
   });
 
   it('후보 목록이 없어도 11칸은 다 있다', () => {

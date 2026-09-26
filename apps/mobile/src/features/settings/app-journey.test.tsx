@@ -35,6 +35,7 @@ jest.mock('@/features/wedding/screen-kit', () => ({ NavBar: 'NavBar' }));
 jest.mock('@/features/loading/delayed-loader', () => ({ DelayedLoadingView: 'Loading' }));
 jest.mock('@/features/settings/my-kit', () => ({
   Avatar: 'Avatar', EmptyBox: 'EmptyBox', NavAction: 'NavAction', Section: 'Section', SubScreen: 'SubScreen',
+  SubScreenStatus: 'SubScreenStatus',
   NoteBox: 'NoteBox', Toggle: 'Toggle', Row: (props: { right?: React.ReactNode }) =>
     jest.requireActual('react').createElement('Row', props, props.right), Rows: 'Rows',
 }));
@@ -74,7 +75,8 @@ describe('알림 이동과 읽음 복구', () => {
     await mount(<NotificationsScreen />);
     const press = tree.root.findAll((node) => node.props.accessibilityRole === 'button' && typeof node.props.onPress === 'function')[0]!.props.onPress;
     await act(async () => { press(); press(); });
-    expect(router.push).toHaveBeenCalledWith('/wedding/partner');
+    /* 연결관리는 웨딩노트 스택에 있다 — 출처(알림)를 넘겨야 Back이 알림 목록으로 온다. */
+    expect(router.push).toHaveBeenCalledWith('/wedding/partner?from=notifications');
     expect(readNotification).toHaveBeenCalledTimes(1);
     await act(async () => pending.resolve({ unread: 6, total: 7 }));
   });

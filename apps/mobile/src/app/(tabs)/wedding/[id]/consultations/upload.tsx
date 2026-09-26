@@ -1,29 +1,22 @@
-import {
-  VISIT_NOTE_AUDIO_CONSENT_POINTS,
-  VISIT_NOTE_AUDIO_CONSENT_VERSION,
-} from '@weddingpick/domain';
+import { VISIT_NOTE_AUDIO_CONSENT_POINTS } from '@weddingpick/domain';
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 
-import {
-  completeConsultationUpload,
-  createConsultationUpload,
-} from '@/api/client';
-import { pickConsultationAudio } from '@/features/capture/pickers';
 import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { showResultToast } from '@/features/navigation/result-toast';
+import { uploadingLabel } from '@/features/wedding/consult-upload-prompt';
+import { uploadConsultationAudio } from '@/features/wedding/consultation-upload';
 import { ActionButton, Spacing, ThemedText } from '@weddingpick/ui';
 
 import WeddingScreen from '../../index';
-
-const MAX_BYTES = 100 * 1024 * 1024;
 
 export default function ConsultationUploadRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { height } = useWindowDimensions();
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   function close() {
@@ -34,40 +27,20 @@ export default function ConsultationUploadRoute() {
   async function uploadAudio() {
     if (uploading) return;
 
-    const picked = await pickConsultationAudio();
-    if (!picked) return;
-
-    if (picked.sizeBytes !== undefined && picked.sizeBytes > MAX_BYTES) {
-      setError(`파일이 너무 커요. ${Math.floor(MAX_BYTES / 1024 / 1024)}MB까지 올릴 수 있어요.`);
-      return;
-    }
-
     setUploading(true);
+    setProgress(null);
     setError(null);
 
     try {
-      const file = await fetch(picked.uri).then((response) => response.blob());
-      const target = await createConsultationUpload({
-        weddingId: id,
-        mimeType: picked.mimeType as never,
-        byteSize: file.size,
-        consentVersion: VISIT_NOTE_AUDIO_CONSENT_VERSION,
-      });
-      const put = await fetch(target.uploadUrl, {
-        method: 'PUT',
-        headers: { 'content-type': picked.mimeType },
-        body: file,
-      });
-
-      if (!put.ok) throw new Error(`올리지 못했어요 (${put.status})`);
-
-      await completeConsultationUpload(target.consultationId);
+      const result = await uploadConsultationAudio(id, { onProgress: setProgress });
+      if (result === 'canceled') return;
       showResultToast('녹음을 올렸어요');
       dismissToOrReplace('/wedding?tab=consult');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '녹음을 올리지 못했어요.');
     } finally {
       setUploading(false);
+      setProgress(null);
     }
   }
 
@@ -109,7 +82,7 @@ export default function ConsultationUploadRoute() {
           <ActionButton
             variant="primary"
             size="xlarge"
-            label={uploading ? '올리는 중…' : '녹음 올리기'}
+            label={uploading ? uploadingLabel(progress) : '녹음 올리기'}
             disabled={uploading}
             onPress={() => void uploadAudio()}
           />

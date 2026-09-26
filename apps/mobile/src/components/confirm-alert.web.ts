@@ -50,10 +50,25 @@ const CANON = {
   size: { screen: { width: 390 }, cta: { primary: 56 }, rowMinHeight: 56, grabber: { width: 40, height: 4 } },
   radius: { pickCard: 14, card: 10, control: 6, sheet: 20, pill: 999 },
   border: { focus: 2, hairline: 1 },
-  motion: { pressButton: { transform: 'scale(0.98)' }, press: { duration: 100 } },
+  motion: {
+    pressButton: { transform: 'scale(0.98)' },
+    press: { duration: 100 },
+    /*
+     * 열고 닫는 움직임 — RN 정본에는 다이얼로그 모션이 없다. 네이티브 판(`confirmation-dialog-host.tsx`)과
+     * 같은 움직임을 웹에도 준다: 가운데 확인(A/B/C)은 RN `Modal animationType="fade"`처럼 제자리 페이드,
+     * 행동 목록(E)은 공통 `BottomSheet`처럼 아래에서 올라온다. 값은 spec/tokens.json motion
+     * (scrimFade · sheetEnter · sheetExit)과 같다(`packages/ui` `Motion`).
+     */
+    fade: { duration: 200, easing: 'ease-out' },
+    sheetEnter: { duration: 350, easing: 'cubic-bezier(.16,1,.3,1)' },
+    sheetExit: { duration: 250, easing: 'ease-in' },
+  },
 } as const;
 
 const C = CANON.color;
+const MOTION = CANON.motion;
+/** 닫는 움직임 중 가장 긴 것(E 시트 내려가기). 이만큼 기다린 뒤 DOM에서 뗀다. */
+const CLOSE_MS = Math.max(MOTION.fade.duration, MOTION.sheetExit.duration);
 const S = CANON.spacing;
 const TYPE = CANON.typography.scale;
 const FONT = tokens.typography.$fontFamily.web;
@@ -144,6 +159,25 @@ function renderDialog(request: Confirmation, choose: (index: number | null) => v
       background:${C.overlay.dim}; padding:${px(S.gutter)}; }
     dialog[data-wp-dialog][data-fallback] .wp-dialog-panel { width:100%; max-width:${px(CANON.size.screen.width)};
       max-height:100%; }
+    @keyframes wpDialogFadeIn { from { opacity:0; } to { opacity:1; } }
+    @keyframes wpDialogFadeOut { from { opacity:1; } to { opacity:0; } }
+    @keyframes wpDialogSheetIn { from { transform:translateY(100%); } to { transform:translateY(0); } }
+    @keyframes wpDialogSheetOut { from { transform:translateY(0); } to { transform:translateY(100%); } }
+    dialog[data-wp-dialog]::backdrop { animation:wpDialogFadeIn ${MOTION.fade.duration}ms ${MOTION.fade.easing}; }
+    dialog[data-wp-dialog] .wp-dialog-panel { animation:wpDialogFadeIn ${MOTION.fade.duration}ms ${MOTION.fade.easing}; }
+    dialog[data-wp-dialog="E"] .wp-dialog-panel { animation:wpDialogSheetIn ${MOTION.sheetEnter.duration}ms ${MOTION.sheetEnter.easing}; }
+    dialog[data-wp-dialog][data-fallback] { animation:wpDialogFadeIn ${MOTION.fade.duration}ms ${MOTION.fade.easing}; }
+    dialog[data-wp-dialog][data-closing] { pointer-events:none; }
+    dialog[data-wp-dialog][data-closing]::backdrop,
+    dialog[data-wp-dialog][data-closing] .wp-dialog-panel,
+    dialog[data-wp-dialog][data-fallback][data-closing] {
+      animation:wpDialogFadeOut ${MOTION.fade.duration}ms ${MOTION.fade.easing} forwards; }
+    dialog[data-wp-dialog="E"][data-closing] .wp-dialog-panel {
+      animation:wpDialogSheetOut ${MOTION.sheetExit.duration}ms ${MOTION.sheetExit.easing} forwards; }
+    @media (prefers-reduced-motion: reduce) {
+      dialog[data-wp-dialog="E"] .wp-dialog-panel { animation-name:wpDialogFadeIn; }
+      dialog[data-wp-dialog="E"][data-closing] .wp-dialog-panel { animation-name:wpDialogFadeOut; }
+    }
   `;
   const panel = document.createElement('div');
   panel.className = 'wp-dialog-panel';
@@ -285,10 +319,20 @@ function renderDialog(request: Confirmation, choose: (index: number | null) => v
     clearInterval(scopeTimer);
     window.removeEventListener('popstate', scopeChanged);
     window.removeEventListener('hashchange', scopeChanged);
-    dialog.remove();
     restores.forEach((restore) => restore());
     document.body.style.overflow = originalOverflow;
-    if (originalFocus?.isConnected) originalFocus.focus();
+    /*
+     * 닫는 움직임(딤 · 판 페이드, E는 아래로)이 끝난 뒤에 뗀다 — 곧바로 떼면 웹 페이지처럼 뚝
+     * 사라졌다(2026-09-26 대표 지시). 그 사이 판은 눌리지 않는다(`data-closing` pointer-events:none).
+     * 선택은 이미 끝났으므로 큐는 다음 확인창을 바로 열 수 있고, 새 창은 이 창 위에 뜬다.
+     */
+    dialog.dataset.closing = '';
+    setTimeout(() => {
+      dialog.remove();
+      /* 원래 자리로 포커스를 돌린다 — 그 사이 다른 확인창이 열렸으면 그 창의 포커스를 뺏지 않는다. */
+      const another = document.querySelector('dialog[data-wp-dialog]:not([data-closing])');
+      if (!another && originalFocus?.isConnected) originalFocus.focus();
+    }, CLOSE_MS);
   };
 }
 

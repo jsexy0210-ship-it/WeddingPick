@@ -10,6 +10,7 @@ jest.mock('expo-router', () => ({
   router: {
     back: jest.fn(),
     dismissTo: jest.fn(),
+    navigate: jest.fn(),
     replace: jest.fn(),
     canGoBack: jest.fn(),
   },
@@ -71,6 +72,45 @@ describe('goDepthBack — Depth 기본, 명시된 화면만 History Back', () =>
 
     expect(router.back).not.toHaveBeenCalled();
     expect(router.replace).toHaveBeenCalledWith('/search/v-101');
+  });
+});
+
+/*
+ * 2026-09-26 웹 빌드 실측 — 출처가 다른 탭이면 `dismissTo`(POP_TO)를 탭이 받지 못해 헤더 Back이
+ * 제자리였다. 다른 탭 스택으로 가는 Back은 navigate, 같은 스택은 그대로 dismissTo다.
+ */
+describe('goDepthBack — 다른 탭 스택으로 가는 Back', () => {
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it.each([
+    ['/wedding/partner?from=my', '/my'],
+    ['/wedding/partner?from=notifications', '/my/notifications'],
+    ['/search/v-101?from=reviews', '/my/reviews'],
+    ['/search/v-101?from=community.my', '/community/review?from=my'],
+    ['/feed/f-1', '/'],
+  ])('%s → navigate(%s)', (pathname, target) => {
+    jest.mocked(router.canGoBack).mockReturnValue(false);
+
+    goDepthBack(pathname);
+
+    expect(router.navigate).toHaveBeenCalledWith(target);
+    expect(router.dismissTo).not.toHaveBeenCalled();
+    expect(router.back).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['/my/reviews', '/my'],
+    ['/wedding/join?from=partner.my', '/wedding/partner?from=my'],
+    ['/wedding/partner', '/wedding'],
+  ])('같은 스택 %s → dismissTo(%s)', (pathname, target) => {
+    jest.mocked(router.canGoBack).mockReturnValue(true);
+
+    goDepthBack(pathname);
+
+    expect(router.dismissTo).toHaveBeenCalledWith(target);
+    expect(router.navigate).not.toHaveBeenCalled();
   });
 });
 

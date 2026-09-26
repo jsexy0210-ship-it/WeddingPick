@@ -7,9 +7,11 @@ import {
   checkWeddingFeedInput,
   findUnlistedNumbers,
   pickTopics,
+  rankFeedForStage,
   shouldGenerate,
   statSourceLine,
   topicsMissingStats,
+  type PreparationStage,
   type WeddingFeedStatus,
 } from '@weddingpick/domain';
 import { weddingFeedInputSchema } from '@weddingpick/api-contract';
@@ -19,6 +21,7 @@ import { listStatKeys, loadStats } from './public-stats';
 import { isUuid } from './uuid';
 import { listTabs } from './wedding-feed-taxonomy';
 import type { FeedWriter } from './analysis/wedding-feed-writer';
+import { FeedDuplicateError, loadRecentFeedPosts, writeDistinctDraft } from './wedding-feed-generation';
 
 /**
  * 웨딩피드 — 운영자가 관리하고 자동 작성이 쌓는 읽을거리.
@@ -161,32 +164,64 @@ export async function listForAdmin(pool: Pool, storage: FeedStorage | null) {
   };
 }
 
-/** 앱 홈이 부르는 것. **공개된 것만** 나간다. */
-export async function listPublished(pool: Pool, storage: FeedStorage | null, limit: number) {
-  const { rows } = await pool.query<Row>(
-    `SELECT ${COLUMNS} FROM structured.wedding_feed_posts
+/**
+ * 준비 단계로 다시 세울 때 읽는 공개 글 수. 홈은 두 장만 보여주지만 단계에 맞는 글이
+ * 최신 두 편 안에 있으리란 법이 없어 넉넉히 읽고 추린다. 본문은 읽지 않는다(`LIST_COLUMNS`).
+ */
+const STAGE_RANK_POOL = 100;
+
+/** 목록 카드에 드는 칸 + 단계가 보는 토픽. 본문(4,000자까지)은 목록에 싣지 않는다. */
+const LIST_COLUMNS = `id, category_label, title, summary, image_key, topic`;
+
+type ListRow = Pick<Row, 'id' | 'category_label' | 'title' | 'summary' | 'image_key' | 'topic'>;
+
+/**
+ * 앱 홈이 부르는 것. **공개된 것만** 나간다.
+ *
+ * `stage`가 있으면(홈 「웨딩 준비 팁」 · 로그인한 사람) 그 준비 단계에 맞는 글을 앞에 세운다
+ * (domain `rankFeedForStage`). 글을 빼지 않고 순서만 바꾸므로 공개된 글이 있는 한 비지
+ * 않고, 맞는 글이 없으면 원래 순서 — 운영자 순서(`sort_order`) → 최신 — 그대로다.
+ */
+export async function listPublished(
+  pool: Pool,
+  storage: FeedStorage | null,
+  limit: number,
+  stage: PreparationStage | null = null
+) {
+  const { rows } = await pool.query<ListRow>(
+    `SELECT ${LIST_COLUMNS} FROM structured.wedding_feed_posts
      WHERE status = 'published'
      ORDER BY sort_order ASC, published_at DESC
      LIMIT $1`,
-    [limit]
+    [stage === null ? limit : Math.max(limit, STAGE_RANK_POOL)]
   );
 
-  const posts = await Promise.all(rows.map((row) => toPost(row, storage)));
+  const chosen =
+    stage === null
+      ? rows
+      : rankFeedForStage(
+          rows.map((row) => ({ row, categoryLabel: row.category_label, topic: row.topic })),
+          stage
+        )
+          .slice(0, limit)
+          .map(({ row }) => row);
+
+  /* 그림 주소는 나가는 글에만 서명한다 — 추리기 전의 백 편에 서명하지 않는다. */
+  const posts = await Promise.all(
+    chosen.map(async (row) => ({
+      id: row.id,
+      categoryLabel: row.category_label,
+      title: row.title,
+      summary: row.summary,
+      imageUrl: row.image_key && storage ? await storage.getPublicUrl(row.image_key, 3600) : null,
+    }))
+  );
 
   /*
    * **탭을 글과 같은 응답으로 준다.** 따로 부르면 목록이 먼저 그려지고 탭 줄이
    * 나중에 끼어들어 본문이 손가락 아래에서 밀린다. 한 번에 오면 둘이 같이 나타난다.
    */
-  return {
-    items: posts.map((post) => ({
-      id: post.id,
-      categoryLabel: post.categoryLabel,
-      title: post.title,
-      summary: post.summary,
-      imageUrl: post.imageUrl,
-    })),
-    tabs: await listTabs(pool),
-  };
+  return { items: posts, tabs: await listTabs(pool) };
 }
 
 /**
@@ -397,7 +432,26 @@ export async function runGeneration(input: {
   for (const topic of topics) {
     try {
       const stats = await loadStats(pool, topic.statKeys ?? []);
-      const { draft, usage } = await writer.write(topic, stats);
+      /*
+       * **같은 카테고리의 이전 글과 겹치지 않게 쓴다**(2026-09-26 대표 지시 — 「같은 카테고리
+       * 이전 내용을 분석해서 중첩되지 않는 내용으로 생성한다」). 주제 키가 달라도 관리자가
+       * 직접 쓴 글(주제 키 없음)과 같은 이야기가 될 수 있다 — 키가 아니라 글을 견준다.
+       * 몇 번 써도 겹치면 쓰지 않고 이유를 기록에 남긴다.
+       */
+      const recent = await loadRecentFeedPosts(pool, topic.categoryLabel);
+      let written: Awaited<ReturnType<typeof writeDistinctDraft>>;
+
+      try {
+        written = await writeDistinctDraft({ writer, topic, stats, recent });
+      } catch (error) {
+        if (!(error instanceof FeedDuplicateError)) throw error;
+        inputTokens += error.usage.inputTokens;
+        outputTokens += error.usage.outputTokens;
+        failures.push(`${topic.key}: ${error.message}`);
+        continue;
+      }
+
+      const { draft, usage } = written;
 
       inputTokens += usage.inputTokens;
       outputTokens += usage.outputTokens;

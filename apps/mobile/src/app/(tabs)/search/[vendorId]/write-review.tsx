@@ -13,8 +13,9 @@ import { createReview, getReviewForm } from '@/api/client';
 import { pickFromLibrary } from '@/features/capture/pickers';
 import type { CapturedPage } from '@/features/capture/types';
 import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
+import { CtaRow } from '@/features/common/cta-row';
 import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
-import { dismissToOrReplace } from '@/features/navigation/depth-back';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import { showResultToast } from '@/features/navigation/result-toast';
 import { uploadReviewMedia } from '@/features/review/media-upload';
 import {
@@ -32,13 +33,13 @@ import VendorDetailScreen from './index';
 
 /**
  * /write-review 딥링크는 업체 상세를 배경으로 남기고 DLG-D 작성 시트만 연다.
+ *
+ * 시트를 닫으면 Depth Back이다 — 출처가 없으면 업체 상세(`/search/[vendorId]`), MY «내가 쓴
+ * 후기»에서 왔으면(`from=reviews`) 그 목록으로 돌아간다(2026-09-26 대표 감사).
  */
 export default function WriteReviewRoute() {
   const { vendorId } = useLocalSearchParams<{ vendorId: string }>();
-
-  function closeSheet() {
-    dismissToOrReplace(`/search/${vendorId}`);
-  }
+  const closeSheet = useDepthBack();
 
   return (
     <View style={styles.host}>
@@ -417,7 +418,8 @@ export function ReviewWriteSheet({
                 ) : null}
               </ScrollView>
 
-              <View style={styles.actions}>
+              {/* 정본 dockPair — 보조 flex 1 · Primary flex 1.4(공용 CtaRow). */}
+              <CtaRow>
                 <ActionButton label="취소" disabled={sending} onPress={requestClose} />
                 <ActionButton
                   variant="primary"
@@ -425,7 +427,7 @@ export function ReviewWriteSheet({
                   disabled={!ready || sending}
                   onPress={() => void submit()}
                 />
-              </View>
+              </CtaRow>
             </>
           )}
         </SheetPanel>
@@ -487,5 +489,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   rightsText: { flex: 1 },
-  actions: { flexDirection: 'row', gap: Spacing.two },
 });

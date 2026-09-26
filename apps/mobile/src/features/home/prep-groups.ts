@@ -68,10 +68,14 @@ const PICKING_DETAIL = S['myPrep.picking'];
 const TODO_DETAIL = S['myPrep.todo'];
 const CONTRACTED_DETAIL = S['myPrep.contracted'];
 
-/** 「웨딩홀」 카드만 계약 완료 상세에 업체 이름을 덧붙인다 — .dc.html WP-HOME-001 예시가 그렇다. */
-function contractedDetail(key: HomePrepGroupKey, venueName: string | null): string {
-  if (key === 'start' && venueName !== null) return `${CONTRACTED_DETAIL} · ${venueName}`;
-  return CONTRACTED_DETAIL;
+/**
+ * 계약 완료 상세에 정한 곳의 이름을 덧붙인다 «계약 완료 · 서울 그랜드 워커힐» — .dc.html
+ * WP-HOME-001 웨딩홀 카드 예시의 꼴이다. 2026-09-26 대표 지시(온보딩 3/5 «직접 입력»)로
+ * 네 칸 모두 같은 꼴을 쓴다 — 적어 둔 이름이 홈 「내 웨딩 준비」에 보여야 한다. 이름이
+ * 없으면(체크만 한 묶음) «계약 완료»만 적는다.
+ */
+function contractedDetail(name: string | null): string {
+  return name === null ? CONTRACTED_DETAIL : `${CONTRACTED_DETAIL} · ${name}`;
 }
 
 export function homePrepCards(input: {
@@ -108,7 +112,12 @@ export function homePrepCards(input: {
       state,
       detail:
         state === 'contracted'
-          ? contractedDetail(group.key, venueName)
+          ? contractedDetail(
+              /* 웨딩홀 칸은 히어로와 같은 예식장 이름을, 나머지는 묶음 안에서 정한 첫 곳의 이름을. */
+              (group.key === 'start' ? venueName : null) ??
+                rows.find((row) => row.decidedName !== null)?.decidedName ??
+                null
+            )
           : state === 'picking'
             ? PICKING_DETAIL
             : TODO_DETAIL,

@@ -52,10 +52,29 @@
 복사할 때는 기존 객체를 삭제하지 않는 `copy --ignore-existing` 방식으로 수행하고, 객체 수와
 용량을 대조한다. `sync`처럼 대상 객체를 삭제할 수 있는 명령은 사용하지 않는다.
 
-브라우저는 결제 증빙 원본을 인증된 동일 출처 API에 한 장씩 `PUT`하고, API가 소유권과 10MB
-제한을 확인한 뒤 Object Storage에 기록한다. 카카오 Object Storage의 브라우저 CORS 경로는
-프로젝트 ID가 필요하므로 문서 업로드에 직접 서명 URL을 사용하지 않는다. 후기 등 기존 서명 URL
-계약은 이번 범위에서 유지한다.
+앱이 올리는 파일은 전부 인증된 동일 출처 API를 지나 Object Storage에 기록된다. 카카오 Object
+Storage의 브라우저 CORS 경로는 프로젝트 ID가 필요해 서명 URL PUT이 preflight에서 막히므로(e66dec7e),
+앱은 서명 URL로 저장소에 직접 올리지 않는다. 웹과 네이티브가 같은 경로를 쓴다(2026-09-26).
+
+| 무엇 | 경로 | API 상한 | Nginx(`install-kakao-app-web.sh`) |
+| --- | --- | --- | --- |
+| 결제 증빙 · 문서 한 장 | `PUT /v1/documents/:id/pages/:n` | 10MB | `^~ /v1/documents/` 10m |
+| 상담 녹음 | `PUT /v1/consultations/:id/audio` | 100MB · 녹음 형식만 | `^~ /v1/consultations/` 100m · 읽기/쓰기 300s |
+| 후기 사진 | `POST /v1/reviews/media` | 10MB · JPG · PNG · WebP | `= /v1/reviews/media` 10m |
+
+상담 녹음과 후기 사진은 API가 본문을 메모리에 모으지 않고 Content-Length 길이로 저장소 PUT에
+흘려 보낸다(`routes/stream-upload.ts`, S3 드라이버 `uploadStream` — 서명은 UNSIGNED-PAYLOAD).
+Nginx는 본문을 다 받은 뒤(`proxy_request_buffering on`, 임시 파일) API로 넘긴다. 나머지 `/v1/`는
+기본 상한 1MB 그대로다. **API 상한과 Nginx 상한은 함께 바꾼다** — `cutover-transaction.test.mjs`가
+둘이 같은지 본다.
+
+Nginx 설정은 `cutover-kakao-app-web.yml`(main 자동 · 정적 변경이 있을 때, production 승인)이
+`install-kakao-app-web.sh`로 다시 쓴다. `install-kakao-preview-routes.sh`([preview-admin-web])는
+이 상한들을 모르는 옛 생성기라 다시 돌리면 1MB로 돌아간다.
+
+이미 배포된 옛 앱을 위해 서명 URL을 주던 자리(`POST /v1/consultations/uploads`의 `uploadUrl` ·
+`POST /v1/consultations/:id/complete` · `POST /v1/reviews/media/upload-target`)는 남겨 두었다 —
+새 앱은 부르지 않는다. 관리자 웨딩피드 그림 · OG 카드는 각 담당 작업에서 옮긴다.
 
 ## 검증 범위
 

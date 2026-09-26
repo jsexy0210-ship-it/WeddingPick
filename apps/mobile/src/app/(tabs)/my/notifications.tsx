@@ -8,7 +8,8 @@ import { ErrorView, Layout, Radius, Spacing, ThemedText, Toast, readWebInteracti
 import { listNotifications, readAllNotifications, readNotification } from '@/api/client';
 import { formatDateDot } from '@/features/common/format-date';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
-import { EmptyBox, NavAction, Section, SubScreen } from '@/features/settings/my-kit';
+import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
+import { EmptyBox, NavAction, Section, SubScreen, SubScreenStatus } from '@/features/settings/my-kit';
 
 const S = {
   title: '알림',
@@ -27,7 +28,8 @@ const S = {
 function go(notification: Notification): void {
   switch (notification.kind) {
     case 'partner':
-      router.push('/wedding/partner');
+      /* 연결관리는 웨딩노트 스택에 있다 — 출처를 넘겨야 Back이 이 목록으로 돌아온다. */
+      router.push('/wedding/partner?from=notifications');
       return;
     case 'inquiry':
       router.push(notification.targetId ? `/my/contact/${notification.targetId}` : '/my/contact');
@@ -55,17 +57,22 @@ export default function NotificationsScreen() {
   const readingAll = useRef(false);
   const [readBusy, setReadBusy] = useState(false);
 
-  const load = useCallback(() => {
+  /** `keep` — 당겨서 새로 고침. 보이던 목록은 두고 실패는 토스트로만 알린다. */
+  const load = useCallback((keep?: boolean) => {
     void listNotifications()
       .then((response) => {
         setLoadError(null);
         setNotifications(response.notifications);
         setUnread(response.unread);
       })
-      .catch((caught: Error) => setLoadError(caught.message ?? '알림을 불러오지 못했어요'));
+      .catch((caught: Error) => {
+        if (keep === true) notifyRefreshFailed();
+        else setLoadError(caught.message ?? '알림을 불러오지 못했어요');
+      });
   }, []);
 
-  useEffect(load, [load]);
+  useEffect(() => load(), [load]);
+  const pull = usePullRefresh(useCallback(() => load(true), [load]));
 
   function open(notification: Notification) {
     // 읽음 저장이 느리거나 실패해도 사용자가 누른 내용은 바로 연다.
@@ -115,12 +122,13 @@ export default function NotificationsScreen() {
       });
   }
 
-  if (loadError) return <ErrorView message={loadError} onRetry={load} />;
-  if (notifications === null) return <DelayedLoadingView />;
+  if (loadError) return <SubScreenStatus title={S.title}><ErrorView message={loadError} onRetry={() => load()} /></SubScreenStatus>;
+  if (notifications === null) return <SubScreenStatus title={S.title}><DelayedLoadingView /></SubScreenStatus>;
 
   return (
     <SubScreen
       title={S.title}
+      refreshControl={pull.refreshControl}
       contentStyle={{ paddingTop: Layout.rowPaddingY }}
       right={
         hasUnread({ unread, total: notifications.length }) ? (

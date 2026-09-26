@@ -19,7 +19,7 @@ import {
   type WeddingStyle,
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
@@ -37,7 +37,9 @@ import { savePendingAction } from '@/features/auth/pending-action';
 import { readCurrentUserSnapshot } from '@/features/loading/current-user-snapshot';
 import { PickDoneSheet, UnpickSheet } from '@/features/pick/pick-sheets';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
+import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import { VendorLocationSection } from '@/features/search/vendor-location';
+import { VENDOR_SOURCE_LABEL, vendorSourceValue } from '@/features/search/vendor-source';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import {
   Badge,
@@ -162,10 +164,14 @@ export default function VendorDetailScreen() {
   const reasons: string[] =
     params.reasons ? params.reasons.split(',').filter(Boolean) : [];
 
-  useEffect(() => {
+  /** `keep` — 당겨서 새로 고침. 보이던 상세 · 사진은 그대로 두고 실패는 토스트로만 알린다. */
+  const load = useCallback((keep?: boolean) => {
     getVendor(vendorId)
       .then(setVendor)
-      .catch((caught: Error) => setError(caught.message));
+      .catch((caught: Error) => {
+        if (keep === true) notifyRefreshFailed();
+        else setError(caught.message);
+      });
 
     /*
      * 실사진도 곁가지다. 이미지 서버가 잠깐 안 되더라도 카테고리 기본 이미지가
@@ -173,7 +179,9 @@ export default function VendorDetailScreen() {
      */
     listVendorPhotos(vendorId)
       .then((res) => setPhotos(res.photos))
-      .catch(() => setPhotos([]));
+      .catch(() => {
+        if (keep !== true) setPhotos([]);
+      });
 
     listVendorReviews(vendorId)
       .then((res) => {
@@ -188,6 +196,18 @@ export default function VendorDetailScreen() {
       })
       .catch(() => undefined);
   }, [vendorId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  /* 당겨서 새로 고침 — 상세 · 사진 · 후기와 함께 Pick 상태(담은 후보)와 «나»(스타일 일치)도 다시 받는다. */
+  const { reload: reloadCandidates } = candidates;
+  const pull = usePullRefresh(useCallback(() => {
+    load(true);
+    void reloadCandidates().catch(() => undefined);
+    if (isServerConfigured) void getCurrentUser().then(setMe).catch(() => undefined);
+  }, [load, reloadCandidates]));
 
   useEffect(() => {
     if (!isServerConfigured) return;
@@ -282,6 +302,7 @@ export default function VendorDetailScreen() {
   const paidPrice = vendor.prices.paidPrice;
   /* 금액 한 줄 — 0층 «업체 안내 150만원~» · 1층 «수집 중» · 3건+ 구간. 검색·비교와 같은 규칙. */
   const line = priceLine(paidPrice, vendor.guidePrice);
+  const sourceValue = vendorSourceValue(vendor.sourceNote);
 
   /* 고른 스타일과 업체 태그의 일치 — 추천 이유 첫 줄이 된다. 로그인 전·미선택이면 줄이 없다. */
   const chosenStyles: readonly WeddingStyle[] = me?.styleTags ?? [];
@@ -308,6 +329,7 @@ export default function VendorDetailScreen() {
 
         <ScrollView
           style={styles.scroll}
+          refreshControl={pull.refreshControl}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}>
 
@@ -653,7 +675,8 @@ export default function VendorDetailScreen() {
             <View>
               <InfoRow label="지역" value={regionLabel(vendor.region)} />
               <InfoRow label={OFFICIAL_LAST_CHECK} value={formatKoreanDate(vendor.lastVerifiedAt)} />
-              {vendor.sourceNote ? <InfoRow label="출처" value={vendor.sourceNote} /> : null}
+              {/* 정보 출처는 「공공데이터」 한 이름(2026-09-26 대표 지시) — 서버 문장을 그대로 적지 않는다. */}
+              {sourceValue ? <InfoRow label={VENDOR_SOURCE_LABEL} value={sourceValue} /> : null}
               <VendorLocationSection
                 vendorId={vendor.id}
                 name={vendor.name}

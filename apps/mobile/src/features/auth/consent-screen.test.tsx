@@ -16,7 +16,10 @@ import { dismissToOrReplace } from '@/features/navigation/depth-back';
  *   8  체크한 여덟 칸이 전부 서버로 가는가. 전에는 셋(terms · privacy · marketing)만 갔다.
  *      옛 서버(셋만 아는)에는 셋만 보내 가입이 막히지 않는가.
  */
-jest.mock('expo-router', () => ({ router: { replace: jest.fn() } }));
+jest.mock('expo-router', () => {
+  const navigation = { isFocused: () => true };
+  return { router: { replace: jest.fn() }, useNavigation: () => navigation };
+});
 jest.mock('@/api/session', () => ({ loadToken: jest.fn() }));
 jest.mock('@/api/client', () => ({
   ApiError: class extends Error {},

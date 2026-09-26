@@ -10,17 +10,19 @@ import {
   priceLine,
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { compareVendors, getCurrentUser, recordComparison } from '@/api/client';
 import { DepthHeader } from '@/components/depth-header';
-import { useDepthBack } from '@/features/navigation/depth-back';
+import { compareOrigin, useDepthBack } from '@/features/navigation/depth-back';
 import { savePendingAction } from '@/features/auth/pending-action';
 import { PickDoneSheet } from '@/features/pick/pick-sheets';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
+import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
+import { vendorSourceValue } from '@/features/search/vendor-source';
 import {
   Border,
   ErrorView,
@@ -134,6 +136,19 @@ export default function CompareScreen() {
       .catch((caught: Error) => setError(caught.message));
   }, [ids, tooFew]);
 
+  /*
+   * 당겨서 새로 고침 — 비교 결과와 담은 후보만 다시 읽는다. 「비교했다」는 기록(미션 ③)은 화면을 연
+   * 순간 한 번이라 여기서 다시 남기지 않는다. 보이던 표는 그대로 두고 실패는 토스트로만 알린다.
+   */
+  const { reload: reloadCandidates } = candidates;
+  const pull = usePullRefresh(useCallback(() => {
+    if (tooFew) return;
+    compareVendors((ids ?? '').split(',').filter(Boolean))
+      .then(setResult)
+      .catch(() => notifyRefreshFailed());
+    void reloadCandidates().catch(() => undefined);
+  }, [ids, reloadCandidates, tooFew]));
+
   if (tooFew || error) {
     return (
       <ErrorView
@@ -181,7 +196,12 @@ export default function CompareScreen() {
   }
 
   function goConsult(vendorId: string) {
-    router.push(`/search/${vendorId}/consult`);
+    /*
+     * 상담 예약을 닫으면 **같은 업체를 견주던 이 비교**로 돌아온다 — 업체 상세로 떨어지지 않게
+     * 비교 목록째 출처로 넘긴다(`compareOrigin`). 목록이 업체 id 모양이 아니면 출처 없이(업체 상세).
+     */
+    const origin = compareOrigin((ids ?? '').split(',').filter(Boolean));
+    router.push({ pathname: '/search/[vendorId]/consult', params: origin ? { vendorId, from: origin } : { vendorId } });
   }
 
   const vendors = result.vendors;
@@ -238,7 +258,8 @@ export default function CompareScreen() {
     {
       label: ROW_SOURCE,
       cells: vendors.map((vendor) => ({
-        value: vendor.sourceNote ?? SOURCE_FROM_DOCUMENT,
+        /* 정보 출처는 「공공데이터」 한 이름(2026-09-26 대표 지시) — 업체 상세와 같은 함수. */
+        value: vendorSourceValue(vendor.sourceNote) ?? SOURCE_FROM_DOCUMENT,
         best: false,
       })),
     },
@@ -277,7 +298,10 @@ export default function CompareScreen() {
           ) : null}
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={pull.refreshControl}>
           <View style={styles.rankWrap}>
             {ranked.map((entry) => (
               <View

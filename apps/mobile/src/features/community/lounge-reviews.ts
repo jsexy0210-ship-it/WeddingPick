@@ -1,19 +1,31 @@
 import type { LoungeReviewListResponse } from '@weddingpick/api-contract';
-import { PREPARATION_GROUPS, VENDOR_CATEGORY_LABEL, type VendorCategory } from '@weddingpick/domain';
+import {
+  PREPARATION_GROUPS,
+  WEDDING_FEED_CHIPS,
+  weddingFeedMatchesChip,
+  type VendorCategory,
+  type WeddingFeedChipKey,
+  type WeddingFeedChipLabel,
+} from '@weddingpick/domain';
 
-/** 정본 my.js `cats` — 라운지 후기 · 웨딩정보가 함께 쓰는 칩 여섯. */
-export const LOUNGE_CATEGORIES = ['전체', '웨딩홀', '스드메', '본식', '예물 · 신혼', '예산'] as const;
-export type LoungeCategory = (typeof LOUNGE_CATEGORIES)[number];
+/**
+ * 정본 my.js `cats` — 라운지 후기 · 웨딩정보가 함께 쓰는 칩 여섯.
+ *
+ * **값은 domain `WEDDING_FEED_CHIPS` 하나다**(2026-09-26 대표 지적 — 관리자와 앱의 웨딩피드
+ * 카테고리가 전혀 달랐다). 관리자 화면 · 서버 검사 · 이 칩이 같은 상수를 본다.
+ */
+export const LOUNGE_CATEGORIES: readonly WeddingFeedChipLabel[] = WEDDING_FEED_CHIPS.map((chip) => chip.label);
+export type LoungeCategory = WeddingFeedChipLabel;
 
-/** 칩 → 업종 묶음. 준비 현황 그룹(`PREPARATION_GROUPS`)과 같은 묶음이다. «예산»은 업종이 아니다. */
+function chipKeyOf(label: string): WeddingFeedChipKey | null {
+  return WEDDING_FEED_CHIPS.find((chip) => chip.label === label)?.key ?? null;
+}
+
+/** 칩 → 업종 묶음. 칩 키가 준비 현황 그룹 키와 같다(`PREPARATION_GROUPS`). «예산»은 업종이 아니다. */
 function groupOf(label: string): readonly VendorCategory[] | null {
-  switch (label) {
-    case '웨딩홀': return PREPARATION_GROUPS.find((group) => group.key === 'start')?.categories ?? [];
-    case '스드메': return PREPARATION_GROUPS.find((group) => group.key === 'sdm')?.categories ?? [];
-    case '본식': return PREPARATION_GROUPS.find((group) => group.key === 'ceremony')?.categories ?? [];
-    case '예물 · 신혼': return PREPARATION_GROUPS.find((group) => group.key === 'goods')?.categories ?? [];
-    default: return null;
-  }
+  const key = chipKeyOf(label);
+
+  return PREPARATION_GROUPS.find((group) => group.key === key)?.categories ?? null;
 }
 
 /**
@@ -31,11 +43,15 @@ export function loungeVendorMatches(label: string, category: VendorCategory): bo
   return groupOf(label)?.includes(category) ?? false;
 }
 
-/** 웨딩정보 글이 칩에 드는가 — 글 분류(`categoryLabel`)가 묶음 안 업종 이름이거나 칩 이름과 같다. */
+/**
+ * 웨딩정보 글이 칩에 드는가 — domain 목록(`WEDDING_FEED_CATEGORIES`)의 칩 배정을 그대로 쓴다.
+ * 목록 밖 이름 · 칩 없는 카테고리(체크리스트 · 일정 · 하객 · 계약)는 «전체»에서만 보인다 —
+ * 관리자 글 목록의 «앱 칩» 칸이 같은 함수로 같은 말을 한다.
+ */
 export function loungeFeedMatches(label: string, categoryLabel: string): boolean {
-  if (label === '전체' || label === categoryLabel) return true;
-  const group = groupOf(label);
-  return group ? group.some((category) => VENDOR_CATEGORY_LABEL[category] === categoryLabel) : false;
+  const key = chipKeyOf(label);
+
+  return key !== null && weddingFeedMatchesChip(key, categoryLabel);
 }
 
 /**

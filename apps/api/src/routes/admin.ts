@@ -9,7 +9,12 @@ import {
   type MarketingChannel,
   type MarketingFormat,
 } from '@weddingpick/api-contract';
-import { disclosureStage, type DisclosureStage, VENDOR_CATEGORIES } from '@weddingpick/domain';
+import {
+  disclosureStage,
+  type DisclosureStage,
+  VENDOR_CATEGORIES,
+  weddingFeedCategoryOf,
+} from '@weddingpick/domain';
 import * as marketingContent from '../marketing/content';
 import * as marketingStore from '../marketing/store';
 import * as adAdmin from '../ad-admin';
@@ -25,9 +30,16 @@ import * as expoCollector from '../expo-collector';
 import { listExposEndingToday } from '../retention/expo-sweep';
 import * as faqAdmin from '../faq-admin';
 import * as weddingFeed from '../wedding-feed';
-import * as feedTaxonomy from '../wedding-feed-taxonomy';
 import { createGeminiFeedWriter } from '../analysis/wedding-feed-writer';
-import { feedImageRequestSchema, generateWeddingFeedImage, WeddingFeedImageError, type WeddingFeedImage } from '../analysis/wedding-feed-image';
+import { feedImageRequestSchema, sniffFeedImageType, WeddingFeedImageError } from '../analysis/wedding-feed-image';
+import {
+  FeedDuplicateError,
+  FeedImageDuplicateError,
+  generateDistinctFeedImage,
+  loadRecentFeedPosts,
+  writeDistinctDraft,
+  type GeneratedFeedImage,
+} from '../wedding-feed-generation';
 import { NotAnOperator } from '../decisions';
 import { ApiError, forbidden, notFound } from '../errors';
 import * as inquiryAdmin from '../inquiry-admin';
@@ -165,8 +177,29 @@ const WEDDING_FEED_IMAGE_TYPES: Record<string, string> = {
   'image/webp': 'webp',
 };
 
+/**
+ * 관리자가 올리는 웨딩피드 그림 한 장의 상한 — 서버가 지키는 마지막 선이다.
+ * 화면은 운영 Nginx의 요청 본문 기본 상한(1MB · `client_max_body_size` 미설정)보다 작게
+ * 줄여서 보낸다(`features/admin/fit-image-upload.ts`).
+ */
+export const WEDDING_FEED_UPLOAD_MAX_BYTES = 5 * 1024 * 1024;
+
+/** 관리자 「자동 작성」이 겹친 초안을 다시 쓸 수 있는 시각. 이후에는 nginx 60초 안에 못 돌려준다. */
+const DRAFT_RETRY_WITHIN_MS = 30_000;
+
 export function registerAdminRoutes(app: FastifyInstance, context: AppContext): void {
   const auth = { preHandler: requireOperatorUser(context) };
+
+  /*
+   * 그림 본문을 그대로 받는다(`PUT /v1/admin/wedding-feed/image/file`). 링크 미리보기
+   * (`site-meta.ts`)가 같은 형식을 먼저 등록하는 브랜치가 있어 **있으면 그대로 쓴다** —
+   * 같은 형식을 두 번 등록하면 Fastify가 서버를 띄우지 않는다.
+   */
+  for (const type of Object.keys(WEDDING_FEED_IMAGE_TYPES)) {
+    if (!app.hasContentTypeParser(type)) {
+      app.addContentTypeParser(type, { parseAs: 'buffer' }, (_request, body, done) => done(null, body));
+    }
+  }
 
   /** 도구 함수의 일반 Error를 사람이 읽는 400으로 바꾼다. */
   async function run<T>(fn: () => Promise<T>): Promise<T> {
@@ -1116,22 +1149,19 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
    * 관리자가 고른 카테고리 한 편을 Gemini가 써서 화면에만 돌려준다. 저장은 하지 않는다.
    */
   app.post<{ Body: unknown }>('/v1/admin/wedding-feed/draft', auth, async (request) => {
+    const started = Date.now();
     const parsed = weddingFeedDraftRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       throw new ApiError('invalid_request', '카테고리를 먼저 선택해주세요.');
     }
-    const { categoryLabel } = parsed.data;
-    const activeCategory = await context.pool.query(
-      `SELECT 1
-         FROM structured.wedding_feed_categories
-        WHERE name = $1 AND active = true
-        LIMIT 1`,
-      [categoryLabel]
-    );
+    /* 목록(domain `WEDDING_FEED_CATEGORIES`) 밖 이름이면 Gemini를 부르기 전에 돌려보낸다. */
+    const category = weddingFeedCategoryOf(parsed.data.categoryLabel);
+    const { avoidTitles } = parsed.data;
 
-    if (activeCategory.rowCount === 0) {
-      throw new ApiError('invalid_request', '사용 중인 카테고리를 먼저 선택해주세요.');
+    if (category === null) {
+      throw new ApiError('invalid_request', '목록에 있는 카테고리를 먼저 선택해주세요.');
     }
+    const categoryLabel = category.label;
 
     const model = context.config.geminiModel;
     const apiKey = process.env.GEMINI_API_KEY ?? '';
@@ -1143,16 +1173,47 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
       );
     }
 
-    const { draft } = await createGeminiFeedWriter({ apiKey, model }).write({
-      key: `admin-${categoryLabel}`,
-      categoryLabel,
-      brief: `${categoryLabel} 카테고리에서 결혼 준비자가 바로 확인하면 좋은 실용적인 내용`,
-    });
+    /*
+     * **같은 카테고리의 이전 글과 겹치지 않게 쓴다**(2026-09-26 대표 지시 — 「같은 카테고리
+     * 이전 내용을 분석해서 중첩되지 않는 내용으로 생성한다」). 전에는 카테고리마다 같은
+     * 요청을 온도 0으로 보내 누를 때마다 같은 초안이 나왔다. 이제 최근 글 30편을 「이미 쓴
+     * 글」로 넘기고, 화면이 방금 받은 초안 제목(`avoidTitles`)도 피하게 하고, 받은 뒤
+     * 서버가 한 번 더 재서 겹치면 버리고 다시 쓴다.
+     */
+    const recent = await loadRecentFeedPosts(context.pool, categoryLabel);
 
-    return draft;
+    try {
+      const { draft } = await writeDistinctDraft({
+        writer: createGeminiFeedWriter({ apiKey, model }),
+        topic: {
+          key: `admin-${categoryLabel}`,
+          categoryLabel,
+          brief: `${categoryLabel} 카테고리에서 결혼 준비자가 바로 확인하면 좋은 실용적인 내용`,
+        },
+        recent,
+        avoidTitles,
+        deadline: started + DRAFT_RETRY_WITHIN_MS,
+      });
+
+      return draft;
+    } catch (error) {
+      if (error instanceof FeedDuplicateError) {
+        request.log.warn({ rejected: error.rejected }, '웨딩피드 자동 작성 — 이전 글과 겹쳐 버렸다');
+        throw new ApiError(
+          'conflict',
+          '이 카테고리의 이전 글과 겹치는 초안만 나왔어요. 다시 눌러주세요.'
+        );
+      }
+      throw error;
+    }
   });
 
-  /** 썸네일과 본문 이미지를 저장소에 직접 올릴 서명 URL을 만든다. */
+  /**
+   * 썸네일과 본문 이미지를 저장소에 직접 올릴 서명 URL을 만든다.
+   *
+   * **지금 관리자 화면은 이 길을 쓰지 않는다** — 운영 저장소가 브라우저 `PUT`을 CORS로
+   * 막는다(아래 `/image/file`). 이미 배포된 옛 관리자 번들의 호출을 깨지 않으려고 남긴다.
+   */
   app.post<{ Body: { mimeType?: string; kind?: string } }>(
     '/v1/admin/wedding-feed/image/upload-target',
     auth,
@@ -1176,7 +1237,56 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
     }
   );
 
-  /** 관리자가 명시적으로 요청한 웨딩피드 이미지만 생성해 기존 이미지 저장소에 둔다. */
+  /**
+   * 관리자가 고른 그림을 **이 서버를 거쳐** 올린다(2026-09-26).
+   *
+   * **왜 서명 URL(위 `upload-target`)을 쓰지 않나.** 운영 저장소(카카오 Object Storage)는
+   * 브라우저 CORS가 프로젝트 ID가 든 전용 경로에서만 열려, 버킷 이름으로 만든 서명 URL로
+   * 보내는 브라우저 `PUT`은 preflight에서 막힌다(e66dec7e · `docs/deployment.md` 「파일
+   * 저장소」). 같은 origin(`/v1/…`)이면 CORS가 없다. `upload-target`은 이미 배포된 옛
+   * 관리자 번들의 호출을 깨지 않으려고 남긴다.
+   *
+   * 화면은 1MB(운영 Nginx 기본 상한) 안으로 줄여 보낸다. 넘으면 Nginx가 413으로 먼저 막는다.
+   */
+  app.put<{ Querystring: { kind?: string }; Body: Buffer }>(
+    '/v1/admin/wedding-feed/image/file',
+    { ...auth, bodyLimit: WEDDING_FEED_UPLOAD_MAX_BYTES },
+    async (request) => {
+      const kind = request.query?.kind;
+      const declared = (request.headers['content-type'] ?? '').split(';')[0]!.trim().toLowerCase();
+      const bytes = request.body;
+
+      if (kind !== 'thumbnail' && kind !== 'body') {
+        throw new ApiError('invalid_request', '이미지 종류를 확인해주세요.');
+      }
+      if (!WEDDING_FEED_IMAGE_TYPES[declared] || !Buffer.isBuffer(bytes)) {
+        throw new ApiError('invalid_request', 'PNG · JPG · WebP 이미지만 올릴 수 있어요.');
+      }
+      if (bytes.length === 0) {
+        throw new ApiError('invalid_request', '이미지 파일이 비어 있어요. 다시 골라주세요.');
+      }
+
+      /* 이름표가 아니라 내용으로 형식을 정한다. 둘이 다르면 받지 않는다. */
+      const actual = sniffFeedImageType(bytes);
+      if (!actual || actual !== declared) {
+        throw new ApiError('invalid_request', 'PNG · JPG · WebP 이미지만 올릴 수 있어요.');
+      }
+
+      const storageKey = `wedding-feed/${kind}/${randomUUID()}.${WEDDING_FEED_IMAGE_TYPES[actual]}`;
+      await context.storage.upload(storageKey, bytes, actual);
+
+      return { storageKey, imageUrl: await context.storage.getPublicUrl(storageKey, 3600) };
+    }
+  );
+
+  /**
+   * 관리자가 요청한 웨딩피드 이미지를 만들어 기존 이미지 저장소에 둔다. 글은 저장하지 않는다.
+   *
+   * **최근 그림과 다르게 만든다**(2026-09-26 대표 지시 — 「이미지도 대부분 다 비슷비슷하다.
+   * 다르게 생성되어야한다」 · 「가상 모델은 동양인 한국인 기준으로만 생성한다」).
+   * `generateDistinctFeedImage`가 촬영 계획을 최근 그림과 다르게 고르고, 지문이 닮으면
+   * 다시 그린다. 그림은 서버가 만들고 서버가 저장한다 — 브라우저 업로드가 없다.
+   */
   app.post<{ Body: unknown }>('/v1/admin/wedding-feed/image/generate', auth, async (request) => {
     const parsed = feedImageRequestSchema.safeParse(request.body);
     if (!parsed.success) {
@@ -1187,28 +1297,33 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
       throw new ApiError('internal', 'Gemini 연결을 확인해주세요.');
     }
 
-    let image: WeddingFeedImage;
+    let generated: GeneratedFeedImage;
     try {
-      image = await generateWeddingFeedImage(apiKey, parsed.data);
+      generated = await generateDistinctFeedImage({
+        pool: context.pool,
+        storage: context.storage,
+        apiKey,
+        request: parsed.data,
+        log: (message) => request.log.warn(message),
+      });
     } catch (error) {
       request.log.error({ err: error }, '웨딩피드 이미지 생성 실패');
+      if (error instanceof FeedImageDuplicateError) {
+        throw new ApiError('conflict', '최근 이미지와 비슷한 그림만 나왔어요. 다시 눌러주세요.');
+      }
       if (error instanceof WeddingFeedImageError) {
         if (error.reason === 'provider') {
           const detail = `${error.providerStatus}${error.providerCode ? ` ${error.providerCode}` : ''}`;
           throw new ApiError(error.providerStatus === 429 ? 'rate_limited' : 'internal', `Gemini 이미지 요청이 거절됐어요 (${detail}).`);
         }
+        if (error.reason === 'timeout') throw new ApiError('internal', '이미지를 만드는 시간이 길어져 멈췄어요. 다시 눌러주세요.');
         if (error.reason === 'incomplete') throw new ApiError('internal', 'Gemini 이미지 생성이 완료되지 않았어요.');
         throw new ApiError('internal', 'Gemini가 쓸 수 있는 이미지를 보내지 않았어요.');
       }
       throw new ApiError('internal', '이미지를 만들지 못했어요. 잠시 후 다시 시도해주세요.');
     }
 
-    const storageKey = `wedding-feed/${parsed.data.kind}/${randomUUID()}.${image.extension}`;
-    await context.storage.upload(storageKey, image.bytes, image.mimeType);
-    return {
-      storageKey,
-      imageUrl: await context.storage.getPublicUrl(storageKey, 3600),
-    };
+    return { storageKey: generated.storageKey, imageUrl: generated.imageUrl };
   });
 
   app.put<{ Params: { id: string }; Body: unknown }>(
@@ -1243,68 +1358,12 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   );
 
   /*
-   * 웨딩피드의 탭과 카테고리 — 2026-09-16 대표 지시 「탭별 카테고리별로 다 설정
-   * 가능해야한다」.
-   *
-   * **지우기는 둘이 다르다.** 탭을 지우면 딸린 카테고리가 소속만 잃고 남지만
-   * (`ON DELETE SET NULL`), 쓰는 카테고리는 아예 지워지지 않는다 — 지우면 그 글들이
-   * 어느 탭에도 안 뜨는데 화면은 멀쩡해 보인다. 끄기로 감춘다.
+   * 웨딩피드의 탭·카테고리 편집(2026-09-16 · GET taxonomy · groups · categories)은 걷었다
+   * (2026-09-26 대표 지적 — 「관리자 웨딩피드 카테고리와 앱웹 카테고리와 정보가 전혀
+   * 다르다」). 앱 칩은 정본(my.js `cats`)이 정하는 값이라 관리자가 고친 탭이 앱에 닿은
+   * 적이 없었다. 목록은 domain `WEDDING_FEED_CATEGORIES` 하나이고 관리자 화면이 그것을
+   * 직접 읽는다 — `wedding-feed-taxonomy.ts`.
    */
-  app.get('/v1/admin/wedding-feed/taxonomy', auth, async () =>
-    feedTaxonomy.listTaxonomy(context.pool)
-  );
-
-  app.post<{ Body: unknown }>('/v1/admin/wedding-feed/groups', auth, async (request) =>
-    feedTaxonomy.createGroup(context.pool, feedTaxonomy.parseGroupInput(request.body))
-  );
-
-  app.put<{ Params: { id: string }; Body: unknown }>(
-    '/v1/admin/wedding-feed/groups/:id',
-    auth,
-    async (request, reply) => {
-      await feedTaxonomy.updateGroup(
-        context.pool,
-        request.params.id,
-        feedTaxonomy.parseGroupInput(request.body)
-      );
-
-      return reply.status(204).send();
-    }
-  );
-
-  app.delete<{ Params: { id: string } }>(
-    '/v1/admin/wedding-feed/groups/:id',
-    auth,
-    async (request) => feedTaxonomy.removeGroup(context.pool, request.params.id)
-  );
-
-  app.post<{ Body: unknown }>('/v1/admin/wedding-feed/categories', auth, async (request) =>
-    feedTaxonomy.createCategory(context.pool, feedTaxonomy.parseCategoryInput(request.body))
-  );
-
-  app.put<{ Params: { id: string }; Body: unknown }>(
-    '/v1/admin/wedding-feed/categories/:id',
-    auth,
-    async (request, reply) => {
-      await feedTaxonomy.updateCategory(
-        context.pool,
-        request.params.id,
-        feedTaxonomy.parseCategoryInput(request.body)
-      );
-
-      return reply.status(204).send();
-    }
-  );
-
-  app.delete<{ Params: { id: string } }>(
-    '/v1/admin/wedding-feed/categories/:id',
-    auth,
-    async (request, reply) => {
-      await feedTaxonomy.removeCategory(context.pool, request.params.id);
-
-      return reply.status(204).send();
-    }
-  );
 
   /*
    * 지금 한 번 쓰게 한다. 평소에는 워커가 스스로 돌지만, 운영자가 「지금 필요하다」고

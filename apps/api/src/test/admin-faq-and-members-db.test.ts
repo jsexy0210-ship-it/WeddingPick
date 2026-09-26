@@ -1,6 +1,6 @@
 import { DISCLOSURE_THRESHOLDS } from '@weddingpick/domain';
 
-import { createTestApp, resetDatabase, signInAs, type TestApp } from './helpers';
+import { adminSession, createTestApp, resetDatabase, signInAs, type TestApp } from './helpers';
 import type { LocalStorage } from '../storage/local';
 
 let test: TestApp;
@@ -336,6 +336,72 @@ describeWithDb('관리자 — FAQ · 회원 추이', () => {
 
     expect(cleared.statusCode).toBe(200);
     expect(cleared.json()).toMatchObject({ ogImageSource: 'default' });
+  });
+
+  /**
+   * 관리자 화면의 「저장」이 실제로 부르는 순서 그대로 — 그림 본문 올리기 → 문구 저장 →
+   * 다시 읽기(2026-09-26 대표 제보 「그림 등록이 안 된다」).
+   *
+   * 서명 URL 길은 운영 저장소가 브라우저 CORS로 막아서 화면이 쓰지 않는다. 여기서 보는 것은
+   * **같은 origin으로 보낸 바이트가 저장소에 들어가고, 다시 읽으면 그 그림이 카드 그림으로
+   * 나오고, 문구 저장이 그 그림을 지우지 않는가**다.
+   */
+  it('그림 본문을 올리고 저장한 뒤 다시 읽으면 그 그림이 나온다', async () => {
+    const { headers } = await operator();
+    const png = Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), Buffer.from('카드 그림')]);
+
+    const uploaded = await test.app.inject({
+      method: 'PUT',
+      url: '/v1/admin/site-meta/og-image/file?kind=app',
+      headers: { ...headers, 'content-type': 'image/png', host: 'admin.test:8443' },
+      payload: png,
+    });
+    expect(uploaded.statusCode).toBe(200);
+    expect(uploaded.json()).toMatchObject({ kind: 'app', ogImageSource: 'upload' });
+
+    /* 화면은 그림 뒤에 문구를 저장한다. 주소 칸이 비어 있으면 올린 그림을 놓지 않는다. */
+    const saved = await test.app.inject({
+      method: 'PUT',
+      url: '/v1/admin/site-meta?kind=app',
+      headers,
+      payload: { ogTitle: '새 카드 제목', ogDescription: '', ogImageUrl: '', ogImageAlt: '' },
+    });
+    expect(saved.statusCode).toBe(200);
+
+    const reread = await test.app.inject({
+      method: 'GET',
+      url: '/v1/admin/site-meta?kind=app',
+      headers: { ...headers, host: 'admin.test:8443' },
+    });
+    const view = reread.json() as { ogImageSource: string; effective: { ogTitle: string; ogImageUrl: string } };
+    expect(view).toMatchObject({ ogImageSource: 'upload', effective: { ogTitle: '새 카드 제목' } });
+    /* 포트까지 담긴 절대 주소여야 한다 — 포트를 빼면 없는 주소가 나간다(Fastify 5 `hostname`). */
+    expect(view.effective.ogImageUrl).toMatch(/^http:\/\/admin\.test:8443\/v1\/site-meta\/og-image\?kind=app&v=\d+$/);
+
+    /* 공개 주소가 올린 바이트 그대로를 내보낸다. */
+    const served = await test.app.inject({ method: 'GET', url: '/v1/site-meta/og-image?kind=app' });
+    expect(served.statusCode).toBe(200);
+    expect(served.headers['content-type']).toContain('image/png');
+    expect(served.rawPayload).toEqual(png);
+
+    /* 다른 벌은 움직이지 않는다. */
+    const website = await test.app.inject({ method: 'GET', url: '/v1/admin/site-meta?kind=website', headers });
+    expect(website.json()).toMatchObject({ ogImageSource: 'default' });
+  });
+
+  it('뷰어는 그림을 올리지 못한다 — 저장소에도 DB에도 닿지 않는다', async () => {
+    const viewer = await adminSession(test, 'viewer');
+
+    const denied = await test.app.inject({
+      method: 'PUT',
+      url: '/v1/admin/site-meta/og-image/file?kind=app',
+      headers: { ...viewer.headers, 'content-type': 'image/png' },
+      payload: Buffer.from('89504e470d0a1a0a', 'hex'),
+    });
+    expect(denied.statusCode).toBe(403);
+
+    const view = await test.app.inject({ method: 'GET', url: '/v1/admin/site-meta?kind=app', headers: viewer.headers });
+    expect(view.json()).toMatchObject({ ogImageSource: 'default' });
   });
 
   /* 2026-09-25 대표 지시 — 링크 미리보기 세 벌(app · invite · website)은 서로 섞이지 않는다. */

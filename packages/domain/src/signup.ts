@@ -67,9 +67,11 @@ export const AGE_VERIFIED_VIA = ['provider', 'self_declared'] as const;
  * 필수 여부 · 동의 시각이 한 줄씩 남는다. 표의 `item`은 text라 새 마이그레이션이
  * 필요 없다(0046). 화면 쪽 키와의 대응은 `consent-terms.ts`의 `signupConsentKey`다.
  *
- * - `activates` — 계정을 살리는 관문. **여전히 `terms` · `privacy` 둘뿐이다.** 옛 앱은
- *   이 둘만 보내므로, 여기에 새 필수 항목을 더하면 이미 깔린 앱이 가입을 못 끝낸다
- *   (하위 호환). 새 필수 셋을 서버 관문에 올릴지는 대표님 판단으로 남긴다.
+ * **필수 다섯이 모두 계정을 살리는 관문이다**(2026-09-26 대표 결정 「강제한다」). 전에는
+ * 옛 앱과 맞추느라 `terms` · `privacy` 둘만 관문이었고 만 14세 · Pick 인증 · 상담 녹음은
+ * 기록만 했다. 이제 다섯 중 하나라도 빠진 가입은 활성화하지 않고 400으로 거절한다
+ * (`REQUIRED_CONSENT_NOTICE`). 선택 셋은 여전히 선택이다.
+ *
  * - `doc` — 동의한 글의 문서 종류(`terms_doc_kind`, 0130 · 0429). 공개된 판이 있으면
  *   `user_consents.terms_version_id`가 그 행을 가리킨다. 글이 없는 항목은 null.
  */
@@ -78,7 +80,6 @@ export const CONSENT_ITEMS = [
     key: 'terms',
     label: '이용약관',
     required: true,
-    activates: true,
     doc: 'terms',
     /* 아직 법률 자문 전이라 판이 초안이다. release-gate가 출시를 막는다. */
     version: 'draft-2026-09-01',
@@ -87,7 +88,6 @@ export const CONSENT_ITEMS = [
     key: 'privacy',
     label: '개인정보처리방침',
     required: true,
-    activates: true,
     doc: 'privacy',
     version: 'draft-2026-09-01',
   },
@@ -95,7 +95,6 @@ export const CONSENT_ITEMS = [
     key: 'marketing',
     label: '혜택 소식 받기',
     required: false,
-    activates: false,
     doc: 'marketing',
     /*
      * 지금은 이 동의로 보내는 것이 없다. 그래도 받아두는 이유가 아니라 **선택으로
@@ -108,7 +107,6 @@ export const CONSENT_ITEMS = [
     key: 'age',
     label: '만 14세 이상이에요',
     required: true,
-    activates: false,
     /* 판정은 로그인이 한다(`age_verified`). 이 줄은 화면에서 확인한 사실만 남긴다. */
     doc: null,
     version: 'draft-2026-09-01',
@@ -117,7 +115,6 @@ export const CONSENT_ITEMS = [
     key: 'pick_certification',
     label: 'Pick 인증 자료 수집 · 이용',
     required: true,
-    activates: false,
     doc: 'pick_verification',
     version: 'draft-2026-09-01',
   },
@@ -125,7 +122,6 @@ export const CONSENT_ITEMS = [
     key: 'consultation_recording',
     label: '상담 녹음 수집 · 이용',
     required: true,
-    activates: false,
     doc: 'consultation_recording',
     version: 'draft-2026-09-01',
   },
@@ -133,7 +129,6 @@ export const CONSENT_ITEMS = [
     key: 'contact_share',
     label: '상담 예약 시 업체에 연락처 제공',
     required: false,
-    activates: false,
     doc: 'contact_sharing',
     version: 'draft-2026-09-01',
   },
@@ -141,7 +136,6 @@ export const CONSENT_ITEMS = [
     key: 'night_alerts',
     label: '밤 9시 ~ 아침 8시에도 알림 받기',
     required: false,
-    activates: false,
     doc: null,
     version: 'draft-2026-09-01',
   },
@@ -149,7 +143,6 @@ export const CONSENT_ITEMS = [
   key: string;
   label: string;
   required: boolean;
-  activates: boolean;
   doc: string | null;
   version: string;
 }[];
@@ -169,12 +162,10 @@ export const OPTIONAL_CONSENTS: ConsentItem[] = CONSENT_ITEMS.filter(
 ).map((item) => item.key);
 
 /**
- * 계정을 살리는 데 꼭 있어야 하는 동의 — `terms` · `privacy`. 옛 앱과 맞추는 관문이다
- * (위 `activates` 설명). `missingRequiredConsents` · `canActivate`가 이것을 본다.
+ * 계정을 살리는 데 꼭 있어야 하는 동의 — **필수 다섯 전부**(`REQUIRED_CONSENTS`와 같다 ·
+ * 2026-09-26 대표 결정 「강제한다」). `missingRequiredConsents` · `canActivate`가 이것을 본다.
  */
-export const ACTIVATION_CONSENTS: ConsentItem[] = CONSENT_ITEMS.filter(
-  (item) => item.activates
-).map((item) => item.key);
+export const ACTIVATION_CONSENTS: ConsentItem[] = REQUIRED_CONSENTS;
 
 /** 이 동의가 가리키는 문서 종류. 글이 없는 항목(만 14세 · 야간 알림)은 null. */
 export function consentDocKind(item: ConsentItem): ConsentDocKind | null {
@@ -213,9 +204,8 @@ export function isDraftVersion(version: string): boolean {
 }
 
 /**
- * 계정을 살리는 관문(`ACTIVATION_CONSENTS`) 중 아직 받지 못한 것. 빈 배열이면 계정을
- * 살릴 수 있다. 화면의 새 필수 셋(만 14세 · Pick 인증 · 상담 녹음)은 기록하지만 이
- * 관문에는 넣지 않는다 — `CONSENT_ITEMS`의 `activates` 설명.
+ * 계정을 살리는 관문(`ACTIVATION_CONSENTS` — 필수 다섯) 중 아직 받지 못한 것. 빈 배열이면
+ * 계정을 살릴 수 있다.
  */
 export function missingRequiredConsents(
   granted: readonly { item: string; version: string }[]

@@ -4,6 +4,7 @@ import { CanonGray, FontSize, Layout, LineHeight, Radius, SeedIcon, Spacing, The
 import strings from '../../../../../spec/strings.ko.json';
 import { MORE_CHEVRON } from './home-summary';
 import type { ScheduleRow } from './schedule-view';
+import { HOME_PAGE_X } from '@/features/home/home-layout';
 
 const S = strings.home;
 
@@ -97,7 +98,8 @@ export function UpcomingSchedule({
 
 const styles = StyleSheet.create({
   /* home.jsx `hsec` — 헤더→본문 gap 12px 하나뿐(heading.marginBottom에 둔다). */
-  section: { paddingHorizontal: Layout.gutter, marginBottom: 24 },
+  /* `hsec` 좌우 20 — 홈 전용 여백(home-layout). */
+  section: { paddingHorizontal: HOME_PAGE_X, marginBottom: 24 },
   heading: {
     flexDirection: 'row',
     alignItems: 'center',

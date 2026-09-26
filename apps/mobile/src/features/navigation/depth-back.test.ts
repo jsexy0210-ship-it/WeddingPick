@@ -3,6 +3,8 @@ import {
   HISTORY_BACK_ROUTES,
   NO_BACK_ROUTES,
   ROUTES,
+  chainOrigin,
+  crossesStackOnBack,
   depthBackTarget,
   hasDepthBack,
   hasHistoryBack,
@@ -71,6 +73,65 @@ describe('depthBackTarget — 대표 경로', () => {
     expect(depthBackTarget('/community?from=https%3A%2F%2Fevil.example')).toBe('/');
     expect(depthBackTarget('/community?from=%2Fadmin')).toBe('/');
     expect(depthBackTarget('/community?from=%E0%A4%A')).toBe('/');
+  });
+
+  /*
+   * 2026-09-26 대표 감사(운영에서 재현) — MY → 연결관리 → Back이 웨딩노트로, MY → 리얼후기 → 후기 카드
+   * → 업체 상세 → Back이 검색 홈으로 갔다. 두 화면은 다른 탭의 스택에 있어 계층대로 올라가면 틀린다.
+   */
+  it('연결관리(배우자 초대)는 들어온 자리로 돌아간다', () => {
+    expect(depthBackTarget('/wedding/partner')).toBe('/wedding');
+    expect(depthBackTarget('/wedding/partner?from=my')).toBe('/my');
+    expect(depthBackTarget('/wedding/partner?from=notifications')).toBe('/my/notifications');
+    expect(depthBackTarget('/wedding/partner?from=home')).toBe('/');
+    /* 초대 수락은 연결관리로, 그 연결관리는 다시 자기 출처(MY)로 — 두 겹을 한 값으로 잇는다. */
+    expect(depthBackTarget('/wedding/join?from=partner.my')).toBe('/wedding/partner?from=my');
+    expect(depthBackTarget('/wedding/join?from=partner')).toBe('/wedding/partner');
+    /* /invite 딥링크처럼 출처가 없으면 계층 부모 그대로다. */
+    expect(depthBackTarget('/wedding/join')).toBe('/wedding');
+  });
+
+  it('업체 상세 · 후기 작성은 MY 후기 · 리얼후기로 돌아간다', () => {
+    expect(depthBackTarget('/search/v-101?from=reviews')).toBe('/my/reviews');
+    expect(depthBackTarget('/search/v-101/write-review?from=reviews')).toBe('/my/reviews');
+    expect(depthBackTarget('/search/v-101?from=community')).toBe('/community/review');
+    expect(depthBackTarget('/search/v-101?from=community.my')).toBe('/community/review?from=my');
+    /* 검색에서 들어온 업체 상세는 그대로 검색으로(운영 확인 — 회귀 방지). */
+    expect(depthBackTarget('/search/v-101')).toBe('/search');
+    expect(depthBackTarget('/search/v-101/write-review')).toBe('/search/v-101');
+  });
+
+  it('이어진 출처도 허용된 값만 받는다', () => {
+    /* 안쪽 값을 모르면 바깥 화면까지만 간다 — 추측해서 주소를 짓지 않는다. */
+    expect(depthBackTarget('/search/v-101?from=community.%2Fadmin')).toBe('/community/review');
+    expect(depthBackTarget('/search/v-101?from=community.https%3A%2F%2Fevil.example')).toBe('/community/review');
+    /* 바깥 화면이 출처를 받지 않는 화면이면 안쪽 값을 버린다. */
+    expect(depthBackTarget('/search/v-101?from=reviews.my')).toBe('/my/reviews');
+    /* 한 겹까지만 잇는다. */
+    expect(depthBackTarget('/wedding/join?from=partner.partner.my')).toBe('/wedding/partner');
+    /* 자기 자신으로 돌아오는 고리는 잇지 않는다. */
+    expect(depthBackTarget('/wedding/join?from=partner.partner')).toBe('/wedding/partner');
+    /* 바깥 값을 모르면 계층 규칙으로 떨어진다. */
+    expect(depthBackTarget('/search/v-101?from=nowhere.my')).toBe('/search');
+  });
+
+  it('chainOrigin은 안쪽 출처가 있을 때만 잇는다', () => {
+    expect(chainOrigin('community', 'my')).toBe('community.my');
+    expect(chainOrigin('community', null)).toBe('community');
+    expect(chainOrigin('partner', ['notifications', 'x'])).toBe('partner.notifications');
+    expect(chainOrigin('partner', undefined)).toBe('partner');
+  });
+
+  it('다른 탭 스택으로 건너가는 Back만 제스처를 끌 대상이다', () => {
+    expect(crossesStackOnBack('/wedding/partner?from=my')).toBe(true);
+    expect(crossesStackOnBack('/search/v-101?from=reviews')).toBe(true);
+    expect(crossesStackOnBack('/search/v-101?from=community.my')).toBe(true);
+    expect(crossesStackOnBack('/wedding/partner?from=home')).toBe(true);
+    /* 같은 스택 안의 부모 — 스와이프가 그대로 맞다. */
+    expect(crossesStackOnBack('/wedding/join?from=partner.my')).toBe(false);
+    expect(crossesStackOnBack('/search/v-101/write-review?from=vendor/v-101')).toBe(false);
+    expect(crossesStackOnBack('/search/v-101')).toBe(false);
+    expect(crossesStackOnBack('/wedding/partner')).toBe(false);
   });
 
   it('Root 5탭에서는 더 올라가지 않는다', () => {
@@ -174,6 +235,11 @@ describe('resolveBackAction — Android/공용 Back 정책', () => {
   it('하위 화면은 history가 있어도 논리 부모로 보낸다', () => {
     expect(resolveBackAction('/my/profile', true)).toEqual({ kind: 'depth', target: '/my' });
     expect(resolveBackAction('/community?from=my', true)).toEqual({ kind: 'depth', target: '/my' });
+    expect(resolveBackAction('/wedding/partner?from=my', true)).toEqual({ kind: 'depth', target: '/my' });
+    expect(resolveBackAction('/search/v-101?from=community.my', true)).toEqual({
+      kind: 'depth',
+      target: '/community/review?from=my',
+    });
   });
 
   it('명시된 History 화면만 기록을 쓴다', () => {

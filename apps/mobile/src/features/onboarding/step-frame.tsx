@@ -10,10 +10,11 @@ import {
   Motion,
   Radius,
   ThemedText,
-  ThemedView,
   USE_NATIVE_DRIVER,
   useTheme,
 } from '@weddingpick/ui';
+
+import { KeyboardAvoid } from '@/features/common/keyboard-avoid';
 
 import { OnboardingProgress } from './progress';
 
@@ -56,8 +57,9 @@ export function StepFrame({
   const insets = useSafeAreaInsets();
   const paired = Boolean(prevLabel && onPrev);
 
+  /* 키패드가 뜨면(예산 금액) 가운데 스크롤이 줄고 dock이 키패드 바로 위로 온다 — 껍데기째 피한다. */
   return (
-    <ThemedView style={styles.container}>
+    <KeyboardAvoid style={[styles.container, { backgroundColor: theme.background }]}>
       <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
         <OnboardingProgress label={label} />
 
@@ -115,7 +117,7 @@ export function StepFrame({
           </Pressable>
         </View>
       </SafeAreaView>
-    </ThemedView>
+    </KeyboardAvoid>
   );
 }
 

@@ -171,8 +171,8 @@ function session(os, c = browser()) {
         useRef(initial){const box={current:initial};refs.push(box);return box;},useMemo:fn=>fn(),useEffect:fn=>effects.push(fn)},
       'react/jsx-runtime':{jsx:(type,props)=>({type,props}),jsxs:(type,props)=>({type,props})},
       'expo-router':{DefaultTheme:{colors:{}},Stack:'Stack',ThemeProvider:'Theme',router:{replace:nothing},usePathname:()=>win.location.pathname},
-      'expo-splash-screen':{preventAutoHideAsync:nothing,hideAsync:nothing},'react-native':{Platform:{OS:'web'}},
-      '@weddingpick/ui':{useTheme:()=>({})},'@/features/navigation/screen-options':{useStackScreenOptions:()=>({})},
+      'expo-splash-screen':{preventAutoHideAsync:nothing,hideAsync:nothing},'expo-router/head':{default:'Head'},'react-native':{Platform:{OS:'web'}},
+      '@weddingpick/ui':{useTheme:()=>({})},'@/features/navigation/screen-options':{useStackScreenOptions:()=>({})},'@/features/navigation/app-stack':{AppStack:'Stack'},
       '@/components/confirmation-dialog-host': { ConfirmationDialogHost: 'ConfirmationDialogHost' },
       '@/features/navigation/result-toast-host': { ResultToastHost: 'ResultToastHost' },
       '@/features/home/home-handoff': { HomeHandoffHost: 'HomeHandoffHost' },
@@ -183,10 +183,11 @@ function session(os, c = browser()) {
       '@/features/auth/sign-in-handoff':{claimSigningInMessageForBoot:nothing,setPendingSignInError:nothing},
       '@/features/auth/signing-in-view':{SigningInView:'SigningIn'},
       '@/features/errors/full-screen-error':{FullScreenError:'Error'},'@/features/inapp-browser/escape':{escapeInAppBrowser:()=>({kind:'none'})},
+      '@/features/common/keyboard-inset':{useKeyboardAvoidingRoot:nothing},
       '@/features/in-app-web/in-app-web-shell':{InAppWebShell:'Shell'},'@/features/inapp-browser/in-app-browser-notice':{InAppBrowserNotice:'Notice'},
       '@/features/auth/session-recovery':{resolveSessionEntry:async()=>{resolutions++;return'app';},sessionErrorKind:()=> 'general'},
       '@/api/session':{stripLegacyUrlToken:nothing},
-      '@/features/splash/splash-view':{SPLASH_MINIMUM_MS:1,SplashView:'Splash'},
+      '@/features/splash/splash-view':{SPLASH_MINIMUM_MS:1,SplashView:'Splash'},'@/features/social-meta':{SHARE_TITLE:'웨딩픽'},
     },{window:win});
     const root=api.default();
     // hydration gate 자체는 verify-root-entry.cjs가 검증한다. 여기서는 hydration 이후

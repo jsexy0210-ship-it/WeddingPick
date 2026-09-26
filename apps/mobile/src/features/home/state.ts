@@ -1,6 +1,7 @@
 import type { CandidateListResponse, CurrentUser, VendorSummary } from '@weddingpick/api-contract';
 import {
   BUDGET_BRACKET_LABEL,
+  formatDday,
   MIN_COMPARABLE,
   PREPARATION_CATEGORIES,
   regionTokens,
@@ -70,13 +71,20 @@ export function categoryStatuses(input: {
   return HOME_CATEGORIES.map((category) => {
     const group = groups.find((row) => row.category === category) ?? null;
     const prepared = input.preparedCategories.includes(category);
+    /* 목록에 없어 이름으로만 정한 곳(0440). 후보가 아니라 `groups`에 없다. */
+    const manual = input.candidates?.manualDecisions?.find((row) => row.category === category) ?? null;
     const state: PreparationState =
-      group?.state === 'decided' || prepared ? 'decided' : (group?.state ?? 'before');
+      group?.state === 'decided' || prepared || manual !== null ? 'decided' : (group?.state ?? 'before');
+    /*
+     * 결정한 곳의 이름 — Pick한 업체로 정했으면 그 후보의 이름, 목록에 없어 직접 입력했으면
+     * 적어 둔 이름(0440 · 2026-09-26 대표 지시). 체크만 한 업종은 null이다.
+     */
     const decidedName =
-      state === 'decided' && group !== null
-        ? (group.candidates.find((row) => row.vendorId === group.decidedVendorId)?.vendorName ??
-          null)
-        : null;
+      state !== 'decided'
+        ? null
+        : (group?.candidates.find((row) => row.vendorId === group.decidedVendorId)?.vendorName ??
+          manual?.name ??
+          null);
 
     return {
       category,
@@ -448,7 +456,7 @@ export function nextStep(input: {
     title: '다음 준비',
     name: `${next.label} 정하기`,
     meta: next.pickCount > 0 ? `후보 ${next.pickCount}곳` : '시작 전',
-    aside: input.daysLeft === null ? '예식일 미정' : `D-${input.daysLeft}`,
+    aside: input.daysLeft === null ? '예식일 미정' : formatDday(input.daysLeft),
     target: { kind: 'pick', category: next.category },
   };
 }

@@ -2,6 +2,8 @@ import { createHash, randomInt } from 'node:crypto';
 
 import { acceptInviteRequestSchema } from '@weddingpick/api-contract';
 import {
+  INVITE_CODE_LENGTH,
+  INVITE_CODE_SPACE,
   INVITE_STATE_MESSAGE,
   INVITE_TTL_HOURS,
   PARTNER_NOT_SHARED,
@@ -18,32 +20,43 @@ import { ApiError, notFound } from '../errors';
 import { notify } from '../notify';
 import { networkIdFor } from './admin-login';
 
-/** 코드 원문은 저장하지 않는다. DB가 유출돼도 그것만으로 남의 웨딩에 들어갈 수 없다. */
+/**
+ * 코드 원문은 저장하지 않는다. 다만 4자리는 1만 가지뿐이라 해시만으로 원문이 숨지는
+ * 않는다 — 막는 것은 72시간 기한과 아래 입력 실패 제한이다. 0439가 옛 코드를 가려낼 때
+ * 이 규칙(UTF-8 SHA-256 · 소문자 16진수)을 SQL로 그대로 되풀이한다 — 바꾸면 함께 바꾼다.
+ */
 function hashCode(code: string): string {
   return createHash('sha256').update(code).digest('hex');
 }
 
 /**
- * 초대 코드 — 6자리 숫자(2026-09-25 대표 지시 「초대 코드는 6자리 난수로만 생성한다」).
+ * 초대 코드 — 4자리 숫자(2026-09-26 대표 지시 「초대 코드 6자리 → 4자리」).
  * `randomInt`는 암호학적 난수다. 앞자리 0도 코드의 일부라 0을 채운다.
  */
 export function generateInviteCode(): string {
-  return randomInt(0, 1_000_000).toString().padStart(6, '0');
+  return randomInt(0, INVITE_CODE_SPACE).toString().padStart(INVITE_CODE_LENGTH, '0');
 }
 
 /** 대기 중인 초대와 겹치면 다시 뽑는다. 이 횟수 안에 못 뽑으면 잠시 뒤 다시 시도하게 한다. */
 const CODE_DRAW_ATTEMPTS = 20;
 
 /**
- * 코드 입력 실패 제한.
+ * 코드 입력 실패 제한 — 4자리에서도 그대로 둔다(2026-09-26).
  *
- * 100만 가지는 맞혀 보기 쉽다. 15분 창에서 계정마다 5번, IP마다 20번 틀리면 그 창이
+ * 1만 가지는 맞혀 보기 쉽다. 15분 창에서 계정마다 5번, IP마다 20번 틀리면 그 창이
  * 끝날 때까지 받지 않는다. IP 한도가 더 넉넉한 것은 한 사무실 · 통신사 NAT 뒤의 여러
  * 사람이 같은 IP를 쓰기 때문이다. 틀린 것은 «그런 코드가 없다»뿐이다 — 기한이 지났거나
  * 취소된 코드는 맞힌 것이라 세지 않는다.
  */
 export const INVITE_FAILURES_PER_USER = 5;
 export const INVITE_FAILURES_PER_IP = 20;
+/*
+ * 한 계정이 72시간 기한 안에 넣어 볼 수 있는 것은 5 × 288창 = 1,440번이다
+ * (`inviteGuessCeiling`) — 대기 중인 초대 하나를 그 안에 맞힐 확률 14.4%. 한 IP는
+ * 20 × 288 = 5,760번까지라, IP 하나 뒤에서 계정을 여럿 돌려도 1만 가지를 다 훑지 못한다.
+ * 4자리의 안전은 이 두 한도와 기한에 기댄다 — 늘리면 그만큼 약해진다.
+ */
+export const INVITE_ATTEMPT_WINDOW_MINUTES = 15;
 
 function attemptKey(scope: 'user' | 'ip', id: string): string {
   return createHash('sha256').update(`invite-code\0${scope}\0${id}`).digest('hex');
@@ -241,7 +254,7 @@ export function registerWeddingInviteRoutes(app: FastifyInstance, context: AppCo
        FROM structured.wedding_invites i
        JOIN structured.weddings w ON w.id = i.wedding_id
        WHERE i.code_hash = $1
-       /* 6자리는 다시 뽑힌다 — 같은 숫자의 옛 줄보다 대기 중인 최신 줄을 먼저 본다. */
+       /* 4자리는 자주 다시 뽑힌다 — 같은 숫자의 옛 줄보다 대기 중인 최신 줄을 먼저 본다. */
        ORDER BY (i.status = 'pending') DESC, i.created_at DESC
        LIMIT 1`,
       [hashCode(code)]

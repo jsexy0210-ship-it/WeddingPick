@@ -37,6 +37,10 @@ export {
   WeddingMark,
   /* 하트 윤곽만. Pick Mark(하트 + 체크)가 아니라 하트 하나로 그리는 자리가 쓴다 — 검색 결과 카드의 Pick pill. */
   MARK_HEART_PATH,
+  /* 마크를 다른 그림 안에 얹는 자리 — 관리자 링크 미리보기의 기본 카드 그림(정본 OG카드.svg). */
+  MARK_CHECK_PATH,
+  MARK_STROKE,
+  MARK_VIEWBOX,
   type WeddingMarkProps,
 } from './wedding-mark';
 export { ProductSymbol, type ProductSymbolName } from './product-symbol';
@@ -66,6 +70,7 @@ export type { LoadingViewProps, SkeletonViewProps, RecommendingViewProps, Recomm
 export { CircleLoader, buildSpinKeyframes, type CircleLoaderProps, type CircleLoaderSize } from './circle-loader';
 export { LoaderSkeleton, type LoaderSkeletonProps, type LoaderSkeletonShape, type LoaderSkeletonSize } from './loader-skeleton';
 export { useDelayedVisible } from './use-delayed-visible';
+export { useReduceMotion } from './use-reduce-motion';
 export { CategoryIcon, CATEGORY_CYCLE_ORDER, CATEGORY_ICON_LABEL, type CategoryIconKind } from './category-icon';
 export { StepList, type Step, type StepState } from './step-list';
 export { ListSkeleton, type ListSkeletonProps } from './list-skeleton';
@@ -102,5 +107,5 @@ export {
 } from './theme';
 export { FontSize, LetterSpacing, LineHeight, type FontSizeToken } from './typography';
 export { useTheme } from './use-theme';
-export { readWebInteractionState, type WebInteractionState } from './web-interaction';
+export { PRESS_TRANSITION, readWebInteractionState, type WebInteractionState } from './web-interaction';
 export { VERIFICATION_LEVEL_ACCENT } from './verification-levels';

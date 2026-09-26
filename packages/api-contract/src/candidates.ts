@@ -75,6 +75,23 @@ export const candidateListResponseSchema = z.object({
   }),
   /** 다음에 무엇을 준비하면 좋은지. 다 정했으면 null — 없는 다음을 지어내지 않는다. */
   nextCategory: vendorCategorySchema.nullable(),
+  /**
+   * 업체 없이 이름으로만 정한 곳(0440 · 2026-09-26 대표 지시 「직접입력하는 방법 고안하라」).
+   * 후보가 아니라서 `groups`에 없다 — Pick은 이것을 그 묶음의 «결정» 카드로 그리되 업체
+   * 상세 · 상담 예약으로 잇지 않는다(이을 업체가 없다). 옛 서버는 이 칸을 안 보낸다 — 빈 배열로 읽는다.
+   */
+  manualDecisions: z
+    .array(
+      z.object({
+        category: vendorCategorySchema,
+        categoryLabel: z.string().min(1),
+        name: z.string().min(1),
+        decidedAt: timestampSchema,
+        /** 배우자가 정했는지. */
+        decidedByPartner: z.boolean(),
+      })
+    )
+    .default([]),
 });
 
 /** 최종 결정. 어느 업종을 어느 곳으로 정하는지. */
@@ -138,6 +155,7 @@ export const decisionListResponseSchema = z.object({
 export type VendorCandidate = z.infer<typeof vendorCandidateSchema>;
 export type CreateCandidateRequest = z.infer<typeof createCandidateRequestSchema>;
 export type CandidateListResponse = z.infer<typeof candidateListResponseSchema>;
+export type ManualDecision = CandidateListResponse['manualDecisions'][number];
 export type DecisionEvent = z.infer<typeof decisionEventSchema>;
 export type DecisionExpenseSummary = z.infer<typeof decisionExpenseSummarySchema>;
 export type DecisionDetail = z.infer<typeof decisionDetailSchema>;

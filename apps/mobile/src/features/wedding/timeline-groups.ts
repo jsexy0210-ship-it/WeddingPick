@@ -1,5 +1,5 @@
 import type { WeddingEvent } from '@weddingpick/api-contract';
-import { daysUntil } from '@weddingpick/domain';
+import { daysUntil, formatDday } from '@weddingpick/domain';
 
 /**
  * 웨딩노트 캘린더의 주 단위 흐름 — `docs/design/React_Native/note.jsx` frame-001 WP-NOTE-001.
@@ -9,7 +9,17 @@ import { daysUntil } from '@weddingpick/domain';
  * 이후** 일정만 묶는다.
  */
 
-export type TimelineItem = { event: WeddingEvent; kind: 'event' } | { event: null; kind: 'wedding'; date: string };
+/**
+ * 할 일 한 줄 — 날짜를 넣은 할 일(`tentative: false`)이거나 예식일에서 역산한 임시 날짜
+ * (`tentative: true`, 2026-09-26 대표 지시). 정본 `tlGroups`의 「웨딩홀 계약금 입금」 ·
+ * 「드레스 투어 3곳 예약하기」처럼 일정 사이에 같은 모양으로 선다. `date`는 `YYYY-MM-DD`.
+ */
+export type TimelinePlan = { id: string; date: string; title: string; meta: string; tentative: boolean };
+
+export type TimelineItem =
+  | { event: WeddingEvent; kind: 'event' }
+  | { event: null; kind: 'wedding'; date: string }
+  | ({ event: null; kind: 'plan' } & TimelinePlan);
 
 export type TimelineGroup = {
   title: string;
@@ -50,47 +60,53 @@ function dateKey(date: Date): string {
 export function buildUpcomingTimelineGroups(
   events: readonly WeddingEvent[],
   weddingDate: string | null,
-  now: Date = new Date()
+  now: Date = new Date(),
+  plans: readonly TimelinePlan[] = []
 ): TimelineGroup[] {
   const today = startOfDay(now);
-  const future = events
-    .filter((event) => new Date(event.startsAt) >= today)
-    .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+  type Entry = { at: Date; item: TimelineItem };
+  const future: Entry[] = [
+    ...events.map((event) => ({ at: new Date(event.startsAt), item: { event, kind: 'event' as const } })),
+    ...plans.map((plan) => ({ at: new Date(`${plan.date}T00:00:00`), item: { event: null, kind: 'plan' as const, ...plan } })),
+  ]
+    .filter((entry) => entry.at >= today)
+    .sort((a, b) => a.at.getTime() - b.at.getTime());
 
   const thisWeekStart = weekStart(today);
   const thisWeekEnd = addDays(thisWeekStart, 6);
   const nextWeekStart = addDays(thisWeekStart, 7);
   const nextWeekEnd = addDays(thisWeekStart, 13);
 
-  const thisWeek: WeddingEvent[] = [];
-  const nextWeek: WeddingEvent[] = [];
-  const laterByMonth = new Map<string, { anchor: Date; items: WeddingEvent[] }>();
+  const thisWeek: Entry[] = [];
+  const nextWeek: Entry[] = [];
+  const laterByMonth = new Map<string, { anchor: Date; items: Entry[] }>();
 
-  for (const event of future) {
-    const startsAt = new Date(event.startsAt);
+  for (const entry of future) {
+    const startsAt = entry.at;
     // 끝날(일요일) 0시가 아니라 다음 주 시작과 비교한다 — 일요일 낮 일정이 다음 주로 넘어가지 않게.
     if (startsAt < nextWeekStart) {
-      thisWeek.push(event);
+      thisWeek.push(entry);
     } else if (startsAt < addDays(thisWeekStart, 14)) {
-      nextWeek.push(event);
+      nextWeek.push(entry);
     } else {
       const anchor = startOfDay(startsAt);
       const key = `${anchor.getFullYear()}-${anchor.getMonth()}`;
       const bucket = laterByMonth.get(key);
-      if (bucket) bucket.items.push(event);
-      else laterByMonth.set(key, { anchor, items: [event] });
+      if (bucket) bucket.items.push(entry);
+      else laterByMonth.set(key, { anchor, items: [entry] });
     }
   }
 
   const groups: TimelineGroup[] = [];
-  const ddayAt = (date: Date) => (weddingDate !== null ? ` · D-${daysUntil(weddingDate, date)}` : '');
+  /* 구간 시작일이 예식 뒤면 `D+N`이다 — `D--1`처럼 부호를 겹치지 않는다(domain `formatDday`). */
+  const ddayAt = (date: Date) => (weddingDate !== null ? ` · ${formatDday(daysUntil(weddingDate, date))}` : '');
 
   if (thisWeek.length > 0) {
     groups.push({
       title: '이번 주',
       // 이번 주는 오늘부터 센다 — 정본 「9.22~9.27 · D-236」(9.22가 오늘, D-236은 오늘 기준).
       range: `${monthDay(today)}~${monthDay(thisWeekEnd)}${ddayAt(today)}`,
-      items: thisWeek.map((event) => ({ event, kind: 'event' })),
+      items: thisWeek.map((entry) => entry.item),
     });
   }
 
@@ -98,24 +114,25 @@ export function buildUpcomingTimelineGroups(
     groups.push({
       title: '다음 주',
       range: `${monthDay(nextWeekStart)}~${monthDay(nextWeekEnd)}${ddayAt(nextWeekStart)}`,
-      items: nextWeek.map((event) => ({ event, kind: 'event' })),
+      items: nextWeek.map((entry) => entry.item),
     });
   }
 
   const laterKeys = [...laterByMonth.entries()].sort((a, b) => a[1].anchor.getTime() - b[1].anchor.getTime());
   for (const [, { anchor, items }] of laterKeys) {
     const sameYear = anchor.getFullYear() === today.getFullYear();
-    const dday = weddingDate !== null ? `D-${daysUntil(weddingDate, anchor)} 구간` : '';
+    const dday = weddingDate !== null ? `${formatDday(daysUntil(weddingDate, anchor))} 구간` : '';
     groups.push({
       title: sameYear ? `${anchor.getMonth() + 1}월` : `${anchor.getFullYear()}년 ${anchor.getMonth() + 1}월`,
       range: dday,
-      items: items.map((event) => ({ event, kind: 'event' })),
+      items: items.map((entry) => entry.item),
     });
   }
 
   if (weddingDate !== null) {
     const alreadyListed = [...thisWeek, ...nextWeek, ...laterKeys.flatMap(([, bucket]) => bucket.items)].some(
-      (event) => dateKey(new Date(event.startsAt)) === dateKey(new Date(`${weddingDate}T00:00:00`))
+      (entry) =>
+        entry.item.kind === 'event' && dateKey(entry.at) === dateKey(new Date(`${weddingDate}T00:00:00`))
     );
     if (!alreadyListed) {
       groups.push({ title: '예식', range: '', items: [{ event: null, kind: 'wedding', date: weddingDate }] });

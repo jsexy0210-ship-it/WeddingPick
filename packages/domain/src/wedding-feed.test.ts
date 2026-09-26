@@ -1,14 +1,18 @@
+import { PREPARATION_GROUPS, VENDOR_CATEGORY_LABEL } from './vendor';
 import {
-  WEDDING_FEED_ALL_TAB,
+  WEDDING_FEED_CATEGORIES,
+  WEDDING_FEED_CATEGORY_LABELS,
+  WEDDING_FEED_CHIPS,
   WEDDING_FEED_LIMITS,
   WEDDING_FEED_PER_RUN,
+  WEDDING_FEED_TABS,
   WEDDING_FEED_TARGET_PUBLISHED,
   WEDDING_FEED_TOPICS,
-  buildFeedTabs,
   checkWeddingFeedInput,
-  findUngroupedCategories,
   pickTopics,
   shouldGenerate,
+  weddingFeedChipOf,
+  weddingFeedMatchesChip,
   type WeddingFeedInput,
 } from './wedding-feed';
 
@@ -111,100 +115,111 @@ describe('웨딩피드 — 언제 자동 작성이 도는가', () => {
   });
 });
 
-describe('웨딩피드 — 탭과 카테고리', () => {
-  const group = (id: string, sortOrder: number, active = true) => ({
-    id,
-    name: `탭${id}`,
-    sortOrder,
-    active,
-  });
-  const category = (
-    name: string,
-    groupId: string | null,
-    sortOrder: number,
-    active = true
-  ) => ({ id: `c-${name}`, name, groupId, sortOrder, active });
+/**
+ * 칩과 카테고리 — 관리자와 앱이 함께 보는 목록 하나(2026-09-26 대표 지적 「관리자 웨딩피드
+ * 카테고리와 앱웹 카테고리와 정보가 전혀 다르다」).
+ *
+ * 칩이 정본 my.js `cats`와 글자까지 같은지는 정본 파일을 직접 읽는 앱 쪽 시험이 센다
+ * (`apps/mobile/src/features/community/lounge-reviews.test.ts`) — 이 패키지는 파일을 못 읽는다.
+ */
+describe('웨딩피드 — 칩과 카테고리', () => {
+  it('칩 키는 준비 현황 그룹 키와 같고, 업종 카테고리는 그 그룹에 든다', () => {
+    const groupKeys = PREPARATION_GROUPS.map((group) => group.key);
 
-  it('어느 탭에도 안 든 카테고리를 찾아낸다', () => {
-    /*
-     * **관리자가 알 수 있어야 한다.** 탭에서 떨어진 카테고리의 글은 「전체」에서만
-     * 보이는데 오류도 안 나고 목록에서는 멀쩡해 보인다.
-     */
-    const found = findUngroupedCategories([
-      category('예산', 'a', 1),
-      category('허니문', null, 2),
-      category('하객', null, 3),
-    ]);
+    expect(WEDDING_FEED_CHIPS.map((chip) => chip.key)).toEqual(['all', ...groupKeys, 'budget']);
 
-    expect(found.map((c) => c.name)).toEqual(['허니문', '하객']);
+    for (const category of WEDDING_FEED_CATEGORIES) {
+      if (category.vendorCategory === null) continue;
+      const group = PREPARATION_GROUPS.find((g) => g.categories.includes(category.vendorCategory));
+
+      expect({ label: category.label, chip: category.chip }).toEqual({
+        label: category.label,
+        chip: group?.key,
+      });
+    }
   });
 
-  it('꺼 둔 카테고리는 탭이 없어도 세지 않는다', () => {
-    // 꺼 둔 것은 앱에 안 나간다 — 늘 켜져 있는 경고는 아무도 읽지 않는다.
-    expect(findUngroupedCategories([category('하객', null, 1, false)])).toEqual([]);
+  it('업종 카테고리 이름은 업종 이름과 같은 글자다', () => {
+    for (const category of WEDDING_FEED_CATEGORIES) {
+      if (category.vendorCategory === null) continue;
+      expect(category.label).toBe(VENDOR_CATEGORY_LABEL[category.vendorCategory]);
+    }
   });
 
-  it('「전체」가 언제나 맨 앞이고 아무것도 거르지 않는다', () => {
-    const tabs = buildFeedTabs(
-      [group('a', 1)],
-      [category('예산', 'a', 1)]
-    );
+  it('이름과 키가 겹치지 않는다', () => {
+    const labels = WEDDING_FEED_CATEGORIES.map((c) => c.label);
+    const keys = WEDDING_FEED_CATEGORIES.map((c) => c.key);
 
-    expect(tabs[0]!.key).toBe(WEDDING_FEED_ALL_TAB.key);
-    expect(tabs[0]!.label).toBe('전체');
-    expect(tabs[0]!.categories).toEqual([]);
+    expect(new Set(labels).size).toBe(labels.length);
+    expect(new Set(keys).size).toBe(keys.length);
   });
 
-  it('탭은 순서대로 나오고 꺼진 탭은 빠진다', () => {
-    const tabs = buildFeedTabs(
-      [group('b', 2), group('a', 1), group('c', 3, false)],
-      [category('예산', 'a', 1), category('계약', 'b', 1), category('허니문', 'c', 1)]
-    );
-
-    expect(tabs.map((t) => t.key)).toEqual([WEDDING_FEED_ALL_TAB.key, 'a', 'b']);
+  it('은퇴·옛 이름은 목록에 없다', () => {
+    // 결정사는 2026-09-24 대표 지시(0433). 준비 순서는 정본 이름 «일정»으로 옮겼다(0442).
+    for (const gone of ['결정사', '준비 순서', '스냅', '헤메', '플래너']) {
+      expect(WEDDING_FEED_CATEGORY_LABELS).not.toContain(gone);
+    }
   });
 
-  it('카테고리가 하나도 없는 탭은 그리지 않는다', () => {
-    // 눌렀는데 늘 비어 있는 탭은 있는 것이 없는 것보다 나쁘다.
-    const tabs = buildFeedTabs([group('a', 1), group('b', 2)], [category('예산', 'a', 1)]);
+  it('칩이 없는 카테고리는 넷이고 «전체»에서만 보인다', () => {
+    const chipless = WEDDING_FEED_CATEGORIES.filter((c) => c.chip === null).map((c) => c.label);
 
-    expect(tabs.map((t) => t.key)).toEqual([WEDDING_FEED_ALL_TAB.key, 'a']);
+    expect(chipless).toEqual(['체크리스트', '일정', '하객', '계약']);
+    for (const label of chipless) {
+      expect(WEDDING_FEED_CHIPS.filter((chip) => weddingFeedMatchesChip(chip.key, label)).map((c) => c.key)).toEqual(['all']);
+    }
   });
 
-  it('탭 안의 카테고리는 순서대로 나오고 꺼진 것은 빠진다', () => {
-    const tabs = buildFeedTabs(
-      [group('a', 1)],
-      [
-        category('하객', 'a', 3),
-        category('예산', 'a', 1),
-        category('체크리스트', 'a', 2, false),
-      ]
-    );
-
-    expect(tabs[1]!.categories).toEqual(['예산', '하객']);
+  it('칩은 묶음 안 카테고리만 남긴다', () => {
+    expect(weddingFeedMatchesChip('sdm', '드레스')).toBe(true);
+    expect(weddingFeedMatchesChip('sdm', '웨딩홀')).toBe(false);
+    expect(weddingFeedMatchesChip('goods', '허니문')).toBe(true);
+    expect(weddingFeedMatchesChip('ceremony', '본식스냅')).toBe(true);
+    expect(weddingFeedMatchesChip('budget', '예산')).toBe(true);
+    // 목록 밖 이름 — 뒤 공백 하나라도 — 은 «전체»에서만 보인다.
+    expect(weddingFeedChipOf('웨딩홀 ')).toBeNull();
+    expect(weddingFeedMatchesChip('start', '웨딩홀 ')).toBe(false);
+    expect(weddingFeedMatchesChip('all', '웨딩홀 ')).toBe(true);
   });
 
-  it('자동 작성이 쓰는 카테고리 이름은 열둘이다', () => {
-    /*
-     * 표의 씨앗값(0421)이 이 목록에서 왔다. **글자 하나 다르면 그 주제로 쓴 글이
-     * 어느 탭에도 안 붙는다** — 자동 작성은 화면을 거치지 않아서 고르기로 막을 수
-     * 없고, 이 시험이 그 자리를 지킨다.
-     */
-    const names = [...new Set(WEDDING_FEED_TOPICS.map((t) => t.categoryLabel))];
-
-    expect(names).toEqual([
-      '예산',
-      '체크리스트',
-      '웨딩홀',
+  it('공개 목록의 tabs는 칩 줄 그대로다 — 「전체」가 맨 앞이고 거르지 않는다', () => {
+    expect(WEDDING_FEED_TABS.map((tab) => tab.label)).toEqual(WEDDING_FEED_CHIPS.map((c) => c.label));
+    expect(WEDDING_FEED_TABS[0]).toEqual({ key: 'all', label: '전체', categories: [] });
+    expect(WEDDING_FEED_TABS.find((tab) => tab.key === 'sdm')!.categories).toEqual([
       '스튜디오',
       '드레스',
       '메이크업',
-      '본식스냅',
       '헤어변형',
-      '허니문',
-      '계약',
-      '준비 순서',
-      '하객',
     ]);
+
+    // 칩이 있는 카테고리는 탭 하나에만 든다 — 둘에 들면 같은 글이 칩 둘에 뜬다.
+    const placed = WEDDING_FEED_TABS.flatMap((tab) => tab.categories);
+
+    expect(new Set(placed).size).toBe(placed.length);
+    expect(placed.sort()).toEqual(
+      WEDDING_FEED_CATEGORIES.filter((c) => c.chip !== null).map((c) => c.label).sort()
+    );
+  });
+
+  it('자동 작성 주제는 전부 목록 안의 이름을 쓴다', () => {
+    /*
+     * 자동 작성은 화면을 거치지 않아서 고르기로 막을 수 없다. 글자 하나 다르면 그 주제로
+     * 쓴 글이 어느 칩에도 안 붙는다. 타입이 한 번 막고 이 시험이 한 번 더 본다.
+     */
+    for (const topic of WEDDING_FEED_TOPICS) {
+      expect(WEDDING_FEED_CATEGORY_LABELS).toContain(topic.categoryLabel);
+    }
+  });
+
+  it('목록 밖 이름은 들어올 때 막는다', () => {
+    expect(checkWeddingFeedInput({ ...ok, categoryLabel: '결정사' })).toEqual([
+      { field: 'categoryLabel', message: '목록에 없는 카테고리예요' },
+    ]);
+    expect(checkWeddingFeedInput({ ...ok, categoryLabel: '웨딩홀 ' })).toEqual([
+      { field: 'categoryLabel', message: '목록에 없는 카테고리예요' },
+    ]);
+    for (const label of WEDDING_FEED_CATEGORY_LABELS) {
+      expect(checkWeddingFeedInput({ ...ok, categoryLabel: label })).toEqual([]);
+    }
   });
 });

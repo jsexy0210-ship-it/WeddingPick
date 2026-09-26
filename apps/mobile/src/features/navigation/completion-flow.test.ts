@@ -37,7 +37,8 @@ describe('transient completion flow navigation', () => {
   it('후기 작성 완료는 성공 화면을 쌓지 않고 부모 시트를 닫는다', () => {
     const write = screen('(tabs)', 'search', '[vendorId]', 'write-review.tsx');
 
-    expect(write).toContain('dismissToOrReplace(`/search/${vendorId}`)');
+    /* 부모(업체 상세 · 출처가 있으면 MY 후기)로 닫는다 — 목적지는 depthBackTarget이 정한다. */
+    expect(write).toContain('const closeSheet = useDepthBack();');
     expect(write).not.toContain('setDone(');
   });
 

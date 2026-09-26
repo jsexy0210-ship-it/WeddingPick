@@ -8,6 +8,8 @@ import * as weddingFeed from '../wedding-feed';
 import * as weddingFeedWriter from '../analysis/wedding-feed-writer';
 import * as weddingFeedImage from '../analysis/wedding-feed-image';
 
+const PNG = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 0]);
+
 /**
  * 웨딩피드 관리자 라우트.
  *
@@ -241,7 +243,7 @@ describe('웨딩피드 관리자 라우트', () => {
 
   it('새 글 자동 작성은 선택한 카테고리 초안만 돌려주고 DB 글은 만들지 않는다', async () => {
     process.env.GEMINI_API_KEY = 'test-key';
-    pool.query.mockResolvedValueOnce({ rowCount: 1, rows: [{ '?column?': 1 }] });
+    pool.query.mockResolvedValueOnce({ rows: [] });
 
     const write = jest.fn().mockResolvedValue({
       draft: { title: '자동 제목', summary: '자동 요약', body: '자동 본문' },
@@ -259,9 +261,115 @@ describe('웨딩피드 관리자 라우트', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({ title: '자동 제목', summary: '자동 요약', body: '자동 본문' });
-    expect(write).toHaveBeenCalledWith(expect.objectContaining({ categoryLabel: '예산' }));
-    expect(String(pool.query.mock.calls[0]?.[0])).toContain('wedding_feed_categories');
+    expect(write).toHaveBeenCalledWith(
+      expect.objectContaining({ categoryLabel: '예산' }),
+      [],
+      { covered: [], avoidTitles: [] }
+    );
+    // 목록은 domain 상수라 표를 묻지 않는다(2026-09-26). 묻는 것은 같은 카테고리의 최근 글 SELECT 하나 — INSERT는 없다.
+    expect(String(pool.query.mock.calls[0]?.[0])).toContain('FROM structured.wedding_feed_posts');
+    expect(pool.query.mock.calls[0]?.[1]).toEqual(['예산', 30]);
     expect(pool.query).toHaveBeenCalledTimes(1);
+  });
+
+  /*
+   * 2026-09-26 대표 지시 — 「같은 카테고리 이전 내용을 분석해서 중첩되지 않는 내용으로
+   * 생성한다」. 이전 글을 넘기고, 받은 초안이 이전 글과 겹치면 버리고 다시 쓴다.
+   */
+  it('자동 작성은 같은 카테고리 최근 글을 넘기고, 겹친 초안은 버리고 다시 쓴다', async () => {
+    process.env.GEMINI_API_KEY = 'test-key';
+    const recent = {
+      title: '웨딩홀 투어에서 꼭 물어볼 것',
+      summary: '보증인원과 식대 인상 조건을 먼저 확인하세요.',
+      body: '투어 전에 질문을 적어 가요.',
+    };
+    pool.query.mockResolvedValueOnce({ rows: [recent] });
+
+    const write = jest
+      .fn()
+      .mockResolvedValueOnce({
+        draft: { title: '웨딩홀 투어 때 꼭 물어봐야 할 질문', summary: '식대 인상 조건과 보증인원부터 확인하세요.', body: '겹친 본문' },
+        usage: { inputTokens: 10, outputTokens: 20 },
+      })
+      .mockResolvedValueOnce({
+        draft: { title: '보증인원이 무엇이고 어떻게 정하나', summary: '하객 수를 가늠해 보증인원을 정하는 순서예요.', body: '새 본문' },
+        usage: { inputTokens: 10, outputTokens: 20 },
+      });
+    jest.spyOn(weddingFeedWriter, 'createGeminiFeedWriter').mockReturnValue({ write });
+
+    const response = await app({ config: { geminiModel: 'm' } } as Partial<AppContext>).inject({
+      method: 'POST',
+      url: '/v1/admin/wedding-feed/draft',
+      payload: { categoryLabel: '웨딩홀', avoidTitles: ['웨딩홀 투어 체크'] },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().title).toBe('보증인원이 무엇이고 어떻게 정하나');
+    expect(write).toHaveBeenCalledTimes(2);
+    expect(write.mock.calls[0]?.[2]).toEqual({ covered: [recent], avoidTitles: ['웨딩홀 투어 체크'] });
+    /* 둘째 부름은 방금 버린 제목까지 피한다. */
+    expect(write.mock.calls[1]?.[2].avoidTitles).toEqual([
+      '웨딩홀 투어 체크',
+      '웨딩홀 투어 때 꼭 물어봐야 할 질문',
+    ]);
+  });
+
+  it('몇 번을 써도 겹치면 초안을 내주지 않고 409로 알린다', async () => {
+    process.env.GEMINI_API_KEY = 'test-key';
+    const recent = { title: '허니문 일정을 짜는 순서', summary: '항공권과 숙소를 먼저 정하고 일정을 채워요.', body: '' };
+    pool.query.mockResolvedValueOnce({ rows: [recent] });
+    const write = jest.fn().mockResolvedValue({
+      draft: { title: '허니문 일정 짜는 순서 정리', summary: '숙소와 항공권부터 정한 뒤 일정을 채워요.', body: '본문' },
+      usage: { inputTokens: 1, outputTokens: 1 },
+    });
+    jest.spyOn(weddingFeedWriter, 'createGeminiFeedWriter').mockReturnValue({ write });
+
+    const response = await app({ config: { geminiModel: 'm' } } as Partial<AppContext>).inject({
+      method: 'POST',
+      url: '/v1/admin/wedding-feed/draft',
+      payload: { categoryLabel: '허니문' },
+    });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json().error.message).toBe('이 카테고리의 이전 글과 겹치는 초안만 나왔어요. 다시 눌러주세요.');
+    expect(write).toHaveBeenCalledTimes(3);
+  });
+
+  it('목록 밖 카테고리로는 초안을 쓰지 않는다 — 결정사 · 옛 이름 · 뒤 공백', async () => {
+    process.env.GEMINI_API_KEY = 'test-key';
+    const writer = jest.spyOn(weddingFeedWriter, 'createGeminiFeedWriter');
+
+    for (const categoryLabel of ['결정사', '준비 순서', '업체·서비스']) {
+      const response = await app({
+        config: { geminiModel: '시험용-모델' },
+      } as Partial<AppContext>).inject({
+        method: 'POST',
+        url: '/v1/admin/wedding-feed/draft',
+        payload: { categoryLabel },
+      });
+
+      expect(response.statusCode).toBe(400);
+    }
+    expect(writer).not.toHaveBeenCalled();
+    expect(pool.query).not.toHaveBeenCalled();
+  });
+
+  it('목록 밖 카테고리로 쓴 글은 DB를 건드리기 전에 거부한다', async () => {
+    /*
+     * 관리자 화면만 막으면 화면을 안 거치는 길(옛 화면 · 직접 호출)이 목록 밖 이름을
+     * 넣는다. 그 글은 앱 어느 칩에도 안 뜨는데 관리자 표에서는 멀쩡해 보인다.
+     */
+    const response = await app().inject({
+      method: 'POST',
+      url: '/v1/admin/wedding-feed',
+      payload: { categoryLabel: '준비·예산', title: '제목', status: 'draft', sortOrder: 0 },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json<{ error: { message: string } }>().error.message).toContain(
+      '목록에 없는 카테고리예요'
+    );
+    expect(pool.query).not.toHaveBeenCalled();
   });
 
   it('카테고리 없이 자동 작성하면 Gemini를 부르지 않는다', async () => {
@@ -304,11 +412,98 @@ describe('웨딩피드 관리자 라우트', () => {
     );
   });
 
-  it('관리자 이미지 생성은 웨딩피드 저장소에만 쓰고 글은 저장하지 않는다', async () => {
+  /*
+   * 관리자가 고른 그림은 같은 origin으로 받는다(2026-09-26). 서명 URL로 브라우저가 저장소에
+   * 직접 PUT하던 길은 운영 저장소가 CORS로 막는다(e66dec7e · docs/deployment.md 「파일 저장소」).
+   */
+  it('관리자가 고른 그림은 이 서버를 거쳐 저장소에 올리고 열쇠와 주소를 돌려준다', async () => {
+    const upload = jest.fn().mockResolvedValue(undefined);
+    const getPublicUrl = jest.fn().mockResolvedValue('https://image.example/uploaded');
+
+    const response = await app({
+      storage: { upload, getPublicUrl } as unknown as AppContext['storage'],
+    }).inject({
+      method: 'PUT',
+      url: '/v1/admin/wedding-feed/image/file?kind=body',
+      headers: { 'content-type': 'image/png' },
+      payload: PNG,
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(upload).toHaveBeenCalledWith(expect.stringMatching(/^wedding-feed\/body\/.+\.png$/), PNG, 'image/png');
+    expect(response.json()).toEqual({
+      storageKey: upload.mock.calls[0]![0],
+      imageUrl: 'https://image.example/uploaded',
+    });
+    expect(pool.query).not.toHaveBeenCalled();
+  });
+
+  it('이름표와 내용이 다른 파일 · 종류가 없는 요청 · 빈 파일은 받지 않는다', async () => {
+    const upload = jest.fn();
+    const instance = app({ storage: { upload } as unknown as AppContext['storage'] });
+
+    const mismatched = await instance.inject({
+      method: 'PUT', url: '/v1/admin/wedding-feed/image/file?kind=thumbnail',
+      headers: { 'content-type': 'image/jpeg' }, payload: PNG,
+    });
+    const noKind = await instance.inject({
+      method: 'PUT', url: '/v1/admin/wedding-feed/image/file',
+      headers: { 'content-type': 'image/png' }, payload: PNG,
+    });
+    const empty = await instance.inject({
+      method: 'PUT', url: '/v1/admin/wedding-feed/image/file?kind=body',
+      headers: { 'content-type': 'image/png' }, payload: Buffer.alloc(0),
+    });
+
+    expect(mismatched.statusCode).toBe(400);
+    expect(mismatched.json().error.message).toBe('PNG · JPG · WebP 이미지만 올릴 수 있어요.');
+    expect(noKind.statusCode).toBe(400);
+    expect(empty.statusCode).toBe(400);
+    expect(upload).not.toHaveBeenCalled();
+  });
+
+  /*
+   * 링크 미리보기(`site-meta.ts`)가 같은 그림 형식의 받는 틀을 먼저 등록하는 브랜치가 있다
+   * (fix-og-card). 같은 형식을 두 번 등록하면 Fastify가 서버를 띄우지 않는다 — 있으면 쓴다.
+   */
+  it('다른 라우트가 그림 형식을 먼저 등록해도 서버가 뜨고 받는다', async () => {
+    const instance = Fastify();
+    for (const type of ['image/png', 'image/jpeg', 'image/webp']) {
+      instance.addContentTypeParser(type, { parseAs: 'buffer' }, (_request, body, done) => done(null, body));
+    }
+    const upload = jest.fn().mockResolvedValue(undefined);
+    const getPublicUrl = jest.fn().mockResolvedValue('https://image.example/x');
+    registerAdminRoutes(instance, {
+      pool, storage: { upload, getPublicUrl },
+    } as unknown as AppContext);
+
+    const response = await instance.inject({
+      method: 'PUT', url: '/v1/admin/wedding-feed/image/file?kind=thumbnail',
+      headers: { 'content-type': 'image/png' }, payload: PNG,
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(upload).toHaveBeenCalledTimes(1);
+  });
+
+  it('서버 상한(5MB)을 넘는 그림은 413이다', async () => {
+    const upload = jest.fn();
+    const big = Buffer.concat([PNG, Buffer.alloc(5 * 1024 * 1024)]);
+
+    const response = await app({ storage: { upload } as unknown as AppContext['storage'] }).inject({
+      method: 'PUT', url: '/v1/admin/wedding-feed/image/file?kind=body',
+      headers: { 'content-type': 'image/png' }, payload: big,
+    });
+
+    expect(response.statusCode).toBe(413);
+    expect(upload).not.toHaveBeenCalled();
+  });
+
+  it('관리자 이미지 생성은 웨딩피드 저장소에 쓰고 계획을 남기며 글은 저장하지 않는다', async () => {
     process.env.GEMINI_API_KEY = 'test-key';
-    const png = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 0]);
-    const generate = jest.spyOn(weddingFeedImage, 'generateWeddingFeedImage').mockResolvedValue({
-      bytes: png, mimeType: 'image/png', extension: 'png',
+    pool.query.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rowCount: 1, rows: [] });
+    const generate = jest.spyOn(weddingFeedWriter, 'generateWeddingFeedImage').mockResolvedValue({
+      bytes: PNG, mimeType: 'image/png', extension: 'png',
     });
     const upload = jest.fn().mockResolvedValue(undefined);
     const getPublicUrl = jest.fn().mockResolvedValue('https://image.example/preview');
@@ -318,22 +513,51 @@ describe('웨딩피드 관리자 라우트', () => {
     }).inject({
       method: 'POST',
       url: '/v1/admin/wedding-feed/image/generate',
-      payload: { kind: 'thumbnail', title: '계약서 확인', summary: '견적 항목' },
+      payload: { kind: 'thumbnail', title: '계약서 확인', summary: '견적 항목', categoryLabel: '계약' },
     });
 
     expect(response.statusCode).toBe(200);
-    expect(generate).toHaveBeenCalledWith('test-key', expect.objectContaining({
-      kind: 'thumbnail', title: '계약서 확인',
-    }));
+    expect(generate).toHaveBeenCalledWith(
+      'test-key',
+      expect.objectContaining({ kind: 'thumbnail', title: '계약서 확인', categoryLabel: '계약' }),
+      expect.objectContaining({ scene: expect.any(String), people: expect.any(String) }),
+      expect.objectContaining({ timeoutMs: expect.any(Number) })
+    );
     expect(upload).toHaveBeenCalledWith(
-      expect.stringMatching(/^wedding-feed\/thumbnail\/.+\.png$/), png, 'image/png'
+      expect.stringMatching(/^wedding-feed\/thumbnail\/.+\.png$/), PNG, 'image/png'
     );
     expect(response.json()).toMatchObject({ imageUrl: 'https://image.example/preview' });
-    expect(pool.query).not.toHaveBeenCalled();
+    /* 첫째는 최근 그림 기록을 읽고, 둘째는 이번 그림의 계획을 남긴다. 글 표는 건드리지 않는다. */
+    expect(String(pool.query.mock.calls[0]?.[0])).toContain('wedding_feed_generated_images');
+    expect(pool.query.mock.calls[0]?.[1]).toEqual(['계약', 30]);
+    expect(String(pool.query.mock.calls[1]?.[0])).toContain('INSERT INTO structured.wedding_feed_generated_images');
+    expect(pool.query.mock.calls.some(([sql]) => String(sql).includes('wedding_feed_posts'))).toBe(false);
+  });
+
+  it('그림 기록 표가 아직 없으면(0443 전) 기록 없이 그림을 준다', async () => {
+    process.env.GEMINI_API_KEY = 'test-key';
+    pool.query.mockRejectedValueOnce(Object.assign(new Error('relation does not exist'), { code: '42P01' }));
+    jest.spyOn(weddingFeedWriter, 'generateWeddingFeedImage').mockResolvedValue({
+      bytes: PNG, mimeType: 'image/png', extension: 'png',
+    });
+    const upload = jest.fn().mockResolvedValue(undefined);
+    const getPublicUrl = jest.fn().mockResolvedValue('https://image.example/preview');
+
+    const response = await app({
+      storage: { upload, getPublicUrl } as unknown as AppContext['storage'],
+    }).inject({
+      method: 'POST',
+      url: '/v1/admin/wedding-feed/image/generate',
+      payload: { kind: 'body', title: '제목' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(upload).toHaveBeenCalledTimes(1);
+    expect(pool.query).toHaveBeenCalledTimes(1);
   });
 
   it('제목이나 Gemini 연결이 없으면 이미지 생성 비용을 쓰지 않는다', async () => {
-    const generate = jest.spyOn(weddingFeedImage, 'generateWeddingFeedImage');
+    const generate = jest.spyOn(weddingFeedWriter, 'generateWeddingFeedImage');
     const invalid = await app().inject({
       method: 'POST', url: '/v1/admin/wedding-feed/image/generate',
       payload: { kind: 'thumbnail', title: '' },
@@ -349,7 +573,8 @@ describe('웨딩피드 관리자 라우트', () => {
 
   it('이미지 모델 거절 원인을 관리자 화면에 안전한 코드로 알린다', async () => {
     process.env.GEMINI_API_KEY = 'test-key';
-    jest.spyOn(weddingFeedImage, 'generateWeddingFeedImage').mockRejectedValue(
+    pool.query.mockResolvedValue({ rows: [] });
+    jest.spyOn(weddingFeedWriter, 'generateWeddingFeedImage').mockRejectedValue(
       new weddingFeedImage.WeddingFeedImageError('provider', 404, 'NOT_FOUND')
     );
     const response = await app().inject({
@@ -409,112 +634,23 @@ describe('웨딩피드 관리자 라우트', () => {
 });
 
 /**
- * 탭과 카테고리 라우트 — 2026-09-16 대표 지시 「탭별 카테고리별로 다 설정 가능해야한다」.
- *
- * **지우기를 막는 자리를 본다.** 쓰는 카테고리를 지우면 그 글들이 어느 탭에도 안 뜨는데
- * 화면은 멀쩡해 보인다 — 이 기능이 없애려던 바로 그 상태다. 화면이 한 번 막고 서버가
- * 한 번 더 막는다. 글로 적은 규칙은 깨지지만 세는 시험은 안 깨진다.
+ * 탭 · 카테고리 편집 라우트는 걷었다(2026-09-26 대표 지적 — 「관리자 웨딩피드 카테고리와
+ * 앱웹 카테고리와 정보가 전혀 다르다」). 관리자가 고친 탭을 그리는 앱 화면이 없었다 —
+ * 목록은 이제 domain 상수 하나다. 걷은 주소가 조용히 살아 있지 않은지 본다.
  */
-describe('웨딩피드 탭·카테고리 라우트', () => {
-  it('어느 탭에도 안 든 카테고리를 세어서 준다', async () => {
-    pool.query
-      .mockResolvedValueOnce({
-        rows: [{ id: 'g1', name: '준비·예산', sort_order: 1, active: true }],
-      })
-      .mockResolvedValueOnce({
-        rows: [
-          { id: 'c1', name: '예산', group_id: 'g1', sort_order: 1, active: true, post_count: '2' },
-          { id: 'c2', name: '하객', group_id: null, sort_order: 2, active: true, post_count: '0' },
-          // 꺼 둔 것은 안 센다 — 애초에 앱에 안 나간다.
-          { id: 'c3', name: '계약', group_id: null, sort_order: 3, active: false, post_count: '1' },
-        ],
-      });
+describe('웨딩피드 탭·카테고리 편집 — 걷었다', () => {
+  it.each([
+    ['GET', '/v1/admin/wedding-feed/taxonomy'],
+    ['POST', '/v1/admin/wedding-feed/groups'],
+    ['PUT', '/v1/admin/wedding-feed/groups/g1'],
+    ['DELETE', '/v1/admin/wedding-feed/groups/g1'],
+    ['POST', '/v1/admin/wedding-feed/categories'],
+    ['PUT', '/v1/admin/wedding-feed/categories/c1'],
+    ['DELETE', '/v1/admin/wedding-feed/categories/c1'],
+  ] as const)('%s %s는 없다', async (method, url) => {
+    const response = await app().inject({ method, url, payload: method === 'GET' || method === 'DELETE' ? undefined : {} });
 
-    const response = await app().inject({
-      method: 'GET',
-      url: '/v1/admin/wedding-feed/taxonomy',
-    });
-    const body = response.json<{ ungrouped: string[]; categories: { postCount: number }[] }>();
-
-    expect(response.statusCode).toBe(200);
-    expect(body.ungrouped).toEqual(['하객']);
-    expect(body.categories[0]).toMatchObject({ name: '예산', postCount: 2 });
-  });
-
-  it('쓰는 카테고리는 지우지 못하고 몇 편인지 말해 준다', async () => {
-    // 세는 질의 하나만 간다 — 딸린 글이 있으면 DELETE까지 가지 않는다.
-    pool.query.mockResolvedValueOnce({ rows: [{ n: '12' }] });
-
-    const response = await app().inject({
-      method: 'DELETE',
-      url: '/v1/admin/wedding-feed/categories/c1',
-    });
-
-    expect(response.statusCode).toBe(409);
-    expect(response.json<{ error: { message: string } }>().error.message).toContain('12편');
-    expect(pool.query).toHaveBeenCalledTimes(1);
-  });
-
-  it('딸린 글이 없으면 지운다', async () => {
-    pool.query
-      .mockResolvedValueOnce({ rows: [{ n: '0' }] })
-      .mockResolvedValueOnce({ rowCount: 1 });
-
-    const response = await app().inject({
-      method: 'DELETE',
-      url: '/v1/admin/wedding-feed/categories/c1',
-    });
-
-    expect(response.statusCode).toBe(204);
-  });
-
-  /*
-   * 탭을 지우면 딸린 카테고리는 **남는다**(`ON DELETE SET NULL`). 함께 지우면 그
-   * 카테고리로 쌓인 글이 가리키던 값이 사라진다. 몇 개가 떨어져 나왔는지 돌려줘서
-   * 화면이 그대로 말할 수 있게 한다.
-   */
-  it('탭을 지우면 떨어져 나온 카테고리 수를 돌려준다', async () => {
-    pool.query
-      .mockResolvedValueOnce({ rows: [{ n: '2' }] })
-      .mockResolvedValueOnce({ rowCount: 1 });
-
-    const response = await app().inject({
-      method: 'DELETE',
-      url: '/v1/admin/wedding-feed/groups/g1',
-    });
-
-    expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual({ orphaned: 2 });
-  });
-
-  /**
-   * **이름을 고치면 글의 `category_label`도 따라간다.**
-   *
-   * 글은 id로 붙어 있어서 이름만 바꿔도 연결은 안 끊어지지만, 카드 위 작은 줄은
-   * `category_label` 문자열을 그대로 그린다 — 안 맞추면 관리자 표에는 새 이름,
-   * 앱 화면에는 옛 이름이 나란히 남는다.
-   */
-  it('카테고리 이름을 고치면 그 글들의 표시 이름도 한 트랜잭션에서 바꾼다', async () => {
-    pool.query.mockResolvedValueOnce({ rows: [] }); // 이름 겹침 확인
-    const client = { query: jest.fn().mockResolvedValue({ rowCount: 1 }), release: jest.fn() };
-
-    pool.connect.mockResolvedValue(client);
-
-    const response = await app().inject({
-      method: 'PUT',
-      url: '/v1/admin/wedding-feed/categories/c1',
-      payload: { name: '예산 관리', groupId: null, sortOrder: 1, active: true },
-    });
-
-    expect(response.statusCode).toBe(204);
-
-    const sql = client.query.mock.calls.map((call) => String(call[0]));
-
-    expect(sql[0]).toBe('BEGIN');
-    expect(sql[sql.length - 1]).toBe('COMMIT');
-    expect(sql.some((q) => q.includes('wedding_feed_posts') && q.includes('category_label'))).toBe(
-      true
-    );
-    expect(client.release).toHaveBeenCalled();
+    expect(response.statusCode).toBe(404);
+    expect(pool.query).not.toHaveBeenCalled();
   });
 });

@@ -293,3 +293,28 @@ export function acceptedSignupItems(state: {
 }): ReadonlySet<string> {
   return new Set([...state.items, ...(state.agreements ?? [])].map((entry) => entry.item));
 }
+
+/**
+ * 약관 상세 풀팝업(WP-AUTH-011)의 탭 — 위 6탭에 «개인정보처리방침»을 더한 것
+ * (2026-09-26 대표 지시 「개인정보처리방침을 공통 약관 풀팝업 탭으로 연다」).
+ *
+ * 개인정보처리방침은 동의 항목이 아니라 **웹사이트 원문**이다(CLAUDE.md 「약관과
+ * 개인정보처리방침의 정본은 웹사이트다」) — 조문을 여기 들지 않고 탭 이름만 둔다. 본문은
+ * 화면이 `POLICY_DOCUMENTS`의 `privacy` 주소(`/privacy.html`)를 앱 안에 불러 그린다 —
+ * `/my/privacy-policy`가 그리던 것과 같은 원문이다.
+ *
+ * 자리는 «이용약관» 바로 뒤다 — MY 약관 목록(서비스 이용약관 · 개인정보처리방침)과 같은
+ * 순서이고, 맨 끝에 두면 390 폭에서 그 탭이 화면 밖에 걸린 채 열린다. 정본에 7번째 탭
+ * 그림이 없어 이 자리는 `DESIGN_UNRESOLVED`다.
+ */
+export const PRIVACY_POLICY_TAB_KEY = 'privacy_policy';
+
+export type TermsPopupTabKey = ConsentAgreementKey | typeof PRIVACY_POLICY_TAB_KEY;
+
+export type TermsPopupTab = { key: TermsPopupTabKey; tab: string };
+
+export const TERMS_POPUP_TABS: readonly TermsPopupTab[] = [
+  ...TERM_DOCUMENTS.slice(0, 1).map(({ key, tab }) => ({ key, tab })),
+  { key: PRIVACY_POLICY_TAB_KEY, tab: '개인정보처리방침' },
+  ...TERM_DOCUMENTS.slice(1).map(({ key, tab }) => ({ key, tab })),
+];

@@ -7,6 +7,7 @@ import {
   SCHEDULED_NOTE,
   bucketFor,
   budgetView,
+  budgetRaiseForProof,
   manualExpenseOverBudget,
   summarizeExpenses,
 } from './expense';
@@ -155,5 +156,25 @@ describe('직접 입력 지출은 총예산을 넘을 수 없다(2026-09-25)', (
       over: true,
       remaining: 0,
     });
+  });
+});
+
+describe('Pick 인증이 총예산을 넘기면 넘은 만큼 늘린다(2026-09-26 대표 결정)', () => {
+  it('넘으면 새 총예산은 낸 돈 합이고 늘어난 금액은 넘은 만큼이다', () => {
+    expect(budgetRaiseForProof({ budget: 10_000_000, spent: 13_000_000 })).toEqual({
+      before: 10_000_000,
+      budget: 13_000_000,
+      raisedBy: 3_000_000,
+    });
+  });
+
+  it('안 넘거나 딱 맞으면 그대로다', () => {
+    expect(budgetRaiseForProof({ budget: 10_000_000, spent: 9_000_000 })).toBeNull();
+    expect(budgetRaiseForProof({ budget: 10_000_000, spent: 10_000_000 })).toBeNull();
+  });
+
+  it('총예산이 없으면 한도도 없어 늘리지 않는다', () => {
+    expect(budgetRaiseForProof({ budget: null, spent: 50_000_000 })).toBeNull();
+    expect(budgetRaiseForProof({ budget: 0, spent: 50_000_000 })).toBeNull();
   });
 });

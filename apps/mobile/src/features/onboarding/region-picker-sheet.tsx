@@ -27,7 +27,7 @@ export type PickedRegion = { region: WeddingRegion; district: string | null };
  *
  * **2026-09-15 대표 지시로 생겼다** — 「온보딩 지역 선택 시 바텀시트가 올라오며
  * 시/도 · 시/군/구 휠 타입으로 변경한다」. 그 전에는 짧은 꼴 아홉을 줄로 늘어놓고
- * 고른 뒤 구를 다시 줄로 골랐다(`region-picker.tsx`).
+ * 고른 뒤 구를 다시 줄로 골랐다(옛 `region-picker.tsx` — MY 내 웨딩설정도 2026-09-26 이 휠로 옮기며 지웠다).
  *
  * **휠은 예식일 시트와 같은 것이다**(`wheel.tsx`) — 새 라이브러리를 들이지 않았다.
  *

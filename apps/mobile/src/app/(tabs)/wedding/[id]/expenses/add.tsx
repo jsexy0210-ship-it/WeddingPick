@@ -10,14 +10,16 @@ import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 
-import { addExpense, getExpenses, removeExpense, updateExpense } from '@/api/client';
-import { confirmAlert } from '@/components/confirm-alert';
+import { addExpense, getExpenses, updateExpense } from '@/api/client';
 import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
+import { CtaRow } from '@/features/common/cta-row';
 import { requestDirtySheetClose } from '@/features/common/dirty-sheet-close';
 import { showOsToast } from '@/features/common/os-toast';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { showResultToast } from '@/features/navigation/result-toast';
 import { todayDay } from '@/features/wedding/expense-day';
+import { ExpenseAddChooser } from '@/features/wedding/expense-add-chooser';
+import { confirmDeleteExpense } from '@/features/wedding/expense-delete';
 import { Field } from '@/features/wedding/screen-kit';
 import { ActionButton, FilterChip, Spacing, ThemedText, Toast } from '@weddingpick/ui';
 
@@ -29,19 +31,23 @@ import ExpenseListScreen from './list';
  * 예산 추가 시트 — WP-NOTE-007 · `docs/design/React_Native/note.jsx` frame-006.
  *
  *   formHead  공용 SheetHeader — 타이틀 «예산 추가» + 우측 36px 회색 원형 X
- *   칸        정본 `budgetFields` 순서대로 항목 · 예산 · 낸 금액 셋을 그린다. 서버가 받는 것
- *             (`createExpenseRequest`)은 항목(업종 → 줄 이름) · 낸 금액뿐이라 그 둘만 보내고,
+ *   칸        항목(업종 칩) · 낸 금액 둘. 서버가 받는 것(`createExpenseRequest`)도 그 둘이고,
  *             날짜는 오늘로 넣는다.
  *
+ * 헤더 «예산 추가»로 열면 먼저 «자동 등록(Pick 인증) · 직접 입력» 고르는 시트가 뜬다(2026-09-26
+ * 대표 지시, `features/wedding/expense-add-chooser.tsx`). 같은 라우트 · 같은 시트 안에서 바뀐다 —
+ * 새 라우트를 두지 않아 Back 규칙(`depth-back-rules.ts`)이 그대로다. «직접 입력»을 고르면 아래 입력
+ * 칸이 열리고, `?mode=manual` · `?category=` · `?vendorName=`로 들어오면 고르기를 건너뛴다.
+ *
  * 정본에 없는 «업체» · «낸 날짜» 칸, «자료를 올리면 실 제보가 돼요» 목록과 «원본은 24시간
- * 안에 지워요» 안내는 지웠다. `DESIGN_UNRESOLVED`로 남긴 것:
- *   - «예산» 칸 — 항목별 예산을 담을 서버 값이 없다(buckets에 budget 없음). 칸은 그리되
- *     `BUDGET_BACKEND_PENDING` 동안 잠가 둔다(2026-09-25 대표 결정). 서버가 붙으면 이 스위치와
- *     잠금을 함께 걷는다
- *   - «사진으로 채우기» 칸과 «읽었어요 · 확인 필요» 딱지 — 사진을 읽어 바로 돌려주는
- *     서버 경로가 없다(Pick 인증은 여러 단계 흐름). 채워 준다고 적고 안 채우는 칸을 만들지 않는다
- *   - 아래 두 단추 «직접입력 · 자동입력» — 자동입력이 위 사진 칸과 한 기능이라 함께 미뤘다.
- *     지금은 «지출만 넣기 · 지출 넣고 인증하기»(Pick 인증 흐름으로)를 그대로 둔다
+ * 안에 지워요» 안내는 지웠다. 정본 `mergedFields`의 «예산» 칸도 지웠다(2026-09-26 대표 지시
+ * 「아무런 의미가 없다」) — 항목별 예산을 담는 서버 값 · DB 칸은 원래 없었다. `DESIGN_UNRESOLVED`:
+ *   - 정본 «사진으로 채우기» 칸과 «읽었어요 · 확인 필요» 딱지 — 사진은 고르는 시트의 «자동 등록»이
+ *     맡는다(서버가 읽어 바로 지출로 넣는다). 이 시트 안에서 채우는 칸은 만들지 않는다
+ *   - CTA — 정본 dock은 «직접입력 · 자동입력» 두 단추다. 고르는 시트가 그 둘을 맡아서 여기는
+ *     단추 하나 «지출 넣기»(일정 시트 WP-NOTE-002 `btnPrimaryFull` «일정 넣기»와 같은 꼴)로 둔다 —
+ *     정본에 한 단추 문구는 없다. 폭(한 개면 꽉 참 · 둘이면 1 : 1.4)은 공용 CTA 줄(`CtaRow`,
+ *     my-orders 작업)이 이 `actions` 자리를 감싸 맞춘다 — 여기서 따로 폭을 고치지 않는다
  *
  * 수정 모드(`?expenseId=`) — 지출내역에서 직접 입력한 줄을 누르면 같은 시트가 값이 채워진 채
  * 열린다(2026-09-25 대표 지시 「등록된 예산정보 수정, 삭제 기능이 없다」). 저장은 PATCH, 시트 안
@@ -54,9 +60,6 @@ import ExpenseListScreen from './list';
  * 토스트로 남은 예산을 알린다. 총예산이 없으면 한도가 없다. 서버도 같은 판정으로 400을 준다.
  */
 
-/** 항목별 예산 저장 경로가 서버에 없다 — 붙으면 false로 바꾸고 `save()`에 예산을 싣는다. */
-const BUDGET_BACKEND_PENDING = true;
-
 function isVendorCategory(value: string | undefined): value is VendorCategory {
   return value !== undefined && (VENDOR_CATEGORIES as readonly string[]).includes(value);
 }
@@ -65,15 +68,22 @@ function isVendorCategory(value: string | undefined): value is VendorCategory {
  * /expenses/add 딥링크는 부모 지출 화면 + DLG-D 입력 시트로 연결한다.
  */
 export default function AddExpenseRoute() {
-  const { id, vendorName, category, expenseId } = useLocalSearchParams<{
+  const { id, vendorName, category, expenseId, mode: modeParam } = useLocalSearchParams<{
     id: string;
     vendorName?: string;
     category?: string;
     expenseId?: string;
+    mode?: string;
   }>();
 
   const { height } = useWindowDimensions();
   const editing = Boolean(expenseId);
+  /* 고르는 시트 → 직접 입력. 수정 · 업체에서 들어온 길 · `?mode=manual`은 고르기를 건너뛴다. */
+  const [choosing, setChoosing] = useState(
+    () => !editing && modeParam !== 'manual' && !category && !vendorName
+  );
+  /* 자동 등록이 사진을 올리고 읽는 동안에는 시트를 닫지 않는다. */
+  const [autoBusy, setAutoBusy] = useState(false);
   const [original, setOriginal] = useState<ExpenseSummaryResponse['expenses'][number] | null>(null);
   const initialCategory = editing
     ? isVendorCategory(original?.category ?? undefined)
@@ -147,7 +157,11 @@ export default function AddExpenseRoute() {
   }
 
   function requestClose() {
-    if (saving) return;
+    if (saving || autoBusy) return;
+    if (choosing) {
+      closeSheet();
+      return;
+    }
     requestDirtySheetClose(dirty, closeSheet);
   }
 
@@ -210,28 +224,20 @@ export default function AddExpenseRoute() {
 
   function requestDelete() {
     if (!expenseId || !original || locked || saving) return;
-    confirmAlert(
-      copy['expense.deleteTitle'],
-      copy['expense.deleteBody'].replace('{label}', original.label).replace('{amount}', manwon(original.amount)),
-      [
-        { text: '취소', style: 'cancel' },
-        {
-          text: copy['expense.delete'],
-          style: 'destructive',
-          onPress: () => {
-            setSaving(true);
-            setError(null);
-            removeExpense(id, expenseId)
-              .then(() => {
-                showResultToast(copy['expense.deleted']);
-                closeSheet();
-              })
-              .catch((caught: Error) => setError(caught.message))
-              .finally(() => setSaving(false));
-          },
-        },
-      ]
-    );
+    confirmDeleteExpense({
+      weddingId: id,
+      expense: original,
+      onStart: () => {
+        setSaving(true);
+        setError(null);
+      },
+      onDeleted: () => {
+        showResultToast(copy['expense.deleted']);
+        closeSheet();
+      },
+      onError: setError,
+      onSettled: () => setSaving(false),
+    });
   }
 
   return (
@@ -240,9 +246,20 @@ export default function AddExpenseRoute() {
 
       <BottomSheet
         visible
+        dismissible={!autoBusy}
         onRequestClose={requestClose}
         style={styles.sheetHost}
         testID={editing ? 'expense-edit-sheet' : 'expense-add-sheet'}>
+        {choosing ? (
+          <SheetPanel>
+            <ExpenseAddChooser
+              weddingId={id}
+              onManual={() => setChoosing(false)}
+              onClose={requestClose}
+              onBusyChange={setAutoBusy}
+            />
+          </SheetPanel>
+        ) : (
         <SheetPanel>
           <SheetHeader
             title={editing ? copy['expense.editTitle'] : copy['headerAdd.expense']}
@@ -275,14 +292,6 @@ export default function AddExpenseRoute() {
                 </View>
               </View>
               <Field
-                label="예산"
-                value=""
-                placeholder="예: 4,000,000"
-                keyboardType="number-pad"
-                editable={!BUDGET_BACKEND_PENDING}
-                testID="expense-add-budget"
-              />
-              <Field
                 label="낸 금액"
                 value={amountText}
                 onChangeText={(text) => setAmountText(formatAmount(text))}
@@ -313,7 +322,8 @@ export default function AddExpenseRoute() {
             </ThemedText>
           ) : null}
 
-          <View style={styles.actions}>
+          {/* 한 개(넣기)면 꽉 차고, 고칠 때(빼기 + 저장)는 정본 note.js sheetDock 1 : 1.4 · 사이 8 — 공용 CtaRow. */}
+          <CtaRow gap={Spacing.two}>
             {/* «지출 넣고 인증하기»는 Pick 인증 촬영 삭제(2026-09-25)로 뺐다 — 남은 CTA가 Primary다. */}
             {editing ? (
               <ActionButton
@@ -331,16 +341,17 @@ export default function AddExpenseRoute() {
                     : copy['expense.save']
                   : saving
                     ? '넣는 중…'
-                    : '지출만 넣기'
+                    : copy['expense.addCta']
               }
               disabled={!ready || saving}
               onPress={() => void saveOnly()}
             />
-          </View>
+          </CtaRow>
 
           {/* iOS · 웹의 한도 토스트 — 시트(Modal) 위에 떠야 해서 시트 안에 둔다. 안드로이드는 시스템 토스트. */}
           <Toast message={toast} onHidden={() => setToast(null)} />
         </SheetPanel>
+        )}
       </BottomSheet>
     </View>
   );
@@ -363,5 +374,4 @@ const styles = StyleSheet.create({
   fields: { gap: 12 },
   field: { gap: 6 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  actions: { flexDirection: 'row', gap: Spacing.two },
 });

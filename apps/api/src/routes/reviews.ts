@@ -54,6 +54,7 @@ import { ApiError, notFound } from '../errors';
 import { isUuid } from '../uuid';
 import { notify } from '../notify';
 import { loadUsageScore } from '../review-view';
+import { receiveUpload, registerUploadScope, storeUpload } from './stream-upload';
 
 /**
  * 규칙의 판. 결정 기록에 함께 남는다 — 규칙이 바뀌면 과거 결정을 다시 읽을 수
@@ -440,7 +441,38 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
   );
 
   /**
-   * 후기 사진 업로드 자리. 파일은 API를 지나지 않고 저장소로 바로 간다.
+   * 후기 사진 한 장을 받는다 — **같은 출처 올리기**(2026-09-26). 웹과 네이티브가 같이 쓴다.
+   *
+   * 서명 URL로 저장소에 바로 올리던 길(아래 `upload-target`)은 브라우저 CORS preflight에서
+   * 막혔다(e66dec7e). 본문은 사진 그대로(JPG · PNG · WebP · 10MB까지)이고, 열쇠는 서버가
+   * 짓는다 — 사용자 id를 넣어 다른 사람이 올린 사진을 후기로 가로채지 못하게 한다(후기 쓰기가
+   * 접두사를 다시 본다). 사진 내용(형식 머리 · 크기)은 후기 쓰기가 저장소에서 다시 읽어 본다.
+   *
+   * 동영상은 받지 않는다 — 후기 사진 계약(`reviewImageMimeTypeSchema`)에 자리가 없다.
+   *
+   *   415  JPG · PNG · WebP가 아니다 · 413  10MB를 넘는다(운영 Nginx도 같은 값)
+   */
+  registerUploadScope(app, /^image\//, REVIEW_IMAGE_MAX_BYTES, (scope) => {
+    scope.post('/v1/reviews/media', auth, async (request, reply) => {
+      const userId = currentUserId(request);
+      const upload = receiveUpload(request, {
+        allowed: Object.keys(REVIEW_IMAGE_TYPES),
+        maxBytes: REVIEW_IMAGE_MAX_BYTES,
+        wrongType: 'JPG · PNG · WebP 사진만 올릴 수 있어요.',
+        tooLarge: `후기 사진은 ${REVIEW_IMAGE_MAX_BYTES / 1024 / 1024}MB 이하만 올릴 수 있어요.`,
+      });
+      const storageKey = `reviews/${userId}/${randomUUID()}.${REVIEW_IMAGE_TYPES[upload.mimeType]}`;
+
+      await storeUpload(context.storage, storageKey, upload);
+
+      return reply.status(201).send({ storageKey, mimeType: upload.mimeType });
+    });
+  });
+
+  /**
+   * 후기 사진 업로드 자리 — **옛 길**. 파일은 API를 지나지 않고 저장소로 바로 간다.
+   * 브라우저에서는 CORS로 막혀 새 앱은 `POST /v1/reviews/media`를 쓴다. 이미 배포된 옛 앱이
+   * 부르는 동안 지우지 않는다.
    * 열쇠에 사용자 id를 넣어 다른 사람이 만든 업로드를 후기로 가로채지 못하게 한다.
    */
   app.post(

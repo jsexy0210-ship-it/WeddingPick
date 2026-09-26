@@ -1,5 +1,5 @@
 import type { AppBootstrapResponse, CurrentUser } from '@weddingpick/api-contract';
-import { formatCount, manwon } from '@weddingpick/domain';
+import { formatCount, formatDday, manwon } from '@weddingpick/domain';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import {
@@ -13,6 +13,7 @@ import {
   ThemedText,
   useTheme,
 } from '@weddingpick/ui';
+import { HOME_PAGE_X } from '@/features/home/home-layout';
 
 /**
  * 홈 코랄 D-day 히어로.
@@ -99,7 +100,7 @@ export function Hero({
         </Pressable>
       ) : (
         <ThemedText type="f46" numeric themeColor="onTint" style={styles.dday}>
-          {daysLeft === 0 ? 'D-DAY' : `D${daysLeft > 0 ? '-' : '+'}${formatCount(Math.abs(daysLeft))}`}
+          {formatDday(daysLeft)}
         </ThemedText>
       )}
 
@@ -188,9 +189,9 @@ export function partnerLine(me: CurrentUser | null, invitePending: boolean): str
 
 /* home.js `hero` 계열 값 그대로. 주석의 이름은 정본 스타일 키다. */
 const styles = StyleSheet.create({
-  /* `heroWrap` 아래 24 · `hero` radius 14 · padding 18. 좌우 여백은 홈 공통 24(아래 PR 설명 참고). */
+  /* `heroWrap` 좌우 20 · 아래 24 · `hero` radius 14 · padding 18. 좌우는 홈 전용 여백(home-layout). */
   hero: {
-    marginHorizontal: Layout.gutter,
+    marginHorizontal: HOME_PAGE_X,
     marginBottom: 24,
     borderRadius: 14,
     padding: 18,

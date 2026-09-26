@@ -17,7 +17,7 @@
  */
 import { FullScreenError } from '@/features/errors/full-screen-error';
 import type { CurrentUser, MyReportListResponse } from '@weddingpick/api-contract';
-import { BUSINESS_NOTICE_LINES, type ConsentAgreementKey, TERM_DOCUMENTS, daysUntil, formatCount } from '@weddingpick/domain';
+import { BUSINESS_NOTICE_LINES, PRIVACY_POLICY_TAB_KEY, TERM_DOCUMENTS, daysUntil, formatCount, type TermsPopupTabKey } from '@weddingpick/domain';
 import { Redirect, router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -43,8 +43,9 @@ import {
   listMyInquiries,
   listMyReports,
 } from '@/api/client';
-import { RootTabHeader } from '@/components/root-tab-header';
+import { ROOT_TAB_GUTTER, RootTabHeader } from '@/components/root-tab-header';
 import { TermsDetailModal } from '@/features/auth/terms-detail-modal';
+import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import { useSession } from '@/features/auth/use-session';
 import { DelayedLoader, DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { AVATAR_MY, Avatar } from '@/features/settings/my-kit';
@@ -85,12 +86,13 @@ export default function MyScreen() {
   const [data, setData] = useState<MyData>(EMPTY);
   const [loadFailed, setLoadFailed] = useState(false);
   /* 약관 상세(WP-AUTH-011 공통 풀팝업) — 누른 약관의 탭으로 연다. */
-  const [termsKey, setTermsKey] = useState<ConsentAgreementKey | null>(null);
+  const [termsKey, setTermsKey] = useState<TermsPopupTabKey | null>(null);
   const loadVersion = useRef(0);
 
   const isSignedIn = state.status === 'signedIn';
 
-  const load = useCallback(() => {
+  /** `keep` — 당겨서 새로 고침. 받아 둔 프로필 · 수는 그대로 두고 실패는 토스트로도 알린다. */
+  const load = useCallback((keep = false) => {
     const version = ++loadVersion.current;
     if (!isSignedIn) {
       void Promise.resolve().then(() => {
@@ -124,13 +126,19 @@ export default function MyScreen() {
           inquiries: inquiries.status === 'fulfilled' ? inquiries.value.inquiries.length : null,
         }));
       })
-      .catch(() => { if (version === loadVersion.current) setLoadFailed(true); });
+      .catch(() => {
+        if (version !== loadVersion.current) return;
+        if (keep) notifyRefreshFailed();
+        setLoadFailed(true);
+      });
   }, [isSignedIn]);
 
   useFocusEffect(useCallback(() => {
     load();
     return () => { loadVersion.current += 1; };
   }, [load]));
+
+  const pull = usePullRefresh(useCallback(() => load(true), [load]));
 
   function guestPush(path: string) {
     if (!isSignedIn) {
@@ -165,7 +173,7 @@ export default function MyScreen() {
     {
       title: S['group.together'],
       rows: [
-        { key: 'partner', label: S['item.partner'], icon: 'community', tail: data.couple ? COUPLE_LABEL[data.couple] : undefined, onPress: () => guestPush('/wedding/partner') },
+        { key: 'partner', label: S['item.partner'], icon: 'community', tail: data.couple ? COUPLE_LABEL[data.couple] : undefined, onPress: () => guestPush('/wedding/partner?from=my') },
       ],
     },
     /*
@@ -201,8 +209,9 @@ export default function MyScreen() {
       /*
        * 2026-09-25 대표 지시 「약관 리스트는 온보딩과 동일한 UX로 맞춘다. 메뉴도 늘리도록 한다」 —
        * 약관 동의(WP-AUTH-010)가 보여주는 약관 전부를 줄로 두고, 누르면 같은 공통 풀팝업
-       * (WP-AUTH-011 `TermsDetailModal`)이 그 탭으로 열린다(«동의하기» 없음). 개인정보처리방침은
-       * 동의 항목이 아니라 웹사이트 정본 원문이라 기존 화면으로 둔다.
+       * (WP-AUTH-011 `TermsDetailModal`)이 그 탭으로 열린다(«동의하기» 없음). 개인정보처리방침도
+       * 같은 풀팝업의 «개인정보처리방침» 탭으로 연다(2026-09-26 대표 지시) — 본문은 그 전
+       * `/my/privacy-policy`가 그리던 웹사이트 원문 그대로다.
        */
       rows: [
         /* 2026-09-25 대표 재지시 — 목록은 「서비스 이용약관」 · 「개인정보처리방침」 둘만. 상세(탭 여섯)는 그대로. */
@@ -212,7 +221,7 @@ export default function MyScreen() {
           icon: 'bookmark' as const,
           onPress: () => setTermsKey(doc.key),
         })),
-        { key: 'privacy', label: S['item.privacy'], icon: 'bookmark', onPress: () => router.push('/my/privacy-policy' as never) },
+        { key: 'privacy', label: S['item.privacy'], icon: 'bookmark', onPress: () => setTermsKey(PRIVACY_POLICY_TAB_KEY) },
       ],
     },
   ];
@@ -224,7 +233,8 @@ export default function MyScreen() {
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+          refreshControl={pull.refreshControl}>
           {/* 프로필 카드 — 아바타 + 이름 18/700 + Pick 인증 배지 + 예식일 · D-day 13 muted + 꺾쇠 → 프로필. 선. «내 웨딩설정» 행. */}
           {isSignedIn && me ? (
             <View style={styles.block}>
@@ -268,7 +278,7 @@ export default function MyScreen() {
           ) : isSignedIn ? (
             <View style={styles.block}>
               {loadFailed ? (
-                <ActionButton label={strings.common['cta.retry']} hint={strings.journey.loadFailed} onPress={load} />
+                <ActionButton label={strings.common['cta.retry']} hint={strings.journey.loadFailed} onPress={() => load()} />
               ) : <DelayedLoader size={28} />}
             </View>
           ) : (
@@ -386,9 +396,9 @@ const styles = StyleSheet.create({
   shrink: { flexShrink: 1, minWidth: 0 },
   pressed: { opacity: 0.6 },
 
-  /* WP-MY-001 sec: 공통 좌우 24 · 아래 20 · 제목↔카드 12. */
+  /* WP-MY-001 sec: Root 5탭 공통 좌우 20(`ROOT_TAB_GUTTER`) · 아래 20 · 제목↔카드 12. */
   block: {
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: ROOT_TAB_GUTTER,
     paddingBottom: Layout.listGap,
   },
   loginCta: { gap: Spacing.two },
@@ -427,10 +437,10 @@ const styles = StyleSheet.create({
     minHeight: 52,
     paddingHorizontal: 20,
   },
-  /* WP-MY-001 secFoot: 위 4 · 공통 좌우 24 · gap 14. */
+  /* WP-MY-001 secFoot: 위 4 · Root 공통 좌우 20 · gap 14. */
   footer: {
     paddingTop: Spacing.one,
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: ROOT_TAB_GUTTER,
     alignItems: 'center',
     gap: 14,
   },

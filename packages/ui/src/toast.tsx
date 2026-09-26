@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Animated, Easing, Platform, StyleSheet, ToastAndroid, View } from 'react-native';
 
-import { Elevation, Layout, Radius, ToastColors, USE_NATIVE_DRIVER } from './theme';
+import { Elevation, Layout, Motion, Radius, ToastColors, USE_NATIVE_DRIVER } from './theme';
 import { FontSize, LineHeight } from './typography';
+import { useReduceMotion } from './use-reduce-motion';
 
 export type ToastProps = {
   /** 보여줄 말. null이면 아무것도 그리지 않는다. */
@@ -28,6 +29,7 @@ const FADE_MS = 175;
  */
 export function Toast({ message, onHidden }: ToastProps) {
   const [opacity] = useState(() => new Animated.Value(0));
+  const reduceMotion = useReduceMotion();
   /** 사라지는 동안에도 그려야 해서, 글자는 따로 붙잡아 둔다. */
   const [shown, setShown] = useState<string | null>(null);
 
@@ -73,9 +75,22 @@ export function Toast({ message, onHidden }: ToastProps) {
 
   return (
     <View pointerEvents="none" style={styles.wrap}>
+      {/*
+        나타날 때 제자리에서 켜지지 않고 살짝 올라오며 켜진다 — `Motion.rise`(요소 상승, translateY 10 → 0)의
+        거리만 빌리고 시간은 이 토스트의 페이드(175ms)를 그대로 따른다. 같은 값 하나(opacity)로 둘을
+        움직여 사라질 때도 같은 길로 내려간다. 「움직임 줄이기」면 페이드만 한다.
+      */}
       <Animated.Text
         accessibilityRole="alert"
-        style={[styles.toast, { opacity }]}>
+        style={[
+          styles.toast,
+          {
+            opacity,
+            transform: reduceMotion
+              ? []
+              : [{ translateY: opacity.interpolate({ inputRange: [0, 1], outputRange: [Motion.rise.from, 0] }) }],
+          },
+        ]}>
         {shown}
       </Animated.Text>
     </View>

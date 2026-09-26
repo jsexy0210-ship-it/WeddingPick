@@ -120,6 +120,7 @@ async function once(input: {
   parts: GeminiPart[];
   schema: z.ZodType;
   tools?: GeminiBuiltinTools;
+  temperature?: number;
   signal: AbortSignal;
 }): Promise<unknown> {
   const tools: unknown[] = [];
@@ -141,7 +142,7 @@ async function once(input: {
       generationConfig: {
         responseMimeType: 'application/json',
         responseSchema: toGeminiSchema(input.schema),
-        temperature: 0,
+        temperature: input.temperature ?? 0,
       },
     }),
   });
@@ -175,6 +176,14 @@ export async function callGemini<T extends z.ZodType>(input: {
   parts: GeminiPart[];
   schema: T;
   tools?: GeminiBuiltinTools;
+  /**
+   * 기본 0 — 읽어내는 일(영수증·녹음)은 같은 입력이 같게 읽혀야 한다.
+   *
+   * **글을 쓰는 자리만 올린다**(웨딩피드 · 2026-09-26 대표 지시 「중첩되지 않는 내용으로
+   * 생성한다」). 0이면 같은 카테고리에서 누를 때마다 같은 글이 나온다 — 요청이
+   * 글자 하나까지 같았다.
+   */
+  temperature?: number;
 }): Promise<{ value: z.infer<T>; usage: GeminiUsage }> {
   let lastError: unknown;
 
@@ -224,4 +233,110 @@ export function inlinePart(input: { mimeType: string; bytes: Buffer }): GeminiPa
 /** 올려둔 파일을 가리키는 꼴로. */
 export function filePart(input: { mimeType: string; fileUri: string }): GeminiPart {
   return { fileData: { mimeType: input.mimeType, fileUri: input.fileUri } };
+}
+
+/**
+ * 그림 한 장을 받아 오는 자리 — **웨딩피드 이미지만 쓴다**(`wedding-feed-writer.ts`).
+ *
+ * 2026-09-26까지는 `wedding-feed-image.ts`가 `fetch`를 직접 불렀다. `callGemini`를 안
+ * 거쳐서 `gemini-scope.test.ts`의 허용 목록 검사에 **잡히지 않는 여섯째 호출 파일**이었다.
+ * 주소·키 헤더·오류 본문 처리를 이 파일 한 곳으로 모으고, 부르는 파일은 시험이 센다.
+ *
+ * 구조화 출력(`callGemini`)과 요청 모양이 달라 따로 둔다 — 그림 응답에는
+ * `responseSchema`를 걸 수 없다.
+ */
+export class GeminiImageError extends Error {
+  constructor(
+    readonly reason: 'provider' | 'incomplete' | 'missing_image' | 'invalid_image' | 'timeout',
+    readonly providerStatus?: number,
+    readonly providerCode?: string
+  ) {
+    super(
+      reason === 'provider'
+        ? `Gemini 이미지 요청 실패 (${providerStatus}${providerCode ? ` ${providerCode}` : ''})`
+        : `Gemini 이미지 응답 오류 (${reason})`
+    );
+    this.name = 'GeminiImageError';
+  }
+}
+
+const imageEnvelope = z.object({
+  candidates: z
+    .array(
+      z.object({
+        finishReason: z.string().optional(),
+        content: z
+          .object({
+            parts: z
+              .array(
+                z.object({
+                  text: z.string().optional(),
+                  inlineData: z.object({ mimeType: z.string(), data: z.string() }).optional(),
+                })
+              )
+              .optional(),
+          })
+          .optional(),
+      })
+    )
+    .optional(),
+});
+
+export async function callGeminiImage(input: {
+  apiKey: string;
+  model: string;
+  prompt: string;
+  aspectRatio: string;
+  /** nginx가 60초에 끊는다 — 부르는 쪽이 남은 시간을 넘긴다. */
+  timeoutMs: number;
+}): Promise<{ mimeType: string; bytes: Buffer }> {
+  let response: Response;
+
+  try {
+    response = await fetch(`${ENDPOINT}/${encodeURIComponent(input.model)}:generateContent`, {
+      method: 'POST',
+      signal: AbortSignal.timeout(input.timeoutMs),
+      // 키를 쿼리스트링이 아니라 헤더로 보낸다 — 주소는 프록시·로그에 남는다.
+      headers: { 'content-type': 'application/json', 'x-goog-api-key': input.apiKey },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: input.prompt }] }],
+        generationConfig: {
+          responseModalities: ['IMAGE'],
+          imageConfig: { aspectRatio: input.aspectRatio },
+        },
+      }),
+    });
+  } catch (error) {
+    if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
+      throw new GeminiImageError('timeout');
+    }
+    throw error;
+  }
+
+  // 오류 본문에는 프롬프트가 되비칠 수 있으므로 응답 내용을 로그나 오류에 넣지 않는다.
+  if (!response.ok) {
+    const body: unknown = await response.json().catch(() => null);
+    const candidate =
+      body && typeof body === 'object' && 'error' in body ? (body as { error?: unknown }).error : null;
+    const code =
+      candidate && typeof candidate === 'object' && 'status' in candidate
+        ? (candidate as { status?: unknown }).status
+        : null;
+    const providerCode = typeof code === 'string' && /^[A-Z_]{1,50}$/.test(code) ? code : undefined;
+
+    throw new GeminiImageError('provider', response.status, providerCode);
+  }
+
+  const parsed = imageEnvelope.safeParse(await response.json().catch(() => null));
+
+  if (!parsed.success) throw new GeminiImageError('incomplete');
+
+  const image = (parsed.data.candidates ?? [])
+    .flatMap((candidate) => candidate.content?.parts ?? [])
+    .map((part) => part.inlineData)
+    .find((data): data is { mimeType: string; data: string } => Boolean(data?.data));
+
+  if (!image) throw new GeminiImageError('missing_image');
+
+  return { mimeType: image.mimeType, bytes: Buffer.from(image.data, 'base64') };
 }

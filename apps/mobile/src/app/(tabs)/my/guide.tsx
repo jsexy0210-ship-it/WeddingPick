@@ -16,70 +16,45 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import { BackBar } from '@/components/back-bar';
+import { chevronRotation, INITIAL_EXPANDED, toggleExpanded } from '@/features/faq/accordion';
 import { useFaq } from '@/features/faq/use-faq';
-import { CatChip, Section } from '@/features/settings/my-kit';
+import { usePullRefresh } from '@/features/refresh/use-pull-refresh';
+import { Section } from '@/features/settings/my-kit';
 import strings from '../../../../../../spec/strings.ko.json';
 
-/** 처음부터 펼쳐 두는 질문 수 — 정본 frame-015는 앞 둘만 답을 보여준다. */
-const FAQ_OPEN_COUNT = 2;
-
-/** 카테고리 칩바의 «전체» — `community/index.tsx` `CATEGORIES`와 같은 이름을 쓴다. */
-const ALL_CATEGORY = '전체';
-
-/** FAQ(WP-MY-013). 촬영 요령 · 분석 안내는 Pick 인증 촬영 삭제(2026-09-25)로 뺐다. */
+/**
+ * FAQ(WP-MY-013). 촬영 요령 · 분석 안내는 Pick 인증 촬영 삭제(2026-09-25)로 뺐다.
+ *
+ * **아코디언 목록 하나뿐이다**(2026-09-26 대표 지시 「FAQ 카테고리 칩 삭제 · 아코디언
+ * 리스트만 · 전부 닫힌 채로」). 정본 my.jsx:681 `chipBar`(`faqCats`)와 my.js `faq()` 앞 둘
+ * 펼침을 대표 지시가 이긴다 — 칩을 지우고 처음에는 모든 질문이 닫혀 있다.
+ */
 export default function GuideScreen() {
   /* 질문은 운영자가 관리자 화면에서 고치고 지운다(2026-09-16 대표 지시). */
   const faq = useFaq();
-  // 시안(WP-MY-013) 카테고리 칩바 — «전체» + 받아온 질문의 category를 처음 나온 순서로.
-  const [category, setCategory] = useState(ALL_CATEGORY);
+  const pull = usePullRefresh(faq.refresh);
   const theme = useTheme();
-  /* 정본 faqs — 앞의 두 질문을 펼친 채로 연다(my.js `faq(q, a)` 앞 둘만 답이 있다). 누르면 접고 편다. */
-  const [toggled, setToggled] = useState<ReadonlySet<string>>(new Set());
-  const initial = new Set(faq.items.slice(0, FAQ_OPEN_COUNT).map((item) => item.key));
-  const expanded = new Set([...initial].filter((key) => !toggled.has(key)).concat(
-    [...toggled].filter((key) => !initial.has(key)),
-  ));
+  /* 펼친 질문. 처음에는 비어 있다 — 전부 닫힌 채로 연다. */
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(INITIAL_EXPANDED);
 
   function toggle(key: string) {
-    setToggled((now) => {
-      const next = new Set(now);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
+    setExpanded((now) => toggleExpanded(now, key));
   }
 
-  const categories = [ALL_CATEGORY, ...new Set(faq.items.map((item) => item.category))];
-  const visible =
-    category === ALL_CATEGORY ? faq.items : faq.items.filter((item) => item.category === category);
+  const visible = faq.items;
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <BackBar title={strings.my['item.faq']} />
 
-        <ScrollView contentContainerStyle={styles.faqContent} showsVerticalScrollIndicator={false}>
-          {/* 정본 chipBar — 0 20 14(좌우 공통 24) · gap 8 · 칩 34. */}
-          {faq.items.length > 0 ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.chipScroll}
-              contentContainerStyle={styles.chipBar}>
-              {categories.map((label) => (
-                <CatChip
-                  key={label}
-                  label={label}
-                  selected={category === label}
-                  onPress={() => setCategory(label)}
-                />
-              ))}
-            </ScrollView>
-          ) : null}
-
+        <ScrollView
+          contentContainerStyle={styles.faqContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={pull.refreshControl}>
           <Section>
             {faq.loading ? null : visible.length > 0 ? (
-              /* 정본 faqs — listCard 안 펼침 목록. 펼친 질문은 답을 아래에 그리고 꺾쇠가 아래를 본다. */
+              /* 정본 faqs — listCard 안 펼침 목록. 펼친 질문은 답을 아래에 그린다. 꺾쇠: 닫힘 ∨ · 열림 ∧. */
               <View style={[styles.listCard, { backgroundColor: theme.background, borderColor: theme.border }]}>
                 {visible.map((item, index) => {
                   const open = expanded.has(item.key);
@@ -101,7 +76,7 @@ export default function GuideScreen() {
                         <ThemedText type="f15" style={styles.faqQ}>
                           {item.question}
                         </ThemedText>
-                        <View style={open ? styles.chevronOpen : styles.chevronClosed}>
+                        <View style={{ transform: [{ rotate: chevronRotation(open) }] }}>
                           <ProductSymbol name="chevronRight" size={Layout.iconInline} color={theme.textDisabled} />
                         </View>
                       </View>
@@ -140,12 +115,6 @@ const styles = StyleSheet.create({
     flex: 1,
     maxWidth: MaxContentWidth,
   },
-  chipScroll: { flexGrow: 0 },
-  chipBar: {
-    gap: Layout.chipGap,
-    paddingHorizontal: Layout.gutter,
-    paddingBottom: Layout.sectionHeadGap,
-  },
   /* 정본 scroll padding-top 16. */
   faqContent: { paddingTop: Spacing.three, paddingBottom: Spacing.four },
   listCard: { borderWidth: Border.hairline, borderRadius: Radius.medium, overflow: 'hidden' },
@@ -158,10 +127,8 @@ const styles = StyleSheet.create({
   faqA: { lineHeight: LineHeight.lh22 },
   /*
    * 아코디언 꺾쇠 — 닫힘은 아래(∨), 열림은 위(∧)(2026-09-25 대표 지시 「아코디언 화살표 방향 수정한다」).
-   * 정본 my.js `faq()`는 닫힘 오른쪽(>) · 열림 아래였다 — 대표 지시가 이긴다.
+   * 정본 my.js `faq()`는 닫힘 오른쪽(>) · 열림 아래였다 — 대표 지시가 이긴다. 각도는 `chevronRotation`.
    */
-  chevronClosed: { transform: [{ rotate: '90deg' }] },
-  chevronOpen: { transform: [{ rotate: '-90deg' }] },
   content: {
     paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.five,

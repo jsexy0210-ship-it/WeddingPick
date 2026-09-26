@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, View, type PressableProps } from 'react-native';
 import { ThemedText } from './themed-text';
 import { Border, Layout, Motion, Radius, Spacing } from './theme';
 import { useTheme } from './use-theme';
-import { readWebInteractionState } from './web-interaction';
+import { PRESS_TRANSITION, readWebInteractionState } from './web-interaction';
 
 export type ActionButtonProps = Omit<PressableProps, 'children' | 'style'> & {
   label: string;
@@ -90,6 +90,7 @@ export function ActionButton({
         const { pressed, focused } = readWebInteractionState(state);
         return [
           styles.button,
+          PRESS_TRANSITION,
           size === 'auto' ? null : [styles.fixed, { height: HEIGHT[size] }],
           {
             backgroundColor: look.background,

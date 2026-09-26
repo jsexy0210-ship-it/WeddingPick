@@ -18,7 +18,9 @@ import {
   type ThemeColor,
 } from '@weddingpick/ui';
 import { DepthHeader } from '@/components/depth-header';
+import { CtaRow } from '@/features/common/cta-row';
 import { formatMonthDayDot } from '@/features/common/format-date';
+import { KeyboardAvoid } from '@/features/common/keyboard-avoid';
 
 /**
  * 웨딩일정 · 제보 하위 화면의 공용 조각 — 핸드오프 08-schedule-sub · 08c · 11-report-review ·
@@ -38,12 +40,15 @@ import { formatMonthDayDot } from '@/features/common/format-date';
 
 /* ------------------------------------------------------------------ 뼈대 */
 
-/** 화면 껍데기 — 가운데 정렬 · 최대 폭 · 위 안전영역. 아래는 탭 바 · dock이 맡는다. */
+/**
+ * 화면 껍데기 — 가운데 정렬 · 최대 폭 · 위 안전영역. 아래는 탭 바 · dock이 맡는다.
+ * 키패드가 뜨면(배우자 코드 등) 가운데 스크롤이 줄고 `Dock`이 키패드 바로 위로 온다(`KeyboardAvoid`).
+ */
 export function Screen({ children }: { children: ReactNode }) {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        {children}
+        <KeyboardAvoid style={styles.keyboard}>{children}</KeyboardAvoid>
       </SafeAreaView>
     </ThemedView>
   );
@@ -529,8 +534,10 @@ export function ToggleSwitch({
 /* ------------------------------------------------------------------ dock */
 
 /**
- * 하단 dock — 92 + safeBottom · padding 12 24 · 버튼 사이 8 · 위 선 1.
- * 버튼은 `ActionButton size="xlarge"`(52). 왼쪽 보조 · 오른쪽 Primary 하나.
+ * 하단 dock — 92 + safeBottom · padding 12 24 · 위 선 1.
+ * 버튼은 `ActionButton`을 그대로 넣는다. 한 개면 좌우 여백 안을 꽉 채우고, 두 개면
+ * 정본 dockPair(왼쪽 보조 flex 1 · 오른쪽 Primary flex 1.4 · 사이 10)로 나눈다 —
+ * 칸은 `CtaRow`가 씌운다(2026-09-26 대표 지시 「단일 CTA 반 폭」).
  */
 export function Dock({ children, note }: { children: ReactNode; note?: string | null }) {
   const theme = useTheme();
@@ -552,17 +559,14 @@ export function Dock({ children, note }: { children: ReactNode; note?: string | 
           {note}
         </ThemedText>
       ) : null}
-      <View style={styles.dockRow}>{children}</View>
+      <CtaRow>{children}</CtaRow>
     </View>
   );
 }
 
+/** dock 버튼 — 칸(flex)은 `Dock`의 `CtaRow`가 씌우므로 여기서는 감싸지 않는다. */
 export function DockButton(props: Omit<ComponentProps<typeof ActionButton>, 'size'>) {
-  return (
-    <View style={styles.dockButton}>
-      <ActionButton size="xlarge" {...props} />
-    </View>
-  );
+  return <ActionButton size="xlarge" {...props} />;
 }
 
 /* ------------------------------------------------------------------ 시간 */
@@ -595,6 +599,7 @@ export function eventTime(iso: string): string {
 const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
+  keyboard: { flex: 1 },
 
   hero: {
     paddingHorizontal: Layout.gutter,
@@ -674,8 +679,6 @@ const styles = StyleSheet.create({
     paddingTop: Layout.rowPaddingY,
     gap: Spacing.two,
   },
-  dockRow: { flexDirection: 'row', gap: Spacing.two },
-  dockButton: { flex: 1 },
 
   bold: { fontWeight: 700 },
   regular: { fontWeight: 400 },

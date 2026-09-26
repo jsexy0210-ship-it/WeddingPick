@@ -7,8 +7,9 @@ import { StyleSheet, View } from 'react-native';
 import { ErrorView, Border, Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import { getInquiry } from '@/api/client';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
+import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import { INQUIRY_STATUS_TEXT, inquiryBadgeTone, inquiryMonthDay } from '@/features/settings/inquiry-status';
-import { NoteBox, Section, SubScreen } from '@/features/settings/my-kit';
+import { NoteBox, Section, SubScreen, SubScreenStatus } from '@/features/settings/my-kit';
 
 const S = {
   title: '문의 내역',
@@ -38,29 +39,34 @@ export default function InquiryDetailScreen() {
   const [inquiry, setInquiry] = useState<Inquiry | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(() => {
+  /** `keep` — 당겨서 새로 고침. 보이던 문의는 두고 실패는 토스트로만 알린다. */
+  const load = useCallback((keep?: boolean) => {
     if (!inquiryId) return;
     getInquiry(inquiryId)
       .then(setInquiry)
-      .catch((caught: Error) => setError(caught.message || S.loadFailed));
+      .catch((caught: Error) => {
+        if (keep === true) notifyRefreshFailed();
+        else setError(caught.message || S.loadFailed);
+      });
   }, [inquiryId]);
 
-  useEffect(load, [load]);
+  useEffect(() => load(), [load]);
+  const pull = usePullRefresh(useCallback(() => load(true), [load]));
 
   const retry = () => {
     setError(null);
     load();
   };
 
-  if (!inquiryId) return <ErrorView message={S.loadFailed} />;
-  if (error) return <ErrorView message={error} onRetry={retry} />;
-  if (inquiry === null) return <DelayedLoadingView />;
+  if (!inquiryId) return <SubScreenStatus title={S.title}><ErrorView message={S.loadFailed} /></SubScreenStatus>;
+  if (error) return <SubScreenStatus title={S.title}><ErrorView message={error} onRetry={retry} /></SubScreenStatus>;
+  if (inquiry === null) return <SubScreenStatus title={S.title}><DelayedLoadingView /></SubScreenStatus>;
 
   const tone = inquiryBadgeTone(theme, inquiry.status);
   const pending = inquiry.status === 'received' || inquiry.status === 'in_review';
 
   return (
-    <SubScreen title={S.title}>
+    <SubScreen title={S.title} refreshControl={pull.refreshControl}>
       {/* 유형 · 상태 배지 · 보낸 날짜. */}
       <Section>
         <View style={styles.headRow}>

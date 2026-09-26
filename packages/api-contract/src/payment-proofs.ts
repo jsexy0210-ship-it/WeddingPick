@@ -69,6 +69,20 @@ export const registerPaymentProofResponseSchema = z.object({
   deepData: z.boolean(),
   /** 원본을 언제까지 들고 있는지. 화면이 그대로 보여준다. */
   originalDeletedBy: timestampSchema.nullable(),
+  /**
+   * 이 결제가 지출로 들어가며 총예산을 넘겨 총예산을 넘은 만큼 늘렸는가(2026-09-26 대표 결정
+   * 「초과되는 금액만큼 총 예산도 늘려」). 안 늘렸거나(안 넘음 · 총예산 없음 · 검수 대기) 이 칸을
+   * 모르는 옛 서버면 null · 없음이다. 금액은 원 단위.
+   */
+  budgetRaise: z
+    .object({
+      weddingId: idSchema,
+      before: amountSchema,
+      budget: amountSchema,
+      raisedBy: amountSchema,
+    })
+    .nullable()
+    .optional(),
 });
 
 /**

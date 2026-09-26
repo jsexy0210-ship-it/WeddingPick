@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet } from 'react-native';
 
-import { ProductSymbol, Radius, SeedIcon, useTheme } from '@weddingpick/ui';
+import { PRESS_TRANSITION, ProductSymbol, Radius, SeedIcon, useTheme } from '@weddingpick/ui';
 import { useDepthBack } from '@/features/navigation/depth-back';
 
 /**
@@ -36,7 +36,7 @@ export function BackButton({
       accessibilityRole="button"
       accessibilityLabel={variant === 'close' ? '닫기' : '뒤로'}
       onPress={onPress ?? depthBack}
-      style={styles.button}
+      style={({ pressed }) => [styles.button, PRESS_TRANSITION, pressed && styles.pressed]}
       hitSlop={4}>
       {/*
         글리프도 `NavBar` · `SubScreen`과 같은 것을 쓴다. 예전에는 이 파일만 path를
@@ -76,4 +76,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  /* 누름 반응 — 시트 X(`bottom-sheet.tsx` headClosePressed)와 같은 값. */
+  pressed: { opacity: 0.6 },
 });

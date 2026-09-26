@@ -10,6 +10,7 @@ import type { Pool } from 'pg';
 import { currentUserId, requireUser } from '../auth/plugin';
 import type { AppContext } from '../context';
 import { readPaymentProof } from '../analysis/proof-pipeline';
+import { raiseBudgetForAcceptedProof, type BudgetRaise } from '../budget-raise';
 import { withTransaction } from '../db';
 import { qualifyReferral } from '../rewards';
 import { ApiError, notFound } from '../errors';
@@ -165,6 +166,7 @@ export function registerPaymentProofRoutes(app: FastifyInstance, context: AppCon
         : null);
 
     let proofId: string;
+    let budgetRaise: BudgetRaise | null = null;
 
     try {
       proofId = await withTransaction(context.pool, async (client) => {
@@ -212,6 +214,15 @@ export function registerPaymentProofRoutes(app: FastifyInstance, context: AppCon
          */
         if (intake.state === 'accepted') {
           await qualifyReferral(client, userId);
+
+          /*
+           * 지출로 세어지는 바로 이 트랜잭션에서 총예산을 넘은 만큼 늘린다(2026-09-26 대표 결정).
+           * 보류 줄은 아직 지출이 아니라 여기 오지 않는다 — 검수가 풀릴 때 같은 규칙이 돈다.
+           */
+          budgetRaise = await raiseBudgetForAcceptedProof(client, {
+            reporterUserId: userId,
+            paymentProofId: created.rows[0]!.id,
+          });
         }
 
         return created.rows[0]!.id;
@@ -268,6 +279,7 @@ export function registerPaymentProofRoutes(app: FastifyInstance, context: AppCon
         usablePaymentProofCount: Number(unlock.rows[0]?.proof_count ?? 0),
       }),
       originalDeletedBy: deletedBy.rows[0]?.retention_until?.toISOString() ?? null,
+      budgetRaise,
     });
   });
 

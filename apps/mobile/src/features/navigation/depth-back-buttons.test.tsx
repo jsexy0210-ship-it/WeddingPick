@@ -35,6 +35,7 @@ jest.mock('expo-router', () => ({
   },
   usePathname: () => mockPathname,
   useLocalSearchParams: () => ({ category: 'studio' }),
+  useNavigation: () => ({ setOptions: jest.fn(), addListener: () => () => undefined }),
 }));
 
 jest.mock('@/api/client', () => ({
@@ -52,14 +53,10 @@ jest.mock('@/api/config', () => ({ isServerConfigured: true }));
 jest.mock('@/components/back-bar', () => ({ BackBar: 'BackBar' }));
 jest.mock('@/features/navigation/result-toast', () => ({ showResultToast: jest.fn() }));
 jest.mock('@/features/loading/delayed-loader', () => ({ DelayedLoadingView: 'Loading' }));
-jest.mock('@/features/onboarding/inline-toast', () => ({
-  InlineToast: 'InlineToast',
-  useInlineToast: () => ({ toast: null, show: jest.fn(), hide: jest.fn() }),
-}));
 jest.mock('@/features/onboarding/option-row', () => ({ OptionRow: 'OptionRow' }));
 jest.mock('@/features/settings/my-kit', () => ({
   Hero: 'Hero', NavAction: 'NavAction', NoteBox: 'NoteBox', Section: 'Section', SubScreen: 'SubScreen',
-  Dock: 'Dock',
+  SubScreenStatus: 'SubScreenStatus', Dock: 'Dock',
 }));
 jest.mock('@weddingpick/ui', () => ({
   Accordion: 'Accordion', ActionButton: 'ActionButton', ErrorView: 'ErrorView', FilterChip: 'FilterChip',

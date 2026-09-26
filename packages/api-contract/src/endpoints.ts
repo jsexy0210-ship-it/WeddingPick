@@ -1,6 +1,7 @@
 import { z, type ZodType } from 'zod';
 
 import { analysisSchema } from './analyses';
+import { publicHolidayListResponseSchema, weddingForecastResponseSchema } from './public-calendar';
 import {
   consultationListResponseSchema,
   consultationRecordSchema,
@@ -89,6 +90,7 @@ import {
   createReviewCommentRequestSchema,
   createReviewMediaUploadTargetRequestSchema,
   createReviewMediaUploadTargetResponseSchema,
+  uploadReviewMediaResponseSchema,
   createReviewReportRequestSchema,
   createReviewReportResponseSchema,
   createReviewRequestSchema,
@@ -284,7 +286,21 @@ export const ENDPOINTS = {
     response: createConsultationUploadResponseSchema,
   },
 
-  /** 올리기가 끝났음을 알리면 1차 판정이 시작된다. */
+  /**
+   * 녹음 본문을 같은 출처로 올린다(2026-09-26). 본문은 JSON이 아니라 **파일 그대로**다 —
+   * `content-type`은 올릴 자리를 받을 때 알린 녹음 형식, 100MB까지. 그래서 `body`를 적지 않는다.
+   * 서버가 저장소로 흘려 보내고 도착까지 적어 기록을 돌려준다(아래 `complete`를 따로 안 부른다).
+   */
+  uploadConsultationAudio: {
+    method: 'PUT',
+    path: '/v1/consultations/{consultationId}/audio',
+    response: consultationRecordSchema,
+  },
+
+  /**
+   * @deprecated 서명 URL로 올리던 옛 앱의 끝 알림. 새 앱은 `uploadConsultationAudio` 한 번으로 끝난다.
+   * 이미 배포된 옛 앱이 부르는 동안 서버에 남긴다.
+   */
   completeConsultationUpload: {
     method: 'POST',
     path: '/v1/consultations/{consultationId}/complete',
@@ -535,6 +551,20 @@ export const ENDPOINTS = {
     method: 'GET',
     path: '/v1/weddings/{weddingId}/events',
     response: weddingEventListResponseSchema,
+  },
+
+  /** 공휴일 — 일정 등록 날짜 칸(WP-NOTE-002) 아래 한 줄. `from`·`to`는 YYYY-MM-DD. */
+  listPublicHolidays: {
+    method: 'GET',
+    path: '/v1/public-holidays',
+    response: publicHolidayListResponseSchema,
+  },
+
+  /** 예식일 예보 — 웨딩노트 D-day 카드(WP-NOTE-001) 한 줄. 4~10일 전에만 값이 있다. */
+  getWeddingForecast: {
+    method: 'GET',
+    path: '/v1/weddings/{weddingId}/forecast',
+    response: weddingForecastResponseSchema,
   },
 
   addWeddingEvent: {
@@ -981,6 +1011,17 @@ export const ENDPOINTS = {
    *
    * 확인 단계는 보내지 않는다 — 서버가 이 사람의 인증된 문서를 보고 정한다.
    */
+  /**
+   * 후기 사진 한 장을 같은 출처로 올린다(2026-09-26). 본문은 **사진 그대로**(JPG · PNG · WebP ·
+   * 10MB까지)라 `body`를 적지 않는다. 받은 `storageKey`를 후기 쓰기의 `media`에 싣는다.
+   */
+  uploadReviewMedia: {
+    method: 'POST',
+    path: '/v1/reviews/media',
+    response: uploadReviewMediaResponseSchema,
+  },
+
+  /** @deprecated 서명 URL 옛 길 — 브라우저 CORS에서 막힌다. 새 앱은 `uploadReviewMedia`. */
   createReviewMediaUploadTarget: {
     method: 'POST',
     path: '/v1/reviews/media/upload-target',

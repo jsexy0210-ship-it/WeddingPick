@@ -1,5 +1,8 @@
 import {
+  INVITE_CODE_LENGTH,
+  INVITE_CODE_SPACE,
   INVITE_TTL_HOURS,
+  inviteGuessCeiling,
   inviteCodeFromLink,
   inviteShareUrl,
   isInviteCode,
@@ -59,7 +62,7 @@ describe('초대 링크', () => {
     const url = inviteShareUrl('https://example.test/');
 
     expect(url).toBe('https://example.test/invite');
-    expect(url).not.toMatch(/\d{6}/);
+    expect(url).not.toMatch(/\d{4}/);
     expect(url).not.toContain('code');
   });
 
@@ -79,15 +82,26 @@ describe('초대 링크', () => {
 });
 
 describe('초대 코드 형식', () => {
-  it('6자리 숫자만 코드다', () => {
-    expect(isInviteCode('012345')).toBe(true);
+  it('4자리 숫자만 코드다(2026-09-26 대표 지시)', () => {
+    expect(INVITE_CODE_LENGTH).toBe(4);
+    expect(isInviteCode('0123')).toBe(true);
+    expect(isInviteCode('123')).toBe(false);
     expect(isInviteCode('12345')).toBe(false);
-    expect(isInviteCode('1234567')).toBe(false);
-    expect(isInviteCode('12a456')).toBe(false);
+    // 옛 6자리 코드는 더 이상 코드가 아니다 — 입력칸도 서버도 받지 않는다.
+    expect(isInviteCode('012345')).toBe(false);
+    expect(isInviteCode('12a4')).toBe(false);
   });
 
-  it('붙여 넣은 글에서 숫자 6자리만 남긴다', () => {
-    expect(normalizeInviteCode('123 456')).toBe('123456');
-    expect(normalizeInviteCode('123-4567')).toBe('123456');
+  it('붙여 넣은 글에서 숫자 4자리만 남긴다', () => {
+    expect(normalizeInviteCode('12 34')).toBe('1234');
+    expect(normalizeInviteCode('12-345')).toBe('1234');
+  });
+
+  it('1만 가지다 — 실패 한도가 기한 안의 시도를 1할 남짓으로 묶는다', () => {
+    expect(INVITE_CODE_SPACE).toBe(10_000);
+    // 서버 한도: 15분 창 · 계정 5번(apps/api wedding-invites.ts). 72시간 = 288창.
+    const ceiling = inviteGuessCeiling(5, 15);
+    expect(ceiling).toBe(1_440);
+    expect(ceiling / INVITE_CODE_SPACE).toBeLessThan(0.15);
   });
 });

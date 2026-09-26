@@ -76,6 +76,6 @@ test('앱 벌과 초대 벌은 서로의 HTML에 섞이지 않는다', async () 
   assert.match(invite, /property="og:title" content="초대 제목"/);
   assert.match(invite, /property="og:image" content="https:\/\/example.test\/invite.png"/);
   assert.doesNotMatch(invite, /앱 제목/);
-  /* 초대 카드에는 코드가 없다 — 6자리 숫자가 실리지 않는다. */
-  assert.doesNotMatch(invite, /content="[^"]*\b\d{6}\b[^"]*"/);
+  /* 초대 카드에는 코드가 없다 — 4자리(2026-09-26 · 그 전 6자리) 숫자가 실리지 않는다. */
+  assert.doesNotMatch(invite, /content="[^"]*\b\d{4}\b[^"]*"/);
 });

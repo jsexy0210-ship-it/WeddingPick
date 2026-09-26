@@ -3,7 +3,7 @@ import { Pressable, StyleSheet } from 'react-native';
 
 import { Border, Layout, Radius } from './theme';
 import { useTheme } from './use-theme';
-import { readWebInteractionState } from './web-interaction';
+import { PRESS_TRANSITION, readWebInteractionState } from './web-interaction';
 
 export type IconButtonProps = {
   /**
@@ -59,6 +59,7 @@ export function IconButton({
         const { pressed, hovered, focused } = readWebInteractionState(state);
         return [
           styles.button,
+          PRESS_TRANSITION,
           {
             backgroundColor: filled || hovered ? theme.backgroundSelected : 'transparent',
             borderWidth: focused ? Border.focus : 0,

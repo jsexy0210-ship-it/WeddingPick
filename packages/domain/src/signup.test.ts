@@ -40,9 +40,9 @@ describe('약관 동의', () => {
     expect(REQUIRED_CONSENTS.filter((item) => OPTIONAL_CONSENTS.includes(item))).toEqual([]);
   });
 
-  it('계정을 살리는 관문은 옛 앱과 같은 둘뿐이다', () => {
-    /* 옛 앱은 terms · privacy만 보낸다. 새 필수 셋을 관문에 올리면 깔린 앱이 가입을 못 끝낸다. */
-    expect(ACTIVATION_CONSENTS).toEqual(['terms', 'privacy']);
+  it('계정을 살리는 관문은 필수 다섯 전부다(2026-09-26 대표 결정 「강제한다」)', () => {
+    expect(ACTIVATION_CONSENTS).toEqual(['terms', 'privacy', 'age', 'pick_certification', 'consultation_recording']);
+    expect(ACTIVATION_CONSENTS).toEqual(REQUIRED_CONSENTS);
   });
 
   it('약관 동의 화면(WP-AUTH-010)의 여덟 칸이 전부 서버 항목으로 옮겨진다', () => {
@@ -92,13 +92,15 @@ describe('약관 동의', () => {
   });
 
   it('필수 항목을 다 받아야 빈 목록이 된다', () => {
-    expect(missingRequiredConsents([])).toEqual(['terms', 'privacy']);
-    expect(missingRequiredConsents(granted('terms'))).toEqual(['privacy']);
-    expect(missingRequiredConsents(granted('terms', 'privacy'))).toEqual([]);
+    expect(missingRequiredConsents([])).toEqual(REQUIRED_CONSENTS);
+    expect(missingRequiredConsents(granted('terms'))).toEqual(['privacy', 'age', 'pick_certification', 'consultation_recording']);
+    /* 옛 앱이 보내던 둘만으로는 이제 모자란다. */
+    expect(missingRequiredConsents(granted('terms', 'privacy'))).toEqual(['age', 'pick_certification', 'consultation_recording']);
+    expect(missingRequiredConsents(granted(...REQUIRED_CONSENTS))).toEqual([]);
   });
 
   it('선택 항목만 받아도 가입은 끝나지 않는다', () => {
-    expect(missingRequiredConsents(granted('marketing'))).toEqual(['terms', 'privacy']);
+    expect(missingRequiredConsents(granted('marketing', 'contact_share', 'night_alerts'))).toEqual(REQUIRED_CONSENTS);
   });
 
   it('판이 다른 동의는 받지 않은 것으로 본다', () => {
@@ -127,8 +129,13 @@ describe('계정 활성화', () => {
   });
 
   it('연령 확인과 필수 동의가 모두 끝나야 살아난다', () => {
-    expect(canActivate({ ageVerified: true, granted: granted('terms', 'privacy') })).toEqual({
+    expect(canActivate({ ageVerified: true, granted: granted(...REQUIRED_CONSENTS) })).toEqual({
       ok: true,
+    });
+    /* 필수 하나라도 빠지면 막는다 — 옛 앱의 terms · privacy만으로는 살아나지 않는다. */
+    expect(canActivate({ ageVerified: true, granted: granted('terms', 'privacy') })).toEqual({
+      ok: false,
+      reason: REQUIRED_CONSENT_NOTICE,
     });
   });
 });
