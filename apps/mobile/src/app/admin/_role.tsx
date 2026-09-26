@@ -23,6 +23,25 @@ export function useAdminRole(): AdminRole | null {
 }
 
 /**
+ * 등급 읽기가 끝났는가 — 성공이든 실패든 끝나면 `true`, 읽는 중에만 `false`.
+ *
+ * `useAdminRole()`의 `null`은 「읽는 중」과 「읽기 실패」를 가르지 않는다. 거의 모든
+ * 화면은 그 둘을 같게 다뤄도 되지만(모르면 평소대로), 뷰어에게 **요청조차 보내지
+ * 않아야 하는 자리**(`users.tsx`의 관리자 계정 패널)는 읽는 중에 기다려야 한다 —
+ * 기다리지 않으면 뷰어가 `?tab=admins`로 들어올 때 목록 요청이 먼저 나가고, 403이
+ * 등급보다 먼저 오면 권한 오류가 한 번 스친다. 실패로 끝나면 평소대로 그린다.
+ *
+ * 공급자가 없으면 `true`다 — 레이아웃 밖(시험 등)에서는 기다릴 것이 없다.
+ */
+const AdminRoleSettledContext = createContext(true);
+
+export const AdminRoleSettledProvider = AdminRoleSettledContext.Provider;
+
+export function useAdminRoleSettled(): boolean {
+  return useContext(AdminRoleSettledContext);
+}
+
+/**
  * 뷰어만 `false`. 등급을 아직 모르면(읽는 중 · 읽기 실패) `true`로 둔다 — 운영자
  * 화면이 한 번 흐려졌다 돌아오는 것보다 낫고, 그 사이 뷰어가 눌러도 서버가 막는다.
  */

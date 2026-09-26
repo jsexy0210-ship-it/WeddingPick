@@ -88,6 +88,7 @@ import {
   removeDecision,
 } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
+import { RootTabHeader } from '@/components/root-tab-header';
 import { DialogToast } from '@/components/confirm-alert-toast';
 import { HOME_PREP_GROUP_LABEL } from '@/features/home/prep-groups';
 import { showResultToast } from '@/features/navigation/result-toast';
@@ -550,18 +551,14 @@ export default function PickScreen() {
 }
 
 /* ────────────────────────────────────────────
-   Header — v3.28 정본 1번 화면: 제목 «Pick» 한 줄뿐(rH1 28/700). «N곳» · 부제 · 배우자
+   Header — 정본 1번 화면: 제목 «Pick» 한 줄뿐. «N곳» · 부제 · 배우자
    함께-보기 상자 · «Pick 인증» 고리는 정본에 없어 지웠다(2026-09-23 대표 지시 —
    정본에 없는 기능은 제거한다). Pick 인증 진입은 MY · 웨딩노트가 갖고 있다.
+   크기 · 여백은 정본 `rH1` 28/36 · `headBlock` 4/24가 아니라 Root 5탭 공통 홈 기준
+   (`RootTabHeader` 26/39/700 · 줄 66) — 2026-09-26 대표 지시 「홈 화면 기준으로 통일한다」.
 ──────────────────────────────────────────── */
 function Header() {
-  return (
-    <View style={styles.titleRow}>
-      <ThemedText type="f28" style={[styles.bold, styles.title]}>
-        {TERMS.pick}
-      </ThemedText>
-    </View>
-  );
+  return <RootTabHeader title={TERMS.pick} />;
 }
 
 /* ────────────────────────────────────────────
@@ -885,22 +882,11 @@ const styles = StyleSheet.create({
   medium: { fontWeight: 500 },
   /* 정본 `cat` 10/14 · ls .06em(0.6px — 같은 값 토큰이 없어 0.5, PR 본문). */
   tracked: { letterSpacing: LetterSpacing.p05, lineHeight: LineHeight.lh14 },
-  /* 정본 rH1 28/36/700 · ls -0.02em(-0.56 — 같은 값 토큰이 없어 -0.65, PR 본문). 좌우 거터는 24. */
-  title: { letterSpacing: LetterSpacing.n065, lineHeight: LineHeight.lh36 },
   pressed: { transform: [{ scale: 0.97 }] },
   busy: { opacity: 0.6 },
   /* 비교함이 찼을 때의 «비교하기» `opacity-40`. */
   disabled: { opacity: 0.4 },
 
-  /* 정본 headBlock: Back 없음 · 위 4 · 제목 36 · 아래 24 = 64. Root 헤더 공통 최소 56(root-header-contract). */
-  titleRow: {
-    minHeight: Layout.navBar,
-    paddingTop: Spacing.one,
-    paddingBottom: Spacing.four,
-    paddingHorizontal: Layout.gutter,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   /*
    * 정본 mypickSec: 위 1px 선 · 위아래 20 · 안쪽 사이 10. 정본 선은 inset box-shadow라 자리를 안
    * 먹는다 — 여기 선은 border라 1을 먹으므로 위 여백에서 1을 뺀다(비교 배너 y 156 맞춤).

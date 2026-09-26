@@ -22,7 +22,10 @@ describe('2026-09-19 사용자 화면 검수 회귀', () => {
 
     /* v3.28(2026-09-22) WP-AUTH-007 «이대로 시작할까요?»가 9/19의 «선택한 정보로 준비할게요»를 덮는다. */
     expect(flow).toContain("DONE_TITLE_LINES = ['이대로', '시작할까요?']");
-    expect(setup).toContain('if (sending) return <HomeSkeleton />');
+    /* 저장 중 골격은 뿌리의 한 장이 든다(2026-09-26 감사 4 · `features/home/home-handoff`). */
+    expect(setup).toContain('beginHomeHandoff();');
+    expect(setup).not.toContain('<HomeSkeleton />');
+    expect(readFeature('home/home-handoff.tsx')).toContain('<HomeSkeleton />');
     expect(setup).not.toContain('remainingLoadingMs = 3000 -');
   });
 

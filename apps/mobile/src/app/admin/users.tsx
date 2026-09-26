@@ -31,7 +31,7 @@ import { AdminsPanel } from './admins';
 import { formatCount } from '@weddingpick/domain';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
-import { WritePressable } from './_role';
+import { useAdminRole, useAdminRoleSettled, WritePressable } from './_role';
 import { formatDateDot } from '@/features/common/format-date';
 
 type WithdrawalStatus = 'hold' | 'failed' | 'pending' | 'deletion_pending';
@@ -378,10 +378,32 @@ export default function UsersShell() {
   const { tab } = useLocalSearchParams<{ tab?: string }>();
   const initial = TABS.some((t) => t.key === tab) ? (tab as string) : 'users';
   const [active, setActive] = useState(initial);
+  /*
+   * 뷰어에게는 관리자 계정 탭이 없다(2026-09-25 대표 지시 — 「뷰어에게 관리자 계정
+   * 목록은 열지 마」 · 「메뉴에서도 빼」). 탭을 숨기고, `?tab=admins`로 들어와도
+   * 권한 오류 대신 앱 회원을 그린다. 사이드바 줄 이름도 뷰어에게는 「앱 회원」이다
+   * (`_layout.tsx` `VIEWER_LABEL`).
+   *
+   * 목록을 막는 것은 여전히 서버다(`GET /v1/admin/accounts` 슈퍼 전용). 탭 줄은
+   * 등급을 모르면 평소대로 그리지만(`_role.tsx`와 같은 기준), **관리자 계정 패널은
+   * 등급 읽기가 끝난 뒤에 연다** — 먼저 열면 뷰어가 `?tab=admins`로 들어올 때 목록
+   * 요청이 먼저 나가고, 403이 등급보다 먼저 오면 권한 오류가 한 번 스친다. 읽기가
+   * 실패로 끝나면 평소대로 연다.
+   */
+  const viewer = useAdminRole() === 'viewer';
+  const settled = useAdminRoleSettled();
+  const tabs = viewer ? TABS.map((t) => (t.key === 'admins' ? { ...t, hidden: true } : t)) : TABS;
+  const shown = viewer ? 'users' : active;
 
   return (
-    <AdminTabShell tabs={TABS} active={active} onChange={setActive}>
-      {active === 'users' ? <UsersPanel /> : <AdminsPanel />}
+    <AdminTabShell tabs={tabs} active={shown} onChange={setActive}>
+      {shown === 'users' ? (
+        <UsersPanel />
+      ) : settled ? (
+        <AdminsPanel />
+      ) : (
+        <DelayedLoader active size={40} style={styles.centered} />
+      )}
     </AdminTabShell>
   );
 }

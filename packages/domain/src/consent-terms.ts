@@ -11,15 +11,15 @@
  * DB · 관리자 편집 도구로 잇는다(CLAUDE.md 「웨딩노트 [open]」이 아니라 이 파일
  * 자체의 경계다). 이 화면은 그 데이터가 붙기 전까지 이 목업으로 UI를 완성해 둔다.
  *
- * **동의 제출(백엔드)과 이 목록은 다르다.** `packages/domain/src/signup.ts`의
- * `CONSENT_ITEMS`(현재 `terms` · `privacy` · `marketing` 셋)만 서버가 실제로
- * 받는다 — DB의 `terms_doc_kind` enum(마이그레이션 0130, admin-ops 소유라 이
- * 세션은 건드리지 않는다)이 그 셋만 알기 때문이다. 아래 `CONSENT_AGREEMENT_ITEMS`는
- * **화면에 보여줄 항목 전부**(필수 5 · 선택 3)를 담지만, 실제로 서버에 보내는
- * 값은 화면 쪽(`app/login/consent.tsx`)이 이 중 서버가 아는 항목만 추려 보낸다.
- * 나머지는 화면 검증(필수 전부 체크해야 CTA가 켜짐)에만 쓰고 서버 계약이 넓어지면
- * 그때 다시 잇는다.
+ * **여덟 칸 모두 서버에 남는다**(2026-09-26 대표 감사 8). 전에는 `signup.ts`의
+ * `CONSENT_ITEMS`가 `terms` · `privacy` · `marketing` 셋뿐이라 화면이 그 셋만 추려
+ * 보냈고, 만 14세 · Pick 인증 · 상담 녹음 · 연락처 제공 · 야간 알림은 체크만 되고
+ * 기록이 없었다. 이제 `CONSENT_ITEMS`가 여덟을 다 알고, 화면 키 → 서버 키는
+ * `signupConsentKey` 하나로 옮긴다(`benefit_alerts` → `marketing`만 이름이 다르다 —
+ * 알림 설정의 «마케팅 알림»이 같은 줄을 켜고 끈다).
  */
+
+import type { ConsentItem } from './signup';
 
 export type ConsentAgreementKey =
   | 'age'
@@ -248,4 +248,48 @@ export const TERM_DOCUMENTS: readonly TermDocument[] = [
 
 export function termDocumentFor(key: ConsentAgreementKey): TermDocument | null {
   return TERM_DOCUMENTS.find((doc) => doc.key === key) ?? null;
+}
+
+/**
+ * 화면의 동의 키 → 서버(`POST /v1/me/signup`)의 동의 키. `benefit_alerts`만 이름이
+ * 다르고(`marketing` — 알림 설정의 «마케팅 알림»과 같은 줄) 나머지는 같다.
+ */
+const SIGNUP_CONSENT_KEY: Record<ConsentAgreementKey, ConsentItem> = {
+  age: 'age',
+  terms: 'terms',
+  privacy: 'privacy',
+  pick_certification: 'pick_certification',
+  consultation_recording: 'consultation_recording',
+  contact_share: 'contact_share',
+  benefit_alerts: 'marketing',
+  night_alerts: 'night_alerts',
+};
+
+export function signupConsentKey(key: ConsentAgreementKey): ConsentItem {
+  return SIGNUP_CONSENT_KEY[key];
+}
+
+/**
+ * 체크한 칸을 화면 순서대로 서버 키로 옮긴다. 체크하지 않은 선택 항목은 보내지 않는다.
+ *
+ * `accepted`는 **서버가 아는 항목**이다(`GET /v1/me/signup`의 `items` ∪ `agreements`).
+ * 주면 그 밖의 키는 뺀다. 옛 서버는 `terms` · `privacy` · `marketing`만 받고 모르는 키가
+ * 하나라도 섞이면 요청 전체를 400으로 거절한다 — 새 화면이 옛 API보다 먼저 공개되는
+ * 사이에 가입이 막히지 않게 한다. 모르면(`null`) 전부 보낸다.
+ */
+export function signupConsentsFor(
+  checked: ReadonlySet<ConsentAgreementKey>,
+  accepted: ReadonlySet<string> | null = null
+): ConsentItem[] {
+  return CONSENT_AGREEMENT_ITEMS.filter((item) => checked.has(item.key))
+    .map((item) => signupConsentKey(item.key))
+    .filter((key) => accepted === null || accepted.has(key));
+}
+
+/** 서버가 가입 상태에서 알려 준 동의 항목 이름 — `signupConsentsFor`의 `accepted`. */
+export function acceptedSignupItems(state: {
+  items: readonly { item: string }[];
+  agreements?: readonly { item: string }[];
+}): ReadonlySet<string> {
+  return new Set([...state.items, ...(state.agreements ?? [])].map((entry) => entry.item));
 }

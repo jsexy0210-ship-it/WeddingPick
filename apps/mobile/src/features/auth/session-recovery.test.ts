@@ -2,6 +2,7 @@ import { NOT_ACTIVATED_NOTICE } from '@weddingpick/domain';
 import { ApiError, getAppBootstrap, getCurrentUser, getSignupState } from '@/api/client';
 import { loadToken } from '@/api/session';
 import { resolveSessionEntry } from './session-recovery';
+import { clearSignupPending, hasFreshSignupPending } from './sign-in-handoff';
 
 jest.mock('@/api/client', () => ({
   ApiError: class extends Error {
@@ -52,11 +53,21 @@ describe('저장된 세션의 첫 화면 복구', () => {
      * (`consent`, WP-AUTH-010)가 먼저다(CHANGELOG v3.29 「약관 동의 · 권한 안내
      * 한 화면 통합」).
      */
+    clearSignupPending();
     jest.mocked(getSignupState).mockResolvedValue({ activated: false } as never);
     await expect(resolveSessionEntry()).resolves.toBe('consent');
     expect(getSignupState).toHaveBeenCalledTimes(1);
     expect(getCurrentUser).not.toHaveBeenCalled();
     expect(getAppBootstrap).not.toHaveBeenCalled();
+    /* 방금 확인한 «가입 전»을 약관 동의 화면에 넘긴다 — 같은 것을 로더와 함께 또 묻지 않게(감사 4). */
+    expect(hasFreshSignupPending()).toBe(true);
+    clearSignupPending();
+  });
+
+  it('활성화된 계정은 약관 동의 깃발을 세우지 않는다', async () => {
+    clearSignupPending();
+    await expect(resolveSessionEntry()).resolves.toBe('app');
+    expect(hasFreshSignupPending()).toBe(false);
   });
 
   it('가입 확인도 일시 실패하면 복구 오류를 유지한다', async () => {

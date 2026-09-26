@@ -1,11 +1,12 @@
 import { Link, Redirect, Slot, usePathname } from 'expo-router';
+import Head from 'expo-router/head';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { AdminSpacing as A, Colors, FontSize, LineHeight, Radius, Spacing, WeddingMark } from '@weddingpick/ui';
 
 import { apiFetch } from './_api';
-import { AdminRoleProvider, type AdminRole } from './_role';
+import { AdminRoleProvider, AdminRoleSettledProvider, useAdminRole, type AdminRole } from './_role';
 import { loadAdminToken, readAdminTokenSync, subscribeAdminToken } from './_session';
 
 /**
@@ -71,13 +72,47 @@ const NAV: NavEntry[] = [
 const LOGIN_PATH = '/admin/login';
 const COMPACT_WIDTH = 900;
 
-function Sidebar({ pathname, compact }: { pathname: string; compact: boolean }) {
+/** 사이드바 맨 위 이름 — 문서 제목의 뒤쪽에도 같은 이름을 쓴다. */
+const CONSOLE_NAME = '웨딩픽 관리자';
+
+/**
+ * 뷰어에게 보이는 줄 이름(2026-09-25 대표 지시 — 「뷰어에게 관리자 계정 목록은 열지
+ * 마」 · 「메뉴에서도 빼」). 뷰어의 계정·권한 화면에는 관리자 계정 탭이 없으므로
+ * (`users.tsx` `UsersShell`) 줄 이름에서도 뺀다. 슈퍼 · 운영자는 그대로다.
+ *
+ * 목록을 막는 것은 여전히 서버다 — `GET /v1/admin/accounts`는 슈퍼 전용이다
+ * (`apps/api/src/routes/admin-accounts.ts` `requireSuperAdmin`).
+ */
+const VIEWER_LABEL: Partial<Record<string, string>> = { users: '앱 회원' };
+
+/** 그 등급이 사이드바에서 읽는 줄 이름. 등급을 아직 모르면 기본 이름이다. */
+function adminNavLabel(item: NavEntry, role: AdminRole | null): string {
+  return (role === 'viewer' && VIEWER_LABEL[item.key]) || item.label;
+}
+
+/**
+ * 브라우저 탭 · 방문 기록 · 스크린리더가 읽는 문서 제목(2026-09-26 감사 8b).
+ *
+ * 전에는 관리자 화면이 문서 제목을 비워 두었다 — 정적 껍데기(`+html.tsx`)의 공유용
+ * 제목이 들어 있다가, 앱이 뜨면 expo-router가 라우트 옵션의 빈 제목으로 덮어썼다.
+ * 이름은 새로 짓지 않고 **사이드바에 이미 적힌 메뉴 이름**을 쓴다 — 같은 화면을 두
+ * 이름으로 부르지 않는다(CLAUDE.md). 메뉴에 없는 주소는 콘솔 이름만 둔다.
+ *
+ * 등급도 받는다 — 뷰어의 사이드바가 「앱 회원」이면 문서 제목도 「앱 회원」이다.
+ */
+export function adminDocumentTitle(pathname: string, role: AdminRole | null = null): string {
+  const entry = NAV.find((item) => pathname.startsWith(item.href));
+  return entry ? `${adminNavLabel(entry, role)} — ${CONSOLE_NAME}` : CONSOLE_NAME;
+}
+
+export function Sidebar({ pathname, compact }: { pathname: string; compact: boolean }) {
+  const role = useAdminRole();
   return (
     <View style={[styles.sidebar, compact && styles.sidebarCompact]}>
       <View style={[styles.sidebarLogo, compact && styles.sidebarLogoCompact]}>
         {/* Pick Mark. spec/tokens.json symbol — 적용처에 관리자 사이드바가 들어 있다. */}
         <WeddingMark size={20} color={Colors.light.tint} />
-        <Text style={styles.sidebarTitle}>웨딩픽 관리자</Text>
+        <Text style={styles.sidebarTitle}>{CONSOLE_NAME}</Text>
       </View>
       <ScrollView
         horizontal={compact}
@@ -110,7 +145,7 @@ function Sidebar({ pathname, compact }: { pathname: string; compact: boolean }) 
                   style={[styles.navLabel, compact && styles.navLabelCompact, active && styles.navLabelActive]}
                   numberOfLines={1}
                 >
-                  {item.label}
+                  {adminNavLabel(item, role)}
                 </Text>
               </Pressable>
             </Link>
@@ -186,33 +221,40 @@ function useAdminToken(): { token: string | null; checked: boolean } {
  * 로그인한 관리자의 등급. 토큰이 바뀔 때마다 다시 읽는다 — 다른 계정으로 다시
  * 로그인하면 등급도 바뀐다. 읽기에 실패하면 `null`(모름)로 두고 화면은 평소대로
  * 그린다. 쓰기를 막는 것은 서버다(`_role.tsx`).
+ *
+ * `settled`는 그 토큰으로 읽기가 끝났는가(성공 · 실패 모두)다 — 「읽는 중」과
+ * 「모름」을 가르는 자리가 하나 필요하다(`_role.tsx` `useAdminRoleSettled`).
  */
-function useAdminRoleFetch(token: string | null): AdminRole | null {
-  const [role, setRole] = useState<{ token: string; role: AdminRole } | null>(null);
+function useAdminRoleFetch(token: string | null): { role: AdminRole | null; settled: boolean } {
+  const [result, setResult] = useState<{ token: string; role: AdminRole | null } | null>(null);
 
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
     apiFetch('/v1/admin/me')
       .then((body) => {
+        if (cancelled) return;
         const value = (body as { role?: unknown } | null)?.role;
-        if (!cancelled && (value === 'super' || value === 'operator' || value === 'viewer')) {
-          setRole({ token, role: value });
-        }
+        const role = value === 'super' || value === 'operator' || value === 'viewer' ? value : null;
+        setResult({ token, role });
       })
-      .catch(() => { /* 모르면 모르는 채로 둔다. */ });
+      .catch(() => {
+        /* 모르면 모르는 채로 둔다 — 다만 읽기는 끝났다. */
+        if (!cancelled) setResult({ token, role: null });
+      });
     return () => {
       cancelled = true;
     };
   }, [token]);
 
-  return role && role.token === token ? role.role : null;
+  const current = result && result.token === token ? result : null;
+  return { role: current?.role ?? null, settled: current !== null };
 }
 
 export default function AdminLayout() {
   const pathname = usePathname();
   const { token, checked } = useAdminToken();
-  const role = useAdminRoleFetch(pathname === LOGIN_PATH ? null : token);
+  const { role, settled } = useAdminRoleFetch(pathname === LOGIN_PATH ? null : token);
   const { width, height } = useWindowDimensions();
   const compact = width < COMPACT_WIDTH;
 
@@ -242,23 +284,28 @@ export default function AdminLayout() {
 
   return (
     <AdminRoleProvider value={role}>
-      <View style={[styles.root, compact && styles.rootCompact, compact && { height }]}>
-        <Sidebar pathname={pathname} compact={compact} />
-        <View style={[styles.main, compact && styles.mainCompact]}>
-          {/*
-            * 뷰어는 모든 메뉴를 열어 보되 바꾸지는 못한다(2026-09-25 대표 지시). 단추가
-            * 왜 흐린지를 화면마다 적지 않고 여기 한 줄로 알린다.
-            */}
-          {role === 'viewer' ? (
-            <View style={styles.viewerNotice}>
-              <Text style={styles.viewerNoticeText} numberOfLines={1}>
-                조회 전용 계정이에요. 등록 · 수정 · 삭제 단추는 잠겨 있어요.
-              </Text>
-            </View>
-          ) : null}
-          <Slot />
+      <AdminRoleSettledProvider value={settled}>
+        <Head>
+          <title>{adminDocumentTitle(pathname, role)}</title>
+        </Head>
+        <View style={[styles.root, compact && styles.rootCompact, compact && { height }]}>
+          <Sidebar pathname={pathname} compact={compact} />
+          <View style={[styles.main, compact && styles.mainCompact]}>
+            {/*
+              * 뷰어는 모든 메뉴를 열어 보되 바꾸지는 못한다(2026-09-25 대표 지시). 단추가
+              * 왜 흐린지를 화면마다 적지 않고 여기 한 줄로 알린다.
+              */}
+            {role === 'viewer' ? (
+              <View style={styles.viewerNotice}>
+                <Text style={styles.viewerNoticeText} numberOfLines={1}>
+                  조회 전용 계정이에요. 등록 · 수정 · 삭제 단추는 잠겨 있어요.
+                </Text>
+              </View>
+            ) : null}
+            <Slot />
+          </View>
         </View>
-      </View>
+      </AdminRoleSettledProvider>
     </AdminRoleProvider>
   );
 }

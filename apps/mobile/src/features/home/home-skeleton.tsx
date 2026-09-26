@@ -1,7 +1,9 @@
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Layout, MaxContentWidth, Radius, Skeleton, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+import { Layout, MaxContentWidth, Radius, Skeleton, Spacing, ThemedView, useTheme } from '@weddingpick/ui';
+
+import { RootTabHeader } from '@/components/root-tab-header';
 
 /** 온보딩 저장부터 홈 첫 자료가 준비될 때까지 같은 홈 골격을 보여준다. */
 export function HomeSkeleton() {
@@ -10,10 +12,7 @@ export function HomeSkeleton() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <View style={styles.header}>
-          <ThemedText type="f26" style={styles.brand}>웨딩픽</ThemedText>
-          <Skeleton width={24} height={24} radius={Radius.pill} />
-        </View>
+        <RootTabHeader title="웨딩픽" right={<Skeleton width={24} height={24} radius={Radius.pill} />} />
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={[styles.hero, { backgroundColor: theme.tint }]}>
             <Skeleton width="38%" height={16} />
@@ -54,14 +53,6 @@ export function HomeSkeleton() {
 const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
-  header: {
-    minHeight: 66,
-    paddingHorizontal: Layout.gutter,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  brand: { fontWeight: '700' },
   content: { paddingBottom: Spacing.three },
   hero: {
     marginHorizontal: Layout.gutter,

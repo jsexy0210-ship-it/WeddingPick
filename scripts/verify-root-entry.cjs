@@ -49,6 +49,7 @@ function render(route, {
     '@/features/navigation/screen-options': { useStackScreenOptions: () => ({}) },
     '@/components/confirmation-dialog-host': { ConfirmationDialogHost: 'ConfirmationDialogHost' },
     '@/features/navigation/result-toast-host': { ResultToastHost: 'ResultToastHost' },
+    '@/features/home/home-handoff': { HomeHandoffHost: 'HomeHandoffHost' },
     '@/features/navigation/depth-back': { dismissToOrReplace: () => { counters.redirects++; } },
     '@/features/auth/finish-sign-in': { entryAfterSignIn: async () => '/', rememberSignedIn: () => {} },
     '@/features/auth/is-auth-popup': {

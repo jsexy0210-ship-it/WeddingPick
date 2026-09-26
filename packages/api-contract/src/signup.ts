@@ -6,6 +6,16 @@ import { timestampSchema } from './common';
 const consentKeys = CONSENT_ITEMS.map((item) => item.key) as [string, ...string[]];
 
 /**
+ * 옛 앱이 아는 동의 항목 셋. **응답의 `items`는 이 셋만 담는다**(2026-09-26 대표 감사 8).
+ *
+ * 옛 앱은 `items[].item`을 `z.enum(['terms','privacy','marketing'])`으로 읽는다. 새 항목
+ * (만 14세 · Pick 인증 …)이 `items`에 섞이면 옛 앱이 응답 전체를 거절하고, 가입 상태를
+ * 묻는 로그인 복구까지 멈춘다 — API가 정적 화면보다 먼저 배포되는 사이에 실제로 난다.
+ * 여덟 칸 전부는 새 칸 `agreements`에 담는다. 옛 앱의 zod는 모르는 칸을 버린다.
+ */
+export const LEGACY_SIGNUP_ITEMS = ['terms', 'privacy', 'marketing'] as const;
+
+/**
  * 가입 완료 절차. 통합정책 v3.13 §3.5.
  *
  * 로그인은 대기 계정을 만들 뿐이다. 이 요청이 통과해야 계정이 살아난다.
@@ -44,7 +54,13 @@ export const signupStateSchema = z.object({
    */
   ageVerified: z.boolean(),
   minimumAge: z.int().positive(),
+  /** 옛 앱과 맞춘 세 항목(`LEGACY_SIGNUP_ITEMS`). 새 화면은 `agreements`를 읽는다. */
   items: z.array(consentItemSchema),
+  /**
+   * 약관 동의(WP-AUTH-010)의 여덟 칸 전부. 옛 서버는 이 칸이 없어 비어 온다.
+   * 항목 이름은 앞으로 늘 수 있어 문자열로 받는다 — 모르는 항목 하나로 응답을 버리지 않는다.
+   */
+  agreements: z.array(consentItemSchema.extend({ item: z.string() })).default([]),
   /** 아직 받지 못한 필수 항목. 빈 배열이면 활성화할 수 있다. */
   missingRequired: z.array(z.enum(consentKeys)),
 });

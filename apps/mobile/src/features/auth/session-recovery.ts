@@ -1,5 +1,6 @@
 import { ApiError, getAppBootstrap, getCurrentUser, getSignupState } from '@/api/client';
 import { loadToken } from '@/api/session';
+import { noteSignupPending } from '@/features/auth/sign-in-handoff';
 import { errorKindOf, type ErrorKind } from '@/features/errors/kind';
 import { error as errorCopy } from '../../../../../spec/strings.ko.json';
 
@@ -27,7 +28,12 @@ export async function resolveSessionEntry(): Promise<SessionEntry> {
     // 대기 계정도 읽을 수 있는 상태부터 확인한다. /me와 bootstrap은 가입 전에는 403이다.
     const signup = await getSignupState();
     if (await loadToken() !== token) throw new Error(errorCopy['general.body']);
-    if (!signup.activated) return 'consent';
+    if (!signup.activated) {
+      /* 방금 물어 «가입 전»을 확인했다 — 약관 동의가 같은 것을 로더와 함께 또 묻지 않게. */
+      noteSignupPending();
+
+      return 'consent';
+    }
 
     void getAppBootstrap().catch(() => undefined);
     const me = await getCurrentUser();

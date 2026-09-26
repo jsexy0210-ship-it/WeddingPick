@@ -29,6 +29,7 @@ import Svg, { Path } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ApiError, listVendorRegions, searchVendors } from '@/api/client';
+import { RootTabHeader } from '@/components/root-tab-header';
 import { isServerConfigured } from '@/api/config';
 import { savePendingAction } from '@/features/auth/pending-action';
 import { PickDoneSheet, UnpickSheet } from '@/features/pick/pick-sheets';
@@ -957,15 +958,13 @@ export default function SearchScreen() {
           `headTitleRoot`(«검색» 22/700) 하나뿐이고 옆에 결과 수를 적지 않는다 — 결과
           수는 검색창 아래 별도 `countRow`에 있다(2026-09-23 v3.29 재대조로 여기 있던
           중복 «N곳» 표시를 뺐다). 검색 Root에는 Back을 두지 않는다.
+
+          제목 줄은 Root 5탭 공통(`RootTabHeader`)이다. 크기 · 줄 높이 · 여백은 정본
+          `headTitleRoot` 22 · `stickyHead` 위 12가 아니라 홈 헤더 기준(26/39/700 · 줄 66)이다
+          — 2026-09-26 대표 지시 「히어로 영역이 제각각이다. 홈 화면 기준으로 통일한다」.
         */}
         <ThemedView style={[styles.header, { borderBottomColor: theme.border }]}>
-          <View style={styles.headerTitleRow}>
-            <View style={styles.headerTitleText}>
-              <ThemedText type="f20" style={[styles.bold, styles.title]}>
-                {TITLE}
-              </ThemedText>
-            </View>
-          </View>
+          <RootTabHeader title={TITLE} />
           <View style={styles.headerSearchRow}>
             {renderSearchBox()}
             {/* 입력 중(WP-SRCH-004)에는 검색창이 줄을 다 쓴다 — 정본 frame-008에 필터 단추가 없다. */}
@@ -1236,28 +1235,18 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
   },
 
-  // ── 검색 Root 헤더 — Back만 제외하고 02-search 정본 수치 유지 ──
+  // ── 검색 Root 헤더 — 제목 줄은 Root 5탭 공통(홈 기준), 검색창 줄 아래는 정본 수치 ──
+  /* 제목 줄(`RootTabHeader` 66) 아래 검색창 줄 · 아래 16 · 아래 선. */
   header: {
-    paddingTop: Layout.inlineGap,
     paddingBottom: Spacing.three,
-    paddingHorizontal: Layout.pageX,
     borderBottomWidth: Border.hairline,
   },
-  headerTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Layout.inlineGap,
-  },
-  headerTitleText: {
-    flex: 1,
-    minWidth: 0,
-    gap: Spacing.half,
-  },
-  /* 검색창과 필터 단추 `flex gap-2`. */
+  /* 검색창과 필터 단추 `flex gap-2` · 좌우 24. */
   headerSearchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
+    paddingHorizontal: Layout.pageX,
   },
   /* 필터 단추 `h-12 w-12 rounded-2xl bg-secondary` — 48 정사각 · radius 16. */
   headerFilterBtn: {
@@ -1360,10 +1349,6 @@ const styles = StyleSheet.create({
   /* 규격서 «ls 0.5px» — 업종 라벨. */
   tracked: {
     letterSpacing: LetterSpacing.p05,
-  },
-  /* WP-SRCH-001 `headTitleRoot`는 22px. 공통 사다리에 없어 화면 값으로 지정한다. */
-  title: {
-    fontSize: FontSize.searchRootTitle,
   },
   /* `micro`는 기본이 700이다. 피그마에서 regular인 작은 글자(부제 · 지역 · 결과 수 · 꼬리)는 400으로 되돌린다. */
   regular: {

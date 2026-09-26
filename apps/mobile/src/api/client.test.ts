@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ApiError,
   clearReadCache,
+  completeSetup,
   listVendorRegions,
   setDisplayName,
   searchVendors,
@@ -13,6 +14,7 @@ import {
 } from '@/api/client';
 import { clearToken, loadToken, saveToken } from '@/api/session';
 import { readCurrentUserSnapshot } from '@/features/loading/current-user-snapshot';
+import { prefetchHomeBootstrap } from '@/features/home/home-handoff';
 
 // EXPO_PUBLIC_* 값은 빌드 시점에 박히므로 테스트에서는 설정 모듈을 갈아 끼운다.
 jest.mock('@/api/config', () => ({
@@ -367,5 +369,45 @@ describe('최신 업체 응답의 경계', () => {
     body.resolve(MEMBER);
     await expect(pending).rejects.toBeInstanceOf(ApiError);
     expect(readCurrentUserSnapshot()).toBeNull();
+  });
+});
+
+/**
+ * 온보딩 저장 → 홈(2026-09-26 대표 감사 4). 설정 화면이 저장 직후 홈 자료를 먼저
+ * 띄우고(`prefetchHomeBootstrap`) 홈이 같은 주소를 부른다. 화면이 두 번 마운트돼도
+ * 서버에는 한 번만 가야 한다 — 짐작하지 않고 fetch 횟수를 센다.
+ */
+describe('온보딩 저장 뒤 홈 bootstrap', () => {
+  const BOOT = {
+    member: MEMBER, notifications: null, popularVendors: [], candidates: null, recommendations: [],
+    budget: null, bracketAnswered: false, partnerInvitePending: false,
+  };
+
+  it('설정 저장 → 미리 띄운 bootstrap → 홈의 bootstrap은 서버에 한 번만 간다', async () => {
+    const boot = deferred<ReturnType<typeof response>>();
+    const fetch = jest.fn((url: string) => {
+      if (url.endsWith('/v1/me/setup')) return Promise.resolve(response(MEMBER));
+      if (url.endsWith('/v1/app/bootstrap')) return boot.promise;
+      return Promise.reject(new Error(`unexpected ${url}`));
+    });
+    globalThis.fetch = fetch as unknown as typeof globalThis.fetch;
+
+    await completeSetup({ weddingDate: null, region: '서울', preparedCategories: [], budgetBracket: 'unknown', styleTags: ['URBAN'] } as never);
+
+    prefetchHomeBootstrap();
+    const bootstrapCalls = () => fetch.mock.calls.filter(([url]) => url.endsWith('/v1/app/bootstrap')).length;
+    for (let i = 0; i < 100 && bootstrapCalls() < 1; i += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+
+    /* 홈이 마운트되며 같은 주소를 부른다 — 가 있는 요청에 합쳐진다. */
+    const home = getAppBootstrap();
+    boot.resolve(response(BOOT));
+    await expect(home).resolves.toMatchObject({ member: { userId: MEMBER.userId } });
+
+    /* 홈이 다시 포커스를 받아도 30초 캐시가 답한다. */
+    await getAppBootstrap();
+
+    expect(bootstrapCalls()).toBe(1);
   });
 });

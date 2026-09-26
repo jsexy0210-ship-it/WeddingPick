@@ -13,6 +13,7 @@ import { useTheme } from '@weddingpick/ui';
 import { useStackScreenOptions } from '@/features/navigation/screen-options';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { ResultToastHost } from '@/features/navigation/result-toast-host';
+import { HomeHandoffHost } from '@/features/home/home-handoff';
 
 import { entryAfterSignIn, rememberSignedIn } from '@/features/auth/finish-sign-in';
 import { completeAuthPopup, isAuthPopup } from '@/features/auth/is-auth-popup';
@@ -381,6 +382,8 @@ function RootLayoutContent({ browserReady }: { browserReady: boolean }) {
         <Stack.Screen name="login" options={{ gestureEnabled: false }} />
         <Stack.Screen name="admin" options={{ headerShown: false }} />
       </Stack>
+      {/* 온보딩 저장 → 홈 첫 자료까지 한 장으로 이어지는 홈 골격(features/home/home-handoff). */}
+      <HomeHandoffHost />
       <ResultToastHost />
     </ThemeProvider>
   );

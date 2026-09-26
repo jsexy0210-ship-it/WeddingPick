@@ -1,6 +1,6 @@
 import type { Pool, PoolClient } from 'pg';
 
-import type { ConsentItem } from '@weddingpick/domain';
+import { consentDocKind, type ConsentItem } from '@weddingpick/domain';
 
 type Queryable = Pool | PoolClient;
 
@@ -23,18 +23,27 @@ type Queryable = Pool | PoolClient;
  * **공개된 판이 없으면 `null`이다.** 초안을 가리키게 하면 그 뒤 초안이 고쳐지면서
  * 동의한 글이 소리 없이 바뀐다 — 0422의 트리거가 그것을 막고, 여기서는 애초에
  * 가리키지 않는다.
+ *
+ * **항목 이름과 문서 종류는 같지 않다**(2026-09-26). `pick_certification`의 글은
+ * `pick_verification`, `contact_share`의 글은 `contact_sharing`이고, 만 14세 ·
+ * 야간 알림은 글이 없다. 이름을 그대로 `terms_doc_kind`로 바꾸면 enum에 없는 값이라
+ * 쿼리가 터진다 — `consentDocKind`로 옮기고, 글이 없으면 묻지 않는다.
  */
 export async function publishedVersionId(
   db: Queryable,
   item: ConsentItem
 ): Promise<string | null> {
+  const doc = consentDocKind(item);
+
+  if (doc === null) return null;
+
   const { rows } = await db.query<{ id: string }>(
     `SELECT id
      FROM structured.terms_versions
      WHERE doc = $1::terms_doc_kind AND published_at IS NOT NULL
      ORDER BY published_at DESC
      LIMIT 1`,
-    [item]
+    [doc]
   );
 
   return rows[0]?.id ?? null;

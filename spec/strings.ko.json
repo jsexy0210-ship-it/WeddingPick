@@ -914,7 +914,9 @@
     "auth.failure.otherAccount": "다른 계정",
     "permission.photo.title": "사진 접근을 허용해주세요",
     "permission.photo.body": "올려주신 사진에서 금액과 업체를 읽어 자동으로 정리해요. 확인이 끝난 원본은 24시간 안에 지워요.",
-    "permission.allow": "허용하기"
+    "permission.allow": "허용하기",
+    "setup.exitBack": "뒤로가기를 한 번 더 누르면 앱이 종료돼요",
+    "setup.loadFailed": "적어 둔 답을 불러오지 못했어요"
   },
 
   "journey": {
@@ -1018,6 +1020,8 @@
 
   "confirm": {
     "delete.title": "삭제할까요?",
-    "delete.cta": "삭제"
+    "delete.cta": "삭제",
+    "logout.title": "로그아웃할까요?",
+    "logout.cta": "로그아웃"
   }
 }

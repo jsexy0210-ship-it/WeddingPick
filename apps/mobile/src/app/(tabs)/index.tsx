@@ -6,16 +6,16 @@ import type {
 } from '@weddingpick/api-contract';
 import { daysUntil } from '@weddingpick/domain';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getAppBootstrap, listWeddingTasks } from '@/api/client';
+import { RootTabHeader } from '@/components/root-tab-header';
 import {
   ActionButton,
   ErrorView,
   Layout,
-  LetterSpacing,
   LineHeight,
   MaxContentWidth,
   Radius,
@@ -29,6 +29,7 @@ import {
 import { listWeddingContent, type WeddingContentItem } from '@/features/home/content';
 import { Hero } from '@/features/home/hero';
 import { HomeBudget, MORE_CHEVRON, MyWeddingPrep } from '@/features/home/home-summary';
+import { endHomeHandoff, useHomeHandoffActive } from '@/features/home/home-handoff';
 import { HomeSkeleton } from '@/features/home/home-skeleton';
 import { homePrepCards, homePrepSectionSub } from '@/features/home/prep-groups';
 import { scheduleRows } from '@/features/home/schedule-view';
@@ -165,6 +166,16 @@ export default function HomeScreen() {
     return () => { loadVersion.current += 1; };
   }, [load]));
 
+  /*
+   * 온보딩에서 넘어왔으면 뿌리의 골격이 이 화면을 덮고 있다. 첫 자료를 그릴 수 있거나
+   * 오류를 말해야 할 때 걷는다 — 그 전에 걷으면 같은 골격이 한 번 더 선다.
+   */
+  const firstPaintReady = bootError || (settled && taskStatus !== 'loading' && contentStatus !== 'loading');
+  const handoffActive = useHomeHandoffActive();
+  useEffect(() => {
+    if (firstPaintReady && handoffActive) endHomeHandoff();
+  }, [firstPaintReady, handoffActive]);
+
   if (bootError) return <ErrorView message={strings.journey.loadFailed} onRetry={load} />;
 
   // 첫 진입에는 흩어진 원형 로더 대신 홈 전체의 자리를 한 번만 잡는다.
@@ -285,17 +296,17 @@ export default function HomeScreen() {
 function Header() {
   const theme = useTheme();
 
+  /*
+    Root 5탭 공통 제목 줄(`RootTabHeader`)의 기준이 이 홈 헤더다 — home.jsx `header` · `wordmark`.
+    React_Native/home.jsx WP-HOME-001~003 header `headIcons` — 아이콘 하나(벨)뿐이다(`iconBtn`
+    40 원형 · `icoBell` notification 20 · ink). #535가 알림 화면과 함께 걷어냈던 것을
+    2026-09-25 대표 지시(「홈 화면에 알림 아이콘 어디갔냐」)로 되살렸다. 정본 벨에는 안 읽음
+    점이 없어 그리지 않는다.
+  */
   return (
-    <ThemedView style={styles.header}>
-      <ThemedText type="f26" style={styles.brand}>웨딩픽</ThemedText>
-
-      {/*
-        React_Native/home.jsx WP-HOME-001~003 header `headIcons` — 아이콘 하나(벨)뿐이다(`iconBtn`
-        40 원형 · `icoBell` notification 20 · ink). #535가 알림 화면과 함께 걷어냈던 것을
-        2026-09-25 대표 지시(「홈 화면에 알림 아이콘 어디갔냐」)로 되살렸다. 정본 벨에는 안 읽음
-        점이 없어 그리지 않는다.
-      */}
-      <View style={styles.headerButtons}>
+    <RootTabHeader
+      title="웨딩픽"
+      right={
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="알림"
@@ -303,8 +314,8 @@ function Header() {
           style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
           <SeedIcon name="notificationRegular" size={Layout.iconRow} color={theme.text} />
         </Pressable>
-      </View>
-    </ThemedView>
+      }
+    />
   );
 }
 
@@ -322,16 +333,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
 
-  header: {
-    minHeight: 66,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Layout.gutter,
-  },
-  brand: { fontWeight: 700, letterSpacing: LetterSpacing.n052 },
-  /* 정본 headIcons — gap 4 · iconBtn 40 원형. */
-  headerButtons: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  /* 정본 `iconBtn` — 40 원형. 줄 높이 · 여백 · 제목은 `RootTabHeader`가 갖는다. */
   iconButton: {
     width: Layout.iconButton,
     height: Layout.iconButton,

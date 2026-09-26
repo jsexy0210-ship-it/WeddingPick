@@ -36,6 +36,9 @@ import {
 
 import { AdminSpacing as A, Colors, FontSize, LineHeight, Radius, Spacing } from '@weddingpick/ui';
 
+import { askSignOut, signOutWithConfirm } from '@/features/admin/sign-out';
+import { buttonA11y, headingA11y, tabA11y, TABLIST_A11Y } from '@/features/admin/web-a11y';
+
 import { WritePressable } from './_role';
 import { clearAdminToken } from './_session';
 
@@ -147,10 +150,10 @@ export type PageProps = {
  *   2. 모양을 다르게 한다 — `action`과 같은 채운 pill이 아니라 테두리만 있는 단추다
  *   3. 항상 있다 — `action`이 없는 화면(표만 있는 화면)에서도 자리가 밀리지 않는다
  *
- * **확인 창은 넣지 않는다.** 로그아웃은 데이터를 바꾸지 않는다 — 관리자 공통 규칙의
- * 「위험한 조작은 한 번 더 확인」은 되돌릴 수 없는 **데이터** 변경을 겨눈 것이라
- * 여기 해당하지 않는다고 본다. 위 1 · 2번(띄우고 모양을 다르게)이 실수를 막는
- * 몫을 이미 한다 — 그래도 잘못 눌리는 사례가 나오면 그때 확인 단계를 더한다.
+ * **확인 창을 넣었다**(2026-09-26 대표 지시). 전에는 「로그아웃은 데이터를 바꾸지
+ * 않는다」며 넣지 않았는데, 대표님이 OS 확인창으로 한 번 묻게 하셨다 — 브라우저의
+ * `window.confirm`이다(`features/admin/sign-out.ts`). 정본 `doLogout`은 묻지 않으므로
+ * 문구 「로그아웃할까요?」는 정본 확인 전이다(DESIGN_UNRESOLVED).
  */
 export function Page({ title, sub, action, embedded, children }: PageProps) {
   const compact = useAdminCompact();
@@ -159,11 +162,13 @@ export function Page({ title, sub, action, embedded, children }: PageProps) {
     <View style={styles.page}>
       <View style={[styles.topbar, compact && styles.topbarCompact]}>
         <View style={styles.topbarText}>
-          <Text style={styles.pageTitle} numberOfLines={1}>{title}</Text>
+          {/* 화면의 제목 — 문서 개요의 첫 단(`<h1>`). 감사 8b. */}
+          <Text {...headingA11y(1)} style={styles.pageTitle} numberOfLines={1}>{title}</Text>
           {sub ? <Text style={styles.pageSub} numberOfLines={1}>{sub}</Text> : null}
         </View>
         {action ? (
           <ActionButton
+            {...buttonA11y()}
             onPress={action.onPress}
             disabled={action.disabled}
             style={[
@@ -197,11 +202,18 @@ export function Page({ title, sub, action, embedded, children }: PageProps) {
 function SignOutButton() {
   return (
     <Pressable
+      {...buttonA11y()}
       style={styles.signOut}
       onPress={() => {
-        void clearAdminToken().then(() => {
+        /*
+         * 2026-09-26 대표 지시 — 로그아웃 전에 OS 확인창으로 한 번 묻는다. 취소면 세션도
+         * 화면도 그대로다(`features/admin/sign-out.ts`).
+         */
+        void signOutWithConfirm({
+          ask: askSignOut,
+          clear: clearAdminToken,
           /* 화면 상태를 되돌리는 가장 단순한 길. 관리자 콘솔은 웹 전용이다. */
-          window.location.assign(LOGIN_PATH);
+          go: () => window.location.assign(LOGIN_PATH),
         });
       }}
     >
@@ -261,6 +273,7 @@ export function AdminTabShell({ tabs, active, onChange, children }: AdminTabShel
     <View style={styles.tabShellRoot}>
       <View style={[styles.tabShellBar, compact && styles.tabShellBarCompact]}>
         <ScrollView
+          {...TABLIST_A11Y}
           horizontal
           style={styles.tabShellTabs}
           contentContainerStyle={styles.tabShellTabsContent}
@@ -271,6 +284,7 @@ export function AdminTabShell({ tabs, active, onChange, children }: AdminTabShel
             return (
               <Pressable
                 key={t.key}
+                {...tabA11y(selected, () => onChange(t.key))}
                 onPress={() => onChange(t.key)}
                 style={[
                   styles.tabShellBtn,
@@ -322,7 +336,7 @@ export function StatusBanner({ tone, title, detail, cta }: StatusBannerProps) {
     <View style={styles.inlineError}>
       <Text style={styles.inlineErrorText}>{detail ?? title}</Text>
       {cta ? (
-        <Pressable onPress={cta.onPress}>
+        <Pressable {...buttonA11y()} onPress={cta.onPress}>
           <Text style={styles.inlineErrorAction}>{cta.label}</Text>
         </Pressable>
       ) : null}
@@ -347,7 +361,7 @@ export function AdminFormModal({
         <View style={styles.formModalCard}>
           <View style={styles.formModalHeader}>
             <Text style={styles.formModalTitle}>{title}</Text>
-            <Pressable onPress={onClose} style={styles.formModalClose}>
+            <Pressable {...buttonA11y()} onPress={onClose} style={styles.formModalClose}>
               <Text style={styles.formModalCloseText}>닫기</Text>
             </Pressable>
           </View>
@@ -433,7 +447,8 @@ export function Card({ title, sub, action, full, note, children }: CardProps) {
     <View style={[styles.card, full ? styles.cardFull : styles.cardCell, compact && !full && styles.cardCellCompact]}>
       <View style={styles.cardHead}>
         <View style={styles.cardHeadText}>
-          <Text style={styles.cardTitle} numberOfLines={1}>{title}</Text>
+          {/* 카드 제목은 화면 제목(`<h1>`) 아래 둘째 단이다. 감사 8b. */}
+          <Text {...headingA11y(2)} style={styles.cardTitle} numberOfLines={1}>{title}</Text>
           {sub ? <Text style={styles.cardSub} numberOfLines={1}>{sub}</Text> : null}
         </View>
         {action ? (
@@ -450,6 +465,51 @@ export function Card({ title, sub, action, full, note, children }: CardProps) {
       </View>
       {children}
       {note ? <Text style={styles.note}>{note}</Text> : null}
+    </View>
+  );
+}
+
+/* ── 고르기 칩 ────────────────────────────────────────────── */
+
+export type ChoiceItem<K extends string> = { key: K; label: string };
+
+/**
+ * 하나만 고르는 칩 줄 — 대시보드 회원 차트의 「일 · 주 · 월 · 년」이 첫 자리다.
+ *
+ * **단추다**(2026-09-26 감사 5). 예전에는 `Text onPress`라서 DOM에 역할도
+ * `tabindex`도 없었고, 키보드로는 구간을 바꿀 수 없었다. 이제 칩마다
+ * `<button type="button" aria-pressed>`로 그려져 Tab으로 닿고 Enter · Space로
+ * 고른다. 정본 `웨딩픽 관리자.dc.html`의 칩(`ad-chip`)도 `<button>`이다.
+ *
+ * 모양은 옮기기 전과 같다 — 테두리 · 여백은 단추에, 글자 색 · 굵기는 글자에 둔다.
+ */
+export function ChoiceChips<K extends string>({
+  items,
+  value,
+  onChange,
+  label,
+}: {
+  items: ChoiceItem<K>[];
+  value: K;
+  onChange: (key: K) => void;
+  /** 칩 줄이 무엇을 고르는지 — 화면에는 안 보이고 스크린리더가 읽는다. */
+  label: string;
+}) {
+  return (
+    <View style={styles.chipRow} role="group" aria-label={label}>
+      {items.map((item) => {
+        const on = item.key === value;
+        return (
+          <Pressable
+            key={item.key}
+            {...buttonA11y(on)}
+            onPress={() => onChange(item.key)}
+            style={[styles.chip, on && styles.chipOn]}
+          >
+            <Text style={[styles.chipText, on && styles.chipTextOn]}>{item.label}</Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -501,10 +561,27 @@ export type RowItem = {
   onPress?: () => void;
 };
 
-/** 눌리는 줄만 Pressable로 감싼다 — 누를 수 없는 줄에 누를 수 있는 표시를 두지 않는다. */
-function Wrap({ onPress, style, children }: { onPress?: () => void; style: StyleProp<ViewStyle>; children: ReactNode }) {
+/**
+ * 눌리는 줄만 Pressable로 감싼다 — 누를 수 없는 줄에 누를 수 있는 표시를 두지 않는다.
+ *
+ * 눌리는 줄은 단추로 알린다(정본 `웨딩픽 관리자.dc.html` dash의 줄 · 카드가
+ * `role="button" tabindex="0"`이다). `nested`는 줄 안에 단추 · 토글이 따로 있는
+ * 경우다 — 단추 안에 단추를 넣을 수 없어서 그때만 역할을 붙이지 않는다
+ * (`RowItem.onPress` 주석대로 둘을 같이 쓰는 줄은 원래 없다).
+ */
+function Wrap({
+  onPress,
+  style,
+  nested,
+  children,
+}: {
+  onPress?: () => void;
+  style: StyleProp<ViewStyle>;
+  nested?: boolean;
+  children: ReactNode;
+}) {
   if (!onPress) return <View style={style}>{children}</View>;
-  return <Pressable onPress={onPress} style={style}>{children}</Pressable>;
+  return <Pressable {...(nested ? null : buttonA11y())} onPress={onPress} style={style}>{children}</Pressable>;
 }
 
 export function Rows({ items }: { items: RowItem[] }) {
@@ -512,7 +589,11 @@ export function Rows({ items }: { items: RowItem[] }) {
     <View>
       {items.map((r, i) => (
         <View key={r.key}>
-          <Wrap onPress={r.onPress} style={[styles.row, r.meta ? styles.rowTop : styles.rowCenter]}>
+          <Wrap
+            onPress={r.onPress}
+            nested={Boolean(r.btn || r.toggle)}
+            style={[styles.row, r.meta ? styles.rowTop : styles.rowCenter]}
+          >
             {r.dot ? (
               <View
                 style={[
@@ -561,7 +642,7 @@ export function Rows({ items }: { items: RowItem[] }) {
 }
 
 function RowButton({ write, ...rest }: PressableProps & { write?: boolean }) {
-  return write ? <WritePressable {...rest} /> : <Pressable {...rest} />;
+  return write ? <WritePressable {...buttonA11y()} {...rest} /> : <Pressable {...buttonA11y()} {...rest} />;
 }
 
 export function Badge({ label, kind = 'none' }: { label: string; kind?: Kind }) {
@@ -734,41 +815,74 @@ function barColor(kind: BarKind | undefined): string {
  * 추이 막대. 값 자체는 표가 말하고 이것은 모양만 말한다(`value`를 주면 함께 적는다).
  *
  * `secondary`를 주면 한 칸에 막대 둘이 나란히 선다.
+ *
+ * **카드 폭을 넘지 않는다**(2026-09-26 감사 4). 칸마다 막대 30 + 30 + 사이 8 = 68이
+ * 줄지 않는 폭이었고, 「일」 14칸이면 14 × 68 + 13 × 12 = 1,108이다. 1280 창의 카드
+ * 안쪽은 1280 − 사이드바 240 − 본문 32 × 2 − 카드 20 × 2 = 936이라 오른쪽 172(두 칸)가
+ * 카드 밖으로 밀렸다. 이제 폭이 모자라면 칸과 막대가 같이 줄고, 남으면 지금처럼 30에서
+ * 멈춘다 — 정본 `웨딩픽 관리자.dc.html`의 사용량 막대가 칸을 `flex:1;min-width:0`로
+ * 나누는 것과 같은 방식이다. 1920에서는 폭이 남으므로 모양이 그대로다.
+ *
+ * **높이는 정본 칸(150) 안에서 막대가 줄어든다**(2026-09-26 대표 결정 — 「카드 레이아웃
+ * 영역 안에서 자동 리사이징 한다」). 정본 막대 칸에는 날짜 줄만 있는데, 회원 차트는
+ * 막대 위에 가입 · 탈퇴 수(값 줄)를 더 적는다. 막대를 정본 자(pct × 1.3 = 최대 130)로
+ * 두면 값 17 + 사이 8 + 130 + 사이 8 + 날짜 17 + 위 여백 8 = 188이 되어 칸이 150을
+ * 넘고 카드가 38 커졌다. 이제 칸은 정본 150에 고정하고, 값 줄 · 날짜 줄 · 사이를 뺀
+ * 나머지 높이를 막대의 100%로 쓴다 — 막대 높이는 px가 아니라 그 나머지의 비율(%)이라
+ * 레이아웃이 알아서 맞춘다. 150 − 위 여백 8 − 날짜 17 − 사이 8 − 값 17 − 사이 8 = 92가
+ * 값 줄이 있을 때의 최대 막대다(값 줄이 없으면 117). 글자 크기 · 줄 높이는 그대로다.
+ *
+ * **자는 칸 전체가 하나다.** 값 줄이 한 칸에라도 있으면 모든 칸이 같은 자리를 비워
+ * 둔다 — 칸마다 남는 높이가 다르면 같은 pct가 다른 높이로 서서 막대끼리 비교가 안 된다.
+ * 값은 두 막대 중 높은 쪽 바로 위(사이 8)에 붙고, 비워 둔 자리 밖으로 나가지 않는다.
  */
 export function Bars({ items }: { items: BarItem[] }) {
+  const withValue = items.some((b) => b.value !== undefined || b.secondary?.value !== undefined);
   return (
     <View style={styles.bars}>
-      {items.map((b) => (
-        <View key={b.label} style={styles.barCol}>
-          {b.value === undefined && b.secondary?.value === undefined ? null : (
-            <Text style={styles.barValue}>
-              {[b.value, b.secondary?.value].filter((part) => part !== undefined).join(' · ')}
-            </Text>
-          )}
-          <View style={styles.barPair}>
-            <View
-              style={[
-                styles.bar,
-                { height: Math.max(4, Math.round(b.pct * 1.3)), backgroundColor: barColor(b.kind) },
-              ]}
-            />
-            {b.secondary ? (
-              <View
-                style={[
-                  styles.bar,
-                  {
-                    height: Math.max(4, Math.round(b.secondary.pct * 1.3)),
-                    backgroundColor: barColor(b.secondary.kind),
-                  },
-                ]}
-              />
-            ) : null}
+      {items.map((b, i) => {
+        const primary = clampPct(b.pct);
+        const secondary = b.secondary ? clampPct(b.secondary.pct) : null;
+        /* 칸에서 가장 높은 막대 — 막대 묶음의 높이이자 값을 붙일 자리다. */
+        const top = Math.max(primary, secondary ?? 0);
+        const value = [b.value, b.secondary?.value].filter((part) => part !== undefined).join(' · ');
+        return (
+          /*
+           * 열쇠에 자리 번호를 넣는다 — 날짜 줄은 겹칠 수 있다. 회원 차트에서 「일」→「월」로
+           * 바꾸면 새 값이 오기 전까지 일 단위 14칸이 모두 「9월」로 적혀 열쇠가 겹쳤고,
+           * React가 옛 칸 13개를 지우지 못해 새 3칸 옆에 남았다(16칸). 칸은 자리로 구별된다.
+           */
+          <View key={`${i}:${b.label}`} style={styles.barCol}>
+            <View style={[styles.barPlot, withValue && styles.barPlotWithValue]}>
+              <View style={[styles.barPair, { height: `${top}%` }]}>
+                {value === '' ? null : (
+                  <Text style={styles.barValue} numberOfLines={1}>
+                    {value}
+                  </Text>
+                )}
+                <View style={[styles.bar, { height: barShare(primary, top), backgroundColor: barColor(b.kind) }]} />
+                {b.secondary && secondary !== null ? (
+                  <View
+                    style={[styles.bar, { height: barShare(secondary, top), backgroundColor: barColor(b.secondary.kind) }]}
+                  />
+                ) : null}
+              </View>
+            </View>
+            <Text style={styles.barLabel} numberOfLines={1}>{b.label}</Text>
           </View>
-          <Text style={styles.barLabel}>{b.label}</Text>
-        </View>
-      ))}
+        );
+      })}
     </View>
   );
+}
+
+function clampPct(pct: number): number {
+  return Number.isFinite(pct) ? Math.min(100, Math.max(0, pct)) : 0;
+}
+
+/** 묶음(가장 높은 막대) 안에서 이 막대가 차지하는 비율. 0이면 최소 높이(4)만 선다. */
+function barShare(pct: number, top: number): `${number}%` {
+  return `${top === 0 ? 0 : (pct / top) * 100}%`;
 }
 
 /* ── 5. 위험한 조작 ────────────────────────────────────────── */
@@ -808,11 +922,11 @@ export function ConfirmCard({ title, body, items, cta, danger, children, onConfi
           </View>
           {children}
           <View style={styles.confirmActions}>
-            <Pressable onPress={onCancel} style={styles.btnGhost}>
+            <Pressable {...buttonA11y()} onPress={onCancel} style={styles.btnGhost}>
               <Text style={styles.btnGhostLabel}>취소</Text>
             </Pressable>
             {/* 확인 카드는 언제나 서버를 바꾸는 자리다 — 뷰어에게는 확인 단추가 잠긴다. */}
-            <WritePressable onPress={onConfirm} style={[styles.btnPrimary, danger && styles.btnDanger]}>
+            <WritePressable {...buttonA11y()} onPress={onConfirm} style={[styles.btnPrimary, danger && styles.btnDanger]}>
               <Text style={styles.btnPrimaryLabel}>{cta}</Text>
             </WritePressable>
           </View>
@@ -828,7 +942,7 @@ export function LoadError({ message, onRetry }: { message: string; onRetry: () =
   return (
     <View style={styles.loadError}>
       <Text style={styles.loadErrorText}>{message}</Text>
-      <Pressable onPress={onRetry} style={styles.btnPrimary}>
+      <Pressable {...buttonA11y()} onPress={onRetry} style={styles.btnPrimary}>
         <Text style={styles.btnPrimaryLabel}>다시 시도</Text>
       </Pressable>
     </View>
@@ -997,7 +1111,14 @@ const styles = StyleSheet.create({
   card: { backgroundColor: C.background, borderRadius: Radius.medium, padding: A.cardPadding, gap: A.cardGap },
   cardCell: { flexGrow: 1, flexShrink: 1, flexBasis: CARD_MIN, minWidth: CARD_MIN },
   cardCellCompact: { flexBasis: '100%', minWidth: 0 },
-  cardFull: { flexGrow: 1, flexShrink: 1, flexBasis: '100%', minWidth: '100%' },
+  /*
+   * 한 줄을 다 쓰는 카드. **폭은 `width`로 잡고 `flexBasis`는 두지 않는다**(2026-09-26 감사 4).
+   * `flexBasis: '100%'`는 `CardGrid`(가로 줄바꿈) 안에서는 폭이지만, `Page` 본문(세로)에
+   * 바로 놓이면 **높이**가 된다 — 본문 높이의 100%에서 줄어들며 `full` 카드 셋이 모두
+   * 247로 같아졌다. 회원 카드는 내용(364)이 잘려 날짜 줄과 안내 문장이 다음 카드에
+   * 가려졌고, 표 카드 둘은 내용(188)보다 59가 비었다. 이제 높이는 내용을 따른다.
+   */
+  cardFull: { flexGrow: 1, flexShrink: 1, width: '100%', minWidth: '100%' },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: A.bannerGap, minHeight: A.cardHeadHeight },
   cardHeadText: { flex: 1, minWidth: 0, gap: A.stackGap },
   cardTitle: { fontSize: FontSize.t6, lineHeight: LineHeight.t6, fontWeight: '700', color: C.text },
@@ -1110,19 +1231,70 @@ const styles = StyleSheet.create({
   cellLeftBox: { alignItems: 'flex-start' },
   cellRightBox: { alignItems: 'flex-end' },
 
+  /* 22-admin-ops.dc.html의 필터 칩과 같은 모양 — 옛 home.tsx `bucketTab` 값 그대로. */
+  chipRow: { flexDirection: 'row', gap: A.stackGap, marginBottom: A.stackGap },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: Radius.badge,
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+  chipOn: { borderColor: C.tint },
+  chipText: {
+    fontSize: FontSize.tab,
+    lineHeight: LineHeight.adminMeta,
+    color: C.textAssistive,
+  },
+  chipTextOn: { color: C.tint, fontWeight: '700' },
+
   bars: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    /* 칸마다 150을 다 쓴다 — 막대 높이(%)가 이 높이에서 나온다. */
+    alignItems: 'stretch',
     justifyContent: 'space-around',
     gap: A.bannerGap,
+    /*
+     * 정본 barsWrap «height:150px» 고정 — 자라지 않는다(2026-09-26 대표 결정 「카드 레이아웃
+     * 영역 안에서 자동 리사이징」). 값 줄이 더해진 만큼 막대가 줄어 이 안에 든다.
+     */
     height: A.barsHeight,
     paddingTop: Spacing.two,
   },
-  barCol: { alignItems: 'center', justifyContent: 'flex-end', gap: Spacing.two },
-  /* 두 막대를 한 칸 안에 세운다. 바닥을 맞춰야 높이가 서로 비교된다. */
-  barPair: { flexDirection: 'row', alignItems: 'flex-end', gap: Spacing.two },
-  bar: { width: 30, borderTopLeftRadius: Radius.badge, borderTopRightRadius: Radius.badge },
+  /* 폭이 모자라면 칸이 준다(`flexShrink`). 남을 때는 내용 폭 그대로다. 감사 4. */
+  barCol: { alignItems: 'center', justifyContent: 'flex-end', gap: Spacing.two, flexShrink: 1, minWidth: 0 },
+  /* 날짜 줄을 뺀 나머지 높이 — 막대 묶음이 이 안에서 바닥에 붙는다. */
+  barPlot: { flex: 1, alignSelf: 'stretch', justifyContent: 'flex-end', minHeight: 0 },
+  /* 값 줄(17) + 사이(8)를 위에 비워 둔다. 값은 이 자리에 선다. */
+  barPlotWithValue: { paddingTop: LineHeight.adminMeta + Spacing.two },
+  /*
+   * 두 막대를 한 칸 안에 세운다. 바닥을 맞춰야 높이가 서로 비교된다. 칸 폭을 따라 줄도록 칸에 붙인다.
+   * 높이는 가장 높은 막대의 %(Bars에서 준다) — 최소 4는 정본 barStyle «Math.max(4, …)».
+   */
+  barPair: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    alignSelf: 'stretch',
+    gap: Spacing.two,
+    minHeight: 4,
+  },
+  bar: {
+    width: 30,
+    minHeight: 4,
+    flexShrink: 1,
+    minWidth: 0,
+    borderTopLeftRadius: Radius.badge,
+    borderTopRightRadius: Radius.badge,
+  },
+  /* 가장 높은 막대의 위 끝에서 사이(8)만큼 띄운다. 비워 둔 자리(barPlotWithValue) 안이다. */
   barValue: {
+    position: 'absolute',
+    bottom: '100%',
+    left: 0,
+    right: 0,
+    marginBottom: Spacing.two,
+    textAlign: 'center',
     fontSize: FontSize.tab,
     lineHeight: LineHeight.adminMeta,
     color: C.textAssistive,

@@ -2,6 +2,7 @@ import { getCurrentUser, type SessionEntry } from '@/api/client';
 import { completeAfterSignIn } from '@/features/auth/after-sign-in';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { saveRememberedAccount, type RememberedAccount } from '@/features/auth/remembered-account';
+import { noteSignupPending } from '@/features/auth/sign-in-handoff';
 
 type Identity = { provider: RememberedAccount['provider']; email: string | null };
 
@@ -45,6 +46,7 @@ export async function finishSignIn(identity: Identity, entry?: SessionEntry) {
      * 14세 확인은 로그인(카카오)이 이미 끝냈고(v3.13 §3.5), 그 화면이 필수 5 ·
      * 선택 3 동의를 받아 가입을 활성화한 뒤 초기 설정(`/setup`)으로 넘긴다.
      */
+    noteSignupPending();
     dismissToOrReplace('/login/consent');
 
     return;
@@ -75,7 +77,12 @@ export async function finishSignIn(identity: Identity, entry?: SessionEntry) {
  * (`completeAfterSignIn`, 서버에 다시 묻지 않는다 — 기기 저장소만 읽는다).
  */
 export async function entryAfterSignIn(entry: SessionEntry): Promise<PostSignInRoute> {
-  if (!entry.activated) return '/login/consent';
+  if (!entry.activated) {
+    /* 세션 응답이 «가입 전»을 이미 말했다 — 약관 동의가 로더를 또 세우지 않게(`sign-in-handoff`). */
+    noteSignupPending();
+
+    return '/login/consent';
+  }
 
   const after = await completeAfterSignIn({ activated: true });
 

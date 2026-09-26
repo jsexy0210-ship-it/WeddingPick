@@ -4,6 +4,8 @@ import {
   CONSENT_AGREEMENT_ITEMS,
   OPTIONAL_AGREEMENT_ITEMS,
   REQUIRED_AGREEMENT_ITEMS,
+  acceptedSignupItems,
+  signupConsentsFor,
   type AppPermissionItem,
   type ConsentAgreementItem,
   type ConsentAgreementKey,
@@ -30,6 +32,7 @@ import {
 } from '@weddingpick/ui';
 import { ApiError, completeSignup, getSignupState } from '@/api/client';
 import { loadToken } from '@/api/session';
+import { clearSignupPending, hasFreshSignupPending } from '@/features/auth/sign-in-handoff';
 import { TermsDetailModal } from '@/features/auth/terms-detail-modal';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
@@ -41,16 +44,31 @@ import { dismissToOrReplace } from '@/features/navigation/depth-back';
  * 초기 설정(`/setup`) 전에 한 번 뜬다(README.md 「진입 흐름」). 필수 5개를 모두 체크해야
  * 하단 CTA가 켜진다. 필수 · 선택 · 앱 접근 권한 3구획, 권한은 아이콘 4칸으로만 보여준다.
  *
- * **서버가 실제로 받는 동의는 아직 `terms` · `privacy` · `marketing` 셋뿐이다**
- * (`packages/domain/src/consent-terms.ts` 머리말 참고 — DB의 `terms_doc_kind` enum이
- * 그 셋만 안다). 이 화면은 v3.29가 요구하는 8개 항목(필수 5 · 선택 3)을 전부 보여주고
- * 필수 체크를 게이트로 쓰지만, 서버로 보내는 값은 그 중 서버가 아는 항목만 추린다 —
- * 나머지(만 14세 · Pick 인증 · 상담 녹음 · 제3자 제공 · 야간 알림)는 서버 계약이
- * 넓어지면 그때 같이 보낸다.
+ * **체크한 칸은 전부 서버에 보낸다**(2026-09-26 대표 감사 8). 전에는 서버가 아는
+ * `terms` · `privacy` · `marketing` 셋만 추려 보내서 나머지 다섯(만 14세 · Pick 인증 ·
+ * 상담 녹음 · 연락처 제공 · 야간 알림)은 어디에도 남지 않았다. 이제 여덟 모두
+ * `user_consents`에 항목 · 판 · 필수 여부 · 시각으로 남는다(`signupConsentsFor`).
+ * 다만 **서버가 아는 항목만** 보낸다 — 가입 상태 응답이 알려 준 항목(`acceptedSignupItems`)
+ * 밖의 키가 섞이면 옛 서버가 요청 전체를 거절한다.
+ *
+ * **로그인 직후에는 로더 없이 바로 선다**(2026-09-26 대표 감사 4). 로그인이 이미
+ * «가입 전»을 확인했으면(`sign-in-handoff` `noteSignupPending`) 폼을 곧바로 그리고,
+ * 가입 상태는 뒤에서 다시 묻는다 — 전에는 «로그인하는 중이에요» 뒤에 이 화면의
+ * 로더가 한 번 더 섰다.
  */
 export default function ConsentScreen() {
   const insets = useSafeAreaInsets();
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  /** 로그인이 방금 «가입 전»을 확인했는가 — 그러면 로더 없이 폼부터 그린다. 첫 렌더에서 한 번만 읽는다. */
+  const [hinted] = useState(() => hasFreshSignupPending());
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(hinted ? 'ready' : 'loading');
+  /** 서버가 아는 동의 항목. 가입 상태를 아직 못 읽었으면 null — 그때는 체크한 칸을 전부 보낸다. */
+  const [accepted, setAccepted] = useState<ReadonlySet<string> | null>(null);
+  /**
+   * 가입 상태를 몇 번째로 묻는가. «다시 시도»가 이 값을 올려 아래 effect를 다시 돌린다.
+   * 전에는 `setStatus('loading')`만 해서 effect가 다시 돌지 않았고, 로더만 영영
+   * 떠 있었다(2026-09-26 대표 감사 5).
+   */
+  const [attempt, setAttempt] = useState(0);
   const [checked, setChecked] = useState<ReadonlySet<ConsentAgreementKey>>(new Set());
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,6 +76,9 @@ export default function ConsentScreen() {
 
   useEffect(() => {
     let alive = true;
+
+    /* 깃발은 한 번 쓰고 버린다 — «다시 시도» · 재방문은 서버 답을 기다린다. */
+    clearSignupPending();
 
     void (async () => {
       const token = await loadToken();
@@ -76,14 +97,19 @@ export default function ConsentScreen() {
           return;
         }
 
+        setAccepted(acceptedSignupItems(state));
         setStatus('ready');
       } catch {
-        if (alive) setStatus('error');
+        /*
+         * 로그인 직후라 폼을 이미 그렸으면 거두지 않는다 — 동의를 누르면 제출이 서버에
+         * 다시 닿고, 거기서 실패하면 폼 아래에 오류가 선다. 그 밖에는 오류 + «다시 시도».
+         */
+        if (alive && !(hinted && attempt === 0)) setStatus('error');
       }
     })();
 
     return () => { alive = false; };
-  }, []);
+  }, [attempt, hinted]);
 
   const allRequiredChecked = REQUIRED_AGREEMENT_ITEMS.every((item) => checked.has(item.key));
   const allChecked = CONSENT_AGREEMENT_ITEMS.every((item) => checked.has(item.key));
@@ -107,11 +133,8 @@ export default function ConsentScreen() {
     setSubmitting(true);
     setError(null);
 
-    /* 서버가 아는 항목만 추린다 — 위 파일 머리말 참고. */
-    const consents: string[] = [];
-    if (checked.has('terms')) consents.push('terms');
-    if (checked.has('privacy')) consents.push('privacy');
-    if (checked.has('benefit_alerts')) consents.push('marketing');
+    /* 체크한 칸 전부 — 화면 키를 서버 키로 옮긴다(`benefit_alerts` → `marketing`). 서버가 모르는 키는 뺀다. */
+    const consents = signupConsentsFor(checked, accepted);
 
     try {
       await completeSignup({ consents });
@@ -136,7 +159,15 @@ export default function ConsentScreen() {
   }
 
   if (status === 'error') {
-    return <ErrorView message="불러오지 못했어요." onRetry={() => setStatus('loading')} />;
+    return (
+      <ErrorView
+        message="불러오지 못했어요."
+        onRetry={() => {
+          setStatus('loading');
+          setAttempt((current) => current + 1);
+        }}
+      />
+    );
   }
 
   return (

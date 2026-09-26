@@ -1,9 +1,13 @@
-import { completeSignupRequestSchema, type SignupState } from '@weddingpick/api-contract';
 import {
+  LEGACY_SIGNUP_ITEMS,
+  completeSignupRequestSchema,
+  type SignupState,
+} from '@weddingpick/api-contract';
+import {
+  ACTIVATION_CONSENTS,
   AGE_UNVERIFIED_NOTICE,
   CONSENT_ITEMS,
   MINIMUM_AGE,
-  REQUIRED_CONSENTS,
   canActivate,
   consentVersion,
   missingRequiredConsents,
@@ -54,23 +58,29 @@ export function registerSignupRoutes(app: FastifyInstance, context: AppContext):
 
     const granted = consents.rows.map((row) => ({ item: row.item, version: row.terms_version }));
 
+    const agreements = CONSENT_ITEMS.map((item) => {
+      const match = consents.rows.find(
+        (row) => row.item === item.key && row.terms_version === item.version
+      );
+
+      return {
+        item: item.key,
+        label: item.label,
+        required: item.required,
+        version: item.version,
+        grantedAt: match?.granted_at.toISOString() ?? null,
+      };
+    });
+
     return {
       activated: user.activated_at !== null,
       ageVerified: user.age_verified,
       minimumAge: MINIMUM_AGE,
-      items: CONSENT_ITEMS.map((item) => {
-        const match = consents.rows.find(
-          (row) => row.item === item.key && row.terms_version === item.version
-        );
-
-        return {
-          item: item.key,
-          label: item.label,
-          required: item.required,
-          version: item.version,
-          grantedAt: match?.granted_at.toISOString() ?? null,
-        };
-      }),
+      /* 옛 앱이 아는 셋만 — 새 항목이 섞이면 옛 앱이 응답을 거절한다(api-contract signup.ts). */
+      items: agreements.filter((item) =>
+        (LEGACY_SIGNUP_ITEMS as readonly string[]).includes(item.item)
+      ),
+      agreements,
       missingRequired: missingRequiredConsents(granted),
     };
   }
@@ -137,6 +147,10 @@ export function registerSignupRoutes(app: FastifyInstance, context: AppContext):
       /*
        * 받은 항목만 적는다. 선택 항목을 대신 켜주지 않는다(§N-2) — 켜주면 그
        * 동의는 사용자가 한 것이 아니다.
+       *
+       * v3.29 약관 동의 여덟 칸이 전부 여기로 온다(2026-09-26 대표 감사 8). 항목마다
+       * 판(`terms_version`) · 필수 여부 · 공개된 글(`terms_version_id`)이 한 줄씩 남는다.
+       * 옛 앱이 보내는 `terms` · `privacy` · `marketing`만 온 요청도 그대로 받는다.
        */
       for (const item of new Set(body.consents as ConsentItem[])) {
         const definition = CONSENT_ITEMS.find((candidate) => candidate.key === item);
@@ -164,7 +178,7 @@ export function registerSignupRoutes(app: FastifyInstance, context: AppContext):
         );
       }
 
-      const granted = REQUIRED_CONSENTS.filter((item) =>
+      const granted = ACTIVATION_CONSENTS.filter((item) =>
         (body.consents as ConsentItem[]).includes(item)
       ).map((item) => ({ item, version: consentVersion(item) }));
 

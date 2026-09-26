@@ -29,7 +29,6 @@ import {
   Border,
   Layout,
   MaxContentWidth,
-  LetterSpacing,
   ProductSymbol,
   type ProductSymbolName,
   Radius,
@@ -44,6 +43,7 @@ import {
   listMyInquiries,
   listMyReports,
 } from '@/api/client';
+import { RootTabHeader } from '@/components/root-tab-header';
 import { TermsDetailModal } from '@/features/auth/terms-detail-modal';
 import { useSession } from '@/features/auth/use-session';
 import { DelayedLoader, DelayedLoadingView } from '@/features/loading/delayed-loader';
@@ -220,11 +220,7 @@ export default function MyScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <View style={styles.header}>
-          <ThemedText type="f26" style={[styles.bold, styles.title]}>
-            {S.title}
-          </ThemedText>
-        </View>
+        <RootTabHeader title={S.title} />
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
@@ -385,19 +381,11 @@ const styles = StyleSheet.create({
   bold: { fontWeight: 700 },
   /* `micro`는 기본이 700 — 시안에서 regular인 작은 글자는 400. */
   regular: { fontWeight: 400 },
-  /* «MY» 26/700 · ls -0.65px(규격서). */
-  title: { letterSpacing: LetterSpacing.n065 },
   center: { textAlign: 'center' },
   grow: { flex: 1, minWidth: 0 },
   shrink: { flexShrink: 1, minWidth: 0 },
   pressed: { opacity: 0.6 },
 
-  /* Root 바깥 여백은 공통 24px. */
-  header: {
-    height: Layout.navBar,
-    justifyContent: 'center',
-    paddingHorizontal: Layout.gutter,
-  },
   /* WP-MY-001 sec: 공통 좌우 24 · 아래 20 · 제목↔카드 12. */
   block: {
     paddingHorizontal: Layout.gutter,

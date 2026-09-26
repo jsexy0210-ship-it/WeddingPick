@@ -85,6 +85,12 @@ function parseArgs(argv) {
     homeLoading: false,
     /** 이 경로로 시작하는 GET 응답을 붙잡아 둔다 — 로딩 뼈대(WP-LOAD-004)를 찍는다. 여러 번 줄 수 있다. */
     slow: [],
+    /**
+     * 페이지가 뜨기 전에 기기 저장소(localStorage)에 심어 둘 값 `키=값`. 여러 번 줄 수 있다.
+     * 서버가 아니라 기기에 적힌 상태(온보딩 답 · 초안)로만 닿는 화면을 찍는다 — 예:
+     * 온보딩 완료 요약(WP-AUTH-007)은 적어 둔 다섯 답이 있어야 선다.
+     */
+    storage: [],
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -101,6 +107,13 @@ function parseArgs(argv) {
     else if (arg === '--guest') opts.guest = true;
     else if (arg === '--home-loading') opts.homeLoading = true;
     else if (arg === '--slow') opts.slow.push(argv[++i]);
+    else if (arg === '--storage') {
+      const pair = argv[++i];
+      const at = pair.indexOf('=');
+
+      if (at <= 0) throw new Error(`--storage는 키=값 꼴이다: ${pair}`);
+      opts.storage.push([pair.slice(0, at), pair.slice(at + 1)]);
+    }
     else if (arg === '--viewport') {
       const [width, height] = argv[++i].split('x').map(Number);
 
@@ -320,6 +333,16 @@ async function captureRoute(context, origin, route, opts) {
     }
   }, 'weddingpick.sessionToken.v1');
 
+  if (opts.storage.length > 0) await page.addInitScript((pairs) => {
+    for (const [key, value] of pairs) {
+      try {
+        window.localStorage.setItem(key, value);
+      } catch {
+        /* 저장소를 못 쓰면 심은 상태 없이 찍힌다 — 그것도 사실이다. */
+      }
+    }
+  }, opts.storage);
+
   const response = await page.goto(`${origin}${route}`, {
     waitUntil: opts.homeLoading || opts.slow.length ? 'domcontentloaded' : 'networkidle',
   });
@@ -528,6 +551,8 @@ const HELP = `화면을 실제로 렌더해 PNG로 찍는다.
   --wait <ms>      렌더를 기다리는 시간. 기본 1500.
   --tap <이름>     찍기 전에 누른다. 여러 번 줄 수 있고 준 순서대로 누른다.
   --guest          토큰을 심지 않는다 — 로그인 전 화면(/login)을 찍을 때.
+  --storage 키=값  페이지가 뜨기 전에 localStorage에 심는다. 여러 번 줄 수 있다 — 기기에
+                   적힌 상태(온보딩 답 등)로만 닿는 화면을 찍을 때.
                    눌러야 나오는 화면(바텀시트 · 펼침)을 찍을 때 쓴다. 못 찾으면 멈춘다.
   --home-loading   홈 데이터 응답을 5초 늦춰 첫 진입 스켈레톤을 찍는다.
   --viewport WxH   창 크기. 기본은 경로를 보고 정한다 — /admin은 1920x1080, 나머지 390x844.

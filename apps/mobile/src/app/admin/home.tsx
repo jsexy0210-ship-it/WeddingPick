@@ -28,7 +28,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { AdminSpacing as A, Colors, FontSize, LineHeight, Radius } from '@weddingpick/ui';
+import { AdminSpacing as A, Colors, FontSize, LineHeight } from '@weddingpick/ui';
 import { formatCount } from '@weddingpick/domain';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
@@ -38,6 +38,7 @@ import {
   Bars,
   Card,
   CardGrid,
+  ChoiceChips,
   DataTable,
   EmptyState,
   KpiRow,
@@ -398,17 +399,8 @@ function HomePanel() {
             note="막대는 왼쪽이 가입 · 오른쪽이 탈퇴예요. 누적은 탈퇴한 계정을 뺀 수이고, 가입 수는 그 칸에 실제로 들어온 수라서 나중에 탈퇴해도 줄지 않아요."
             full
           >
-            <View style={styles.bucketRow}>
-              {BUCKETS.map((item) => (
-                <Text
-                  key={item.key}
-                  style={[styles.bucketTab, bucket === item.key && styles.bucketTabOn]}
-                  onPress={() => setBucket(item.key)}
-                >
-                  {item.label}
-                </Text>
-              ))}
-            </View>
+            {/* 키보드로도 고른다 — `ChoiceChips`가 칩마다 단추를 그린다(감사 5). */}
+            <ChoiceChips label="회원 추이 구간" items={BUCKETS} value={bucket} onChange={setBucket} />
             {trendError ? (
               <EmptyState title="회원 추이를 불러오지 못했어요" detail={trendError} />
             ) : trendSignups === 0 && (trend?.current ?? 0) === 0 ? (
@@ -504,23 +496,6 @@ export default function HomeShell() {
 }
 
 const styles = StyleSheet.create({
-  /* 구간 단추. 22-admin-ops.dc.html의 필터 칩과 같은 모양이다. */
-  bucketRow: { flexDirection: 'row', gap: A.stackGap, marginBottom: A.stackGap },
-  bucketTab: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: Radius.badge,
-    borderWidth: 1,
-    borderColor: Colors.light.border,
-    fontSize: FontSize.tab,
-    lineHeight: LineHeight.adminMeta,
-    color: Colors.light.textAssistive,
-  },
-  bucketTabOn: {
-    borderColor: Colors.light.tint,
-    color: Colors.light.tint,
-    fontWeight: '700',
-  },
   rateRow: { flexDirection: 'row', alignItems: 'flex-end', gap: A.stackGap },
   /* 21-admin.dc.html dash — «font-size:40px;letter-spacing:-1.4px;line-height:1». */
   rateValue: {

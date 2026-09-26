@@ -72,7 +72,13 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(taste).toContain('STYLE_PICK_LIMIT_TOAST');
   });
   it('setup 저장 중과 홈 첫 진입에 같은 홈 스켈레톤을 쓴다', () => {
-    expect(mobile('app/setup.tsx')).toContain('if (sending) return <HomeSkeleton />');
+    /*
+     * 2026-09-26 대표 감사 4 — 설정이 제 골격을 그리고 홈이 새 골격을 또 세우던 것을
+     * 뿌리의 골격 한 장(`features/home/home-handoff`)으로 합쳤다. 같은 `HomeSkeleton`이다.
+     */
+    expect(mobile('app/setup.tsx')).toContain('beginHomeHandoff();');
+    expect(mobile('app/setup.tsx')).not.toContain('<HomeSkeleton />');
+    expect(mobile('features/home/home-handoff.tsx')).toContain('<HomeSkeleton />');
     expect(mobile('app/(tabs)/index.tsx')).toContain('return <HomeSkeleton />');
     expect(mobile('app/setup.tsx')).not.toContain('remainingLoadingMs = 3000 -');
   });

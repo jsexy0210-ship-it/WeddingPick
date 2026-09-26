@@ -34,7 +34,6 @@ import {
   DonutChart,
   FontSize,
   Layout,
-  LetterSpacing,
   LineHeight,
   ProductSymbol,
   Radius,
@@ -55,6 +54,7 @@ import {
 } from '@/api/client';
 import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
 import { confirmAlert } from '@/components/confirm-alert';
+import { RootTabHeader } from '@/components/root-tab-header';
 import { formatDateDot } from '@/features/common/format-date';
 import { noteMonthDayWeekdayTime } from '@/features/wedding/note-format';
 import { useSession } from '@/features/auth/use-session';
@@ -182,13 +182,12 @@ export default function WeddingScreen({
     weddingId !== null && me?.weddingDate != null && !isBeforeWedding(stage.stage) && stage.stage !== 'wedding_day';
   const headerAddLabel = ADD_LABEL[tab];
 
+  /* 제목 줄은 Root 5탭 공통(`RootTabHeader`). 헤더에는 현재 탭의 추가 행동 하나만 둔다. */
   const header = (
-    <View style={styles.header}>
-      <ThemedText type="f26" style={[styles.bold, styles.rootTitle]}>
-        {TERMS.ourWedding}
-      </ThemedText>
-      {!weddingOver && weddingId ? (
-        <View style={styles.headerActions}>
+    <RootTabHeader
+      title={TERMS.ourWedding}
+      right={
+        !weddingOver && weddingId ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={headerAddLabel}
@@ -199,9 +198,9 @@ export default function WeddingScreen({
               {headerAddLabel}
             </ThemedText>
           </Pressable>
-        </View>
-      ) : null}
-    </View>
+        ) : null
+      }
+    />
   );
 
   if (weddingOver && weddingId) {
@@ -467,11 +466,7 @@ function EmptyNoteView({
 
   return (
     <>
-      <View style={[styles.emptyNav, { borderBottomColor: theme.border }]}>
-        <ThemedText type="f26" style={[styles.bold, styles.grow]}>
-          {TERMS.ourWedding}
-        </ThemedText>
-      </View>
+      <RootTabHeader title={TERMS.ourWedding} style={[styles.emptyNav, { borderBottomColor: theme.border }]} />
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.emptySection}>
           <ThemedText type="f18" style={styles.bold}>일정</ThemedText>
@@ -916,28 +911,11 @@ const styles = StyleSheet.create({
   },
   container: { flex: 1 },
   safeArea: { flex: 1 },
-  /*
-   * Root 1Depth 제목 — 홈 · 검색 · Pick · MY와 같은 56 · 좌우 24 · 26/700
-   * (`root-header-contract.test.ts`). DESIGN_UNRESOLVED: note.js `head`는
-   * `padding:20px 24px 16px;align-items:baseline`(높이 71)이라 공통 계약과 다르다.
-   */
-  header: {
-    height: Layout.navBar,
-    paddingHorizontal: Layout.gutter,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Layout.inlineGap,
-  },
-  /* 헤더에는 현재 탭의 추가 행동 하나만 둔다. */
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: Layout.inlineGap },
   scroll: { flex: 1 },
   /* note.jsx 세 탭 프레임 끝의 `height:40px` 빈 칸. 40은 같은 값의 `LineHeight.lh40`. */
   scrollContent: { paddingBottom: LineHeight.lh40 },
 
   bold: { fontWeight: 700 },
-  /* note.js `h1` — 26/35/700. 35는 같은 값의 `LineHeight.t2`. */
-  rootTitle: { lineHeight: LineHeight.t2, letterSpacing: LetterSpacing.n065 },
   regular: { fontWeight: 400 },
   /* 규격서의 굵기 600 · 500 — spec/tokens.json typography.$weights의 피그마 예외. */
   semibold: { fontWeight: 600 },
@@ -979,14 +957,11 @@ const styles = StyleSheet.create({
   },
 
   // ── 웨딩노트 · 처음(WP-EMPTY-NOTE) ──
-  /* common.js `navBar` — `flex:0 0 56px;padding:0 16px;box-shadow:inset 0 -1px 0 BORDER`, back 없는 루트라 제목 왼쪽 26/700. */
-  emptyNav: {
-    height: Layout.navBar,
-    paddingHorizontal: Spacing.three,
-    borderBottomWidth: Border.hairline,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
+  /*
+   * common.js `navBar`의 아래 선(`box-shadow:inset 0 -1px 0 BORDER`)만 남긴다. 높이 56 · 좌우 16은
+   * Root 5탭 공통 홈 기준(`RootTabHeader` 66 · 24)으로 바꿨다 — 2026-09-26 대표 지시.
+   */
+  emptyNav: { borderBottomWidth: Border.hairline },
   /* `wrapStyle` — `padding:0 20px 24px;gap:12px`. */
   emptySection: { paddingHorizontal: Layout.cardPadding, paddingBottom: Spacing.four, gap: Layout.inlineGap },
   /* `emptyCard` — `border-radius:12px;background:REC;padding:32px 20px;gap:6px`, 가운데 정렬. */

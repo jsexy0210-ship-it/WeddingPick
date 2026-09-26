@@ -33,56 +33,65 @@ describe('Root 1Depth 제목 헤더', () => {
     expect(text).not.toContain('name="arrowLeft"');
   });
 
-  it.each([
-    ['pick/index.tsx', 'titleRow'],
-    ['wedding/index.tsx', 'header'],
-    ['my/index.tsx', 'header'],
-  ])('%s 제목행은 nav 56 · 좌우 gutter 24를 쓴다', (path, styleName) => {
-    const header = styleBlock(source(path), styleName);
-
-    expect(header).toMatch(/(?:height|minHeight): Layout\.navBar/);
-    expect(header).toContain('paddingHorizontal: Layout.gutter');
-  });
-
-  it('홈 브랜드 헤더는 화면 원본 높이 66과 공통 거터 24를 쓴다', () => {
-    const header = styleBlock(source('index.tsx'), 'header');
-    expect(header).toContain('minHeight: 66');
-    expect(header).toContain('paddingHorizontal: Layout.gutter');
-  });
-
-  it.each([
-    ['index.tsx', '웨딩픽', 'styles.brand'],
-    ['wedding/index.tsx', '{TERMS.ourWedding}', 'styles.bold'],
-    ['my/index.tsx', '{S.title}', 'styles.bold'],
-  ])('%s 제목은 f26/700을 쓴다', (path, title, weightStyle) => {
-    const text = source(path);
-    const titleAt = text.indexOf(title);
-    const opening = text.lastIndexOf('<ThemedText', titleAt);
-    const tag = text.slice(opening, titleAt);
-
-    expect(titleAt).toBeGreaterThanOrEqual(0);
-    expect(opening).toBeGreaterThanOrEqual(0);
-    expect(tag).toContain('type="f26"');
-    expect(tag).toContain(weightStyle);
-  });
-
-  it('Pick Root 제목은 화면 원본의 28px을 쓴다', () => {
-    const text = source('pick/index.tsx');
-    const titleAt = text.indexOf('{TERMS.pick}');
-    const opening = text.lastIndexOf('<ThemedText', titleAt);
-    expect(text.slice(opening, titleAt)).toContain('type="f28"');
-  });
-
-  it('검색 Root는 Back 없이 22px 제목·24px 여백을 쓴다', () => {
-    const text = source('search/index.tsx');
+  /*
+   * 2026-09-26 대표 지시 「히어로 영역이 제각각이다. 홈 화면 기준으로 통일한다」 — 다섯 탭 제목 줄은
+   * `components/root-tab-header.tsx` 한 벌이고, 값은 홈 브랜드 헤더(home.js `header` · `wordmark`)다.
+   * 화면마다 제목 크기 · 줄 높이 · 여백을 따로 들면 다시 갈라진다(운영에서 26/35 · 26/39 · 22/28 ·
+   * 28/36+위 4 · 아래 24로 넷이 갈려 있었다).
+   */
+  it('공통 제목 줄은 홈 기준 — 줄 66 · 좌우 gutter 24 · 위아래 0 · f26(26/39) · 700 · 자간 -0.52', () => {
+    const text = readFileSync(join(__dirname, '..', '..', 'components', 'root-tab-header.tsx'), 'utf8');
     const header = styleBlock(text, 'header');
-    const titleAt = text.indexOf('{TITLE}');
-    const opening = text.lastIndexOf('<ThemedText', titleAt);
-    const tag = text.slice(opening, titleAt);
 
-    expect(header).toContain('paddingHorizontal: Layout.pageX');
-    expect(tag).toContain('type="f20"');
-    expect(styleBlock(text, 'title')).toContain('fontSize: FontSize.searchRootTitle');
+    expect(text).toContain('export const ROOT_TAB_HEADER_HEIGHT = 66;');
+    expect(header).toContain('minHeight: ROOT_TAB_HEADER_HEIGHT');
+    expect(header).toContain("alignItems: 'center'");
+    expect(text).toContain('gutter = Layout.gutter');
+    expect(text).toContain('{ paddingHorizontal: gutter }');
+    expect(header).not.toMatch(/padding(?:Top|Bottom|Vertical)?:/);
+    expect(text).toContain('type="f26"');
+    expect(text).toMatch(/title: \{[^}]*fontWeight: 700[^}]*letterSpacing: LetterSpacing\.n052/);
+  });
+
+  it.each([
+    ['index.tsx', '<RootTabHeader\n      title="웨딩픽"'],
+    ['search/index.tsx', '<RootTabHeader title={TITLE} />'],
+    ['pick/index.tsx', '<RootTabHeader title={TERMS.pick} />'],
+    ['wedding/index.tsx', '<RootTabHeader\n      title={TERMS.ourWedding}'],
+    ['my/index.tsx', '<RootTabHeader title={S.title} />'],
+  ])('%s 제목은 공통 RootTabHeader로 그린다', (path, usage) => {
+    const text = source(path);
+
+    expect(text).toContain(usage);
+    // 화면별 제목 크기 · 줄 높이를 다시 들지 않는다.
+    expect(text).not.toContain('type="f28" style={[styles.bold, styles.title]}');
+    expect(text).not.toContain('FontSize.searchRootTitle');
+    expect(text).not.toContain('rootTitle');
+  });
+
+  it('홈 첫 로딩 골격도 같은 제목 줄을 쓴다', () => {
+    const text = readFileSync(join(__dirname, '..', 'home', 'home-skeleton.tsx'), 'utf8');
+    expect(text).toContain('<RootTabHeader title="웨딩픽"');
+  });
+
+  it('웨딩노트 첫 방문(WP-EMPTY-NOTE)도 같은 제목 줄에 아래 선만 더한다', () => {
+    const text = source('wedding/index.tsx');
+    expect(text).toContain(
+      '<RootTabHeader title={TERMS.ourWedding} style={[styles.emptyNav, { borderBottomColor: theme.border }]} />'
+    );
+    // 덧붙이는 스타일은 선뿐 — 높이 · 여백을 다시 들면 이 화면만 갈라진다.
+    expect(text).toMatch(/emptyNav: \{ borderBottomWidth: Border\.hairline \}/);
+  });
+
+  it('홈 말고는 좌우 여백을 따로 넘기지 않는다', () => {
+    for (const path of ['search/index.tsx', 'pick/index.tsx', 'wedding/index.tsx', 'my/index.tsx']) {
+      expect(source(path)).not.toContain('gutter=');
+    }
+  });
+
+  it('검색 Root는 제목 줄 아래 검색창 줄만 좌우 24를 갖는다', () => {
+    const text = source('search/index.tsx');
+    expect(styleBlock(text, 'headerSearchRow')).toContain('paddingHorizontal: Layout.pageX');
   });
 
   /*

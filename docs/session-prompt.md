@@ -92,7 +92,7 @@
 - 공통 UI 규칙(별도 지시 없이도 유지): 등록·추가·작성 BottomSheet 기준 · **등록 버튼은
   헤더 영역에 있는 것만 쓴다 — 화면 본문(리스트 행·카드 안·플로팅 버튼)에 별도 등록·추가
   진입점을 임의로 만들지 않는다(2026-09-23 대표 지시, 전체 UX 통일)** · 인증된 사용자는
-  Back으로 `/login`·`/setup` 역진입 금지 · Overlay 열려 있으면 Back은 Overlay만 닫음 ·
+  Back으로 `/login`·`/setup` 역진입 금지(절대 규칙 — RN 정본 온보딩 1단계 「로그인으로」보다 우선, 2026-09-26 대표) · Overlay 열려 있으면 Back은 Overlay만 닫음 ·
   2Depth 이상 Header 규격 통일 · Header 서브 문구 미사용 · 진입 출처에 따라 Back
   destination 보존 · 정본에 없는 임의 Alert/Dialog 금지.
 

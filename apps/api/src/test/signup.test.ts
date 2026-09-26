@@ -1,4 +1,6 @@
-import { MINIMUM_AGE, REQUIRED_CONSENTS } from '@weddingpick/domain';
+import { ACTIVATION_CONSENTS, CONSENT_ITEMS, MINIMUM_AGE, REQUIRED_CONSENTS } from '@weddingpick/domain';
+
+import { z } from 'zod';
 
 import { createTestApp, resetDatabase, signInAs, type TestApp } from './helpers';
 
@@ -39,7 +41,8 @@ describeWithDb('가입 연령과 약관 동의', () => {
         // 나이는 로그인이 이미 확인했다. 남은 것은 동의뿐이다.
         ageVerified: true,
         minimumAge: MINIMUM_AGE,
-        missingRequired: REQUIRED_CONSENTS,
+        // 계정을 살리는 관문은 terms · privacy 둘이다(옛 앱 호환 — domain signup.ts).
+        missingRequired: ACTIVATION_CONSENTS,
       });
     });
 
@@ -72,12 +75,17 @@ describeWithDb('가입 연령과 약관 동의', () => {
         headers: session.headers,
       });
 
-      const items = response.json<{ items: { item: string; required: boolean }[] }>().items;
+      const body = response.json<{
+        items: { item: string; required: boolean }[];
+        agreements: { item: string; required: boolean }[];
+      }>();
 
-      expect(items.filter((item) => item.required).map((item) => item.item)).toEqual(
+      expect(body.agreements.filter((item) => item.required).map((item) => item.item)).toEqual(
         REQUIRED_CONSENTS
       );
-      expect(items.some((item) => !item.required)).toBe(true);
+      expect(body.agreements.some((item) => !item.required)).toBe(true);
+      /* 옛 앱이 읽는 `items`에는 옛 셋만 — 새 항목이 섞이면 옛 앱의 계약 검사가 응답을 버린다. */
+      expect(body.items.map((item) => item.item)).toEqual(['terms', 'privacy', 'marketing']);
     });
   });
 
@@ -343,6 +351,162 @@ describeWithDb('가입 연령과 약관 동의', () => {
       );
 
       expect(rows).toHaveLength(REQUIRED_CONSENTS.length);
+    });
+  });
+
+  /**
+   * v3.29 약관 동의(WP-AUTH-010)의 여덟 칸(2026-09-26 대표 감사 8). 화면이 받은 동의가
+   * 전부 항목 · 판 · 필수 여부 · 시각으로 남는지, 옛 앱의 세 항목 요청도 그대로
+   * 통하는지를 본다.
+   */
+  describe('약관 동의 여덟 칸', () => {
+    const ALL = [
+      'age', 'terms', 'privacy', 'pick_certification', 'consultation_recording',
+      'contact_share', 'marketing', 'night_alerts',
+    ];
+
+    it('여덟 칸 모두 항목 · 판 · 필수 여부로 남는다', async () => {
+      const session = await pending('kakao-eight');
+
+      const response = await test.app.inject({
+        method: 'POST',
+        url: '/v1/me/signup',
+        headers: session.headers,
+        payload: { consents: ALL },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toMatchObject({ activated: true, missingRequired: [] });
+
+      const { rows } = await test.pool.query<{
+        item: string;
+        terms_version: string;
+        is_required: boolean;
+        granted_at: Date;
+      }>(
+        'SELECT item, terms_version, is_required, granted_at FROM structured.active_consents WHERE user_id = $1',
+        [session.userId]
+      );
+
+      expect(rows.map((row) => row.item).sort()).toEqual([...ALL].sort());
+
+      for (const row of rows) {
+        const definition = CONSENT_ITEMS.find((item) => item.key === row.item);
+        expect(definition).toBeDefined();
+        expect(row.terms_version).toBe(definition?.version);
+        expect(row.is_required).toBe(definition?.required);
+        expect(row.granted_at).toBeInstanceOf(Date);
+      }
+
+      /* 필수 다섯은 is_required=true로 남는다 — 화면이 받던 성격 그대로. */
+      expect(rows.filter((row) => row.is_required).map((row) => row.item).sort()).toEqual(
+        ['age', 'consultation_recording', 'pick_certification', 'privacy', 'terms']
+      );
+    });
+
+    it('가입 상태가 여덟 칸의 동의 시각을 돌려준다', async () => {
+      const session = await pending('kakao-eight-state');
+
+      await test.app.inject({
+        method: 'POST',
+        url: '/v1/me/signup',
+        headers: session.headers,
+        payload: { consents: ALL },
+      });
+
+      const state = await test.app.inject({ method: 'GET', url: '/v1/me/signup', headers: session.headers });
+      const body = state.json<{
+        items: { item: string; grantedAt: string | null }[];
+        agreements: { item: string; required: boolean; grantedAt: string | null }[];
+      }>();
+
+      expect(body.agreements.map((item) => item.item).sort()).toEqual([...ALL].sort());
+      expect(body.agreements.every((item) => item.grantedAt !== null)).toBe(true);
+
+      /*
+       * 옛 앱의 계약(`items[].item`이 terms · privacy · marketing 셋 중 하나)으로 읽어도
+       * 응답이 통과한다 — 새 칸 `agreements`는 옛 zod가 모르는 칸이라 버린다.
+       */
+      const legacy = z.object({
+        activated: z.boolean(),
+        items: z.array(z.object({ item: z.enum(['terms', 'privacy', 'marketing']) })),
+        missingRequired: z.array(z.enum(['terms', 'privacy', 'marketing'])),
+      });
+      expect(legacy.safeParse(state.json()).success).toBe(true);
+      expect(body.items.every((item) => item.grantedAt !== null)).toBe(true);
+    });
+
+    it('글이 공개된 항목은 그 판을 가리키고, 글이 없거나 초안이면 비워 둔다', async () => {
+      const session = await pending('kakao-eight-version');
+
+      const response = await test.app.inject({
+        method: 'POST',
+        url: '/v1/me/signup',
+        headers: session.headers,
+        payload: { consents: ALL },
+      });
+
+      /* 항목 이름을 그대로 terms_doc_kind로 바꾸면 pick_certification에서 쿼리가 터진다. */
+      expect(response.statusCode).toBe(200);
+
+      const { rows } = await test.pool.query<{ item: string; terms_version_id: string | null; doc: string | null }>(
+        `SELECT c.item, c.terms_version_id, v.doc::text AS doc
+         FROM structured.user_consents c
+         LEFT JOIN structured.terms_versions v ON v.id = c.terms_version_id
+         WHERE c.user_id = $1`,
+        [session.userId]
+      );
+      const byItem = new Map(rows.map((row) => [row.item, row]));
+
+      expect(byItem.get('age')?.terms_version_id).toBeNull();
+      expect(byItem.get('night_alerts')?.terms_version_id).toBeNull();
+
+      for (const [item, doc] of [
+        ['terms', 'terms'],
+        ['privacy', 'privacy'],
+        ['marketing', 'marketing'],
+        ['pick_certification', 'pick_verification'],
+        ['consultation_recording', 'consultation_recording'],
+        ['contact_share', 'contact_sharing'],
+      ] as const) {
+        const published = await test.pool.query<{ id: string }>(
+          `SELECT id FROM structured.terms_versions
+           WHERE doc = $1::terms_doc_kind AND published_at IS NOT NULL
+           ORDER BY published_at DESC LIMIT 1`,
+          [doc]
+        );
+        const expected = published.rows[0]?.id ?? null;
+
+        expect(byItem.get(item)?.terms_version_id ?? null).toBe(expected);
+        if (expected !== null) expect(byItem.get(item)?.doc).toBe(doc);
+      }
+    });
+
+    it('옛 앱이 보내는 terms · privacy만으로도 가입이 끝난다', async () => {
+      const session = await pending('kakao-legacy');
+
+      const response = await test.app.inject({
+        method: 'POST',
+        url: '/v1/me/signup',
+        headers: session.headers,
+        payload: { consents: ['terms', 'privacy'] },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toMatchObject({ activated: true, missingRequired: [] });
+    });
+
+    it('계약에 없는 항목은 거절한다', async () => {
+      const session = await pending('kakao-unknown');
+
+      const response = await test.app.inject({
+        method: 'POST',
+        url: '/v1/me/signup',
+        headers: session.headers,
+        payload: { consents: ['terms', 'privacy', 'benefit_alerts'] },
+      });
+
+      expect(response.statusCode).toBe(400);
     });
   });
 });

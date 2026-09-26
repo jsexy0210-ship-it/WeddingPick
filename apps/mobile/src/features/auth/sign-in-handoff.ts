@@ -82,3 +82,34 @@ export function isAgeUnverifiedSignInError(error: unknown): boolean {
 
   return error instanceof Error && error.message === AGE_UNVERIFIED_SIGN_IN_MESSAGE;
 }
+
+/**
+ * 방금 «가입 전(활성화 전)»을 확인했다 — 약관 동의 화면(`app/login/consent.tsx`)이
+ * **로더 없이 바로 서게** 하는 손잡이(2026-09-26 대표 감사 4).
+ *
+ * 로그인 → 약관 동의로 넘어갈 때 로더가 두 번 떴다. 부팅(`SigningInView`)이나
+ * 로그인 화면이 «카카오로 로그인하는 중이에요»를 보이며 이미 `activated: false`를
+ * 확인했는데(세션 응답 · `GET /v1/me/signup`), 약관 동의 화면이 같은 것을 다시 물으며
+ * 제 로더(`DelayedLoader`, 700ms 뒤 뼈대)를 한 번 더 세웠다. `/v1/me/signup`은
+ * 캐시하지 않는 주소라(`api/client.ts` `NEVER_CACHED`) 그 물음은 늘 서버까지 간다.
+ *
+ * 이제 앞 단계가 «가입 전»을 확인하면 이 깃발을 세우고, 약관 동의 화면은 깃발이
+ * 싱싱하면 폼을 곧바로 그린다. **다시 묻는 것은 그대로다** — 뒤에서 물어, 이미
+ * 활성화된 계정이면 초기 설정으로 넘기고 서버가 아는 동의 항목을 읽는다. 깃발은
+ * 로더를 세울지만 정한다. 판정은 여전히 서버가 한다.
+ */
+const SIGNUP_PENDING_FRESH_MS = 60_000;
+let signupPendingAt = 0;
+
+export function noteSignupPending(now: number = Date.now()): void {
+  signupPendingAt = now;
+}
+
+export function hasFreshSignupPending(now: number = Date.now()): boolean {
+  return signupPendingAt > 0 && now - signupPendingAt <= SIGNUP_PENDING_FRESH_MS;
+}
+
+/** 한 번 쓰고 버린다 — 다음 진입(다시 시도 · 재방문)은 서버 답을 기다린다. */
+export function clearSignupPending(): void {
+  signupPendingAt = 0;
+}

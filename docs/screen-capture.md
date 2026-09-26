@@ -37,6 +37,7 @@ node scripts/screenshot-screens.mjs --build
 | `--wait <ms>` | 렌더를 기다리는 시간. 기본 1500 |
 | `--tap <이름>` | 찍기 전에 누른다. 여러 번 줄 수 있고 준 순서대로 누른다 — 아래 |
 | `--viewport WxH` | 창 크기. 기본은 경로를 보고 정한다 — 아래 |
+| `--storage 키=값` | 페이지가 뜨기 전에 localStorage에 심는다. 여러 번 줄 수 있다 — 아래 |
 
 ## 눌러야 나오는 화면
 
@@ -53,6 +54,18 @@ node scripts/screenshot-screens.mjs --route "/(tabs)/my/wedding-settings" --tap 
 같은 화면이 여러 경로에 걸려 있으면 **닿는 쪽**으로 찍는다. 날짜 시트가 그 예다 —
 `/setup`은 온보딩을 이미 마친 fixture 사용자라 홈으로 튕기고, `/(tabs)/my/wedding-settings`로
 들어가면 같은 시트가 열린다.
+
+## 기기에 적힌 상태로만 닿는 화면
+
+온보딩 완료 요약(WP-AUTH-007)은 서버가 아니라 **기기에 적어 둔 다섯 답**이 있어야 선다.
+`--storage`로 그 답을 심고, 온보딩을 안 마친 사용자(`FIXTURE_SETUP_COMPLETE=false`)로 찍는다.
+다섯 답이 다 있으면 마지막 질문(5/5)이 열리므로 «다음»을 한 번 눌러 요약으로 간다.
+
+```bash
+FIXTURE_SETUP_COMPLETE=false node scripts/screenshot-screens.mjs --route "/setup" \
+  --storage 'weddingpick.onboardingAnswers.v1={"date":{"value":null},"region":{"region":"서울","district":null},"prep":{"categories":[]},"budget":{"amount":null},"style":["URBAN"]}' \
+  --tap "다음" --viewport 320x568
+```
 
 ## PR에 붙인다
 

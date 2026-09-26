@@ -1,5 +1,14 @@
 import { findPaymentWords } from './pick-verification';
 import {
+  CONSENT_AGREEMENT_ITEMS,
+  OPTIONAL_AGREEMENT_ITEMS,
+  REQUIRED_AGREEMENT_ITEMS,
+  acceptedSignupItems,
+  signupConsentKey,
+  signupConsentsFor,
+} from './consent-terms';
+import {
+  ACTIVATION_CONSENTS,
   AGE_BLOCKED_NOTICE,
   CONSENT_INTRO,
   CONSENT_ITEMS,
@@ -9,6 +18,7 @@ import {
   REQUIRED_CONSENTS,
   REQUIRED_CONSENT_NOTICE,
   canActivate,
+  consentDocKind,
   consentVersion,
   isDraftVersion,
   missingRequiredConsents,
@@ -25,9 +35,60 @@ describe('가입 연령', () => {
 
 describe('약관 동의', () => {
   it('필수와 선택이 갈라져 있다', () => {
-    expect(REQUIRED_CONSENTS).toEqual(['terms', 'privacy']);
-    expect(OPTIONAL_CONSENTS).toEqual(['marketing']);
+    expect(REQUIRED_CONSENTS).toEqual(['terms', 'privacy', 'age', 'pick_certification', 'consultation_recording']);
+    expect(OPTIONAL_CONSENTS).toEqual(['marketing', 'contact_share', 'night_alerts']);
     expect(REQUIRED_CONSENTS.filter((item) => OPTIONAL_CONSENTS.includes(item))).toEqual([]);
+  });
+
+  it('계정을 살리는 관문은 옛 앱과 같은 둘뿐이다', () => {
+    /* 옛 앱은 terms · privacy만 보낸다. 새 필수 셋을 관문에 올리면 깔린 앱이 가입을 못 끝낸다. */
+    expect(ACTIVATION_CONSENTS).toEqual(['terms', 'privacy']);
+  });
+
+  it('약관 동의 화면(WP-AUTH-010)의 여덟 칸이 전부 서버 항목으로 옮겨진다', () => {
+    expect(CONSENT_AGREEMENT_ITEMS).toHaveLength(8);
+    const serverKeys = CONSENT_ITEMS.map((item) => item.key as string);
+    for (const item of CONSENT_AGREEMENT_ITEMS) {
+      const key = signupConsentKey(item.key);
+      expect(serverKeys).toContain(key);
+      /* 필수 · 선택이 화면과 서버에서 같다 — 행의 is_required가 화면이 받은 성격을 남긴다. */
+      expect(CONSENT_ITEMS.find((candidate) => candidate.key === key)?.required).toBe(item.required);
+    }
+    expect(signupConsentKey('benefit_alerts')).toBe('marketing');
+    expect(new Set(CONSENT_AGREEMENT_ITEMS.map((item) => signupConsentKey(item.key))).size).toBe(8);
+  });
+
+  it('체크한 칸만 화면 순서대로 보낸다', () => {
+    const all = new Set(CONSENT_AGREEMENT_ITEMS.map((item) => item.key));
+    expect(signupConsentsFor(all)).toEqual([
+      'age', 'terms', 'privacy', 'pick_certification', 'consultation_recording',
+      'contact_share', 'marketing', 'night_alerts',
+    ]);
+    const requiredOnly = new Set(REQUIRED_AGREEMENT_ITEMS.map((item) => item.key));
+    expect(signupConsentsFor(requiredOnly)).toEqual(['age', 'terms', 'privacy', 'pick_certification', 'consultation_recording']);
+    expect(signupConsentsFor(requiredOnly).some((key) => OPTIONAL_AGREEMENT_ITEMS.some((item) => signupConsentKey(item.key) === key))).toBe(false);
+  });
+
+  it('서버가 아는 항목만 보낸다 — 옛 서버는 셋, 새 서버는 여덟', () => {
+    const all = new Set(CONSENT_AGREEMENT_ITEMS.map((item) => item.key));
+    const legacy = acceptedSignupItems({ items: [{ item: 'terms' }, { item: 'privacy' }, { item: 'marketing' }] });
+    expect(signupConsentsFor(all, legacy)).toEqual(['terms', 'privacy', 'marketing']);
+
+    const current = acceptedSignupItems({
+      items: [{ item: 'terms' }, { item: 'privacy' }, { item: 'marketing' }],
+      agreements: CONSENT_ITEMS.map((item) => ({ item: item.key })),
+    });
+    expect(signupConsentsFor(all, current)).toHaveLength(8);
+    /* 모르면(null) 전부 — 서버가 판정한다. */
+    expect(signupConsentsFor(all, null)).toHaveLength(8);
+  });
+
+  it('동의 항목이 가리키는 문서 종류는 terms_doc_kind 이름이다', () => {
+    expect(consentDocKind('pick_certification')).toBe('pick_verification');
+    expect(consentDocKind('contact_share')).toBe('contact_sharing');
+    expect(consentDocKind('consultation_recording')).toBe('consultation_recording');
+    expect(consentDocKind('age')).toBeNull();
+    expect(consentDocKind('night_alerts')).toBeNull();
   });
 
   it('필수 항목을 다 받아야 빈 목록이 된다', () => {

@@ -11,15 +11,16 @@ import {
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BackHandler, Pressable, StyleSheet, View } from 'react-native';
+import { BackHandler, Platform, Pressable, StyleSheet, View, type TextStyle } from 'react-native';
 
 import { ApiError, completeSetup, completeSignup, getCurrentUser, getSignupState } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { loadToken } from '@/api/session';
-import { error as errorCopy } from '../../../../spec/strings.ko.json';
+import { error as errorCopy, onboarding as onboardingCopy } from '../../../../spec/strings.ko.json';
 import {
   Border,
   CanonGray,
+  ErrorView,
   FontSize,
   Layout,
   LineHeight,
@@ -30,8 +31,9 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 
-import { HomeSkeleton } from '@/features/home/home-skeleton';
+import { beginHomeHandoff, endHomeHandoff, prefetchHomeBootstrap } from '@/features/home/home-handoff';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
+import { showResultToast } from '@/features/navigation/result-toast';
 import { BudgetAmount } from '@/features/onboarding/budget-amount';
 import { OnboardingDatePickerSheet } from '@/features/onboarding/date-picker-sheet';
 import {
@@ -65,6 +67,7 @@ import { InlineToast, useInlineToast } from '@/features/onboarding/inline-toast'
 import { OptionRow } from '@/features/onboarding/option-row';
 import { QuestionHead } from '@/features/onboarding/question-head';
 import { RegionPickerSheet } from '@/features/onboarding/region-picker-sheet';
+import { isSecondExitPress, resolveSetupBack } from '@/features/onboarding/setup-back';
 import { StepFrame } from '@/features/onboarding/step-frame';
 import {
   clearOnboardingAnswers,
@@ -94,7 +97,9 @@ import {
  * 모두 «다음»이다.**
  *
  * **상단 뒤로가기가 없다.** 첫 질문은 «다음»만, 두 번째부터 «이전 · 다음».
- * 안드로이드 물리 뒤로가기는 «이전»과 같고 첫 질문에서는 로그인으로 나간다.
+ * 안드로이드 물리 뒤로가기는 «이전»과 같고, 완료 요약에서는 마지막 질문으로 돌아가며,
+ * 첫 질문에서는 **로그인으로 나가지 않고** 홈처럼 두 번 눌러 앱을 닫는다
+ * (2026-09-26 대표 감사 1 · `features/onboarding/setup-back.ts`).
  *
  * **미정을 억지로 받지 않는다.** 예식일은 «아직 정하지 않았어요» 칩, 진행 상황 · 예산은
  * 아무것도 안 고르고 «다음»을 누르면 미정이다(`settleAnswer`). **지역은 필수다**(2026-09-25
@@ -145,6 +150,14 @@ export default function SetupScreen() {
   const [step, setStep] = useState<QuestionStep | 'done'>('date');
   /** 기기에 적어둔 답을 읽기 전에는 첫 질문을 그리지 않는다 — 잠깐 스쳤다 바뀌면 안 된다. */
   const [restored, setRestored] = useState(false);
+  /**
+   * 기기 저장소를 못 읽었다. 전에는 거절을 받는 자리가 없어 `restored`가 영영 false로
+   * 남고 빈 화면만 섰다(2026-09-26 대표 감사 5). 오류 + «다시 시도»로 다시 읽는다.
+   */
+  const [restoreFailed, setRestoreFailed] = useState(false);
+  const [restoreAttempt, setRestoreAttempt] = useState(0);
+  /** 첫 질문에서 뒤로가기를 마지막으로 누른 때. 2초 안에 다시 누르면 앱을 닫는다. */
+  const lastExitBackAt = useRef(0);
   /** 서버에 이미 있는 스타일 — 5/5에 닿았을 때 아직 안 골랐으면 이걸로 복원한다. */
   const [seedStyle, setSeedStyle] = useState<readonly WeddingStyle[] | null>(null);
   /** 서버 응답이 올 때 이미 5/5에 있는지 보려고 지금 Step을 적어 둔다. */
@@ -156,16 +169,27 @@ export default function SetupScreen() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    void loadOnboardingAnswers().then((saved) => {
-      if (saved) {
-        setAnswers(saved);
-        /* 전부 답했는데 못 보낸 상태면 마지막 질문을 다시 연다. */
-        setStep(resumeStep(saved) ?? stepsFor(saved).at(-1) ?? 'date');
-      }
+    let alive = true;
 
-      setRestored(true);
-    });
-  }, []);
+    void loadOnboardingAnswers().then(
+      (saved) => {
+        if (!alive) return;
+
+        if (saved) {
+          setAnswers(saved);
+          /* 전부 답했는데 못 보낸 상태면 마지막 질문을 다시 연다. */
+          setStep(resumeStep(saved) ?? stepsFor(saved).at(-1) ?? 'date');
+        }
+
+        setRestored(true);
+      },
+      () => {
+        if (alive) setRestoreFailed(true);
+      }
+    );
+
+    return () => { alive = false; };
+  }, [restoreAttempt]);
 
   useEffect(() => {
     if (!isServerConfigured) return;
@@ -222,32 +246,55 @@ export default function SetupScreen() {
     [answers.style, seedStyle]
   );
 
+  /** 화면의 «이전» 단추. 첫 질문에는 단추가 없다 — 로그인으로 돌아가는 길을 두지 않는다. */
   const goPrev = useCallback(() => {
     if (step === 'done') return;
 
     const previous = prevStep(step, answers);
+    if (previous === null) return;
 
     setError(null);
-
-    if (previous === null) {
-      router.replace('/login');
-    } else {
-      enter(previous);
-    }
+    enter(previous);
   }, [step, answers, enter]);
 
-  /* 안드로이드 물리 뒤로가기 = «이전». 완료 화면에서는 아무 데도 가지 않는다. */
+  /*
+   * 안드로이드 물리 뒤로가기. 무엇을 할지는 `resolveSetupBack`이 정한다 — 시트는 닫고,
+   * 요약은 마지막 질문으로, 질문은 앞 질문으로, 첫 질문은 두 번 눌러 종료.
+   * **어느 경우에도 `/login`으로 가지 않는다**(CLAUDE.md 공통 UI 규칙).
+   */
   useEffect(() => {
+    lastExitBackAt.current = 0;
+
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (step === 'done') return true;
+      if (sending) return true;
 
-      goPrev();
+      const action = resolveSetupBack({ step, answers, sheetOpen: sheetOpen || regionSheetOpen });
 
+      if (action.kind === 'close-sheet') {
+        setSheetOpen(false);
+        setRegionSheetOpen(false);
+        return true;
+      }
+
+      if (action.kind === 'step') {
+        setError(null);
+        enter(action.target);
+        return true;
+      }
+
+      const now = Date.now();
+      if (isSecondExitPress(lastExitBackAt.current, now)) {
+        BackHandler.exitApp();
+        return true;
+      }
+
+      lastExitBackAt.current = now;
+      showResultToast(onboardingCopy['setup.exitBack']);
       return true;
     });
 
     return () => subscription.remove();
-  }, [step, goPrev]);
+  }, [step, answers, enter, sending, sheetOpen, regionSheetOpen]);
 
   /**
    * 서버에 보낸다. **완료 화면에서 «완료»를 눌렀을 때만 부른다.**
@@ -270,6 +317,10 @@ export default function SetupScreen() {
 
     setSending(true);
     setError(null);
+    /* 저장부터 홈의 첫 자료까지 뿌리의 골격 하나가 덮는다 — `features/home/home-handoff`. */
+    beginHomeHandoff();
+    /** 홈으로 넘겼는가. 넘기지 못한 모든 길(오류 · 로그인으로 돌려보냄)은 골격을 걷는다. */
+    let handedOff = false;
 
     const region = source.region?.region ?? null;
     const styleTags = [...(source.style ?? [])];
@@ -343,6 +394,12 @@ export default function SetupScreen() {
        */
       void clearOnboardingAnswers().catch(() => undefined);
 
+      /*
+       * 홈의 첫 자료를 지금 띄운다. 홈이 마운트되며 같은 주소를 부르면 가 있는 요청에
+       * 합쳐진다 — 서버는 한 번만 묻는다(`features/home/home-handoff`).
+       */
+      if (isServerConfigured) prefetchHomeBootstrap();
+      handedOff = true;
       dismissToOrReplace('/');
     } catch (caught) {
       // 세션이 끝났으면(401) 이 화면에 머물 이유가 없다 — 로그인으로 보낸다.
@@ -352,6 +409,7 @@ export default function SetupScreen() {
       }
       setError(caught instanceof Error ? caught.message : '저장하지 못했어요.');
     } finally {
+      if (!handedOff) endHomeHandoff();
       setSending(false);
     }
   }
@@ -378,12 +436,26 @@ export default function SetupScreen() {
     }
   }
 
+  if (restoreFailed) {
+    return (
+      <ErrorView
+        message={onboardingCopy['setup.loadFailed']}
+        onRetry={() => {
+          setRestoreFailed(false);
+          setRestoreAttempt((attempt) => attempt + 1);
+        }}
+      />
+    );
+  }
+
   if (!restored) {
     return <ThemedView style={styles.blank} />;
   }
 
-  /* 저장부터 홈의 첫 자료가 준비될 때까지 같은 홈 골격을 유지한다. */
-  if (sending) return <HomeSkeleton />;
+  /*
+   * 저장 중(`sending`)에는 이 화면 위를 뿌리의 홈 골격(`HomeHandoffHost`)이 덮는다.
+   * 여기서 따로 골격을 그리지 않는다 — 그리면 홈으로 넘어갈 때 두 번째 골격이 새로 선다.
+   */
 
   if (step === 'done') {
     return (
@@ -414,7 +486,18 @@ export default function SetupScreen() {
                 <ThemedText type="f14" themeColor="textAssistive" style={styles.summaryKey}>
                   {row.label}
                 </ThemedText>
-                <ThemedText type="f16" numeric numberOfLines={1} style={styles.summaryValue}>
+                {/*
+                  값은 줄을 넘긴다(2026-09-26 대표 감사 6). 정본 `sumV`는 375 캔버스에서
+                  한 줄 말줄임이지만 320 폭에서는 「아직 시작 전이…」처럼 답이 잘려 읽히지
+                  않았다 — 라벨 72 · 값 · 바꾸기 세 칸의 배치는 그대로 두고 값만 감싼다.
+                  줄은 글자가 아니라 어절에서 바꾼다(「아직 시작 / 전이에요」) — 웹 `keep-all` ·
+                  iOS `hangul-word`. 안드로이드는 이 선택지가 없어 글자 단위로 넘길 수 있다.
+                */}
+                <ThemedText
+                  type="f16"
+                  numeric
+                  lineBreakStrategyIOS="hangul-word"
+                  style={[styles.summaryValue, KEEP_WORDS]}>
                   {row.value}
                 </ThemedText>
                 <Pressable
@@ -599,6 +682,9 @@ export default function SetupScreen() {
 /* 시안 sumK — 요약 라벨 칸 폭 72. */
 const SUMMARY_KEY_WIDTH = 72;
 
+/** 한국어 어절을 쪼개지 않는다 — 웹(react-native-web)만 받는 값이라 RN 타입 밖이다. */
+const KEEP_WORDS: TextStyle | null = Platform.OS === 'web' ? ({ wordBreak: 'keep-all' } as TextStyle) : null;
+
 const styles = StyleSheet.create({
   blank: { flex: 1 },
   /* 시안 padSec — 좌우 24 · 아래 24 · 사이 12. */
@@ -673,6 +759,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
   },
   summaryKey: { width: SUMMARY_KEY_WIDTH, flexShrink: 0 },
-  summaryValue: { flex: 1, minWidth: 0, fontWeight: 700 },
+  /* 두 줄이 되면 행이 56보다 커지므로 위아래 12를 둔다 — 한 줄일 때는 minHeight 56이 그대로 선다. */
+  summaryValue: { flex: 1, minWidth: 0, fontWeight: 700, paddingVertical: Layout.rowPaddingY },
   summaryEdit: { fontWeight: 700 },
 });

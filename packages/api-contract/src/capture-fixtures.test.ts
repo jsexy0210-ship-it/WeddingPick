@@ -56,6 +56,7 @@ const { routes } = require('../../../scripts/fixtures/api.cjs');
 const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/me/signup', signupStateSchema],
   ['GET /v1/me', currentUserSchema],
+  ['POST /v1/me/setup', currentUserSchema],
   ['GET /v1/app/bootstrap', appBootstrapResponseSchema],
   ['GET /v1/me/recommendations', categoryRecommendationsResponseSchema],
   ['GET /v1/me/pick-recommendations', ENDPOINTS.getPickRecommendations.response],
@@ -139,6 +140,8 @@ const NO_CONTRACT = new Set([
   'GET /v1/admin/inquiries/:id',
   /* 회원 상세 360뷰(2026-09-23 새 화면) — 관리자 전용, 같은 자리다. */
   'GET /v1/admin/users/:id',
+  /* 앱 회원 목록 — 관리자 전용, 같은 자리다(뷰어 캡처용, 2026-09-26). */
+  'GET /v1/admin/users',
   'GET /v1/weddings/:weddingId/candidates/removed',
 ]);
 

@@ -2,7 +2,8 @@ import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { router } from 'expo-router';
 import SetupScreen from '@/app/setup';
-import { ApiError, completeSetup, completeSignup, getCurrentUser, getSignupState } from '@/api/client';
+import { ApiError, completeSetup, completeSignup, getAppBootstrap, getCurrentUser, getSignupState } from '@/api/client';
+import { endHomeHandoff, isHomeHandoffActive } from '@/features/home/home-handoff';
 import { loadToken } from '@/api/session';
 import { clearOnboardingAnswers, clearWeddingDraft, loadOnboardingAnswers, saveOnboardingAnswers, saveWeddingDraft } from './wedding-draft';
 import type { Answers } from './flow';
@@ -16,7 +17,7 @@ jest.mock('@/api/client', () => ({
     status: number;
     constructor(code: string, message: string, status: number) { super(message); this.code = code; this.status = status; }
   },
-  completeSetup: jest.fn(), completeSignup: jest.fn(), getCurrentUser: jest.fn(), getSignupState: jest.fn(),
+  completeSetup: jest.fn(), completeSignup: jest.fn(), getAppBootstrap: jest.fn(), getCurrentUser: jest.fn(), getSignupState: jest.fn(),
 }));
 jest.mock('./wedding-draft', () => ({
   clearOnboardingAnswers: jest.fn(), clearWeddingDraft: jest.fn(), loadOnboardingAnswers: jest.fn(),
@@ -33,6 +34,7 @@ jest.mock('./step-frame', () => ({ StepFrame: 'StepFrame' }));
 jest.mock('@weddingpick/ui', () => ({
   Border: { selected: 1.5 },
   CanonGray: {},
+  ErrorView: 'ErrorView',
   FontSize: { dateWheel: 17 },
   Layout: {},
   LineHeight: {},
@@ -97,6 +99,8 @@ beforeEach(() => {
   jest.mocked(getCurrentUser).mockResolvedValue({ styleTags: [] } as never);
   jest.mocked(completeSignup).mockResolvedValue(activeSignup);
   jest.mocked(completeSetup).mockResolvedValue({} as never);
+  jest.mocked(getAppBootstrap).mockResolvedValue({} as never);
+  endHomeHandoff();
 });
 afterEach(async () => { if (tree) await act(async () => tree.unmount()); });
 
@@ -161,16 +165,41 @@ it('이미 활성화된 계정은 가입 동의를 다시 저장하지 않고 �
   expect(completeSetup).toHaveBeenCalledTimes(1);
 });
 
-it('초기 설정 저장 중 홈 스켈레톤을 보여주고 저장 직후 홈으로 이동한다', async () => {
+it('초기 설정 저장 중 뿌리의 홈 골격을 켜고, 저장 직후 홈 자료를 먼저 띄운 뒤 홈으로 이동한다', async () => {
   const pending = deferred<Awaited<ReturnType<typeof completeSetup>>>();
   jest.mocked(getSignupState).mockResolvedValue(activeSignup);
   jest.mocked(completeSetup).mockReturnValue(pending.promise);
   await mount();
   await finish();
-  expect(tree.root.findAllByType('HomeSkeleton' as never)).toHaveLength(1);
+  /* 설정 화면은 제 골격을 그리지 않는다 — 뿌리(HomeHandoffHost)가 한 장을 들고 있다. */
+  expect(tree.root.findAllByType('HomeSkeleton' as never)).toHaveLength(0);
+  expect(isHomeHandoffActive()).toBe(true);
   expect(router.replace).not.toHaveBeenCalledWith('/');
+  expect(getAppBootstrap).not.toHaveBeenCalled();
   await act(async () => pending.resolve({} as never));
+  expect(getAppBootstrap).toHaveBeenCalledTimes(1);
   expect(router.replace).toHaveBeenCalledWith('/');
+  /* 골격은 홈이 첫 자료를 그릴 때 걷는다 — 여기서 걷으면 홈이 골격을 한 번 더 세운다. */
+  expect(isHomeHandoffActive()).toBe(true);
+});
+
+it('저장이 실패하면 홈 골격을 걷고 요약에 오류를 남긴다', async () => {
+  jest.mocked(getSignupState).mockResolvedValue(activeSignup);
+  jest.mocked(completeSetup).mockRejectedValue(new Error('저장하지 못했어요'));
+  await mount();
+  await finish();
+  expect(isHomeHandoffActive()).toBe(false);
+  expect(frame().props.error).toBe('저장하지 못했어요');
+  expect(frame().props.stepKey).toBe('done');
+});
+
+it('세션이 끝나 로그인으로 돌려보낼 때도 홈 골격을 걷는다', async () => {
+  jest.mocked(getSignupState).mockResolvedValue(activeSignup);
+  jest.mocked(completeSetup).mockRejectedValue(new ApiError('unauthenticated', '로그인이 필요합니다.', 401));
+  await mount();
+  await finish();
+  expect(router.replace).toHaveBeenCalledWith('/login');
+  expect(isHomeHandoffActive()).toBe(false);
 });
 
 it('가입 미완료 계정의 스타일 복원은 보호된 내 정보 API를 호출하지 않는다', async () => {

@@ -225,6 +225,8 @@ const routes = {
   },
   /* `FIXTURE_SETUP_COMPLETE=false`면 온보딩(`/setup`)을 찍을 수 있다 — 그때만 setupComplete가 false다. */
   'GET /v1/me': () => ({ ...ME, setupComplete: process.env.FIXTURE_SETUP_COMPLETE !== 'false' }),
+  /* 온보딩 완료(WP-AUTH-007 «웨딩픽 시작하기») — 저장 → 홈 골격 한 장(`features/home/home-handoff`)을 찍는다. */
+  'POST /v1/me/setup': () => ({ ...ME, setupComplete: true }),
   'GET /v1/app/bootstrap': {
     member: ME,
     notifications: null,
@@ -1011,14 +1013,37 @@ const routes = {
       },
     ],
   },
-  'GET /v1/admin/members-trend': {
-    bucket: 'month',
-    points: [
-      { at: '2026-07-01T00:00:00.000Z', signups: 120, withdrawals: 8, total: 1200 },
-      { at: '2026-08-01T00:00:00.000Z', signups: 150, withdrawals: 11, total: 1350 },
-      { at: '2026-09-01T00:00:00.000Z', signups: 90, withdrawals: 6, total: 1440 },
-    ],
-    current: 1440,
+  /*
+   * 구간마다 칸 수가 서버(`apps/api/src/dashboard-admin.ts` `BUCKET_SPAN`)와 같아야
+   * 한다. 예전에는 무엇을 물어도 월 3칸을 돌려줘서, 기본 구간인 「일」 14칸이
+   * 1280 폭에서 카드 밖으로 밀리는 것을 캡처가 한 번도 못 봤다(2026-09-26 감사 4번).
+   */
+  'GET /v1/admin/members-trend': ({ url }) => {
+    if (url.searchParams.get('bucket') === 'day') {
+      const signups = [18, 22, 15, 30, 27, 12, 9, 24, 31, 19, 26, 21, 14, 11];
+      const withdrawals = [1, 0, 2, 1, 0, 3, 1, 0, 2, 1, 1, 0, 2, 1];
+      let total = 1440 - signups.reduce((sum, n, i) => sum + n - withdrawals[i], 0);
+      return {
+        bucket: 'day',
+        points: signups.map((n, i) => {
+          total += n - withdrawals[i];
+          /* KST 자정 = 전날 15:00Z. 2026-09-13 ~ 2026-09-26 KST. */
+          const at = new Date(Date.UTC(2026, 8, 12 + i, 15)).toISOString();
+          return { at, signups: n, withdrawals: withdrawals[i], total };
+        }),
+        current: 1440,
+      };
+    }
+
+    return {
+      bucket: 'month',
+      points: [
+        { at: '2026-07-01T00:00:00.000Z', signups: 120, withdrawals: 8, total: 1200 },
+        { at: '2026-08-01T00:00:00.000Z', signups: 150, withdrawals: 11, total: 1350 },
+        { at: '2026-09-01T00:00:00.000Z', signups: 90, withdrawals: 6, total: 1440 },
+      ],
+      current: 1440,
+    };
   },
   'GET /v1/admin/briefing': {
     briefing: [
@@ -1505,6 +1530,60 @@ const routes = {
     subjectId: 'pp111111-1111-4111-8111-111111111111',
     resolution: null,
     events: [],
+  },
+  /*
+   * 계정·권한 → 앱 회원 목록(`apps/api/src/routes/admin.ts` `GET /v1/admin/users`).
+   * 뷰어에게는 관리자 계정 탭 대신 이 목록만 보인다(2026-09-25 대표 지시) — 그 화면을
+   * 찍으려면 본문이 «불러오기 실패»가 아니어야 한다. 탈퇴 대기 한 줄을 섞어 상태 칸도 찍는다.
+   */
+  'GET /v1/admin/users': {
+    users: [
+      {
+        id: '99999999-9999-4999-8999-999999999999',
+        displayName: '김웨딩',
+        provider: 'kakao',
+        email: 'wedding@example.com',
+        nickname: '웨딩픽',
+        createdAt: '2026-06-01T00:00:00.000Z',
+        activatedAt: '2026-06-01T00:05:00.000Z',
+        lastLoginAt: '2026-09-22T09:00:00.000Z',
+        deletedAt: null,
+        isOperator: false,
+        pickVerified: true,
+        withdrawal: null,
+      },
+      {
+        id: '88888888-8888-4888-8888-888888888888',
+        displayName: '이신부',
+        provider: 'kakao',
+        email: 'bride@example.com',
+        nickname: '봄신부',
+        createdAt: '2026-07-14T00:00:00.000Z',
+        activatedAt: '2026-07-14T00:03:00.000Z',
+        lastLoginAt: '2026-09-20T11:30:00.000Z',
+        deletedAt: null,
+        isOperator: false,
+        pickVerified: false,
+        withdrawal: null,
+      },
+      {
+        id: '77777777-7777-4777-8777-777777777777',
+        displayName: '박예비',
+        provider: 'kakao',
+        email: null,
+        nickname: '예비신랑',
+        createdAt: '2026-08-02T00:00:00.000Z',
+        activatedAt: null,
+        lastLoginAt: '2026-08-02T00:00:00.000Z',
+        deletedAt: null,
+        isOperator: false,
+        pickVerified: false,
+        withdrawal: null,
+      },
+    ],
+    total: 3,
+    hasMore: false,
+    nextCursor: null,
   },
   /*
    * 회원 상세(360뷰, 2026-09-23 관리자-프론트 연결 재검증). 웨딩·Pick·후기·결제

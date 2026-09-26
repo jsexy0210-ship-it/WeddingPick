@@ -21,7 +21,7 @@
     "validation": "정본 검사 통과(ZIP 2·활성 99·화면 ID 208). 모바일 538건, 도메인 991건, 웹 67건, API 계약 58건 통과. 전체 workspace typecheck와 웹 정적 export 259라우트 통과. lint 오류 0·기존 경고 5. 로컬 Windows API 전체 검사는 307건 통과·7건 실패·905건 skip이며, 실패는 Git 파일 탐색 6건과 Node TAP 출력 형식 1건이다. DB가 없어 결제 인증 API 21건은 skip되어 최종 CI DB 검증이 필요하다.",
     "completion": "정본 저장·무결성 검사·208개 추적 대장과 확인된 충돌 구현은 반영했다. 30개 미연결 화면과 전체 390×844 네이티브 대조가 남아 있어 전 화면 1:1 완료로 표시하지 않는다."
   },
-  "updatedDate": "2026-09-15",
+  "updatedDate": "2026-09-26",
   "pendingAdminDeployment": {
     "dateKst": "2026-09-11",
     "baselineCommit": "d20e898b394ac52fda1dab9df98770b83c218294",
@@ -1447,5 +1447,1292 @@
       "MY 홈 「스크랩」 메뉴 행 유지 여부·`my/privacy.tsx` 삭제 대 정본 재연결·공용 헤더 back 40px→36px·알림 토글 On 색상 실기기 재확인 — 4건 대표님/후속 세션 판단 필요.",
       "search/images.tsx의 navPaddingLeft/Right 비대칭·Layout.gutter(24) vs 정본 20px·팔레트 미세 오차 — 공용 토큰이라 common-components 세션이 기록만 남기고 안 고침."
     ]
+  },
+  "sessionAbsorption20260926": {
+    "absorbedAtKst": "2026-09-26 16:20",
+    "trigger": "대표 지시 「진행상황 보고하고 완료된 세션은 흡수 정리해라」",
+    "method": "원격 세션 list_sessions(mine) 전 페이지 확인 — 보관 안 된 28개 전부 작업이 main에 들어간 것을 PR·통합 커밋으로 확인한 뒤 보관. PR 23개(#502 · #518 · #520 · #522 · #524~#542)의 본문·코멘트에서 남은 항목을 뽑아 origin/main eacbe298 코드와 대표 결정에 대조하는 워크플로(wf_a601912e-b08, 에이전트 9)를 돌렸다.",
+    "archivedSessions": [
+      {
+        "id": "session_01NJcJfFrTDtZARdk2VHpBCh",
+        "title": "디자인된 날짜·시간 휠 선택기 · 온보딩 예식일 선택 원복"
+      },
+      {
+        "id": "session_01PACPQvVTf1q8KeR9ENSQSw",
+        "title": "웨딩노트 예산 — 등록한 지출·예산 수정·삭제"
+      },
+      {
+        "id": "session_019iVePDnJwbCVwDn5ZnPHMJ",
+        "title": "Pick 업종별 5곳 · 홈 알림 아이콘 복구 · 지난 문의 상세"
+      },
+      {
+        "id": "session_01Md7LbBYcCpKECx5he9JA6q",
+        "title": "바텀시트 공통 UX 통일 · OS 날짜/시간 선택기"
+      },
+      {
+        "id": "session_01S5hFpdSqYTCMivaGSdiVAX",
+        "title": "관리자: 뷰어 조회만 · 등록 목록마다 수정·삭제 · 업체 관리 수정·삭제"
+      },
+      {
+        "id": "session_01T6eSmTZdr69WLeshkuJfCG",
+        "title": "픽셀 대조 · 공통 UI·빈 상태·로더 (common 18)"
+      },
+      {
+        "id": "session_01DJMUEgfgUPfjzfW8tbo1xj",
+        "title": "픽셀 대조 · MY·라운지·배우자 (my 22)"
+      },
+      {
+        "id": "session_01V1K3eHJwQiDgB5YMsjR3by",
+        "title": "픽셀 대조 · 웨딩노트 (note 9)"
+      },
+      {
+        "id": "session_01VQz9W7dChKSdZFN7X5eLAV",
+        "title": "픽셀 대조 · Pick (pick 5)"
+      },
+      {
+        "id": "session_01WgAjGRVwJJX9FZ6xysJC1K",
+        "title": "픽셀 대조 · 검색·업체 상세 (search 11)"
+      },
+      {
+        "id": "session_01UrwqUvywGkv55exPdFxuHR",
+        "title": "픽셀 대조 · 홈·로그인·온보딩 (home 15)"
+      },
+      {
+        "id": "session_01UnGSfZkqxUkRqCB1hLiVfG",
+        "title": "추천·할 일 섹션 삭제 · 초대 6자리 · 링크 미리보기 3종 관리"
+      },
+      {
+        "id": "session_01YTdHosHWxeM6rnAiWucZoc",
+        "title": "정본에 없는 앱 화면 52개 전부 삭제(Pick 인증 포함)"
+      },
+      {
+        "id": "session_01Sk7xeZEcjRbo9mwgftcHEc",
+        "title": "후속 · 웨딩노트 (#529)"
+      },
+      {
+        "id": "session_01U6ejyj1DsayNxGijSD7CzY",
+        "title": "후속 · 홈·로그인·온보딩 (#528)"
+      },
+      {
+        "id": "session_01BvxGZkvvCRS1fHrnSW8w7U",
+        "title": "후속 · 공통 로더→스켈레톤·다이얼로그 (#524)"
+      },
+      {
+        "id": "session_013yF8Mmw6dU91NGzThhwk2E",
+        "title": "RN 정본 후속 · MY·라운지·약관 (#526)"
+      },
+      {
+        "id": "session_01ANayGp3zKggX2c2KHQBcgG",
+        "title": "RN 정본 후속 · 검색·업체 상세 (#527)"
+      },
+      {
+        "id": "session_012ZuKXXssFx9KUvPWGQcQUt",
+        "title": "RN 정본 후속 · Pick 카드→상담 예약 (#525)"
+      },
+      {
+        "id": "session_012hYTWHx2nKxg4NYQpQ4wsi",
+        "title": "RN 정본 1:1 · 공통 UI·빈 상태·로더"
+      },
+      {
+        "id": "session_01KjFyjNFT2zP4Sgx192hVA2",
+        "title": "RN 정본 1:1 · MY·라운지·배우자"
+      },
+      {
+        "id": "session_01VTS4PJNxAjuzVE2WzZ4miv",
+        "title": "RN 정본 1:1 · 웨딩노트"
+      },
+      {
+        "id": "session_01A8f8R5g44x9bKJRym3KYFp",
+        "title": "RN 정본 1:1 · Pick·Pick 인증"
+      },
+      {
+        "id": "session_01WwS9FJw3So4WYXqXva1TUi",
+        "title": "RN 정본 1:1 · 검색·업체 상세"
+      },
+      {
+        "id": "session_01Q1jEEnpShJSFNENjFtiHvF",
+        "title": "RN 정본 1:1 · 홈·로그인·온보딩"
+      },
+      {
+        "id": "session_01QnBZDqA5DndDLBXH35zRNT",
+        "title": "결정사 개념 전면 제거"
+      },
+      {
+        "id": "session_012occtF86jRnrKFzkPTHB1L",
+        "title": "공공 API 활용 기능·콘텐츠 조사"
+      },
+      {
+        "id": "session_01P32uyFzXTqnfQhH1LKfBCE",
+        "title": "v3.29 · 웨딩노트 1:1 대조"
+      }
+    ],
+    "closedPrs": {
+      "prs": [
+        518,
+        530,
+        531,
+        532,
+        533,
+        534,
+        535,
+        536,
+        537,
+        538,
+        539,
+        540,
+        541
+      ],
+      "reason": "통합 커밋(a79c1b25 · 78552f9a · 015e2132 · de55d067 · a5ff5d6e)으로 main에 들어갔다. #542는 29535824로 통합 후 닫음."
+    },
+    "keptOpenPrs": [
+      {
+        "pr": 520,
+        "reason": "main에 아직 반영되지 않았다. 예보 줄, 공휴일 API, 0432_public_calendar.sql이 main에 없고, 브랜치 feat/note-holiday-weather(7f7bf968)는 main보다 64커밋 뒤처져 있다. main이 이미 지운 wedding-calendar.tsx도 고친다. port-520에서 포팅하는 중이다. GitHub을 확인한 결과(2026-09-26) 열린 PR은 #520 하나뿐이다. #518은 2026-09-26 15:23 KST에 닫혔고 #530~#541도 이미 닫혀 있어서 새로 닫을 PR은 없다."
+      }
+    ],
+    "removedLocalWorktrees": "main에 합쳐진 로컬 worktree 18개 삭제(브랜치는 보존). claude/v3.29-reference-audit의 c89ac634는 원격 브랜치에 남아 있다.",
+    "counts": {
+      "resolved": 107,
+      "obsolete": 25,
+      "open": 95,
+      "needsDaepyoDecision": 48
+    },
+    "missingFromMain": [
+      {
+        "commit": "2bf6a219f92b3951301c0ecf100d8a9237023a6d",
+        "from": "#538 claude/admin-viewer-readonly",
+        "what": "뷰어에게 관리자 계정 탭을 메뉴에서 뺀다(사이드바 「앱 회원」) — 대표 지시 「메뉴에서도 빼」",
+        "status": "cherry-pick 시도가 자동 권한 판정에서 막혀 대표님 확인 대기(2026-09-26)"
+      }
+    ],
+    "openItems": [
+      {
+        "id": "port-520",
+        "kind": "followup",
+        "text": "#520(예식일 예보 줄 · 공휴일 API · 0432 표)을 main 위로 포팅한다. 삭제된 html 웨딩노트 시안 대신 RN note.jsx 기준으로 다시 대조하고, events/new.tsx import를 합친다. 그다음 api jest 전체를 돌리고, 실제 데이터(4~10일 전 창)로 화면을 찍는다. 끝나면 DB Migrate 수동 실행(0432)을 하고, PR #520과 브랜치를 닫는다",
+        "source_prs": [
+          520,
+          522,
+          536
+        ],
+        "evidence": "git log origin/main --grep '#520' 0건. packages/db/migrations는 0431 다음이 바로 0433~0436이다(실행기가 파일명 집합으로 비교해 나중에 넣어도 적용된다, migrate.ts:23-31). wedding/index.tsx:543-571 ddayCard에 예보 줄이 없다. PR 본문: 「api jest 전체는 돌리지 않았다」 · 「캡처는 fixture 응답」",
+        "in_progress_branch": "port-520",
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "public-api-probe-run",
+        "kind": "ops",
+        "text": "「공공 API 응답 조회」 워크플로를 한 번도 돌리지 않았다. 예식장 · 특일정보 · 중기예보 응답 모양도, GitHub Secret(DATA_GO_KR_MY_KEY 등) 등록 여부도 아직 확인하지 못했다",
+        "source_prs": [
+          518
+        ],
+        "evidence": "public-api-probe.yml 실행 기록 total_count 0(2026-09-26 재확인). 워크플로 19-22줄에는 「대표님이 DATA_GO_KR_MY_KEY 하나로 등록」이라는 주석만 있다",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "public-calendar-collectors",
+        "kind": "followup",
+        "text": "특일정보(공휴일) · 중기예보 수집기가 없어서 #520을 포팅해도 표가 비고 화면에 줄이 나오지 않는다. 예식 지역이 「그 외」이면 쓸 지역→예보구역 매핑도 없다",
+        "source_prs": [
+          518,
+          520
+        ],
+        "evidence": "main에서 SpcdeInfoService · MidFcstInfoService · public_holidays · mid_forecasts 검색 결과 0건. apps/api/src/public-data/sources.ts에는 파일데이터 · sdsc2만 있다. 선행 조건인 조회 워크플로 실행 기록도 0건이다",
+        "in_progress_branch": "port-520",
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "holiday-line-placement",
+        "kind": "design_decision",
+        "text": "공휴일 한 줄(A안)을 넣기로 했던 「일정 추가 시트 안 달력 아래」 자리가 없어졌다. 달력 격자를 걷고 날짜를 휠 시트로 바꿨기 때문이다. 이 줄을 어디에 둘지 새로 정해야 한다",
+        "source_prs": [
+          520
+        ],
+        "evidence": "de55d067(#539)에서 달력 격자를 걷었고, 29535824(#542)에서 DateWheelSheet로 바꿨다. events/new.tsx:105·121은 OsDateField · OsTimeField다",
+        "in_progress_branch": "port-520",
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "public-api-probe-agency-key",
+        "kind": "bug_or_gap",
+        "text": "결정사 개념을 전면 제거하기로 했는데, 공공 API 조회 워크플로의 키 선택지에 결혼중개업소 키가 아직 남아 있다. 계정당 키가 하나라서 WEDDING_HALL_KEY 선택지도 중복이다",
+        "source_prs": [
+          518,
+          522
+        ],
+        "evidence": ".github/workflows/public-api-probe.yml:24 DATA_GO_KR_MARRIAGE_AGENCY_KEY(2026-09-26 main에서 재확인), :23 WEDDING_HALL_KEY",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "agency-feed-posts",
+        "kind": "ops",
+        "text": "「결정사」 카테고리를 단 기존 웨딩피드 글을 내릴지 정해야 한다. 0433은 글이 있으면 카테고리를 남겨 둔다. 몇 건인지 먼저 세어 보고한다",
+        "source_prs": [
+          522
+        ],
+        "evidence": "0433_retire_agency_task.sql:21-27. 건수와 처리 결정이 저장소에도 master-status에도 없다",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "pick-verify-leftovers",
+        "kind": "design_decision",
+        "text": "Pick 인증 촬영 · 제출 · 결과 화면은 삭제했는데(#535), 인증을 하라고 권하는 문구와 행이 화면 곳곳에 남아 있고 누르면 막다른 길로 간다. 해당 자리: 홈 예산 안내 「Pick 인증하면 낸 금액이 자동으로 들어가요」 · 홈 CTA 「Pick 인증하기」 · 예식 완료 뷰 「Pick 인증 N건 남았어요 · 인증」(지출 추가로 이동) · MY 리포트 빈 상태 「첫 Pick 인증을 시작해 보세요」 · 후기 「Pick 인증을 하면 후기를 쓸 수 있어요」 · 라운지 후기 빈 상태의 정본 CTA 「Pick 인증하기」. Pick 인증 진입 경로를 새로 둘지, 이 문구들을 모두 걷을지 정해야 한다(배지는 「냅둬」로 유지)",
+        "source_prs": [
+          535,
+          537,
+          531,
+          528
+        ],
+        "evidence": "spec/strings.ko.json:284 budget.note(home-summary.tsx:167에서 노출) · features/home/state.ts:316 homeCta 'Pick 인증하기' · features/wedding/complete-view.tsx:102-127 ↔ expenses/add.tsx:317 「지출 넣고 인증하기 뺐다」 · my/reports.tsx:15 · my/reviews.tsx:32 · apps/mobile/src/app 아래 capture 라우트 0건",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "decide-path-missing",
+        "kind": "design_decision",
+        "text": "/pick/confirm을 삭제한 뒤로 앱에서 업종 「결정」을 새로 만들 방법이 없다. 그래서 신규 사용자는 예약현황 「N/11」이 늘 0이고 decided.tsx도 늘 빈 화면이다. 예약현황을 무엇으로 셀지(예: 상담 예약한 업체) 새로 정해야 한다",
+        "source_prs": [
+          529
+        ],
+        "evidence": "decideCategory 호출은 pick/index.tsx:377(빼기 되돌리기)뿐이다. wedding/index.tsx:142와 decided.tsx는 listDecisions로 읽는다. 결정 A(015e2132)",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "pick-undecide",
+        "kind": "bug_or_gap",
+        "text": "결정한 카드 왼쪽의 「결정 취소」와 askUndecide가 남아 있다. 정본에서 이 자리는 늘 비교 담기/빼기다. confirm을 지울 때 같이 지우라고 했던 요소다",
+        "source_prs": [
+          525,
+          530
+        ],
+        "evidence": "pick/index.tsx:109 ACTION_UNDECIDE · :280-284 · :701-715",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "pick-more-button",
+        "kind": "design_decision",
+        "text": "묶음의 「더 보기」를 정본은 카드 2개짜리 묶음에도 그리지만, 구현은 3개를 넘을 때만 그린다",
+        "source_prs": [
+          525,
+          530
+        ],
+        "evidence": "pick/index.tsx:134 GROUP_PREVIEW=3 · :503 DESIGN_UNRESOLVED 주석",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "pick-other-category-groups",
+        "kind": "design_decision",
+        "text": "준비 묶음 넷에 들지 않는 업종(기타 · 과거 결정사)을 업종 이름 묶음으로 만들어 뒤에 붙였다. 정본에 없는 자리다",
+        "source_prs": [
+          525
+        ],
+        "evidence": "pick/index.tsx:161-163 「정본에 없는 자리라 DESIGN_UNRESOLVED」",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "pick-chip-anchor",
+        "kind": "design_decision",
+        "text": "Pick 칩(id=cat-… 앵커)을 스크롤 이동이 아니라 목록 거르기로 구현했다(홈 /pick?group=도 같다)",
+        "source_prs": [
+          525
+        ],
+        "evidence": "pick/index.tsx:238 visibleSections filter. 대표 확인 기록 없음",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "pick-recommend-row",
+        "kind": "design_decision",
+        "text": "Pick 묶음별 추천 줄은 섹션 이름 「내 조건에 맞는 곳」이 임시이고, 카드 148×116 · Pick 단추 36 · 코랄 선도 정본 없이 정했다(DESIGN_SOURCE_NOT_VERIFIED). 캡처 fixture가 이미 담은 곳을 추천에서 빼지 않아 같은 업체가 두 줄에 나오는 것도 함께 고친다",
+        "source_prs": [
+          540
+        ],
+        "evidence": "pick/index.tsx:127-128 「이름은 대표님 확인 대기」 · :130-131 RECOMMEND_CARD_WIDTH 148 · scripts/fixtures/api.cjs:765-772 slice(0,5)",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "pick-008-frame005",
+        "kind": "design_decision",
+        "text": "WP-PICK-008 정본 frame-005의 축약 카드 목록이 frame-001 카드 구조와 다르다. 구현은 frame-001을 따랐다",
+        "source_prs": [
+          530
+        ],
+        "evidence": "#530 본문 표 WP-PICK-008 행. 판단 기록 없음",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "pick-candidate-api-fields",
+        "kind": "bug_or_gap",
+        "text": "Pick 후보 카드에 태그 · 제보 금액(priceLine) · 실 제보 N건 · 「인기」 배지가 없다. API 계약에 값이 없기 때문이다. 비교 화면 지표 줄(원본 제공 · 보정 · 5월 주말)과 「상담 예약함」 상태도 서버 값이 없다",
+        "source_prs": [
+          525,
+          530
+        ],
+        "evidence": "packages/api-contract/src/candidates.ts:20-34 vendorCandidateSchema에는 rating뿐이다 · search/compare.tsx:69-73 DESIGN_UNRESOLVED",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "pick-group-meta-empty",
+        "kind": "followup",
+        "text": "Pick 묶음 머리 「N개 · 최신순」 삭제 오더가 아직 반영되지 않았다. 빈 Pick은 빈 카드를 남은 높이의 세로 가운데에 두고, 헤더 아래 1px 선을 넣어야 한다. Empty · Loading · Error 상태 대조도 하지 않았다",
+        "source_prs": [
+          525,
+          531
+        ],
+        "evidence": "pick/index.tsx:123-125 `${count}개 · 최신순` · :1085-1089 styles.empty에 flex · justifyContent 없음 · :557-565 Header 선 없음",
+        "in_progress_branch": "audit-app",
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "pick-alimtalk-calendar",
+        "kind": "followup",
+        "text": "정본 pick.js diffs에 있는 「결정 이후 알림톡 발송 · 캘린더 자동 등록」 서버 기능이 없다. 알림톡은 카카오 비즈 채널 등록이 선행돼야 한다",
+        "source_prs": [
+          525
+        ],
+        "evidence": "docs/design/React_Native/pick.js:425. apps · packages에서 알림톡 관련 코드 0건",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "vendor-image-empty",
+        "kind": "design_decision",
+        "text": "업체 이미지가 없을 때 정본은 SEC 면 위에 작은 이미지 아이콘을 두고, 앱은 업종 기본 이미지를 쓴다. 2026-09-15 대표 지시 「이미지 없는 건 디폴트 이미지」와 정본이 충돌한다",
+        "source_prs": [
+          530
+        ],
+        "evidence": "packages/ui/src/vendor-image.tsx:58-67",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "region-long-form",
+        "kind": "design_decision",
+        "text": "지역을 정본은 「강남구」(긴 꼴)로 적고, 구현은 2026-09-10 짧은 꼴 지시에 따라 shortDistrictName으로 「강남」이라 적는다",
+        "source_prs": [
+          530
+        ],
+        "evidence": "대표 확인 기록 없음. 도메인 함수는 그대로다",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "tabbar-pick-glyph",
+        "kind": "design_decision",
+        "text": "탭바 Pick 아이콘을 RN 정본은 SEED heart/heart-fill로 그리고, 구현은 Pick Mark를 쓴다. CLAUDE.md 심볼 적용처에는 Pick 탭이 들어 있다",
+        "source_prs": [
+          530,
+          531
+        ],
+        "evidence": "features/navigation/tab-bar.tsx:20 · packages/ui/src/seed-icon.tsx:12 「대표님이 하트라고 하기 전까지 Pick Mark」",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "tabbar-height",
+        "kind": "design_decision",
+        "text": "탭바 수치가 정본 보드끼리 72/9/3(pick · search · note)과 76/8/4(common · home · my)로 갈린다. 구현은 72 쪽이다",
+        "source_prs": [
+          531,
+          534
+        ],
+        "evidence": "packages/ui/src/theme.ts:755 tabBar 72 · tab-bar.tsx:14-17 · home.js:375 76+8",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "tabbar-on-faq-terms",
+        "kind": "design_decision",
+        "text": "정본은 FAQ · 약관 · 방침 화면에도 탭바를 그리는데, 구현은 Root 5화면에서만 보여 준다(README 「Root에서만」 규칙과 충돌)",
+        "source_prs": [
+          537
+        ],
+        "evidence": "features/navigation/root-tab-visibility.ts:3-13",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "close-button-circle",
+        "kind": "bug_or_gap",
+        "text": "풀팝업 닫기 X(지출내역 · 변경내역 · 예약현황 · 비교 등 DepthHeader close 변형)에 정본의 36 회색 원형 면이 없다. 공통 풀팝업 규격(좌측 36 슬롯 회색 원형 X)은 이미 정해져 있다",
+        "source_prs": [
+          529,
+          530,
+          536
+        ],
+        "evidence": "screen-kit.tsx:82 NavBar→DepthHeader · back-button.tsx:69-75 close 변형에 backgroundColor 없음. full-popup-header.tsx:43에만 CanonGray.gray100 원이 있다",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "canon-color-palette",
+        "kind": "design_decision",
+        "text": "앱 전역 회색 팔레트를 SEED에서 RN 정본 색으로 바꿀지 정해야 한다. 정본 색: INK #212124 · SEC #f2f3f6 · BORDER #eaebee · SUB #4d5159 · #f7f8fa · #adb1ba · 확인 필요 상자 #fff8ee. CanonGray는 17개 파일에서만 부분적으로 쓰이고, 보조 글자는 textSecondary #868b94로 그려진다. 부분 적용 가능한 곳(Pick 꺼진 칩 · 더 보기, 상담 완료 「홈으로」)은 이미 생긴 CanonGray로 바로 고칠 수 있다",
+        "source_prs": [
+          524,
+          525,
+          527,
+          529,
+          530,
+          534,
+          536
+        ],
+        "evidence": "packages/ui/src/theme.ts:67-76 · :312 textSecondary=gray600 · :257-261 CanonGray · spec/tokens.json:286 canonGray · pick/index.tsx:585 textAssistive · consult-done.tsx:112 textStrong · consultations/[recordId].tsx:189-191",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "typography-tokens",
+        "kind": "bug_or_gap",
+        "text": "줄높이 토큰 13 · 25 · 31 · 33과 letter-spacing -0.56 · 0.6이 없다. 그래서 필터 시트 제목 18/25, 검색 제목 22/31, 약관 상세 제목(28+minHeight 30 우회), Pick 글자 간격(-0.65 · 0.5로 대체)이 정본과 다르다. line-height: normal 추정값도 정리해야 한다",
+        "source_prs": [
+          525,
+          528,
+          533,
+          534,
+          537
+        ],
+        "evidence": "packages/ui/src/typography.ts:111~ LineHeight(25는 관리자 adminConfirmTitle뿐) · auth/terms-detail-modal.tsx:122 lh28 · pick/index.tsx:887-889",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "seed-icon-and-button-bits",
+        "kind": "bug_or_gap",
+        "text": "작은 정본 불일치 셋. SeedIcon에 check-fill · close-fill 글리프가 없다(카드 체크 14 · 빼기 X 16). ActionButton 아이콘이 정본(icoExternal, 글자 뒤 margin 8)과 달리 글자 앞에 붙는다. 웹에서 온보딩 선택 카드의 1.5px 테두리가 1px로 반올림되어 카드 높이가 1px 준다(정본은 inset shadow)",
+        "source_prs": [
+          530,
+          534,
+          537
+        ],
+        "evidence": "packages/ui/src/seed-icon.tsx 이름 목록 · packages/ui/src/action-button.tsx:105-112 · features/onboarding/option-row.tsx:63-67",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "sheet-canon-conflict",
+        "kind": "design_decision",
+        "text": "바텀시트 값이 정본 보드끼리 갈린다. gap은 common 12 대 home · pick · note 14, 그래버 위는 14 대 12, 시트 제목은 공통 22/30 대 화면별(home 20 · note 20 · pick 24/33 · search 18/25)이다. 공통 값을 하나로 정해야 한다",
+        "source_prs": [
+          524,
+          534,
+          539
+        ],
+        "evidence": "packages/ui/src/theme.ts:942-944 위 14 · 아래 28 · gap 12 · bottom-sheet.tsx:399 headTitle FontSize.sheetTitle 22/30",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "sheet-canon-values",
+        "kind": "bug_or_gap",
+        "text": "바텀시트 공통 값이 정본과 다르다. radius 28 · padding 12 20 32 · 최대 760, 딤 위 blur가 빠져 있고, 공용 SheetHeader 제목이 정본보다 3pt쯤 아래에 있다",
+        "source_prs": [
+          533,
+          536,
+          542
+        ],
+        "evidence": "features/common/bottom-sheet.tsx:236-237 Radius.sheet 20 · :370 maxHeight '90%' · :350 스크림 blur 없음 · :286 SheetHeader t4 · 정본 home.js:703-704",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "filter-sheet-close-x",
+        "kind": "design_decision",
+        "text": "검색 필터 시트는 정본(search.js:502)대로 X 없이 「전체 해제」만 있다. 대표 결정 「바텀시트 공통 UX: 타이틀 + 우측 X」와 충돌하고, 다른 시트 20곳과 달리 공통 SheetHeader를 쓰지 않는다",
+        "source_prs": [
+          533,
+          539
+        ],
+        "evidence": "features/search/filter-sheet.tsx:47 · :136 「제목 줄에 닫기(X)도 없다」",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "duplicate-close-buttons",
+        "kind": "design_decision",
+        "text": "시트 머리의 X와 같은 일을 하는 본문 닫기 버튼이 남아 있다. 상담기록 추가 「취소」 · 캘린더에 추가 「닫기」 · 로그인 유도 「나중에 하기」 · 확인 시트 취소가 그렇다",
+        "source_prs": [
+          539
+        ],
+        "evidence": "consultations/upload.tsx:116 · search/expo/[expoId]/calendar.tsx:226 · features/auth/login-sheet.tsx:118",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "toast-conflict",
+        "kind": "design_decision",
+        "text": "삭제 토스트 정본 둘이 충돌한다. Pick WP-PICK-008은 #212124 · 폭 100% 최대 390 · 최소 48 · 되돌리기 #ff6f61이고, common WP-DLG-F는 rgba(23,25,28,.92) · #ffb3ab다. 구현은 common 쪽을 따른다",
+        "source_prs": [
+          530
+        ],
+        "evidence": "components/confirm-alert-toast.tsx:103-107",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "dialog-icons",
+        "kind": "design_decision",
+        "text": "다이얼로그 아이콘(ok · bad · warn)을 어느 확인창에 붙일지 정해지지 않았다(dirty-sheet-close warn 포함). 옵션만 있고 넘기는 호출처가 없어서 지금은 한 곳에서도 아이콘이 나오지 않는다. 다이얼로그 가운데 정렬 1px 미만 차이(정본 top:50% translateY 대 <dialog> margin:auto)도 함께 남아 있다",
+        "source_prs": [
+          524,
+          531
+        ],
+        "evidence": "apps/mobile/src/components/confirmation-queue.ts:21 icon 옵션 · icon을 넘기는 confirmAlert 호출 git grep 0건 · confirm-alert.web.ts",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "canon-render-defects",
+        "kind": "design_decision",
+        "text": "정본 미리보기에 렌더 결함으로 보이는 곳이 세 군데 있고, 세션이 임의로 해석했다. ① 입력칸이 content-box라 실제 82px인데 의도를 52로 보고 따르지 않았다(WP-NOTE-002 · 007). ② WP-NOTE-002 날짜 칸 테두리 스타일 문자열이 깨졌다(검정 1.5 대 구현 코랄 1, 표본 요일 「2026.09.12(금)」도 틀렸다). ③ 지역 휠에서 선택값을 강조 띠 밖에 그렸다(WP-AUTH-003)",
+        "source_prs": [
+          536,
+          534
+        ],
+        "evidence": "#536 DESIGN_UNRESOLVED 1 · 2, os-picker-field.tsx:14-37 · features/onboarding/region-picker-sheet.tsx:90-109. 대표 확인 기록 없음",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "dock-bottom-padding",
+        "kind": "design_decision",
+        "text": "도크 아래 여백이 정본 그림은 48, devices.js는 92+safeBottom이다. 구현 두 도크도 서로 다른 식을 쓴다(온보딩 max(48, 24+inset) → 58, my-kit inset+max(48−inset,12) → 48)",
+        "source_prs": [
+          534
+        ],
+        "evidence": "features/onboarding/step-frame.tsx:82 · features/settings/my-kit.tsx:87",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "home-gutter-20",
+        "kind": "design_decision",
+        "text": "홈 좌우 여백을 정본 20으로 재작업하는 중이다. 전역은 대표 결정 「코덱 기준」에 따라 24로 확정됐다. 홈 가로 좌표가 전부 4px씩 다르다",
+        "source_prs": [
+          528,
+          534
+        ],
+        "evidence": "packages/ui/src/theme.ts:677 · 679 gutter/pageX 24",
+        "in_progress_branch": "audit-app",
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "hero-more-button",
+        "kind": "design_decision",
+        "text": "홈 히어로의 「…」 단추와 「함께 준비 중」 줄을 「배우자 연결됨」 조건에 묶었다. 이 규칙이 맞는지 확인이 필요하고, 「…」는 눌러도 아무 동작이 없다",
+        "source_prs": [
+          534,
+          528
+        ],
+        "evidence": "features/home/hero.tsx:71 · 82-85(View, onPress 없음) · 122-125",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "age-required-copy",
+        "kind": "design_decision",
+        "text": "WP-AUTH-009 만 14세 안내 둘째 줄이 정본은 「출생 연도는 삭제했어요」, 구현은 「연령대는 삭제했어요」다(서버는 연령대만 받는다)",
+        "source_prs": [
+          528
+        ],
+        "evidence": "apps/mobile/src/app/login/age-required.tsx:22-24 · 44 ↔ docs/design/React_Native/home.jsx:112",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "home-budget-sub",
+        "kind": "design_decision",
+        "text": "홈 예산 서브 「온보딩에서 등록한 예산이에요」를 지출이 있을 때(WP-HOME-003)도 보여 줄지 규칙이 불명확하다. 지금은 지출이 0일 때만 보여 준다",
+        "source_prs": [
+          528
+        ],
+        "evidence": "features/home/home-summary.tsx:109 · 118-122",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "home-server-gaps",
+        "kind": "bug_or_gap",
+        "text": "홈에 서버 값이 없어 못 그리는 것 둘. WP-HOME-001 비고 「웨딩홀이 예산의 43%로 가장 큰 비중이에요」는 bootstrap에 업종별 비중이 없다. 홈 웨딩일정 메타 「오후 2시 · …」는 할 일 API에 시각 칸이 없다",
+        "source_prs": [
+          528,
+          534
+        ],
+        "evidence": "home-summary.tsx:167 · features/home/schedule-view.ts:40-42 taskMeta(vendorLabel/stateLabel만)",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "onboarding-style-count",
+        "kind": "design_decision",
+        "text": "온보딩 스타일 개수가 RN 정본은 「개수 제한 없이」, 구현은 최대 2개다(CLAUDE.md v3.24 규칙). RN 정본이 이긴다",
+        "source_prs": [
+          528
+        ],
+        "evidence": "app/setup.tsx:102-103 ↔ docs/design/React_Native/home.jsx:328",
+        "in_progress_branch": "audit-onboarding",
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "search-back-state",
+        "kind": "design_decision",
+        "text": "WP-SRCH-003 · 004 정본은 검색어 결과 · 자동완성 상태에서 뒤로가기를 보여 주고 탭바는 숨긴다. CLAUDE.md 「검색 Root Back 없음」과 충돌한다. #527은 규칙 쪽으로 닫았지만 ⛔ 지침상 앱은 RN 정본이 이긴다",
+        "source_prs": [
+          533,
+          527
+        ],
+        "evidence": "(tabs)/search/index.tsx:959 · 1239 Back 없음, 탭바 노출",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "search-ad-card",
+        "kind": "design_decision",
+        "text": "검색 목록과 결과 없음 화면의 「광고」 카드가 정본 어디에도 없다. 지울지 정해야 한다",
+        "source_prs": [
+          533
+        ],
+        "evidence": "(tabs)/search/index.tsx:191-193 · 916-920 sponsored",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "search-noresult-report-box",
+        "kind": "design_decision",
+        "text": "검색 결과 없음 화면의 「찾는 곳이 없나요? · 업체 제보」 상자는 정본 프레임에는 없고 diffs에만 있는데 남겨 두었다",
+        "source_prs": [
+          533
+        ],
+        "evidence": "(tabs)/search/index.tsx:121-123 · 813-826(/my/contact data_correction)",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "search-filter-server",
+        "kind": "bug_or_gap",
+        "text": "검색 필터 · 정렬 칸이 서버 부족으로 잠겨 있다. 카테고리 여러 업종 묶음(스드메 · 본식 · 예물·신혼), 지역 구 단위, 총예산 구간 4칸, 스타일 4종, 정렬 「많이 확인된 순」 · 「최근 등록순」이 그렇다. 여기에 버그가 하나 있다: /search?category=makeup처럼 묶음 밖 업종으로 들어오면 필터 시트 카테고리 칸이 아무것도 켜지지 않는다",
+        "source_prs": [
+          527
+        ],
+        "evidence": "features/search/filter-sheet.tsx:36-41 · 85-94 · 159-167 · 191 · 204 · features/search/sort-panel.tsx:16-24 · packages/api-contract/src/vendors.ts:101 · 148-152",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "vendor-detail-server-fields",
+        "kind": "bug_or_gap",
+        "text": "업체 상세 · 검색 카드에서 서버 칸이 없어 못 그리는 것들: 검색 결과 해시태그, 소개 탭 「포함된 것」 · 「따로 드는 비용」, 패키지 시간 · 컷 · 보정, 정보 탭 가는 길 · 영업시간 · 쉬는 날 · 전화 · 주차 · 예약 · FAQ, 후기 3축×3보기 분포(지금은 평균 막대로 대체)",
+        "source_prs": [
+          527,
+          533
+        ],
+        "evidence": "search/index.tsx:688 · 1055 · search/[vendorId]/index.tsx:436-440 · 494-499 · 545 · 644-650",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "package-consult-cta",
+        "kind": "design_decision",
+        "text": "패키지 카드 「이 구성으로 상담」을 넣지 않았다. 막던 규칙(「최종 Pick 뒤에만 상담 예약」)은 결정 A로 폐기됐지만, 지금 상담 예약은 Pick 후보에게만 열려 있어 Pick하지 않은 업체에서 누르면 어떻게 할지 정해야 한다. 주석이 폐기된 규칙을 근거로 적고 있으니 그것도 고친다",
+        "source_prs": [
+          527,
+          533
+        ],
+        "evidence": "search/[vendorId]/index.tsx:498-500 · consult.tsx:63(후보 또는 결정만 허용) · 015e2132",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "review-write-entry",
+        "kind": "design_decision",
+        "text": "후기 쓰기의 진입과 형태를 정해야 한다. ① 후기 탭 본문 「후기 쓰기」 단추가 「등록 버튼은 헤더에만」 규칙과 충돌해서 그리지 않았고, 그 결과 후기가 1건 이상인 업체에서는 작성 진입이 없다. ② WP-LNG-005는 정본이 전체 화면인데, 구현은 「등록·작성은 BottomSheet」 규칙대로 시트다",
+        "source_prs": [
+          527,
+          533,
+          526,
+          537
+        ],
+        "evidence": "search/[vendorId]/index.tsx:545-546 · 626-633(후기 0건 줄만 이동) · search/[vendorId]/write-review.tsx:170 BottomSheet",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "vendor-header-more",
+        "kind": "design_decision",
+        "text": "업체 상세 헤더 오른쪽 more-horiz(icoShare 22)를 눌렀을 때 무엇을 하는지 정본에 없어서 넣지 않았다",
+        "source_prs": [
+          527,
+          533
+        ],
+        "evidence": "search/[vendorId]/index.tsx:307 DepthHeader right 없음 · docs/design/React_Native/search.js:244",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "consult-done-next-card-copy",
+        "kind": "design_decision",
+        "text": "상담 예약 완료(WP-DONE-VEND)의 다음 카드 「원하는 분위기 사진을 모아두면 좋아요」 정본 문구가 카피 린트 금지어 「좋아요」에 걸려 그리지 않았다",
+        "source_prs": [
+          527,
+          530,
+          533
+        ],
+        "evidence": "search/[vendorId]/consult-done.tsx:39-41 DESIGN_UNRESOLVED",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "consult-done-server",
+        "kind": "bug_or_gap",
+        "text": "상담 예약 완료와 예약 풀팝업의 서버 부족 두 가지. 「알림 · 하루 전과 두 시간 전에 알려드려요」는 일정 notify_enabled 발송 작업이 없다. 담당자 이름 「· 김소연 작가」는 값이 없다",
+        "source_prs": [
+          527,
+          530,
+          533
+        ],
+        "evidence": "consult-done.tsx:30-38 BACKEND_PENDING · consult.tsx:275",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "consult-date-range",
+        "kind": "design_decision",
+        "text": "상담 예약 날짜를 칩 시절 범위(내일~+7일)로만 열어 두었다. 풀팝업 · 휠 시트로 바뀐 뒤에도 그대로다",
+        "source_prs": [
+          539
+        ],
+        "evidence": "search/[vendorId]/consult.tsx:37-38 DAY_COUNT = 7",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "search-expo-route-fallthrough",
+        "kind": "bug_or_gap",
+        "text": "/search/expo · /search/wedding-info로 바로 들어오면 공용 not-found가 아니라 /search/[vendorId]가 받아서 업체 조회 실패 화면이 뜬다",
+        "source_prs": [
+          535
+        ],
+        "evidence": "main에 search/expo/index · wedding-info 라우트 없음. search/[vendorId] · search/_layout.tsx에 예외 처리 0건",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "budget-buckets-4",
+        "kind": "bug_or_gap",
+        "text": "예산 묶음이 정본은 4묶음(웨딩홀 · 스드메 · 본식 · 예물·신혼)인데 구현은 3묶음(웨딩홀 · 스드메 · 기타)이다. 정본이 분명해서 맞추면 되지만 note-orders 범위에는 없다",
+        "source_prs": [
+          522
+        ],
+        "evidence": "packages/domain/src/expense.ts:49-56 EXPENSE_BUCKETS=['hall','sdm','etc'] ↔ docs/design/React_Native/note.js:409 budgets",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "item-budget",
+        "kind": "followup",
+        "text": "항목별 예산이 없다. 예산현황의 「N / M만원」 · 연필 · 휴지통(정본 note.jsx:291 bTop 업종 줄)이 없고, 예산 추가 시트의 「예산」 칸은 BACKEND_PENDING으로 잠겨 있으며 서버 buckets에도 budget 칸이 없다. 대표 오더 「예산 인라인 수정/삭제 · 예산칸 삭제」를 반영하는 중이다",
+        "source_prs": [
+          529,
+          536,
+          541
+        ],
+        "evidence": "expenses/add.tsx:38-41 · 58 · 282 BUDGET_BACKEND_PENDING=true · wedding/index.tsx:764-790 bucketRow 아이콘 없음",
+        "in_progress_branch": "note-orders",
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "expense-edit-ui",
+        "kind": "followup",
+        "text": "지출 수정 · 삭제 UI(등록 시트 재사용, 「예산 수정」 제목, 시트 하단 「삭제」)를 정본 줄 단위 아이콘(icoEditSm · icoTrashSm)으로 바꾸는 중이다. 통합 뒤 수정 시트 · 삭제 확인창 · 잠긴 시트를 다시 찍지 않았다",
+        "source_prs": [
+          541
+        ],
+        "evidence": "expenses/add.tsx:46-50 DESIGN_SOURCE_NOT_VERIFIED 주석(정본 note.js:245-246에 아이콘이 있어 이 판단은 틀렸다) · a5ff5d6e 스크린샷 기록 없음",
+        "in_progress_branch": "note-orders",
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "total-budget-clear",
+        "kind": "design_decision",
+        "text": "「총예산 지우기」 ghost 버튼과 확인창은 정본에 없는 요소다. 정본은 수정(icoEditSm2)만 그리고, 대표 결정 목록에도 없다. 「정본에 없는 기능은 제거」 규칙에 따라 지울지 확인이 필요하다",
+        "source_prs": [
+          541
+        ],
+        "evidence": "wedding/index.tsx:301-324 · 437 · strings.ko.json:509-512 ↔ note.jsx:282 sumRightBtn",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "consultation-expense-source",
+        "kind": "bug_or_gap",
+        "text": "「상담 정리(consultation)」 출처 지출이 DB 뷰에 없어서, 상담에서 나온 금액이 예산에 합쳐지지 않는다. 2026-09-23 웨딩노트 [open] 결정(배지와 함께 합산)이 아직 구현되지 않았다. 지출 수정 · 삭제 이력도 남지 않는다",
+        "source_prs": [
+          541
+        ],
+        "evidence": "packages/domain/src/expense.ts:11에는 consultation이 있지만 structured.wedding_expenses 뷰(0150_payment_proof_pending_review.sql:121-150)는 manual · payment_proof 두 갈래뿐이다 · wedding-plan.ts:386 · 540 audit 기록 없음",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "event-notify-toggles",
+        "kind": "bug_or_gap",
+        "text": "WP-NOTE-002 일정 알림 토글이 정본은 3개(하루 전 · 두 시간 전 · 배우자)인데 서버 값은 notifyEnabled 하나뿐이다",
+        "source_prs": [
+          529,
+          536
+        ],
+        "evidence": "wedding/[id]/events/new.tsx:28-32 · 46 · 128-139",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "consultation-result-structure",
+        "kind": "design_decision",
+        "text": "상담 정리 결과(WP-NOTE-005)에 정본 dock의 「수정」(ghost) 단추가 없다(서버 · 정본 편집 화면 없음). 정본 밖 3블록(혜택 · 주의할 점 · 상담 내용)은 남아 있다",
+        "source_prs": [
+          529,
+          536
+        ],
+        "evidence": "consultations/[recordId].tsx:47-48 DESIGN_UNRESOLVED · 150-154",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "consultation-processing-state",
+        "kind": "bug_or_gap",
+        "text": "상담기록 「정리하고 있어요」(처리 중) 상태 값이 없어서 저장됨과 정리 완료 두 가지만 보인다",
+        "source_prs": [
+          529
+        ],
+        "evidence": "wedding/index.tsx:80-82 · 860. note-orders(녹음 업로드)가 다루는지는 확인하지 못했다",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "expense-photo-fill",
+        "kind": "bug_or_gap",
+        "text": "예산 추가(WP-NOTE-007)에 「사진으로 채우기」 · 「읽었어요/확인 필요」 딱지 · 직접입력/자동입력 단추가 없다. 사진을 읽어 바로 돌려주는 서버 경로가 없어서다(Gemini 허용 범위 1번 안의 일이다)",
+        "source_prs": [
+          529,
+          536
+        ],
+        "evidence": "expenses/add.tsx:41-44 DESIGN_UNRESOLVED",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "decided-note",
+        "kind": "bug_or_gap",
+        "text": "예약현황 카드 둘째 줄(decidedNote 「보증 250명 · 계약금 500만원」)에 담을 서버 값이 없다",
+        "source_prs": [
+          529,
+          536
+        ],
+        "evidence": "wedding/[id]/decided.tsx:28-29 DESIGN_UNRESOLVED",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "wedding-memo-write",
+        "kind": "design_decision",
+        "text": "예약현황 메모는 읽기만 남았다. notes 라우트를 정본 밖이라 삭제해서 앱에서 웨딩 메모를 쓸 경로가 없다. 메모 표시를 걷을지, 쓰기 경로를 둘지 정해야 한다",
+        "source_prs": [
+          529
+        ],
+        "evidence": "decided.tsx:43-45 listWeddingNotes만 호출. 웨딩 메모 create/update 호출 grep 0건. notes.tsx는 78552f9a에서 삭제됐다",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "changelog-gaps",
+        "kind": "bug_or_gap",
+        "text": "변경내역(WP-CPL-005)에 「누가」 · 「되돌리기」 · 필터가 없다. 알림 API를 웨딩 ID로 거르지 않아 전체 알림이 보이고, 앱에서 이 화면으로 들어오는 곳도 없다. 정본의 진입점은 연결관리 「변경 내역 보기」다",
+        "source_prs": [
+          526,
+          529,
+          536
+        ],
+        "evidence": "wedding/[id]/changelog.tsx:13-22 · changelog 라우트 참조는 depth-back-rules.ts뿐",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "empty-note-condition",
+        "kind": "design_decision",
+        "text": "WP-EMPTY-NOTE 조건을 정본 「세 탭 모두 빔」에서 「예식일 없음 + 세 탭 빔」으로 좁혔다",
+        "source_prs": [
+          529
+        ],
+        "evidence": "wedding/index.tsx:218-231. 대표 확인 기록 없음",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "note-empty-states",
+        "kind": "bug_or_gap",
+        "text": "지출내역 · 변경내역 · 예약현황에 정본 빈 상태 그림이 없다. 예약현황 빈 상태에는 정본 밖 본문 CTA 「Pick 보러 가기」가 남아 있다",
+        "source_prs": [
+          529
+        ],
+        "evidence": "decided.tsx:70-76",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "timeline-week-label",
+        "kind": "design_decision",
+        "text": "웨딩일정 타임라인에서 「10월 2주」 같은 주 단위 표기를 언제까지 쓸지 규칙이 없다. 지금은 다음 주 이후를 달 단위로 묶는다",
+        "source_prs": [
+          536
+        ],
+        "evidence": "features/wedding/timeline-groups.ts:110",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "wedding-map-route",
+        "kind": "followup",
+        "text": "/wedding/[id]/map 라우트가 진입점 없이 남아 있다. RN 정본에 없으면 삭제 후보다(공용 여부 · 지도 예외부터 확인한다)",
+        "source_prs": [
+          529
+        ],
+        "evidence": "map.tsx · map.web.tsx. 참조는 depth-back-rules.ts:119 · 193뿐",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "invite-4digit",
+        "kind": "followup",
+        "text": "배우자 초대 코드를 대표 결정대로 4자리로 바꾸는 중이다. main은 아직 6자리다. 바꿀 때 챙길 것: 대기 중인 옛 코드 이행(배포 즉시 입력 불가, 최대 72시간), 무염 SHA-256 저장 보강(1만 가지면 역산 · 추측 위험, IP 20회/15분 한도 재검토), /wedding/partner 초대 화면 캡처",
+        "source_prs": [
+          532,
+          537
+        ],
+        "evidence": "apps/api/src/routes/wedding-invites.ts:21-23 · 31 · 44-45 · api-contract weddings.ts:207-209 /^\\d{6}$/ · packages/domain/src/partner-link.ts:73 INVITE_CODE_LENGTH=6 · wedding/join.tsx:26 · 267",
+        "in_progress_branch": "my-orders",
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "invite-og-copy",
+        "kind": "design_decision",
+        "text": "초대 OG 문구(inviteShare 제목 · 설명 · pageBody, 「코드 6자리」가 박혀 있음)를 확인해야 한다. /invite 안내 화면과 관리자 링크 미리보기(앱 · 초대 · 웹사이트 3벌)도 정본이 없다(DESIGN_SOURCE_NOT_VERIFIED). 대표가 올린 OG카드.png/svg 기준으로 작업 중이다",
+        "source_prs": [
+          532
+        ],
+        "evidence": "spec/strings.ko.json:697-702 · app/invite.tsx · admin/og-card.tsx:29 · 26337b42 · eacbe298",
+        "in_progress_branch": "fix-og-card",
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "invite-accept-and-share",
+        "kind": "bug_or_gap",
+        "text": "초대 흐름에 빠진 것 셋. ① 정본 초대 수락 화면(WP-CPL-002: 초대자 이름 · 예식일 미리보기)이 없고 코드 입력 화면뿐이다. InvitePreviewResponse가 값을 내려주지 않는다. ② 비로그인으로 /invite를 열면 로그인 뒤 코드 입력으로 돌아오지 않는다. ③ 카카오 공유 SDK가 없어 「카카오로 초대하기」가 시스템 공유다(앱 키 · 도메인 등록 필요)",
+        "source_prs": [
+          526,
+          532,
+          537
+        ],
+        "evidence": "wedding/join.tsx:57-62 DESIGN_UNRESOLVED · app/invite.tsx Redirect만 · returnTo 처리 grep 0건 · wedding/partner.tsx:16 · 115 shareOrCopy",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "partner-screen",
+        "kind": "bug_or_gap",
+        "text": "연결관리(WP-MY-005)가 정본 구조와 다르다. 정본은 코랄 카드(두 아바타 · 연결일 · 건수) · 같이/각자 공유 범위 토글 4+2 · 「변경 내역 보기」 · 「연결 끊기」 행이고, 구현은 Hero · NoteCard · 배지 행 · 하단 버튼이다. 공유 범위는 서버 설정이 없다. 정본 밖 「코드 받았어요」 링크도 남아 있다",
+        "source_prs": [
+          526,
+          537
+        ],
+        "evidence": "wedding/partner.tsx:24-28 · 43 · 296-319 · 396-398",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "profile-server-contract",
+        "kind": "design_decision",
+        "text": "프로필(WP-MY-002)에 서버 계약이 없는 요소가 있고 대표 · MASTER 판단이 보류돼 있다. 해당 요소: 사진 바꾸기, 알림 개별 토글 4종(「추천 갱신」 포함, 서버에는 push · marketing · nightPush 셋뿐), 계정 행의 마스킹 이메일 · 가입일 · 로그인 유지, 헤더 「저장」",
+        "source_prs": [
+          526,
+          537
+        ],
+        "evidence": "my/profile.tsx:62-83 주석(currentUserSchema에 이메일 · 가입일 없음, 판단 보류)",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "inquiry-categories",
+        "kind": "design_decision",
+        "text": "문의 유형 5개가 정본(Pick 인증이 안 돼요 · 금액이 이상해요 …)과 서버 enum(업체 이의 제기 · 업체 정보 정정 · 분석 결과가 달라요 · 개인정보 · 그 밖의 문의)으로 갈린다. Pick 인증 삭제 뒤로 정본 유형 일부는 뜻이 없어졌다. 정본의 「사진 · 선택」 첨부도 없다(서버는 evidence_url만 받음)",
+        "source_prs": [
+          526,
+          537,
+          540
+        ],
+        "evidence": "my/contact.tsx:35-42 · packages/domain/src/inquiry.ts:37-74 · apps/api/src/routes/inquiries.ts:38 · 99",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "withdrawal-complete-screen",
+        "kind": "design_decision",
+        "text": "탈퇴 완료 화면이 RN 정본에 없다. 정본에는 확인 시트(common 다이얼로그 C)만 있다. 「정본에 없는 화면 제거」에 따라 지우면 탈퇴 뒤 어디로 보낼지 정해야 한다",
+        "source_prs": [
+          526
+        ],
+        "evidence": "my/withdrawal.tsx:96-118 ↔ docs/design/React_Native/my.jsx:632-671",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "withdrawal-deletion-list",
+        "kind": "bug_or_gap",
+        "text": "탈퇴 「바로 지워져요」 묶음에 「Pick 인증 자료 · 목적 달성 시 삭제」 줄이 들어 있어 묶음 이름과 맞지 않는다(법적 확인 권고). 사용처 없는 WITHDRAWAL_TITLE 상수도 남아 있다",
+        "source_prs": [
+          526
+        ],
+        "evidence": "packages/domain/src/withdrawal.ts:142-143",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "lounge-empty-first",
+        "kind": "design_decision",
+        "text": "WP-EMPTY-LNG(라운지 처음, 후기와 박람회를 한 화면에)가 없다. 라운지는 my.jsx 기준으로 3화면으로 나뉘어 있어 정본 보드끼리 구조가 다르다",
+        "source_prs": [
+          531
+        ],
+        "evidence": "features/community/lounge-screen.tsx:65-71 · 323-329",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "lounge-article-detail",
+        "kind": "followup",
+        "text": "라운지 글 상세(WP-LNG-004)를 아직 정본대로 고치지 않았다. 정본: 제목 24/33 · 분류 12/700 코랄 · 본문 16/27 #4d5159 · 헤더 책갈피 20 · 「함께 보면 좋아요」 · 「돌아가기」 삭제. 웨딩정보 목록 「읽는 데 N분」 메타도 빠져 있다",
+        "source_prs": [
+          526,
+          537
+        ],
+        "evidence": "(home)/feed/[id].tsx:34-38 · 115-150(마지막 변경 #483) · :37 「읽는 시간은 만들지 않는다」",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "scraps-orphan",
+        "kind": "design_decision",
+        "text": "스크랩 목록(/my/scraps)은 삭제됐는데 웨딩피드 글 상세에 「스크랩 저장/해제」가 남아 있어, 저장한 글을 볼 곳이 없다. 정본 LNG-004 헤더에는 책갈피가 있다",
+        "source_prs": [
+          535
+        ],
+        "evidence": "(home)/feed/[id].tsx:141-148 · api/client.ts:588-598 /v1/me/scraps · my/scraps 라우트 없음",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "unverified-screens",
+        "kind": "design_decision",
+        "text": "정본 프레임 없이 되살렸거나 새로 만든 화면이 있다(DESIGN_SOURCE_NOT_VERIFIED). 알림 목록(/my/notifications, #535 이전 구현 복원, 반론 · Pick 인증 알림은 이동할 곳이 없음), 지난 문의 상세(/my/contact/[id]), 「후보에서 뺄까요?」 시트의 펼친 모습이 그렇다",
+        "source_prs": [
+          535,
+          540,
+          539
+        ],
+        "evidence": "my/notifications.tsx:24-38 · 44-48 · docs/design/React_Native/my.jsx:325-331(목록뿐) · features/pick/pick-sheets.tsx:112",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "my-server-gaps",
+        "kind": "bug_or_gap",
+        "text": "MY · 라운지에 서버 값이 없는 것: WP-MY-006 썸네일 · 「도움돼요」 수(myReportSchema 없음), 박람회 「입장」 행 · 태그 칩 「사전등록 무료」(박람회 계약 없음)",
+        "source_prs": [
+          526,
+          537
+        ],
+        "evidence": "my/reviews.tsx:48 · 59-61 · search/expo/[expoId]/index.tsx:65",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "my-orders-faq-policy",
+        "kind": "followup",
+        "text": "대표 결정 「FAQ 카테고리 삭제 · 전부 접힘」이 아직 main에 없다. 개인정보처리방침 풀팝업 전환과 약관 · 방침 본문 로딩 실측도 하지 않았다",
+        "source_prs": [
+          526,
+          537
+        ],
+        "evidence": "my/guide.tsx:24 FAQ_OPEN_COUNT=2 · :52-73 CatChip · features/settings/policy-document-screen.tsx:39-52 WebView/iframe",
+        "in_progress_branch": "my-orders",
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "admin-viewer-menu-hide",
+        "kind": "bug_or_gap",
+        "text": "대표 지시 「메뉴에서도 빼」를 반영한 커밋 2bf6a21이 main에 빠졌다(뷰어에게 관리자 계정 탭 숨김, 사이드바 이름 「앱 회원」). 그래서 뷰어가 /admin/users?tab=admins를 열면 권한 오류가 그대로 보인다. 흡수한 뒤 브랜치를 지운다",
+        "source_prs": [
+          538
+        ],
+        "evidence": "git merge-base --is-ancestor 2bf6a219 origin/main → not-in-main(2026-09-26 재확인). 이 커밋은 origin/claude/admin-viewer-readonly에만 있다. admin/users.tsx:383 · _layout.tsx:60",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "vendor-purge-closed-at",
+        "kind": "bug_or_gap",
+        "text": "결정사 purge CLI가 병합 연결만 끊고 closed_at을 남기지 않는다. 병합된 업체가 있으면 vendors_inactive_requires_reason 제약에 걸려 실패할 수 있다",
+        "source_prs": [
+          538
+        ],
+        "evidence": "apps/api/src/vendor-category-purge.ts:98 · 비교: vendor-admin.ts:529-534 COALESCE로 고친 경로",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "ci-sigpipe-flaky",
+        "kind": "ops",
+        "text": "CI cutover-transaction.test.mjs 26번 「explicit rollback is repeatable」이 SIGPIPE(141)로 가끔 실패한다. 원인은 조사하지 않았다",
+        "source_prs": [
+          538
+        ],
+        "evidence": "CI run #1240이 attempt 2에서야 성공했다. SIGPIPE 수정 커밋 0건",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "terms-delete-policy",
+        "kind": "design_decision",
+        "text": "관리자 약관에 삭제 단추를 넣지 않았다. 공개된 판은 법적 기록이라는 세션 판단이었고 대표 확인은 없었다",
+        "source_prs": [
+          538
+        ],
+        "evidence": "#538 본문 표. main에 약관 DELETE 라우트 없음",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "admin-ads-entry",
+        "kind": "design_decision",
+        "text": "관리자 광고 자리 · 광고 화면은 조회만 되고 등록 · 수정 · 삭제 진입점이 없다. 서버에는 POST와 DELETE가 있다. 여기에 검색 광고 카드 삭제 여부(search-ad-card)도 걸린다",
+        "source_prs": [
+          538
+        ],
+        "evidence": "apps/api/src/routes/admin.ts:1665 · 1731 · apps/mobile/src/app/admin/ads.tsx:76 GET만",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "removed-features-server-cleanup",
+        "kind": "design_decision",
+        "text": "앱에서 삭제한 기능(혜택 · 반론 · 관계자 인증 · 스크랩 등)의 서버 API와 관리자 화면이 그대로 남아 있다. 정리할지 아직 정하지 않았다. 관리자 FAQ 삭제 확인창도 삭제된 /my/faq/[key] 주소를 안내하고 있으니 같이 고친다",
+        "source_prs": [
+          535
+        ],
+        "evidence": "apps/api/src/routes/rewards.ts · rebuttals.ts · vendor-claims.ts · scraps.ts · admin/biz-queue.tsx · objections.tsx · admin/faq.tsx:374-376",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": true
+      },
+      {
+        "id": "rule-docs-sync",
+        "kind": "followup",
+        "text": "규칙 문서 세 파일(CLAUDE.md · docs/session-prompt.md와 전달문)을 갱신해야 한다. 고칠 내용: ① 로더→스켈레톤 결정 기록. ② 삭제된 visit-notes.tsx 경로 · 정보 0층 「Pick 인증 CTA」 · Npay WP-EVT-006 · 혜택 시트 WP-SHT-017 잔존 설명. ③ 「추천 개념 금지」 문구에 대표 지시(Pick 묶음별 5곳 = 추천) 예외를 적기. ④ session-prompt.md의 「OS 선택기」를 휠 시트로. ⑤ docs/screen-capture.md 예시 경로 /(tabs)/(home)/가 not-found이니 / 로 바꾸기",
+        "source_prs": [
+          524,
+          529,
+          535,
+          540,
+          542
+        ],
+        "evidence": "CLAUDE.md:73 · 89 · 119 · 283 · 290 · 450 · 481 · docs/session-prompt.md:31-32 · docs/screen-capture.md:22",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "stale-comments-docs",
+        "kind": "followup",
+        "text": "낡은 주석 · 문서를 정리한다. category-icon.tsx 머리 주석이 삭제된 .dc.html을 근거로 적고 있다(RN common.js:7 ICONS로). my/wedding-settings.tsx:88 「준비 예산 유지」가 낡았다. wheel-picker-sheet.tsx:44-45 · 153과 date-picker-sheet.tsx:40-46이 이미 결정된 것을 DESIGN_UNRESOLVED로 적고 있다. docs/sync/rn-parity-map.md가 consult-done을 「불명확 · pick 형」으로 적고 있다(common WP-DONE-VEND로)",
+        "source_prs": [
+          524,
+          526,
+          527,
+          542
+        ],
+        "evidence": "packages/ui/src/category-icon.tsx:12-17 · docs/sync/rn-parity-map.md:62 · 127 · 247",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "dead-code",
+        "kind": "followup",
+        "text": "쓰지 않는 코드와 문구를 정리한다. CircleLoader · buildSpinKeyframes · size.loaderCircle, status-view의 ProcessingView · RecommendingBody(호출처 0), 미사용 문구 키 home.budget.empty · emptySub · set이 대상이다",
+        "source_prs": [
+          524,
+          528
+        ],
+        "evidence": "packages/ui/src/circle-loader.tsx:65 · 107 · index.ts:66 · theme.ts:969-971 · status-view.tsx:185 · 380 · strings.ko.json home.budget.empty(apps 참조 0건)",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "loader-skeleton-per-screen",
+        "kind": "followup",
+        "text": "DelayedLoader 호출처 83곳이 공통 목록 뼈대 하나를 쓴다. 「목록 · 상세 · 폼 skeleton은 실제 화면 구조」 규칙에 맞춰 화면별 뼈대로 바꿔야 한다",
+        "source_prs": [
+          524
+        ],
+        "evidence": "apps/mobile/src/features/loading/delayed-loader.tsx:98",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "date-wheel-default-range",
+        "kind": "bug_or_gap",
+        "text": "min/max를 넘기지 않은 날짜 휠은 올해 앞뒤 5년이 기본이다. 그래서 일정 추가 날짜가 올해+5년 12월 31일에서 잘린다. 동작 기본값이라 아무도 정하지 않았다",
+        "source_prs": [
+          542
+        ],
+        "evidence": "os-picker-field.shared.ts:66-67 · 87-92 DEFAULT_YEARS_AROUND=5 · events/new.tsx:105-111(min만)",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "compare-capture-gaps",
+        "kind": "not_checked",
+        "text": "렌더 · 대조 미검증 목록. 온보딩 예식일 휠 시트(모의 사용자라 /setup이 넘어감), 상담 예약 풀팝업 위의 날짜 · 시간 휠, 카카오 복귀 SigningInView shape=\"mark\", 네이티브 실기기(다이얼로그 · 시트 패딩 · 휠), WP-CPL-001 · 003 · 006 캡처, my-kit 값 변경이 번진 fix-report(WP-VEND-008) 재확인, WP-DLG-D 시트 안 내용의 화면별 대조",
+        "source_prs": [
+          542,
+          524,
+          537,
+          531
+        ],
+        "evidence": "29535824 · a5ff5d6e에 캡처 기록 없음 · features/auth/signing-in-view.tsx:72 · 97 · #531 대조는 react-native-web뿐 · search/[vendorId]/fix-report.tsx:12 my-kit import",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      },
+      {
+        "id": "master-status-handover",
+        "kind": "ops",
+        "text": "docs/sync/master-status.json이 2026-09-23 이후 갱신되지 않았다. #522~#542 통합 결과와 위 미해결 항목을 인수 기록하고, 흡수가 끝난 원격 브랜치를 정리한다(claude/admin-viewer-readonly는 2bf6a21을 흡수한 뒤, bottomsheet-unify-os-pickers · pick-recs-bell-inquiry · budget-edit-delete · designed-wheel-pickers · pixel-* · rn-parity-* · chore/public-api-probe 등)",
+        "source_prs": [
+          538,
+          539,
+          540
+        ],
+        "evidence": "master-status.json 마지막 갱신 d1b8d750(2026-09-23). git branch -r에 흡수된 claude/* 브랜치 20여 개가 남아 있다",
+        "in_progress_branch": null,
+        "needs_daepyo_decision": false
+      }
+    ],
+    "rule": "미해결은 완료에 섞지 않는다. needs_daepyo_decision=true는 대표님 결정을 받은 뒤 전담에 넘긴다. in_progress_branch가 적힌 항목은 해당 7차 작업 결과로 다시 대조한다."
   }
 }

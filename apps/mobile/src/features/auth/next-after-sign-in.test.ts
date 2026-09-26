@@ -1,4 +1,5 @@
-import { nextAfterSignIn } from './finish-sign-in';
+import { entryAfterSignIn, nextAfterSignIn } from './finish-sign-in';
+import { clearSignupPending, hasFreshSignupPending } from './sign-in-handoff';
 
 /**
  * 로그인·가입 뒤 어디로 가는가.
@@ -55,4 +56,13 @@ describe('로그인 뒤 다음 화면', () => {
     ).toBe('/search/..%2Flogin%3Fx%3D1');
   });
 
+});
+
+describe('세션 응답이 «가입 전»이라고 말할 때', () => {
+  it('약관 동의로 보내고, 약관 동의가 로더를 또 세우지 않게 깃발을 넘긴다(감사 4)', async () => {
+    clearSignupPending();
+    await expect(entryAfterSignIn({ activated: false, setupComplete: false })).resolves.toBe('/login/consent');
+    expect(hasFreshSignupPending()).toBe(true);
+    clearSignupPending();
+  });
 });
