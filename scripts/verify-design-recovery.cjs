@@ -74,6 +74,7 @@ function hooks() {
 }
 /* 당겨서 새로 고침 훅은 화면 조회 회귀와 무관하다 — 몸짓 · 캐시 우회는 apps/mobile/src/features/refresh 시험이 본다. */
 const pullRefresh={usePullRefresh:()=>({refreshing:false,onRefresh:()=>{},refreshControl:'RefreshControl'}),notifyRefreshFailed:()=>{}};
+const scrollTop={ScrollToTopButton:'ScrollToTopButton',useScrollToTopVisibility:()=>({visible:false,onScroll:()=>{},reset:()=>{}})};
 function detailHarness(initialId='a', from) {
   let id=initialId, backs=0; const h=hooks(), calls=[], lists=[];
   const back=()=>{backs++;};
@@ -85,6 +86,7 @@ function detailHarness(initialId='a', from) {
     '@/features/home/content':{getWeddingFeedDetail:key=>{const d=deferred();calls.push({key,...d});return d.promise;}},
     '@/features/common/format-date':{formatDateDot:x=>x},'@/features/loading/delayed-loader':{DelayedLoadingView:'Loading'},
     '@/features/navigation/depth-back':{useDepthBack:()=>back,dismissToOrReplace:target=>{lists.push(target);}},
+    '@/features/navigation/scroll-to-top-button':scrollTop,
     '../../../../../../../spec/strings.ko.json':strings,
     '@/features/refresh/use-pull-refresh':pullRefresh,
   }).default;
@@ -116,6 +118,7 @@ function loungeHarness(kind='review', params={}) {
     '@/features/wedding/screen-kit':{NavBar:'NavBar'},'../../../../../spec/strings.ko.json':strings,
     '@/features/refresh/use-pull-refresh':pullRefresh,
     '@/features/navigation/depth-back':{chainOrigin:(alias,from)=>from?`${alias}.${from}`:alias},
+    '@/features/navigation/scroll-to-top-button':scrollTop,
     '@/features/navigation/stack-alias':load('apps/mobile/src/features/navigation/stack-alias.ts'),
     '@/app/(tabs)/search/[vendorId]/write-review':{ReviewWriteSheet:'ReviewWriteSheet'},
     '@/app/(tabs)/community/review/write':{LoungeReviewVendorSheet:'LoungeReviewVendorSheet'},
