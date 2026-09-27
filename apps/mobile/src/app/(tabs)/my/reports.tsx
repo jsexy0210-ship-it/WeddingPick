@@ -82,7 +82,7 @@ export default function MyReportsScreen() {
 
   return (
     /* 하단 «새로 인증하기 · 첫 Pick 인증하기»는 Pick 인증 촬영 삭제(2026-09-25)로 뺐다. */
-    <SubScreen title={S.title} refreshControl={pull.refreshControl}>
+    <SubScreen title={S.title} scrollToTop refreshControl={pull.refreshControl}>
       <Hero lines={empty ? S.heroEmpty : S.hero(proofs.length, used)} />
 
       {empty ? null : (

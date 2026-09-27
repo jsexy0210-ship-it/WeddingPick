@@ -1,11 +1,12 @@
 import type { DecisionListResponse, WeddingNote } from '@weddingpick/api-contract';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { listDecisions, listWeddingNotes } from '@/api/client';
 import { formatDateDot } from '@/features/common/format-date';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { ScrollToTopButton, useScrollToTopVisibility } from '@/features/navigation/scroll-to-top-button';
 import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import { ActionButton, Border, ErrorView, Layout, LineHeight, Radius, SkeletonView, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import { Hero, NavBar, Screen } from '@/features/wedding/screen-kit';
@@ -30,6 +31,8 @@ const S = {
  * 없어 그리지 않는다 — `DESIGN_UNRESOLVED`.
  */
 export default function DecidedVendorsScreen() {
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollTop = useScrollToTopVisibility();
   const depthBack = useDepthBack();
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme();
@@ -77,6 +80,9 @@ export default function DecidedVendorsScreen() {
       <NavBar title={S.title} variant="close" />
 
       <ScrollView
+        ref={scrollRef}
+        onScroll={scrollTop.onScroll}
+        scrollEventThrottle={100}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={pull.refreshControl}>
@@ -120,6 +126,7 @@ export default function DecidedVendorsScreen() {
           })
         )}
       </ScrollView>
+      <ScrollToTopButton visible={scrollTop.visible} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
     </Screen>
   );
 }

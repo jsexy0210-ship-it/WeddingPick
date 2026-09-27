@@ -73,7 +73,7 @@ import {
   regionLabel,
 } from '@weddingpick/domain';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -96,6 +96,7 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
+import { ScrollToTopButton, useScrollToTopVisibility } from '@/features/navigation/scroll-to-top-button';
 import {
   addCandidate,
   decideCategory,
@@ -219,6 +220,8 @@ function pickSections(rows: readonly Row[], manual: readonly ManualDecision[] = 
 }
 
 export default function PickScreen() {
+  const scrollRef = useRef<ScrollView>(null);
+  const { visible: scrollTopVisible, onScroll: onScrollTop, reset: resetScrollTop } = useScrollToTopVisibility();
   const { group: groupParam } = useLocalSearchParams<{ group?: string | string[] }>();
   const rawGroup = Array.isArray(groupParam) ? groupParam[0] : groupParam;
   /* 홈 «내 웨딩 준비» 카드가 넘긴 묶음. 모르는 값이면 «전체». */
@@ -230,6 +233,10 @@ export default function PickScreen() {
   const [recs, setRecs] = useState<PickRecommendationsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>(requestedGroup ?? 'all');
+  useEffect(() => {
+    resetScrollTop();
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [filter, resetScrollTop]);
   /* 탭에 머문 채 홈에서 다른 묶음으로 다시 들어오면 그 칩으로 바꾼다(렌더 중 조정 — 이펙트 불필요). */
   const [seenGroup, setSeenGroup] = useState(requestedGroup);
   if (seenGroup !== requestedGroup) {
@@ -475,6 +482,9 @@ export default function PickScreen() {
             </View>
           ) : (
             <ScrollView
+              ref={scrollRef}
+              onScroll={onScrollTop}
+              scrollEventThrottle={100}
               contentContainerStyle={styles.scroll}
               showsVerticalScrollIndicator={false}
               refreshControl={pull.refreshControl}>
@@ -635,6 +645,7 @@ export default function PickScreen() {
             </ScrollView>
           )}
         </View>
+        <ScrollToTopButton visible={scrollTopVisible && !error} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
       </SafeAreaView>
 
       <DialogToast

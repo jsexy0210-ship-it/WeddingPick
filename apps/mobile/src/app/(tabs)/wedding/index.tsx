@@ -76,6 +76,7 @@ import { noteMonthDayWeekdayTime } from '@/features/wedding/note-format';
 import { useSession } from '@/features/auth/use-session';
 import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import { inStack } from '@/features/navigation/stack-alias';
+import { ScrollToTopButton, useScrollToTopVisibility } from '@/features/navigation/scroll-to-top-button';
 import { WeddingCompleteView } from '@/features/wedding/complete-view';
 import { forecastLine } from '@/features/wedding/public-calendar-lines';
 import { buildUpcomingTimelineGroups, type TimelineItem } from '@/features/wedding/timeline-groups';
@@ -120,6 +121,8 @@ export default function WeddingScreen({
   suppressBudgetPrompt?: boolean;
 } = {}) {
   const theme = useTheme();
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollTop = useScrollToTopVisibility();
   const params = useLocalSearchParams<{ tab?: string }>();
   const { state, refresh } = useSession();
   const [me, setMe] = useState<CurrentUser | null>(null);
@@ -427,6 +430,9 @@ export default function WeddingScreen({
         {header}
 
         <ScrollView
+          ref={scrollRef}
+          onScroll={scrollTop.onScroll}
+          scrollEventThrottle={100}
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -441,7 +447,11 @@ export default function WeddingScreen({
                   accessibilityRole="tab"
                   accessibilityState={{ selected }}
                   accessibilityLabel={item.label}
-                  onPress={() => setTab(item.key)}
+                  onPress={() => {
+                    setTab(item.key);
+                    scrollTop.reset();
+                    scrollRef.current?.scrollTo({ y: 0, animated: false });
+                  }}
                   style={[styles.tab, selected ? [styles.tabActive, { borderBottomColor: theme.text }] : null]}>
                   <ThemedText type="t6" style={[styles.bold, { color: selected ? theme.text : theme.textAssistive }]}>
                     {item.label}
@@ -489,6 +499,7 @@ export default function WeddingScreen({
             />
           )}
         </ScrollView>
+        <ScrollToTopButton visible={scrollTop.visible} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
 
       </SafeAreaView>
 

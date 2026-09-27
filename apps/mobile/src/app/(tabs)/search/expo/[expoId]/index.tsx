@@ -129,6 +129,7 @@ export default function ExpoDetailScreen() {
   return (
     <SubScreen
       title={S.title}
+      scrollToTop
       refreshControl={pull.refreshControl}
       contentStyle={styles.content}
       dock={

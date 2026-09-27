@@ -19,9 +19,11 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   FlatList,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
+  type TextStyle,
   TextInput,
   View,
 } from 'react-native';
@@ -72,6 +74,7 @@ import {
 } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { inStack } from '@/features/navigation/stack-alias';
+import { ScrollToTopButton, useScrollToTopVisibility } from '@/features/navigation/scroll-to-top-button';
 
 /**
  * 검색은 자주 쓰는 분류부터 보여준다. 사업계획서 6번의 확장 순서와 같다.
@@ -174,6 +177,9 @@ function countTail(item: VendorSummary): string {
 
 export default function SearchScreen() {
   const theme = useTheme();
+  const listRef = useRef<FlatList<VendorSummary>>(null);
+  const { visible: scrollTopVisible, onScroll: onScrollTop, reset: resetScrollTop } = useScrollToTopVisibility();
+  const [searchFocused, setSearchFocused] = useState(false);
   const entry = useLocalSearchParams<EntryParams>();
   const [filters, setFilters] = useState<Filters>({
     q: '',
@@ -182,6 +188,10 @@ export default function SearchScreen() {
     budget: null,
     sort: 'data',
   });
+  useEffect(() => {
+    resetScrollTop();
+    listRef.current?.scrollToOffset({ offset: 0, animated: false });
+  }, [filters.q, filters.category, filters.region, filters.budget, filters.sort, resetScrollTop]);
   /*
    * 탭을 열면 곧바로 결과다. 'home'으로 시작하던 것을 2026-09-11 대표 지시로 바꿨다 —
    * 루트 시안이 «검색 홈 없음, 즉시 결과»다. 상태 자체는 남긴다: 자동완성이
@@ -550,10 +560,13 @@ export default function SearchScreen() {
         SEED bg-layer-fill = backgroundElement) · 좌우 16 · 사이 8 · 돋보기 16은 **언제나**
         선다 · 글자 14. 입력이 있으면 오른쪽에 ✕(16)이 서서 지운다.
       */
-      <View style={[styles.searchBox, { backgroundColor: theme.backgroundElement }]}>
+      <View style={[styles.searchBox, {
+        backgroundColor: theme.backgroundElement,
+        borderColor: searchFocused ? theme.tint : 'transparent',
+      }]}>
         <ProductSymbol name="magnifier" size={Layout.iconField} color={theme.textAssistive} />
         <TextInput
-          style={[styles.searchInput, { color: theme.text }]}
+          style={[styles.searchInput, { color: theme.text }, Platform.OS === 'web' ? ({ outlineStyle: 'none' } as unknown as TextStyle) : null]}
           placeholder={PLACEHOLDER}
           placeholderTextColor={theme.textAssistive}
           value={filters.q}
@@ -561,7 +574,8 @@ export default function SearchScreen() {
             setFilters((current) => ({ ...current, q: text }));
             setAcOpen(true);
           }}
-          onFocus={() => setAcOpen(true)}
+          onFocus={() => { setSearchFocused(true); setAcOpen(true); }}
+          onBlur={() => setSearchFocused(false)}
           onSubmitEditing={() => submitSearch(filters.q)}
           returnKeyType="search"
           autoCorrect={false}
@@ -935,6 +949,9 @@ export default function SearchScreen() {
           </View>
         ) : (
           <FlatList
+            ref={listRef}
+            onScroll={onScrollTop}
+            scrollEventThrottle={100}
             data={vendors}
             refreshControl={pull.refreshControl}
             accessibilityState={{ busy: refreshing }}
@@ -1015,6 +1032,7 @@ export default function SearchScreen() {
 
         {/* ── 본문 ── */}
         {renderResults()}
+        <ScrollToTopButton visible={scrollTopVisible && !showAutocomplete && !sortOpen} onPress={() => listRef.current?.scrollToOffset({ offset: 0, animated: true })} />
 
         <Toast message={toast} onHidden={() => setToast(null)} />
 
@@ -1295,6 +1313,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
     height: Layout.searchField,
     borderRadius: Radius.cardLarge,
+    borderWidth: Border.focus,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.three,

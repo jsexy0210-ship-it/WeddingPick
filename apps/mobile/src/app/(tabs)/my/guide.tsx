@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -19,6 +19,7 @@ import { BackBar } from '@/components/back-bar';
 import { chevronRotation, INITIAL_EXPANDED, toggleExpanded } from '@/features/faq/accordion';
 import { useFaq } from '@/features/faq/use-faq';
 import { usePullRefresh } from '@/features/refresh/use-pull-refresh';
+import { ScrollToTopButton, useScrollToTopVisibility } from '@/features/navigation/scroll-to-top-button';
 import { Section } from '@/features/settings/my-kit';
 import strings from '../../../../../../spec/strings.ko.json';
 
@@ -30,6 +31,8 @@ import strings from '../../../../../../spec/strings.ko.json';
  * 펼침을 대표 지시가 이긴다 — 칩을 지우고 처음에는 모든 질문이 닫혀 있다.
  */
 export default function GuideScreen() {
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollTop = useScrollToTopVisibility();
   /* 질문은 운영자가 관리자 화면에서 고치고 지운다(2026-09-16 대표 지시). */
   const faq = useFaq();
   const pull = usePullRefresh(faq.refresh);
@@ -49,6 +52,9 @@ export default function GuideScreen() {
         <BackBar title={strings.my['item.faq']} />
 
         <ScrollView
+          ref={scrollRef}
+          onScroll={scrollTop.onScroll}
+          scrollEventThrottle={100}
           contentContainerStyle={styles.faqContent}
           showsVerticalScrollIndicator={false}
           refreshControl={pull.refreshControl}>
@@ -100,6 +106,7 @@ export default function GuideScreen() {
             )}
           </Section>
         </ScrollView>
+        <ScrollToTopButton visible={scrollTop.visible} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
       </SafeAreaView>
     </ThemedView>
   );

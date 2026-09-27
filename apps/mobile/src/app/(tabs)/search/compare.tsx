@@ -10,7 +10,7 @@ import {
   priceLine,
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams, usePathname } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -18,6 +18,7 @@ import { compareVendors, getCurrentUser, recordComparison } from '@/api/client';
 import { DepthHeader } from '@/components/depth-header';
 import { compareOrigin, useDepthBack } from '@/features/navigation/depth-back';
 import { inStack } from '@/features/navigation/stack-alias';
+import { ScrollToTopButton, useScrollToTopVisibility } from '@/features/navigation/scroll-to-top-button';
 import { savePendingAction } from '@/features/auth/pending-action';
 import { PickDoneSheet } from '@/features/pick/pick-sheets';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
@@ -102,6 +103,8 @@ const SOURCE_FROM_DOCUMENT = '올려주신 문서에서 확인한 업체예요';
 const CTA_CONSULT = '상담 예약';
 
 export default function CompareScreen() {
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollTop = useScrollToTopVisibility();
   const depthBack = useDepthBack();
   const pathname = usePathname();
   const { ids } = useLocalSearchParams<{ ids?: string }>();
@@ -303,6 +306,9 @@ export default function CompareScreen() {
         </View>
 
         <ScrollView
+          ref={scrollRef}
+          onScroll={scrollTop.onScroll}
+          scrollEventThrottle={100}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
           refreshControl={pull.refreshControl}>
@@ -430,6 +436,7 @@ export default function CompareScreen() {
           </View>
           <View style={styles.bottomPad} />
         </ScrollView>
+        <ScrollToTopButton visible={scrollTop.visible} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
       </SafeAreaView>
 
       <Toast message={toast} onHidden={() => setToast(null)} />

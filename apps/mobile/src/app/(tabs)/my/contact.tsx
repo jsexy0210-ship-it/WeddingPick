@@ -145,6 +145,7 @@ export default function ContactScreen() {
   return (
     <SubScreen
       title="문의하기"
+      scrollToTop
       onBack={depthBack}
       dock={
         <Dock

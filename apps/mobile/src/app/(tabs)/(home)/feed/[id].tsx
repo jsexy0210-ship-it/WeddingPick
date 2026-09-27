@@ -10,6 +10,7 @@ import { getWeddingFeedDetail, type WeddingContentDetail } from '@/features/home
 import { formatDateDot } from '@/features/common/format-date';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { dismissToOrReplace, useDepthBack } from '@/features/navigation/depth-back';
+import { ScrollToTopButton, useScrollToTopVisibility } from '@/features/navigation/scroll-to-top-button';
 import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import {
   ActionButton,
@@ -47,6 +48,8 @@ type DetailState =
  *   쌓이지 않는다). 정본 WP-LNG-004에는 하단 단추가 없다(`DESIGN_UNRESOLVED`). 헤더 Back은 그대로다.
  */
 export default function WeddingFeedDetailScreen() {
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollTop = useScrollToTopVisibility();
   const params = useLocalSearchParams<{ id: string | string[]; from?: string | string[] }>();
   const id = typeof params.id === 'string' ? params.id : '';
   const from = Array.isArray(params.from) ? params.from[0] : params.from;
@@ -101,7 +104,12 @@ export default function WeddingFeedDetailScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <BackBar />
-        <ScrollView contentContainerStyle={styles.scroll} refreshControl={pull.refreshControl}>
+        <ScrollView
+          ref={scrollRef}
+          onScroll={scrollTop.onScroll}
+          scrollEventThrottle={100}
+          contentContainerStyle={styles.scroll}
+          refreshControl={pull.refreshControl}>
           <ThemedView type="backgroundElement" style={styles.hero}>
             <CategoryImage uri={post.imageUri} />
           </ThemedView>
@@ -131,6 +139,7 @@ export default function WeddingFeedDetailScreen() {
             <ActionButton label={S['detail.list']} onPress={() => dismissToOrReplace(feedListHref(from))} />
           </ThemedView>
         </ScrollView>
+        <ScrollToTopButton visible={scrollTop.visible} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
       </SafeAreaView>
     </ThemedView>
   );
