@@ -17,7 +17,7 @@ import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 
-import { ActionButton, Border, Layout, ProductSymbol, Radius, Spacing, ThemedText, Toast, useTheme } from '@weddingpick/ui';
+import { ActionButton, Border, Layout, LineHeight, ProductSymbol, Radius, Spacing, ThemedText, Toast, useTheme } from '@weddingpick/ui';
 import { getWithdrawalNotice, withdraw } from '@/api/client';
 import { wipeDevice } from '@/api/session';
 import { showResultToast } from '@/features/navigation/result-toast';
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
   modalHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   modalTitle: { flex: 1, fontWeight: 700 },
   modalClose: { width: 36, height: 36, borderRadius: Radius.pill, alignItems: 'center', justifyContent: 'center' },
-  modalMessage: { lineHeight: 22 },
+  modalMessage: { lineHeight: LineHeight.lh22 },
   modalActions: { flexDirection: 'row', gap: 10, marginTop: 8 },
   modalCancel: { flex: 1 },
   modalConfirm: { flex: 1.4 },
