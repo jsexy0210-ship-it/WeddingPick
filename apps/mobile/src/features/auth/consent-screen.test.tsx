@@ -116,12 +116,12 @@ it('다시 시도가 또 실패하면 오류 화면으로 돌아온다(로더에
   expect(tree.root.findAllByType('ErrorView' as never)).toHaveLength(1);
 });
 
-it('전체 동의 후 제출하면 여덟 칸 모두를 서버 키로 보낸다', async () => {
+it('전체동의 후 제출하면 여덟 칸 모두를 서버 키로 보낸다', async () => {
   jest.mocked(getSignupState).mockResolvedValue(pendingState());
   jest.mocked(completeSignup).mockResolvedValue({ activated: true } as never);
 
   await act(async () => { tree = create(<ConsentScreen />); });
-  await act(async () => { tree.root.findByProps({ accessibilityLabel: '전체 동의' }).props.onPress(); });
+  await act(async () => { tree.root.findByProps({ accessibilityLabel: '전체동의' }).props.onPress(); });
   await act(async () => { tree.root.findByType('ActionButton' as never).props.onPress(); });
 
   expect(completeSignup).toHaveBeenCalledWith({
@@ -155,7 +155,7 @@ it('옛 서버(셋만 아는)에는 서버가 아는 항목만 보낸다 — 모
   jest.mocked(completeSignup).mockResolvedValue({ activated: true } as never);
 
   await act(async () => { tree = create(<ConsentScreen />); });
-  await act(async () => { tree.root.findByProps({ accessibilityLabel: '전체 동의' }).props.onPress(); });
+  await act(async () => { tree.root.findByProps({ accessibilityLabel: '전체동의' }).props.onPress(); });
   await act(async () => { tree.root.findByType('ActionButton' as never).props.onPress(); });
 
   expect(completeSignup).toHaveBeenCalledWith({ consents: ['terms', 'privacy', 'marketing'] });
@@ -199,7 +199,7 @@ describe('로그인 직후(감사 4 — 로더를 두 번 세우지 않는다)',
     await act(async () => { tree = create(<ConsentScreen />); });
 
     expect(tree.root.findAllByType('ErrorView' as never)).toHaveLength(0);
-    await act(async () => { tree.root.findByProps({ accessibilityLabel: '전체 동의' }).props.onPress(); });
+    await act(async () => { tree.root.findByProps({ accessibilityLabel: '전체동의' }).props.onPress(); });
     await act(async () => { tree.root.findByType('ActionButton' as never).props.onPress(); });
 
     /* 서버가 아는 항목을 못 읽었으면 체크한 칸을 전부 보낸다. */
@@ -215,7 +215,7 @@ describe('로그인 직후(감사 4 — 로더를 두 번 세우지 않는다)',
     await act(async () => { tree = create(<ConsentScreen />); });
     expect(tree.root.findByType('SigningInOverlay' as never).props.active).toBe(false);
 
-    await act(async () => { tree.root.findByProps({ accessibilityLabel: '전체 동의' }).props.onPress(); });
+    await act(async () => { tree.root.findByProps({ accessibilityLabel: '전체동의' }).props.onPress(); });
     await act(async () => { tree.root.findByType('ActionButton' as never).props.onPress(); });
     expect(tree.root.findByType('SigningInOverlay' as never).props.active).toBe(true);
 
@@ -231,7 +231,7 @@ describe('로그인 직후(감사 4 — 로더를 두 번 세우지 않는다)',
     noteSignupPending();
 
     await act(async () => { tree = create(<ConsentScreen />); });
-    await act(async () => { tree.root.findByProps({ accessibilityLabel: '전체 동의' }).props.onPress(); });
+    await act(async () => { tree.root.findByProps({ accessibilityLabel: '전체동의' }).props.onPress(); });
     await act(async () => { tree.root.findByType('ActionButton' as never).props.onPress(); });
 
     expect(tree.root.findByType('SigningInOverlay' as never).props.active).toBe(false);
