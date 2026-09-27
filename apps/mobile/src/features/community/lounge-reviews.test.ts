@@ -57,8 +57,12 @@ describe('라운지 후기 페이지 연결', () => {
     expect(loungeVendorMatches('예물 · 신혼', 'honeymoon')).toBe(true);
     expect(loungeVendorMatches('예산', 'hall')).toBe(false);
     expect(loungeFeedMatches('스드메', '드레스')).toBe(true);
-    expect(loungeFeedMatches('예산', '예산')).toBe(true);
-    expect(loungeFeedMatches('웨딩홀', '드레스')).toBe(false);
+    expect(loungeFeedMatches('예산·계약', '예산')).toBe(true);
+    expect(loungeFeedMatches('예산·계약', '계약')).toBe(true);
+    expect(loungeFeedMatches('준비', '체크리스트')).toBe(true);
+    expect(loungeFeedMatches('준비', '일정')).toBe(true);
+    expect(loungeFeedMatches('웨딩홀 · 본식', '하객')).toBe(true);
+    expect(loungeFeedMatches('웨딩홀 · 본식', '드레스')).toBe(false);
   });
 
   it('cursor 다음 쪽을 순서대로 붙이고 중복 id는 제거한다', () => {

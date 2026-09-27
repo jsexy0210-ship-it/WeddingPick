@@ -43,7 +43,7 @@ export type WeddingContentDetail = WeddingContentItem & {
 };
 
 /**
- * 칩 하나 — 서버가 domain `WEDDING_FEED_TABS`(정본 my.js `cats`)를 그대로 싣는다.
+ * 칩 하나 — 서버가 domain `WEDDING_FEED_TABS`의 현재 피드 대분류를 그대로 싣는다.
  *
  * 2026-09-16~26에는 관리자 탭 표에서 왔는데, 그 탭을 그리는 앱 화면이 없어 관리자와
  * 앱의 카테고리가 갈라졌다(2026-09-26 대표 지적). 라운지 칩은 같은 domain 상수를 직접

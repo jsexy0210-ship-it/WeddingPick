@@ -1,4 +1,4 @@
-import { PREPARATION_GROUPS, VENDOR_CATEGORY_LABEL } from './vendor';
+import { VENDOR_CATEGORY_LABEL } from './vendor';
 import {
   WEDDING_FEED_CATEGORIES,
   WEDDING_FEED_CATEGORY_LABELS,
@@ -119,24 +119,18 @@ describe('웨딩피드 — 언제 자동 작성이 도는가', () => {
  * 칩과 카테고리 — 관리자와 앱이 함께 보는 목록 하나(2026-09-26 대표 지적 「관리자 웨딩피드
  * 카테고리와 앱웹 카테고리와 정보가 전혀 다르다」).
  *
- * 칩이 정본 my.js `cats`와 글자까지 같은지는 정본 파일을 직접 읽는 앱 쪽 시험이 센다
- * (`apps/mobile/src/features/community/lounge-reviews.test.ts`) — 이 패키지는 파일을 못 읽는다.
+ * 글의 소분류·자동 작성 주제는 유지한 채 모든 소분류를 한 대분류에 배정한다.
  */
 describe('웨딩피드 — 칩과 카테고리', () => {
-  it('칩 키는 준비 현황 그룹 키와 같고, 업종 카테고리는 그 그룹에 든다', () => {
-    const groupKeys = PREPARATION_GROUPS.map((group) => group.key);
-
-    expect(WEDDING_FEED_CHIPS.map((chip) => chip.key)).toEqual(['all', ...groupKeys, 'budget']);
-
-    for (const category of WEDDING_FEED_CATEGORIES) {
-      if (category.vendorCategory === null) continue;
-      const group = PREPARATION_GROUPS.find((g) => g.categories.includes(category.vendorCategory));
-
-      expect({ label: category.label, chip: category.chip }).toEqual({
-        label: category.label,
-        chip: group?.key,
-      });
-    }
+  it('비슷한 정보가 한 칩에 모인다', () => {
+    expect(WEDDING_FEED_TABS).toEqual([
+      { key: 'all', label: '전체', categories: [] },
+      { key: 'preparation', label: '준비', categories: ['체크리스트', '일정'] },
+      { key: 'ceremony', label: '웨딩홀 · 본식', categories: ['웨딩홀', '본식스냅', '하객'] },
+      { key: 'sdm', label: '스드메', categories: ['스튜디오', '드레스', '메이크업', '헤어변형'] },
+      { key: 'budget_contract', label: '예산·계약', categories: ['예산', '계약'] },
+      { key: 'honeymoon', label: '신혼여행', categories: ['허니문'] },
+    ]);
   });
 
   it('업종 카테고리 이름은 업종 이름과 같은 글자다', () => {
@@ -161,24 +155,28 @@ describe('웨딩피드 — 칩과 카테고리', () => {
     }
   });
 
-  it('칩이 없는 카테고리는 넷이고 «전체»에서만 보인다', () => {
-    const chipless = WEDDING_FEED_CATEGORIES.filter((c) => c.chip === null).map((c) => c.label);
-
-    expect(chipless).toEqual(['체크리스트', '일정', '하객', '계약']);
-    for (const label of chipless) {
-      expect(WEDDING_FEED_CHIPS.filter((chip) => weddingFeedMatchesChip(chip.key, label)).map((c) => c.key)).toEqual(['all']);
+  it('소분류 열둘은 빠짐없이 정확히 한 칩에 든다', () => {
+    for (const category of WEDDING_FEED_CATEGORIES) {
+      expect(WEDDING_FEED_CHIPS.filter((chip) => weddingFeedMatchesChip(chip.key, category.label)).map((c) => c.key)).toEqual([
+        'all',
+        category.chip,
+      ]);
     }
   });
 
   it('칩은 묶음 안 카테고리만 남긴다', () => {
     expect(weddingFeedMatchesChip('sdm', '드레스')).toBe(true);
     expect(weddingFeedMatchesChip('sdm', '웨딩홀')).toBe(false);
-    expect(weddingFeedMatchesChip('goods', '허니문')).toBe(true);
+    expect(weddingFeedMatchesChip('honeymoon', '허니문')).toBe(true);
     expect(weddingFeedMatchesChip('ceremony', '본식스냅')).toBe(true);
-    expect(weddingFeedMatchesChip('budget', '예산')).toBe(true);
+    expect(weddingFeedMatchesChip('ceremony', '하객')).toBe(true);
+    expect(weddingFeedMatchesChip('budget_contract', '예산')).toBe(true);
+    expect(weddingFeedMatchesChip('budget_contract', '계약')).toBe(true);
+    expect(weddingFeedMatchesChip('preparation', '체크리스트')).toBe(true);
+    expect(weddingFeedMatchesChip('preparation', '일정')).toBe(true);
     // 목록 밖 이름 — 뒤 공백 하나라도 — 은 «전체»에서만 보인다.
     expect(weddingFeedChipOf('웨딩홀 ')).toBeNull();
-    expect(weddingFeedMatchesChip('start', '웨딩홀 ')).toBe(false);
+    expect(weddingFeedMatchesChip('ceremony', '웨딩홀 ')).toBe(false);
     expect(weddingFeedMatchesChip('all', '웨딩홀 ')).toBe(true);
   });
 
@@ -196,9 +194,7 @@ describe('웨딩피드 — 칩과 카테고리', () => {
     const placed = WEDDING_FEED_TABS.flatMap((tab) => tab.categories);
 
     expect(new Set(placed).size).toBe(placed.length);
-    expect(placed.sort()).toEqual(
-      WEDDING_FEED_CATEGORIES.filter((c) => c.chip !== null).map((c) => c.label).sort()
-    );
+    expect(placed.sort()).toEqual(WEDDING_FEED_CATEGORIES.map((c) => c.label).sort());
   });
 
   it('자동 작성 주제는 전부 목록 안의 이름을 쓴다', () => {

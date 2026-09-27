@@ -16,7 +16,7 @@ import { registerAppRoutes } from '../routes/app';
  *
  * **탭(칩 줄)도 같은 응답으로 나간다.** 2026-09-16~26에는 관리자 탭 표에서 읽었는데
  * 그 탭을 그리는 앱 화면이 없었다(2026-09-26 대표 지적 — 관리자와 앱의 카테고리가 전혀
- * 달랐다). 이제 domain `WEDDING_FEED_TABS`(정본 my.js `cats`)를 그대로 싣고 표를 묻지 않는다.
+ * 달랐다). 이제 domain `WEDDING_FEED_TABS`를 그대로 싣고 표를 묻지 않는다.
  */
 const pool = { query: jest.fn(), connect: jest.fn() };
 
@@ -92,14 +92,14 @@ describe('공개 웨딩피드', () => {
     expect(pool.query.mock.calls[0]?.[0]).toContain("status = 'published'");
   });
 
-  it('칩 줄을 같은 응답으로 준다 — 정본 칩 그대로이고 표를 묻지 않는다', async () => {
+  it('칩 줄을 같은 응답으로 준다 — 현재 피드 칩 그대로이고 표를 묻지 않는다', async () => {
     pool.query.mockResolvedValueOnce({ rows: [] });
 
     const response = await app().inject({ method: 'GET', url: '/v1/wedding-feed' });
     const body = response.json<{ tabs: { key: string; label: string; categories: string[] }[] }>();
 
     expect(body.tabs).toEqual(WEDDING_FEED_TABS);
-    expect(body.tabs.map((t) => t.label)).toEqual(['전체', '웨딩홀', '스드메', '본식', '예물 · 신혼', '예산']);
+    expect(body.tabs.map((t) => t.label)).toEqual(['전체', '준비', '웨딩홀 · 본식', '스드메', '예산·계약', '신혼여행']);
     expect(body.tabs[0]).toEqual({ key: 'all', label: '전체', categories: [] });
     // 글 질의 하나뿐이다 — 옛 탭 · 카테고리 표를 읽지 않는다.
     expect(pool.query).toHaveBeenCalledTimes(1);

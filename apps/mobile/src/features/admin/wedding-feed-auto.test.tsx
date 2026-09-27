@@ -33,21 +33,6 @@ const FEED = {
   automation: { manualReady: true, scheduledEnabled: false },
 };
 
-const TAXONOMY = {
-  groups: [{ id: '00000000-0000-4000-8000-0000000000a1', name: '업체·서비스', sortOrder: 0, active: true }],
-  categories: [
-    {
-      id: '00000000-0000-4000-8000-0000000000b1',
-      name: '웨딩홀',
-      groupId: '00000000-0000-4000-8000-0000000000a1',
-      sortOrder: 0,
-      active: true,
-      postCount: 3,
-    },
-  ],
-  ungrouped: [],
-};
-
 const DRAFT = { title: '웨딩홀 조명 리허설에서 볼 것', summary: '입장 동선의 밝기를 먼저 확인해요.', body: '본문 첫 문단.\n\n본문 둘째 문단.' };
 
 type Call = { path: string; method: string; body: unknown };
@@ -64,7 +49,6 @@ function route(overrides: Partial<Record<string, (call: Call) => unknown>> = {})
     const override = overrides[key];
     if (override) return override(call);
     if (key === 'GET /v1/admin/wedding-feed') return FEED;
-    if (key === 'GET /v1/admin/wedding-feed/taxonomy') return TAXONOMY;
     if (key === 'POST /v1/admin/wedding-feed/draft') return DRAFT;
     if (key === 'POST /v1/admin/wedding-feed/image/generate') {
       const kind = (body as { kind: string }).kind;
@@ -137,6 +121,18 @@ async function openNewPost(): Promise<ReactTestRenderer> {
 }
 
 describe('웨딩피드 자동 작성 — 글과 이미지를 한 번에', () => {
+  it('앱 칩별로 소분류를 고르고 기존 전체 전용 분류도 대분류를 알려준다', async () => {
+    route();
+    const tree = await openNewPost();
+
+    expect(tree.root.findAllByProps({ accessibilityLabel: '준비 일정' }).length).toBeGreaterThan(0);
+    expect(tree.root.findAllByProps({ accessibilityLabel: '웨딩홀 · 본식 하객' }).length).toBeGreaterThan(0);
+    await press(tree, '일정');
+    expect(allText(tree)).toContain('앱 라운지 칩: 준비');
+    await press(tree, '계약');
+    expect(allText(tree)).toContain('앱 라운지 칩: 예산·계약');
+  });
+
   it('글 → 대표 썸네일 → 본문 이미지를 차례로 채우고, 저장은 하지 않는다', async () => {
     const calls = route();
     const tree = await openNewPost();

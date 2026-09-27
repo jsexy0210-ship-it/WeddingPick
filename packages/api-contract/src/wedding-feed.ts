@@ -87,7 +87,7 @@ export const adminWeddingFeedResponseSchema = z.object({
 export type AdminWeddingFeedResponse = z.infer<typeof adminWeddingFeedResponseSchema>;
 
 /**
- * 칩 하나 — domain `WEDDING_FEED_TABS`(정본 my.js `cats`)를 그대로 싣는다.
+ * 칩 하나 — domain `WEDDING_FEED_TABS`의 현재 피드 대분류를 그대로 싣는다.
  *
  * `categories`는 **이름 배열**이다 — 글이 들고 있는 것이 `categoryLabel` 문자열이라
  * 그 이름으로 거른다. 「전체」는 빈 배열이고 아무것도 거르지 않는다. 지금 앱은 같은
@@ -117,7 +117,7 @@ export const weddingFeedListResponseSchema = z.object({
       imageUrl: true,
     })
   ),
-  /** 맨 앞은 언제나 「전체」다. 정본 칩 여섯 그대로다. */
+  /** 맨 앞은 언제나 「전체」다. */
   tabs: z.array(weddingFeedTabSchema),
 });
 

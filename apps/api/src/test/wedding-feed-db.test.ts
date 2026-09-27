@@ -74,7 +74,7 @@ describeWithDb('웨딩피드 저장(실제 DB)', () => {
   });
 
   /**
-   * 표(0421 · 0442)가 domain 목록과 같은가(2026-09-26 대표 지적 — 「관리자 웨딩피드
+   * 표(0421 · 0442 · 0448)가 domain 목록과 같은가(2026-09-26 대표 지적 — 「관리자 웨딩피드
    * 카테고리와 앱웹 카테고리와 정보가 전혀 다르다」). 표는 글의 `category_id`를 잇는
    * 자리로만 남았지만, 열어 본 사람이 옛 탭을 현행으로 읽지 않게 같은 모양이어야 한다.
    */
@@ -96,7 +96,7 @@ describeWithDb('웨딩피드 저장(실제 DB)', () => {
     expect(categories.rows).toEqual(
       WEDDING_FEED_CATEGORIES.map((category) => ({
         name: category.label,
-        chip: category.chip === null ? null : weddingFeedChipLabel(category.chip),
+        chip: weddingFeedChipLabel(category.chip),
       }))
     );
   });
