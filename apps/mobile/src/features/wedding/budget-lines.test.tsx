@@ -208,24 +208,24 @@ describe('웨딩일정 타임라인 — 줄마다 수정 · 삭제', () => {
 
   const plan = { id: 't-1', date: '2026-10-02', title: '예복 맞춤', meta: '예식일 기준 임시 날짜', tentative: true, editable: true };
 
-  it('서버에 행이 있는 할 일 줄은 수정·삭제 CTA를 둔다 · 대신 세운 기본 줄은 없다', () => {
+  it('서버에 행이 있는 할 일만 더보기에서 수정·삭제할 수 있다', () => {
     const onEdit = jest.fn();
     const onDelete = jest.fn();
     act(() => {
       view = create(<TimelinePlanRow plan={plan} onEdit={onEdit} onDelete={onDelete} />);
     });
-    const edit = view!.root.find((node) => node.type === ActionButton && node.props.testID === 'timeline-row-edit');
-    const trash = view!.root.find((node) => node.type === ActionButton && node.props.testID === 'timeline-row-delete');
-    expect(edit.props.accessibilityLabel).toBe('예복 맞춤 수정');
-    act(() => edit.props.onPress());
-    act(() => trash.props.onPress());
+    expect(view!.root.findAllByProps({ accessibilityLabel: '예복 맞춤 수정' })).toHaveLength(0);
+    act(() => view!.root.findByProps({ accessibilityLabel: '예복 맞춤 더보기' }).props.onPress());
+    act(() => view!.root.findByProps({ accessibilityLabel: '예복 맞춤 수정' }).props.onPress());
+    act(() => view!.root.findByProps({ accessibilityLabel: '예복 맞춤 더보기' }).props.onPress());
+    act(() => view!.root.findByProps({ accessibilityLabel: '예복 맞춤 삭제' }).props.onPress());
     expect(onEdit).toHaveBeenCalledWith(plan);
     expect(onDelete).toHaveBeenCalledWith(plan);
 
     act(() => {
       view!.update(<TimelinePlanRow plan={{ ...plan, editable: false }} onEdit={onEdit} onDelete={onDelete} />);
     });
-    expect(view!.root.findAll((node) => node.props.testID === 'timeline-row-edit')).toHaveLength(0);
+    expect(view!.root.findAllByProps({ accessibilityLabel: '예복 맞춤 더보기' })).toHaveLength(0);
   });
 
   it('수정 주소 — 일정은 eventId, 할 일은 taskId + 보이던 날짜', () => {
@@ -270,7 +270,7 @@ describe('웨딩노트 화면 연결', () => {
   });
 
   it('일정 줄(직접 넣은 일정 · 상담 일정)과 할 일 줄 모두 수정 · 삭제를 잇는다', () => {
-    expect(screen).toMatch(/<ExpenseRowActions[\s\S]*?testIDPrefix="timeline-row"[\s\S]*?kind: 'event'/);
+    expect(screen).toMatch(/<TimelineRowMenu[\s\S]*?kind: 'event'/);
     expect(screen).toContain("onEdit={(plan) => onEdit({ kind: 'task', id: plan.id, title: plan.title }, plan.date)}");
     expect(screen).toContain('confirmDeleteTimelineItem({');
   });

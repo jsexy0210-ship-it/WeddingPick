@@ -152,7 +152,8 @@ describe('웨딩노트 웨딩일정 — 임시 날짜 줄', () => {
         );
       });
       const texts = view.root.findAll((node) => typeof node.props.children === 'string').map((node) => node.props.children);
-      expect(texts).toContain('9.23(수) · D+4');
+      expect(texts).toContain('9.23(수)');
+      expect(texts).toContain('D+4');
       act(() => view.unmount());
     } finally {
       jest.useRealTimers();

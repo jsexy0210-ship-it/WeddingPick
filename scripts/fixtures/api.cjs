@@ -2310,6 +2310,24 @@ if (process.env.FIXTURE_TASKS_UNDATED === 'true') {
   };
 }
 
+/* 웨딩일정의 지연 배지·접힌 액션 메뉴를 같은 상태로 캡처할 때 사용한다. */
+if (process.env.FIXTURE_NOTE_OVERDUE === 'true') {
+  const dateDaysAgo = (days) => {
+    const date = new Date();
+    date.setDate(date.getDate() - days);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  };
+  routes['GET /v1/weddings/:weddingId/tasks'] = {
+    tasks: [4, 11, 27].map((days, index) => ({
+      id: ['9b111111-1111-4111-8111-111111111111', '9b222222-2222-4222-8222-222222222222', '9b333333-3333-4333-8333-333333333333'][index],
+      label: ['웨딩홀 잔금 납부', '혼인신고 서류', '식순·사회자 확정'][index],
+      dueDate: dateDaysAgo(days), vendorId: null, vendorLabel: null,
+      state: 'upcoming', stateLabel: '예정', manualState: false,
+    })),
+    progress: { done: 0, total: 3 },
+  };
+}
+
 /*
  * 웨딩노트 수정 · 삭제(2026-09-26) — 대표님 캡처와 같은 꼴: 상담 일정 «리엔헤어메이크업 상담»(20:50),
  * 날짜 없는 할 일 «예복 맞춤»(예식일 기준 임시 날짜), 그리고 예산 추가로 넣은 여러 업종의 지출

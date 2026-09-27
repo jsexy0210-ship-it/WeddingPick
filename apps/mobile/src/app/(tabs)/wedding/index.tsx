@@ -91,6 +91,7 @@ import { ExpenseRowActions } from '@/features/wedding/expense-row-actions';
 import { notePlanEntries } from '@/features/wedding/note-plan';
 import { confirmDeleteTimelineItem, timelineEditHref, type TimelineTarget } from '@/features/wedding/timeline-delete';
 import { TimelinePlanRow } from '@/features/wedding/timeline-plan-row';
+import { TimelineRowMenu } from '@/features/wedding/timeline-row-menu';
 
 import { ourWedding as copy } from '../../../../../../spec/strings.ko.json';
 
@@ -746,7 +747,7 @@ function CalendarPanel({
 
       {overduePlans.length > 0 ? (
         <TimelineGroupView
-          title="기한 지난 할 일"
+          title="아직 못 끝낸 일이 있어요"
           range=""
           items={overduePlans.map((plan) => ({ ...plan, event: null, kind: 'plan' as const }))}
           busy={busy}
@@ -880,15 +881,12 @@ function TimelineGroupView({
                   </ThemedText>
                 ) : null}
               </View>
-              <View style={styles.eventActions}>
-                <ExpenseRowActions
-                  label={event.title}
-                  disabled={busy}
-                  testIDPrefix="timeline-row"
-                  onEdit={() => onEdit({ kind: 'event', id: event.id, title: event.title })}
-                  onDelete={() => onDelete({ kind: 'event', id: event.id, title: event.title })}
-                />
-              </View>
+              <TimelineRowMenu
+                label={event.title}
+                disabled={busy}
+                onEdit={() => onEdit({ kind: 'event', id: event.id, title: event.title })}
+                onDelete={() => onDelete({ kind: 'event', id: event.id, title: event.title })}
+              />
             </View>
           </View>
         );
@@ -1258,10 +1256,9 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     gap: 3,
   },
-  /* 일정 수정·삭제는 내용 아래의 CTA 두 개로 놓는다. */
-  eventRowActions: { gap: Spacing.two },
+  /* 반복 목록에서는 수정·삭제를 우측 더보기로 접어 둔다. */
+  eventRowActions: { flexDirection: 'row', alignItems: 'flex-start' },
   eventText: { flex: 1, minWidth: 0, gap: 3 },
-  eventActions: { alignSelf: 'stretch' },
   /* note.js `tlItem(…'wed')` — `box-shadow:inset 0 0 0 1.5px P`. */
   weddingRow: { borderWidth: 1.5 },
 
