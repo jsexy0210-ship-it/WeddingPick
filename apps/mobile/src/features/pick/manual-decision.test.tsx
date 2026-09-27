@@ -393,14 +393,15 @@ describe('Pick — 결정이 끝난 묶음의 후보', () => {
       (node) => node.props.accessibilityLabel === label && typeof node.props.onPress === 'function'
     )[0]!;
     expect(action('비교 닫기')).toBeUndefined();
-    expect(action('강남 B 웨딩홀 비교에 담기').props.accessibilityRole).toBe('checkbox');
-    expect(action('강남 B 웨딩홀 비교에 담기').props.accessibilityState.checked).toBe(false);
+    expect(action('강남 B 웨딩홀 비교에 담기').props.accessibilityRole).toBe('button');
+    expect(action('강남 B 웨딩홀 비교에 담기').props.accessibilityState.selected).toBe(false);
     act(() => action('강남 B 웨딩홀 비교에 담기').props.onPress());
-    expect(action('강남 B 웨딩홀 비교에서 빼기').props.accessibilityState.checked).toBe(true);
+    expect(action('강남 B 웨딩홀 비교에서 빼기').props.accessibilityState.selected).toBe(true);
     expect(action('비교 닫기')).toBeUndefined();
     act(() => action('루이비스스퀘어 비교에 담기').props.onPress());
     expect(action('비교 닫기')).toBeDefined();
     expect(action('비교하기')).toBeDefined();
+    expect(tree.root.findAll((node) => node.props.children === '금액과 조건을 나란히 볼 수 있어요')).toHaveLength(0);
     act(() => action('비교 닫기').props.onPress());
     expect(action('비교 닫기')).toBeUndefined();
     expect(action('강남 B 웨딩홀 비교에 담기')).toBeDefined();

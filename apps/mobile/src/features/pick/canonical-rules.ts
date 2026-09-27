@@ -9,7 +9,6 @@ export const PICK_COMPARE_MAX = 3;
 
 export const PICK_COMPARE_ADD_LABEL = '비교에 담기';
 export const PICK_COMPARE_REMOVE_LABEL = '비교에서 빼기';
-export const PICK_COMPARE_BANNER_HINT = '금액과 조건을 나란히 볼 수 있어요';
 
 export function compareBasketLabel(count: number): string {
   return `${count}곳 담았어요`;
