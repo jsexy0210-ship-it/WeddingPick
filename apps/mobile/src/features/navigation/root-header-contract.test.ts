@@ -7,7 +7,7 @@ const { readFileSync } = require('node:fs') as {
 const { join } = require('node:path') as { join: (...parts: string[]) => string };
 
 const APP = join(__dirname, '..', '..', 'app', '(tabs)');
-const source = (path: string) => readFileSync(join(APP, path), 'utf8');
+const source = (path: string) => readFileSync(join(APP, path), 'utf8').replace(/\r\n/g, '\n');
 
 function styleBlock(text: string, name: string): string {
   const start = text.indexOf(`  ${name}: {`);
