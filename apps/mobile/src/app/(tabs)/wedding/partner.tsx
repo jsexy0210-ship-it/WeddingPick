@@ -43,7 +43,7 @@ const S = {
   kakao: '초대하기',
   sharedLabel: '연결하면 같이 봐요',
   scopeNote: '검색 기록과 알림 설정은 각자 봐요.',
-  haveCode: '코드 받았어요',
+  haveCode: '코드를 받았어요',
   unlinkQTitle: '해제하면\n이렇게 돼요',
   cutLabel: '끝나요',
   keepLabel: '그대로예요',

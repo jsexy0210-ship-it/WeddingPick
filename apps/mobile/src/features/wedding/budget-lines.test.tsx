@@ -1,6 +1,7 @@
 import type { ExpenseSummaryResponse, MyReport } from '@weddingpick/api-contract';
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import { ActionButton } from '@weddingpick/ui';
 
 import { removeWeddingEvent, removeWeddingTask } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
@@ -124,7 +125,7 @@ describe('예산현황 업종 목록 — 지출내역 흡수 · 건마다 수정
     note: '사진에서 금액을 읽지 못했어요',
   } as MyReport;
 
-  it('직접 넣은 건에만 아이콘 · Pick 인증 · 상담정리 건은 잠금 · 0원 줄은 아이콘 없음 · «확인중» 줄은 맨 위', () => {
+  it('직접 넣은 건에만 수정·삭제 CTA · Pick 인증·상담정리 건은 잠금 · «확인중» 줄은 맨 위', () => {
     const manual = expense('dress', 1_500_000, { label: '드레스 예약금' });
     const proof = expense('hall', 10_000_000, { label: '청담 E 웨딩홀', source: 'payment_proof', sourceLabel: 'Pick 인증 자료' });
     const consult = expense('studio', 1_500_000, { label: '블루밍 스튜디오', source: 'consultation', sourceLabel: '상담정리' });
@@ -148,8 +149,8 @@ describe('예산현황 업종 목록 — 지출내역 흡수 · 건마다 수정
       );
     });
 
-    const edits = view!.root.findAll((node) => node.props.testID === 'expense-row-edit' && typeof node.props.onPress === 'function');
-    const trashes = view!.root.findAll((node) => node.props.testID === 'expense-row-delete' && typeof node.props.onPress === 'function');
+    const edits = view!.root.findAll((node) => node.type === ActionButton && node.props.testID === 'expense-row-edit');
+    const trashes = view!.root.findAll((node) => node.type === ActionButton && node.props.testID === 'expense-row-delete');
     expect(edits.map((node) => node.props.accessibilityLabel)).toEqual(['드레스 예약금 수정']);
     expect(trashes.map((node) => node.props.accessibilityLabel)).toEqual(['드레스 예약금 삭제']);
 
@@ -177,7 +178,7 @@ describe('예산현황 업종 목록 — 지출내역 흡수 · 건마다 수정
     expect(onPending).toHaveBeenCalledWith(pending);
   });
 
-  it('지출이 없는 0원 줄은 «아직 안 냈어요»만 · 아이콘 없음', () => {
+  it('지출이 없는 0원 줄은 빈 안내만 · 수정·삭제 CTA 없음', () => {
     act(() => {
       view = create(
         <BudgetCategoryList
@@ -192,7 +193,7 @@ describe('예산현황 업종 목록 — 지출내역 흡수 · 건마다 수정
       );
     });
     expect(view!.root.findAll((node) => node.props.testID === 'expense-row-edit')).toHaveLength(0);
-    const labels = view!.root.findAll((node) => node.props.children === '아직 안 냈어요');
+    const labels = view!.root.findAll((node) => node.props.children === '아직 지출이 없어요');
     expect(labels.length).toBeGreaterThanOrEqual(3);
   });
 });
@@ -207,14 +208,14 @@ describe('웨딩일정 타임라인 — 줄마다 수정 · 삭제', () => {
 
   const plan = { id: 't-1', date: '2026-10-02', title: '예복 맞춤', meta: '예식일 기준 임시 날짜', tentative: true, editable: true };
 
-  it('서버에 행이 있는 할 일 줄은 edit · trash 아이콘(44 칸)을 둔다 · 대신 세운 기본 줄은 없다', () => {
+  it('서버에 행이 있는 할 일 줄은 수정·삭제 CTA를 둔다 · 대신 세운 기본 줄은 없다', () => {
     const onEdit = jest.fn();
     const onDelete = jest.fn();
     act(() => {
       view = create(<TimelinePlanRow plan={plan} onEdit={onEdit} onDelete={onDelete} />);
     });
-    const edit = view!.root.find((node) => node.props.testID === 'timeline-row-edit' && typeof node.props.onPress === 'function');
-    const trash = view!.root.find((node) => node.props.testID === 'timeline-row-delete' && typeof node.props.onPress === 'function');
+    const edit = view!.root.find((node) => node.type === ActionButton && node.props.testID === 'timeline-row-edit');
+    const trash = view!.root.find((node) => node.type === ActionButton && node.props.testID === 'timeline-row-delete');
     expect(edit.props.accessibilityLabel).toBe('예복 맞춤 수정');
     act(() => edit.props.onPress());
     act(() => trash.props.onPress());

@@ -17,7 +17,7 @@
  */
 import { FullScreenError } from '@/features/errors/full-screen-error';
 import type { CurrentUser, MyReportListResponse } from '@weddingpick/api-contract';
-import { BUSINESS_NOTICE_LINES, PRIVACY_POLICY_TAB_KEY, TERM_DOCUMENTS, daysUntil, formatCount, type TermsPopupTabKey } from '@weddingpick/domain';
+import { BUSINESS_NOTICE_LINES, TERM_DOCUMENTS, daysUntil, formatCount } from '@weddingpick/domain';
 import { Redirect, router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -44,7 +44,6 @@ import {
   listMyReports,
 } from '@/api/client';
 import { ROOT_TAB_GUTTER, RootTabHeader } from '@/components/root-tab-header';
-import { TermsDetailModal } from '@/features/auth/terms-detail-modal';
 import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import { ScrollToTopButton, useScrollToTopVisibility } from '@/features/navigation/scroll-to-top-button';
 import { useSession } from '@/features/auth/use-session';
@@ -89,8 +88,6 @@ export default function MyScreen() {
   const { state, refresh } = useSession();
   const [data, setData] = useState<MyData>(EMPTY);
   const [loadFailed, setLoadFailed] = useState(false);
-  /* 약관 상세(WP-AUTH-011 공통 풀팝업) — 누른 약관의 탭으로 연다. */
-  const [termsKey, setTermsKey] = useState<TermsPopupTabKey | null>(null);
   const loadVersion = useRef(0);
 
   const isSignedIn = state.status === 'signedIn';
@@ -212,10 +209,7 @@ export default function MyScreen() {
       title: S['group.terms'],
       /*
        * 2026-09-25 대표 지시 「약관 리스트는 온보딩과 동일한 UX로 맞춘다. 메뉴도 늘리도록 한다」 —
-       * 약관 동의(WP-AUTH-010)가 보여주는 약관 전부를 줄로 두고, 누르면 같은 공통 풀팝업
-       * (WP-AUTH-011 `TermsDetailModal`)이 그 탭으로 열린다(«동의하기» 없음). 개인정보처리방침도
-       * 같은 풀팝업의 «개인정보처리방침» 탭으로 연다(2026-09-26 대표 지시) — 본문은
-       * 관리자 공개판을 공통 팝업 안에 RN으로 그린다(2026-09-27 대표 지시).
+       * 약관 행은 일반 하위 페이지로 연다. Back은 MY 목록으로 돌아온다.
        */
       rows: [
         /* 2026-09-25 대표 재지시 — 목록은 「서비스이용약관」 · 「개인정보처리방침」 둘만. 상세 탭은 유지한다. */
@@ -223,9 +217,9 @@ export default function MyScreen() {
           key: `term-${doc.key}`,
           label: doc.title,
           icon: 'bookmark' as const,
-          onPress: () => setTermsKey(doc.key),
+          onPress: () => guestPush('/my/terms'),
         })),
-        { key: 'privacy', label: S['item.privacy'], icon: 'bookmark', onPress: () => setTermsKey(PRIVACY_POLICY_TAB_KEY) },
+        { key: 'privacy', label: S['item.privacy'], icon: 'bookmark', onPress: () => guestPush('/my/privacy-policy') },
       ],
     },
   ];
@@ -355,11 +349,6 @@ export default function MyScreen() {
         </ScrollView>
         <ScrollToTopButton visible={scrollTop.visible} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
       </SafeAreaView>
-      <TermsDetailModal
-        visible={termsKey !== null}
-        initialKey={termsKey ?? 'terms'}
-        onClose={() => setTermsKey(null)}
-      />
     </ThemedView>
   );
 }

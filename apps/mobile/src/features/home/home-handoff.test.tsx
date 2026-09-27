@@ -162,14 +162,12 @@ it('설정 저장부터 홈 첫 자료까지 뿌리의 골격 하나가 내려�
   await act(async () => boot.resolve({
     member: null, candidates: null, budget: null, bracketAnswered: false, partnerInvitePending: false,
   } as never));
-  expect(hostSkeletonId(tree)).toBe(first);
-
-  await act(async () => content.resolve([]));
-
-  /* 홈이 첫 자료를 그린 순간 걷힌다. 그 사이 뿌리 골격은 단 한 번 섰다. */
+  /* 핵심 정보가 도착하면 홈을 바로 열고, 피드 응답은 그 자리에서 기다린다. */
   expect(isHomeHandoffActive()).toBe(false);
   expect(hostSkeletonId(tree)).toBeNull();
   expect(tree.root.findAll((node) => typeof node.props.testID === 'string' && node.props.testID.startsWith('skeleton-'))).toHaveLength(0);
+
+  await act(async () => content.resolve([]));
 });
 
 it('홈이 첫 자료를 못 받으면 골격을 걷고 오류를 보인다', async () => {

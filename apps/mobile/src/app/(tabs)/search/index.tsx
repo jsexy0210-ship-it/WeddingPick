@@ -561,7 +561,7 @@ export default function SearchScreen() {
         SEED bg-layer-fill = backgroundElement) · 좌우 16 · 사이 8 · 돋보기 16은 **언제나**
         선다 · 글자 14. 입력이 있으면 오른쪽에 ✕(16)이 서서 지운다.
       */
-      <View style={[styles.searchBox, {
+      <View testID="input-frame" style={[styles.searchBox, {
         backgroundColor: theme.backgroundElement,
         borderColor: searchFocused ? theme.tint : 'transparent',
       }]}>

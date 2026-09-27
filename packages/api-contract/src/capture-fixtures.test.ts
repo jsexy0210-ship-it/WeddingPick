@@ -170,6 +170,8 @@ const NO_CONTRACT = new Set([
   /* 웨딩피드 그림 생성(2026-09-26 자동 작성) — 관리자 전용, 같은 자리다. */
   'POST /v1/admin/wedding-feed/image/generate',
   'GET /v1/weddings/:weddingId/candidates/removed',
+  /* 공개 약관 응답은 앱 클라이언트의 인라인 스키마로 검사한다. */
+  'GET /v1/legal/privacy',
 ]);
 
 /**

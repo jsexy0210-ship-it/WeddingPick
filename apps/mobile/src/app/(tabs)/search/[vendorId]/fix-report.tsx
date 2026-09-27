@@ -164,7 +164,7 @@ export default function FixReportScreen() {
           multiline
           textAlignVertical="top"
           editable={chosen === null || chosen.needsValue}
-          style={[styles.rptArea, { backgroundColor: theme.backgroundSelected, color: theme.text }]}
+          style={[styles.rptArea, { backgroundColor: theme.backgroundSelected, color: theme.text, borderColor: theme.fieldBorder }]}
         />
       </FixSection>
 
@@ -177,7 +177,7 @@ export default function FixReportScreen() {
           accessibilityLabel={S.evidence}
           autoCapitalize="none"
           keyboardType="url"
-          style={[styles.rptInput, { backgroundColor: theme.backgroundSelected, color: theme.text }]}
+          style={[styles.rptInput, { backgroundColor: theme.backgroundSelected, color: theme.text, borderColor: theme.fieldBorder }]}
         />
         {evidenceBad ? (
           <ThemedText type="f13" themeColor="negative">
@@ -225,6 +225,7 @@ const styles = StyleSheet.create({
   rptLabel: { flex: 1 },
   rptArea: {
     minHeight: RPT_AREA_MIN,
+    borderWidth: Border.hairline,
     borderRadius: Radius.picker,
     padding: Layout.fieldPaddingX,
     fontSize: FontSize.f14,
@@ -232,6 +233,7 @@ const styles = StyleSheet.create({
   },
   rptInput: {
     height: Layout.searchField,
+    borderWidth: Border.hairline,
     borderRadius: Radius.picker,
     paddingHorizontal: Layout.fieldPaddingX,
     fontSize: FontSize.f14,

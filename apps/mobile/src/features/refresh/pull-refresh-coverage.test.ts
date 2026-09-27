@@ -79,7 +79,7 @@ describe('당겨서 새로 고침 — 붙은 자리', () => {
           continue;
         }
         if (!/\.tsx?$/.test(name) || /\.test\.tsx?$/.test(name)) continue;
-        const path = relative(SRC, full);
+        const path = relative(SRC, full).replace(/\\/g, '/');
         if (path.startsWith('features/refresh/') || path.startsWith('app/admin/')) continue;
         if (/<RefreshControl\b|\bonRefresh=\{/.test(readFileSync(full, 'utf8'))) offenders.push(path);
       }

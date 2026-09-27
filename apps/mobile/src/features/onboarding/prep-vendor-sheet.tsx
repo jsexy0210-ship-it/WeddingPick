@@ -102,6 +102,7 @@ function SheetBody({
   const { query, trimmed, change, vendors, loading, failed } = usePrepVendorSearch(card.categories);
   /** 직접 입력 모드. 들어갈 때 치던 검색어를 그대로 가져간다. */
   const [manual, setManual] = useState<string | null>(null);
+  const [inputFocused, setInputFocused] = useState(false);
 
   if (manual !== null) {
     const name = manualPrepName(manual);
@@ -115,9 +116,11 @@ function SheetBody({
         />
 
         {/* 검색창과 같은 칸 — 돋보기만 없다(찾는 칸이 아니라 적는 칸이다). */}
-        <View style={[styles.searchBox, { backgroundColor: theme.backgroundElement }]}>
+        <View testID="input-frame" style={[styles.searchBox, { backgroundColor: theme.backgroundElement, borderColor: inputFocused ? theme.fieldBorderFocus : theme.fieldBorder }]}>
           <TextInput
             autoFocus
+            onFocus={() => setInputFocused(true)}
+            onBlur={() => setInputFocused(false)}
             value={manual}
             onChangeText={setManual}
             placeholder={copy['prepVendor.manualPlaceholder']}
@@ -170,10 +173,12 @@ function SheetBody({
     <SheetPanel style={styles.sheet}>
       <SheetHeader title={copy['prepVendor.title'].replace('{name}', card.name)} closeLabel={copy['prepVendor.close']} onClose={onDismiss} />
 
-      <View style={[styles.searchBox, { backgroundColor: theme.backgroundElement }]}>
+      <View testID="input-frame" style={[styles.searchBox, { backgroundColor: theme.backgroundElement, borderColor: inputFocused ? theme.fieldBorderFocus : theme.fieldBorder }]}>
         <ProductSymbol name="magnifier" size={Layout.iconField} color={theme.textAssistive} />
         <TextInput
           autoFocus
+          onFocus={() => setInputFocused(true)}
+          onBlur={() => setInputFocused(false)}
           value={query}
           onChangeText={change}
           placeholder={copy['prepVendor.placeholder']}
@@ -304,6 +309,7 @@ const styles = StyleSheet.create({
   searchBox: {
     height: Layout.searchField,
     borderRadius: Radius.cardLarge,
+    borderWidth: Border.hairline,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.three,

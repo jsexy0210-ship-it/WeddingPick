@@ -46,7 +46,7 @@ export function ScrollToTopButton({
 }
 
 const styles = StyleSheet.create({
-  position: { position: 'absolute', right: 16, zIndex: 10 },
+  position: { position: 'absolute', left: '50%', marginLeft: -Layout.touchTarget / 2, zIndex: 10 },
   button: {
     width: Layout.touchTarget,
     height: Layout.touchTarget,

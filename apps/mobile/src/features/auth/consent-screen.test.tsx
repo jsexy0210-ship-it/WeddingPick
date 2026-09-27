@@ -32,7 +32,7 @@ jest.mock('@/api/client', () => ({
   getSignupState: jest.fn(),
 }));
 jest.mock('@/features/navigation/depth-back', () => ({ dismissToOrReplace: jest.fn() }));
-jest.mock('@/features/auth/terms-detail-modal', () => ({ TermsDetailModal: 'TermsDetailModal' }));
+jest.mock('@/features/auth/terms-detail-page', () => ({ TermsDetailPage: 'TermsDetailPage' }));
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaView: 'SafeAreaView',
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
@@ -147,6 +147,22 @@ it('필수만 체크하면 선택 항목은 보내지 않는다', async () => {
   expect(completeSignup).toHaveBeenCalledWith({
     consents: ['age', 'terms', 'privacy', 'pick_certification', 'consultation_recording'],
   });
+});
+
+it('약관 상세는 Back 페이지로 열리고 동의 후 체크 상태를 유지한다', async () => {
+  jest.mocked(getSignupState).mockResolvedValue(pendingState());
+  await act(async () => { tree = create(<ConsentScreen />); });
+
+  await act(async () => {
+    tree.root.findByProps({ accessibilityLabel: '서비스이용약관 상세' }).props.onPress();
+  });
+  const page = tree.root.findByType('TermsDetailPage' as never);
+  expect(page.props.initialKey).toBe('terms');
+  await act(async () => page.props.onAgree('terms'));
+
+  expect(tree.root.findAllByType('TermsDetailPage' as never)).toHaveLength(0);
+  const agreement = tree.root.findAll((node) => node.props.accessibilityRole === 'checkbox' && node.props.accessibilityLabel === '서비스이용약관')[0]!;
+  expect(agreement.props.accessibilityState.checked).toBe(true);
 });
 
 it('옛 서버(셋만 아는)에는 서버가 아는 항목만 보낸다 — 모르는 키로 가입 전체가 거절되지 않게', async () => {

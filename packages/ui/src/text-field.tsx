@@ -46,6 +46,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
         </ThemedText>
       ) : null}
       <View
+        testID="input-frame"
         style={[
           styles.box,
           multiline ? styles.boxMultiline : styles.boxSingle,

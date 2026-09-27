@@ -2,13 +2,13 @@ import type { ConsultationRecord } from '@weddingpick/api-contract';
 import { manwon } from '@weddingpick/domain';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { ScrollView, StyleSheet, TextInput, View, useWindowDimensions } from 'react-native';
 
-import { confirmConsultation, listConsultations } from '@/api/client';
+import { confirmConsultation, listConsultations, updateConsultation } from '@/api/client';
 import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
 import { showResultToast } from '@/features/navigation/result-toast';
-import { ActionButton, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { ActionButton, Border, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 
 import WeddingScreen from '../../index';
@@ -49,20 +49,27 @@ function str(data: Record<string, unknown>, key: string): string | null {
  * 대표님 확인 전까지 같은 블록 모양으로 남긴다.
  */
 export default function ConsultationDetailRoute() {
-  const { id, recordId } = useLocalSearchParams<{ id: string; recordId: string }>();
+  const { id, recordId, edit } = useLocalSearchParams<{ id: string; recordId: string; edit?: string }>();
+  const theme = useTheme();
   const { height } = useWindowDimensions();
   const requestKey = `${id}:${recordId}`;
   const [record, setRecord] = useState<ConsultationRecord | null>(null);
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState(edit === '1');
+  const [vendorDraft, setVendorDraft] = useState('');
+  const [amountDraft, setAmountDraft] = useState('');
 
   useEffect(() => {
     let active = true;
     void listConsultations(id)
       .then((page) => {
         if (!active) return;
-        setRecord(page.records.find((item) => item.id === recordId) ?? null);
+        const next = page.records.find((item) => item.id === recordId) ?? null;
+        setRecord(next);
+        setVendorDraft(next?.vendorLabel ?? '');
+        setAmountDraft(String(next ? (money(next.common, 'finalAmount') ?? money(next.common, 'quotedTotal'))?.value ?? '' : ''));
         setError(null);
       })
       .catch((caught: Error) => {
@@ -93,6 +100,33 @@ export default function ConsultationDetailRoute() {
       dismissToOrReplace('/wedding?tab=consult');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '저장하지 못했어요.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveChanges() {
+    if (!record || saving || !vendorDraft.trim() || record.confirmedAt) return;
+    const amount = amountDraft.trim().length > 0 ? Number(amountDraft.replace(/,/g, '')) : null;
+    if (amount !== null && (!Number.isFinite(amount) || amount < 0)) {
+      setError('금액을 확인해 주세요');
+      return;
+    }
+    const amountKey = money(record.common, 'finalAmount') ? 'finalAmount' : 'quotedTotal';
+    const previous = record.common[amountKey];
+    const value = previous && typeof previous === 'object' ? { ...previous, value: amount } : { value: amount, evidence: null };
+    setSaving(true);
+    setError(null);
+    try {
+      const next = await updateConsultation(record.id, {
+        vendorLabel: vendorDraft.trim(),
+        common: { ...record.common, [amountKey]: value },
+      });
+      setRecord(next);
+      setEditing(false);
+      showResultToast('상담기록을 수정했어요');
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : '수정하지 못했어요.');
     } finally {
       setSaving(false);
     }
@@ -129,6 +163,33 @@ export default function ConsultationDetailRoute() {
                 nestedScrollEnabled
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.content}>
+                {editing && !record.confirmedAt ? (
+                  <View style={styles.editFields}>
+                    <ThemedText type="f14" style={styles.bold}>업체명</ThemedText>
+                    <View testID="input-frame" style={[styles.inputFrame, { borderColor: theme.fieldBorder }]}>
+                      <TextInput
+                        value={vendorDraft}
+                        onChangeText={setVendorDraft}
+                        maxLength={100}
+                        placeholder="업체명을 입력해 주세요"
+                        accessibilityLabel="상담 업체명"
+                        style={[styles.input, { color: theme.text }]}
+                      />
+                    </View>
+                    <ThemedText type="f14" style={styles.bold}>제시금액</ThemedText>
+                    <View testID="input-frame" style={[styles.inputFrame, { borderColor: theme.fieldBorder }]}>
+                      <TextInput
+                        value={amountDraft}
+                        onChangeText={(value) => setAmountDraft(value.replace(/[^\d]/g, ''))}
+                        keyboardType="number-pad"
+                        placeholder="금액을 입력해 주세요"
+                        accessibilityLabel="상담 제시금액 원 단위"
+                        style={[styles.input, { color: theme.text }]}
+                      />
+                      <ThemedText type="f14" themeColor="textSecondary">원</ThemedText>
+                    </View>
+                  </View>
+                ) : null}
                 {/* WP-NOTE-005 정본 analysis 5블록 — 라벨은 정본 문구 그대로(대조표 「분석 라벨」). */}
                 <Lines label="포함" items={list(record.common, 'included')} />
                 <Lines label="별도로 확인할 비용" items={list(record.after, 'additionalCosts')} />
@@ -162,13 +223,17 @@ export default function ConsultationDetailRoute() {
               </ScrollView>
 
               {!record.confirmedAt ? (
-                <ActionButton
-                  variant="primary"
-                  label="저장"
-                  loading={saving}
-                  onPress={() => void save()}
-                />
-              ) : null}
+                editing ? (
+                  <ActionButton variant="primary" label="변경 내용 저장" loading={saving} disabled={!vendorDraft.trim()} onPress={() => void saveChanges()} />
+                ) : (
+                  <View style={styles.actions}>
+                    <View style={styles.action}><ActionButton variant="ghost" label="수정" onPress={() => setEditing(true)} /></View>
+                    <View style={styles.action}><ActionButton variant="primary" label="저장" loading={saving} onPress={() => void save()} /></View>
+                  </View>
+                )
+              ) : (
+                <ThemedText type="f13" themeColor="textAssistive">저장한 상담기록은 수정할 수 없어요</ThemedText>
+              )}
             </>
           )}
         </SheetPanel>
@@ -208,6 +273,11 @@ const styles = StyleSheet.create({
   content: { gap: Spacing.three, paddingBottom: Spacing.two },
   /* `aBlock` — `gap:8px`. */
   group: { gap: Spacing.two },
+  editFields: { gap: Spacing.two },
+  inputFrame: { minHeight: 52, borderWidth: Border.hairline, borderRadius: Radius.medium, paddingHorizontal: Spacing.three, flexDirection: 'row', alignItems: 'center' },
+  input: { flex: 1, minWidth: 0, paddingVertical: Spacing.two },
+  actions: { flexDirection: 'row', gap: Spacing.two },
+  action: { flex: 1, minWidth: 0 },
   /* `ab().boxStyle` — `gap:8px;padding:14px 16px;border-radius:10px`. */
   box: { gap: Spacing.two, paddingVertical: 14, paddingHorizontal: Spacing.three, borderRadius: Radius.medium },
 });

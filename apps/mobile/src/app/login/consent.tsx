@@ -12,7 +12,7 @@ import {
 } from '@weddingpick/domain';
 import { router, useNavigation } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { BackHandler, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
@@ -34,7 +34,7 @@ import { ApiError, completeSignup, getSignupState } from '@/api/client';
 import { loadToken } from '@/api/session';
 import { clearSignupPending, hasFreshSignupPending, noteSignupActivated } from '@/features/auth/sign-in-handoff';
 import { SigningInOverlay, SigningInView } from '@/features/auth/signing-in-view';
-import { TermsDetailModal } from '@/features/auth/terms-detail-modal';
+import { TermsDetailPage } from '@/features/auth/terms-detail-page';
 import { beginAuthProgress } from '@/features/loading/auth-progress';
 import { dismissToOrReplace } from '@/features/navigation/depth-back';
 
@@ -75,6 +75,15 @@ export default function ConsentScreen() {
   const [error, setError] = useState<string | null>(null);
   const [detailKey, setDetailKey] = useState<ConsentAgreementKey | null>(null);
   const navigation = useNavigation();
+
+  useEffect(() => {
+    if (!detailKey) return;
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      setDetailKey(null);
+      return true;
+    });
+    return () => subscription.remove();
+  }, [detailKey]);
 
   useEffect(() => {
     let alive = true;
@@ -187,6 +196,21 @@ export default function ConsentScreen() {
     );
   }
 
+  if (detailKey !== null) {
+    return (
+      <TermsDetailPage
+        key={detailKey}
+        initialKey={detailKey}
+        onBack={() => setDetailKey(null)}
+        onAgree={(selectedKey) => {
+          const selectedAgreement = CONSENT_AGREEMENT_ITEMS.find((item) => item.key === selectedKey);
+          if (selectedAgreement) setChecked((current) => new Set(current).add(selectedAgreement.key));
+          setDetailKey(null);
+        }}
+      />
+    );
+  }
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -245,15 +269,6 @@ export default function ConsentScreen() {
 
       <SigningInOverlay active={submitting} />
 
-      <TermsDetailModal
-        visible={detailKey !== null}
-        initialKey={detailKey ?? 'terms'}
-        onClose={() => setDetailKey(null)}
-        onAgree={() => {
-          if (detailKey) setChecked((current) => new Set(current).add(detailKey));
-          setDetailKey(null);
-        }}
-      />
     </ThemedView>
   );
 }
