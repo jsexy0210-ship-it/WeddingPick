@@ -1,4 +1,5 @@
 import type { CandidateListResponse } from '@weddingpick/api-contract';
+import { PREPARATION_CATEGORIES } from '@weddingpick/domain';
 import { AccessibilityInfo } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'react-test-renderer';
@@ -148,6 +149,44 @@ describe('Pick — 온보딩에서 정한 곳', () => {
 
     /* 상담 예약(WP-PICK-009)은 Pick 스택 별칭 안에서 민다(stack-alias.ts). */
     expect(mockPush).toHaveBeenCalledWith(`/pick/vendor/${HALL_ID}/consult?from=pick`);
+  });
+
+  it('홈과 같은 실제 결정 수와 다음 업종을 안내한다', () => {
+    expect(texts()).toContain('2개 결정 · 9개 남음 · 다음 본식스냅');
+  });
+
+  it('모든 업종을 정했으면 완료를 안내하고 검색 빈 상태를 내지 않는다', async () => {
+    jest.mocked(listCandidates).mockResolvedValue({
+      ...PAGE,
+      groups: [],
+      total: 0,
+      manualDecisions: PREPARATION_CATEGORIES.map((category) => ({
+        category,
+        categoryLabel: category,
+        name: `${category} 업체`,
+        decidedAt: '2026-09-26T00:00:00.000Z',
+        decidedByPartner: false,
+      })),
+      progress: { decided: 11, total: 11, label: '11/11 완료' },
+      nextCategory: null,
+    });
+    jest.mocked(getPickRecommendations).mockResolvedValue({ groups: [] } as never);
+
+    await act(async () => {
+      tree.unmount();
+      tree = create(
+        <SafeAreaProvider initialMetrics={METRICS}>
+          <PickScreen />
+        </SafeAreaProvider>
+      );
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(texts()).toContain('정할 업종을 모두 마쳤어요');
+    expect(texts()).not.toContain('아직 담은 곳이 없어요');
+    expect(texts()).not.toContain('업체 검색하기');
   });
 
   it('직접 입력한 곳은 스드메 묶음의 결정 카드로 서고, 업체 상세 · 상담 예약은 없다', () => {
