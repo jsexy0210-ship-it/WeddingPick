@@ -10,7 +10,7 @@ type Body = { groups: { key: string; vendors: { id: string; name: string; catego
  * Pick 묶음별 «내 조건에 맞는 곳» — `GET /v1/me/pick-recommendations`
  * (2026-09-25 대표 지시 「Pick 메뉴 카테고리별로 각각 5개씩」).
  *
- * 지키는 것: 묶음마다 5곳을 넘지 않는다 · 담아둔 곳은 빠진다 · 온보딩에서 정한 업종은
+ * 지키는 것: 묶음마다 5곳을 넘지 않는다 · 담아둔 곳은 빠진다 · 실제 결정한 업종은
  * 권하지 않는다 · 온보딩 지역이 맞는 곳이 먼저 선다 · 묶음 안 업종을 번갈아 뽑는다.
  */
 describeWithDb('Pick 묶음별 추천', () => {
@@ -75,7 +75,7 @@ describeWithDb('Pick 묶음별 추천', () => {
     expect(names).toEqual(['안 담은 웨딩홀']);
   });
 
-  it('온보딩에서 이미 정한 업종은 권하지 않는다', async () => {
+  it('준비 현황 체크만 있고 결정이 없으면 계속 추천한다', async () => {
     const { headers } = await signInAs(test);
     const weddingId = await createWedding(test, headers);
     await test.pool.query(
@@ -83,6 +83,21 @@ describeWithDb('Pick 묶음별 추천', () => {
       [weddingId]
     );
     await createVendor('웨딩홀', 'hall');
+
+    expect(group((await get(headers)).json<Body>(), 'start').vendors.map((vendor) => vendor.name)).toEqual([
+      '웨딩홀',
+    ]);
+  });
+
+  it('직접 입력으로 결정한 업종은 권하지 않는다', async () => {
+    const { headers, userId } = await signInAs(test);
+    const weddingId = await createWedding(test, headers);
+    await createVendor('웨딩홀', 'hall');
+    await test.pool.query(
+      `INSERT INTO structured.category_decisions (wedding_id, category, manual_name, decided_by)
+       VALUES ($1, 'hall', '직접 정한 웨딩홀', $2)`,
+      [weddingId, userId]
+    );
 
     expect(group((await get(headers)).json<Body>(), 'start').vendors).toEqual([]);
   });
