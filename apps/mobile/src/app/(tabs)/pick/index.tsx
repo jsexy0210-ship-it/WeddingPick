@@ -109,6 +109,7 @@ import { confirmAlert } from '@/components/confirm-alert';
 import { ROOT_TAB_GUTTER, RootTabHeader } from '@/components/root-tab-header';
 import { DialogToast } from '@/components/confirm-alert-toast';
 import { HOME_PREP_GROUP_LABEL } from '@/features/home/prep-groups';
+import { categoryStatuses, currentCategory, decidedCount, HOME_TOTAL } from '@/features/home/state';
 import { pickOrigin } from '@/features/navigation/depth-back';
 import { showResultToast } from '@/features/navigation/result-toast';
 import { inStack } from '@/features/navigation/stack-alias';
@@ -226,6 +227,7 @@ export default function PickScreen() {
   const theme = useTheme();
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [page, setPage] = useState<CandidateListResponse | null>(null);
+  const [loaded, setLoaded] = useState(false);
   /** 묶음별 «내 조건에 맞는 곳». 못 받아도 담은 목록은 그대로 보인다(null). */
   const [recs, setRecs] = useState<PickRecommendationsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -257,6 +259,7 @@ export default function PickScreen() {
         ]);
         setPage(candidates);
         setRecs(recommendations);
+        setLoaded(true);
       })
       .catch((caught: Error) => {
         if (keep) notifyRefreshFailed();
@@ -280,6 +283,11 @@ export default function PickScreen() {
   const sections = pickSections(rows, manualDecisions);
   /* 결정이 끝난 묶음 — 홈 «내 웨딩 준비»와 같은 규칙(features/pick/completed-groups). */
   const doneGroups = completedPickGroups(page);
+  /* 홈과 같은 실제 결정 기준으로 Pick의 완료·남은 업종을 계산한다. */
+  const statuses = categoryStatuses({ candidates: page });
+  const decided = decidedCount(statuses);
+  const next = currentCategory(statuses, page?.nextCategory ?? null);
+  const allDone = decided === HOME_TOTAL;
   const isDoneSection = (key: string) => doneGroups.has(key as PreparationGroupKey);
   /* 담은 곳이 없어도 직접 입력한 결정이 있으면 빈 화면이 아니다. */
   const hasItems = rows.length > 0 || manualDecisions.length > 0;
@@ -469,7 +477,7 @@ export default function PickScreen() {
                 <RetryLink onPress={() => load()} />
               </View>
             </ScrollView>
-          ) : !me ? (
+          ) : !me || !loaded ? (
             <View style={styles.loadingCenter}>
               <DelayedLoader size={40} />
             </View>
@@ -478,7 +486,12 @@ export default function PickScreen() {
               contentContainerStyle={styles.scroll}
               showsVerticalScrollIndicator={false}
               refreshControl={pull.refreshControl}>
-              {!hasItems ? <Empty /> : null}
+              <ThemedText type="f13" themeColor="textSecondary" style={styles.progressLine}>
+                {allDone
+                  ? '정할 업종을 모두 마쳤어요'
+                  : `${decided}개 결정 · ${HOME_TOTAL - decided}개 남음${next ? ` · 다음 ${VENDOR_CATEGORY_LABEL[next]}` : ''}`}
+              </ThemedText>
+              {!hasItems && !hasRecs && !allDone ? <Empty /> : null}
               {hasItems || hasRecs ? (
                 <>
                   {/* 정본 chipBarSticky: 위 4 · 아래 16 · 칩 사이 8. 칩은 준비 묶음 넷(위 `Filter`). */}
@@ -1081,6 +1094,7 @@ const styles = StyleSheet.create({
   errorBox: { padding: Layout.gutter, paddingHorizontal: ROOT_TAB_GUTTER, gap: Layout.rowPaddingY },
   /* 정본 frame-001 스크롤 끝 «height:24px». */
   bottomSpacer: { height: Spacing.four },
+  progressLine: { paddingHorizontal: ROOT_TAB_GUTTER, paddingVertical: Spacing.two },
 
   bold: { fontWeight: 700 },
   /* 규격서의 굵기 600 · 500 — spec/tokens.json typography.$weights의 피그마 예외. */
