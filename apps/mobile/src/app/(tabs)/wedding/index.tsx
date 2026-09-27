@@ -45,6 +45,7 @@ import {
   ActionButton,
   Border,
   DonutChart,
+  EmptyStateIcon,
   FontSize,
   Layout,
   LineHeight,
@@ -590,11 +591,12 @@ function EmptyNoteView({
         <View style={styles.emptySection}>
           <ThemedText type="f18" style={styles.bold}>일정</ThemedText>
           <View style={[styles.emptyCard, { backgroundColor: theme.backgroundElement }]}>
+            <EmptyStateIcon />
             <ThemedText type="f16" style={[styles.bold, styles.center]}>
-              예식일만 넣어두면 나머지는 알려드려요
+              아직 예식일이 없어요
             </ThemedText>
             <ThemedText type="f13" themeColor="textAssistive" style={styles.center}>
-              준비 순서를 차례대로 챙겨드려요
+              예식일을 넣으면 준비 일정을 알려드려요
             </ThemedText>
             <Pressable
               accessibilityRole="button"

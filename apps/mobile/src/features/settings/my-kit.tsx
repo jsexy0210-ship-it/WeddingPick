@@ -9,6 +9,7 @@ import {
   Border,
   type BadgeKind,
   CanonGray,
+  EmptyStateIcon,
   Layout,
   MaxContentWidth,
   ProductSymbol,
@@ -560,11 +561,12 @@ export function NoteBox({ title, body }: { title: string; body?: string }) {
   );
 }
 
-/** emptyBox — 비어 있을 때 한 줄. */
+/** MY 목록이 비었을 때 공통 아이콘과 안내. */
 export function EmptyBox({ children }: { children: string }) {
   return (
     <ThemedView type="backgroundElement" style={styles.emptyBox}>
-      <ThemedText type="body" themeColor="textSecondary">
+      <EmptyStateIcon />
+      <ThemedText type="body" themeColor="textSecondary" style={styles.emptyBoxText}>
         {children}
       </ThemedText>
     </ThemedView>
@@ -788,7 +790,10 @@ const styles = StyleSheet.create({
   emptyBox: {
     borderRadius: Radius.medium,
     padding: Layout.cardPadding,
+    alignItems: 'center',
+    gap: Layout.menuGroupGap,
   },
+  emptyBoxText: { textAlign: 'center' },
 
   /* 카드 radius 10 · 1 테두리 · 18 20 · gap 10 */
   card: {

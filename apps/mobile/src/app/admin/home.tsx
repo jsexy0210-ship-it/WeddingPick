@@ -402,7 +402,7 @@ function HomePanel() {
             {/* 키보드로도 고른다 — `ChoiceChips`가 칩마다 단추를 그린다(감사 5). */}
             <ChoiceChips label="회원 추이 구간" items={BUCKETS} value={bucket} onChange={setBucket} />
             {trendError ? (
-              <EmptyState title="회원 추이를 불러오지 못했어요" detail={trendError} />
+              <StatusBanner tone="bad" title="회원 추이를 불러오지 못했어요" detail={trendError} />
             ) : trendSignups === 0 && (trend?.current ?? 0) === 0 ? (
               /* 빈 상태가 정상 상태다(ADMIN.md 공통 규칙). 0을 고장으로 보이게 하지 않는다. */
               <EmptyState title="아직 가입이 없어요" detail="가입이 들어오면 이 자리에 쌓여요." />
@@ -417,6 +417,7 @@ function HomePanel() {
               {total === 0 ? (
                 /* 빈 큐는 실패가 아니라 목표다(ADMIN.md 공통 규칙). */
                 <EmptyState
+                  kind="success"
                   title="확인할 것이 없어요"
                   detail="사람이 결정해야 하는 건을 모두 끝냈어요."
                 />

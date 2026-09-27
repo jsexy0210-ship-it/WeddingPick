@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   ActionButton,
+  EmptyStateIcon,
   ErrorView,
   Layout,
   MaxContentWidth,
@@ -114,8 +115,12 @@ export default function WeddingMapScreen() {
 
           {pinned.length === 0 ? (
             <ThemedView type="backgroundElement" style={styles.emptyCard}>
-              <ThemedText type="t7" themeColor="textSecondary">
-                Pick한 업체 중 위치 정보가 있는 곳이 없어요.
+              <EmptyStateIcon />
+              <ThemedText type="t6" style={styles.emptyText}>
+                아직 볼 수 있는 업체 위치가 없어요
+              </ThemedText>
+              <ThemedText type="t7" themeColor="textSecondary" style={styles.emptyText}>
+                위치 정보가 있는 업체를 Pick하면 여기서 볼 수 있어요
               </ThemedText>
             </ThemedView>
           ) : (
@@ -200,7 +205,10 @@ const styles = StyleSheet.create({
   emptyCard: {
     borderRadius: Radius.medium,
     padding: Spacing.three,
+    alignItems: 'center',
+    gap: Spacing.two,
   },
+  emptyText: { textAlign: 'center' },
   vendorCard: {
     borderRadius: Radius.medium,
     padding: Spacing.three,

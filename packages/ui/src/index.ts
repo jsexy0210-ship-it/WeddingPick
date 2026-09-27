@@ -44,6 +44,7 @@ export {
   type WeddingMarkProps,
 } from './wedding-mark';
 export { ProductSymbol, type ProductSymbolName } from './product-symbol';
+export { EmptyStateIcon } from './empty-state-icon';
 export { SeedIcon, type SeedIconName } from './seed-icon';
 export { NpayLogo } from './npay-logo';
 export { Skeleton, type SkeletonProps } from './skeleton';

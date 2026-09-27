@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { error as errorCopy } from '../../../spec/strings.ko.json';
 
 import { ActionButton } from './action-button';
+import { EmptyStateIcon } from './empty-state-icon';
 import { ListSkeleton } from './list-skeleton';
 import { LoaderSkeleton } from './loader-skeleton';
 import { StepList, type Step } from './step-list';
@@ -31,7 +32,7 @@ type StatusFrameProps = {
 
 /**
  * 17-sheets-states stFrameCenter — 가운데 정렬 · 제목 18/24 700 · 본문 16/24 #4D5159 · 간격 8 ·
- * 행동 버튼 하나(48). 삽화는 없다.
+ * 행동 버튼 하나(48). 정보 부재에는 요청된 공통 아이콘을 쓴다.
  */
 function StatusFrame({ children, scope = 'page' }: StatusFrameProps) {
   if (scope === 'section') {
@@ -237,6 +238,7 @@ export function EmptyView({ title, scope = 'page', description, actionLabel, onA
   const theme = useTheme();
   return (
     <StatusFrame scope={scope}>
+      <View style={styles.emptyIcon}><EmptyStateIcon /></View>
       <StatusTitle scope={scope}>{title}</StatusTitle>
       {description ? <StatusBody scope={scope}>{description}</StatusBody> : null}
       {actionLabel && onAction ? scope === 'section' ? (
@@ -461,6 +463,7 @@ const styles = StyleSheet.create({
   processingText: { alignItems: 'center', gap: Spacing.two },
   sectionTitle: { fontWeight: '700' },
   sectionBody: { lineHeight: LineHeight.lh20, fontWeight: '400' },
+  emptyIcon: { marginBottom: 8 },
   sectionAction: {
     marginTop: 12,
     height: 44,

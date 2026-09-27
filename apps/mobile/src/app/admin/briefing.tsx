@@ -157,7 +157,7 @@ export function BriefingPanel() {
           <CardGrid>
             <Card title="무엇이 처리됐나" sub="최근 24시간 판정">
               {processedRows.length === 0 ? (
-                <EmptyState title="처리 내역이 없어요" />
+                <EmptyState title="아직 처리 내역이 없어요" />
               ) : (
                 <Rows items={processedRows} />
               )}
@@ -165,7 +165,7 @@ export function BriefingPanel() {
 
             <Card title="확인 필요" sub="아직 끝나지 않은 판정">
               {pendingRows.length === 0 ? (
-                <EmptyState title="확인할 것이 없어요" />
+                <EmptyState title="확인할 것이 없어요" kind="success" />
               ) : (
                 <Rows items={pendingRows} />
               )}

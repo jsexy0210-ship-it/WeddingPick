@@ -197,7 +197,7 @@ export function AuditLogPanel() {
               full
               note="rollback_target이 비어 있으면 되돌릴 수 없는 일괄 작업이에요."
             >
-              <DataTable cols={COLS} rows={rows} empty="남은 기록이 없어요" />
+              <DataTable cols={COLS} rows={rows} empty="아직 기록이 없어요" />
             </Card>
           </CardGrid>
         </>

@@ -34,7 +34,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { AdminSpacing as A, Colors, FontSize, LineHeight, LoaderSkeleton, Radius, Spacing } from '@weddingpick/ui';
+import { AdminSpacing as A, Colors, EmptyStateIcon, FontSize, LineHeight, LoaderSkeleton, Radius, Spacing } from '@weddingpick/ui';
 
 import { askSignOut, signOutWithConfirm } from '@/features/admin/sign-out';
 import { buttonA11y, headingA11y, tabA11y, TABLIST_A11Y } from '@/features/admin/web-a11y';
@@ -516,16 +516,15 @@ export function ChoiceChips<K extends string>({
 
 /* ── 2. 빈 상태 ───────────────────────────────────────────── */
 
-/**
- * 큐가 비어 있는 것은 실패가 아니라 목표다. 그래서 초록 체크로 그린다 —
- * 회색 「데이터 없음」은 고장처럼 읽힌다.
- */
-export function EmptyState({ title, detail }: { title: string; detail?: string }) {
+/** 비어 있는 데이터에는 공통 아이콘을, 처리할 일이 없는 큐에는 완료 표시를 쓴다. */
+export function EmptyState({ title, detail, kind = 'empty' }: { title: string; detail?: string; kind?: 'empty' | 'success' }) {
   return (
     <View style={styles.empty}>
-      <View style={styles.emptyMark}>
-        <Text style={styles.emptyMarkText}>✓</Text>
-      </View>
+      {kind === 'success' ? (
+        <View style={styles.emptyMark}>
+          <Text style={styles.emptyMarkText}>✓</Text>
+        </View>
+      ) : <EmptyStateIcon size={A.emptyMark} mode="light" />}
       <Text style={styles.emptyTitle}>{title}</Text>
       {detail ? <Text style={styles.emptyDetail}>{detail}</Text> : null}
     </View>
@@ -702,11 +701,11 @@ export type TableRow = { key: string; cells: Cell[] };
  *
  * 폭이 남으면 `grow` 열이 먹는다. 열을 고르게 늘리면 짧은 열에 빈칸만 생긴다.
  */
-export function DataTable({ cols, rows, empty }: { cols: Col[]; rows: TableRow[]; empty?: StatusBannerProps['title'] }) {
+export function DataTable({ cols, rows, empty, emptyKind }: { cols: Col[]; rows: TableRow[]; empty?: StatusBannerProps['title']; emptyKind?: 'success' }) {
   const min = cols.reduce((sum, c) => sum + c.width, 0);
 
   if (rows.length === 0) {
-    return <EmptyState title={empty ?? '확인할 것이 없어요'} />;
+    return <EmptyState title={empty ?? '아직 정보가 없어요'} kind={emptyKind} />;
   }
 
   return (

@@ -8,7 +8,7 @@ import { formatDateDot } from '@/features/common/format-date';
 import { useDepthBack } from '@/features/navigation/depth-back';
 import { ScrollToTopButton, useScrollToTopVisibility } from '@/features/navigation/scroll-to-top-button';
 import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
-import { ActionButton, Border, ErrorView, Layout, LineHeight, Radius, SkeletonView, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { ActionButton, Border, EmptyStateIcon, ErrorView, Layout, LineHeight, Radius, SkeletonView, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import { Hero, NavBar, Screen } from '@/features/wedding/screen-kit';
 
 /** `spec/strings.ko.json` `ourWedding.decided.*`. */
@@ -88,7 +88,8 @@ export default function DecidedVendorsScreen() {
         refreshControl={pull.refreshControl}>
         {page.decisions.length === 0 ? (
           <>
-            <Hero title="아직 정한 곳이 없어요" sub="업종마다 마음에 드는 곳을 정하면 여기 모여요" />
+            <View style={styles.emptyIcon}><EmptyStateIcon /></View>
+            <Hero title="아직 정한 곳이 없어요" sub="Pick에서 마음에 드는 업체를 정해 보세요" />
             <View style={styles.emptyAction}>
               <ActionButton variant="ghost" size="large" label="Pick 보러 가기" onPress={() => router.push('/pick' as never)} />
             </View>
@@ -134,6 +135,7 @@ export default function DecidedVendorsScreen() {
 const styles = StyleSheet.create({
   /* 프레임 끝 `height:24px` 빈 칸. */
   content: { paddingBottom: Spacing.four },
+  emptyIcon: { alignItems: 'center', paddingTop: Layout.gutter },
   emptyAction: { paddingHorizontal: Layout.gutter },
   /* note.js `sec` — `padding:0 24px 20px;gap:12px`. */
   sec: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.listGap, gap: Layout.inlineGap },
