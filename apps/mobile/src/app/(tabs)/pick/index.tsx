@@ -9,7 +9,7 @@
  *
  * v3.29.1 정본 `docs/design/React_Native/pick.jsx` frame-001을 바탕으로 한다.
  * 최신 사용자 지시에 따라 카테고리 칩을 빼고 담은 업체를 먼저 모아 보여준 뒤 추천을 한 번만 둔다.
- * 카드는 검색 결과와 같은 틀(썸네일 104×116 · 정보 안쪽 14)에서 조작부를 정보 열에 넣는다.
+ * 카드는 검색 결과와 같은 틀(썸네일 104×116 · 정보 안쪽 14)에 원래의 하단 CTA 띠를 둔다.
  *
  * **v3.29 대조로 정한 것.**
  * - 사용자 후속 지시에 따라 후보와 결정은 «진행 중 · 완료» 탭으로 구분한다. 홈 «내 웨딩 준비»
@@ -22,7 +22,7 @@
  * - 카드를 누르면 그 업체의 상담 예약(`/search/[vendorId]/consult`)으로 바로 간다 — 정본
  *   frame-001 tagDesc «카드를 누르면 상담 예약으로 바로 이어집니다»(2026-09-25 MASTER 지시로
  *   diffs «상담 진입»보다 이 동선을 따른다). 상담 예약 화면 자체는 검색 화면군 소유다.
- * - 카드 CTA는 상담예약 하나이고 비교는 체크박스 아이콘이다. 결정한 카드만 코랄,
+ * - 카드 CTA는 상담예약 하나이고 비교는 텍스트 링크다. 결정한 카드만 코랄,
  *   나머지는 흰 바탕 + 1px 선이다.
  * - 삭제(WP-PICK-008)는 확인 시트 없이 «빼기»로 즉시 지우고 «되돌리기» 토스트만 띄운다.
  *
@@ -113,7 +113,6 @@ import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull
 import { completedPickGroups } from '@/features/pick/completed-groups';
 import {
   PICK_COMPARE_ADD_LABEL,
-  PICK_COMPARE_BANNER_HINT,
   PICK_COMPARE_MAX,
   PICK_COMPARE_REMOVE_LABEL,
   compareBasketLabel,
@@ -124,7 +123,6 @@ import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import { pick as pickCopy } from '../../../../../../spec/strings.ko.json';
 
 /* 문구 — spec/strings.ko.json `pick` · features/pick/canonical-rules. */
-const COMPARE_HINT = PICK_COMPARE_BANNER_HINT;
 const COMPARE_ALL = '비교하기';
 const PICK_TABS = [
   { key: 'progress', label: '진행 중' },
@@ -639,23 +637,24 @@ export default function PickScreen() {
         </View>
         {compare.size >= MIN_COMPARE ? (
           <View style={[styles.compareDock, { backgroundColor: theme.background, borderTopColor: theme.border }]}>
-            <View style={[styles.compareBanner, { backgroundColor: theme.tintSurface, borderColor: theme.tintBorder }]}>
-              <View style={styles.compareText}>
-                <ThemedText type="f14" style={styles.bold}>{compareBasketLabel(compare.size)}</ThemedText>
-                <ThemedText type="f12" themeColor="textAssistive">{COMPARE_HINT}</ThemedText>
+            <View style={styles.compareDockRow}>
+              <View style={[styles.compareBanner, { backgroundColor: theme.tintSurface, borderColor: theme.tintBorder }]}>
+                <View style={styles.compareText}>
+                  <ThemedText type="f14" style={styles.bold}>{compareBasketLabel(compare.size)}</ThemedText>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={COMPARE_ALL}
+                  onPress={startCompare}
+                  style={({ pressed }) => [styles.compareBtn, { backgroundColor: theme.tint }, pressed ? styles.pressed : null]}>
+                  <ThemedText type="f14" style={[styles.bold, { color: theme.onTint }]}>{COMPARE_ALL}</ThemedText>
+                </Pressable>
               </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={COMPARE_ALL}
-                onPress={startCompare}
-                style={({ pressed }) => [styles.compareBtn, { backgroundColor: theme.tint }, pressed ? styles.pressed : null]}>
-                <ThemedText type="f14" style={[styles.bold, { color: theme.onTint }]}>{COMPARE_ALL}</ThemedText>
-              </Pressable>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="비교 닫기"
                 onPress={() => setCompare(new Set())}
-                style={styles.compareClose}>
+                style={({ pressed }) => [styles.compareClose, pressed ? styles.pressed : null]}>
                 <ProductSymbol name="close" size={Layout.iconField} color={theme.textAssistive} />
               </Pressable>
             </View>
@@ -795,51 +794,44 @@ function CandidateCard({
               {candidate.note}
             </ThemedText>
           ) : null}
-          <View style={styles.cardActions}>
-            <Pressable
-              accessibilityRole={isDecided ? 'button' : 'checkbox'}
-              accessibilityState={isDecided ? { disabled: busy } : { checked: comparing, disabled: compareDisabled }}
-              accessibilityLabel={`${candidate.vendorName} ${isDecided ? ACTION_UNDECIDE : comparing ? ACTION_COMPARING : ACTION_COMPARE}`}
-              disabled={isDecided ? busy : compareDisabled}
-              hitSlop={(Layout.touchTarget - 32) / 2}
-              onPress={isDecided ? onUndecide : onCompare}
-              style={(state) => {
-                const { focused, pressed } = readWebInteractionState(state);
-                return [
-                  styles.compareIconButton,
-                  focused ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: 2 } : null,
-                  pressed ? styles.pressed : null,
-                ];
-              }}>
-              {isDecided ? (
-                <ThemedText type="f12" themeColor="textAssistive">{ACTION_UNDECIDE}</ThemedText>
-              ) : (
-                <View style={[styles.compareBox, { borderColor: comparing ? theme.tint : theme.textAssistive, backgroundColor: comparing ? theme.tint : 'transparent' }]}>
-                  {comparing ? <ProductSymbol name="check" size={Layout.iconTiny} color={theme.onTint} /> : null}
-                </View>
-              )}
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`${candidate.vendorName} ${ACTION_CONSULT}`}
-              disabled={busy}
-              hitSlop={{ top: (Layout.touchTarget - 32) / 2, bottom: (Layout.touchTarget - 32) / 2 }}
-              onPress={openConsult}
-              style={({ pressed }) => [
-                styles.decisionCta,
-                isDecided
-                  ? { backgroundColor: theme.tint, borderColor: theme.tint }
-                  : { backgroundColor: theme.background, borderColor: theme.border },
-                pressed ? styles.pressed : null,
-                busy ? styles.busy : null,
-              ]}>
-              <ThemedText type="f12" style={[styles.bold, { color: isDecided ? theme.onTint : theme.text }]}>
-                {ACTION_CONSULT}
-              </ThemedText>
-            </Pressable>
-          </View>
         </View>
       </Pressable>
+      <View style={[styles.ctaStrip, { borderTopColor: theme.border }]}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={isDecided ? undefined : { selected: comparing, disabled: compareDisabled }}
+          accessibilityLabel={`${candidate.vendorName} ${isDecided ? ACTION_UNDECIDE : comparing ? ACTION_COMPARING : ACTION_COMPARE}`}
+          disabled={isDecided ? busy : compareDisabled}
+          onPress={isDecided ? onUndecide : onCompare}
+          style={({ pressed }) => [
+            styles.compareLink,
+            !isDecided && compareDisabled ? styles.disabled : null,
+            pressed ? styles.pressed : null,
+          ]}>
+          <ThemedText
+            type="f13"
+            style={[styles.bold, { color: isDecided ? theme.textAssistive : comparing ? theme.tint : compareDisabled ? theme.textDisabled : theme.textAssistive }]}>
+            {isDecided ? ACTION_UNDECIDE : comparing ? ACTION_COMPARING : ACTION_COMPARE}
+          </ThemedText>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${candidate.vendorName} ${ACTION_CONSULT}`}
+          disabled={busy}
+          onPress={openConsult}
+          style={({ pressed }) => [
+            styles.decisionCta,
+            isDecided
+              ? { backgroundColor: theme.tint, borderColor: theme.tint }
+              : { backgroundColor: theme.background, borderColor: theme.border },
+            pressed ? styles.pressed : null,
+            busy ? styles.busy : null,
+          ]}>
+          <ThemedText type="f13" style={[styles.bold, { color: isDecided ? theme.onTint : theme.text }]}>
+            {ACTION_CONSULT}
+          </ThemedText>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -1119,8 +1111,9 @@ const styles = StyleSheet.create({
 
   // ── 선택한 업체가 둘 이상이면 스크롤 밖 하단에 둔다. ──
   compareDock: { borderTopWidth: Border.hairline, paddingVertical: Spacing.two },
+  compareDockRow: { flexDirection: 'row', alignItems: 'center', paddingLeft: ROOT_TAB_GUTTER, paddingRight: Spacing.two },
   compareBanner: {
-    marginHorizontal: ROOT_TAB_GUTTER,
+    flex: 1,
     borderWidth: Border.hairline,
     borderRadius: Radius.medium,
     padding: Spacing.three,
@@ -1129,8 +1122,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: Spacing.two,
   },
-  /* 정본 bannerCol: 제목 · 부제 사이 2. */
-  compareText: { flex: 1, minWidth: 0, gap: Spacing.half },
+  compareText: { flex: 1, minWidth: 0 },
   /* 03-pick bannerBtn: height 36 · radius 6 · px 16. */
   compareBtn: {
     height: Layout.chip,
@@ -1221,11 +1213,7 @@ const styles = StyleSheet.create({
   /* 메모 — 피그마 해시태그 줄 자리 `mt-2`. */
   note: { marginTop: Spacing.two },
 
-  /* 비교와 예약은 카드 정보 열 안에 두어 별도 하단 띠 높이를 없앤다. */
-  cardActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', paddingTop: Spacing.one },
-  compareIconButton: { minWidth: 32, minHeight: 32, alignItems: 'center', justifyContent: 'center' },
-  compareBox: { width: 18, height: 18, borderWidth: Border.hairline, borderRadius: Radius.small, alignItems: 'center', justifyContent: 'center' },
-  /* 직접 입력한 결정은 여전히 결정 취소만 하단에 둔다. */
+  /* 비교와 상담은 카드 아래에 두어 업체 정보와 행동을 분리한다. */
   ctaStrip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1251,10 +1239,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   decisionCta: {
-    height: 32,
+    height: Layout.controlMedium,
     borderRadius: Radius.small,
     borderWidth: Border.hairline,
-    paddingHorizontal: Spacing.two,
+    paddingHorizontal: Layout.toastPaddingX,
     alignItems: 'center',
     justifyContent: 'center',
   },
