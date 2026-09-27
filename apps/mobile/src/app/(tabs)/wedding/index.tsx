@@ -8,7 +8,7 @@
  * 대신 할 일은 타임라인에 예식일에서 역산한 임시 날짜 줄로 선다(2026-09-26 대표 지시 · `note-plan.ts`).
  *
  * 2026-09-26 대표 지시 셋:
- *   - 타임라인 줄(직접 넣은 일정 · 상담 일정 · 할 일 · 임시 날짜 줄)마다 수정 · 삭제 아이콘. 수정은 일정
+ *   - 타임라인 줄(직접 넣은 일정 · 상담 일정 · 할 일 · 임시 날짜 줄)마다 수정 · 삭제 CTA. 수정은 일정
  *     추가 시트(`events/new?eventId=` · `?taskId=`)를 값이 채워진 채 열고, 삭제는 OS 확인창(`timeline-delete.ts`)
  *   - 지출내역 풀팝업을 예산현황 목록에 통합했다 — 업종 줄 아래 그 업종의 지출 건이 서고 건마다 수정 ·
  *     삭제(`budget-category-list.tsx`). 줄은 서버 세 묶음이 아니라 고른 업종으로 묶는다(`budget-lines.ts`)
@@ -63,6 +63,7 @@ import {
   getExpenses,
   getWeddingForecast,
   listConsultations,
+  removeConsultation,
   listDecisions,
   listMyReports,
   listWeddingEvents,
@@ -135,7 +136,7 @@ export default function WeddingScreen({
   const [tasks, setTasks] = useState<WeddingTask[] | null>(null);
   /* 예산 추가 «자동 등록»으로 올렸는데 아직 못 읽은 Pick 인증 — 예산 목록 맨 위 «확인 중» 줄. */
   const [pending, setPending] = useState<MyReport[]>([]);
-  /* 지우는 중 — 그동안 다른 줄의 아이콘도 잠근다(두 번 눌러 두 번 지우지 않게). */
+  /* 지우는 중 — 그동안 다른 줄의 CTA도 잠근다(두 번 눌러 두 번 지우지 않게). */
   const [deleting, setDeleting] = useState(false);
   const [expenses, setExpenses] = useState<ExpenseSummaryResponse | null>(null);
   const [expensesError, setExpensesError] = useState(false);
@@ -302,7 +303,7 @@ export default function WeddingScreen({
     else router.push(`/wedding/${weddingId}/consultations/upload` as never);
   }
 
-  /* 타임라인 줄 · 예산 목록 건의 수정 · 삭제(2026-09-26 대표 지시). 지운 뒤에는 목록을 다시 읽는다. */
+  /* 타임라인 줄 · 예산 목록 건의 수정 · 삭제. 지운 뒤에는 목록을 다시 읽는다. */
   function editTimeline(target: TimelineTarget, date?: string) {
     if (!weddingId) return;
     router.push(timelineEditHref(weddingId, target, date) as never);
@@ -341,6 +342,28 @@ export default function WeddingScreen({
       onError: setToast,
       onSettled: () => setDeleting(false),
     });
+  }
+
+  function deleteConsultation(record: ConsultationRecord) {
+    if (deleting) return;
+    confirmAlert('상담기록을 삭제할까요?', `"${record.vendorLabel ?? '업체 미확인'}" 상담기록을 삭제해요.`, [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '삭제',
+        style: 'destructive',
+        onPress: () => {
+          setDeleting(true);
+          void removeConsultation(record.id)
+            .then(() => {
+              setConsults((current) => current?.filter((item) => item.id !== record.id) ?? null);
+              setToast('상담기록을 삭제했어요');
+              load(true);
+            })
+            .catch(() => setToast('상담기록을 삭제하지 못했어요. 다시 시도해 주세요.'))
+            .finally(() => setDeleting(false));
+        },
+      },
+    ]);
   }
 
   const budgetManwon = Number(budgetDraft.replace(/[^\d]/g, ''));
@@ -490,8 +513,15 @@ export default function WeddingScreen({
             <ConsultPanel
               records={consults ?? []}
               weddingId={weddingId}
+              busy={deleting}
               onUploaded={load}
               onMessage={setToast}
+              onEdit={(record) =>
+                weddingId
+                  ? router.push(`/wedding/${weddingId}/consultations/${record.id}?edit=1` as never)
+                  : null
+              }
+              onDelete={deleteConsultation}
               onOpen={(record) =>
                 weddingId
                   ? router.push(`/wedding/${weddingId}/consultations/${record.id}` as never)
@@ -520,7 +550,7 @@ export default function WeddingScreen({
               ? '바꾼 예산으로 남은 금액과 사용률을 다시 계산해요.'
               : '총예산을 입력하면 남은 금액과 사용률을 함께 보여드려요.'}
           </ThemedText>
-          <View style={[styles.budgetInputWrap, { borderColor: theme.fieldBorder }]}>
+          <View testID="input-frame" style={[styles.budgetInputWrap, { borderColor: theme.fieldBorder }]}>
             <TextInput
               value={budgetDraft}
               onChangeText={(text) =>
@@ -831,12 +861,7 @@ function TimelineGroupView({
               <View style={[styles.timelineDot, { backgroundColor: done ? theme.track : theme.tint }]} />
               <View style={[styles.timelineLine, { backgroundColor: theme.border }]} />
             </View>
-            {/*
-              * 일정 상세(WP-OUR-005)는 2026-09-25 삭제 — 줄 자체는 누르지 않는다. 대신 오른쪽 수정 · 삭제
-              * 아이콘(2026-09-26 대표 지시 · 지출 줄과 같은 `ExpenseRowActions`). 직접 넣은 일정과 상담 일정
-              * 둘 다 같은 `wedding_events` 행이라 같은 PATCH · DELETE를 쓴다. 정본 `tlItem`에 아이콘은 없다 —
-              * `DESIGN_UNRESOLVED`.
-              */}
+            {/* 직접 넣은 일정과 상담 일정은 같은 이벤트 행이라 같은 PATCH · DELETE를 쓴다. */}
             <View style={[styles.eventRow, styles.eventRowActions, { backgroundColor: done ? theme.backgroundElement : theme.backgroundSelected }]}>
               <View style={styles.eventText}>
                 <ThemedText type="f12" themeColor="textAssistive" numeric style={styles.bold}>
@@ -942,19 +967,15 @@ function BudgetPanel({
               <ThemedText type="f30" numeric style={[styles.bold, styles.sumBig]}>
                 {manwon(spent)}
               </ThemedText>
-              <Pressable accessibilityRole="button" accessibilityLabel="총예산 수정" onPress={onEditBudget}>
-                <View style={styles.budgetEditRow}>
-                  <ThemedText type="f14" themeColor="textAssistive" numeric>
-                    {`예산 ${manwon(total)}`}
-                  </ThemedText>
-                  <ProductSymbol name="edit" size={14} color={theme.textAssistive} />
-                </View>
-              </Pressable>
+              <ThemedText type="f14" themeColor="textAssistive" numeric>
+                {`예산 ${manwon(total)}`}
+              </ThemedText>
               <ThemedText type="f13" themeColor="textAssistive" numeric style={styles.budgetSummaryNote}>
                 {`${manwon(Math.max(set.remaining, 0))} 남았어요`}
               </ThemedText>
             </View>
           </View>
+          <ActionButton variant="ghost" size="medium" label="총예산 수정" onPress={onEditBudget} />
         </View>
       ) : (
         <View style={styles.budgetSummary}>
@@ -992,15 +1013,21 @@ function BudgetPanel({
 function ConsultPanel({
   records,
   weddingId,
+  busy,
   onUploaded,
   onMessage,
   onOpen,
+  onEdit,
+  onDelete,
 }: {
   records: ConsultationRecord[];
   weddingId: string | null;
+  busy: boolean;
   onUploaded: () => void;
   onMessage: (message: string) => void;
   onOpen: (record: ConsultationRecord) => void;
+  onEdit: (record: ConsultationRecord) => void;
+  onDelete: (record: ConsultationRecord) => void;
 }) {
   const theme = useTheme();
 
@@ -1025,28 +1052,37 @@ function ConsultPanel({
             const meta = `${date.getMonth() + 1}월 ${date.getDate()}일${amount !== null ? ` · ${manwon(amount)}` : ''}`;
             const saved = record.confirmedAt !== null;
             return (
-              <Pressable
-                key={record.id}
-                accessibilityRole="button"
-                accessibilityLabel={`${record.vendorLabel ?? '업체 미확인'} 상담기록`}
-                onPress={() => onOpen(record)}
-                style={[styles.consultRow, { borderBottomColor: theme.backgroundSelected }]}>
-                <View style={styles.grow}>
-                  <ThemedText type="f15" numberOfLines={1} style={styles.bold}>
-                    {record.vendorLabel ?? '업체 미확인'}
+              <View key={record.id} style={[styles.consultItem, { borderBottomColor: theme.backgroundSelected }]}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${record.vendorLabel ?? '업체 미확인'} 상담기록`}
+                  onPress={() => onOpen(record)}
+                  style={styles.consultRow}>
+                  <View style={styles.grow}>
+                    <ThemedText type="f15" numberOfLines={1} style={styles.bold}>
+                      {record.vendorLabel ?? '업체 미확인'}
+                    </ThemedText>
+                    <ThemedText type="f12" themeColor="textAssistive" numeric style={styles.consultMeta}>
+                      {meta}
+                    </ThemedText>
+                  </View>
+                  <ThemedText type="f13" themeColor={saved ? undefined : 'textAssistive'} style={saved ? styles.bold : null}>
+                    {saved ? CONSULT_SAVED : CONSULT_DONE}
                   </ThemedText>
-                  <ThemedText type="f12" themeColor="textAssistive" numeric style={styles.consultMeta}>
-                    {meta}
-                  </ThemedText>
-                </View>
-                <ThemedText
-                  type="f13"
-                  themeColor={saved ? undefined : 'textAssistive'}
-                  style={saved ? styles.bold : null}>
-                  {saved ? CONSULT_SAVED : CONSULT_DONE}
-                </ThemedText>
-                <ProductSymbol name="chevronRight" size={Layout.iconField} color={theme.textDisabled} />
-              </Pressable>
+                  <ProductSymbol name="chevronRight" size={Layout.iconField} color={theme.textDisabled} />
+                </Pressable>
+                <ExpenseRowActions
+                  label={record.vendorLabel ?? '업체 미확인'}
+                  disabled={busy}
+                  editDisabled={saved}
+                  testIDPrefix={`consultation-${record.id}`}
+                  onEdit={() => onEdit(record)}
+                  onDelete={() => onDelete(record)}
+                />
+                {saved ? (
+                  <ThemedText type="f12" themeColor="textAssistive">저장한 상담기록은 수정할 수 없어요</ThemedText>
+                ) : null}
+              </View>
             );
           })}
         </View>
@@ -1222,10 +1258,10 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     gap: 3,
   },
-  /* 일정 줄 — 글자 칸과 오른쪽 수정 · 삭제 아이콘(`timeline-plan-row.tsx`와 같은 자리). */
-  eventRowActions: { flexDirection: 'row', alignItems: 'center', gap: 0 },
+  /* 일정 수정·삭제는 내용 아래의 CTA 두 개로 놓는다. */
+  eventRowActions: { gap: Spacing.two },
   eventText: { flex: 1, minWidth: 0, gap: 3 },
-  eventActions: { marginRight: -15, marginVertical: -Spacing.two },
+  eventActions: { alignSelf: 'stretch' },
   /* note.js `tlItem(…'wed')` — `box-shadow:inset 0 0 0 1.5px P`. */
   weddingRow: { borderWidth: 1.5 },
 
@@ -1239,8 +1275,6 @@ const styles = StyleSheet.create({
   budgetSummaryCol: { flex: 1, minWidth: 0, gap: Spacing.one },
   /* note.js `sumBig` 30/40/700. 40은 같은 값의 `LineHeight.lh40`. */
   sumBig: { lineHeight: LineHeight.lh40 },
-  /* note.js `sumRightBtn` — `gap:5px`. */
-  budgetEditRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   budgetSummaryNote: { marginTop: Spacing.two },
   /* note.js `divider` — `margin:20px 0;height:1px;background:BORDER`. */
   divider: { marginVertical: Layout.listGap, height: Border.hairline },
@@ -1250,13 +1284,13 @@ const styles = StyleSheet.create({
   consultHead: { gap: 3 },
   center: { textAlign: 'center' },
   /* note.js `cRow` — `gap:12px;min-height:60px;padding:14px 0;border-bottom:1px solid SEC`(마지막 행 포함). */
+  consultItem: { paddingVertical: Spacing.two, borderBottomWidth: Border.hairline, gap: Spacing.two },
   consultRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Layout.inlineGap,
     minHeight: 60,
-    paddingVertical: 14,
-    borderBottomWidth: Border.hairline,
+    paddingVertical: Spacing.one,
   },
   consultMeta: { marginTop: 3 },
 });

@@ -801,6 +801,13 @@ const routes = {
     deepData: false,
     originalDeletedBy: '2026-09-27T05:00:00.000Z',
   },
+  'GET /v1/legal/privacy': {
+    document: {
+      version: 'fixture-1',
+      effectiveOn: '2026-09-01',
+      clauses: [{ id: 'fixture-purpose', title: '개인정보 처리 목적', body: '화면 검증용 문서입니다.', bodyTable: null }],
+    },
+  },
   'GET /v1/me/withdrawal': {
     lead: '배우자와 함께 만든 기록도 함께 사라져요',
     hasPartner: true,

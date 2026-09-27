@@ -89,6 +89,21 @@ describeWithDb('홈 부팅', () => {
     void other;
   });
 
+  it('홈 전용 조회는 화면에 쓰지 않는 인기 업체와 추천을 생략한다', async () => {
+    const { headers } = await signInAs(test);
+    const weddingId = await createWedding(test, headers);
+    await aVendor('가온예식홀');
+
+    const response = await test.app.inject({ method: 'GET', url: '/v1/app/bootstrap?view=home', headers });
+    const body = response.json<BootstrapBody>();
+
+    expect(response.statusCode).toBe(200);
+    expect(body.member?.weddingId).toBe(weddingId);
+    expect(body.popularVendors).toEqual([]);
+    expect(body.recommendations).toEqual([]);
+    expect(body.candidates).not.toBeNull();
+  });
+
   it('로그인 세션이 없으면 인증 헤더 없이도 200이다', async () => {
     const response = await bootstrap();
 

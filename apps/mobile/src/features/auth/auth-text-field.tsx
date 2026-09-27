@@ -53,6 +53,7 @@ export function AuthTextField({
         {label}
       </ThemedText>
       <View
+        testID="input-frame"
         style={[
           styles.box,
           {

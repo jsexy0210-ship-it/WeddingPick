@@ -446,7 +446,7 @@ describe('온보딩 저장 뒤 홈 bootstrap', () => {
     const boot = deferred<ReturnType<typeof response>>();
     const fetch = jest.fn((url: string) => {
       if (url.endsWith('/v1/me/setup')) return Promise.resolve(response(MEMBER));
-      if (url.endsWith('/v1/app/bootstrap')) return boot.promise;
+      if (url.endsWith('/v1/app/bootstrap?view=home')) return boot.promise;
       return Promise.reject(new Error(`unexpected ${url}`));
     });
     globalThis.fetch = fetch as unknown as typeof globalThis.fetch;
@@ -454,7 +454,7 @@ describe('온보딩 저장 뒤 홈 bootstrap', () => {
     await completeSetup({ weddingDate: null, region: '서울', preparedCategories: [], budgetBracket: 'unknown', styleTags: ['URBAN'] } as never);
 
     prefetchHomeBootstrap();
-    const bootstrapCalls = () => fetch.mock.calls.filter(([url]) => url.endsWith('/v1/app/bootstrap')).length;
+    const bootstrapCalls = () => fetch.mock.calls.filter(([url]) => url.endsWith('/v1/app/bootstrap?view=home')).length;
     for (let i = 0; i < 100 && bootstrapCalls() < 1; i += 1) {
       await new Promise((resolve) => setTimeout(resolve, 0));
     }

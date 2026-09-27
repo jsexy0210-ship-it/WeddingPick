@@ -11,41 +11,33 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { ActionButton, CanonGray, FontSize, Layout, LineHeight, MaxContentWidth, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
 
-import { FullPopupHeader } from '@/components/full-popup-header';
-import { FullPopupModal } from '@/components/full-popup-modal';
+import { DepthHeader } from '@/components/depth-header';
 import { PolicyDocumentBody } from '@/features/settings/policy-document-body';
 
 /**
- * 약관 상세 — WP-AUTH-011. 공통 풀팝업.
+ * 약관 상세 — WP-AUTH-011. 뒤로가기 헤더가 있는 페이지.
  *
- * 약관 동의(WP-AUTH-010) · MY · 서비스 정보의 `>`에서 연다(이 컴포넌트는 로그인
- * 흐름에서만 쓴다 — MY · 서비스 정보 쪽 연결은 그 화면을 담당하는 세션의 몫이다).
+ * 약관 동의(WP-AUTH-010) · MY의 약관 행에서 연다.
  * 누른 항목의 탭이 선택된 채로 열리고 탭은 가로 스크롤한다.
  *
- * 올라오고 내려가는 움직임 · 뒤 딤은 공통 껍데기(`components/full-popup-modal.tsx`)가 맡는다.
- *
- * 헤더는 CLAUDE.md 공통 풀팝업 규격 그대로다 — 56px · 좌우 16px · 좌측 36px 슬롯에
- * 회색 원형 X(16px 아이콘) · 중앙 타이틀 · 우측 36px 빈칸. 상담 예약과 같이 쓰도록
- * `components/full-popup-header.tsx`로 뗐다.
+ * 헤더는 일반 하위 페이지와 같은 Back 버튼을 쓴다.
  *
  * **동의 화면에서 열었을 때만** 하단에 «동의하기»가 붙는다(`onAgree`가 있을 때).
  *
- * «개인정보처리방침» 탭은 관리자 공개판을 같은 풀팝업 안에 그린다.
+ * «개인정보처리방침» 탭은 관리자 공개판을 같은 페이지 안에 그린다.
  * 조문 사본을 두지 않으며 MY와 저장된 링크가 이 탭으로 연다.
  *
  * 조문은 아직 법무 확정 전 임시 문구다(`packages/domain/src/consent-terms.ts`).
  */
-export function TermsDetailModal({
-  visible,
+export function TermsDetailPage({
   initialKey,
   onAgree,
-  onClose,
+  onBack,
 }: {
-  visible: boolean;
   initialKey: TermsPopupTabKey;
   /** 있으면 하단에 «동의하기»가 뜬다 — 약관 동의 화면에서 열었을 때만 넘긴다. */
-  onAgree?: () => void;
-  onClose: () => void;
+  onAgree?: (key: TermsPopupTabKey) => void;
+  onBack: () => void;
 }) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -54,11 +46,10 @@ export function TermsDetailModal({
   const doc = (policy ? null : termDocumentFor(key)) ?? TERM_DOCUMENTS[0]!;
 
   return (
-    <FullPopupModal visible={visible} onRequestClose={onClose} onShow={() => setKey(initialKey)}>
-      <ThemedView style={styles.container}>
+    <ThemedView style={styles.container}>
         {/* 동의 도크가 있으면 도크가 아래 inset을 직접 챙긴다(정본 CTA y 828). */}
         <SafeAreaView style={styles.safeArea} edges={onAgree ? ['top'] : ['top', 'bottom']}>
-          <FullPopupHeader title="약관상세" onClose={onClose} />
+          <DepthHeader title="약관상세" onBack={onBack} />
 
           <ScrollView
             horizontal
@@ -111,14 +102,13 @@ export function TermsDetailModal({
             </ScrollView>
           )}
 
-          {onAgree ? (
+          {onAgree && !policy ? (
             <ThemedView style={[styles.dock, { borderTopColor: CanonGray.gray200, paddingBottom: Math.max(DOCK_BOTTOM, Layout.gutter + insets.bottom) }]}>
-              <ActionButton variant="primary" size="sheet" label="동의하기" onPress={onAgree} />
+              <ActionButton variant="primary" size="sheet" label="동의하기" onPress={() => onAgree(key)} />
             </ThemedView>
           ) : null}
         </SafeAreaView>
       </ThemedView>
-    </FullPopupModal>
   );
 }
 

@@ -36,6 +36,7 @@ export function BudgetAmount({
   return (
     <View style={styles.section}>
       <Pressable
+        testID="input-frame"
         accessibilityRole="none"
         onPress={() => inputRef.current?.focus()}
         style={[styles.field, { borderColor: theme.tint }]}>

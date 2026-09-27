@@ -4,8 +4,9 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { PRIVACY_POLICY_TAB_KEY, TERMS_POPUP_TABS } from '@weddingpick/domain';
 
 import PrivacyPolicyScreen from '@/app/(tabs)/my/privacy-policy';
+import TermsScreen from '@/app/(tabs)/my/terms';
 
-import { TermsDetailModal } from './terms-detail-modal';
+import { TermsDetailPage } from './terms-detail-page';
 
 declare const require: (id: string) => unknown;
 declare const __dirname: string;
@@ -13,7 +14,7 @@ const { readFileSync } = require('fs') as { readFileSync: (path: string, encodin
 const { join } = require('path') as { join: (...parts: string[]) => string };
 
 /**
- * 2026-09-26 대표 지시 — 개인정보처리방침을 공통 약관 풀팝업(WP-AUTH-011)의 탭으로 연다.
+ * 개인정보처리방침을 공통 약관 페이지(WP-AUTH-011)의 탭으로 연다.
  * 본문은 관리자 공개판(`PolicyDocumentBody id="privacy"`)을 RN으로 그리며,
  * MY 행과 저장된 링크 둘 다 이 탭으로 연다.
  */
@@ -29,6 +30,7 @@ jest.mock('@/features/navigation/depth-back', () => ({ useDepthBack: () => mockD
 
 let tree: ReactTestRenderer;
 
+beforeEach(() => mockDepthBack.mockClear());
 afterEach(() => act(() => tree?.unmount()));
 
 function selectedTab(): string {
@@ -39,10 +41,10 @@ function selectedTab(): string {
   return JSON.stringify(tab.findAll((node) => typeof node.props.children === 'string').map((node) => node.props.children));
 }
 
-describe('약관 풀팝업 — 개인정보처리방침 탭', () => {
+describe('약관 페이지 — 개인정보처리방침 탭', () => {
   it('탭 메뉴에 «개인정보처리방침»이 있다', () => {
     act(() => {
-      tree = create(<TermsDetailModal visible initialKey="terms" onClose={() => undefined} />);
+      tree = create(<TermsDetailPage initialKey="terms" onBack={() => undefined} />);
     });
 
     const labels = tree.root
@@ -55,7 +57,7 @@ describe('약관 풀팝업 — 개인정보처리방침 탭', () => {
 
   it('개인정보처리방침 탭으로 열면 공개판을 읽는 RN 본문을 그린다', () => {
     act(() => {
-      tree = create(<TermsDetailModal visible initialKey={PRIVACY_POLICY_TAB_KEY} onClose={() => undefined} />);
+      tree = create(<TermsDetailPage initialKey={PRIVACY_POLICY_TAB_KEY} onBack={() => undefined} />);
     });
 
     expect(selectedTab()).toContain('개인정보처리방침');
@@ -66,7 +68,7 @@ describe('약관 풀팝업 — 개인정보처리방침 탭', () => {
 
   it('다른 탭을 누르면 조문 목록으로 돌아간다', () => {
     act(() => {
-      tree = create(<TermsDetailModal visible initialKey={PRIVACY_POLICY_TAB_KEY} onClose={() => undefined} />);
+      tree = create(<TermsDetailPage initialKey={PRIVACY_POLICY_TAB_KEY} onBack={() => undefined} />);
     });
 
     const terms = tree.root.findAll(
@@ -78,22 +80,28 @@ describe('약관 풀팝업 — 개인정보처리방침 탭', () => {
     expect(JSON.stringify(tree.toJSON())).toContain('서비스이용약관');
   });
 
-  it('저장된 링크 /my/privacy-policy는 같은 풀팝업을 그 탭으로 열고, 닫으면 Depth Back이다', () => {
+  it('저장된 링크 /my/privacy-policy는 페이지의 해당 탭을 열고, Back은 Depth Back이다', () => {
     act(() => {
       tree = create(<PrivacyPolicyScreen />);
     });
 
-    const modal = tree.root.findByType(TermsDetailModal);
-    expect(modal.props.visible).toBe(true);
-    expect(modal.props.initialKey).toBe(PRIVACY_POLICY_TAB_KEY);
-    modal.props.onClose();
+    const page = tree.root.findByType(TermsDetailPage);
+    expect(page.props.initialKey).toBe(PRIVACY_POLICY_TAB_KEY);
+    page.props.onBack();
     expect(mockDepthBack).toHaveBeenCalledTimes(1);
   });
 
-  it('MY 「개인정보처리방침」 행은 경로를 밀지 않고 풀팝업 탭을 연다', () => {
+  it('MY 서비스이용약관은 하위 페이지를 열고 Back으로 MY에 돌아간다', () => {
+    act(() => { tree = create(<TermsScreen />); });
+    const page = tree.root.findByType(TermsDetailPage);
+    expect(page.props.initialKey).toBe('terms');
+    page.props.onBack();
+    expect(mockDepthBack).toHaveBeenCalledTimes(1);
+  });
+
+  it('MY 「개인정보처리방침」 행은 하위 페이지를 연다', () => {
     const my = readFileSync(join(__dirname, '..', '..', 'app', '(tabs)', 'my', 'index.tsx'), 'utf8');
 
-    expect(my).toContain('setTermsKey(PRIVACY_POLICY_TAB_KEY)');
-    expect(my).not.toContain("router.push('/my/privacy-policy'");
+    expect(my).toContain("guestPush('/my/privacy-policy')");
   });
 });

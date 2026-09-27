@@ -35,6 +35,7 @@ import { HomeBudget, MORE_CHEVRON, MyWeddingPrep } from '@/features/home/home-su
 import { HOME_PAGE_X } from '@/features/home/home-layout';
 import { endHomeHandoff, useHomeHandoffActive } from '@/features/home/home-handoff';
 import { HomeSkeleton } from '@/features/home/home-skeleton';
+import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { homePrepCards, homePrepSectionSub } from '@/features/home/prep-groups';
 import { scheduleRows } from '@/features/home/schedule-view';
 import { categoryStatuses, currentCategory } from '@/features/home/state';
@@ -203,7 +204,7 @@ export default function HomeScreen() {
    * 온보딩에서 넘어왔으면 뿌리의 골격이 이 화면을 덮고 있다. 첫 자료를 그릴 수 있거나
    * 오류를 말해야 할 때 걷는다 — 그 전에 걷으면 같은 골격이 한 번 더 선다.
    */
-  const firstPaintReady = bootError || (settled && taskStatus !== 'loading' && contentStatus !== 'loading');
+  const firstPaintReady = bootError || settled;
   const handoffActive = useHomeHandoffActive();
   useEffect(() => {
     if (firstPaintReady && handoffActive) endHomeHandoff();
@@ -214,8 +215,8 @@ export default function HomeScreen() {
 
   if (bootError) return <ErrorView message={strings.journey.loadFailed} onRetry={load} />;
 
-  // 첫 진입에는 흩어진 원형 로더 대신 홈 전체의 자리를 한 번만 잡는다.
-  if (!settled || taskStatus === 'loading' || contentStatus === 'loading') {
+  // 첫 화면은 핵심 정보가 도착하면 열고, 독립적인 일정·콘텐츠는 각 자리에서 불러온다.
+  if (!settled) {
     return <HomeSkeleton />;
   }
 
@@ -259,7 +260,9 @@ export default function HomeScreen() {
             onMore={() => router.push('/pick')}
           />
 
-          {taskStatus === 'error' ? (
+          {taskStatus === 'loading' ? (
+            <DelayedLoader active size={28} style={styles.block} />
+          ) : taskStatus === 'error' ? (
             <View style={styles.block}>
               <ThemedText type="f13" themeColor="textAssistive">{strings.journey.loadFailed}</ThemedText>
               <ActionButton variant="secondary" label={strings.common['cta.retry']} onPress={load} />
@@ -297,7 +300,9 @@ export default function HomeScreen() {
                 <SeedIcon name="chevronRightRegular" size={MORE_CHEVRON} color={theme.textAssistive} />
               </Pressable>
             </View>
-            {contentStatus === 'error' ? (
+            {contentStatus === 'loading' ? (
+              <DelayedLoader active size={28} />
+            ) : contentStatus === 'error' ? (
               <View>
                 <ThemedText type="f13" themeColor="textAssistive">{strings.journey.loadFailed}</ThemedText>
                 <ActionButton variant="secondary" label={strings.common['cta.retry']} onPress={load} />

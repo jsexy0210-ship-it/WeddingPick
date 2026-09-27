@@ -86,8 +86,9 @@ async function heroFacts(
 export function registerAppRoutes(app: FastifyInstance, context: AppContext): void {
   const auth = { preHandler: optionalUser(context) };
 
-  app.get('/v1/app/bootstrap', auth, async (request) => {
+  app.get<{ Querystring: { view?: string } }>('/v1/app/bootstrap', auth, async (request) => {
     const userId = optionalUserId(request);
+    const homeOnly = request.query.view === 'home';
     const authHeader = request.headers.authorization;
     const headers = authHeader ? { authorization: authHeader } : {};
 
@@ -103,7 +104,7 @@ export function registerAppRoutes(app: FastifyInstance, context: AppContext): vo
      * 뒤에 부르면 그만큼 늦어질 뿐이었다(2026-09-09).
      */
     const [popularVendors, member, notifications] = await Promise.all([
-      injectJson<{ vendors: unknown[] }>(`/v1/vendors?sort=data&limit=${POPULAR_COUNT}`).then(
+      homeOnly ? Promise.resolve([]) : injectJson<{ vendors: unknown[] }>(`/v1/vendors?sort=data&limit=${POPULAR_COUNT}`).then(
         (body) => body?.vendors ?? []
       ),
       userId ? injectJson<{ weddingId: string | null }>('/v1/me') : Promise.resolve(null),
@@ -123,11 +124,21 @@ export function registerAppRoutes(app: FastifyInstance, context: AppContext): vo
       };
     }
 
-    const candidates = member.weddingId
-      ? await injectJson<{ nextCategory: string | null; groups: { candidates: unknown[] }[] }>(
-          `/v1/weddings/${member.weddingId}/candidates`
-        )
-      : null;
+    const [candidates, hero] = await Promise.all([
+      member.weddingId
+        ? injectJson<{ nextCategory: string | null; groups: { candidates: unknown[] }[] }>(
+            `/v1/weddings/${member.weddingId}/candidates`
+          )
+        : Promise.resolve(null),
+      member.weddingId
+        ? heroFacts(context, member.weddingId)
+        : Promise.resolve({ budget: null, bracketAnswered: false, partnerInvitePending: false }),
+    ]);
+
+    /* 현재 홈은 추천·인기 업체를 그리지 않는다. 화면에 쓰지 않는 두 조회를 기다리지 않는다. */
+    if (homeOnly) {
+      return { member, notifications, popularVendors, candidates, recommendations: [], ...hero };
+    }
 
     /*
      * 웨딩픽 추천 — TOP3와 같은 함수(지역 + 스타일 + 업체 안내 가격 · 실 제보가 붙는
@@ -165,10 +176,6 @@ export function registerAppRoutes(app: FastifyInstance, context: AppContext): vo
      * 히어로가 적는 예산 한 줄과 초대 상태. 둘 다 작은 값인데 각자 왕복을 타면 홈이 두 번 더
      * 기다린다 — 여기서 같이 읽는다. 지출 화면은 계속 `/v1/weddings/:id/expenses`를 쓴다.
      */
-    const hero = member.weddingId
-      ? await heroFacts(context, member.weddingId)
-      : { budget: null, bracketAnswered: false, partnerInvitePending: false };
-
     return { member, notifications, popularVendors, candidates, recommendations, ...hero };
   });
 

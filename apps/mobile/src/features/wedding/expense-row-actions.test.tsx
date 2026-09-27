@@ -1,6 +1,6 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
+import { ActionButton } from '@weddingpick/ui';
 
 import { removeExpense } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
@@ -21,36 +21,30 @@ const remove = removeExpense as unknown as jest.Mock;
 
 type Button = { text: string; style?: string; onPress?: () => void };
 
-/** 2026-09-26 대표 지시 — 지출내역의 직접 넣은 줄마다 수정 · 삭제 아이콘. */
-describe('지출내역 줄 수정 · 삭제 아이콘', () => {
+describe('지출내역 줄 수정 · 삭제 CTA', () => {
   let view: ReactTestRenderer | null = null;
   afterEach(() => {
     if (view) act(() => view!.unmount());
     view = null;
   });
 
-  it('정본 edit · trash 아이콘을 44 × 44 누르는 칸에 둔다', () => {
+  it('글자로 식별할 수 있는 같은 크기의 수정·삭제 버튼을 둔다', () => {
     const onEdit = jest.fn();
     const onDelete = jest.fn();
     act(() => {
       view = create(<ExpenseRowActions label="드레스" onEdit={onEdit} onDelete={onDelete} />);
     });
 
-    const edit = view!.root.find((node) => node.props.testID === 'expense-row-edit' && typeof node.props.onPress === 'function');
-    const trash = view!.root.find((node) => node.props.testID === 'expense-row-delete' && typeof node.props.onPress === 'function');
+    const edit = view!.root.find((node) => node.type === ActionButton && node.props.testID === 'expense-row-edit');
+    const trash = view!.root.find((node) => node.type === ActionButton && node.props.testID === 'expense-row-delete');
     expect(edit.props.accessibilityLabel).toBe('드레스 수정');
     expect(trash.props.accessibilityLabel).toBe('드레스 삭제');
 
     for (const target of [edit, trash]) {
-      const style = StyleSheet.flatten(
-        typeof target.props.style === 'function' ? target.props.style({ pressed: false }) : target.props.style
-      );
-      expect(style.width).toBeGreaterThanOrEqual(44);
-      expect(style.height).toBeGreaterThanOrEqual(44);
+      expect(target.props.variant).toBe('ghost');
+      expect(target.props.size).toBe('medium');
     }
-
-    const icons = view!.root.findAll((node) => typeof node.props.name === 'string' && node.props.size === 14);
-    expect(icons.map((node) => node.props.name)).toEqual(expect.arrayContaining(['edit', 'trash']));
+    expect([edit.props.label, trash.props.label]).toEqual(['수정', '삭제']);
 
     act(() => edit.props.onPress());
     act(() => trash.props.onPress());

@@ -17,7 +17,7 @@ describe('웨딩노트 총예산 수정', () => {
   });
 
   it('예산 카드에서 수정하고 저장 결과를 분명하게 안내한다', () => {
-    expect(source).toContain('accessibilityLabel="총예산 수정"');
+    expect(source).toContain('<ActionButton variant="ghost" size="medium" label="총예산 수정" onPress={onEditBudget} />');
     expect(source).toContain('총예산을 바꿨어요');
     expect(source).toContain('총예산을 바꾸지 못했어요. 잠시 후 다시 시도해 주세요.');
     expect(source).toContain("label={budgetIsSet ? '변경 내용 저장' : '총예산 등록'}");

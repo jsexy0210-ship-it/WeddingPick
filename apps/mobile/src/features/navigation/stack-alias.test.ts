@@ -33,7 +33,7 @@ function urlOf(file: string): string {
   return `/${parts.join('/')}`;
 }
 
-const ALIAS_LINE = /^\/\*\*[^\n]*\*\/\nexport \{ default \} from '([^']+)';\n$/;
+const ALIAS_LINE = /^\/\*\*[^\r\n]*\*\/\r?\nexport \{ default \} from '([^']+)';\r?\n$/;
 const aliasFiles = walk(TABS).filter((file: string) => file.endsWith('.tsx') && ALIAS_LINE.test(readFileSync(file, 'utf8')));
 
 describe('stackOf', () => {

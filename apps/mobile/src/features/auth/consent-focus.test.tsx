@@ -24,7 +24,7 @@ jest.mock('@/api/client', () => ({
   getSignupState: jest.fn(),
 }));
 jest.mock('@/features/navigation/depth-back', () => ({ dismissToOrReplace: jest.fn() }));
-jest.mock('@/features/auth/terms-detail-modal', () => ({ TermsDetailModal: 'TermsDetailModal' }));
+jest.mock('@/features/auth/terms-detail-page', () => ({ TermsDetailPage: 'TermsDetailPage' }));
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaView: 'SafeAreaView',
   useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),

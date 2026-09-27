@@ -765,7 +765,7 @@ export async function getCurrentUser() {
 
 /** 홈 데이터를 미리 받으면 인증 확인과 병렬로 준비할 수 있다. */
 export async function getAppBootstrap(): Promise<AppBootstrapResponse> {
-  return request('/v1/app/bootstrap', appBootstrapResponseSchema);
+  return request('/v1/app/bootstrap?view=home', appBootstrapResponseSchema);
 }
 
 /**

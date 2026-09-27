@@ -85,9 +85,9 @@ describe('registration routes use canonical overlays', () => {
     expect(consult).not.toContain('<BackBar');
     expect(consult).not.toContain('<NavBar');
 
-    // 약관상세(WP-AUTH-011)와 같은 머리를 쓴다.
-    const terms = readFileSync(join(APP, '..', 'features', 'auth', 'terms-detail-modal.tsx'), 'utf8');
-    expect(terms).toContain('<FullPopupHeader title="약관상세" onClose={onClose} />');
+    // 약관상세는 뒤로가기 헤더가 있는 페이지다.
+    const terms = readFileSync(join(APP, '..', 'features', 'auth', 'terms-detail-page.tsx'), 'utf8');
+    expect(terms).toContain('<DepthHeader title="약관상세" onBack={onBack} />');
   });
 
   it('데이터를 만드는 route는 이름이 등록이 아니어도 시트다', () => {

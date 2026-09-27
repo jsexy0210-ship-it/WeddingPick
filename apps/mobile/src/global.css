@@ -26,3 +26,10 @@ input:-webkit-autofill:active {
   -webkit-text-fill-color: currentColor;
   caret-color: currentColor;
 }
+
+/* 입력을 감싼 상자가 테두리인 화면은 브라우저가 안쪽 input에 그리는
+   사각 포커스 선을 숨긴다. 바깥 상자의 포커스 테두리는 각 컴포넌트가 그린다. */
+[data-testid="input-frame"] input:focus,
+[data-testid="input-frame"] textarea:focus {
+  outline: none;
+}

@@ -15,12 +15,11 @@ import {
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
 
-import { Border, Layout, ProductSymbol, Radius, Spacing, ThemedText, Toast, useTheme } from '@weddingpick/ui';
+import { ActionButton, Border, Layout, ProductSymbol, Radius, Spacing, ThemedText, Toast, useTheme } from '@weddingpick/ui';
 import { getWithdrawalNotice, withdraw } from '@/api/client';
 import { wipeDevice } from '@/api/session';
-import { ConfirmSheet } from '@/features/common/confirm-sheet';
 import { showResultToast } from '@/features/navigation/result-toast';
 import {
   Dock,
@@ -131,7 +130,7 @@ export default function WithdrawalScreen() {
           }}
         />
       }>
-      {/* 정본 qBlock — 제목 두 줄뿐이다. 되돌릴 수 없다는 말은 확인 시트가 한 번 더 한다. */}
+      {/* 정본 qBlock — 제목 두 줄뿐이다. 되돌릴 수 없다는 말은 확인 모달이 한 번 더 한다. */}
       <Hero lines={[...WITHDRAWAL_HEADLINE_LINES]} />
 
       {/* 정본 delNow — listCard 안 52 행 · 회색 점 5 + 라벨 15. */}
@@ -191,7 +190,7 @@ export default function WithdrawalScreen() {
         </Pressable>
       </Section>
 
-      <ConfirmSheet
+      <WithdrawalConfirmModal
         visible={confirming}
         title={WITHDRAWAL_SHEET_TITLE}
         message={WITHDRAWAL_SHEET_BODY}
@@ -204,6 +203,41 @@ export default function WithdrawalScreen() {
 
       <Toast message={toast} onHidden={() => setToast(null)} />
     </SubScreen>
+  );
+}
+
+function WithdrawalConfirmModal({
+  visible, title, message, confirmLabel, cancelLabel, busy, onConfirm, onCancel,
+}: {
+  visible: boolean;
+  title: string;
+  message: string;
+  confirmLabel: string;
+  cancelLabel: string;
+  busy: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const theme = useTheme();
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
+      <View style={[styles.modalOverlay, { backgroundColor: theme.scrimLight }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel="닫기" style={StyleSheet.absoluteFill} onPress={busy ? undefined : onCancel} />
+        <View accessibilityViewIsModal style={[styles.modalCard, { backgroundColor: theme.background }]}>
+          <View style={styles.modalHeader}>
+            <ThemedText type="t5" style={styles.modalTitle}>{title}</ThemedText>
+            <Pressable accessibilityRole="button" accessibilityLabel="닫기" disabled={busy} onPress={onCancel} style={[styles.modalClose, { backgroundColor: theme.backgroundSelected }]}>
+              <ProductSymbol name="close" size={16} color={theme.text} />
+            </Pressable>
+          </View>
+          <ThemedText type="f15" themeColor="textSecondary" style={styles.modalMessage}>{message}</ThemedText>
+          <View style={styles.modalActions}>
+            <View style={styles.modalCancel}><ActionButton size="sheet" label={cancelLabel} disabled={busy} onPress={onCancel} /></View>
+            <View style={styles.modalConfirm}><ActionButton variant="danger" size="sheet" label={confirmLabel} loading={busy} onPress={onConfirm} /></View>
+          </View>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -238,4 +272,13 @@ const styles = StyleSheet.create({
     paddingVertical: Layout.rowPaddingY,
   },
   hr: { height: 1, marginTop: Spacing.half },
+  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
+  modalCard: { width: '100%', maxWidth: 360, borderRadius: Radius.cardLarge, padding: 24, gap: 16 },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  modalTitle: { flex: 1, fontWeight: 700 },
+  modalClose: { width: 36, height: 36, borderRadius: Radius.pill, alignItems: 'center', justifyContent: 'center' },
+  modalMessage: { lineHeight: 22 },
+  modalActions: { flexDirection: 'row', gap: 10, marginTop: 8 },
+  modalCancel: { flex: 1 },
+  modalConfirm: { flex: 1.4 },
 });
