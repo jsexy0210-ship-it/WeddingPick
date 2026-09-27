@@ -90,7 +90,7 @@ export function tentativeDueDate(weddingDate: string, label: string): string | n
  *
  *   4일 이상 남음 → 예정
  *   3일 이내      → 진행중
- *   지남          → 완료
+ *   지남          → 진행중(사용자가 직접 완료해야 완료)
  */
 export const IN_PROGRESS_WITHIN_DAYS = 3;
 
@@ -128,14 +128,7 @@ export function resolveTaskState(input: {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const days = Math.round((target - today) / (24 * 60 * 60 * 1000));
 
-  /*
-   * 지난 날을 '완료'로 본다. 핸드오프가 정한 규칙이다.
-   *
-   * 짐작인 것은 맞다 — 날이 지났다고 실제로 했는지는 모른다. 다만 사용자가
-   * 직접 지정하면 그 값이 이기므로, 틀렸을 때 고칠 방법이 화면에 있다.
-   */
-  if (days < 0) return { state: 'done', manual: false };
-
+  // 기한 경과는 실제 완료의 증거가 아니다. 완료는 사용자가 직접 지정한 때에만 센다.
   return {
     state: days <= IN_PROGRESS_WITHIN_DAYS ? 'in_progress' : 'upcoming',
     manual: false,

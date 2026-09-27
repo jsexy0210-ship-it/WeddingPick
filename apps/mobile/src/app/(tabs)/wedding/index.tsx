@@ -645,11 +645,15 @@ function CalendarPanel({
   const past = events
     .filter((event) => new Date(event.startsAt) < today)
     .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+  const plans = notePlanEntries(tasks, events, weddingDate, now);
+  const overduePlans = plans
+    .filter((plan) => daysUntil(plan.date, now) < 0)
+    .sort((a, b) => b.date.localeCompare(a.date));
   const upcomingGroups = buildUpcomingTimelineGroups(
     events,
     weddingDate,
     now,
-    notePlanEntries(tasks, events, weddingDate, now)
+    plans
   );
 
   const days = weddingDate !== null ? daysUntil(weddingDate, now) : null;
@@ -694,6 +698,17 @@ function CalendarPanel({
             </Pressable>
           ) : null}
         </View>
+      ) : null}
+
+      {overduePlans.length > 0 ? (
+        <TimelineGroupView
+          title="기한 지난 할 일"
+          range=""
+          items={overduePlans.map((plan) => ({ ...plan, event: null, kind: 'plan' as const }))}
+          busy={busy}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
       ) : null}
 
       {past.length > 0 ? (

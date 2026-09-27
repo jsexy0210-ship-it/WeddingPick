@@ -9,10 +9,11 @@ import { HOME_PAGE_X } from '@/features/home/home-layout';
 const S = strings.home;
 
 /**
- * 홈 「웨딩일정」. RN 정본 `docs/design/React_Native/home.jsx` frame-012 WP-HOME-001 `schedule`(날짜 있는 일정 최대 3건) ·
+ * 홈 「웨딩일정」. RN 정본 `docs/design/React_Native/home.jsx` frame-012 WP-HOME-001 `schedule`(날짜 있는 일정) ·
  * WP-HOME-002/003 `defaultSchedule`(번호 매긴 기본 다섯 줄). `rows`가 `dated`면
  * 앞쪽, `preset`이면 뒤쪽 모양으로 그린다 — 한 섹션에서 둘이 섞이지 않는다
  * (`scheduleRows`가 이미 갈라 준다).
+ * 예식일이 있는 경우 사용자가 요청한 미완료 기한 최대 다섯 줄(D+N 포함)을 그린다.
  *
  * 개별 줄은 home.jsx에 `<a href>`가 없다 — 「자세히」만 누를 수 있다. 줄마다 탭
  * 진입점을 임의로 만들지 않는다(정본에 없는 진입점 추가 금지).

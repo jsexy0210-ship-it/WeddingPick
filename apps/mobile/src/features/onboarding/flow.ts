@@ -322,14 +322,18 @@ export function togglePrepCard(card: PrepCard, categories: readonly PreparedCate
  * (2026-09-26 대표 지시 — 직접 입력한 이름이 완료 요약에도 보여야 한다).
  */
 export function summarizePrep(prep: Answers['prep']): string {
+  const names = prepSummaryItems(prep);
+
+  return names.length > 0 ? names.join(' · ') : PREPARATION_NOT_STARTED_LABEL;
+}
+
+function prepSummaryItems(prep: Answers['prep']): string[] {
   const categories = prep?.categories ?? [];
-  const names = PREP_CARDS.filter((card) => isPrepCardSelected(card, categories)).map((card) => {
+  return PREP_CARDS.filter((card) => isPrepCardSelected(card, categories)).map((card) => {
     const choice = prepVendorOf(prep, card);
 
     return choice === null ? card.name : `${card.name}(${choice.name})`;
   });
-
-  return names.length > 0 ? names.join(' · ') : PREPARATION_NOT_STARTED_LABEL;
 }
 
 /**
@@ -470,6 +474,10 @@ export function answerSummary(step: QuestionStep, answers: Answers): string | nu
  */
 export type SummaryRow = { step: QuestionStep; label: string; value: string };
 
+function firstAndCount(items: readonly string[]): string {
+  return items.length > 1 ? `${items[0]} 외 ${items.length - 1}건` : items[0] ?? PREPARATION_NOT_STARTED_LABEL;
+}
+
 /**
  * 완료 요약 5행. 항상 다섯 줄이다 — 미정은 «미정»으로 적는다. 빈칸이나 «—»는
  * 쓰지 않는다.
@@ -477,8 +485,13 @@ export type SummaryRow = { step: QuestionStep; label: string; value: string };
 export function doneRows(answers: Answers): SummaryRow[] {
   return QUESTION_STEPS.map((step) => ({
     step,
-    label: STEP_LABEL[step],
-    value: answerSummary(step, answers) ?? UNDECIDED_VALUE,
+    label: step === 'prep' ? '준비현황' : step === 'budget' ? '총 예산' : STEP_LABEL[step],
+    value:
+      step === 'prep' && answers.prep !== null
+        ? firstAndCount(prepSummaryItems(answers.prep))
+        : step === 'style' && answers.style !== null && answers.style.length > 0
+          ? firstAndCount(answers.style.map((style) => WEDDING_STYLE_LABEL[style]))
+          : answerSummary(step, answers) ?? UNDECIDED_VALUE,
   }));
 }
 

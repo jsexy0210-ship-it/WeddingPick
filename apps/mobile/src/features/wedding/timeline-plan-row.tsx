@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
+import { daysUntil, formatDday } from '@weddingpick/domain';
 import { Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 
 import { ExpenseRowActions } from './expense-row-actions';
@@ -33,7 +34,8 @@ export function TimelinePlanRow({
   onDelete?: (plan: TimelinePlan) => void;
 }) {
   const theme = useTheme();
-  const time = noteMonthDayWeekday(plan.date);
+  const daysLeft = daysUntil(plan.date);
+  const time = `${noteMonthDayWeekday(plan.date)}${daysLeft < 0 ? ` · ${formatDday(daysLeft)}` : ''}`;
 
   return (
     <View style={styles.row} testID={plan.tentative ? 'timeline-plan-tentative' : 'timeline-plan'}>

@@ -9,7 +9,7 @@ const S = strings.home;
  * 홈 「웨딩일정」 섹션.
  *
  * 정본: `docs/design/React_Native/home.jsx` WP-HOME-001 §11 `schedule`
- * (날짜가 있는 일정 최대 3건) · WP-HOME-002/003 `defaultSchedule`(아직 날짜가 없을 때
+ * (날짜가 있는 일정) · WP-HOME-002/003 `defaultSchedule`(예식일도 날짜도 없을 때
  * 번호 매긴 다섯 줄).
  *
  * 옛 구현은 이 섹션 자체가 없었다(정본 대조표 `hdiffs` — 「다가오는 일정 · 홈에
@@ -101,7 +101,7 @@ export type TentativePlanItem = { id: string; label: string; due: string; daysLe
  * 보여 줄 때만 계산한다(`tentativeDueDate`).
  *
  *   - 날짜를 넣은 할 일(`dueDate`)과 끝낸 할 일은 뺀다 — 진짜 날짜가 이긴다
- *   - 이미 지난 임시 날짜는 빼고 가까운 순
+ *   - 이미 지난 임시 날짜도 남긴다 — 실제 완료 전에는 D+N으로 다시 볼 수 있어야 한다
  *   - 할 일 목록이 비면 `fallbackLabels`(홈은 기본 다섯 줄, 웨딩노트는 기본 열셋)로 대신한다
  *   - 예식일을 모르면 빈 배열 — 역산할 기준이 없다
  */
@@ -125,24 +125,24 @@ export function tentativePlanItems(
     .map((item) => ({ ...item, due: tentativeDueDate(weddingDate, item.label) }))
     .filter((row): row is { id: string; label: string; due: string } => row.due !== null)
     .map((row) => ({ ...row, daysLeft: daysUntil(row.due, now) }))
-    .filter((row) => row.daysLeft >= 0)
-    .sort((a, b) => a.daysLeft - b.daysLeft)
+    .sort((a, b) => a.due.localeCompare(b.due))
     .slice(0, limit);
 }
 
 /**
  * 날짜를 넣은 일정이 하나도 없을 때 — 기본 줄에 예식일에서 역산한 **임시 날짜**를 붙인다
  * (2026-09-25 대표 지시 「기본 날짜는 결혼식 예정일을 역산해서 임시로 넣어놓는다」).
- * 이미 지난 날짜는 빼고, 남은 것을 가까운 순으로 최대 다섯 줄. 예식일을 모르거나 남는 줄이
- * 없으면 빈 배열 — 번호 줄로 대신한다.
+ * 지난 날짜도 남기고 오늘과 기한이 가까운 순으로 최대 다섯 줄을 보여 준다.
  */
 export function tentativeScheduleRows(
   tasks: readonly WeddingTask[],
   weddingDate: string | null,
   now: Date = new Date()
 ): ScheduleRow[] {
-  return tentativePlanItems(tasks, weddingDate, now, { limit: DEFAULT_ROWS_MAX }).map(
-    ({ id, label, due, daysLeft }, index) => {
+  return [...tentativePlanItems(tasks, weddingDate, now)]
+    .sort((a, b) => Math.abs(a.daysLeft) - Math.abs(b.daysLeft) || b.daysLeft - a.daysLeft)
+    .slice(0, DEFAULT_ROWS_MAX)
+    .map(({ id, label, due, daysLeft }, index) => {
       const { month, day } = monthDay(due);
       return {
         kind: 'dated' as const,
@@ -154,8 +154,7 @@ export function tentativeScheduleRows(
         dday: ddayLabel(daysLeft),
         near: index === 0,
       };
-    }
-  );
+    });
 }
 
 export function scheduleRows(
@@ -163,8 +162,47 @@ export function scheduleRows(
   now: Date = new Date(),
   weddingDate: string | null = null
 ): ScheduleRow[] {
-  const dated = datedScheduleRows(tasks, now);
-  if (dated.length > 0) return dated;
-  const tentative = tentativeScheduleRows(tasks, weddingDate, now);
-  return tentative.length > 0 ? tentative : presetScheduleRows(tasks);
+  if (weddingDate === null) {
+    const dated = datedScheduleRows(tasks, now);
+    return dated.length > 0 ? dated : presetScheduleRows(tasks);
+  }
+
+  const items = [
+    ...tasks.filter((task) => task.dueDate !== null && task.state !== 'done').map((task) => ({
+      id: task.id,
+      title: task.label,
+      due: task.dueDate!,
+      daysLeft: daysUntil(task.dueDate!, now),
+      meta: taskMeta(task),
+    })),
+    ...tentativePlanItems(tasks, weddingDate, now).map((item) => ({
+      id: item.id,
+      title: item.label,
+      due: item.due,
+      daysLeft: item.daysLeft,
+      meta: TENTATIVE_META,
+    })),
+  ];
+
+  // 날짜를 역산할 수 없는 사용자 할 일만 있어도 예식일 카드까지 번호 목록으로 되돌리지 않는다.
+  if (items.length === 0) {
+    items.push({ id: 'wedding-day', title: '예식일', due: weddingDate, daysLeft: daysUntil(weddingDate, now), meta: '' });
+  }
+
+  return items
+    .sort((a, b) => Math.abs(a.daysLeft) - Math.abs(b.daysLeft) || b.daysLeft - a.daysLeft)
+    .slice(0, DEFAULT_ROWS_MAX)
+    .map((item, index) => {
+      const { month, day } = monthDay(item.due);
+      return {
+        kind: 'dated' as const,
+        id: item.id,
+        month,
+        day,
+        title: item.title,
+        meta: item.meta,
+        dday: ddayLabel(item.daysLeft),
+        near: index === 0,
+      };
+    });
 }
