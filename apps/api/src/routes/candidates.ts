@@ -81,34 +81,28 @@ export function registerCandidateRoutes(app: FastifyInstance, context: AppContex
        * 여기로 정했다"가 후보 한 줄의 속성이 아니라 웨딩과 업종에 붙는 결론이기
        * 때문이다.
        *
-       * 준비 현황(0088 prepared_categories)은 또 다른 결론이다 — «우리 앱 밖에서
-       * 이미 정했다». 업체가 없다. 홈 준비현황에는 똑같이 «결정 완료»로 들어가고
-       * 다음 준비에서 건너뛴다(v3.19).
+       * 준비 현황(0088 prepared_categories)은 **결정이 아니다**(2026-09-26 대표 결정 A ·
+       * 「홈 계약 완료도 결정 후 완료로 진행」) — «이미 정했다»는 체크일 뿐 결정 카드가 없어,
+       * 세면 결정을 취소해도 «결정 완료»가 남는다. 그래서 진행률 · 다음 업종도 결정만 센다 —
+       * Pick · 홈이 쓰는 domain `decidedCategories`와 같은 기준이다(v3.19의 «준비 현황도
+       * 결정 완료»는 이 결정으로 폐기).
        */
-      const [decisions, wedding] = await Promise.all([
-        /* 직접 입력한 결정(0440)은 업체가 없다 — vendor_id가 NULL이고 manual_name이 이름이다. */
-        context.pool.query<{
-          category: VendorCategory;
-          vendor_id: string | null;
-          manual_name: string | null;
-          decided_at: Date;
-          decided_by: string | null;
-        }>(
-          `SELECT category, vendor_id, manual_name, decided_at, decided_by
-           FROM structured.category_decisions WHERE wedding_id = $1
-           ORDER BY decided_at DESC`,
-          [request.params.weddingId]
-        ),
-        context.pool.query<{ prepared_categories: VendorCategory[] }>(
-          /* enum 배열은 드라이버가 문자열 '{a,b}'로 준다 — text[]로 바꿔 읽는다. */
-          'SELECT prepared_categories::text[] AS prepared_categories FROM structured.weddings WHERE id = $1',
-          [request.params.weddingId]
-        ),
-      ]);
+      /* 직접 입력한 결정(0440)은 업체가 없다 — vendor_id가 NULL이고 manual_name이 이름이다. */
+      const decisions = await context.pool.query<{
+        category: VendorCategory;
+        vendor_id: string | null;
+        manual_name: string | null;
+        decided_at: Date;
+        decided_by: string | null;
+      }>(
+        `SELECT category, vendor_id, manual_name, decided_at, decided_by
+         FROM structured.category_decisions WHERE wedding_id = $1
+         ORDER BY decided_at DESC`,
+        [request.params.weddingId]
+      );
 
       /* 업종 → 결정한 업체. 직접 입력한 결정은 업체가 없어 null이지만 «결정 완료»다. */
       const decidedBy = new Map(decisions.rows.map((row) => [row.category, row.vendor_id]));
-      const prepared = new Set(wedding.rows[0]?.prepared_categories ?? []);
       const grouped = groupByCategory(rows);
 
       /*
@@ -122,14 +116,9 @@ export function registerCandidateRoutes(app: FastifyInstance, context: AppContex
         return {
           category,
           label: VENDOR_CATEGORY_LABEL[category],
-          state:
-            decidedBy.has(category) || prepared.has(category)
-              ? 'decided'
-              : picks.length > 0
-                ? 'picking'
-                : 'before',
+          state: decidedBy.has(category) ? 'decided' : picks.length > 0 ? 'picking' : 'before',
           pickCount: picks.length,
-          // 앱 밖에서 정한 업종은 업체가 없다 — 결정 완료인데 decidedVendorId가 null이다.
+          // 직접 입력한 결정(0440)은 업체가 없다 — 결정 완료인데 decidedVendorId가 null이다.
           decidedVendorId: decided,
         };
       });

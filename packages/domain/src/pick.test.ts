@@ -3,6 +3,8 @@ import {
   MIN_COMPARABLE,
   PREPARATION_STATE_LABEL,
   canCompare,
+  completedPreparationGroups,
+  decidedCategories,
   nextCategory,
   pickOwner,
   preparationProgress,
@@ -109,5 +111,40 @@ describe('Pick', () => {
         decided: '결정 완료',
       });
     });
+  });
+});
+
+describe('완료 판정 — 실제 결정 하나(2026-09-26 대표 결정 A · 「결정 후 완료로 진행」)', () => {
+  const HALL = '11111111-1111-4111-8111-111111111111';
+
+  it('업체로 정한 곳과 이름으로 정한 곳만 센다 — 후보만 담은 업종은 아니다', () => {
+    const decided = decidedCategories({
+      groups: [
+        { category: 'hall', decidedVendorId: HALL },
+        { category: 'dress', decidedVendorId: null },
+      ],
+      manualDecisions: [{ category: 'studio' }],
+    });
+
+    expect([...decided].sort()).toEqual(['hall', 'studio']);
+  });
+
+  it('출처가 없으면 정한 업종도 없다 — 준비 현황은 받는 칸이 없다', () => {
+    expect(decidedCategories(null).size).toBe(0);
+    expect(decidedCategories({}).size).toBe(0);
+  });
+
+  it('묶음은 업종이 모두 정해져야 끝난다 — 스드메는 넷', () => {
+    expect([...completedPreparationGroups(new Set(['hall']))]).toEqual(['start']);
+    expect(completedPreparationGroups(new Set(['studio', 'dress', 'makeup'])).has('sdm')).toBe(false);
+    expect(completedPreparationGroups(new Set(['studio', 'dress', 'makeup', 'hair'])).has('sdm')).toBe(true);
+  });
+
+  it('결정을 취소하면(decidedVendorId null) 곧바로 풀린다', () => {
+    const before = decidedCategories({ groups: [{ category: 'hall', decidedVendorId: HALL }] });
+    const after = decidedCategories({ groups: [{ category: 'hall', decidedVendorId: null }] });
+
+    expect(completedPreparationGroups(before).has('start')).toBe(true);
+    expect(completedPreparationGroups(after).has('start')).toBe(false);
   });
 });

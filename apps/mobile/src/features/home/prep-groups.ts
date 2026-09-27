@@ -1,4 +1,9 @@
-import { PREPARATION_GROUPS, type PreparationGroupKey, type VendorCategory } from '@weddingpick/domain';
+import {
+  completedPreparationGroups,
+  PREPARATION_GROUPS,
+  type PreparationGroupKey,
+  type VendorCategory,
+} from '@weddingpick/domain';
 import type { CategoryIconKind } from '@weddingpick/ui';
 
 import strings from '../../../../../spec/strings.ko.json';
@@ -12,6 +17,12 @@ const S = strings.home;
  * 정본: `docs/design/html/대메뉴_홈(로그인, 온보딩).dc.html` WP-HOME-001~003 §11 `prep`·
  * `prepEmpty`·`prepPartial`. 항상 4칸이고(끝낸 것도 빠지지 않는다), 칸마다 상태가
  * 미정(todo) · 상담예약 완료(picking) · 계약 완료(contracted) 셋 중 하나다.
+ *
+ * **«계약 완료»는 묶음 업종이 모두 실제 결정으로 채워졌을 때뿐이다**(2026-09-26 대표 결정 A ·
+ * 「홈 계약 완료도 결정 후 완료로 진행」). 판정은 Pick «결정 완료»(`completedPickGroups`)와 같은
+ * domain `completedPreparationGroups` 하나다 — `statuses`의 «decided»가 이미 실제 결정만
+ * 세므로(`categoryStatuses`) 온보딩 3/5 준비 현황만으로는 완료가 되지 않고, 결정을 취소하면
+ * 홈에서도 곧바로 풀린다.
  *
  * 그룹 키(start · sdm · ceremony · goods)는 `packages/domain`의
  * `PREPARATION_GROUPS`(온보딩 3/5가 이미 쓰는 4그룹)를 그대로 따른다. 카드 라벨은
@@ -84,6 +95,9 @@ export function homePrepCards(input: {
 }): HomePrepCard[] {
   const { statuses, venueName } = input;
   const byCategory = new Map(statuses.map((row) => [row.category, row]));
+  const completed = completedPreparationGroups(
+    new Set(statuses.filter((row) => row.state === 'decided').map((row) => row.category))
+  );
 
   return PREPARATION_GROUPS.map((group) => {
     const categories = HOME_PREP_GROUP_CATEGORIES[group.key];
@@ -91,9 +105,8 @@ export function homePrepCards(input: {
       .map((category) => byCategory.get(category))
       .filter((row): row is CategoryStatus => row !== undefined);
 
-    const allDecided = rows.length > 0 && rows.every((row) => row.state === 'decided');
     const anyStarted = rows.some((row) => row.state !== 'before' || row.pickCount > 0);
-    const state: HomePrepState = allDecided ? 'contracted' : anyStarted ? 'picking' : 'todo';
+    const state: HomePrepState = completed.has(group.key) ? 'contracted' : anyStarted ? 'picking' : 'todo';
 
     const openRow = rows.find((row) => row.state !== 'decided') ?? rows[0];
     const targetCategory = openRow?.category ?? categories[0]!;

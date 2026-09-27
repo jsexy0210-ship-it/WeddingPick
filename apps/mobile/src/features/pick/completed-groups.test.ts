@@ -45,7 +45,7 @@ describe('completedPickGroups — 묶음 업종이 모두 실제 결정으로 �
     expect(completedPickGroups(page({ groups: [hallGroup(null)] })).size).toBe(0);
   });
 
-  it('온보딩 준비 현황만으로는 끝나지 않는다 — 판정이 준비 현황을 받지도 않는다(홈 «계약 완료»와 갈린다)', () => {
+  it('온보딩 준비 현황만으로는 끝나지 않는다 — 판정이 준비 현황을 받지도 않는다(홈 «계약 완료»와 같은 판정)', () => {
     expect(completedPickGroups(page({})).size).toBe(0);
     expect(completedPickGroups(null).size).toBe(0);
   });

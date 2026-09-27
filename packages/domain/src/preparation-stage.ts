@@ -20,7 +20,8 @@ import { TASK_PRESETS, TENTATIVE_DAYS_BEFORE } from './wedding-plan';
  * **새로 묻지 않는다.** 이미 있는 셋만 본다.
  *
  *   예식일        남은 날(D-day). 예식일 기준 임시 날짜(`TENTATIVE_DAYS_BEFORE`)의 경계로 자른다
- *   업종별 상태   앱에서 정한 것 · 준비 현황(온보딩 3/5)에서 «이미 정했다» · 후보를 담는 중
+ *   업종별 상태   앱에서 정한 것(업체 · 직접 입력) · 후보를 담는 중. 준비 현황(온보딩 3/5)의
+ *                 «이미 정했다» 체크는 결정이 아니다(2026-09-26 대표 결정 A)
  *   임시 일정     기본 할 일(`TASK_PRESETS`)의 임시 날짜가 이미 온 미정 업종이 먼저다
  *
  * 지금 정하는 업종(`current`)은 서버의 `nextCategory`(홈 히어로 · Pick 탭이 보는 것)와 같은
@@ -70,8 +71,9 @@ export type PreparationStageInput = {
   /** 예식일까지 남은 날(한국 날짜 기준). 예식일을 안 정했으면 null. */
   daysLeft: number | null;
   /**
-   * 정한 업종 — 앱에서 결정한 것(`category_decisions`)과 준비 현황에서 «이미 정했다»고
-   * 고른 것(`prepared_categories`)을 합친 것. 홈 준비 현황 4칸이 「완료」로 적는 그 집합이다.
+   * 정한 업종 — 앱에서 결정한 것(`category_decisions`, 업체 · 직접 입력)뿐이다. 홈 «내 웨딩
+   * 준비»와 Pick이 «완료»로 적는 그 집합이다(domain `decidedCategories`). 준비 현황
+   * (`prepared_categories`)은 넣지 않는다(2026-09-26 대표 결정 A).
    */
   decided: readonly VendorCategory[];
   /** 후보를 담는 중인 업종(`wedding_preparation.state = 'picking'`). */

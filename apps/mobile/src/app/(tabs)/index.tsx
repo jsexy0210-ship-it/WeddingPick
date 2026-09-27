@@ -217,11 +217,9 @@ export default function HomeScreen() {
 
   const daysLeft = data.me?.weddingDate == null ? null : daysUntil(data.me.weddingDate);
 
-  const statuses = categoryStatuses({
-    candidates: data.candidates,
-    preparedCategories: data.me?.preparedCategories ?? [],
-  });
-  const prepCards = homePrepCards({ statuses, venueName: venueName(data.candidates, data.me) });
+  /* «계약 완료»는 실제 결정만 센다 — 온보딩 준비 현황만으로는 완료가 아니다(2026-09-26 대표 결정 A). */
+  const statuses = categoryStatuses({ candidates: data.candidates });
+  const prepCards = homePrepCards({ statuses, venueName: venueName(data.candidates) });
   const current = currentCategory(statuses, data.candidates?.nextCategory ?? null);
   const currentLabel = current === null ? null : (statuses.find((row) => row.category === current)?.label ?? null);
   const prepSub = homePrepSectionSub({ cards: prepCards, currentLabel });
@@ -351,11 +349,8 @@ function openPartnerFromHome(): void {
   router.push(HOME_PARTNER_ROUTE as never);
 }
 
-function venueName(candidates: CandidateListResponse | null, me: CurrentUser | null): string | null {
-  const hall = categoryStatuses({
-    candidates,
-    preparedCategories: me?.preparedCategories ?? [],
-  }).find((row) => row.category === 'hall');
+function venueName(candidates: CandidateListResponse | null): string | null {
+  const hall = categoryStatuses({ candidates }).find((row) => row.category === 'hall');
 
   return hall?.decidedName ?? null;
 }

@@ -367,10 +367,11 @@ describeWithDb('후보 저장', () => {
       expect(body.nextCategory).toBe('studio');
     });
 
-    it('준비 현황에서 이미 정한 업종은 업체 없이 «결정 완료»이고 다음에서 건너뛴다', async () => {
+    it('준비 현황 체크만으로는 «결정 완료»가 아니다 — 진행률 · 다음 업종은 실제 결정만 센다', async () => {
       /*
-       * v3.19 온보딩 3/5. 우리 앱 밖에서 정한 업종이라 업체가 없다 — 결정 완료인데
-       * decidedVendorId가 null이다. 홈 준비현황이 «결정 완료»로 그리고 추천이 건너뛴다.
+       * 2026-09-26 대표 결정 A(「홈 계약 완료도 결정 후 완료로 진행」). 온보딩 3/5에서 «이미
+       * 정했다»고 체크만 한 업종은 결정 카드가 없다 — 세면 결정을 취소해도 «완료»가 남는다.
+       * 예전(v3.19)에는 여기서 웨딩홀을 «결정 완료»로 세고 다음을 스튜디오로 넘겼다.
        */
       const { headers } = await signInAs(test);
       const weddingId = await createWedding(test, headers);
@@ -386,12 +387,32 @@ describeWithDb('후보 저장', () => {
         groups: unknown[];
       }>();
 
-      // 결정사(2026-09-24 제거)는 예전에 저장된 값이라도 세지 않는다 — 웨딩홀 하나만 센다.
-      expect(body.progress.decided).toBe(1);
+      expect(body.progress.decided).toBe(0);
       expect(body.progress.total).toBe(11);
-      expect(body.nextCategory).toBe('studio');
+      expect(body.nextCategory).toBe('hall');
       // 후보가 없으니 묶음도 없다 — 준비 현황은 후보가 아니다.
       expect(body.groups).toEqual([]);
+    });
+
+    it('직접 입력한 결정은 업체 없이 «결정 완료»이고 다음에서 건너뛴다(0440)', async () => {
+      const { headers } = await signInAs(test);
+      const weddingId = await createWedding(test, headers);
+
+      await test.pool.query(
+        `INSERT INTO structured.category_decisions (wedding_id, category, vendor_id, manual_name)
+         VALUES ($1, 'hall', NULL, '우리동네 웨딩컨벤션')`,
+        [weddingId]
+      );
+
+      const body = (await list(headers, weddingId)).json<{
+        progress: { decided: number };
+        nextCategory: string;
+        manualDecisions: { category: string; name: string }[];
+      }>();
+
+      expect(body.progress.decided).toBe(1);
+      expect(body.nextCategory).toBe('studio');
+      expect(body.manualDecisions).toMatchObject([{ category: 'hall', name: '우리동네 웨딩컨벤션' }]);
     });
   });
 

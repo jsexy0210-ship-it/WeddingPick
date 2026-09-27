@@ -1,4 +1,10 @@
-import { PREPARATION_CATEGORIES, VENDOR_CATEGORY_LABEL, type VendorCategory } from './vendor';
+import {
+  PREPARATION_CATEGORIES,
+  PREPARATION_GROUPS,
+  VENDOR_CATEGORY_LABEL,
+  type PreparationGroupKey,
+  type VendorCategory,
+} from './vendor';
 
 /**
  * Pick. 통합정책 v3.2 §6~7.
@@ -124,4 +130,49 @@ export function preparationProgress(progress: readonly CategoryProgress[]): {
 
 export function categoryProgressLabel(category: VendorCategory): string {
   return VENDOR_CATEGORY_LABEL[category];
+}
+
+/* ------------------------------------------------------------ 완료 판정 — Pick · 홈 공용 */
+
+/**
+ * 실제 결정의 출처. 후보 목록 응답(`CandidateListResponse`)이 이 모양을 품는다 — 도메인이
+ * 계약에 기대지 않게 필요한 칸만 적는다.
+ */
+export type DecisionSource = {
+  groups?: readonly { category: VendorCategory; decidedVendorId: string | null }[];
+  manualDecisions?: readonly { category: VendorCategory }[];
+};
+
+/**
+ * 정한 업종 — **실제 결정만 센다**(2026-09-26 대표 결정 A · 「홈 계약 완료도 결정 후 완료로
+ * 진행」). 실제 결정은 둘뿐이다.
+ *
+ *   Pick한 업체로 정함   `groups[].decidedVendorId`
+ *   이름으로만 정함      `manualDecisions`(0440)
+ *
+ * 온보딩 3/5 준비 현황(`preparedCategories`)은 **받지도 않는다.** 그것은 «이미 정했다»는
+ * 체크일 뿐 결정 카드가 없어, 세면 결정을 취소해도 «완료»가 남는다. Pick «결정 완료»와 홈
+ * «계약 완료»가 이 함수 하나를 쓴다 — 두 벌로 두면 한쪽만 풀리는 날이 온다.
+ */
+export function decidedCategories(source: DecisionSource | null | undefined): ReadonlySet<VendorCategory> {
+  return new Set<VendorCategory>([
+    ...(source?.groups ?? [])
+      .filter((group) => group.decidedVendorId !== null)
+      .map((group) => group.category),
+    ...(source?.manualDecisions ?? []).map((one) => one.category),
+  ]);
+}
+
+/**
+ * 끝난 준비 묶음 — 묶음 안 업종이 **모두** 실제 결정으로 채워졌을 때만(규칙 A). 스드메는
+ * 스튜디오 · 드레스 · 메이크업 · 헤어변형 넷이 다 정해져야 끝난다.
+ */
+export function completedPreparationGroups(
+  decided: ReadonlySet<VendorCategory>
+): ReadonlySet<PreparationGroupKey> {
+  return new Set(
+    PREPARATION_GROUPS.filter(
+      (group) => group.categories.length > 0 && group.categories.every((category) => decided.has(category))
+    ).map((group) => group.key)
+  );
 }

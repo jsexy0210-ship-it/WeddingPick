@@ -286,6 +286,12 @@ main에 반영한 뒤 병합 결과를 확인한다. 세부 기준은 `AGENTS.md
   최소 1개, **개수 제한 없음**(2026-09-26 대표 결정 「개수제한 없다」 — RN 정본 WP-AUTH-006 「개수 제한 없이 원하는 만큼」을 따르고, WP-MY-014 · common 토스트의 「2개까지」는 이 결정으로 진다. 3번째 선택 토스트는 없앴다). 태그는 정렬 가중치로만 쓴다 — 태그가 다르다고 업체를 빼지 않는다.
 - 홈 상태는 2층(진행 0 · 1~8 · 9+ / 정보량 3건 기준)이다. 준비 현황은 홈 4칸 + WP-HOME-009 두 곳뿐.
   코랄은 홈에서 다섯 곳 — 현재 업종 테두리 · 진행바 · 웨딩픽 추천 라벨 · CTA · D-day(2026-09-09 사용자 오더).
+  **예외 하나 — 날씨를 보여주는 동안 히어로 D-day는 날씨 팔레트 색이다**(2026-09-26 대표 결정 · `hero-weather.ts` `HERO_WEATHER_PALETTE`). 날씨 값이 없으면 코랄 그대로.
+- **Pick · 홈 완료 판정은 실제 결정 기준 하나다**(2026-09-26 대표 결정 A · 「홈 계약 완료도 결정 후 완료로 진행」).
+  실제 결정 = Pick한 업체로 정함(`decidedVendorId`) · 이름으로 정함(`manualDecisions`, 0440). **온보딩 준비 현황(`preparedCategories`) 체크만으로는 완료가 아니다.**
+  묶음은 업종이 모두 결정돼야 끝난다(스드메는 넷). 판정 함수는 domain `decidedCategories` · `completedPreparationGroups` 하나 — Pick `completedPickGroups` · 홈 `categoryStatuses`/`homePrepCards` · 서버 후보 목록 진행률·다음 업종 · 준비 팁 단계가 같이 쓴다. 결정을 취소하면 홈에서도 곧바로 풀린다. 두 벌로 만들지 않는다.
+- **후기 쓰기는 바텀시트를 유지한다**(2026-09-26 대표 결정) — RN 정본 WP-LNG-005의 전체 화면 글쓰기보다 이 결정이 이긴다.
+- **온보딩 3/5 「없음」 표시 문구는 「아직 정한 곳이 없어요」다**(2026-09-26 대표 결정 · `onboarding.prepVendor.none`).
 - 검색은 온보딩 값을 미리 걸지 않는다. 알림은 진행 중 업종만 · 하루 2건. 날짜·시간 선택은 **디자인된 휠 시트**다(2026-09-25 대표 지시 — 「디자인된 OS 날짜, 시간 선택기로 구현한다」 · 「온보딩에서 예식일 선택 UX 원복한다」). 로그인 이후 날짜는 년·월·일, 시간은 오전/오후·시·분(10분 단위) 휠 — `features/common/wheel-picker-sheet.tsx`, 값은 정본 `home.js` `wheelSheet`·`note.js` `dateWheels`. 온보딩 예식일은 원래 휠 3열 시트(`OnboardingDatePickerSheet`). 시스템 선택기(`@react-native-community/datetimepicker`)·브라우저 `<input type=date>`는 쓰지 않는다.
 - Npay 수령(WP-EVT-006): 휴대폰 번호는 보내는 데만 쓰고 보낸 뒤 지운다(reward_payouts CHECK). 돈은 사람이 보내고
   `reward-admin --payouts / --sent / --payout-failed`로 사실만 적는다. 본인에게도 번호 전체를 되돌려주지 않는다.

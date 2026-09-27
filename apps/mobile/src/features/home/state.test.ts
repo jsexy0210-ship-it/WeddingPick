@@ -25,6 +25,7 @@ import {
   type CategoryStatus,
 } from './state';
 import { homePrepCards } from './prep-groups';
+import { completedPickGroups } from '../pick/completed-groups';
 
 /* 시안 네 장(0개 · 3/11 · 3/11 정보 부족 · 9/11)을 되살리는 최소한의 자료만 만든다. */
 
@@ -104,6 +105,28 @@ function decidedFirst(n: number): CandidateListResponse['groups'] {
   return HOME_CATEGORIES.slice(0, n).map((category) => group(category, 'decided', 1, `${category}-v0`));
 }
 
+/**
+ * 이름으로만 정한 결정(0440)을 얹는다 — 실제 결정이다. 온보딩 준비 현황(`preparedCategories`)은
+ * 2026-09-26부터 «결정 완료»로 세지 않으므로(대표 결정 A) 정한 업종은 이렇게 만든다.
+ */
+function decidedByName(
+  base: CandidateListResponse | null,
+  categories: readonly string[]
+): CandidateListResponse {
+  const list = base ?? candidates([], null);
+
+  return {
+    ...list,
+    manualDecisions: categories.map((category) => ({
+      category,
+      categoryLabel: category,
+      name: `${category} 직접`,
+      decidedAt: '2026-09-26T00:00:00.000Z',
+      decidedByPartner: false,
+    })),
+  } as unknown as CandidateListResponse;
+}
+
 describe('홈 순서', () => {
   it('11업종이고 웨딩홀부터 시작한다 — 결정사는 없다(2026-09-24)', () => {
     // 시안 1의 격자는 웨딩홀 · 스튜디오 · 드레스 · 메이크업이다.
@@ -122,24 +145,38 @@ describe('1층 · 진행 구간', () => {
     expect(homeTier(12)).toBe('finishing');
   });
 
-  it('준비 현황에서 체크한 업종도 정한 것으로 센다', () => {
-    // 앱 밖에서 정한 업종은 후보 목록에 없거나 업체가 없다 — 그래도 정한 것이다.
-    const statuses = categoryStatuses({
+  it('준비 현황에서 체크만 한 업종은 정한 것이 아니다 — 실제 결정만 센다(2026-09-26 대표 결정 A)', () => {
+    // 온보딩 3/5에서 «이미 정했다»고 체크만 한 웨딩홀 · 드레스. 결정 카드가 없어 «완료»가 아니다.
+    const view = homeView({
+      me: { ...ME, preparedCategories: ['hall', 'dress'] } as unknown as CurrentUser,
       candidates: candidates([group('studio', 'picking', 2)], 'studio'),
-      preparedCategories: ['hall', 'dress'],
+      recommended: [],
+      daysLeft: null,
     });
 
-    expect(statuses.filter((row) => row.state === 'decided').map((row) => row.category)).toEqual([
-      'hall',
-      'dress',
-    ]);
-    expect(statuses.find((row) => row.category === 'hall')?.decidedName).toBeNull();
+    expect(view.decided).toBe(0);
+    expect(view.statuses.filter((row) => row.state === 'decided')).toEqual([]);
+    expect(view.statuses.find((row) => row.category === 'studio')?.state).toBe('picking');
+  });
+
+  it('홈 «계약 완료»는 Pick «결정 완료»와 같은 판정이다 — 결정을 취소하면 풀린다', () => {
+    const decided = candidates([group('hall', 'decided', 2, 'hall-v1')], null);
+    const cancelled = candidates([group('hall', 'picking', 2, null)], null);
+    const card = (list: CandidateListResponse) =>
+      homePrepCards({ statuses: categoryStatuses({ candidates: list }), venueName: null }).find(
+        (one) => one.key === 'start'
+      );
+
+    expect(card(decided)).toMatchObject({ state: 'contracted', detail: '계약 완료 · hall 1' });
+    expect(completedPickGroups(decided).has('start')).toBe(true);
+    // 결정 취소 — 후보는 남아 있어 «상담 예약» 칸으로 돌아가고 «계약 완료»가 사라진다.
+    expect(card(cancelled)?.state).toBe('picking');
+    expect(completedPickGroups(cancelled).has('start')).toBe(false);
   });
 
   it('앱에서 정했으면 업체 이름이 남는다', () => {
     const statuses = categoryStatuses({
       candidates: candidates([group('hall', 'decided', 2, 'hall-v1')], null),
-      preparedCategories: [],
     });
 
     expect(statuses[0]?.decidedName).toBe('hall 1');
@@ -153,21 +190,33 @@ describe('1층 · 진행 구간', () => {
         { category: 'studio', categoryLabel: '스튜디오', name: '청담 스튜디오', decidedAt: '2026-09-26T00:00:00.000Z', decidedByPartner: false },
       ],
     } as unknown as CandidateListResponse;
-    const statuses = categoryStatuses({ candidates: list, preparedCategories: ['hall', 'studio', 'dress', 'makeup', 'hair'] });
+    const statuses = categoryStatuses({ candidates: list });
 
     expect(statuses.find((row) => row.category === 'hall')).toMatchObject({ state: 'decided', decidedName: '우리동네 웨딩컨벤션' });
     expect(statuses.find((row) => row.category === 'studio')).toMatchObject({ state: 'decided', decidedName: '청담 스튜디오' });
 
-    // 홈 「내 웨딩 준비」 — 웨딩홀 · 스드메 칸이 «계약 완료 · 이름».
+    // 홈 「내 웨딩 준비」 — 웨딩홀 칸이 «계약 완료 · 이름». 스드메는 스튜디오 하나만 정해
+    // 아직 끝나지 않았다 — 넷이 다 정해져야 «계약 완료»다(Pick 규칙 A와 같다).
     const cards = homePrepCards({ statuses, venueName: statuses[0]!.decidedName });
 
     expect(cards.find((card) => card.key === 'start')?.detail).toBe('계약 완료 · 우리동네 웨딩컨벤션');
-    expect(cards.find((card) => card.key === 'sdm')?.detail).toBe('계약 완료 · 청담 스튜디오');
+    expect(cards.find((card) => card.key === 'sdm')?.state).not.toBe('contracted');
     expect(cards.find((card) => card.key === 'ceremony')?.state).toBe('todo');
+
+    // 스드메 넷을 다 정하면 «계약 완료 · 청담 스튜디오»(묶음 순서의 첫 결정 이름).
+    const allSdm = decidedByName(null, ['studio', 'dress', 'makeup', 'hair']);
+    const sdm = homePrepCards({
+      statuses: categoryStatuses({
+        candidates: { ...allSdm, manualDecisions: [...list.manualDecisions, ...allSdm.manualDecisions.slice(1)] },
+      }),
+      venueName: null,
+    }).find((card) => card.key === 'sdm');
+
+    expect(sdm).toMatchObject({ state: 'contracted', detail: '계약 완료 · 청담 스튜디오' });
   });
 
   it('후보 목록이 없어도 11칸은 다 있다', () => {
-    expect(categoryStatuses({ candidates: null, preparedCategories: [] })).toHaveLength(11);
+    expect(categoryStatuses({ candidates: null })).toHaveLength(11);
   });
 });
 
@@ -175,27 +224,20 @@ describe('현재 업종', () => {
   it('서버가 지목한 업종을 따른다', () => {
     const statuses = categoryStatuses({
       candidates: candidates([group('dress', 'picking', 2)], 'dress'),
-      preparedCategories: [],
     });
 
     expect(currentCategory(statuses, 'dress')).toBe('dress');
   });
 
   it('지목이 없거나 이미 정한 것이면 안 정한 첫째다', () => {
-    const statuses = categoryStatuses({
-      candidates: candidates([], null),
-      preparedCategories: ['hall'],
-    });
+    const statuses = categoryStatuses({ candidates: decidedByName(null, ['hall']) });
 
     expect(currentCategory(statuses, null)).toBe('studio');
     expect(currentCategory(statuses, 'hall')).toBe('studio');
   });
 
   it('다 정했으면 없는 다음을 지어내지 않는다', () => {
-    const statuses = categoryStatuses({
-      candidates: candidates([], null),
-      preparedCategories: [...HOME_CATEGORIES],
-    });
+    const statuses = categoryStatuses({ candidates: decidedByName(null, HOME_CATEGORIES) });
 
     expect(currentCategory(statuses, null)).toBeNull();
   });
@@ -250,7 +292,7 @@ describe('준비 현황 4칸', () => {
   });
 
   it('0개 — 순서상 첫 4개, 첫 칸만 코랄', () => {
-    const statuses = categoryStatuses({ candidates: null, preparedCategories: [] });
+    const statuses = categoryStatuses({ candidates: null });
     const cells = boardCells({ tier: 'start', statuses, current: 'hall' });
 
     expect(cells.map((cell) => cell.value)).toEqual(['먼저', '시작 전', '시작 전', '시작 전']);
@@ -261,7 +303,6 @@ describe('준비 현황 4칸', () => {
     // 시안 2: 웨딩홀 완료 · 스튜디오 완료 · 드레스 완료 · 메이크업 3곳.
     const statuses = categoryStatuses({
       candidates: candidates([...decidedFirst(3), group('makeup', 'picking', 3)], 'makeup'),
-      preparedCategories: [],
     });
     const cells = boardCells({ tier: 'going', statuses, current: 'makeup' });
 
@@ -277,7 +318,6 @@ describe('준비 현황 4칸', () => {
   it('1~8개 — 끝낸 것이 하나면 그다음 올 업종으로 채운다', () => {
     const statuses = categoryStatuses({
       candidates: candidates(decidedFirst(1), 'studio'),
-      preparedCategories: [],
     });
     const cells = boardCells({ tier: 'going', statuses, current: 'studio' });
 
@@ -289,7 +329,6 @@ describe('준비 현황 4칸', () => {
     // 웨딩홀 ~ 본식스냅 여섯을 정했고 지금은 부케. 격자에는 메이크업부터 온다.
     const statuses = categoryStatuses({
       candidates: candidates(decidedFirst(6), 'bouquet'),
-      preparedCategories: [],
     });
     const cells = boardCells({ tier: 'going', statuses, current: 'bouquet' });
 
@@ -301,8 +340,7 @@ describe('준비 현황 4칸', () => {
     // 시안 3: 청첩장 2곳 · 예물 시작 전 · 허니문 시작 전 · 본식스냅 완료.
     const done = HOME_CATEGORIES.filter((c) => !['invitation', 'goods', 'honeymoon'].includes(c));
     const statuses = categoryStatuses({
-      candidates: candidates([group('invitation', 'picking', 2)], 'invitation'),
-      preparedCategories: done,
+      candidates: decidedByName(candidates([group('invitation', 'picking', 2)], 'invitation'), done),
     });
     const cells = boardCells({ tier: 'finishing', statuses, current: 'invitation' });
 
@@ -317,10 +355,7 @@ describe('준비 현황 4칸', () => {
   });
 
   it('11/11 — 네 칸 다 완료', () => {
-    const statuses = categoryStatuses({
-      candidates: null,
-      preparedCategories: [...HOME_CATEGORIES],
-    });
+    const statuses = categoryStatuses({ candidates: decidedByName(null, HOME_CATEGORIES) });
     const cells = boardCells({ tier: 'finishing', statuses, current: null });
 
     expect(cells).toHaveLength(4);
@@ -417,7 +452,7 @@ describe('조건 칩', () => {
 
 describe('다음 준비', () => {
   it('0개 — 그다음 업종을 대기로', () => {
-    const statuses = categoryStatuses({ candidates: null, preparedCategories: [] });
+    const statuses = categoryStatuses({ candidates: null });
 
     expect(nextStep({ tier: 'start', statuses, current: 'hall', daysLeft: 142 })).toEqual({
       title: '그다음은',
@@ -431,7 +466,6 @@ describe('다음 준비', () => {
   it('1~8개 — 다음 업종과 D-day', () => {
     const statuses = categoryStatuses({
       candidates: candidates([...decidedFirst(3), group('makeup', 'picking', 3)], 'makeup'),
-      preparedCategories: [],
     });
     const step = nextStep({ tier: 'going', statuses, current: 'makeup', daysLeft: 60 });
 
@@ -442,7 +476,7 @@ describe('다음 준비', () => {
   });
 
   it('예식일이 없으면 D-day 대신 미정', () => {
-    const statuses = categoryStatuses({ candidates: candidates(decidedFirst(1), null), preparedCategories: [] });
+    const statuses = categoryStatuses({ candidates: candidates(decidedFirst(1), null) });
 
     expect(nextStep({ tier: 'going', statuses, current: 'studio', daysLeft: null })?.aside).toBe(
       '예식일 미정'
@@ -450,10 +484,7 @@ describe('다음 준비', () => {
   });
 
   it('9개 이상 — Pick 인증으로 바꾼다', () => {
-    const statuses = categoryStatuses({
-      candidates: null,
-      preparedCategories: HOME_CATEGORIES.slice(0, 9),
-    });
+    const statuses = categoryStatuses({ candidates: decidedByName(null, HOME_CATEGORIES.slice(0, 9)) });
 
     expect(nextStep({ tier: 'finishing', statuses, current: 'goods', daysLeft: 20 })).toEqual({
       title: '정리하면 좋은 것',
@@ -481,8 +512,8 @@ describe('홈 종합', () => {
 
   it('시안 3 · 9/11', () => {
     const view = homeView({
-      me: { ...ME, preparedCategories: HOME_CATEGORIES.slice(0, 9) } as unknown as CurrentUser,
-      candidates: candidates([group('goods', 'picking', 2)], 'goods'),
+      me: ME,
+      candidates: decidedByName(candidates([group('goods', 'picking', 2)], 'goods'), HOME_CATEGORIES.slice(0, 9)),
       recommended: PRICED,
       daysLeft: 20,
     });

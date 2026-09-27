@@ -7,9 +7,10 @@ import { createTestApp, createWedding, resetDatabase, signInAs, type TestApp } f
  * **실제 DB**에 맞대어 본다(2026-09-26 대표 오더 「준비단계에 맞춰 콘텐츠를 추천한다」).
  *
  * 단계 규칙 자체는 domain `preparation-stage.test.ts`가 경계마다 본다. 여기서 보는 것은
- * 서버가 그 규칙에 **맞는 값을 넣는가**다 — 예식일을 한국 날짜로 세는가, 준비 현황
- * (`prepared_categories`)과 앱의 결정(`category_decisions`) · 담는 중(`vendor_candidates`)을
- * 모두 읽는가, 단계를 모를 때 원래 순서로 돌아가는가.
+ * 서버가 그 규칙에 **맞는 값을 넣는가**다 — 예식일을 한국 날짜로 세는가, 앱의 결정
+ * (`category_decisions` — 업체 · 직접 입력) · 담는 중(`vendor_candidates`)을 읽는가, 준비 현황
+ * (`prepared_categories`) 체크만은 결정으로 세지 않는가(2026-09-26 대표 결정 A), 단계를 모를 때
+ * 원래 순서로 돌아가는가.
  */
 const describeWithDb = process.env.DATABASE_URL ? describe : describe.skip;
 
@@ -37,7 +38,10 @@ async function seedTopicPosts(): Promise<Map<string, string>> {
 }
 
 /** 로그인 + 웨딩 하나. 예식일은 **한국 날짜** 기준 오늘에서 `daysLeft`일 뒤다. */
-async function member(subject: string, setup: { daysLeft: number | null; prepared?: string[] }) {
+async function member(
+  subject: string,
+  setup: { daysLeft: number | null; prepared?: string[]; decidedByName?: string[] }
+) {
   const { headers } = await signInAs(test, subject);
   const weddingId = await createWedding(test, headers);
 
@@ -49,6 +53,14 @@ async function member(subject: string, setup: { daysLeft: number | null; prepare
      WHERE id = $1`,
     [weddingId, setup.daysLeft, setup.prepared ?? []]
   );
+  /* 이름으로만 정한 결정(0440) — 실제 결정이다. */
+  for (const category of setup.decidedByName ?? []) {
+    await test.pool.query(
+      `INSERT INTO structured.category_decisions (wedding_id, category, vendor_id, manual_name)
+       VALUES ($1, $2::vendor_category, NULL, '직접 입력한 곳')`,
+      [weddingId, category]
+    );
+  }
 
   return { headers, weddingId };
 }
@@ -112,10 +124,16 @@ describeWithDb('웨딩 준비 팁 — 준비 단계 순서(실제 DB)', () => {
     expect(await home(headers)).toEqual(['hall-visit', 'guest-count']);
   });
 
-  it('D-120 · 준비 현황에서 웨딩홀을 정함 — 스튜디오와 스드메 예산', async () => {
-    const { headers } = await member('sdm', { daysLeft: 120, prepared: ['hall'] });
+  it('D-120 · 웨딩홀을 이름으로 정함 — 스튜디오와 스드메 예산', async () => {
+    const { headers } = await member('sdm', { daysLeft: 120, decidedByName: ['hall'] });
 
     expect(await home(headers)).toEqual(['studio-pick', 'budget-sdm']);
+  });
+
+  it('D-120 · 준비 현황에서 웨딩홀을 체크만 함 — 결정이 아니라 웨딩홀 글이 먼저다(2026-09-26 대표 결정 A)', async () => {
+    const { headers } = await member('prepared-only', { daysLeft: 120, prepared: ['hall'] });
+
+    expect(await home(headers)).toEqual(['hall-visit', 'guest-count']);
   });
 
   it('앱에서 웨딩홀을 결정해도 같다 — category_decisions를 읽는다', async () => {
@@ -140,7 +158,7 @@ describeWithDb('웨딩 준비 팁 — 준비 단계 순서(실제 DB)', () => {
   });
 
   it('드레스 후보를 담는 중이면 드레스 글이 먼저다 — 홈 히어로와 같은 업종', async () => {
-    const { headers, weddingId } = await member('picking-dress', { daysLeft: 200, prepared: ['hall'] });
+    const { headers, weddingId } = await member('picking-dress', { daysLeft: 200, decidedByName: ['hall'] });
     const dress = await aVendor('청담 B 드레스', 'dress');
 
     await test.app.inject({
@@ -154,7 +172,7 @@ describeWithDb('웨딩 준비 팁 — 준비 단계 순서(실제 DB)', () => {
   });
 
   it('D-20 — 한 달 전 체크리스트와 하객', async () => {
-    const { headers } = await member('final', { daysLeft: 20, prepared: ['hall'] });
+    const { headers } = await member('final', { daysLeft: 20, decidedByName: ['hall'] });
 
     expect(await home(headers)).toEqual(['checklist-1m', 'guest-count']);
   });
@@ -186,7 +204,7 @@ describeWithDb('웨딩 준비 팁 — 준비 단계 순서(실제 DB)', () => {
         [label, `글 ${index}`, index]
       );
     }
-    const { headers } = await member('no-match', { daysLeft: 120, prepared: ['hall'] });
+    const { headers } = await member('no-match', { daysLeft: 120, decidedByName: ['hall'] });
 
     const response = await test.app.inject({
       method: 'GET',

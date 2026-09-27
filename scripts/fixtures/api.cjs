@@ -2066,6 +2066,21 @@ if (process.env.FIXTURE_DAYS_LEFT !== undefined || process.env.FIXTURE_PREPARED 
   };
 }
 
+/*
+ * 홈 «내 웨딩 준비» 완료 판정 캡처 스위치(2026-09-26 대표 결정 「홈 계약 완료도 결정 후 완료로
+ * 진행」). 켤 때만 덮는다.
+ *
+ *   FIXTURE_HOME_CANDIDATES=true  홈 부트스트랩의 담아둔 후보를 후보 목록(`GET …/candidates`)과
+ *                                 같게 — `FIXTURE_PICK_CANON=true`와 같이 켜면 웨딩홀 · 스튜디오
+ *                                 결정이 홈에도 실린다. 끄면 부트스트랩 후보는 null 그대로다.
+ */
+if (process.env.FIXTURE_HOME_CANDIDATES === 'true') {
+  routes['GET /v1/app/bootstrap'] = {
+    ...routes['GET /v1/app/bootstrap'],
+    candidates: routes['GET /v1/weddings/:weddingId/candidates'],
+  };
+}
+
 /**
  * 홈 히어로 — 배우자 연결 현황 · 날씨(2026-09-26 대표 지시). 켤 때만 덮는다.
  *

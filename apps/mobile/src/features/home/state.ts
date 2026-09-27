@@ -1,6 +1,7 @@
 import type { CandidateListResponse, CurrentUser, VendorSummary } from '@weddingpick/api-contract';
 import {
   BUDGET_BRACKET_LABEL,
+  decidedCategories,
   formatDday,
   MIN_COMPARABLE,
   PREPARATION_CATEGORIES,
@@ -51,33 +52,35 @@ export type CategoryStatus = {
   state: PreparationState;
   /** 담아둔 후보 수. */
   pickCount: number;
-  /** 앱에서 정한 업체 이름. 앱 밖에서 정했다고 체크만 한 업종은 null. */
+  /** 정한 곳의 이름 — Pick한 업체 이름이나 직접 입력한 이름. 안 정했으면 null. */
   decidedName: string | null;
 };
 
 /**
- * 12업종 각각이 어디까지 왔는가.
+ * 11업종 각각이 어디까지 왔는가.
  *
- * 후보 목록(`groups`)이 말하는 상태와 준비 현황(온보딩 3/5)에서 «이미 정했다»고
- * 체크한 업종(`preparedCategories`)을 합친다. 뒤쪽은 업체가 없어 `decidedVendorId`가
- * null이고, 후보 목록이 아직 안 왔을 때도(오프라인 등) 그 사실만은 알 수 있다.
+ * **«결정 완료»는 실제 결정 하나로만 정한다**(2026-09-26 대표 결정 A · 「홈 계약 완료도 결정
+ * 후 완료로 진행」) — Pick한 업체로 정함(`groups[].decidedVendorId`) · 이름으로만 정함
+ * (`manualDecisions`, 0440). 판정은 domain `decidedCategories` 하나이고 Pick의
+ * `completedPickGroups`와 같은 함수다.
+ *
+ * 온보딩 3/5 준비 현황(`preparedCategories`)은 **받지 않는다.** «이미 정했다»는 체크일 뿐
+ * 결정 카드가 없어, 세면 결정을 취소해도 홈에 «계약 완료»가 남는다. 그 전(2026-09-26까지)에는
+ * 여기서 준비 현황을 «결정 완료»로 합쳐 Pick과 홈이 갈렸다.
  */
-export function categoryStatuses(input: {
-  candidates: CandidateListResponse | null;
-  preparedCategories: readonly string[];
-}): CategoryStatus[] {
+export function categoryStatuses(input: { candidates: CandidateListResponse | null }): CategoryStatus[] {
   const groups = input.candidates?.groups ?? [];
+  const decided = decidedCategories(input.candidates);
 
   return HOME_CATEGORIES.map((category) => {
     const group = groups.find((row) => row.category === category) ?? null;
-    const prepared = input.preparedCategories.includes(category);
     /* 목록에 없어 이름으로만 정한 곳(0440). 후보가 아니라 `groups`에 없다. */
     const manual = input.candidates?.manualDecisions?.find((row) => row.category === category) ?? null;
-    const state: PreparationState =
-      group?.state === 'decided' || prepared || manual !== null ? 'decided' : (group?.state ?? 'before');
+    const pickCount = group?.candidates.length ?? 0;
+    const state: PreparationState = decided.has(category) ? 'decided' : pickCount > 0 ? 'picking' : 'before';
     /*
      * 결정한 곳의 이름 — Pick한 업체로 정했으면 그 후보의 이름, 목록에 없어 직접 입력했으면
-     * 적어 둔 이름(0440 · 2026-09-26 대표 지시). 체크만 한 업종은 null이다.
+     * 적어 둔 이름(0440 · 2026-09-26 대표 지시).
      */
     const decidedName =
       state !== 'decided'
@@ -90,7 +93,7 @@ export function categoryStatuses(input: {
       category,
       label: group?.categoryLabel ?? VENDOR_CATEGORY_LABEL[category],
       state,
-      pickCount: group?.candidates.length ?? 0,
+      pickCount,
       decidedName,
     };
   });
@@ -488,10 +491,7 @@ export function homeView(input: {
   recommended: readonly VendorSummary[];
   daysLeft: number | null;
 }): HomeView {
-  const statuses = categoryStatuses({
-    candidates: input.candidates,
-    preparedCategories: input.me?.preparedCategories ?? [],
-  });
+  const statuses = categoryStatuses({ candidates: input.candidates });
   const decided = decidedCount(statuses);
   const tier = homeTier(decided);
   const current = currentCategory(statuses, input.candidates?.nextCategory ?? null);
