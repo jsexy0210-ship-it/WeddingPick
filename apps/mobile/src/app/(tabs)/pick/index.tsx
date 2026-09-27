@@ -289,7 +289,9 @@ export default function PickScreen() {
       rows: section.rows.filter((row) => tab === 'completed' ? row.isDecided : !row.isDecided),
       manual: tab === 'completed' ? section.manual : [],
     }))
-    .filter((section) => section.rows.length > 0 || section.manual.length > 0);
+    .filter((section) => section.rows.length > 0 || section.manual.length > 0)
+    /* 홈 준비 카드에서 들어온 묶음은 먼저 보여주되 나머지 Pick 목록도 이어서 보여 준다. */
+    .sort((left, right) => left.key === requestedGroup ? -1 : right.key === requestedGroup ? 1 : 0);
   const weddingId = me?.weddingId ?? null;
   const recsFor = (key: string): readonly VendorSummary[] =>
     recs?.groups.find((group) => group.key === key)?.vendors ?? [];

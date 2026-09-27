@@ -179,6 +179,29 @@ describe('Pick — 온보딩에서 정한 곳', () => {
     expect(pressables('완료')[0]!.props.accessibilityState).toEqual({ selected: true });
   });
 
+  it('홈에서 들어온 묶음을 먼저 보여주고 다른 Pick도 이어서 보여준다', async () => {
+    const hall = PAGE.groups[0]!;
+    jest.mocked(listCandidates).mockResolvedValue({
+      ...PAGE,
+      groups: [
+        { ...hall, state: 'picking', stateLabel: '후보 Pick 중', decidedVendorId: null },
+        {
+          ...hall, category: 'studio', categoryLabel: '스튜디오', state: 'picking', stateLabel: '후보 Pick 중', decidedVendorId: null,
+          candidates: [{ ...hall.candidates[0]!, id: 'c2222222-2222-4222-8222-222222222222', vendorId: '22222222-2222-4222-8222-222222222222', vendorName: '블루밍 스튜디오', category: 'studio' }],
+        },
+      ],
+      manualDecisions: [],
+    });
+    mockParams.group = 'sdm';
+    await act(async () => {
+      tree.unmount();
+      tree = create(<SafeAreaProvider initialMetrics={METRICS}><PickScreen /></SafeAreaProvider>);
+    });
+    await act(async () => { await Promise.resolve(); });
+    expect(texts().indexOf('스드메')).toBeLessThan(texts().indexOf('웨딩홀'));
+    expect(texts()).toContain('강남 A 웨딩홀');
+  });
+
   it('모든 업종을 정했으면 완료를 안내하고 검색 빈 상태를 내지 않는다', async () => {
     jest.mocked(listCandidates).mockResolvedValue({
       ...PAGE,
