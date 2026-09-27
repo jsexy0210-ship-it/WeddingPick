@@ -1,10 +1,7 @@
 /**
  * 약관 동의 · 권한 안내(WP-AUTH-010) · 약관 상세 풀팝업(WP-AUTH-011) 콘텐츠.
  *
- * v3.29 정본 `docs/design/html/대메뉴_홈(로그인, 온보딩).dc.html`의 `agreeReq` ·
- * `agreeOpt` · `perms` · `TERM_DOCS`를 그대로 옮긴다. 문구는 임의로 바꾸지 않는다
- * (CLAUDE.md 「.dc.html은 디자인 레퍼런스다 … 문구는 그대로 쓰고 임의로 바꾸지
- * 않는다」).
+ * 2026-09-27 지시에 따라 약관명만 붙여 쓴다. 조문은 디자인 임시 문구를 유지한다.
  *
  * **6탭 조문은 아직 목업이다.** v3.29 정본 — 「약관 조문은 법무 확정 전 임시
  * 문구」(README.md 「미확정」) — 이고, 실제 조문 데이터는 관리자 그룹이 별도로
@@ -44,10 +41,10 @@ export type ConsentAgreementItem = {
 /** 필수 5 — dc.html `agreeReq` 순서 그대로. */
 export const REQUIRED_AGREEMENT_ITEMS: readonly ConsentAgreementItem[] = [
   { key: 'age', required: true, label: '만 14세 이상이에요', hasDoc: false },
-  { key: 'terms', required: true, label: '서비스 이용약관', hasDoc: true },
-  { key: 'privacy', required: true, label: '개인정보 수집 · 이용', hasDoc: true },
-  { key: 'pick_certification', required: true, label: 'Pick 인증 자료 수집 · 이용', hasDoc: true },
-  { key: 'consultation_recording', required: true, label: '상담 녹음 수집 · 이용', hasDoc: true },
+  { key: 'terms', required: true, label: '서비스이용약관', hasDoc: true },
+  { key: 'privacy', required: true, label: '개인정보수집·이용', hasDoc: true },
+  { key: 'pick_certification', required: true, label: 'Pick인증자료수집·이용', hasDoc: true },
+  { key: 'consultation_recording', required: true, label: '상담녹음수집·이용', hasDoc: true },
 ];
 
 /** 선택 3 — dc.html `agreeOpt` 순서 그대로. */
@@ -93,7 +90,7 @@ export const TERM_DOCUMENTS: readonly TermDocument[] = [
   {
     key: 'terms',
     tab: '이용약관',
-    title: '서비스 이용약관',
+    title: '서비스이용약관',
     meta: 'v1.0 · 2026년 9월 1일 시행 · 필수',
     articles: [
       {
@@ -141,7 +138,7 @@ export const TERM_DOCUMENTS: readonly TermDocument[] = [
   {
     key: 'privacy',
     tab: '개인정보',
-    title: '개인정보 수집 · 이용',
+    title: '개인정보수집·이용',
     meta: 'v1.0 · 2026년 9월 1일 시행 · 필수',
     articles: [
       {
@@ -164,8 +161,8 @@ export const TERM_DOCUMENTS: readonly TermDocument[] = [
   },
   {
     key: 'pick_certification',
-    tab: 'Pick 인증',
-    title: 'Pick 인증 자료 수집 · 이용',
+    tab: 'Pick인증',
+    title: 'Pick인증자료수집·이용',
     meta: 'v1.0 · 2026년 9월 1일 시행 · 필수',
     articles: [
       {
@@ -192,8 +189,8 @@ export const TERM_DOCUMENTS: readonly TermDocument[] = [
   },
   {
     key: 'consultation_recording',
-    tab: '상담 녹음',
-    title: '상담 녹음 수집 · 이용',
+    tab: '상담녹음',
+    title: '상담녹음수집·이용',
     meta: 'v1.0 · 2026년 9월 1일 시행 · 필수',
     articles: [
       { title: '수집 항목', body: '회원이 녹음하거나 올린 상담 음성 파일, 상담 업체명, 상담 일시.' },
@@ -217,7 +214,7 @@ export const TERM_DOCUMENTS: readonly TermDocument[] = [
   },
   {
     key: 'contact_share',
-    tab: '제3자 제공',
+    tab: '제3자제공',
     title: '상담 예약 시 연락처 제공',
     meta: 'v1.0 · 2026년 9월 1일 시행 · 선택',
     articles: [
@@ -233,7 +230,7 @@ export const TERM_DOCUMENTS: readonly TermDocument[] = [
   },
   {
     key: 'benefit_alerts',
-    tab: '혜택 알림',
+    tab: '혜택알림',
     title: '혜택 · 이벤트 알림 수신',
     meta: 'v1.0 · 2026년 9월 1일 시행 · 선택',
     articles: [
@@ -298,10 +295,8 @@ export function acceptedSignupItems(state: {
  * 약관 상세 풀팝업(WP-AUTH-011)의 탭 — 위 6탭에 «개인정보처리방침»을 더한 것
  * (2026-09-26 대표 지시 「개인정보처리방침을 공통 약관 풀팝업 탭으로 연다」).
  *
- * 개인정보처리방침은 동의 항목이 아니라 **웹사이트 원문**이다(CLAUDE.md 「약관과
- * 개인정보처리방침의 정본은 웹사이트다」) — 조문을 여기 들지 않고 탭 이름만 둔다. 본문은
- * 화면이 `POLICY_DOCUMENTS`의 `privacy` 주소(`/privacy.html`)를 앱 안에 불러 그린다 —
- * `/my/privacy-policy`가 그리던 것과 같은 원문이다.
+ * 개인정보처리방침은 동의 항목이 아니라 관리자 공개 문서다. 조문을 여기 들지 않고
+ * 탭 이름만 둔다. 앱과 웹은 같은 `/v1/legal/privacy` 공개판을 각각 렌더한다.
  *
  * 자리는 «이용약관» 바로 뒤다 — MY 약관 목록(서비스 이용약관 · 개인정보처리방침)과 같은
  * 순서이고, 맨 끝에 두면 390 폭에서 그 탭이 화면 밖에 걸린 채 열린다. 정본에 7번째 탭

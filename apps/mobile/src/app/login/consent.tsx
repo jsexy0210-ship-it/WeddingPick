@@ -201,12 +201,12 @@ export default function ConsentScreen() {
           <Pressable
             accessibilityRole="checkbox"
             accessibilityState={{ checked: allChecked }}
-            accessibilityLabel="전체 동의"
+            accessibilityLabel="전체동의"
             onPress={toggleAll}
             style={[styles.allRow, { backgroundColor: CanonGray.gray100 }]}>
             <Mark on={allChecked} />
             <ThemedText type="f17" style={styles.bold}>
-              전체 동의
+              전체동의
             </ThemedText>
           </Pressable>
 

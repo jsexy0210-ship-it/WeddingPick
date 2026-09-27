@@ -14,8 +14,8 @@ const { join } = require('path') as { join: (...parts: string[]) => string };
 
 /**
  * 2026-09-26 대표 지시 — 개인정보처리방침을 공통 약관 풀팝업(WP-AUTH-011)의 탭으로 연다.
- * 본문은 `/my/privacy-policy`가 그리던 웹사이트 원문(`PolicyDocumentBody id="privacy"`)
- * 그대로이고, MY 행과 저장된 링크 둘 다 이 탭으로 연다.
+ * 본문은 관리자 공개판(`PolicyDocumentBody id="privacy"`)을 RN으로 그리며,
+ * MY 행과 저장된 링크 둘 다 이 탭으로 연다.
  */
 
 const mockDepthBack = jest.fn();
@@ -53,7 +53,7 @@ describe('약관 풀팝업 — 개인정보처리방침 탭', () => {
     expect(tree.root.findAllByType('PolicyDocumentBody' as never)).toHaveLength(0);
   });
 
-  it('개인정보처리방침 탭으로 열면 그 탭이 선택되고 웹사이트 원문 본문을 그린다', () => {
+  it('개인정보처리방침 탭으로 열면 공개판을 읽는 RN 본문을 그린다', () => {
     act(() => {
       tree = create(<TermsDetailModal visible initialKey={PRIVACY_POLICY_TAB_KEY} onClose={() => undefined} />);
     });
@@ -75,7 +75,7 @@ describe('약관 풀팝업 — 개인정보처리방침 탭', () => {
     act(() => terms.props.onPress());
 
     expect(tree.root.findAllByType('PolicyDocumentBody' as never)).toHaveLength(0);
-    expect(JSON.stringify(tree.toJSON())).toContain('서비스 이용약관');
+    expect(JSON.stringify(tree.toJSON())).toContain('서비스이용약관');
   });
 
   it('저장된 링크 /my/privacy-policy는 같은 풀팝업을 그 탭으로 열고, 닫으면 Depth Back이다', () => {

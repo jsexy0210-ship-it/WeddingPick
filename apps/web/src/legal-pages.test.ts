@@ -70,7 +70,7 @@ describe('공개 법적 문서', () => {
 
     expect(links.length).toBeGreaterThan(10);
     for (const [, id] of links) expect(html).toContain(`id="${id}"`);
-    expect(html).toContain('<summary>목차 보기</summary>');
+    expect(html).toContain('<summary>목차보기</summary>');
   });
 
   /*
@@ -97,5 +97,6 @@ describe('공개 법적 문서', () => {
       expect(html).not.toContain('시행일 2026년 10월 1일');
       expect(html).not.toContain('v2.0');
     }
+    expect(terms).toContain('웨딩픽 서비스이용약관');
   });
 });
