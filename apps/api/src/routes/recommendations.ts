@@ -66,7 +66,7 @@ type CandidateRow = {
 type ViewerRow = {
   region: string | null;
   budget_bracket: WeddingBudgetBracket | null;
-  prepared_categories: VendorCategory[];
+  decided_categories: VendorCategory[];
   style_tags: string[] | null;
 };
 
@@ -115,11 +115,12 @@ export async function recommendVendors(
     ? (
         await context.pool.query<ViewerRow>(
           /* enum 배열은 드라이버가 문자열 '{a,b}'로 준다 — text[]로 바꿔 읽는다. */
-          `SELECT region, budget_bracket,
-                  prepared_categories::text[] AS prepared_categories,
-                  style_tags::text[] AS style_tags
-           FROM structured.weddings
-           WHERE owner_user_id = $1 OR partner_user_id = $1
+          `SELECT w.region, w.budget_bracket,
+                  ARRAY(SELECT d.category::text FROM structured.category_decisions d
+                        WHERE d.wedding_id = w.id) AS decided_categories,
+                  w.style_tags::text[] AS style_tags
+           FROM structured.weddings w
+           WHERE w.owner_user_id = $1 OR w.partner_user_id = $1
            ORDER BY created_at LIMIT 1`,
           [input.userId]
         )
@@ -129,19 +130,18 @@ export async function recommendVendors(
   /* 온보딩의 `그 외`는 전국이다 — 지역으로 거르지 않는다(regionFilter). */
   const region = regionFilter(input.region ?? viewer?.region ?? null);
   const budgetBracket = viewer?.budget_bracket ?? null;
-  const prepared = viewer?.prepared_categories ?? [];
+  const decided = viewer?.decided_categories ?? [];
   const chosenStyles = (viewer?.style_tags ?? []).filter(isWeddingStyle);
   const limit = input.limit ?? TOP3_LIMIT;
   /*
-   * 업종을 안 주면 준비 현황(3/5)에서 아직 안 정한 첫 업종을 본다 — 이미 정한
-   * 업종을 추천하면 «이미 골랐는데 왜 또?»가 된다(v3.19). 아무것도 안 정했으면
+   * 업종을 안 주면 실제 결정이 없는 첫 업종을 본다. 아무것도 안 정했으면
    * 웨딩홀부터 — 준비 순서에서 가장 먼저 정해지는 업종이고, 나머지 업종의
    * 날짜와 예산이 여기서 갈린다. 화면이 업종을 콕 집어 보내면 그대로 따른다.
    */
   const category: VendorCategory =
     input.category ??
-    nextTasteCategory(prepared) ??
-    PREPARATION_CATEGORIES.find((candidate) => !prepared.includes(candidate)) ??
+    nextTasteCategory(decided) ??
+    PREPARATION_CATEGORIES.find((candidate) => !decided.includes(candidate)) ??
     'hall';
 
   /*
@@ -305,8 +305,8 @@ export async function categoryRecommendations(
   remainingCategories: VendorCategory[];
 }> {
   const wedding = (
-    await context.pool.query<{ id: string; prepared_categories: VendorCategory[] }>(
-      `SELECT id, prepared_categories::text[] AS prepared_categories
+    await context.pool.query<{ id: string }>(
+      `SELECT id
        FROM structured.weddings
        WHERE owner_user_id = $1 OR partner_user_id = $1
        ORDER BY created_at LIMIT 1`,
@@ -318,7 +318,6 @@ export async function categoryRecommendations(
    * 웨딩이 없으면 준비 상태도 없다. 그래도 빈 목록을 돌려주지 않는다 — 준비 순서의 앞에서부터
    * 시작 전으로 세운다. 온보딩을 막 끝낸 사람이 홈에서 빈 자리를 보는 것이 가장 나쁘다.
    */
-  const prepared = new Set(wedding?.prepared_categories ?? []);
   const progress = new Map<VendorCategory, { state: PreparationState; pickCount: number }>();
 
   if (wedding) {
@@ -348,7 +347,6 @@ export async function categoryRecommendations(
       state: categoryPickState({
         state: row?.state ?? 'before',
         pickCount,
-        prepared: prepared.has(category),
       }),
     };
   })
@@ -448,7 +446,7 @@ async function vendorsFor(
  * 뽑는다(웨딩홀 한 업종인 묶음은 웨딩홀만, 스드메는 스튜디오 → 드레스 → 메이크업 → 헤어변형 …).
  * 모델 호출은 없다.
  *
- *   준비 현황   온보딩에서 «이미 정했다»고 고른 업종은 뺀다 — 정한 업종을 또 권하지 않는다.
+ *   실제 결정   업체 결정·직접 입력으로 정한 업종은 뺀다.
  *   담은 곳     이미 Pick에 담은 업체는 뺀다 — 후보 줄에 이미 있다.
  *   모자라면    자격(이유)이 붙는 곳이 5곳이 안 되면 같은 업종에서 지역이 맞는 곳 → 실 제보
  *               많은 곳 → 이름순으로 채운다. 온보딩 값이 비어 있으면 전부 이 기본 정렬이다.
@@ -458,16 +456,18 @@ export async function pickRecommendations(
   input: { userId: string }
 ): Promise<{ groups: { key: PreparationGroupKey; vendors: VendorSummary[] }[] }> {
   const wedding = (
-    await context.pool.query<{ id: string; region: string | null; prepared_categories: VendorCategory[] }>(
-      `SELECT id, region, prepared_categories::text[] AS prepared_categories
-       FROM structured.weddings
-       WHERE owner_user_id = $1 OR partner_user_id = $1
+    await context.pool.query<{ id: string; region: string | null; decided_categories: VendorCategory[] }>(
+      `SELECT w.id, w.region,
+              ARRAY(SELECT d.category::text FROM structured.category_decisions d
+                    WHERE d.wedding_id = w.id) AS decided_categories
+       FROM structured.weddings w
+       WHERE w.owner_user_id = $1 OR w.partner_user_id = $1
        ORDER BY created_at LIMIT 1`,
       [input.userId]
     )
   ).rows[0];
 
-  const prepared = new Set(wedding?.prepared_categories ?? []);
+  const decided = new Set(wedding?.decided_categories ?? []);
   const picked = wedding
     ? (
         await context.pool.query<{ vendor_id: string }>(
@@ -482,7 +482,7 @@ export async function pickRecommendations(
 
   const groups = await Promise.all(
     PREPARATION_GROUPS.map(async (group) => {
-      const categories = group.categories.filter((category) => !prepared.has(category));
+      const categories = group.categories.filter((category) => !decided.has(category));
       if (categories.length === 0) return { key: group.key, vendors: [] as VendorSummary[] };
 
       /* 업종마다 추천 순서. 담은 곳을 빼고도 5곳이 남도록 담은 수만큼 더 읽는다. */

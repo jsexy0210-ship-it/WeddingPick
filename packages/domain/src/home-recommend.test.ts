@@ -15,10 +15,6 @@ describe('categoryPickState', () => {
     expect(categoryPickState({ state: 'decided', pickCount: 5 })).toBe('DECIDED');
   });
 
-  it('온보딩에서 이미 정했다고 고른 업종도 DECIDED다 — 업체가 없어도 끝난 준비다', () => {
-    expect(categoryPickState({ state: 'before', pickCount: 0, prepared: true })).toBe('DECIDED');
-  });
-
   it('Pick 둘 이상이면 COMPARING — 견줄 수 있는 상태다', () => {
     expect(categoryPickState({ state: 'picking', pickCount: 2 })).toBe('COMPARING');
     expect(categoryPickState({ state: 'picking', pickCount: 9 })).toBe('COMPARING');
@@ -41,9 +37,7 @@ describe('categoryPickState', () => {
 
     for (const state of ['before', 'picking', 'decided'] as const) {
       for (const pickCount of [0, 1, 2, 7]) {
-        for (const prepared of [false, true]) {
-          produced.add(categoryPickState({ state, pickCount, prepared }));
-        }
+        produced.add(categoryPickState({ state, pickCount }));
       }
     }
 

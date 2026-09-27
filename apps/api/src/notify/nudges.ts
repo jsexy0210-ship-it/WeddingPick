@@ -31,13 +31,11 @@ import { deliver, type Deliverable, type DeliveryResult } from './send';
 /**
  * 이 웨딩에서 지금 진행 중인 업종.
  *
- * 진행 중 = 후보를 담았고(`vendor_candidates`), 앱 안에서 정하지 않았고
- * (`category_decisions`), 앱 밖에서 이미 정했다고 고르지도 않은(`prepared_categories`)
+ * 진행 중 = 후보를 담았고(`vendor_candidates`), 실제 결정(`category_decisions`)이 없는
  * 업종. Pick 후보 변화 · 금액 변경 · 혜택 알림이 전부 이 집합만 본다 — 각자
  * 조건을 적으면 한 곳만 고쳐지는 날이 온다.
  *
- * `wedding_preparation` 뷰(0041)가 앞의 둘을 계산하고, 0088의 prepared_categories를
- * 여기서 겹친다.
+ * `wedding_preparation` 뷰(0440)가 후보와 업체·직접 입력 결정을 함께 계산한다.
  */
 export async function inProgressCategories(
   db: Pool | PoolClient,
@@ -46,9 +44,7 @@ export async function inProgressCategories(
   const { rows } = await db.query<{ category: VendorCategory; state: PreparationState }>(
     `SELECT p.category::text AS category, p.state
      FROM structured.wedding_preparation p
-     JOIN structured.weddings w ON w.id = p.wedding_id
-     WHERE p.wedding_id = $1
-       AND NOT (p.category = ANY (w.prepared_categories))`,
+     WHERE p.wedding_id = $1`,
     [weddingId]
   );
 
@@ -147,8 +143,8 @@ type CandidateRow = {
  * 의미 있는 변화일 때만 보내고, 같은 업체는 하루 한 번까지다.
  *
  * **내가 Pick한 업체 중 진행 중 업종만이다**(13.12 «금액 변경 — 내가 Pick한
- * 업체만»). 결정을 끝낸 업종의 다른 후보나, 앱 밖에서 이미 정했다고 고른
- * 업종은 조용하다 — 정한 뒤에 «다른 곳이 싸졌어요»는 정보가 아니라 후회다.
+ * 업체만»). 결정을 끝낸 업종의 다른 후보는 조용하다 — 정한 뒤에
+ * «다른 곳이 싸졌어요»는 정보가 아니라 후회다.
  * 기준점(`price_alert_marks`)은 그래도 옮긴다 — 나중에 결정을 되돌렸을 때
  * 그동안의 변화가 한꺼번에 «오늘 일어난 일»로 오면 안 된다.
  *
@@ -175,7 +171,6 @@ export async function sendPriceChangeNudges(
                 SELECT 1 FROM structured.category_decisions d
                 WHERE d.wedding_id = w.id AND d.category = v.category
               )
-              AND NOT (v.category = ANY (w.prepared_categories))
             ) AS in_progress
      FROM structured.vendor_candidates c
      JOIN structured.vendors v ON v.id = c.vendor_id

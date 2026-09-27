@@ -42,10 +42,8 @@ export function categoryPickState(input: {
   state: PreparationState;
   /** 그 업종에 담아둔 후보 수. */
   pickCount: number;
-  /** 온보딩 준비 현황에서 「이미 정했다」고 고른 업종인가. */
-  prepared?: boolean;
 }): CategoryPickState {
-  if (input.state === 'decided' || input.prepared === true) return 'DECIDED';
+  if (input.state === 'decided') return 'DECIDED';
   if (input.pickCount >= MIN_COMPARABLE) return 'COMPARING';
   if (input.pickCount > 0) return 'SHORTLISTED';
 

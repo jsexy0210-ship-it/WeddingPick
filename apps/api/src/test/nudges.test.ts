@@ -1,4 +1,4 @@
-import { sendPriceChangeNudges, sendTaskNudges } from '../notify/nudges';
+import { inProgressCategories, sendPriceChangeNudges, sendTaskNudges } from '../notify/nudges';
 import type { Push, PushMessage } from '../push/port';
 import { createTestApp, createWedding, resetDatabase, signInAs, type TestApp } from './helpers';
 
@@ -358,7 +358,7 @@ describeWithDb('사용자 알림', () => {
 
       await seedProofs(vendorId, count, amount);
 
-      return { headers, userId, vendorId };
+      return { headers, userId, vendorId, weddingId };
     }
 
     async function seedProofs(vendorId: string, count: number, amount: number) {
@@ -432,7 +432,7 @@ describeWithDb('사용자 알림', () => {
        * SPEC 13.12 — 알림은 진행 중 업종에서만 온다. 정한 뒤에 «다른 곳이
        * 싸졌어요»는 정보가 아니라 후회다.
        */
-      const { headers, userId, vendorId } = await candidateWith(1, 3_000_000);
+      const { headers, userId, vendorId, weddingId } = await candidateWith(1, 3_000_000);
       const { push } = fakePush();
 
       await sendPriceChangeNudges({ pool: test.pool, push });
@@ -445,12 +445,13 @@ describeWithDb('사용자 알림', () => {
         [userId, vendorId]
       );
 
+      expect((await inProgressCategories(test.pool, weddingId)).has('hall')).toBe(false);
       expect((await sendPriceChangeNudges({ pool: test.pool, push })).stored).toBe(0);
       expect(await inbox(headers)).toHaveLength(0);
     });
 
-    it('앱 밖에서 이미 정했다고 고른 업종에도 알리지 않는다', async () => {
-      const { headers, vendorId } = await candidateWith(1, 3_000_000);
+    it('준비 현황 체크만 있고 실제 결정이 없으면 가격 변화를 알린다', async () => {
+      const { headers, vendorId, weddingId } = await candidateWith(1, 3_000_000);
       const { push } = fakePush();
 
       await sendPriceChangeNudges({ pool: test.pool, push });
@@ -460,8 +461,9 @@ describeWithDb('사용자 알림', () => {
         `UPDATE structured.weddings SET prepared_categories = ARRAY['hall']::vendor_category[]`
       );
 
-      expect((await sendPriceChangeNudges({ pool: test.pool, push })).stored).toBe(0);
-      expect(await inbox(headers)).toHaveLength(0);
+      expect((await inProgressCategories(test.pool, weddingId)).has('hall')).toBe(true);
+      expect((await sendPriceChangeNudges({ pool: test.pool, push })).stored).toBe(1);
+      expect(await inbox(headers)).toHaveLength(1);
     });
 
     it('가격 알림만 따로 끌 수 있다', async () => {
