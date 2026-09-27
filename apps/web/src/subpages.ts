@@ -328,9 +328,9 @@ export function renderTermsPage(doc: LegalDocument): string {
   return subDocument({
     path: "/terms.html",
     title: '이용약관',
-    description: '웨딩픽 서비스 이용약관을 확인하세요.',
+    description: '웨딩픽 서비스이용약관을 확인하세요.',
     activePath: null,
-    titleBand: titleBand('홈 · 이용약관', '웨딩픽 서비스 이용약관'),
+    titleBand: titleBand('홈 · 이용약관', '웨딩픽 서비스이용약관'),
     body: legalDocument(doc.sections),
   });
 }

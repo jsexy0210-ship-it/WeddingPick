@@ -137,7 +137,7 @@ it('필수만 체크하면 선택 항목은 보내지 않는다', async () => {
   jest.mocked(completeSignup).mockResolvedValue({ activated: true } as never);
 
   await act(async () => { tree = create(<ConsentScreen />); });
-  for (const label of ['만 14세 이상이에요', '서비스 이용약관', '개인정보 수집 · 이용', 'Pick 인증 자료 수집 · 이용', '상담 녹음 수집 · 이용']) {
+  for (const label of ['만 14세 이상이에요', '서비스이용약관', '개인정보수집·이용', 'Pick인증자료수집·이용', '상담녹음수집·이용']) {
     await act(async () => {
       tree.root.findAll((node) => node.props.accessibilityRole === 'checkbox' && node.props.accessibilityLabel === label)[0]!.props.onPress();
     });
