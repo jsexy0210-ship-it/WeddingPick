@@ -508,7 +508,7 @@ export function ExposPanel() {
             </Card>
 
             <Card title="검수 대기" sub="지금 확인이 필요한 박람회" full>
-              <DataTable cols={QUEUE_COLS} rows={queueRows} empty="확인할 것이 없어요" />
+              <DataTable cols={QUEUE_COLS} rows={queueRows} empty="확인할 것이 없어요" emptyKind="success" />
             </Card>
 
             <Card
@@ -521,7 +521,7 @@ export function ExposPanel() {
             </Card>
 
             <Card title="전체 박람회" sub="지금 노출 중이거나 관리 중인 박람회" full>
-              <DataTable cols={LIST_COLS} rows={listRows} empty="등록된 박람회가 없어요" />
+              <DataTable cols={LIST_COLS} rows={listRows} empty="아직 박람회가 없어요" />
             </Card>
           </CardGrid>
 

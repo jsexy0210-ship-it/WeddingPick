@@ -55,6 +55,7 @@ import {
   ActionButton,
   Border,
   Elevation,
+  EmptyStateIcon,
   FontSize,
   LetterSpacing,
   Layout,
@@ -783,12 +784,15 @@ export default function SearchScreen() {
           ? relaxedTotal !== null && relaxedTotal > 0
             ? `${relaxLabel}을 풀면 ${formatCount(relaxedTotal)}곳을 볼 수 있어요`
             : `${relaxLabel} 조건을 풀어보세요`
-          : '찾으시는 업체가 아직 등록되지 않았어요.';
+          : '필터를 바꾸거나 다른 업체를 검색해 보세요';
 
     return (
       <View style={styles.emptyRoot}>
         <View style={styles.emptyWrap}>
-          <ThemedText type="f16" style={[styles.bold, styles.emptyTitle]}>{EMPTY_TITLE}</ThemedText>
+          {!error && isServerConfigured ? <EmptyStateIcon /> : null}
+          <ThemedText type="f16" style={[styles.bold, styles.emptyTitle]}>
+            {error || !isServerConfigured ? '검색 결과를 불러오지 못했어요' : EMPTY_TITLE}
+          </ThemedText>
           <ThemedText type="f14" themeColor="textAssistive" style={styles.emptySub}>{body}</ThemedText>
           {relaxLabel ? (
             <Pressable

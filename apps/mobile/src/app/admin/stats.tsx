@@ -153,7 +153,7 @@ function StatsPanel() {
               full
               note="되돌리면 해당 제보가 다시 집계에 들어가고 변경 복구 관리에 기록돼요."
             >
-              <DataTable cols={COLS} rows={rows} empty="차단된 것이 없어요" />
+              <DataTable cols={COLS} rows={rows} empty="차단된 것이 없어요" emptyKind="success" />
             </Card>
           </CardGrid>
         </>

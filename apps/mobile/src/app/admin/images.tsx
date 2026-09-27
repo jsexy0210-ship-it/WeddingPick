@@ -212,7 +212,7 @@ export function ImagesPanel() {
               full
               note="권리 미확인은 승인 버튼이 아예 뜨지 않아요. 출처를 보강하거나 폐기만 할 수 있어요."
             >
-              <DataTable cols={COLS} rows={rows} empty="승인을 기다리는 사진이 없어요" />
+              <DataTable cols={COLS} rows={rows} empty="확인할 것이 없어요" emptyKind="success" />
             </Card>
 
             <Card title="권리 확인 경로" sub="자동 확인이 되는 출처">

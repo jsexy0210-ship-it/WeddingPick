@@ -221,7 +221,7 @@ export function RollbackPanel() {
               full
               note="전체에 영향을 주는 일괄 작업은 되돌릴 수 없어요. 재실행으로만 고칠 수 있어요."
             >
-              <DataTable cols={COLS} rows={rows} empty="되돌릴 것이 없어요" />
+              <DataTable cols={COLS} rows={rows} empty="아직 결정 이력이 없어요" />
             </Card>
           </CardGrid>
 

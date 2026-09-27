@@ -617,7 +617,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
 
           <CardGrid>
             <Card title="글 목록" sub="등록 · 수정 · 삭제는 직접 한다" action={{ label: '+ 새 글', write: true, onPress: openNew, kind: 'brand' }} full>
-              <DataTable cols={COLS} rows={rows} empty="등록된 글이 없어요" />
+              <DataTable cols={COLS} rows={rows} empty="아직 글이 없어요" />
             </Card>
 
             <Card
@@ -649,7 +649,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
               sub="앱 웨딩정보 칩과 글의 소분류 연결"
               full
             >
-              <DataTable cols={CATEGORY_COLS} rows={categoryRows} empty="등록된 카테고리가 없어요" />
+              <DataTable cols={CATEGORY_COLS} rows={categoryRows} empty="아직 카테고리가 없어요" />
             </Card>
           </CardGrid>
 

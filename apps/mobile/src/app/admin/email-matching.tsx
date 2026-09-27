@@ -181,7 +181,7 @@ export function EmailMatchingPanel() {
               full
               note={`확신도 ${CONFIDENCE_FLOOR} 미만은 자동으로 붙이지 않고 확인 필요로 남겨요.`}
             >
-              <DataTable cols={COLS} rows={rows} empty="받은 회신이 없어요" />
+              <DataTable cols={COLS} rows={rows} empty="아직 받은 회신이 없어요" />
             </Card>
           </CardGrid>
         </>

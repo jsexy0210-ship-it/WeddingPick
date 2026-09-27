@@ -15,6 +15,7 @@ import {
   ActionButton,
   Border,
   CanonGray,
+  EmptyStateIcon,
   Layout,
   LineHeight,
   MaxContentWidth,
@@ -718,6 +719,7 @@ function ymd(iso: string): { month: number; day: number } | null {
 function Empty({ title, body, action }: { title: string; body: string; action?: { label: string; onPress: () => void } }) {
   return (
     <View style={styles.empty}>
+      <EmptyStateIcon />
       <ThemedText type="f16" style={[styles.bold, styles.center]}>
         {title}
       </ThemedText>

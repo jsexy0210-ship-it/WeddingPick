@@ -79,6 +79,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   Border,
+  EmptyStateIcon,
   Elevation,
   Layout,
   LetterSpacing,
@@ -1048,6 +1049,7 @@ function Empty() {
     <View style={styles.empty}>
       <ThemedText type="f18" style={styles.bold}>저장한 업체</ThemedText>
       <View style={styles.emptyCard}>
+        <EmptyStateIcon />
         <ThemedText type="f16" style={[styles.bold, styles.emptyText]}>
           {EMPTY_TITLE}
         </ThemedText>
