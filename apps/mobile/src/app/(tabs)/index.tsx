@@ -15,6 +15,7 @@ import { getAppBootstrap, getRegionWeather, listWeddingTasks } from '@/api/clien
 import { RootTabHeader } from '@/components/root-tab-header';
 import {
   ActionButton,
+  EmptyStateIcon,
   ErrorView,
   Layout,
   LineHeight,
@@ -302,7 +303,13 @@ export default function HomeScreen() {
                 <ActionButton variant="secondary" label={strings.common['cta.retry']} onPress={load} />
               </View>
             ) : data.content.length === 0 ? (
-              <ThemedText type="f13" themeColor="textAssistive">{strings.community['feed.empty.body']}</ThemedText>
+              <View style={styles.feedEmpty}>
+                <EmptyStateIcon />
+                <ThemedText type="f14">{strings.community['feed.empty.title']}</ThemedText>
+                <ThemedText type="f13" themeColor="textAssistive" style={styles.feedEmptyText}>
+                  {strings.community['feed.empty.body']}
+                </ThemedText>
+              </View>
             ) : (
               <WeddingContent
                 items={data.content}
@@ -380,6 +387,8 @@ const styles = StyleSheet.create({
   block: { paddingHorizontal: HOME_PAGE_X, marginBottom: Layout.sectionGap },
   /* `secLast` — 마지막 섹션은 아래 여백이 없고 스크롤 끝 16(`hscroll`)만 남는다. */
   lastBlock: { marginBottom: 0 },
+  feedEmpty: { alignItems: 'center', gap: Spacing.two, paddingVertical: Layout.gutter },
+  feedEmptyText: { textAlign: 'center' },
   sectionHead: {
     flexDirection: 'row',
     alignItems: 'center',

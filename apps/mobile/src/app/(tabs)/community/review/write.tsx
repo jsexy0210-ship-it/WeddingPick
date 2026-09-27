@@ -9,6 +9,7 @@ import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-s
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import {
   Border,
+  EmptyStateIcon,
   Layout,
   Radius,
   Spacing,
@@ -117,9 +118,11 @@ export function LoungeReviewVendorSheet({
                 업체를 불러오지 못했어요. 다시 입력해주세요.
               </ThemedText>
             ) : vendors?.length === 0 ? (
-              <ThemedText type="t7" themeColor="textSecondary" style={styles.empty}>
-                해당 이름의 업체가 아직 없어요.
-              </ThemedText>
+              <View style={styles.emptyResult}>
+                <EmptyStateIcon />
+                <ThemedText type="t6">조건에 맞는 업체가 없어요</ThemedText>
+                <ThemedText type="t7" themeColor="textSecondary">다른 이름으로 검색해 보세요</ThemedText>
+              </View>
             ) : (
               vendors?.map((vendor) => (
                 <Pressable
@@ -161,6 +164,7 @@ const styles = StyleSheet.create({
   results: { flexGrow: 0, maxHeight: 420 },
   loader: { minHeight: 120 },
   empty: { paddingVertical: Spacing.four },
+  emptyResult: { paddingVertical: Spacing.four, alignItems: 'center', gap: Spacing.two },
   row: {
     minHeight: 64,
     paddingVertical: Spacing.two,

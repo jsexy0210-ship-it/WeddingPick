@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Border,
   CanonGray,
+  EmptyStateIcon,
   Layout,
   LineHeight,
   MaxContentWidth,
@@ -96,11 +97,10 @@ export default function GuideScreen() {
                 })}
               </View>
             ) : (
-              <ThemedView type="backgroundElement" style={styles.card}>
-                <ThemedText type="small" themeColor="textSecondary">
-                  {faq.failed
-                    ? '질문을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.'
-                    : '아직 등록된 질문이 없어요.'}
+              <ThemedView type="backgroundElement" style={[styles.card, !faq.failed && styles.emptyCard]}>
+                {!faq.failed ? <EmptyStateIcon /> : null}
+                <ThemedText type={faq.failed ? 'small' : 't6'} themeColor={faq.failed ? 'textSecondary' : undefined} style={!faq.failed && styles.emptyText}>
+                  {faq.failed ? '질문을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.' : '아직 등록된 질문이 없어요'}
                 </ThemedText>
               </ThemedView>
             )}
@@ -150,4 +150,6 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
     gap: Spacing.one,
   },
+  emptyCard: { alignItems: 'center', gap: Spacing.two },
+  emptyText: { textAlign: 'center' },
 });

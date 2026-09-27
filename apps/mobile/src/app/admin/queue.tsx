@@ -18,7 +18,7 @@ import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { WritePressable } from './_role';
-import { AdminTabShell, compactSplit, useAdminCompact, type AdminTabDef } from './_ui';
+import { AdminTabShell, EmptyState, compactSplit, useAdminCompact, type AdminTabDef } from './_ui';
 import { DataPipelinePanel } from './data-pipeline';
 import { InquiryPanel } from './inquiries';
 import { PiiReviewsPanel } from './pii-reviews';
@@ -150,9 +150,7 @@ function QueuePanel() {
                 <Text style={[styles.th, styles.colAmount]}>금액</Text>
                 <Text style={[styles.th, styles.colDate]}>접수일</Text>
               </View>
-              {items.length === 0 && (
-                <Text style={styles.emptyText}>대기 중인 신청이 없어요.</Text>
-              )}
+              {items.length === 0 && <EmptyState title="확인할 것이 없어요" kind="success" />}
               {items.map((item) => (
                 <Pressable
                   key={item.id}

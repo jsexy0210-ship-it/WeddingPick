@@ -13,7 +13,7 @@ import { Colors, FontSize, Layout, Spacing } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { WritePressable } from './_role';
-import { AdminButtonLoader } from './_ui';
+import { AdminButtonLoader, EmptyState } from './_ui';
 import { formatCount } from '@weddingpick/domain';
 
 type StageCount = { stage: string; count: number; avgWaitMin: number };
@@ -175,7 +175,7 @@ export function DataPipelinePanel() {
           </View>
           <View style={styles.card}>
             {data.failedQueue.length === 0 ? (
-              <Text style={styles.emptyText}>실패 큐 비어 있어요.</Text>
+              <EmptyState title="실패한 작업이 없어요" kind="success" />
             ) : (
               <>
                 <View style={styles.tableHead}>

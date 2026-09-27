@@ -6,7 +6,7 @@ import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { WritePressable } from './_role';
-import { AdminTabShell, compactSplit, useAdminCompact, type AdminTabDef } from './_ui';
+import { AdminTabShell, EmptyState, compactSplit, useAdminCompact, type AdminTabDef } from './_ui';
 import { ObjectionsPanel } from './objections';
 import { ReportPanel } from './report';
 import { ConfirmDecision } from '@/features/admin/confirm-decision';
@@ -190,9 +190,7 @@ function RebuttalPanel() {
                 <Text style={[styles.th, styles.colRole]}>소속</Text>
                 <Text style={[styles.th, styles.colDate]}>접수일</Text>
               </View>
-              {items.length === 0 && (
-                <Text style={styles.emptyText}>확인 대기 반론이 없어요.</Text>
-              )}
+              {items.length === 0 && <EmptyState title="확인할 것이 없어요" kind="success" />}
               {items.map((item) => (
                 <Pressable
                   key={item.id}

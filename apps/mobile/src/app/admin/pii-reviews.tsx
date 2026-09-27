@@ -9,7 +9,7 @@ import { formatDateTimeDot } from '@/features/common/format-date';
 
 import { apiFetch } from './_api';
 import { WritePressable } from './_role';
-import { compactSplit, useAdminCompact } from './_ui';
+import { EmptyState, compactSplit, useAdminCompact } from './_ui';
 
 /**
  * 개인정보 검토 큐 — 문서에서 개인정보 꼴이 보인 것을 사람이 확인한다.
@@ -148,7 +148,7 @@ export function PiiReviewsPanel() {
                 <Text style={[styles.th, styles.colDate]}>올린 때</Text>
               </View>
 
-              {items.length === 0 && <Text style={styles.emptyText}>검토할 문서가 없어요.</Text>}
+              {items.length === 0 && <EmptyState title="확인할 것이 없어요" kind="success" />}
 
               {items.map((item) => (
                 <Pressable

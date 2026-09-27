@@ -21,7 +21,7 @@ import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { WritePressable } from './_role';
-import { AdminButtonLoader, compactSplit, useAdminCompact } from './_ui';
+import { AdminButtonLoader, EmptyState, compactSplit, useAdminCompact } from './_ui';
 
 type BizStatus = 'pending' | 'approved' | 'rejected';
 type BizItem = {
@@ -163,9 +163,7 @@ export function BizQueuePanel() {
                   </View>
                 </Pressable>
               ))}
-              {data.items.length === 0 && (
-                <Text style={styles.emptyText}>확인할 신청이 없어요.</Text>
-              )}
+              {data.items.length === 0 && <EmptyState title="아직 신청이 없어요" />}
             </ScrollView>
           </View>
 
