@@ -26,7 +26,7 @@ import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { WritePressable } from './_role';
-import { AdminTabShell, ConfirmCard, type AdminTabDef } from './_ui';
+import { AdminButtonLoader, AdminTabShell, ConfirmCard, type AdminTabDef } from './_ui';
 import { TermsPanel } from './terms';
 import { OgCardPanel } from './og-card';
 import { AuditLogPanel } from './audit-log';
@@ -352,7 +352,7 @@ function FaqPanel() {
                     onPress={() => void save()}
                     disabled={saving}
                   >
-                    <Text style={styles.saveBtnText}>{saving ? '저장 중…' : '저장'}</Text>
+                    {saving ? <AdminButtonLoader /> : <Text style={styles.saveBtnText}>저장</Text>}
                   </WritePressable>
                 </View>
               </>

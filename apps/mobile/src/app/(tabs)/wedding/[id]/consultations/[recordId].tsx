@@ -164,8 +164,8 @@ export default function ConsultationDetailRoute() {
               {!record.confirmedAt ? (
                 <ActionButton
                   variant="primary"
-                  label={saving ? '저장하는 중…' : '저장'}
-                  disabled={saving}
+                  label="저장"
+                  loading={saving}
                   onPress={() => void save()}
                 />
               ) : null}

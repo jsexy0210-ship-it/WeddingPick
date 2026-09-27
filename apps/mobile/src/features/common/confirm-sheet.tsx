@@ -63,8 +63,8 @@ export function ConfirmSheet({
             <ActionButton
               variant={destructive ? 'danger' : 'primary'}
               size="sheet"
-              label={busy ? '처리 중…' : confirmLabel}
-              disabled={busy}
+              label={confirmLabel}
+              loading={busy}
               onPress={onConfirm}
             />
           </View>

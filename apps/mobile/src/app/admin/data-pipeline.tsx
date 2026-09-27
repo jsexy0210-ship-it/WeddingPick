@@ -13,6 +13,7 @@ import { Colors, FontSize, Layout, Spacing } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { WritePressable } from './_role';
+import { AdminButtonLoader } from './_ui';
 import { formatCount } from '@weddingpick/domain';
 
 type StageCount = { stage: string; count: number; avgWaitMin: number };
@@ -168,9 +169,7 @@ export function DataPipelinePanel() {
                 onPress={() => void retryAll()}
                 disabled={retrying !== null}
               >
-                <Text style={styles.retryAllText}>
-                  {retrying === 'all' ? '처리 중…' : '전체 재처리'}
-                </Text>
+                {retrying === 'all' ? <AdminButtonLoader /> : <Text style={styles.retryAllText}>전체 재처리</Text>}
               </WritePressable>
             )}
           </View>
@@ -200,9 +199,7 @@ export function DataPipelinePanel() {
                         onPress={() => void retryItem(item.id)}
                         disabled={retrying !== null}
                       >
-                        <Text style={styles.inlineBtnText}>
-                          {retrying === item.id ? '…' : '재처리'}
-                        </Text>
+                        {retrying === item.id ? <AdminButtonLoader /> : <Text style={styles.inlineBtnText}>재처리</Text>}
                       </WritePressable>
                     </View>
                   </View>

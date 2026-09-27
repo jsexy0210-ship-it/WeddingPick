@@ -22,6 +22,7 @@ import {
   FontSize,
   Layout,
   LineHeight,
+  LoaderSkeleton,
   MaxContentWidth,
   Radius,
   Spacing,
@@ -350,21 +351,22 @@ export default function ConsultRoute() {
               ]}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityState={{ disabled: !canConfirm }}
+                accessibilityLabel={sending ? '상담예약' : undefined}
+                accessibilityState={{ disabled: !canConfirm, busy: sending }}
                 disabled={!canConfirm}
                 onPress={() => void confirm()}
                 style={({ pressed }) => [
                   styles.cta,
-                  { backgroundColor: canConfirm ? theme.tint : theme.backgroundElement },
+                  { backgroundColor: canConfirm || sending ? theme.tint : theme.backgroundElement },
                   pressed && styles.pressed,
                 ]}>
-                {canConfirm && chosen ? (
+                {sending ? <LoaderSkeleton size={20} shape="mark" /> : canConfirm && chosen ? (
                   <ThemedText type="f18" themeColor="onTint" style={styles.bold}>
                     {chosen.getMonth() + 1}월 {chosen.getDate()}일 {withInstrument(spokenTime(selectedTime ?? ''))} 잡기
                   </ThemedText>
                 ) : (
                   <ThemedText type="f18" themeColor="textAssistive" style={styles.bold}>
-                    {sending ? '등록하는 중…' : '날짜와 시간을 선택해주세요'}
+                    날짜와 시간을 선택해주세요
                   </ThemedText>
                 )}
               </Pressable>

@@ -150,8 +150,9 @@ export default function ContactScreen() {
       dock={
         <Dock
           primary={{
-            label: busy ? '보내는 중…' : '문의 보내기',
-            disabled: busy || !ready || !isServerConfigured,
+            label: '문의 보내기',
+            loading: busy,
+            disabled: !ready || !isServerConfigured,
             onPress: () => void submit(),
           }}
         />

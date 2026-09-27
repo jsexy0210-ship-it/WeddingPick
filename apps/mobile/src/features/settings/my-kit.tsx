@@ -167,7 +167,7 @@ export function Dock({
   primary,
   secondary,
 }: {
-  primary: { label: string; onPress: () => void; disabled?: boolean; danger?: boolean; icon?: ReactNode };
+  primary: { label: string; onPress: () => void; disabled?: boolean; loading?: boolean; danger?: boolean; icon?: ReactNode };
   secondary?: { label: string; onPress: () => void; disabled?: boolean };
 }) {
   const theme = useTheme();
@@ -191,6 +191,7 @@ export function Dock({
           label={primary.label}
           icon={primary.icon}
           disabled={primary.disabled}
+          loading={primary.loading}
           /* 13b ctaDangerWide — 탈퇴만 빨강. 그 밖의 primary는 스킨 색. */
           tone={primary.danger ? { background: theme.negative, text: theme.onTint } : undefined}
           onPress={primary.onPress}

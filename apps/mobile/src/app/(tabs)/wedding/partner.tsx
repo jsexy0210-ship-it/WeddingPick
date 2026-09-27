@@ -19,7 +19,7 @@ import { APP_WEB_ORIGIN } from '@/features/social-meta';
 import { useDepthBack } from '@/features/navigation/depth-back';
 import { ScrollToTopButton, useScrollToTopVisibility } from '@/features/navigation/scroll-to-top-button';
 import { partnerJoinHref } from '@/features/partner/routes';
-import { ActionButton, Border, ErrorView, Layout, Radius, SocialColors, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { ActionButton, Border, ErrorView, Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import { Badge, Dock, Hero, ListRow, NavBar, NoteCard, Screen, Section } from '@/features/wedding/screen-kit';
@@ -40,7 +40,7 @@ const S = {
   copied: '복사했어요',
   remake: '코드 다시 받기',
   make: '초대 코드 만들기',
-  kakao: '카카오로 초대하기',
+  kakao: '초대하기',
   sharedLabel: '연결하면 같이 봐요',
   scopeNote: '검색 기록과 알림 설정은 각자 봐요.',
   haveCode: '코드 받았어요',
@@ -113,11 +113,11 @@ function InfoList({ items }: { items: { label: string; sub: string }[] }) {
  * (보낸 초대는 있는데 이 화면을 나갔다 돌아온 경우)에는 마스킹값을 보여주고 "코드 다시 받기"
  * 하나만 남긴다. 혼자인 상태를 결핍으로 적지 않는다.
  *
- * DESIGN_UNRESOLVED — 정본 dockSingle의 «카카오로 초대하기»는 카카오톡 공유 SDK 전용
+ * DESIGN_UNRESOLVED — 정본 dockSingle의 카카오톡 공유 동작은 카카오톡 공유 SDK 전용
  * 버튼이다. 이 저장소에는 콘텐츠 공유용 카카오 SDK가 없고(로그인만 카카오를 쓴다),
  * 새로 붙이는 것은 이번 디자인 대조 범위를 넘는 인프라 작업이라 기존 `shareOrCopy`
- * (OS 공유 시트 — 카카오톡을 포함해 고를 수 있다)를 그대로 연결한다. 버튼 라벨·색은
- * 정본 그대로(`SocialColors.kakao`) 쓰되, 실제로 카카오톡으로 강제 전달하지는 않는다.
+ * (OS 공유 시트 — 카카오톡을 포함해 고를 수 있다)를 그대로 연결한다. 버튼은
+ * 최신 지시의 「초대하기」·키 컬러를 쓰며, 실제로 카카오톡으로 강제 전달하지는 않는다.
  */
 export default function PartnerScreen() {
   const scrollRef = useRef<ScrollView>(null);
@@ -301,8 +301,8 @@ export default function PartnerScreen() {
           <ActionButton
             variant="danger"
             size="sheet"
-            label={busy ? '끊는 중…' : S.unlink}
-            disabled={busy}
+            label={S.unlink}
+            loading={busy}
             onPress={() => void unlink()}
           />
         </Dock>
@@ -392,8 +392,8 @@ export default function PartnerScreen() {
                 <ActionButton
                   variant="ghost"
                   size="large"
-                  label={busy ? '만드는 중…' : S.remake}
-                  disabled={busy}
+                  label={S.remake}
+                  loading={busy}
                   onPress={() => void makeInvite()}
                 />
               </View>
@@ -416,7 +416,7 @@ export default function PartnerScreen() {
         {/*
          * 정본(WP-CPL-001)에는 없는 보조 진입점이다 — 내가 초대를 만드는 화면과 별개로,
          * 상대에게 받은 코드를 입력하는 길(WP-CPL-002)이 따로 있어야 한다. 헤더가 아니라
-         * 화면 맨 아래 작은 밑줄 텍스트로 둬 Primary CTA(카카오로 초대하기)와 겹치지
+         * 화면 맨 아래 작은 밑줄 텍스트로 둬 Primary CTA(초대하기)와 겹치지
          * 않게 한다.
          *
          * **가운데 · 더 잘 보이게**(2026-09-26 대표 지시 「텍스트는 중앙에 배치하고 조금 더 눈에
@@ -424,7 +424,7 @@ export default function PartnerScreen() {
          * 이었다 — 그보다 강조한 것은 전부 대표 지시다: 가로 가운데 · f15(14→15) · 700 · 본문색
          * `text`(gray900 · 흰 바탕 16.9:1 — 이전 textAssistive gray600은 3.4:1로 4.5:1 미달) ·
          * 터치 영역 최소 44(`Layout.touchTarget`). 밑줄은 링크 표시로 그대로 둔다. Primary CTA는
-         * 여전히 Dock의 「카카오로 초대하기」 하나다.
+         * 여전히 Dock의 「초대하기」 하나다.
          */}
         <Pressable
           accessibilityRole="link"
@@ -442,9 +442,8 @@ export default function PartnerScreen() {
         <ActionButton
           variant="primary"
           size="sheet"
-          tone={code ? { background: SocialColors.kakao.background, text: SocialColors.kakao.text } : undefined}
-          label={code ? S.kakao : busy ? '만드는 중…' : S.make}
-          disabled={busy && !code}
+          label={code ? S.kakao : S.make}
+          loading={busy && !code}
           onPress={() => (code ? void share() : void makeInvite())}
         />
       </Dock>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Border, Layout, ProductSymbol, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { Border, Layout, LoaderSkeleton, ProductSymbol, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 
 import { uploadConsultationAudio } from './consultation-upload';
 
@@ -12,8 +12,7 @@ const CONSULT_UPLOADED = '녹음을 올렸어요';
 
 /**
  * «올리는 중…»에 올라간 비율을 붙인다 — 100MB 녹음은 오래 걸려, 멈춘 것처럼 보이지 않게.
- * 정본(note.js)에 올리는 중 상태가 없어 새 줄 · 막대를 만들지 않고 같은 글자 자리에만 적는다
- * (DESIGN_UNRESOLVED — 진행 표시 모양은 정본이 정하면 따른다). 비율을 모르는 동안은 글자만.
+ * 진행률은 CTA 바깥 줄에 남긴다. 비율을 모르는 동안은 글자만 보인다.
  */
 export function uploadingLabel(progress: number | null): string {
   return progress === null ? CONSULT_UPLOADING : `${CONSULT_UPLOADING} ${Math.round(progress * 100)}%`;
@@ -67,22 +66,25 @@ export function ConsultUploadPrompt({
   }
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={CONSULT_EMPTY_TITLE}
-      accessibilityState={{ disabled: !weddingId || uploading, busy: uploading }}
-      disabled={!weddingId || uploading}
-      onPress={() => void pickAndUpload()}
-      testID="consult-upload-prompt"
-      style={({ pressed }) => [styles.box, { borderColor: theme.track }, pressed ? styles.pressed : null]}>
-      <ProductSymbol name="mic" size={22} color={theme.textAssistive} />
-      <ThemedText type="f15" style={styles.bold}>
-        {uploading ? uploadingLabel(progress) : CONSULT_EMPTY_TITLE}
-      </ThemedText>
-      <ThemedText type="f13" themeColor="textAssistive" style={styles.center}>
-        {CONSULT_EMPTY_BODY}
-      </ThemedText>
-    </Pressable>
+    <View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={CONSULT_EMPTY_TITLE}
+        accessibilityState={{ disabled: !weddingId || uploading, busy: uploading }}
+        disabled={!weddingId || uploading}
+        onPress={() => void pickAndUpload()}
+        testID="consult-upload-prompt"
+        style={({ pressed }) => [styles.box, { borderColor: theme.track }, pressed ? styles.pressed : null]}>
+        <ProductSymbol name="mic" size={22} color={theme.textAssistive} />
+        {uploading ? <LoaderSkeleton size={20} shape="mark" /> : <ThemedText type="f15" style={styles.bold}>{CONSULT_EMPTY_TITLE}</ThemedText>}
+        <ThemedText type="f13" themeColor="textAssistive" style={styles.center}>{CONSULT_EMPTY_BODY}</ThemedText>
+      </Pressable>
+      {uploading ? (
+        <ThemedText type="f13" themeColor="textAssistive" style={styles.center}>
+          {uploadingLabel(progress)}
+        </ThemedText>
+      ) : null}
+    </View>
   );
 }
 

@@ -24,6 +24,7 @@ import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { WritePressable } from './_role';
 import {
+  AdminButtonLoader,
   Card,
   CardGrid,
   ConfirmCard,
@@ -501,9 +502,7 @@ export function ExposPanel() {
                   disabled={collecting || !collection?.ready}
                   onPress={() => void collectNow()}
                 >
-                  <Text style={[styles.collectBtnText, !collection?.ready && styles.collectBtnTextDisabled]}>
-                    {collecting ? '수집 중' : collection?.ready ? '지금 수집' : '수집 불가'}
-                  </Text>
+                  {collecting ? <AdminButtonLoader /> : <Text style={[styles.collectBtnText, !collection?.ready && styles.collectBtnTextDisabled]}>{collection?.ready ? '지금 수집' : '수집 불가'}</Text>}
                 </WritePressable>
               </View>
             </Card>
@@ -661,7 +660,7 @@ export function ExposPanel() {
                   <Text style={styles.ghostBtnText}>취소</Text>
                 </Pressable>
                 <WritePressable style={[styles.primaryBtn, saving && styles.btnDisabled]} onPress={() => void save()} disabled={saving}>
-                  <Text style={styles.primaryBtnText}>{saving ? '저장 중' : '저장'}</Text>
+                  {saving ? <AdminButtonLoader /> : <Text style={styles.primaryBtnText}>저장</Text>}
                 </WritePressable>
               </View>
             </View>

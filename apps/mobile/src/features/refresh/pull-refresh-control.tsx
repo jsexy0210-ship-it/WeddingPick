@@ -11,10 +11,10 @@ export type PullRefreshControlProps = RefreshControlProps;
  * 맞춘다. 웹은 같은 이름의 `pull-refresh-control.web.tsx`가 받는다 — react-native-web의
  * `RefreshControl`은 당기는 몸짓이 없는 빈 껍데기라서다.
  *
- * **정본과 다른 자리가 있다.** RN 정본 `common.js` 로더 표는 「당겨서 새로 고침 — 아이콘 순회 20」이고
- * 같은 표가 「원형 스피너를 쓰지 않아요」라고 적는다. OS의 당김 표시는 원형이고 앱이 모양을 바꿀 수
- * 없다(iOS UIRefreshControl · 안드로이드 SwipeRefreshLayout). 모양을 맞추려면 OS 컨트롤을 버리고 직접
- * 그려야 하는데, 그러면 OS 스크롤의 튕김 · 관성과 어긋난다 — DESIGN_UNRESOLVED(대표님 확인 전).
+ * 2026-09-27 기본 로더로 통일 지시가 있지만 이 표시는 아직 OS 원형이다. iOS UIRefreshControl과
+ * 안드로이드 SwipeRefreshLayout은 색·크기만 받아 사용자 지정 표시를 넣을 수 없다. 표시를 숨긴 뒤
+ * 앱 뿌리에 로더 하나를 띄우면 화면마다 다른 스크롤 시작 위치와 맞지 않는다. 별도 화면 위치 계약과
+ * 실기기 검증을 마련할 때까지 OS 제스처와 표시를 함께 유지한다.
  *
  * 스크롤 목록의 `refreshControl`에 넣는다. 화면은 대개 `usePullRefresh`가 만든 것을 그대로 쓴다.
  */

@@ -230,8 +230,8 @@ export default function JoinScreen() {
           <ActionButton
             variant="primary"
             size="sheet"
-            label={busy ? '연결 중…' : S.accept}
-            disabled={busy}
+            label={S.accept}
+            loading={busy}
             onPress={() => void join()}
           />
         </Dock>
@@ -278,8 +278,9 @@ export default function JoinScreen() {
         <ActionButton
           variant="primary"
           size="sheet"
-          label={busy ? '확인 중…' : S.check}
-          disabled={busy || !isInviteCode(code)}
+          label={S.check}
+          loading={busy}
+          disabled={!isInviteCode(code)}
           onPress={() => void check()}
         />
       </Dock>

@@ -9,11 +9,11 @@
  */
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
 import { API_URL } from '@/api/config';
-import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
+import { Colors, FontSize, LineHeight, LoaderSkeleton } from '@weddingpick/ui';
 
 import { saveAdminToken } from './_session';
 
@@ -161,7 +161,7 @@ export default function AdminLoginScreen() {
         ) : null}
 
         <Pressable style={styles.cta} onPress={submit} disabled={busy}>
-          {busy ? <ActivityIndicator color={Colors.light.background} /> : <Text style={styles.ctaText}>로그인</Text>}
+          {busy ? <LoaderSkeleton size={20} shape="mark" style={styles.buttonLoader} /> : <Text style={styles.ctaText}>로그인</Text>}
         </Pressable>
 
         <View style={styles.note}>
@@ -186,6 +186,7 @@ export default function AdminLoginScreen() {
 }
 
 const styles = StyleSheet.create({
+  buttonLoader: { alignSelf: 'center' },
   root: {
     flex: 1,
     flexDirection: 'row',

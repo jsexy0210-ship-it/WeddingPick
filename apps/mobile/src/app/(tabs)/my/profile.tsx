@@ -52,7 +52,6 @@ const S = {
   placeholder: '비워두면 이름 없이 인사해요',
   cancel: '취소',
   save: '저장',
-  saving: '저장하는 중…',
   saveFail: '이름을 바꾸지 못했어요',
   saveDone: '닉네임을 바꿨어요',
   settingsFail: '알림 설정을 바꾸지 못했어요',
@@ -318,8 +317,9 @@ export default function ProfileScreen() {
               <ActionButton
                 variant="primary"
                 size="xlarge"
-                label={saving ? S.saving : S.save}
-                disabled={!nameReady || saving}
+                label={S.save}
+                loading={saving}
+                disabled={!nameReady}
                 onPress={() => void saveName()}
               />
             </View>

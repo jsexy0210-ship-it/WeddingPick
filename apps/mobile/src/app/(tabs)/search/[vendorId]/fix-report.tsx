@@ -24,7 +24,6 @@ const S = {
   evidencePlaceholder: '공식 홈페이지, SNS 등',
   evidenceInvalid: '주소 전체를 적어주세요 · https://로 시작해요',
   cta: '제출하기',
-  sending: '보내는 중…',
   failed: '보내지 못했어요',
 } as const;
 
@@ -125,8 +124,9 @@ export default function FixReportScreen() {
       dock={
         <Dock
           primary={{
-            label: busy ? S.sending : S.cta,
-            disabled: !ready || busy,
+            label: S.cta,
+            loading: busy,
+            disabled: !ready,
             onPress: () => void submit(),
           }}
         />

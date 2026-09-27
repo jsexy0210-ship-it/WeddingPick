@@ -542,8 +542,9 @@ export default function WeddingScreen({
           <ActionButton
             variant="primary"
             size="xlarge"
-            label={budgetSaving ? '저장하는 중…' : budgetIsSet ? '변경 내용 저장' : '총예산 등록'}
-            disabled={!budgetReady || budgetSaving}
+            label={budgetIsSet ? '변경 내용 저장' : '총예산 등록'}
+            loading={budgetSaving}
+            disabled={!budgetReady}
             onPress={() => void saveBudget()}
           />
           {budgetIsSet ? (

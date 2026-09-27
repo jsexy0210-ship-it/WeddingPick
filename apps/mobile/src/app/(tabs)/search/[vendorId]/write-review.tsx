@@ -430,8 +430,9 @@ export function ReviewWriteSheet({
                 <ActionButton label="취소" disabled={sending} onPress={requestClose} />
                 <ActionButton
                   variant="primary"
-                  label={sending ? '올리는 중…' : '후기 남기기'}
-                  disabled={!ready || sending}
+                  label="후기 남기기"
+                  loading={sending}
+                  disabled={!ready}
                   onPress={() => void submit()}
                 />
               </CtaRow>

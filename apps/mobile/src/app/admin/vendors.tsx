@@ -32,7 +32,7 @@ import { Colors, FontSize, Spacing } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { WritePressable } from './_role';
-import { AdminTabShell, ConfirmCard, type AdminTabDef } from './_ui';
+import { AdminButtonLoader, AdminTabShell, ConfirmCard, type AdminTabDef } from './_ui';
 import { ImagesPanel } from './images';
 import { BizQueuePanel } from './biz-queue';
 import { EmailMatchingPanel } from './email-matching';
@@ -472,7 +472,7 @@ function VendorsPanel() {
               onPress={() => void saveEdit()}
               disabled={acting || !form?.name.trim() || !form?.region.trim()}
             >
-              <Text style={styles.primaryBtnText}>{acting ? '저장 중…' : '저장'}</Text>
+              {acting ? <AdminButtonLoader /> : <Text style={styles.primaryBtnText}>저장</Text>}
             </WritePressable>
             <Pressable style={styles.closeBtn} onPress={() => setForm(null)}>
               <Text style={styles.closeBtnText}>닫기</Text>

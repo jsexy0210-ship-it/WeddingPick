@@ -248,8 +248,8 @@ export function QuoteResultView({
           {confirm ? (
             <ActionButton
               variant="primary"
-              label={confirm.busy ? '확인 중…' : '전부 맞아요'}
-              disabled={confirm.busy}
+              label="전부 맞아요"
+              loading={confirm.busy}
               onPress={() => confirm.onConfirm(pending.map((field) => field.path))}
             />
           ) : null}

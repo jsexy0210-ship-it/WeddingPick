@@ -22,9 +22,8 @@ export const PULL_REFRESH = {
   slop: 6,
   /** 끌기 저항 — 처음에는 손가락의 0.75배로 따라오고 `max`에 가까울수록 무거워진다. */
   rate: 0.75,
-  /** 표시 상자 — 정본 `common.js` `spin(20)`: 상자 40(20 + 20) · 아이콘 20 · radius 10. */
+  /** 표시 상자 — 20px 기본 로더와 위아래 10px 여백. */
   indicatorBox: 40,
-  indicatorIcon: 20,
   /** 놓은 뒤 제자리로(또는 머무는 자리로) 가는 시간 — `Motion.scrimFade`(200)와 같은 값. */
   settleMs: 200,
   /** 표시가 번쩍이고 사라지지 않게 최소 이만큼은 보여준다. */

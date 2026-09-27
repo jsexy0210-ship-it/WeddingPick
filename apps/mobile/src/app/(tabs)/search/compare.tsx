@@ -29,6 +29,7 @@ import {
   Border,
   ErrorView,
   Layout,
+  LoaderSkeleton,
   MaxContentWidth,
   ProductSymbol,
   Radius,
@@ -405,6 +406,7 @@ export default function CompareScreen() {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={`${entry.vendor.name} ${TERMS.pick}`}
+                    accessibilityState={{ busy: candidates.busyVendorId === entry.vendor.id, disabled: candidates.busyVendorId === entry.vendor.id }}
                     disabled={candidates.busyVendorId === entry.vendor.id}
                     onPress={() => void pickVendor(entry.vendor)}
                     style={({ pressed }) => [
@@ -412,9 +414,9 @@ export default function CompareScreen() {
                       styles.ctaGhost,
                       { borderColor: theme.border, opacity: pressed ? 0.8 : 1 },
                     ]}>
-                    <ThemedText type="f14" style={styles.bold}>
-                      {candidates.busyVendorId === entry.vendor.id ? '담는 중…' : TERMS.pick}
-                    </ThemedText>
+                    {candidates.busyVendorId === entry.vendor.id ? <LoaderSkeleton size={20} shape="mark" /> : (
+                      <ThemedText type="f14" style={styles.bold}>{TERMS.pick}</ThemedText>
+                    )}
                   </Pressable>
                 )}
               </View>

@@ -82,10 +82,11 @@ export default function ConsultationUploadRoute() {
           <ActionButton
             variant="primary"
             size="xlarge"
-            label={uploading ? uploadingLabel(progress) : '녹음 올리기'}
-            disabled={uploading}
+            label="녹음 올리기"
+            loading={uploading}
             onPress={() => void uploadAudio()}
           />
+          {uploading ? <ThemedText type="t7" themeColor="textSecondary">{uploadingLabel(progress)}</ThemedText> : null}
           <ActionButton label="취소" disabled={uploading} onPress={close} />
         </SheetPanel>
       </BottomSheet>

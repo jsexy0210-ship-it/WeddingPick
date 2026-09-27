@@ -312,8 +312,9 @@ export default function AddWeddingEventRoute() {
               />
               <ActionButton
                 variant="primary"
-                label={saving ? '저장하는 중…' : copy['expense.save']}
-                disabled={!ready || saving}
+                label={copy['expense.save']}
+                loading={saving}
+                disabled={!ready}
                 onPress={() => void save()}
               />
             </CtaRow>
@@ -321,8 +322,9 @@ export default function AddWeddingEventRoute() {
             <ActionButton
               variant="primary"
               size="xlarge"
-              label={saving ? '넣는 중…' : '일정추가'}
-              disabled={!ready || saving}
+              label="일정추가"
+              loading={saving}
+              disabled={!ready}
               onPress={() => void save()}
             />
           )}

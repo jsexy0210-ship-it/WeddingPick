@@ -349,16 +349,9 @@ export default function AddExpenseRoute() {
             ) : null}
             <ActionButton
               variant="primary"
-              label={
-                editing
-                  ? saving
-                    ? '저장하는 중…'
-                    : copy['expense.save']
-                  : saving
-                    ? '넣는 중…'
-                    : copy['expense.addCta']
-              }
-              disabled={!ready || saving}
+              label={editing ? copy['expense.save'] : copy['expense.addCta']}
+              loading={saving}
+              disabled={!ready}
               onPress={() => void saveOnly()}
             />
           </CtaRow>

@@ -1,15 +1,7 @@
 import { cloneElement, isValidElement, useEffect, useRef, useState, type ReactElement } from 'react';
 import { StyleSheet, View, type RefreshControlProps, type StyleProp, type ViewStyle } from 'react-native';
 
-import {
-  Border,
-  CATEGORY_CYCLE_ORDER,
-  CategoryIcon,
-  Motion,
-  Radius,
-  useReduceMotion,
-  useTheme,
-} from '@weddingpick/ui';
+import { Border, LoaderSkeleton, Radius, Skeleton, useReduceMotion, useTheme } from '@weddingpick/ui';
 import strings from '../../../../../spec/strings.ko.json';
 
 import { createPullTracker, PULL_REFRESH } from './pull-gesture';
@@ -28,7 +20,7 @@ export type PullRefreshControlProps = RefreshControlProps;
  * ```
  * 틀(바깥 크기 · 자리 · overflow hidden)
  *  ├ 밀림(끄는 만큼 translateY) ─ 스크롤(원래 스타일에서 바깥 몫을 뺀 것)
- *  └ 표시(상자 40 · 업종 아이콘 20, 화면 위끝을 따라 내려온다)
+ *  └ 표시(상자 40 · 기본 로더 20, 화면 위끝을 따라 내려온다)
  * ```
  *
  * 몸짓 — 스크롤이 **맨 위일 때** 아래로 끌면(터치 · 마우스) 저항을 받으며 내려오고, 64px 넘게
@@ -44,11 +36,8 @@ export type PullRefreshControlProps = RefreshControlProps;
  * 직후의 click은 삼킨다 — 마우스로 끌다 카드 위에서 놓으면 그 카드가 열리던 것을 막는다.
  * 「움직임 줄이기」면 놓은 뒤 미끄러지지 않고 곧장 자리를 잡는다(손가락을 따라오는 것은 그대로).
  *
- * 표시 — 정본 `common.js` 로더 표 「당겨서 새로 고침 · 아이콘 순회 20 · 문구 없음」, 모양은 같은 파일
- * `spin(20)`(흰 상자 40 · radius 10 · 1px 선 · 코랄 업종 아이콘 20). 끄는 동안은 첫 아이콘이 거리만큼
- * 짙어지고, 새로 고치는 동안 `Motion.loaderIconCycle.perIconSmall`(820ms)마다 다음 업종으로 바뀐다.
- * 2026-09-25 대표 결정 「스켈레톤으로 해」로 화면 로더는 뼈대가 됐지만 당김 표시는 내용을 가리지 않고
- * 위에 떠야 해서 뼈대로 대신할 수 없다 — 정본 표의 이 한 줄을 따랐다. DESIGN_UNRESOLVED.
+ * 표시 — 당기는 동안과 새로 고치는 동안 모두 공용 기본 로더의 작은 mark 스켈레톤을 쓴다.
+ * 40px 상자는 당긴 거리와 머무는 자리의 기존 기하를 유지한다.
  */
 export function PullRefreshControl({ refreshing, onRefresh, enabled = true, style, children }: PullRefreshControlProps) {
   const theme = useTheme();
@@ -263,33 +252,12 @@ export function PullRefreshControl({ refreshing, onRefresh, enabled = true, styl
         accessibilityLabel={mode === 'refreshing' ? strings.journey.loading : undefined}
         style={styles.indicator}>
         <View style={[styles.box, { backgroundColor: theme.background, borderColor: theme.line }]}>
-          <IconCycle cycling={mode === 'refreshing'} color={theme.tint} />
+          {mode !== 'idle' && (reduceMotion
+            ? <Skeleton width={20} height={20} radius={10} style={styles.staticMark} />
+            : <LoaderSkeleton size={20} shape="mark" />)}
         </View>
       </View>
     </View>
-  );
-}
-
-/** 새로 고치는 동안 업종 아이콘을 차례로 바꿔 보인다. 끄는 동안은 첫 아이콘에 머문다. */
-function IconCycle({ cycling, color }: { cycling: boolean; color: string }) {
-  const [step, setStep] = useState(0);
-
-  useEffect(() => {
-    if (!cycling) return;
-    const timer = setInterval(() => setStep((value) => value + 1), Motion.loaderIconCycle.perIconSmall);
-    return () => clearInterval(timer);
-  }, [cycling]);
-
-  const shown = cycling ? step % CATEGORY_CYCLE_ORDER.length : 0;
-
-  return (
-    <>
-      {CATEGORY_CYCLE_ORDER.map((kind, index) => (
-        <View key={kind} style={[styles.icon, FADE, { opacity: index === shown ? 1 : 0 }]}>
-          <CategoryIcon kind={kind} size={PULL_REFRESH.indicatorIcon} color={color} />
-        </View>
-      ))}
-    </>
   );
 }
 
@@ -321,13 +289,6 @@ const GAP = (PULL_REFRESH.hold - PULL_REFRESH.indicatorBox) / 2;
 const SWALLOW_CLICK_MS = 400;
 /** 놓았는데 `refreshing`이 켜지지 않으면 이만큼 뒤 올라간다. */
 const ORPHAN_SETTLE_MS = 1_000;
-/** 아이콘 바뀜 — 정본 `wpSwap` 키프레임의 옅어지는 구간(한 칸 820ms 중 약 240ms). */
-const FADE = {
-  transitionProperty: 'opacity',
-  transitionDuration: '240ms',
-  transitionTimingFunction: 'linear',
-} as unknown as ViewStyle;
-
 const styles = StyleSheet.create({
   wrap: { overflow: 'hidden' },
   fill: { flexGrow: 1, flexShrink: 1, minHeight: 0 },
@@ -340,7 +301,7 @@ const styles = StyleSheet.create({
     opacity: 0,
     transform: [{ translateY: -(PULL_REFRESH.indicatorBox + GAP) }],
   },
-  /* 정본 `spin(20).box` — 40 · radius 10 · 흰 바탕 · 1px #eaebee 선. */
+  /* 당김 표시 자리 — 40 · radius 10 · 흰 바탕 · 1px 선. */
   box: {
     width: PULL_REFRESH.indicatorBox,
     height: PULL_REFRESH.indicatorBox,
@@ -349,5 +310,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  icon: { position: 'absolute' },
+  staticMark: { opacity: 1 },
 });

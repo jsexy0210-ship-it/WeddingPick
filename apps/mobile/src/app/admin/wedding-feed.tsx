@@ -27,7 +27,7 @@
  */
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import {
   WEDDING_FEED_CATEGORIES,
@@ -55,6 +55,7 @@ import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { WritePressable } from './_role';
 import {
+  AdminButtonLoader,
   Card,
   CardGrid,
   AdminFormModal,
@@ -726,7 +727,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                       disabled={draftGenerating || uploadingImage !== null || generatingImage !== null}
                     >
                       {draftGenerating ? (
-                        <ActivityIndicator color={C.onTint} />
+                        <AdminButtonLoader />
                       ) : (
                         <Text style={styles.btnPrimaryLabel}>자동 작성</Text>
                       )}
@@ -770,7 +771,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                       disabled={draftGenerating || uploadingImage !== null || generatingImage !== null}
                     >
                       {uploadingImage === 'thumbnail' ? (
-                        <ActivityIndicator />
+                        <AdminButtonLoader />
                       ) : (
                         <Text style={styles.btnGhostLabel}>{form.imageKey ? '썸네일 교체' : '썸네일 올리기'}</Text>
                       )}
@@ -780,7 +781,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                       onPress={() => void generateFeedImage('thumbnail')}
                       disabled={draftGenerating || uploadingImage !== null || generatingImage !== null}
                     >
-                      {generatingImage === 'thumbnail' ? <ActivityIndicator /> :
+                      {generatingImage === 'thumbnail' ? <AdminButtonLoader /> :
                         <Text style={styles.btnGhostLabel}>이미지 생성</Text>}
                     </WritePressable>
                     {form.imageKey ? (
@@ -818,7 +819,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                       disabled={draftGenerating || uploadingImage !== null || generatingImage !== null}
                     >
                       {uploadingImage === 'body' ? (
-                        <ActivityIndicator />
+                        <AdminButtonLoader />
                       ) : (
                         <Text style={styles.btnGhostLabel}>{form.bodyImageKey ? '본문 이미지 교체' : '본문 이미지 올리기'}</Text>
                       )}
@@ -828,7 +829,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                       onPress={() => void generateFeedImage('body')}
                       disabled={draftGenerating || uploadingImage !== null || generatingImage !== null}
                     >
-                      {generatingImage === 'body' ? <ActivityIndicator /> :
+                      {generatingImage === 'body' ? <AdminButtonLoader /> :
                         <Text style={styles.btnGhostLabel}>이미지 생성</Text>}
                     </WritePressable>
                     {form.bodyImageKey ? (
@@ -885,7 +886,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                     onPress={() => void save()}
                     disabled={saving || needsPick}
                   >
-                    <Text style={styles.btnPrimaryLabel}>{saving ? '저장 중…' : '저장'}</Text>
+                    {saving ? <AdminButtonLoader /> : <Text style={styles.btnPrimaryLabel}>저장</Text>}
                   </WritePressable>
                 </View>
               </View>
@@ -938,7 +939,8 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                 `상태 ${WEDDING_FEED_STATUS_LABEL[deleting.status]} → 삭제됨`,
                 `출처 ${WEDDING_FEED_SOURCE_LABEL[deleting.source]}`,
               ]}
-              cta={deleteBusy ? '지우는 중…' : '삭제'}
+              cta="삭제"
+              busy={deleteBusy}
               danger
               onConfirm={() => void commitDelete()}
               onCancel={() => setDeleting(null)}
