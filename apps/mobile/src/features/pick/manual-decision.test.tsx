@@ -10,7 +10,7 @@ import { confirmAlert } from '@/components/confirm-alert';
 import PickScreen from '../../app/(tabs)/pick/index';
 
 const mockPush = jest.fn();
-const mockParams: { group?: string } = {};
+const mockParams: { group?: string; tab?: string } = {};
 
 jest.mock('expo-router', () => ({
   router: { push: (...args: unknown[]) => mockPush(...args) },
@@ -82,7 +82,7 @@ const PAGE: CandidateListResponse = {
 
 /** «내 조건에 맞는 곳» 카드 한 장 — 화면이 읽는 칸만. */
 function rec(id: string, name: string, category: string) {
-  return { id, name, category, imageUrl: null, paidPrice: { stage: 'collecting', count: 0, caption: '아직 정보가 적어요' }, guidePrice: null };
+  return { id, name, category, region: '서울', imageUrl: null, paidPrice: { stage: 'collecting', count: 0, caption: '아직 정보가 적어요' }, guidePrice: null };
 }
 
 /**
@@ -94,9 +94,10 @@ describe('Pick — 온보딩에서 정한 곳', () => {
 
   beforeEach(async () => {
     delete mockParams.group;
+    delete mockParams.tab;
     jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
     mockPush.mockReset();
-    jest.mocked(getCurrentUser).mockResolvedValue({ weddingId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' } as never);
+    jest.mocked(getCurrentUser).mockResolvedValue({ weddingId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', region: '서울' } as never);
     jest.mocked(listCandidates).mockResolvedValue(PAGE);
     jest.mocked(getPickRecommendations).mockResolvedValue({
       groups: [
@@ -123,6 +124,7 @@ describe('Pick — 온보딩에서 정한 곳', () => {
   afterEach(() => {
     act(() => tree.unmount());
     delete mockParams.group;
+    delete mockParams.tab;
   });
 
   function texts(): string[] {
@@ -140,7 +142,7 @@ describe('Pick — 온보딩에서 정한 곳', () => {
 
   function showCompleted() {
     act(() => {
-      pressables('완료')[0]!.props.onPress();
+      pressables('결정한곳')[0]!.props.onPress();
     });
   }
 
@@ -164,7 +166,7 @@ describe('Pick — 온보딩에서 정한 곳', () => {
 
   it('결정 수 요약 없이 담은 업체와 추천을 구분해 보여준다', () => {
     expect(texts()).not.toContain('2개 결정 · 9개 남음 · 다음 본식스냅');
-    expect(texts().filter((one) => one === '이런 곳은 어떠세요?')).toHaveLength(1);
+    expect(texts().filter((one) => one === '내 조건에 맞는 곳')).toHaveLength(1);
     expect(texts()).toContain('블루밍 스튜디오');
   });
 
@@ -176,7 +178,19 @@ describe('Pick — 온보딩에서 정한 곳', () => {
     });
     await act(async () => { await Promise.resolve(); });
     expect(texts()).toContain('강남 A 웨딩홀');
-    expect(pressables('완료')[0]!.props.accessibilityState).toEqual({ selected: true });
+    expect(pressables('결정한곳')[0]!.props.accessibilityState).toEqual({ selected: true });
+  });
+
+  it('홈의 담은곳 링크는 결정된 묶음이 있어도 담은곳을 연다', async () => {
+    mockParams.group = 'start';
+    mockParams.tab = 'progress';
+    await act(async () => {
+      tree.unmount();
+      tree = create(<SafeAreaProvider initialMetrics={METRICS}><PickScreen /></SafeAreaProvider>);
+    });
+    await act(async () => { await Promise.resolve(); });
+    expect(pressables('담은곳')[0]!.props.accessibilityState).toEqual({ selected: true });
+    expect(texts()).not.toContain('강남 A 웨딩홀');
   });
 
   it('홈에서 들어온 묶음을 먼저 보여주고 다른 Pick도 이어서 보여준다', async () => {
@@ -235,9 +249,9 @@ describe('Pick — 온보딩에서 정한 곳', () => {
     expect(texts()).not.toContain('아직 담은 곳이 없어요');
     expect(texts()).not.toContain('업체 검색하기');
     act(() => {
-      pressables('진행 중')[0]!.props.onPress();
+      pressables('담은곳')[0]!.props.onPress();
     });
-    expect(texts()).toContain('진행 중인 곳이 없어요');
+    expect(texts()).toContain('담은 곳이 없어요');
   });
 
   it('직접 입력한 곳은 스드메 묶음의 결정 카드로 서고, 업체 상세 · 상담예약은 없다', () => {
@@ -256,12 +270,52 @@ describe('Pick — 온보딩에서 정한 곳', () => {
     // 끝난 웨딩홀의 추천은 없고, 아직 스튜디오만 정한 스드메의 추천은 그대로다.
     expect(texts()).not.toContain('강남 B 웨딩홀');
     expect(texts()).not.toContain('블루밍 스튜디오');
-    expect(texts()).not.toContain('이런 곳은 어떠세요?');
+    expect(texts()).not.toContain('내 조건에 맞는 곳');
+  });
+
+  it('추천은 지역 조건을 적용한 검색으로 더 찾을 수 있다', () => {
+    act(() => pressables('검색에서 더 찾기')[0]!.props.onPress());
+    expect(mockPush).toHaveBeenCalledWith('/search?region=%EC%84%9C%EC%9A%B8');
+  });
+
+  it('하단 업체 제안은 여러 묶음에서 최대 다섯 곳만 보여준다', async () => {
+    jest.mocked(getPickRecommendations).mockResolvedValue({
+      groups: [
+        { key: 'start', vendors: [] },
+        { key: 'sdm', vendors: Array.from({ length: 5 }, (_, i) => rec(`s${i}`, `스드메 ${i}`, 'studio')) },
+        { key: 'ceremony', vendors: Array.from({ length: 5 }, (_, i) => rec(`c${i}`, `본식 ${i}`, 'snap')) },
+        { key: 'goods', vendors: Array.from({ length: 5 }, (_, i) => rec(`g${i}`, `예물 ${i}`, 'jewelry')) },
+      ],
+    } as never);
+    await act(async () => {
+      tree.unmount();
+      tree = create(<SafeAreaProvider initialMetrics={METRICS}><PickScreen /></SafeAreaProvider>);
+    });
+    await act(async () => { await Promise.resolve(); });
+    expect(pressables('검색에서 더 찾기')).toHaveLength(1);
+    expect(texts().filter((one) => /^(스드메|본식|예물) \d$/.test(one))).toHaveLength(5);
+    expect(texts()).toContain('스드메 0');
+    expect(texts()).toContain('본식 0');
+    expect(texts()).toContain('예물 0');
+  });
+
+  it('지역·서버 이유가 없으면 맞는 이유를 지어내지 않는다', async () => {
+    jest.mocked(getPickRecommendations).mockResolvedValue({
+      groups: [{ key: 'sdm', vendors: [{ ...rec('busan', '부산 스튜디오', 'studio'), region: '부산' }] }],
+    } as never);
+    await act(async () => {
+      tree.unmount();
+      tree = create(<SafeAreaProvider initialMetrics={METRICS}><PickScreen /></SafeAreaProvider>);
+    });
+    await act(async () => { await Promise.resolve(); });
+    expect(texts()).toContain('부산 스튜디오');
+    expect(texts()).not.toContain('스튜디오 준비');
+    expect(texts()).not.toContain('선택한 지역');
   });
 
   it('카테고리 칩 없이 진행 중 목록과 완료 묶음을 구분한다', () => {
     expect(tree.root.findAll((node) => node.props.accessibilityRole === 'radio')).toHaveLength(0);
-    expect(texts()).toContain('이런 곳은 어떠세요?');
+    expect(texts()).toContain('내 조건에 맞는 곳');
     showCompleted();
     expect(tree.root.findAll((node) => node.props.accessibilityLabel === '웨딩홀 결정완료')).not.toHaveLength(0);
     expect(texts()).toContain('스드메');
@@ -292,7 +346,7 @@ describe('Pick — 온보딩에서 정한 곳', () => {
     expect(texts()).not.toContain('결정완료');
     expect(tree.root.findAll((node) => node.props.accessibilityLabel === '웨딩홀 결정완료')).toHaveLength(0);
     act(() => {
-      pressables('진행 중')[0]!.props.onPress();
+      pressables('담은곳')[0]!.props.onPress();
     });
     expect(texts()).toContain('강남 B 웨딩홀');
   });
@@ -338,6 +392,8 @@ describe('Pick — 결정이 끝난 묶음의 후보', () => {
   const newer = cand('3', '강남 B 웨딩홀', '2026-09-05T00:00:00.000Z');
 
   beforeEach(async () => {
+    delete mockParams.group;
+    delete mockParams.tab;
     jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
     jest.mocked(getCurrentUser).mockResolvedValue({
       weddingId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
@@ -365,6 +421,8 @@ describe('Pick — 결정이 끝난 묶음의 후보', () => {
 
   afterEach(() => {
     act(() => tree.unmount());
+    delete mockParams.group;
+    delete mockParams.tab;
   });
 
   function names(): string[] {
@@ -379,7 +437,7 @@ describe('Pick — 결정이 끝난 묶음의 후보', () => {
     expect(names()).toEqual(['강남 B 웨딩홀', '루이비스스퀘어']);
 
     const completedTab = tree.root.findAll(
-      (node) => node.props.accessibilityLabel === '완료' && typeof node.props.onPress === 'function'
+      (node) => node.props.accessibilityLabel === '결정한곳' && typeof node.props.onPress === 'function'
     );
     act(() => {
       completedTab[0]!.props.onPress();
@@ -393,10 +451,10 @@ describe('Pick — 결정이 끝난 묶음의 후보', () => {
       (node) => node.props.accessibilityLabel === label && typeof node.props.onPress === 'function'
     )[0]!;
     expect(action('비교 닫기')).toBeUndefined();
-    expect(action('강남 B 웨딩홀 비교에 담기').props.accessibilityRole).toBe('button');
-    expect(action('강남 B 웨딩홀 비교에 담기').props.accessibilityState.selected).toBe(false);
+    expect(action('강남 B 웨딩홀 비교에 담기').props.accessibilityRole).toBe('checkbox');
+    expect(action('강남 B 웨딩홀 비교에 담기').props.accessibilityState.checked).toBe(false);
     act(() => action('강남 B 웨딩홀 비교에 담기').props.onPress());
-    expect(action('강남 B 웨딩홀 비교에서 빼기').props.accessibilityState.selected).toBe(true);
+    expect(action('강남 B 웨딩홀 비교에서 빼기').props.accessibilityState.checked).toBe(true);
     expect(action('비교 닫기')).toBeUndefined();
     act(() => action('루이비스스퀘어 비교에 담기').props.onPress());
     expect(action('비교 닫기')).toBeDefined();
@@ -405,6 +463,32 @@ describe('Pick — 결정이 끝난 묶음의 후보', () => {
     act(() => action('비교 닫기').props.onPress());
     expect(action('비교 닫기')).toBeUndefined();
     expect(action('강남 B 웨딩홀 비교에 담기')).toBeDefined();
+  });
+
+  it('카드 본문은 업체 상세로 가고 상담예약 단추만 예약 화면으로 간다', () => {
+    const detail = tree.root.findAll((node) => node.props.accessibilityLabel === '강남 B 웨딩홀 자세히 보기' && typeof node.props.onPress === 'function')[0]!;
+    act(() => detail.props.onPress());
+    expect(mockPush).toHaveBeenCalledWith(`/pick/vendor/${newer.vendorId}?from=pick`);
+    const consult = tree.root.findAll((node) => node.props.accessibilityLabel === '강남 B 웨딩홀 상담예약' && typeof node.props.onPress === 'function');
+    expect(consult).toHaveLength(1);
+  });
+
+  it('결정한곳으로 옮기면 비교 선택과 고정 바를 비운다', () => {
+    const action = (label: string) => tree.root.findAll((node) => node.props.accessibilityLabel === label && typeof node.props.onPress === 'function')[0]!;
+    act(() => action('강남 B 웨딩홀 비교에 담기').props.onPress());
+    act(() => action('루이비스스퀘어 비교에 담기').props.onPress());
+    expect(action('비교하기')).toBeDefined();
+    act(() => action('결정한곳').props.onPress());
+    expect(action('비교하기')).toBeUndefined();
+    act(() => action('담은곳').props.onPress());
+    expect(action('강남 B 웨딩홀 비교에 담기')).toBeDefined();
+  });
+
+  it('업체 제안이 0건이어도 담은곳 아래에서 검색을 열 수 있다', () => {
+    const action = tree.root.findAll((node) => node.props.accessibilityLabel === '검색에서 더 찾기' && typeof node.props.onPress === 'function');
+    expect(action).toHaveLength(1);
+    act(() => action[0]!.props.onPress());
+    expect(mockPush).toHaveBeenCalledWith('/search');
   });
 });
 

@@ -1,8 +1,9 @@
 import React from 'react';
 import { act, create, type ReactTestRenderer, type ReactTestRendererJSON } from 'react-test-renderer';
-import { MyWeddingPrep, HomeBudget } from './home-summary';
+import { MyWeddingPrep, HomeBudget, HomeDestinationLink } from './home-summary';
 import { formatWeddingDate, partnerLine, weatherLines } from './hero';
 import { homePrepCards } from './prep-groups';
+import { UpcomingSchedule } from './wedding-schedule';
 
 jest.mock('./category-image', () => ({ CategoryImage: () => null }));
 
@@ -88,7 +89,7 @@ describe('최신 홈·추천 연결', () => {
   it('예산만 있고 쓴 돈이 없으면 WP-HOME-002 문구를 보여 준다', () => {
     const view = mount(<HomeBudget budget={{ total: 17_500_000, spent: 0, remaining: 17_500_000 }} onOpen={jest.fn()} />);
     expect(text(view)).toContain('온보딩에서 등록한 예산이에요');
-    expect(text(view)).toContain('아직 예산 정보가 없어요');
+    expect(text(view)).toContain('아직 기록한 지출이 없어요');
     expect(text(view)).toContain('0%');
   });
 
@@ -97,5 +98,34 @@ describe('최신 홈·추천 연결', () => {
     expect(text(view)).toContain('예산을 넘었어요');
     const bar = view.root.findAllByProps({ accessibilityRole: 'progressbar' })[0];
     expect(bar!.props.accessibilityValue).toEqual({ min: 0, max: 100, now: 100 });
+  });
+
+  it('홈 섹션의 이동 행은 미리보기 아래에서 목적지와 행동을 말한다', () => {
+    const prepPress = jest.fn();
+    const schedulePress = jest.fn();
+    const budgetPress = jest.fn();
+    const feedPress = jest.fn();
+    const prep = mount(<MyWeddingPrep cards={[]} sub="준비를 시작해 보세요" onOpen={jest.fn()} onMore={prepPress} />);
+    const schedule = mount(<UpcomingSchedule rows={[{ kind: 'preset', id: 'one', num: 1, title: '상견례 날짜 정하기', meta: '날짜 미정' }]} hasDate={false} onMore={schedulePress} />);
+    const budget = mount(<HomeBudget budget={null} onOpen={budgetPress} />);
+    const feed = mount(<HomeDestinationLink destination="웨딩정보" action="콘텐츠 보기" icon="communityRegular" onPress={feedPress} />);
+
+    for (const [view, label, handler] of [
+      [prep, 'Pick 담은곳 보기', prepPress],
+      [schedule, '웨딩노트 웨딩일정 보기', schedulePress],
+      [budget, '웨딩노트 예산현황 보기', budgetPress],
+      [feed, '웨딩정보 콘텐츠 보기', feedPress],
+    ] as const) {
+      const destination = view.root.findByProps({ accessibilityLabel: label });
+      expect(destination.props.accessibilityRole).toBe('button');
+      act(() => destination.props.onPress());
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(text(view)).not.toContain('자세히');
+    }
+    expect(budget.root.findAllByProps({ accessibilityLabel: '예산현황 자세히' })).toHaveLength(0);
+
+    const setup = mount(<HomeBudget budget={null} hasWedding={false} onOpen={budgetPress} />);
+    act(() => setup.root.findByProps({ accessibilityLabel: 'MY 내 웨딩 설정' }).props.onPress());
+    expect(budgetPress).toHaveBeenCalledTimes(2);
   });
 });

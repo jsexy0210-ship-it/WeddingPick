@@ -9,20 +9,18 @@
  *
  * v3.29.1 정본 `docs/design/React_Native/pick.jsx` frame-001을 바탕으로 한다.
  * 최신 사용자 지시에 따라 카테고리 칩을 빼고 담은 업체를 먼저 모아 보여준 뒤 추천을 한 번만 둔다.
- * 카드는 검색 결과와 같은 틀(썸네일 104×116 · 정보 안쪽 14)에 원래의 하단 CTA 띠를 둔다.
+ * 카드는 검색 결과의 이미지·정보 순서를 따르고, 비교·상담 행동을 정보 열 안에 둔다.
  *
  * **v3.29 대조로 정한 것.**
- * - 사용자 후속 지시에 따라 후보와 결정은 «진행 중 · 완료» 탭으로 구분한다. 홈 «내 웨딩 준비»
- *   카드는 `/pick?group=<묶음>`으로 들어오고, 이미 끝난 묶음이면 완료 탭을 연다.
+ * - 사용자 후속 지시에 따라 후보와 결정은 «담은곳 · 결정한곳» 탭으로 구분한다. 홈 «내 웨딩 준비»
+ *   카드는 `/pick?group=<묶음>`으로 들어오고, 이미 끝난 묶음이면 결정한곳 탭을 연다.
  * - `/pick?section=recommendations` 분기는 없앴다(2026-09-25 대표 지시). 옛 링크로 들어와도
  *   `section`을 보지 않으므로 이 기본 화면이 뜬다.
  * - 최종 결정 확인 시트(옛 `/pick/confirm`)는 2026-09-25 대표 결정(안 A)으로 삭제했다.
  *   상담 예약은 더 이상 최종 결정을 먼저 요구하지 않는다 — Pick에 담은 업체(후보)라면
  *   결정 전이라도 카드에서 바로 상담 예약으로 간다(서버도 후보 · 결정 둘 다 받는다).
- * - 카드를 누르면 그 업체의 상담 예약(`/search/[vendorId]/consult`)으로 바로 간다 — 정본
- *   frame-001 tagDesc «카드를 누르면 상담 예약으로 바로 이어집니다»(2026-09-25 MASTER 지시로
- *   diffs «상담 진입»보다 이 동선을 따른다). 상담 예약 화면 자체는 검색 화면군 소유다.
- * - 카드 CTA는 상담예약 하나이고 비교는 텍스트 링크다. 결정한 카드만 코랄,
+ * - 카드 본문은 업체 상세, 명시적인 «상담예약» 단추는 상담 예약으로 간다.
+ * - 담은 카드의 비교는 작은 아이콘, 상담예약은 작은 CTA다. 결정한 카드만 코랄,
  *   나머지는 흰 바탕 + 1px 선이다.
  * - 삭제(WP-PICK-008)는 확인 시트 없이 «빼기»로 즉시 지우고 «되돌리기» 토스트만 띄운다.
  *
@@ -41,9 +39,9 @@
  * 완료를 푼다(2026-09-26 대표 결정 · `features/pick/completed-groups`, 홈 «계약 완료»와 갈린다): 머리 앞에 정본 `doneMarkSm`(22 코랄 원 ·
  * 흰 체크 13)을 세우고 «N개 · 최신순» 자리에 «결정 완료»를 적는다. 결정 카드는 완료 탭에,
  * 아직 담아 둔 후보는 진행 중 탭에 둔다. 끝난 묶음에는 «내 조건에 맞는 곳»을 그리지 않는다.
- * 완료 탭의 끝난 묶음 칩에는 14px 코랄 체크를 라벨 앞에 붙인다.
+ * 결정한곳 탭의 끝난 묶음에는 코랄 체크를 라벨 앞에 붙인다.
  *
- * **추천**은 서버의 묶음별 최대 5곳을 한 줄로 모아 담은 업체 목록 끝에 둔다.
+ * **내 조건에 맞는 곳**은 서버의 묶음별 결과에서 최대 5곳을 담은 업체 목록 끝에 둔다.
  * 카드마다 «Pick»으로 바로 담는다. 고르는 규칙은 서버
  * `GET /v1/me/pick-recommendations`(온보딩 지역 · 예산 · 스타일 · 준비 현황)가 정한다.
  */
@@ -125,8 +123,8 @@ import { pick as pickCopy } from '../../../../../../spec/strings.ko.json';
 /* 문구 — spec/strings.ko.json `pick` · features/pick/canonical-rules. */
 const COMPARE_ALL = '비교하기';
 const PICK_TABS = [
-  { key: 'progress', label: '진행 중' },
-  { key: 'completed', label: '완료' },
+  { key: 'progress', label: '담은곳' },
+  { key: 'completed', label: '결정한곳' },
 ] as const;
 type PickTab = (typeof PICK_TABS)[number]['key'];
 const ACTION_COMPARE = PICK_COMPARE_ADD_LABEL;
@@ -145,12 +143,12 @@ const UNDECIDE_BODY = '웨딩노트의 결정 상태가 풀려요. 언제든 다
 const MIN_COMPARE = 2;
 /* 정본 pick.js `sv().thumb` radius 8 — 같은 값의 기존 토큰(Radius.picker). */
 const THUMB_RADIUS = Radius.picker;
+const CANDIDATE_THUMB_WIDTH = 88;
+const CANDIDATE_THUMB_HEIGHT = 100;
 /* 추천은 담은 목록 끝에 한 번만 노출한다. */
-const RECOMMEND_TITLE = '이런 곳은 어떠세요?';
+const RECOMMEND_TITLE = '내 조건에 맞는 곳';
 const RECOMMEND_PICK = TERMS.pick;
-/** 추천 카드 폭 · 사진 높이. 정본 값이 없어 검색 썸네일 높이(116)에 폭을 맞췄다(DESIGN_SOURCE_NOT_VERIFIED). */
-const RECOMMEND_CARD_WIDTH = 148;
-const RECOMMEND_THUMB_HEIGHT = Layout.thumbSearchHeight;
+const RECOMMEND_LIMIT = 5;
 /** 정본 frame-001 tagDesc «곧 3개씩 제공하고» — 묶음마다 먼저 보이는 카드 수. */
 const GROUP_PREVIEW = 3;
 /* 끝난 묶음의 머리 — 정본 pick.js `confirmRows` · `doneRows` «결정 완료»(= PREPARATION_STATE_LABEL.decided). */
@@ -210,8 +208,12 @@ function pickSections(rows: readonly Row[], manual: readonly ManualDecision[] = 
 export default function PickScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const { visible: scrollTopVisible, onScroll: onScrollTop, reset: resetScrollTop } = useScrollToTopVisibility();
-  const { group: groupParam } = useLocalSearchParams<{ group?: string | string[] }>();
+  const { group: groupParam, tab: tabParam } = useLocalSearchParams<{
+    group?: string | string[];
+    tab?: string | string[];
+  }>();
   const rawGroup = Array.isArray(groupParam) ? groupParam[0] : groupParam;
+  const rawTab = Array.isArray(tabParam) ? tabParam[0] : tabParam;
   /* 홈 «내 웨딩 준비» 카드가 넘긴 묶음. 모르는 값이면 «전체». */
   const requestedGroup = PREPARATION_GROUPS.find((group) => group.key === rawGroup)?.key ?? null;
   const theme = useTheme();
@@ -223,13 +225,15 @@ export default function PickScreen() {
   const [error, setError] = useState<string | null>(null);
   const [selectedTab, setTab] = useState<PickTab | null>(null);
   /* 홈에서 다른 묶음으로 다시 들어오면 해당 묶음의 완료 상태에 맞는 탭을 연다. */
-  const [seenGroup, setSeenGroup] = useState(requestedGroup);
-  if (seenGroup !== requestedGroup) {
-    setSeenGroup(requestedGroup);
-    setTab(null);
-  }
+  const entryKey = `${requestedGroup ?? ''}|${rawTab ?? ''}`;
+  const [seenEntry, setSeenEntry] = useState(entryKey);
   /** 비교함에 담은 업체(vendorId). 최대 PICK_COMPARE_MAX. */
   const [compare, setCompare] = useState<ReadonlySet<string>>(new Set());
+  if (seenEntry !== entryKey) {
+    setSeenEntry(entryKey);
+    setTab(null);
+    setCompare(new Set());
+  }
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [undoCandidate, setUndoCandidate] = useState<UndoCandidate | null>(null);
@@ -275,7 +279,9 @@ export default function PickScreen() {
   const doneGroups = completedPickGroups(page);
   const requestedGroupCompleted = requestedGroup !== null && doneGroups.has(requestedGroup);
   const allDone = decidedCount(categoryStatuses({ candidates: page })) === HOME_TOTAL;
-  const tab = selectedTab ?? (requestedGroupCompleted || allDone ? 'completed' : 'progress');
+  const tab = selectedTab ?? (rawTab === 'progress' || rawTab === 'completed'
+    ? rawTab
+    : requestedGroupCompleted || allDone ? 'completed' : 'progress');
   useEffect(() => {
     resetScrollTop();
     scrollRef.current?.scrollTo({ y: 0, animated: false });
@@ -294,17 +300,24 @@ export default function PickScreen() {
   const recsFor = (key: string): readonly VendorSummary[] =>
     recs?.groups.find((group) => group.key === key)?.vendors ?? [];
   const pickedVendorIds = new Set(rows.map((row) => row.candidate.vendorId));
-  const recommended = tab === 'progress'
-    ? [...new Map(
-        sections
-          .filter((section) => !doneGroups.has(section.key as PreparationGroupKey))
-          .flatMap((section) => recsFor(section.key))
-          .filter((vendor) => !pickedVendorIds.has(vendor.id))
-          .map((vendor) => [vendor.id, vendor] as const),
-      ).values()]
-    : [];
-  const hasProgress = rows.some((row) => !row.isDecided) ||
-    (recs?.groups ?? []).some((group) => !doneGroups.has(group.key as PreparationGroupKey) && group.vendors.length > 0);
+  const availableGroups = sections.filter((section) => !doneGroups.has(section.key as PreparationGroupKey));
+  const recommended: VendorSummary[] = [];
+  const requestedRecommendationGroup = availableGroups.find((section) => section.key === requestedGroup);
+  const recommendationGroups = requestedRecommendationGroup
+    ? [requestedRecommendationGroup]
+    : availableGroups;
+  if (tab === 'progress') {
+    for (let rank = 0; recommended.length < RECOMMEND_LIMIT && rank < RECOMMEND_LIMIT; rank += 1) {
+      for (const section of recommendationGroups) {
+        const vendor = recsFor(section.key)[rank];
+        if (vendor && !pickedVendorIds.has(vendor.id) && !recommended.some((one) => one.id === vendor.id)) {
+          recommended.push(vendor);
+          if (recommended.length === RECOMMEND_LIMIT) break;
+        }
+      }
+    }
+  }
+  const hasProgress = rows.some((row) => !row.isDecided) || recommended.length > 0;
   const hasCompleted = rows.some((row) => row.isDecided) || manualDecisions.length > 0;
   /*
    * 여기서 여는 업체 상세 · 상담 예약은 **검색 스택**에 쌓인다 — 출처를 넘기지 않으면 Back이
@@ -478,7 +491,7 @@ export default function PickScreen() {
           {/* 제목 줄은 스크롤 밖에 고정한다 — 다른 Root 네 탭과 같다(2026-09-26 대표 「고정으로 통일해」). */}
           <Header />
           {error ? (
-            <ScrollView contentContainerStyle={styles.scroll} refreshControl={pull.refreshControl}>
+            <ScrollView style={styles.scroller} contentContainerStyle={styles.scroll} refreshControl={pull.refreshControl}>
               <View style={styles.errorBox}>
                 <ThemedText type="t2">불러오지 못했어요</ThemedText>
                 <ThemedText type="t6" themeColor="textSecondary">
@@ -494,6 +507,7 @@ export default function PickScreen() {
           ) : (
             <ScrollView
               ref={scrollRef}
+              style={styles.scroller}
               onScroll={onScrollTop}
               scrollEventThrottle={100}
               contentContainerStyle={styles.scroll}
@@ -508,7 +522,10 @@ export default function PickScreen() {
                       accessibilityRole="tab"
                       accessibilityState={{ selected }}
                       accessibilityLabel={item.label}
-                      onPress={() => setTab(item.key)}
+                      onPress={() => {
+                        if (item.key !== 'progress') setCompare(new Set());
+                        setTab(item.key);
+                      }}
                       style={[styles.tab, selected ? [styles.tabActive, { borderBottomColor: theme.text }] : null]}>
                       <ThemedText type="f15" style={[styles.bold, { color: selected ? theme.text : theme.textAssistive }]}>
                         {item.label}
@@ -521,8 +538,8 @@ export default function PickScreen() {
                 allDone ? (
                   <View style={styles.emptyCompleted}>
                     <EmptyStateIcon />
-                    <ThemedText type="f16" style={styles.bold}>진행 중인 곳이 없어요</ThemedText>
-                    <ThemedText type="f13" themeColor="textAssistive">결정한 곳은 완료에서 볼 수 있어요</ThemedText>
+                    <ThemedText type="f16" style={styles.bold}>담은 곳이 없어요</ThemedText>
+                    <ThemedText type="f13" themeColor="textAssistive">결정한 곳은 결정한곳 탭에서 볼 수 있어요</ThemedText>
                   </View>
                 ) : <Empty />
               ) : null}
@@ -533,10 +550,10 @@ export default function PickScreen() {
                   <ThemedText type="f13" themeColor="textAssistive">최종 결정한 곳을 여기서 볼 수 있어요</ThemedText>
                 </View>
               ) : null}
-              {visibleSections.length > 0 || recommended.length > 0 ? (
+              {visibleSections.length > 0 || (tab === 'progress' && hasProgress) ? (
                 <>
                   {/* 묶음 목록. 비교 바는 스크롤 밖 하단에 고정한다. */}
-                  <View style={[styles.mypickSec, { borderTopColor: theme.border }]}>
+                  {visibleSections.length > 0 ? <View style={[styles.mypickSec, { borderTopColor: theme.border }]}>
                     <View style={styles.groupWrap}>
                       {visibleSections.map((section) => {
                         const open = expanded.has(section.key);
@@ -621,21 +638,23 @@ export default function PickScreen() {
                         );
                       })}
                     </View>
-                  </View>
-                  <RecommendRow
+                  </View> : null}
+                  {tab === 'progress' ? <RecommendRow
                     vendors={recommended}
                     canPick={weddingId !== null}
                     busy={busy}
                     origin={origin}
+                    region={me.region}
+                    searchCategory={requestedRecommendationGroup?.key === 'start' ? 'hall' : null}
                     onPick={(vendor) => void pickRecommended(vendor)}
-                  />
+                  /> : null}
                 </>
               ) : null}
               <View style={styles.bottomSpacer} />
             </ScrollView>
           )}
         </View>
-        {compare.size >= MIN_COMPARE ? (
+        {tab === 'progress' && compare.size >= MIN_COMPARE ? (
           <View style={[styles.compareDock, { backgroundColor: theme.background, borderTopColor: theme.border }]}>
             <View style={styles.compareDockRow}>
               <View style={[styles.compareBanner, { backgroundColor: theme.tintSurface, borderColor: theme.tintBorder }]}>
@@ -660,7 +679,7 @@ export default function PickScreen() {
             </View>
           </View>
         ) : null}
-        <ScrollToTopButton visible={scrollTopVisible && !error && compare.size < MIN_COMPARE} bottom={Spacing.two} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
+        <ScrollToTopButton visible={scrollTopVisible && !error && (tab !== 'progress' || compare.size < MIN_COMPARE)} bottom={Spacing.two} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
       </SafeAreaView>
 
       <DialogToast
@@ -688,9 +707,7 @@ function Header() {
   return <RootTabHeader title={TERMS.pick} />;
 }
 
-/* ────────────────────────────────────────────
-   카드 — 정본 `sv()`: 썸네일 열 120 + 정보 + 아래 CTA 띠(border-top · 안쪽 8 14 10 · 단추 40 · radius 6)
-──────────────────────────────────────────── */
+/* 검색 카드의 이미지·정보 순서를 유지하고 비교·상담 행동은 정보 열 아래에 둔다. */
 function CandidateCard({
   row,
   comparing,
@@ -714,6 +731,8 @@ function CandidateCard({
   const theme = useTheme();
   const { candidate, isDecided } = row;
   const compareDisabled = !comparing && compareFull;
+  const openDetail = () =>
+    router.push(inStack('/pick', `/search/${encodeURIComponent(candidate.vendorId)}?from=${encodeURIComponent(origin)}`) as never);
   const openConsult = () =>
     router.push(inStack('/pick', `/search/${encodeURIComponent(candidate.vendorId)}/consult?from=${encodeURIComponent(origin)}`) as never);
 
@@ -727,17 +746,17 @@ function CandidateCard({
           borderWidth: isDecided ? 1.5 : Border.hairline,
         },
       ]}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${candidate.vendorName} ${ACTION_CONSULT}`}
-        onPress={openConsult}
-        style={styles.cardBody}>
-        <View style={styles.thumbCol}>
+      <View style={styles.cardBody}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${candidate.vendorName} 자세히 보기`}
+          onPress={openDetail}
+          style={styles.thumbCol}>
           <VendorImage
             source={candidate.imageUrl ? { uri: candidate.imageUrl } : undefined}
             category={vendorImageCategory(candidate.category)}
-            width={Layout.thumbSearchWidth}
-            height={Layout.thumbSearchHeight}
+            width={CANDIDATE_THUMB_WIDTH}
+            height={CANDIDATE_THUMB_HEIGHT}
             radius={THUMB_RADIUS}
           />
           {candidate.addedByPartner ? (
@@ -753,19 +772,22 @@ function CandidateCard({
               <ProductSymbol name="check" size={Layout.iconSmall} color={theme.onTint} />
             </View>
           ) : null}
-        </View>
+        </Pressable>
 
-        <View style={styles.info}>
+        <View style={styles.candidateInfo}>
           <View style={styles.headRow}>
-            <View style={styles.headText}>
-              {/* 규격서: 업종 «10/700 #868B94 · lh 15 · ls 0.5px» · 이름 «16/700 · lh 22 · mar 2 0 0 0». */}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${candidate.vendorName} 자세히 보기`}
+              onPress={openDetail}
+              style={styles.headText}>
               <ThemedText type="f10" themeColor="textAssistive" style={[styles.bold, styles.tracked]}>
                 {VENDOR_CATEGORY_LABEL[candidate.category]}
               </ThemedText>
               <ThemedText type="f14" numberOfLines={1} style={[styles.bold, styles.name]}>
                 {candidate.vendorName}
               </ThemedText>
-            </View>
+            </Pressable>
             {/* × — 후보에서 즉시 뺀다(WP-PICK-008). 되돌리기는 토스트가 맡는다. */}
             <Pressable
               accessibilityRole="button"
@@ -776,61 +798,74 @@ function CandidateCard({
               <ProductSymbol name="close" size={Layout.iconField} color={theme.textDisabled} />
             </Pressable>
           </View>
-          <View style={styles.location}>
-            {/* 정본 icoPin: SEED location 12 · #868b94 — 같은 패스의 SeedIcon locationRegular. */}
-            <SeedIcon name="locationRegular" size={Layout.iconMicro} color={theme.textAssistive} />
-            {/* 규격서: 지역 «12/400 #868B94 · lh 16 · mar 6 0 0 0». */}
-            <ThemedText type="f12" themeColor="textAssistive" numberOfLines={1} style={styles.locText}>
-              {regionLabel(candidate.region)}
-            </ThemedText>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${candidate.vendorName} 자세히 보기`}
+            onPress={openDetail}
+            style={styles.candidateDetails}>
+            <View style={styles.location}>
+              <SeedIcon name="locationRegular" size={Layout.iconMicro} color={theme.textAssistive} />
+              <ThemedText type="f12" themeColor="textAssistive" numberOfLines={1} style={styles.locText}>
+                {regionLabel(candidate.region)}
+              </ThemedText>
+            </View>
+            {candidate.rating ? <RatingStars value={candidate.rating.average} count={candidate.rating.count} /> : null}
+            {candidate.note ? (
+              <ThemedText type="f10" themeColor="textAssistive" numberOfLines={1} style={[styles.medium, styles.candidateNote]}>
+                {candidate.note}
+              </ThemedText>
+            ) : null}
+          </Pressable>
+          <View style={styles.inlineActions}>
+            {isDecided ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`${candidate.vendorName} ${ACTION_UNDECIDE}`}
+                disabled={busy}
+                onPress={onUndecide}
+                style={({ pressed }) => [styles.decisionUndo, pressed ? styles.pressed : null]}>
+                <ThemedText type="f12" themeColor="textAssistive">{ACTION_UNDECIDE}</ThemedText>
+              </Pressable>
+            ) : (
+              <Pressable
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: comparing, disabled: compareDisabled }}
+                accessibilityLabel={`${candidate.vendorName} ${comparing ? ACTION_COMPARING : ACTION_COMPARE}`}
+                disabled={compareDisabled}
+                hitSlop={Spacing.one}
+                onPress={onCompare}
+                style={({ pressed }) => [
+                  styles.compareIcon,
+                  compareDisabled ? styles.disabled : null,
+                  pressed ? styles.pressed : null,
+                ]}>
+                <View style={[styles.compareBox, {
+                  borderColor: comparing ? theme.tint : theme.textAssistive,
+                  backgroundColor: comparing ? theme.tint : theme.background,
+                }]}>
+                  {comparing ? <ProductSymbol name="check" size={14} color={theme.onTint} /> : null}
+                </View>
+              </Pressable>
+            )}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${candidate.vendorName} ${ACTION_CONSULT}`}
+              disabled={busy}
+              onPress={openConsult}
+              style={({ pressed }) => [
+                styles.decisionCta,
+                isDecided
+                  ? { backgroundColor: theme.tint, borderColor: theme.tint }
+                  : { backgroundColor: theme.background, borderColor: theme.border },
+                pressed ? styles.pressed : null,
+                busy ? styles.busy : null,
+              ]}>
+              <ThemedText type="f12" style={[styles.bold, { color: isDecided ? theme.onTint : theme.text }]}>
+                {ACTION_CONSULT}
+              </ThemedText>
+            </Pressable>
           </View>
-          {/* 후기 별점은 최신 CLAUDE.md의 미해결 예외에 따라 유지한다. */}
-          {candidate.rating ? (
-            <RatingStars value={candidate.rating.average} count={candidate.rating.count} />
-          ) : null}
-          {candidate.note ? (
-            /* 규격서 해시태그 줄 자리 «10/500 #868B94 · lh 15 · mar 8 0 0 0». */
-            <ThemedText type="f10" themeColor="textAssistive" numberOfLines={1} style={[styles.medium, styles.note]}>
-              {candidate.note}
-            </ThemedText>
-          ) : null}
         </View>
-      </Pressable>
-      <View style={[styles.ctaStrip, { borderTopColor: theme.border }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={isDecided ? undefined : { selected: comparing, disabled: compareDisabled }}
-          accessibilityLabel={`${candidate.vendorName} ${isDecided ? ACTION_UNDECIDE : comparing ? ACTION_COMPARING : ACTION_COMPARE}`}
-          disabled={isDecided ? busy : compareDisabled}
-          onPress={isDecided ? onUndecide : onCompare}
-          style={({ pressed }) => [
-            styles.compareLink,
-            !isDecided && compareDisabled ? styles.disabled : null,
-            pressed ? styles.pressed : null,
-          ]}>
-          <ThemedText
-            type="f13"
-            style={[styles.bold, { color: isDecided ? theme.textAssistive : comparing ? theme.tint : compareDisabled ? theme.textDisabled : theme.textAssistive }]}>
-            {isDecided ? ACTION_UNDECIDE : comparing ? ACTION_COMPARING : ACTION_COMPARE}
-          </ThemedText>
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${candidate.vendorName} ${ACTION_CONSULT}`}
-          disabled={busy}
-          onPress={openConsult}
-          style={({ pressed }) => [
-            styles.decisionCta,
-            isDecided
-              ? { backgroundColor: theme.tint, borderColor: theme.tint }
-              : { backgroundColor: theme.background, borderColor: theme.border },
-            pressed ? styles.pressed : null,
-            busy ? styles.busy : null,
-          ]}>
-          <ThemedText type="f13" style={[styles.bold, { color: isDecided ? theme.onTint : theme.text }]}>
-            {ACTION_CONSULT}
-          </ThemedText>
-        </Pressable>
       </View>
     </View>
   );
@@ -913,17 +948,14 @@ function ManualDecisionCard({
   );
 }
 
-/* WP-EMPTY-PICK — 아이콘 없는 회색 카드와 다음 행동. */
-/* ────────────────────────────────────────────
-   «이런 곳은 어떠세요?» — 하단에 한 번만 보이는 가로 줄.
-   카드: 사진 148×116 radius 8 · 업종 10/700 · 이름 14/700 · 금액 한 줄(priceLine) · «Pick» 36.
-   사진 · 이름을 누르면 업체 상세, «Pick»은 바로 후보로 담는다.
-──────────────────────────────────────────── */
+/* Pick 목록 뒤에 한 번만 보이는 서버 추천. 카드 본문은 상세, Pick은 후보 추가로 간다. */
 function RecommendRow({
   vendors,
   canPick,
   busy,
   origin,
+  region,
+  searchCategory,
   onPick,
 }: {
   vendors: readonly VendorSummary[];
@@ -931,63 +963,100 @@ function RecommendRow({
   busy: boolean;
   /** Pick 출처(`pickOrigin`) — 업체 상세 Back이 이 Pick으로 돌아온다. */
   origin: string;
+  region: string | null;
+  searchCategory: VendorCategory | null;
   onPick: (vendor: VendorSummary) => void;
 }) {
   const theme = useTheme();
-  if (vendors.length === 0) return null;
+  const searchParams = [
+    searchCategory ? `category=${encodeURIComponent(searchCategory)}` : null,
+    region ? `region=${encodeURIComponent(region)}` : null,
+  ].filter(Boolean);
+  const searchTarget = `/search${searchParams.length ? `?${searchParams.join('&')}` : ''}`;
 
   return (
     <View style={[styles.recommend, { backgroundColor: theme.backgroundSelected, borderTopColor: theme.border }]}>
       <ThemedText type="f15" style={[styles.bold, styles.recommendTitle]}>
         {RECOMMEND_TITLE}
       </ThemedText>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recommendRow}>
-        {vendors.map((vendor) => {
+      <View style={styles.recommendRow}>
+        {vendors.length === 0 ? (
+          <ThemedText type="f13" themeColor="textAssistive">지금 보여줄 곳이 없어요</ThemedText>
+        ) : vendors.map((vendor) => {
           const line = priceLine(vendor.paidPrice, vendor.guidePrice);
+          const reason = vendor.reasons?.[0]
+            ?? (region && vendor.region.startsWith(region) ? '선택한 지역' : null);
           return (
-            <View key={vendor.id} style={styles.recommendCard}>
+            <View key={vendor.id} style={[styles.recommendCard, { backgroundColor: theme.background, borderColor: theme.border }]}>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`${vendor.name} 자세히 보기`}
                 onPress={() => router.push(inStack('/pick', `/search/${encodeURIComponent(vendor.id)}?from=${encodeURIComponent(origin)}`) as never)}
                 style={({ pressed }) => [styles.recommendBody, pressed ? styles.pressed : null]}>
-                <VendorImage
-                  source={vendor.imageUrl ? { uri: vendor.imageUrl } : undefined}
-                  category={vendorImageCategory(vendor.category)}
-                  width={RECOMMEND_CARD_WIDTH}
-                  height={RECOMMEND_THUMB_HEIGHT}
-                  radius={THUMB_RADIUS}
-                />
-                <ThemedText type="f10" themeColor="textAssistive" style={[styles.bold, styles.tracked]}>
-                  {VENDOR_CATEGORY_LABEL[vendor.category]}
-                </ThemedText>
-                <ThemedText type="f14" numberOfLines={1} style={styles.bold}>
-                  {vendor.name}
-                </ThemedText>
-                <ThemedText type="f12" numberOfLines={1} numeric themeColor={line.dim ? 'textAssistive' : 'text'}>
-                  {line.text}
-                </ThemedText>
+                <View style={styles.thumbCol}>
+                  <VendorImage
+                    source={vendor.imageUrl ? { uri: vendor.imageUrl } : undefined}
+                    category={vendorImageCategory(vendor.category)}
+                    width={Layout.thumbSearchWidth}
+                    height={Layout.thumbSearchHeight}
+                    radius={THUMB_RADIUS}
+                  />
+                </View>
+                <View style={styles.recommendInfo}>
+                  <View>
+                    <ThemedText type="f10" themeColor="textAssistive" style={[styles.bold, styles.tracked]}>
+                      {VENDOR_CATEGORY_LABEL[vendor.category]}
+                    </ThemedText>
+                    <ThemedText type="f14" numberOfLines={1} style={[styles.bold, styles.name]}>
+                      {vendor.name}
+                    </ThemedText>
+                    <View style={styles.location}>
+                      <SeedIcon name="locationRegular" size={Layout.iconMicro} color={theme.textAssistive} />
+                      <ThemedText type="f12" themeColor="textAssistive" numberOfLines={1}>
+                        {regionLabel(vendor.region)}
+                      </ThemedText>
+                    </View>
+                  </View>
+                  <View style={styles.recommendPriceRow}>
+                    <ThemedText type="f12" numeric numberOfLines={1} themeColor={line.dim ? 'textAssistive' : 'text'} style={styles.semibold}>
+                      {line.text}
+                    </ThemedText>
+                    {!line.dim ? <ThemedText type="f10" themeColor="textAssistive" numeric>{TERMS.verifiedData} {vendor.paidPrice.count}건</ThemedText> : null}
+                  </View>
+                </View>
               </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`${vendor.name} ${RECOMMEND_PICK}하기`}
-                accessibilityState={{ disabled: !canPick || busy }}
-                disabled={!canPick || busy}
-                onPress={() => onPick(vendor)}
-                style={({ pressed }) => [
-                  styles.recommendPick,
-                  { borderColor: theme.tint },
-                  pressed ? styles.pressed : null,
-                  !canPick || busy ? styles.disabled : null,
-                ]}>
-                <ThemedText type="f13" style={[styles.bold, { color: theme.tint }]}>
-                  {RECOMMEND_PICK}
-                </ThemedText>
-              </Pressable>
+              <View style={[styles.recommendFoot, { borderTopColor: theme.border }]}>
+                {reason ? (
+                  <ThemedText type="f12" themeColor="textAssistive" numberOfLines={1} style={styles.recommendReason}>{reason}</ThemedText>
+                ) : <View style={styles.recommendReason} />}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${vendor.name} ${RECOMMEND_PICK}하기`}
+                  accessibilityState={{ disabled: !canPick || busy }}
+                  disabled={!canPick || busy}
+                  onPress={() => onPick(vendor)}
+                  style={({ pressed }) => [
+                    styles.recommendPick,
+                    { borderColor: theme.tint },
+                    pressed ? styles.pressed : null,
+                    !canPick || busy ? styles.disabled : null,
+                  ]}>
+                  <ThemedText type="f13" style={[styles.bold, { color: theme.tint }]}>
+                    {RECOMMEND_PICK}
+                  </ThemedText>
+                </Pressable>
+              </View>
             </View>
           );
         })}
-      </ScrollView>
+      </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="검색에서 더 찾기"
+        onPress={() => router.push(searchTarget as never)}
+        style={({ pressed }) => [styles.moreBtn, { backgroundColor: theme.background }, pressed ? styles.pressed : null]}>
+        <ThemedText type="f14" style={[styles.bold, { color: theme.tint }]}>검색에서 더 찾기</ThemedText>
+      </Pressable>
     </View>
   );
 }
@@ -1048,9 +1117,10 @@ function RetryLink({ onPress }: { onPress: () => void }) {
    (2026-09-26 대표 지시 「통일해」).
 ──────────────────────────────────────────── */
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  safeArea: { flex: 1, alignItems: 'center' },
-  wrapper: { flex: 1, width: '100%' },
+  root: { flex: 1, minHeight: 0 },
+  safeArea: { flex: 1, minHeight: 0, alignItems: 'center' },
+  wrapper: { flex: 1, minHeight: 0, width: '100%' },
+  scroller: { flex: 1, minHeight: 0 },
   loadingCenter: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   scroll: { flexGrow: 1 },
   errorBox: { padding: Layout.gutter, paddingHorizontal: ROOT_TAB_GUTTER, gap: Layout.rowPaddingY },
@@ -1134,19 +1204,24 @@ const styles = StyleSheet.create({
   },
   compareClose: { width: Layout.touchTarget, height: Layout.touchTarget, alignItems: 'center', justifyContent: 'center' },
 
-  // ── «내 조건에 맞는 곳»(정본 없음 — 대표 지시 2026-09-25): 제목 · 가로 줄 사이 12 · 카드 사이 12 ──
+  // ── «내 조건에 맞는 곳»: 검색 카드 정보 순서와 104×116 썸네일을 따른다. ──
   recommend: { gap: Layout.inlineGap, borderTopWidth: Border.hairline, paddingTop: Spacing.four, paddingBottom: Spacing.four },
   recommendTitle: { paddingHorizontal: ROOT_TAB_GUTTER },
   recommendRow: { paddingHorizontal: ROOT_TAB_GUTTER, gap: Layout.inlineGap },
-  recommendCard: { width: RECOMMEND_CARD_WIDTH, gap: Spacing.two },
-  recommendBody: { gap: Spacing.half },
+  recommendCard: { borderRadius: Radius.cardLarge, borderWidth: Border.hairline, overflow: 'hidden', ...Elevation.figmaCard },
+  recommendBody: { flexDirection: 'row' },
+  recommendInfo: { flex: 1, minWidth: 0, padding: Layout.fieldPaddingX, justifyContent: 'space-between' },
+  recommendPriceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.one },
+  recommendFoot: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, borderTopWidth: Border.hairline, paddingHorizontal: Layout.fieldPaddingX, paddingVertical: Spacing.two },
+  recommendReason: { flex: 1 },
   /* Pick 단추 — 칩 높이 36 · radius 6 · 코랄 1px 선(화면 Primary는 상담 예약이라 채우지 않는다). */
   recommendPick: {
-    height: Layout.chip,
+    minHeight: Layout.chip,
     borderWidth: Border.hairline,
     borderRadius: Radius.small,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: Spacing.three,
   },
 
   // ── 카드 목록 `space-y-3 px-5` — 카드 사이 12 ──
@@ -1191,6 +1266,31 @@ const styles = StyleSheet.create({
     minWidth: 0,
     padding: Layout.fieldPaddingX,
   },
+  candidateInfo: {
+    flex: 1,
+    minWidth: 0,
+    paddingHorizontal: Layout.inlineGap,
+    paddingVertical: Spacing.two,
+    justifyContent: 'space-between',
+  },
+  candidateDetails: { flex: 1, minWidth: 0 },
+  candidateNote: { marginTop: Spacing.one },
+  inlineActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
+  compareIcon: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  compareBox: {
+    width: 20,
+    height: 20,
+    borderWidth: Border.hairline,
+    borderRadius: Radius.small,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  decisionUndo: { minHeight: 32, justifyContent: 'center' },
   headRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -1210,10 +1310,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.one,
   },
   locText: { lineHeight: LineHeight.lh17 },
-  /* 메모 — 피그마 해시태그 줄 자리 `mt-2`. */
-  note: { marginTop: Spacing.two },
-
-  /* 비교와 상담은 카드 아래에 두어 업체 정보와 행동을 분리한다. */
+  /* 직접 입력한 결정 카드의 취소 버튼 줄. 후보 카드는 정보 열 안의 작은 행동을 쓴다. */
   ctaStrip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1239,10 +1336,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   decisionCta: {
-    height: Layout.controlMedium,
+    height: 32,
     borderRadius: Radius.small,
     borderWidth: Border.hairline,
-    paddingHorizontal: Layout.toastPaddingX,
+    paddingHorizontal: Spacing.two,
     alignItems: 'center',
     justifyContent: 'center',
   },
