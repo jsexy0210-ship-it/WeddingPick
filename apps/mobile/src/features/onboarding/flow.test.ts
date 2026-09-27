@@ -207,14 +207,19 @@ describe('완료 요약', () => {
     expect(summarizeBudget(null)).toBe('미정');
   });
 
-  it('완료 요약은 항상 다섯 줄이고 빈칸 대신 «미정»이다', () => {
+  it('완료 요약은 다섯 줄이며 준비현황·총 예산 라벨과 한 줄 요약을 쓴다', () => {
     const rows = doneRows({ ...FULL, style: null });
 
-    expect(rows.map((row) => row.label)).toEqual(['예식일', '지역', '준비 현황', '예산', '스타일']);
+    expect(rows.map((row) => row.label)).toEqual(['예식일', '지역', '준비현황', '총 예산', '스타일']);
     expect(rows[4]!.value).toBe('미정');
+    expect(doneRows({ ...FULL, style: [] })[4]!.value).toBe('미정');
     expect(rows.every((row) => row.value !== '' && row.value !== '—')).toBe(true);
 
-    expect(doneRows(FULL)[4]).toEqual({ step: 'style', label: '스타일', value: '도시적인 · 로맨틱한' });
+    expect(doneRows(FULL)[4]).toEqual({ step: 'style', label: '스타일', value: '도시적인 외 1건' });
+
+    const prep = choosePrepManual(choosePrepManual(null, PREP_CARDS[0]!, '더그레이스켈리강남'), PREP_CARDS[1]!, '스튜디오 A');
+    const prepared = doneRows({ ...FULL, prep });
+    expect(prepared[2]!.value).toBe('웨딩홀(더그레이스켈리강남) 외 1건');
   });
 
   it('시트의 D-day는 «D-250», 당일은 «D-DAY»다', () => {

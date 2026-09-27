@@ -50,18 +50,17 @@ describe('상태 자동 판정', () => {
     ).toBe('upcoming');
   });
 
-  it('지나면 완료로 본다', () => {
-    expect(resolveTaskState({ dueDate: at(-1), override: null, now: NOW }).state).toBe('done');
+  it('기한이 지나도 직접 완료하기 전까지 진행중이다', () => {
+    expect(resolveTaskState({ dueDate: at(-1), override: null, now: NOW })).toEqual({
+      state: 'in_progress',
+      manual: false,
+    });
   });
 
   it('사용자가 정한 값이 이긴다', () => {
-    /*
-     * 자동 판정은 날짜만 보고 짐작하는 것이라, 사람이 아니라고 말했으면 그쪽이 맞다.
-     * 지난 날인데도 '진행중'이라고 정할 수 있어야 한다.
-     */
-    const resolved = resolveTaskState({ dueDate: at(-5), override: 'in_progress', now: NOW });
+    const resolved = resolveTaskState({ dueDate: at(-5), override: 'done', now: NOW });
 
-    expect(resolved).toEqual({ state: 'in_progress', manual: true });
+    expect(resolved).toEqual({ state: 'done', manual: true });
   });
 
   it('날짜가 없으면 예정으로 둔다', () => {
@@ -96,11 +95,11 @@ describe('진행률과 다음 일정', () => {
   it('완료한 것을 센다', () => {
     const tasks = [
       { dueDate: at(-1), override: null },
-      { dueDate: at(-2), override: null },
+      { dueDate: at(-2), override: 'done' as const },
       { dueDate: at(10), override: null },
     ];
 
-    expect(taskProgress(tasks, NOW)).toEqual({ done: 2, total: 3 });
+    expect(taskProgress(tasks, NOW)).toEqual({ done: 1, total: 3 });
   });
 
   it('아직 오지 않은 것 중 가장 가까운 것이 다음이다', () => {

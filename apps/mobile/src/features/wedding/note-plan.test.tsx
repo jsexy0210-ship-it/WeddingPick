@@ -50,10 +50,9 @@ function event(title: string, startsAt: string): WeddingEvent {
 
 /** 2026-09-26 대표 지시 — 웨딩노트 «웨딩일정»은 할 일을 예식일에서 역산한 임시 날짜로 보여 준다. */
 describe('웨딩노트 웨딩일정 — 임시 날짜 줄', () => {
-  it('할 일을 못 읽었으면 기본 열셋 중 아직 안 지난 것을 모두 임시 날짜로 세운다', () => {
+  it('할 일을 못 읽었으면 지난 기한을 포함해 기본 열셋을 임시 날짜로 세운다', () => {
     const plans = notePlanEntries(null, [], WEDDING, NOW);
-    const expected = TASK_PRESETS.map((preset) => ({ label: preset.label, due: tentativeDueDate(WEDDING, preset.label)! }))
-      .filter((row) => row.due >= '2026-09-26');
+    const expected = TASK_PRESETS.map((preset) => ({ label: preset.label, due: tentativeDueDate(WEDDING, preset.label)! }));
 
     expect(plans).toHaveLength(expected.length);
     expect(plans.length).toBeGreaterThan(5); // 홈처럼 다섯 줄에서 자르지 않는다
@@ -103,6 +102,13 @@ describe('웨딩노트 웨딩일정 — 임시 날짜 줄', () => {
     expect(notePlanEntries([task('드레스 투어')], [], null, NOW)).toEqual([]);
   });
 
+  it('예식일이 가까워 임시 날짜가 지나도 미완료 할 일을 남긴다', () => {
+    const plans = notePlanEntries([task('웨딩홀 잔금 납부')], [], '2026-09-30', new Date(2026, 8, 27));
+    expect(plans).toMatchObject([
+      { title: '웨딩홀 잔금 납부', date: '2026-09-23', tentative: true },
+    ]);
+  });
+
   it('홈과 같은 함수를 쓴다 — 홈은 다섯 줄, 웨딩노트는 전부', () => {
     const all = tentativePlanItems([], WEDDING, NOW, { fallbackLabels: TASK_PRESETS.map((p) => p.label) });
     expect(all.length).toBe(notePlanEntries(null, [], WEDDING, NOW).length);
@@ -136,10 +142,28 @@ describe('웨딩노트 웨딩일정 — 임시 날짜 줄', () => {
     act(() => view.unmount());
   });
 
+  it('지난 임시 날짜에는 D+N을 표시한다', () => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 8, 27, 9));
+    let view!: ReactTestRenderer;
+    try {
+      act(() => {
+        view = create(
+          <TimelinePlanRow plan={{ id: 'overdue', date: '2026-09-23', title: '잔금 납부', meta: TENTATIVE, tentative: true, editable: false }} />
+        );
+      });
+      const texts = view.root.findAll((node) => typeof node.props.children === 'string').map((node) => node.props.children);
+      expect(texts).toContain('9.23(수) · D+4');
+      act(() => view.unmount());
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it('웨딩노트는 할 일을 읽어 타임라인에 넘긴다 — 저장하지 않는다', () => {
     const screen = readFileSync(join(__dirname, '..', '..', 'app', '(tabs)', 'wedding', 'index.tsx'), 'utf8');
     expect(screen).toContain('listWeddingTasks(weddingId)');
     expect(screen).toContain('notePlanEntries(tasks, events, weddingDate, now)');
+    expect(screen).toContain('overduePlans.map');
     expect(screen).toContain("item.kind === 'plan'");
     const plan = readFileSync(join(__dirname, 'note-plan.ts'), 'utf8');
     expect(plan).not.toMatch(/updateWeddingTask|patchWeddingTask|createWeddingTask/);
