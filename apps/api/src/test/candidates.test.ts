@@ -241,7 +241,7 @@ describeWithDb('후보 저장', () => {
       const hall = body.groups.find((group) => group.category === 'hall');
 
       expect(hall?.state).toBe('decided');
-      expect(hall?.stateLabel).toBe('결정 완료');
+      expect(hall?.stateLabel).toBe('결정완료');
       expect(hall?.decidedVendorId).toBe(vendorId);
     });
 
