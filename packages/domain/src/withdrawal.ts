@@ -120,22 +120,22 @@ export function withdrawalLead(counts: WithdrawalCounts): string {
 export function deletedOnWithdrawal(counts: WithdrawalCounts): WithdrawalRow[] {
   const spend: WithdrawalRow =
     counts.expenseTotal > 0
-      ? { label: '지출 기록', value: formatWon(counts.expenseTotal) }
-      : { label: '지출 기록', value: '없어요', empty: true };
+      ? { label: '지출내역', value: formatWon(counts.expenseTotal) }
+      : { label: '지출내역', value: '없어요', empty: true };
 
   if (!counts.hasPartner) {
     return [
-      { label: '계정 · 프로필', value: '즉시 삭제' },
+      { label: '계정 · 프로필', value: '즉시삭제' },
       { label: 'Pick한 곳', value: `${formatCount(counts.candidates)}곳` },
       { label: '일정 · 체크리스트', value: `${formatCount(counts.tasks)}개` },
       spend,
-      { label: '취향 · 개인화', value: '즉시 삭제' },
+      { label: '취향 · 개인화', value: '즉시삭제' },
     ];
   }
 
   return [
-    { label: '계정 · 프로필', value: '즉시 삭제' },
-    { label: '배우자 연결', value: '즉시 해제' },
+    { label: '계정 · 프로필', value: '즉시삭제' },
+    { label: '배우자 연결', value: '즉시해제' },
     { label: 'Pick한 곳', value: `${formatCount(counts.candidates)}곳` },
     { label: '일정 · 체크리스트', value: `${formatCount(counts.tasks)}개` },
     spend,
@@ -200,7 +200,7 @@ export function withdrawalDoneItems(counts: WithdrawalCounts): string[] {
   items.push('Pick · 일정 · 지출 기록을 삭제했어요');
 
   if (counts.reviews > 0 || counts.confirmedReports > 0) {
-    items.push('후기와 실 제보는 나를 알아볼 수 없도록 분리했어요');
+    items.push('후기와 실제보는 나를 알아볼 수 없도록 분리했어요');
   }
 
   return items;

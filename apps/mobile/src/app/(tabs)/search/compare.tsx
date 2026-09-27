@@ -93,13 +93,13 @@ import {
 const COUNT_GAP_NOTABLE = DISCLOSURE_THRESHOLDS.limited;
 
 const HEADER_TITLE = '비교';
-const ROW_PRICE = '제보 금액';
+const ROW_PRICE = '제보금액';
 const ROW_MEDIAN = TERMS.baseAmount;
 const ROW_COUNT = TERMS.verifiedData;
-const ROW_CATEGORY = '업종 · 지역';
+const ROW_CATEGORY = '업종·지역';
 const ROW_SOURCE = '업체 정보 출처';
 const SOURCE_FROM_DOCUMENT = '올려주신 문서에서 확인한 업체예요';
-const CTA_CONSULT = '상담 예약';
+const CTA_CONSULT = '상담예약';
 
 export default function CompareScreen() {
   const depthBack = useDepthBack();

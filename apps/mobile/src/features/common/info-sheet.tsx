@@ -5,7 +5,7 @@ import { ActionButton, Layout, Radius, ThemedText, useTheme } from '@weddingpick
 import { BottomSheet, SheetHeader, SheetPanel } from '@/features/common/bottom-sheet';
 
 /**
- * 금액 옆 ⓘ가 여는 설명 시트 — WP-SHT-014 «실 제보가 뭔가요?» · WP-SHT-015 «기준금액이 뭔가요?».
+ * 금액 옆 ⓘ가 여는 설명 시트 — WP-SHT-014 «실제보가 뭔가요?» · WP-SHT-015 «기준금액이 뭔가요?».
  * 시안 17-sheets-states `sh('SHT-014' …)` · `sh('SHT-015' …)`.
  *
  *   그래버 → 제목 20/27 700 → 본문 15/22 gray700 → «알겠어요» 하나
@@ -22,13 +22,13 @@ export type InfoTopic = 'verifiedData' | 'baseAmount';
 const SHEETS: Record<InfoTopic, { title: string; body: string }> = {
   /** `data.verifiedTooltipTitle` · `data.verifiedTooltipBody`. */
   verifiedData: {
-    title: '실 제보가 뭔가요?',
-    body: '자료로 확인한 제보 금액만 모은 정보예요. 웨딩픽은 비싸다 싸다를 판정하지 않아요.',
+    title: '실제보가 뭔가요?',
+    body: '자료로 확인한 제보금액만 모은 정보예요. 웨딩픽은 비싸다 싸다를 판정하지 않아요.',
   },
   /** `data.medianTooltipTitle` · `data.medianTooltipBody`. CLAUDE.md가 문장까지 정했다. */
   baseAmount: {
     title: '기준금액이 뭔가요?',
-    body: '실 제보의 중앙값이에요',
+    body: '실제보의 중앙값이에요',
   },
 };
 

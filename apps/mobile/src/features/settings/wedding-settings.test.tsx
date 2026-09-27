@@ -87,14 +87,14 @@ describe('내 웨딩설정 — 행마다 휠 바텀시트', () => {
 
     const labels = rows().map((row) => row.props.accessibilityLabel as string);
     /* 2026-09-26 대표 지시 「MY 내 웨딩설정에서 예산은 삭제한다」. */
-    expect(labels.map((label) => label.split(' ')[0])).toEqual(['예식일', '지역', '준비', '스타일']);
+    expect(labels.map((label) => label.split(' ')[0])).toEqual(['예식일', '지역', '준비현황', '스타일']);
     expect(labels.some((label) => label.startsWith('예산'))).toBe(false);
     expect(visibleSheets()).toEqual([]);
 
     const expected = [
       'DateWheelSheet:예식일 선택',
       'RegionPickerSheet:',
-      'OptionWheelSheet:준비 현황 선택',
+      'OptionWheelSheet:준비현황 선택',
       'StylePickSheet:스타일 선택',
     ];
     for (const [index, row] of rows().entries()) {
@@ -117,7 +117,7 @@ describe('내 웨딩설정 — 행마다 휠 바텀시트', () => {
 
     expect(sheet('DateWheelSheet').props.value).toBe('2027-05-16');
     expect(sheet('RegionPickerSheet').props.value).toEqual({ region: '서울', district: '강남구' });
-    expect(sheet('OptionWheelSheet', '준비 현황 선택').props.value).toBe('hall');
+    expect(sheet('OptionWheelSheet', '준비현황 선택').props.value).toBe('hall');
     expect(tree.root.findAll((node) => node.props.title === '예산 선택')).toHaveLength(0);
     expect(sheet('StylePickSheet').props.value).toEqual(['ROMANTIC', 'URBAN']);
   });
@@ -136,7 +136,7 @@ describe('내 웨딩설정 — 행마다 휠 바텀시트', () => {
     await act(async () => sheet('StylePickSheet').props.onConfirm(['NATURAL', 'GLAMOROUS', 'URBAN']));
     expect(jest.mocked(completeSetup).mock.calls.at(-1)?.[0]).toMatchObject({ styleTags: ['NATURAL', 'GLAMOROUS', 'URBAN'] });
 
-    await act(async () => sheet('OptionWheelSheet', '준비 현황 선택').props.onConfirm('hall+sdm'));
+    await act(async () => sheet('OptionWheelSheet', '준비현황 선택').props.onConfirm('hall+sdm'));
     expect(jest.mocked(completeSetup).mock.calls.at(-1)?.[0]).toMatchObject({
       preparedCategories: ['hall', 'studio', 'dress', 'makeup', 'hair'],
     });
@@ -157,7 +157,7 @@ describe('내 웨딩설정 — 행마다 휠 바텀시트', () => {
   it('닫기(✕ · 바깥)는 아무것도 저장하지 않는다', async () => {
     await mount();
     await act(async () => rows()[2]!.props.onPress());
-    await act(async () => sheet('OptionWheelSheet', '준비 현황 선택').props.onDismiss());
+    await act(async () => sheet('OptionWheelSheet', '준비현황 선택').props.onDismiss());
 
     expect(visibleSheets()).toEqual([]);
     expect(completeSetup).not.toHaveBeenCalled();
@@ -170,8 +170,8 @@ describe('1열 휠 보기 — 온보딩 답 그대로', () => {
 
     expect(options).toHaveLength(16);
     expect(options[0]).toEqual({ value: PREP_NONE_KEY, label: '아직 시작 전이에요' });
-    expect(options.slice(1, 5).map((option) => option.label)).toEqual(['웨딩홀', '스드메', '본식', '예물 · 신혼']);
-    expect(options.at(-1)?.label).toBe('웨딩홀 · 스드메 · 본식 · 예물 · 신혼');
+    expect(options.slice(1, 5).map((option) => option.label)).toEqual(['웨딩홀', '스드메', '본식', '예물·신혼']);
+    expect(options.at(-1)?.label).toBe('웨딩홀 · 스드메 · 본식 · 예물·신혼');
     expect(prepCategoriesFromKey(PREP_NONE_KEY)).toEqual([]);
   });
 

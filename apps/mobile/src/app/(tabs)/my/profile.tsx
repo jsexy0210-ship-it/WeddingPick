@@ -34,15 +34,15 @@ const S = {
   serviceMeta: '일정 · Pick 변화 · 인증 결과',
   marketing: '마케팅 알림',
   marketingMeta: '혜택 · 이벤트',
-  night: '야간 수신',
+  night: '야간수신',
   nightMeta: '밤 9시 이후',
   notiNote: '진행 중인 업종에서만 보내고 하루 최대 2건이에요.',
   account: '계정',
   social: '카카오',
   connected: '연결됨',
   logout: '로그아웃',
-  /* 정본 my.jsx:157(frame-002 계정 섹션 행) 「회원 탈퇴」. 탈퇴 화면 헤더(frame-014)는 「회원탈퇴」다. */
-  withdraw: '회원 탈퇴',
+  /* 정본 my.jsx:157(frame-002 계정 섹션 행). 탈퇴 화면 헤더와 같은 「회원탈퇴」를 쓴다. */
+  withdraw: '회원탈퇴',
   logoutTitle: '로그아웃할까요',
   logoutBody: '기기에 저장된 문서는 그대로 남아요',
   stay: '계속 이용하기',

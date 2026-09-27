@@ -37,11 +37,11 @@ export type ReviewAspect = { key: string; label: string };
 
 export const REVIEW_ASPECTS: Partial<Record<VendorCategory, readonly ReviewAspect[]>> = {
   hall: [
-    { key: 'food_taste', label: '음식 맛' },
-    { key: 'food_menu', label: '메뉴 구성' },
-    { key: 'food_temperature', label: '음식 온도' },
+    { key: 'food_taste', label: '음식맛' },
+    { key: 'food_menu', label: '메뉴구성' },
+    { key: 'food_temperature', label: '음식온도' },
     { key: 'crowding', label: '연회장 혼잡' },
-    { key: 'staff', label: '직원 응대' },
+    { key: 'staff', label: '직원응대' },
     { key: 'parking', label: '주차' },
     { key: 'transport', label: '교통' },
     /*
@@ -59,27 +59,27 @@ export const REVIEW_ASPECTS: Partial<Record<VendorCategory, readonly ReviewAspec
    * 시술이 걸려 있어 한 목록으로는 무엇이 좋았는지 남지 않는다. 사업계획서 19번.
    */
   studio: [
-    { key: 'shooting', label: '촬영 구성' },
+    { key: 'shooting', label: '촬영구성' },
     { key: 'result', label: '결과물' },
     { key: 'retouch', label: '원본·수정본' },
-    { key: 'staff', label: '직원 응대' },
-    { key: 'response', label: '요청 반영' },
+    { key: 'staff', label: '직원응대' },
+    { key: 'response', label: '요청반영' },
     { key: 'extra_cost', label: '추가비용' },
   ],
   dress: [
     { key: 'fitting', label: '피팅' },
     { key: 'variety', label: '드레스 구성' },
     { key: 'condition', label: '드레스 상태' },
-    { key: 'staff', label: '직원 응대' },
-    { key: 'response', label: '요청 반영' },
+    { key: 'staff', label: '직원응대' },
+    { key: 'response', label: '요청반영' },
     { key: 'extra_cost', label: '추가비용' },
   ],
   makeup: [
     { key: 'makeup', label: '메이크업 시술' },
     { key: 'hair', label: '헤어' },
     { key: 'durability', label: '지속력' },
-    { key: 'staff', label: '직원 응대' },
-    { key: 'response', label: '요청 반영' },
+    { key: 'staff', label: '직원응대' },
+    { key: 'response', label: '요청반영' },
     { key: 'extra_cost', label: '추가비용' },
   ],
   /* 헤어변형(v3.22) — 메이크업과 따로 센다. 시술과 스타일, 얼마나 가는지. */
@@ -87,14 +87,14 @@ export const REVIEW_ASPECTS: Partial<Record<VendorCategory, readonly ReviewAspec
     { key: 'treatment', label: '시술' },
     { key: 'style', label: '스타일' },
     { key: 'durability', label: '지속력' },
-    { key: 'staff', label: '직원 응대' },
+    { key: 'staff', label: '직원응대' },
     { key: 'extra_cost', label: '추가비용' },
   ],
   snap: [
     { key: 'result', label: '결과물' },
-    { key: 'shooting', label: '촬영 진행' },
-    { key: 'delivery', label: '전달 기간' },
-    { key: 'staff', label: '직원 응대' },
+    { key: 'shooting', label: '촬영진행' },
+    { key: 'delivery', label: '전달기간' },
+    { key: 'staff', label: '직원응대' },
     { key: 'extra_cost', label: '추가비용' },
   ],
   /* 부케(v3.22) — 당일 받는 꽃이라 신선도와 전달이 걸려 있다. */
@@ -102,20 +102,20 @@ export const REVIEW_ASPECTS: Partial<Record<VendorCategory, readonly ReviewAspec
     { key: 'design', label: '디자인' },
     { key: 'freshness', label: '신선도' },
     { key: 'delivery', label: '전달' },
-    { key: 'response', label: '요청 반영' },
+    { key: 'response', label: '요청반영' },
   ],
   /* 혼수·청첩장은 물건을 받는 거래라 짧게 묻는다. */
   dowry: [
     { key: 'quality', label: '품질' },
     { key: 'delivery', label: '배송·설치' },
-    { key: 'staff', label: '직원 응대' },
+    { key: 'staff', label: '직원응대' },
     { key: 'extra_cost', label: '추가비용' },
   ],
   invitation: [
-    { key: 'quality', label: '인쇄 품질' },
+    { key: 'quality', label: '인쇄품질' },
     { key: 'design', label: '디자인 구성' },
-    { key: 'delivery', label: '제작 기간' },
-    { key: 'response', label: '요청 반영' },
+    { key: 'delivery', label: '제작기간' },
+    { key: 'response', label: '요청반영' },
   ],
 };
 

@@ -70,7 +70,7 @@ export const WEDDING_FEED_CHIPS = [
   { key: 'start', label: '웨딩홀' },
   { key: 'sdm', label: '스드메' },
   { key: 'ceremony', label: '본식' },
-  { key: 'goods', label: '예물 · 신혼' },
+  { key: 'goods', label: '예물·신혼' },
   { key: 'budget', label: '예산' },
 ] as const;
 

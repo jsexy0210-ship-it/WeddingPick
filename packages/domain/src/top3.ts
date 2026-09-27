@@ -50,8 +50,8 @@ export const TOP3_REASON_LABEL: Record<Top3Reason, string> = {
   style_all: '고른 스타일 2개가 다 맞아요',
   style: '고른 스타일이랑 맞아요',
   region: '준비하는 지역이에요',
-  budget: '제보 금액이 준비 예산과 맞아요',
-  many_confirmed: '실 제보가 많아요',
+  budget: '제보금액이 준비 예산과 맞아요',
+  many_confirmed: '실제보가 많아요',
   recent_data: `${RECENT_PERIOD_LABEL} 자료가 있어요`,
 };
 

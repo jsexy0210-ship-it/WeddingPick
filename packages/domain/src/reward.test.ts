@@ -63,7 +63,7 @@ describe('이벤트 보상', () => {
 
   it('미션 완주가 보상 종류에 있다', () => {
     expect(REWARD_KINDS).toContain('mission');
-    expect(REWARD_LABEL.mission).toBe('미션 완주');
+    expect(REWARD_LABEL.mission).toBe('미션완주');
     // 1인 1회. 두 번 완주할 수 없다.
     expect(REWARDS.mission.perPerson).toBe(1);
   });
@@ -204,8 +204,8 @@ describe('보상 지급 규칙', () => {
 
     it('조건이 찬 것과 돈이 간 것을 다르게 말한다', () => {
       expect(REWARD_STATUS_NOTE.earned).not.toBe(REWARD_STATUS_NOTE.paid);
-      expect(REWARD_STATUS_LABEL.earned).toBe('지급 대기');
-      expect(REWARD_STATUS_LABEL.paid).toBe('지급 완료');
+      expect(REWARD_STATUS_LABEL.earned).toBe('지급대기');
+      expect(REWARD_STATUS_LABEL.paid).toBe('지급완료');
     });
 
     it('운영 기간을 적지 않는다', () => {

@@ -41,7 +41,7 @@ export function EventBanner({ draw, onPress }: EventBannerProps) {
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="혜택 보기"
+        accessibilityLabel="혜택보기"
         onPress={onPress}
         style={({ pressed }) => [
           styles.banner,

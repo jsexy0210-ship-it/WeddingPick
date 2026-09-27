@@ -87,7 +87,7 @@ describe('검색 문구는 spec과 같다', () => {
   it('필터 카테고리는 정본 묶음이고 결정사를 되살리지 않는다(WP-SRCH-002)', () => {
     const sheet = read('filter-sheet.tsx');
 
-    for (const label of ['스드메', '본식', '예물 · 신혼']) {
+    for (const label of ['스드메', '본식', '예물·신혼']) {
       expect(sheet).toContain(`label: '${label}'`);
     }
     expect(sheet).not.toContain('VENDOR_CATEGORIES.map');

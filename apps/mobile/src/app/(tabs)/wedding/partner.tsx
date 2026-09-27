@@ -32,10 +32,10 @@ import { Badge, Dock, Hero, ListRow, NavBar, NoteCard, Screen, Section } from '@
 const S = {
   inviteNav: '배우자 초대',
   linkedNav: '연결관리',
-  unlinkNav: '연결 해제',
+  unlinkNav: '연결해제',
   qTitle: '같이 준비할\n사람을 초대해요',
-  inviteCode: '초대 코드',
-  copy: '코드 복사',
+  inviteCode: '초대코드',
+  copy: '코드복사',
   copied: '복사했어요',
   remake: '코드 다시 받기',
   make: '초대 코드 만들기',
@@ -54,10 +54,10 @@ const S = {
 const SHARE_SCOPE = ['고른 곳 · Pick', '일정', '지출', '메모'];
 
 /** WP-CPL-006 cutRows(끝나요) — 3행, 회색 점 + 라벨만. */
-const CUT_ROWS = ['일정 · 지출 공유', 'Pick 비교 같이 보기', '변경 알림'];
+const CUT_ROWS = ['일정 · 지출 공유', 'Pick 비교 같이 보기', '변경알림'];
 
 /** WP-CPL-006 keepRows(그대로예요) — 3행, 라벨 + 「그대로 남아요」. */
-const KEEP_ROWS = ['내가 쓴 일정 · 지출', '내 Pick', 'Pick 인증내역'];
+const KEEP_ROWS = ['내가 쓴 일정 · 지출', '내 Pick', 'Pick 인증 내역'];
 
 /** 정본 listCard 행 — 코랄/회색 점 + 라벨. WP-CPL-001·002·006이 함께 쓰는 모양이다. */
 function DotList({ items, tone }: { items: string[]; tone: 'brand' | 'muted' }) {
@@ -321,7 +321,7 @@ export default function PartnerScreen() {
             ))}
           </Section>
           <Section label="각자 남아요">
-            {['검색 기록', '알림 설정'].map((item) => (
+            {['검색기록', '알림설정'].map((item) => (
               <ListRow key={item} title={item} right={<Badge label="각자" tone="none" />} />
             ))}
           </Section>
@@ -331,7 +331,7 @@ export default function PartnerScreen() {
           </View>
         </ScrollView>
         <Dock>
-          <ActionButton variant="secondary" size="sheet" label="연결 끊기" onPress={() => setConfirmingUnlink(true)} />
+          <ActionButton variant="secondary" size="sheet" label="연결해제" onPress={() => setConfirmingUnlink(true)} />
         </Dock>
       </Screen>
     );

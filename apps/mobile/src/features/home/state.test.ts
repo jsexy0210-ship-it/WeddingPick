@@ -167,7 +167,7 @@ describe('1층 · 진행 구간', () => {
         (one) => one.key === 'start'
       );
 
-    expect(card(decided)).toMatchObject({ state: 'contracted', detail: '계약 완료 · hall 1' });
+    expect(card(decided)).toMatchObject({ state: 'contracted', detail: '계약완료 · hall 1' });
     expect(completedPickGroups(decided).has('start')).toBe(true);
     // 결정 취소 — 후보는 남아 있어 «상담 예약» 칸으로 돌아가고 «계약 완료»가 사라진다.
     expect(card(cancelled)?.state).toBe('picking');
@@ -199,7 +199,7 @@ describe('1층 · 진행 구간', () => {
     // 아직 끝나지 않았다 — 넷이 다 정해져야 «계약 완료»다(Pick 규칙 A와 같다).
     const cards = homePrepCards({ statuses, venueName: statuses[0]!.decidedName });
 
-    expect(cards.find((card) => card.key === 'start')?.detail).toBe('계약 완료 · 우리동네 웨딩컨벤션');
+    expect(cards.find((card) => card.key === 'start')?.detail).toBe('계약완료 · 우리동네 웨딩컨벤션');
     expect(cards.find((card) => card.key === 'sdm')?.state).not.toBe('contracted');
     expect(cards.find((card) => card.key === 'ceremony')?.state).toBe('todo');
 
@@ -212,7 +212,7 @@ describe('1층 · 진행 구간', () => {
       venueName: null,
     }).find((card) => card.key === 'sdm');
 
-    expect(sdm).toMatchObject({ state: 'contracted', detail: '계약 완료 · 청담 스튜디오' });
+    expect(sdm).toMatchObject({ state: 'contracted', detail: '계약완료 · 청담 스튜디오' });
   });
 
   it('후보 목록이 없어도 11칸은 다 있다', () => {
@@ -251,19 +251,19 @@ describe('히어로', () => {
     });
   });
 
-  it('1~8개 — 이번 주엔 메이크업 차례예요', () => {
+  it('1~8개 — 이번 주에는 메이크업 차례예요', () => {
     expect(heroCopy({ tier: 'going', currentLabel: '메이크업', decided: 3 })).toEqual({
-      line1: '이번 주엔',
+      line1: '이번 주에는',
       line2: '메이크업 차례예요',
     });
   });
 
   it('9개 이상 — 남은 수를 우리말로', () => {
     expect(heroCopy({ tier: 'finishing', currentLabel: '청첩장', decided: 9 })).toEqual({
-      line1: '두 개만',
+      line1: '이제 두 개만',
       line2: '더 정하면 끝나요',
     });
-    expect(heroCopy({ tier: 'finishing', currentLabel: '허니문', decided: 10 }).line1).toBe('하나만');
+    expect(heroCopy({ tier: 'finishing', currentLabel: '허니문', decided: 10 }).line1).toBe('이제 하나만');
   });
 
   it('11/11 — 다 정했어요', () => {
@@ -288,14 +288,14 @@ describe('준비 현황 4칸', () => {
     expect(boardValue(status('hall', 'decided'), false)).toBe('완료');
     expect(boardValue(status('hall', 'picking', 3), true)).toBe('3곳');
     expect(boardValue(status('hall', 'before'), true)).toBe('먼저');
-    expect(boardValue(status('hall', 'before'), false)).toBe('시작 전');
+    expect(boardValue(status('hall', 'before'), false)).toBe('시작전');
   });
 
   it('0개 — 순서상 첫 4개, 첫 칸만 코랄', () => {
     const statuses = categoryStatuses({ candidates: null });
     const cells = boardCells({ tier: 'start', statuses, current: 'hall' });
 
-    expect(cells.map((cell) => cell.value)).toEqual(['먼저', '시작 전', '시작 전', '시작 전']);
+    expect(cells.map((cell) => cell.value)).toEqual(['먼저', '시작전', '시작전', '시작전']);
     expect(cells.map((cell) => cell.tone)).toEqual(['now', 'none', 'none', 'none']);
   });
 
@@ -322,7 +322,7 @@ describe('준비 현황 4칸', () => {
     const cells = boardCells({ tier: 'going', statuses, current: 'studio' });
 
     expect(cells.map((cell) => cell.category)).toEqual(['hall', 'studio', 'dress', 'makeup']);
-    expect(cells.map((cell) => cell.value)).toEqual(['완료', '먼저', '시작 전', '시작 전']);
+    expect(cells.map((cell) => cell.value)).toEqual(['완료', '먼저', '시작전', '시작전']);
   });
 
   it('1~8개 — 끝낸 것이 많으면 지금 것에 가까운 셋만', () => {
@@ -346,8 +346,8 @@ describe('준비 현황 4칸', () => {
 
     expect(cells.map((cell) => `${cell.category} ${cell.value}`)).toEqual([
       'invitation 2곳',
-      'goods 시작 전',
-      'honeymoon 시작 전',
+      'goods 시작전',
+      'honeymoon 시작전',
       'dowry 완료',
     ]);
     expect(cells[0]?.tone).toBe('now');
@@ -365,7 +365,7 @@ describe('준비 현황 4칸', () => {
   it('완료 개수는 격자가 아니라 헤더에 적는다', () => {
     // 시안 1 — 시작 전에는 링크가 없다. 펼쳐도 빈 칸 11개다.
     expect(boardMoreLabel('start', 0)).toBeNull();
-    expect(boardMoreLabel('going', 3)).toBe('전체 보기');
+    expect(boardMoreLabel('going', 3)).toBe('전체보기');
     expect(boardMoreLabel('finishing', 9)).toBe('완료 9개 · 전체 보기');
   });
 
@@ -469,7 +469,7 @@ describe('다음 준비', () => {
     });
     const step = nextStep({ tier: 'going', statuses, current: 'makeup', daysLeft: 60 });
 
-    expect(step?.title).toBe('다음 준비');
+    expect(step?.title).toBe('다음에 할 일');
     expect(step?.name).toBe('헤어변형 정하기');
     expect(step?.aside).toBe('D-60');
     expect(step?.target).toEqual({ kind: 'pick', category: 'hair' });

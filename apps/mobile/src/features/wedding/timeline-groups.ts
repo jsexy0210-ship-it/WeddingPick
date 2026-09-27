@@ -111,7 +111,7 @@ export function buildUpcomingTimelineGroups(
 
   if (thisWeek.length > 0) {
     groups.push({
-      title: '이번 주',
+      title: '이번주',
       // 이번 주는 오늘부터 센다 — 정본 「9.22~9.27 · D-236」(9.22가 오늘, D-236은 오늘 기준).
       range: `${monthDay(today)}~${monthDay(thisWeekEnd)}${ddayAt(today)}`,
       items: thisWeek.map((entry) => entry.item),
@@ -120,7 +120,7 @@ export function buildUpcomingTimelineGroups(
 
   if (nextWeek.length > 0) {
     groups.push({
-      title: '다음 주',
+      title: '다음주',
       range: `${monthDay(nextWeekStart)}~${monthDay(nextWeekEnd)}${ddayAt(nextWeekStart)}`,
       items: nextWeek.map((entry) => entry.item),
     });

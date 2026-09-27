@@ -46,7 +46,7 @@ describe('라운지 후기 페이지 연결', () => {
     /* 묶음 칩은 서버에 한 업종으로 보낼 수 없다 — 전체를 받아 화면에서 거른다. */
     expect(loungeReviewCategory('스드메')).toBeUndefined();
     expect(loungeReviewCategory('본식')).toBeUndefined();
-    expect(loungeReviewCategory('예물 · 신혼')).toBeUndefined();
+    expect(loungeReviewCategory('예물·신혼')).toBeUndefined();
   });
 
   it('묶음 칩은 준비 현황 그룹의 업종을 모두 담는다', () => {
@@ -54,7 +54,7 @@ describe('라운지 후기 페이지 연결', () => {
     expect(loungeVendorMatches('스드메', 'dress')).toBe(true);
     expect(loungeVendorMatches('스드메', 'hair')).toBe(true);
     expect(loungeVendorMatches('본식', 'snap')).toBe(true);
-    expect(loungeVendorMatches('예물 · 신혼', 'honeymoon')).toBe(true);
+    expect(loungeVendorMatches('예물·신혼', 'honeymoon')).toBe(true);
     expect(loungeVendorMatches('예산', 'hall')).toBe(false);
     expect(loungeFeedMatches('스드메', '드레스')).toBe(true);
     expect(loungeFeedMatches('예산', '예산')).toBe(true);

@@ -155,14 +155,14 @@ export type HeroCopy = {
 };
 
 /** 남은 수를 우리말로. 9개 이상 구간이라 셋 이하다. */
-const REMAINING_WORD: Record<number, string> = { 3: '세 개만', 2: '두 개만', 1: '하나만' };
+const REMAINING_WORD: Record<number, string> = { 3: '이제 세 개만', 2: '이제 두 개만', 1: '이제 하나만' };
 
 /**
- * 히어로 제목. 시안 1 · 2 · 3의 문장 그대로다.
+ * 히어로 제목. 시안 1 · 2 · 3의 상태별 문장을 따른다.
  *
  *   0개      웨딩홀부터 / 정해볼까요?
- *   1~8개    이번 주엔 / 메이크업 차례예요
- *   9개 이상  세 개만 / 더 정하면 끝나요      12/12면 다 정했어요
+ *   1~8개    이번 주에는 / 메이크업 차례예요
+ *   9개 이상  이제 세 개만 / 더 정하면 끝나요      12/12면 다 정했어요
  */
 export function heroCopy(input: {
   tier: HomeTier;
@@ -172,7 +172,7 @@ export function heroCopy(input: {
   const label = input.currentLabel ?? VENDOR_CATEGORY_LABEL.hall;
 
   if (input.tier === 'start') return { line1: `${label}부터`, line2: '정해볼까요?' };
-  if (input.tier === 'going') return { line1: '이번 주엔', line2: `${label} 차례예요` };
+  if (input.tier === 'going') return { line1: '이번 주에는', line2: `${label} 차례예요` };
 
   const remaining = HOME_TOTAL - input.decided;
 
@@ -209,7 +209,7 @@ export function boardValue(row: CategoryStatus, isCurrent: boolean): string {
   if (row.state === 'decided') return '완료';
   if (row.pickCount > 0) return `${row.pickCount}곳`;
 
-  return isCurrent ? '먼저' : '시작 전';
+  return isCurrent ? '먼저' : '시작전';
 }
 
 export function boardTone(row: CategoryStatus, isCurrent: boolean): BoardTone {
@@ -283,7 +283,7 @@ export function boardCells(input: {
 export function boardMoreLabel(tier: HomeTier, decided: number): string | null {
   if (tier === 'start') return null;
 
-  return tier === 'finishing' ? `완료 ${decided}개 · 전체 보기` : '전체 보기';
+  return tier === 'finishing' ? `완료 ${decided}개 · 전체 보기` : '전체보기';
 }
 
 /** 시작 전 구간에서 격자 아래 한 줄. 웨딩홀이 먼저인 이유다. */
@@ -456,9 +456,9 @@ export function nextStep(input: {
   }
 
   return {
-    title: '다음 준비',
+    title: '다음에 할 일',
     name: `${next.label} 정하기`,
-    meta: next.pickCount > 0 ? `후보 ${next.pickCount}곳` : '시작 전',
+    meta: next.pickCount > 0 ? `후보 ${next.pickCount}곳` : '시작전',
     aside: input.daysLeft === null ? '예식일 미정' : formatDday(input.daysLeft),
     target: { kind: 'pick', category: next.category },
   };

@@ -90,7 +90,7 @@ describe('지출 출처', () => {
     for (const source of EXPENSE_SOURCES) {
       expect(EXPENSE_SOURCE_LABEL[source].length).toBeGreaterThan(0);
     }
-    expect(EXPENSE_SOURCE_LABEL.consultation).toBe('상담 정리');
+    expect(EXPENSE_SOURCE_LABEL.consultation).toBe('상담정리');
   });
 });
 

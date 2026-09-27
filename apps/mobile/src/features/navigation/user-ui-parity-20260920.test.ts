@@ -150,7 +150,7 @@ describe('2026-09-20 사용자 공통 UI 회귀', () => {
     expect(search).toContain('<ListSkeleton variant="search" rows={3} />');
 
     const detail = mobile('app/(tabs)/search/[vendorId]/index.tsx');
-    expect(detail).toContain('<DepthHeader title="업체 상세" onBack={depthBack} />');
+    expect(detail).toContain('<DepthHeader title="업체상세" onBack={depthBack} />');
     expect(detail).toContain('<Skeleton height={Layout.heroVendor} radius={0} />');
     expect(detail).not.toContain('<SkeletonView hero />');
   });

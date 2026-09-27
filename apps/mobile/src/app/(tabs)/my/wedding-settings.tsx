@@ -45,17 +45,17 @@ type PreparedCategory = Exclude<VendorCategory, 'etc'>;
 
 /** `docs/design/React_Native/my.jsx` WP-MY-003 · `spec/strings.ko.json` `my.setting.*`. */
 const S = {
-  title: '내 웨딩설정',
+  title: '내 웨딩 설정',
   date: '예식일',
   region: '지역',
   style: '스타일',
-  prepared: '준비 현황',
+  prepared: '준비현황',
   /*
    * 휠 시트 제목 — 예식일 · 지역은 이미 쓰던 것(지역은 정본 home.jsx:247 「지역 선택」),
    * 나머지 둘은 같은 꼴로 지었다(정본에 이 화면의 시트 그림이 없다 — DESIGN_UNRESOLVED).
    */
   dateTitle: '예식일 선택',
-  prepTitle: '준비 현황 선택',
+  prepTitle: '준비현황 선택',
   styleTitle: '스타일 선택',
   /** 예식일이 지난 상태(운영 데이터 상태). */
   passed: '지났어요',

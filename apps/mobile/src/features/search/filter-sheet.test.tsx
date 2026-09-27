@@ -1,7 +1,7 @@
 /**
  * 검색 필터 시트 — 공통 바텀시트 UX(2026-09-26 대표 지시 「검색 -> 필터도 공통 바텀시트 UX 적용한다」).
  *
- *   1. 머리는 공통 `SheetHeader`다 — 타이틀 «필터» · «전체 해제» · 우측 X. 끌어 닫기 손잡이도 머리다.
+ *   1. 머리는 공통 `SheetHeader`다 — 타이틀 «필터» · «전체해제» · 우측 X. 끌어 닫기 손잡이도 머리다.
  *   2. 본문만 굴러간다 — CTA «{n}개 업체 보기»는 스크롤 밖에 있어 늘 보인다.
  *   3. 선택 상태 — 고른 칩은 selected, 서버가 못 거르는 칩(BACKEND_PENDING)은 disabled이고 눌러도 안 바뀐다.
  *   4. 적용 전 취소 — X · 딤 · 안드로이드 뒤로가기(Modal onRequestClose)로 닫으면 열 때 조건으로 되돌린다.
@@ -115,13 +115,13 @@ const header = (root: ReactTestInstance) => root.find((node) => node.props.testI
 const sheetOpen = (root: ReactTestInstance) => root.findAll((node) => node.type === Modal).length > 0;
 
 describe('필터 시트는 공통 바텀시트 모양이다', () => {
-  it('머리에 타이틀 «필터» · «전체 해제» · X가 한 줄로 선다', () => {
+  it('머리에 타이틀 «필터» · «전체해제» · X가 한 줄로 선다', () => {
     const { root } = mount();
     open(root);
 
     const head = header(root);
     expect(head.findAll((node) => node.props.children === '필터').length).toBeGreaterThan(0);
-    expect(head.findAll((node) => node.props.accessibilityLabel === '전체 해제' && node.props.accessibilityRole === 'button').length).toBeGreaterThan(0);
+    expect(head.findAll((node) => node.props.accessibilityLabel === '전체해제' && node.props.accessibilityRole === 'button').length).toBeGreaterThan(0);
     expect(head.findAll((node) => node.props.accessibilityLabel === '닫기' && node.props.accessibilityRole === 'button').length).toBeGreaterThan(0);
   });
 
@@ -164,13 +164,13 @@ describe('선택 상태', () => {
     expect(filters().category).toBe('hall');
   });
 
-  it('«전체 해제»는 카테고리 · 지역 · 예산만 비우고 정렬과 검색어는 둔다', () => {
+  it('«전체해제»는 카테고리 · 지역 · 예산만 비우고 정렬과 검색어는 둔다', () => {
     const { root, filters } = mount();
     open(root);
     press(root, '웨딩홀', 'radio');
     press(root, '금액 낮은순', 'radio');
 
-    press(root, '전체 해제', 'button');
+    press(root, '전체해제', 'button');
     expect(filters()).toEqual({ ...INITIAL, region: null, sort: 'price_low' });
   });
 });

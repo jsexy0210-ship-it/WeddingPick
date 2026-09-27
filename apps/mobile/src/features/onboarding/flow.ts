@@ -80,7 +80,7 @@ export const UNDECIDED_VALUE = '미정';
 export const STEP_LABEL: Record<QuestionStep, string> = {
   date: '예식일',
   region: '지역',
-  prep: '준비 현황',
+  prep: '준비현황',
   budget: '예산',
   style: '스타일',
 };
@@ -163,7 +163,7 @@ export const PREP_CARDS: readonly PrepCard[] = [
     categories: groupCategories('sdm'),
   },
   { key: 'ceremony', name: '본식', description: '본식스냅 · 부케 · 청첩장', group: 'ceremony', categories: groupCategories('ceremony') },
-  { key: 'goods', name: '예물 · 신혼', description: '예물 · 혼수 · 허니문', group: 'goods', categories: groupCategories('goods') },
+  { key: 'goods', name: '예물·신혼', description: '예물 · 혼수 · 허니문', group: 'goods', categories: groupCategories('goods') },
 ];
 
 /** 준비 현황 카드에서 목록으로 고른 업체 한 곳. 줄에 이름을 적고 저장할 때 id를 보낸다. */

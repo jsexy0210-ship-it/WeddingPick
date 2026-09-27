@@ -64,7 +64,7 @@ function gnb(current: string | null): string {
           <span style="color:var(--tint);display:flex">${mark(26)}</span>
           <b>${escapeHtml(SITE.name)}</b>
         </a>
-        <nav aria-label="주요 메뉴">${menu}</nav>
+        <nav aria-label="주요메뉴">${menu}</nav>
         <div class="side">
           <!--
             로그인은 앱에서 한다. 웹에 로그인 칸을 두면 웹에서 계정을 만들 수 있다는
@@ -113,7 +113,7 @@ function footer(): string {
             <ul>
               <li><a href="/search.html">업체 ${escapeHtml(TERMS.search)}</a></li>
               <li>${escapeHtml(TERMS.verifiedData)}</li>
-              <li>웨딩 정보</li>
+              <li>웨딩정보</li>
             </ul>
           </li>
           <li>

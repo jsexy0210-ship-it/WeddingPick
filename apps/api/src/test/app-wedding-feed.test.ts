@@ -99,7 +99,7 @@ describe('공개 웨딩피드', () => {
     const body = response.json<{ tabs: { key: string; label: string; categories: string[] }[] }>();
 
     expect(body.tabs).toEqual(WEDDING_FEED_TABS);
-    expect(body.tabs.map((t) => t.label)).toEqual(['전체', '웨딩홀', '스드메', '본식', '예물 · 신혼', '예산']);
+    expect(body.tabs.map((t) => t.label)).toEqual(['전체', '웨딩홀', '스드메', '본식', '예물·신혼', '예산']);
     expect(body.tabs[0]).toEqual({ key: 'all', label: '전체', categories: [] });
     // 글 질의 하나뿐이다 — 옛 탭 · 카테고리 표를 읽지 않는다.
     expect(pool.query).toHaveBeenCalledTimes(1);

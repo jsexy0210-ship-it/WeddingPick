@@ -87,7 +87,7 @@ describe('히어로 문구 (v3.28 WP-AUTH-002 ~ 007)', () => {
       ['웨딩홀', '예식장 · 식대 · 대관'],
       ['스드메', '스튜디오 · 드레스 · 메이크업'],
       ['본식', '본식스냅 · 부케 · 청첩장'],
-      ['예물 · 신혼', '예물 · 혼수 · 허니문'],
+      ['예물·신혼', '예물 · 혼수 · 허니문'],
     ]);
     expect(BUDGET_QUICK_CHIPS.map((chip) => chip.label)).toEqual(['+100만', '+500만', '+1,000만', '지우기']);
   });
@@ -96,7 +96,7 @@ describe('히어로 문구 (v3.28 WP-AUTH-002 ~ 007)', () => {
 describe('다섯 질문의 순서 (v3.28)', () => {
   it('예식일 → 지역 → 진행 상황 → 예산 → 스타일 다섯이다', () => {
     expect(QUESTION_STEPS).toEqual(['date', 'region', 'prep', 'budget', 'style']);
-    expect(Object.values(STEP_LABEL)).toEqual(['예식일', '지역', '준비 현황', '예산', '스타일']);
+    expect(Object.values(STEP_LABEL)).toEqual(['예식일', '지역', '준비현황', '예산', '스타일']);
   });
 
   it('진행바와 N/5는 다섯 질문 기준으로만 움직인다', () => {
@@ -210,7 +210,7 @@ describe('완료 요약', () => {
   it('완료 요약은 항상 다섯 줄이고 빈칸 대신 «미정»이다', () => {
     const rows = doneRows({ ...FULL, style: null });
 
-    expect(rows.map((row) => row.label)).toEqual(['예식일', '지역', '준비 현황', '예산', '스타일']);
+    expect(rows.map((row) => row.label)).toEqual(['예식일', '지역', '준비현황', '예산', '스타일']);
     expect(rows[4]!.value).toBe('미정');
     expect(rows.every((row) => row.value !== '' && row.value !== '—')).toBe(true);
 

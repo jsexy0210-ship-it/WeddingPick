@@ -406,7 +406,7 @@ function ReviewList({
       {items.map((review) => {
         const answers = reviewAnswers(review);
         const verified = review.verification !== 'reported';
-        const who = review.mine ? '내 후기' : review.roleLabel;
+        const who = review.mine ? '내후기' : review.roleLabel;
         const helpful = helpfulOverrides[review.id] ?? review.helpful;
         return (
           <View
@@ -465,7 +465,7 @@ function ReviewList({
                 source={{ uri: review.media[0].url }}
                 style={styles.reviewImage}
                 resizeMode="cover"
-                accessibilityLabel="후기 사진"
+                accessibilityLabel="후기사진"
               />
             ) : null}
 
@@ -476,7 +476,7 @@ function ReviewList({
             {review.rebuttal ? (
               <View style={[styles.rebuttal, { backgroundColor: theme.backgroundElement }]}>
                 <ThemedText type="f12" themeColor="textAssistive" style={styles.bold}>
-                  업체 답변
+                  업체답변
                 </ThemedText>
                 <ThemedText type="f13">{review.rebuttal.body}</ThemedText>
               </View>

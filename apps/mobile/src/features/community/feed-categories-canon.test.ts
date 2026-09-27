@@ -29,13 +29,14 @@ describe('웨딩피드 칩 — 정본 my.js 대조', () => {
   const canonMy = read('docs', 'design', 'React_Native', 'my.js');
   const canonHome = read('docs', 'design', 'React_Native', 'home.js');
 
-  it('칩은 정본 my.js `cats`와 글자까지 같고 라운지가 그 줄을 그린다', () => {
+  it('칩은 정본 my.js `cats`를 최신 사용자 표기로 보여주고 라운지가 그 줄을 그린다', () => {
     const line = canonMy.split('\n').find((l: string) => l.trim().startsWith('cats:')) ?? '';
     const canon = [...line.matchAll(/cat\('([^']+)'/g)].map((m) => m[1]);
 
     expect(canon).toEqual(['전체', '웨딩홀', '스드메', '본식', '예물 · 신혼', '예산']);
-    expect(WEDDING_FEED_CHIPS.map((chip) => chip.label)).toEqual(canon);
-    expect(LOUNGE_CATEGORIES).toEqual(canon);
+    const displayLabels = canon.map((label) => label === '예물 · 신혼' ? '예물·신혼' : label);
+    expect(WEDDING_FEED_CHIPS.map((chip) => chip.label)).toEqual(displayLabels);
+    expect(LOUNGE_CATEGORIES).toEqual(displayLabels);
   });
 
   it('정본 카드 배지(라운지 guides · relGuides · MY 스크랩 saved, 홈 feed)는 전부 고를 수 있는 카테고리다', () => {

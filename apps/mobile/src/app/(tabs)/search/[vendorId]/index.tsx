@@ -253,7 +253,7 @@ export default function VendorDetailScreen() {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-          <DepthHeader title="업체 상세" onBack={depthBack} />
+          <DepthHeader title="업체상세" onBack={depthBack} />
           <ScrollView
             style={styles.scroll}
             showsVerticalScrollIndicator={false}
@@ -484,8 +484,8 @@ export default function VendorDetailScreen() {
             */
             <View>
               <View style={styles.introSec}>
-                {/* 정본 `secTitle` «추천 이유» — 2026-09-25 대표 결정으로 정본 라벨 그대로 쓴다. */}
-                <ThemedText type="f17" style={styles.bold}>추천 이유</ThemedText>
+                {/* 정본 `secTitle` 위치에 비교 판단을 돕는 라벨을 표시한다. */}
+                <ThemedText type="f17" style={styles.bold}>비교할 때 볼 점</ThemedText>
                 {hasRecommendation && reasonLines.length > 0 ? (
                   <View style={styles.reasonWrap}>
                     {reasonLines.map((reason) => (
@@ -501,7 +501,7 @@ export default function VendorDetailScreen() {
                   </View>
                 ) : (
                   <ThemedText type="body" themeColor="textSecondary">
-                    아직 추천 이유가 없어요.
+                    비교할 때 볼 점을 아직 정리하지 못했어요.
                   </ThemedText>
                 )}
               </View>
@@ -659,7 +659,7 @@ export default function VendorDetailScreen() {
                     </ThemedText>
                     {review.rebuttal ? (
                       <View style={[styles.rebuttal, { backgroundColor: theme.backgroundElement }]}>
-                        <ThemedText type="t7" themeColor="textSecondary" style={styles.bold}>업체 반론</ThemedText>
+                        <ThemedText type="t7" themeColor="textSecondary" style={styles.bold}>업체반론</ThemedText>
                         <ThemedText type="body" themeColor="textStrong">{review.rebuttal.body}</ThemedText>
                       </View>
                     ) : null}
@@ -692,7 +692,7 @@ export default function VendorDetailScreen() {
             (DESIGN_UNRESOLVED · 서버 필요). 빈 줄을 만들지 않는다(정본 vdiffs «미등록 항목»).
           */
           <View style={styles.introSec}>
-            <ThemedText type="f17" style={styles.bold}>기본 정보</ThemedText>
+            <ThemedText type="f17" style={styles.bold}>기본정보</ThemedText>
             <View>
               <InfoRow label="지역" value={regionLabel(vendor.region)} />
               <InfoRow label={OFFICIAL_LAST_CHECK} value={formatKoreanDate(vendor.lastVerifiedAt)} />

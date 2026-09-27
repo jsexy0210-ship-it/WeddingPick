@@ -591,7 +591,7 @@ export default function SetupScreen() {
           <View style={styles.selectionSection}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="지역 선택"
+              accessibilityLabel="지역선택"
               onPress={() => setRegionSheetOpen(true)}
               style={({ pressed }) => [
                 styles.selectionField,

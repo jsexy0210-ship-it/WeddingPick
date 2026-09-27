@@ -21,7 +21,7 @@ export type RebuttalStatus = (typeof REBUTTAL_STATUSES)[number];
  * 보이느냐다.
  */
 export const REBUTTAL_STATUS_LABEL: Record<RebuttalStatus, string> = {
-  pending: '확인 중',
+  pending: '확인중',
   published: '게시됨',
   rejected: '반영되지 않았어요',
 };

@@ -42,8 +42,8 @@ describe('회원탈퇴 안내', () => {
 
     expect(rows).toContainEqual({ label: 'Pick한 곳', value: '8곳' });
     expect(rows).toContainEqual({ label: '일정 · 체크리스트', value: '12개' });
-    expect(rows).toContainEqual({ label: '지출 기록', value: '2,140만원' });
-    expect(rows).toContainEqual({ label: '배우자 연결', value: '즉시 해제' });
+    expect(rows).toContainEqual({ label: '지출내역', value: '2,140만원' });
+    expect(rows).toContainEqual({ label: '배우자 연결', value: '즉시해제' });
   });
 
   it('배우자가 없으면 배우자 줄을 세우지 않는다', () => {
@@ -51,12 +51,12 @@ describe('회원탈퇴 안내', () => {
     const rows = deletedOnWithdrawal(solo);
 
     expect(rows.map((row) => row.label)).not.toContain('배우자 연결');
-    expect(rows).toContainEqual({ label: '취향 · 개인화', value: '즉시 삭제' });
+    expect(rows).toContainEqual({ label: '취향 · 개인화', value: '즉시삭제' });
   });
 
   it('지출이 없으면 0원이 아니라 없다고 적는다', () => {
     expect(deletedOnWithdrawal(solo)).toContainEqual({
-      label: '지출 기록',
+      label: '지출내역',
       value: '없어요',
       empty: true,
     });
@@ -107,7 +107,7 @@ describe('회원탈퇴 안내', () => {
       '계정과 프로필을 삭제했어요',
       '준호님과의 연결을 해제했어요',
       'Pick · 일정 · 지출 기록을 삭제했어요',
-      '후기와 실 제보는 나를 알아볼 수 없도록 분리했어요',
+      '후기와 실제보는 나를 알아볼 수 없도록 분리했어요',
     ]);
 
     // 분리한 것이 없으면 분리했다고 적지 않는다.

@@ -102,7 +102,7 @@ export default function ExpoDetailScreen() {
       <ErrorView
         title={error}
         onRetry={() => load()}
-        retryLabel="다시 시도"
+        retryLabel="다시 시도하기"
         onBack={depthBack}
         backLabel="돌아가기"
       />
@@ -258,7 +258,7 @@ function kst(iso: string) {
 /** 정본 expoDday «D-2» · 진행 중 · 종료. */
 function dday(expo: ExpoDetail): string {
   if (expo.status === 'closed') return '종료';
-  if (expo.status === 'ongoing') return '진행 중';
+  if (expo.status === 'ongoing') return '진행중';
   const days = daysUntil(expo.startsAt.slice(0, 10));
   return days <= 0 ? '오늘' : `D-${days}`;
 }

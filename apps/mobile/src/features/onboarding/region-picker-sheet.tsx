@@ -117,7 +117,7 @@ function SheetBody({
 
 
 const S = {
-  title: '지역 선택',
+  title: '지역선택',
   close: '닫기',
   region: '시/도',
   district: '시/군/구',

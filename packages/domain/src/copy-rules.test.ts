@@ -48,10 +48,10 @@ describe('데이터 — v3.3이 화면에서 걷어낸 말', () => {
     /*
      * v3.1이 정반대를 말했었다(`표본` 대신 `데이터`). 규칙이 뒤집힌 뒤에도 목록이
      * 따라오지 않아 화면 여섯 곳에 남아 있었고, 검색 화면은 같은 자리에서
-     * `실 제보`와 `데이터 많은 순`을 함께 적고 있었다.
+     * `실제보`와 `데이터 많은 순`을 함께 적고 있었다.
      */
     expect(violatesCopyRules('데이터 많은 순')).toBe(true);
-    expect(violatesCopyRules('실 제보 많은 순')).toBe(false);
+    expect(violatesCopyRules('실제보 많은 순')).toBe(false);
   });
 
   it('출처의 이름은 그대로 둔다', () => {
@@ -90,7 +90,7 @@ describe('v3.18 · v3.22 금지어를 게이트가 잡는다', () => {
   });
 
   it('대신 쓰는 말은 통과한다', () => {
-    for (const text of ['웨딩픽 추천', '업체 검색', 'Pick 목록', '실 제보 12건', 'Npay 5,000원']) {
+    for (const text of ['웨딩픽 추천', '업체 검색', 'Pick 목록', '실제보 12건', 'Npay 5,000원']) {
       expect(violatesCopyRules(text)).toBe(false);
     }
   });
@@ -120,7 +120,7 @@ describe('금지어 목록의 원본은 spec/glossary.json이다', () => {
      * 「중앙값」을 통째로 풀어주면 「중앙값 168만원」까지 통과한다. 승인된 문구
      * 하나만 풀어야 그 자리만 지나간다 — glossary의 note가 원래 그렇게 적고 있었다.
      */
-    expect(violatesCopyRules('기준금액은 실 제보의 중앙값이에요')).toBe(false);
+    expect(violatesCopyRules('기준금액은 실제보의 중앙값이에요')).toBe(false);
     expect(violatesCopyRules('중앙값 168만원')).toBe(true);
   });
 

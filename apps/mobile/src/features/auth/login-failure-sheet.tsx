@@ -16,7 +16,7 @@ export type LoginFailureSheetProps = {
  *
  * v3.13부터 초기 버전은 카카오만 쓴다 — 이메일 로그인을 대안으로 안내하지
  * 않는다("어느 화면에서도 연결하지 않는다"). 카카오 말고는 고를 다른
- * 방법이 없으므로 "다시 시도"만 남긴다.
+ * 방법이 없으므로 "다시 시도하기"만 남긴다.
  *
  * 디자인 핸드오프는 취소·네트워크·계정 오류 3개 state를 구분하지만, 지금
  * `useSignIn`의 에러는 카카오 SDK/API가 던진 원문 메시지 하나뿐이라 셋을
@@ -36,7 +36,7 @@ export function LoginFailureSheet({ visible, onRetry, onDismiss }: LoginFailureS
           </ThemedView>
 
           <ThemedView style={styles.actions}>
-            <ActionButton variant="primary" size="xlarge" label="다시 시도" onPress={onRetry} />
+            <ActionButton variant="primary" size="xlarge" label="다시 시도하기" onPress={onRetry} />
           </ThemedView>
         </SheetPanel>
     </BottomSheet>
