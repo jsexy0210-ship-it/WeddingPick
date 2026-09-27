@@ -65,9 +65,9 @@ describe('다른 탭 스택으로 들어가는 자리는 출처를 넘긴다', (
     expect(layout).toContain('withBackOrigin(pathname, from)');
   });
 
-  it('Pick → «내 조건에 맞는 곳» → 업체 상세는 Pick(과 켜진 칩)을 넘긴다(2026-09-26 대표 감사)', () => {
+  it('Pick 추천 → 업체 상세는 Pick(과 홈에서 넘긴 묶음)을 넘긴다(2026-09-26 대표 감사)', () => {
     const pick = read('app/(tabs)/pick/index.tsx');
-    expect(pick).toContain("const origin = pickOrigin(filter === 'all' ? null : filter);");
+    expect(pick).toContain('const origin = pickOrigin(requestedGroup);');
     expect(pick).toContain("router.push(inStack('/pick', `/search/${encodeURIComponent(vendor.id)}?from=${encodeURIComponent(origin)}`) as never)");
     // Pick 스택 별칭(stack-alias.ts) — 같은 Pick 스택 안이라 건너지 않는다.
     expect(depthBackTarget('/pick/vendor/v-1?from=pick%2Fsdm')).toBe('/pick?group=sdm');
