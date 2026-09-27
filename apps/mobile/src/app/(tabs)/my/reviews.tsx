@@ -107,7 +107,7 @@ export default function MyReviewsScreen() {
   );
 
   return (
-    <SubScreen title={S.title} refreshControl={pull.refreshControl}>
+    <SubScreen title={S.title} scrollToTop refreshControl={pull.refreshControl}>
       <Section title={`${S.written} ${written.length}개`}>
         {written.length > 0 ? (
           <ListCard>

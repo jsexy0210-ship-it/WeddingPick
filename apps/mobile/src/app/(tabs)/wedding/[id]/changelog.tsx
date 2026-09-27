@@ -1,11 +1,12 @@
 import type { Notification } from '@weddingpick/api-contract';
 import { useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { listNotifications } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { ScrollToTopButton, useScrollToTopVisibility } from '@/features/navigation/scroll-to-top-button';
 import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import { noteMonthDayTime } from '@/features/wedding/note-format';
 import { Border, ErrorView, Layout, SkeletonView, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
@@ -24,6 +25,8 @@ import { Hero, NavBar, Screen } from '@/features/wedding/screen-kit';
  * 정본에 없는 «오늘 · 이번 주» 묶음 머리와 상세 한 줄은 지웠다.
  */
 export default function ChangelogScreen() {
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollTop = useScrollToTopVisibility();
   const depthBack = useDepthBack();
   useLocalSearchParams<{ id: string }>();
   const [notifications, setNotifications] = useState<Notification[] | null>(null);
@@ -79,6 +82,9 @@ export default function ChangelogScreen() {
       <NavBar title="변경내역" variant="close" />
 
       <ScrollView
+        ref={scrollRef}
+        onScroll={scrollTop.onScroll}
+        scrollEventThrottle={100}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={pull.refreshControl}>
@@ -92,6 +98,7 @@ export default function ChangelogScreen() {
           </View>
         )}
       </ScrollView>
+      <ScrollToTopButton visible={scrollTop.visible} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
     </Screen>
   );
 }

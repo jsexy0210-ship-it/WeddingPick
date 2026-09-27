@@ -44,6 +44,7 @@ import { feedDetailHref } from '@/features/community/feed-href';
 import { CatChipBar } from '@/features/settings/my-kit';
 import { chainOrigin } from '@/features/navigation/depth-back';
 import { inStack } from '@/features/navigation/stack-alias';
+import { ScrollToTopButton, useScrollToTopVisibility } from '@/features/navigation/scroll-to-top-button';
 import { NavBar } from '@/features/wedding/screen-kit';
 import strings from '../../../../../spec/strings.ko.json';
 import { ReviewWriteSheet } from '@/app/(tabs)/search/[vendorId]/write-review';
@@ -83,6 +84,8 @@ type LoungeReview = LoungeReviewListResponse['reviews'][number];
  * 바꿔 보여준다 — 이 둘은 서로 다른 값(overall vs. aspects)이라 함께 둔다.
  */
 export function LoungeScreen({ kind: tab }: { kind: LoungeKind }) {
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollTop = useScrollToTopVisibility();
   const { state, refresh } = useSession();
   const params = useLocalSearchParams<{
     from?: string | string[];
@@ -282,19 +285,24 @@ export function LoungeScreen({ kind: tab }: { kind: LoungeKind }) {
             onSelect={(label) => {
               categoryRef.current = label;
               setCategory(label);
+              scrollTop.reset();
+              scrollRef.current?.scrollTo({ y: 0, animated: false });
               if (tab === 'review') loadReviews(label);
             }}
           />
         ) : null}
 
         <ScrollView
+          ref={scrollRef}
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           refreshControl={pull.refreshControl}
           scrollEventThrottle={160}
-          onScroll={({ nativeEvent }) => {
+          onScroll={(event) => {
+            scrollTop.onScroll(event);
             if (tab !== 'review') return;
+            const { nativeEvent } = event;
             const distanceToEnd =
               nativeEvent.contentSize.height -
               nativeEvent.layoutMeasurement.height -
@@ -318,6 +326,7 @@ export function LoungeScreen({ kind: tab }: { kind: LoungeKind }) {
             <ExpoList state={expos} onRetry={() => load()} />
           )}
         </ScrollView>
+        <ScrollToTopButton visible={scrollTop.visible} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
       </SafeAreaView>
       {tab === 'review' && writeSheet ? (
         writeSheet.vendorId ? (

@@ -1,6 +1,7 @@
-import { Children, cloneElement, isValidElement, type ReactElement, type ReactNode } from 'react';
+import { Children, cloneElement, isValidElement, useRef, type ReactElement, type ReactNode } from 'react';
 import { Pressable, type RefreshControlProps, ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ScrollToTopButton, useScrollToTopVisibility } from '@/features/navigation/scroll-to-top-button';
 
 import {
   ActionButton,
@@ -56,6 +57,7 @@ export function SubScreen({
   dock,
   contentStyle,
   refreshControl,
+  scrollToTop = false,
 }: {
   title: string;
   /** 오른쪽 글자 액션(«저장» · «참여 내역»). */
@@ -67,9 +69,12 @@ export function SubScreen({
   contentStyle?: StyleProp<ViewStyle>;
   /** 당겨서 새로 고침(`usePullRefresh().refreshControl`). 목록 화면만 넘긴다 — 입력 화면은 넘기지 않는다. */
   refreshControl?: ReactElement<RefreshControlProps>;
+  scrollToTop?: boolean;
 }) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const scrollRef = useRef<ScrollView>(null);
+  const topButton = useScrollToTopVisibility();
 
   /*
    * 껍데기째 키패드를 피한다 — 키패드가 뜨면 가운데 스크롤이 줄고 dock이 키패드 바로 위로 온다
@@ -81,12 +86,20 @@ export function SubScreen({
         <DepthHeader title={title} right={right} onBack={onBack} />
 
         <ScrollView
+          ref={scrollRef}
+          onScroll={scrollToTop ? topButton.onScroll : undefined}
+          scrollEventThrottle={100}
           style={styles.scroll}
           contentContainerStyle={[styles.content, contentStyle]}
           showsVerticalScrollIndicator={false}
           refreshControl={refreshControl}>
           {children}
         </ScrollView>
+        <ScrollToTopButton
+          visible={scrollToTop && topButton.visible}
+          bottom={dock ? Layout.ctaPick + Layout.rowPaddingY + Math.max(DOCK_BOTTOM - insets.bottom, Layout.rowPaddingY) + 16 : 16}
+          onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })}
+        />
 
         {dock ? (
           <View

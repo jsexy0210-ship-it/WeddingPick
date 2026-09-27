@@ -46,6 +46,7 @@ import {
 import { ROOT_TAB_GUTTER, RootTabHeader } from '@/components/root-tab-header';
 import { TermsDetailModal } from '@/features/auth/terms-detail-modal';
 import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
+import { ScrollToTopButton, useScrollToTopVisibility } from '@/features/navigation/scroll-to-top-button';
 import { useSession } from '@/features/auth/use-session';
 import { DelayedLoader, DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { AVATAR_MY, Avatar } from '@/features/settings/my-kit';
@@ -83,6 +84,8 @@ type MenuRow = {
 
 export default function MyScreen() {
   const theme = useTheme();
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollTop = useScrollToTopVisibility();
   const { state, refresh } = useSession();
   const [data, setData] = useState<MyData>(EMPTY);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -232,6 +235,9 @@ export default function MyScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <RootTabHeader title={S.title} />
         <ScrollView
+          ref={scrollRef}
+          onScroll={scrollTop.onScroll}
+          scrollEventThrottle={100}
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -347,6 +353,7 @@ export default function MyScreen() {
             </View>
           </View>
         </ScrollView>
+        <ScrollToTopButton visible={scrollTop.visible} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
       </SafeAreaView>
       <TermsDetailModal
         visible={termsKey !== null}

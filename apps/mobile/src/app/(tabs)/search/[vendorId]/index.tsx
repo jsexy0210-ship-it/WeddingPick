@@ -19,7 +19,7 @@ import {
   type WeddingStyle,
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams, usePathname } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
@@ -34,6 +34,7 @@ import { isServerConfigured } from '@/api/config';
 import { DepthHeader } from '@/components/depth-header';
 import { useDepthBack } from '@/features/navigation/depth-back';
 import { inStack } from '@/features/navigation/stack-alias';
+import { ScrollToTopButton, useScrollToTopVisibility } from '@/features/navigation/scroll-to-top-button';
 import { savePendingAction } from '@/features/auth/pending-action';
 import { readCurrentUserSnapshot } from '@/features/loading/current-user-snapshot';
 import { PickDoneSheet, UnpickSheet } from '@/features/pick/pick-sheets';
@@ -130,6 +131,8 @@ function formatYearMonth(iso: string): string {
  * reasons는 검색·TOP3에서 넘어올 때만 존재한다. 이 화면에서 직접 접근하면 없다.
  */
 export default function VendorDetailScreen() {
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollTop = useScrollToTopVisibility();
   const depthBack = useDepthBack();
   /*
    * 이 화면은 Pick · 라운지 · MY · 웨딩노트 스택에도 선다(`stack-alias.ts`). 사진 · 후기 쓰기 · 정보
@@ -349,6 +352,9 @@ export default function VendorDetailScreen() {
         <DepthHeader title={vendor.name} />
 
         <ScrollView
+          ref={scrollRef}
+          onScroll={scrollTop.onScroll}
+          scrollEventThrottle={100}
           style={styles.scroll}
           refreshControl={pull.refreshControl}
           showsVerticalScrollIndicator={false}
@@ -722,6 +728,11 @@ export default function VendorDetailScreen() {
 
           <View style={styles.bottomPad} />
         </ScrollView>
+        <ScrollToTopButton
+          visible={scrollTop.visible}
+          bottom={PICK_CTA_HEIGHT + Layout.inlineGap + Math.max(DOCK_PAD_BOTTOM, insets.bottom) + 16}
+          onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })}
+        />
 
         {/*
           ⑤ Pick 하나 — 탭 전환과 무관하게 항상 보이는 하단 고정 영역. 화면당 Primary

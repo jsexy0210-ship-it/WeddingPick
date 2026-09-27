@@ -138,6 +138,7 @@ export default function NotificationsScreen() {
   return (
     <SubScreen
       title={S.title}
+      scrollToTop
       refreshControl={pull.refreshControl}
       contentStyle={{ paddingTop: Layout.rowPaddingY }}
       right={

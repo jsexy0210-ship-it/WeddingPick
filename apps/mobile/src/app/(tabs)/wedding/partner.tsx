@@ -17,6 +17,7 @@ import { shareOrCopy } from '@/components/share-or-copy';
 import { formatDateTimeDot } from '@/features/common/format-date';
 import { APP_WEB_ORIGIN } from '@/features/social-meta';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { ScrollToTopButton, useScrollToTopVisibility } from '@/features/navigation/scroll-to-top-button';
 import { partnerJoinHref } from '@/features/partner/routes';
 import { ActionButton, Border, ErrorView, Layout, Radius, SocialColors, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
@@ -119,6 +120,8 @@ function InfoList({ items }: { items: { label: string; sub: string }[] }) {
  * 정본 그대로(`SocialColors.kakao`) 쓰되, 실제로 카카오톡으로 강제 전달하지는 않는다.
  */
 export default function PartnerScreen() {
+  const scrollRef = useRef<ScrollView>(null);
+  const { visible: scrollTopVisible, onScroll: onScrollTop, reset: resetScrollTop } = useScrollToTopVisibility();
   const depthBack = useDepthBack();
   /* 초대 수락으로 넘어가도 이 화면의 출처(MY · 알림 · 홈)를 이어 준다 — 돌아온 뒤 Back이 그리로 간다. */
   const { from } = useLocalSearchParams<{ from?: string | string[] }>();
@@ -137,6 +140,7 @@ export default function PartnerScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmingUnlink, setConfirmingUnlink] = useState(false);
+  useEffect(() => { resetScrollTop(); }, [confirmingUnlink, me?.spouseLinked, resetScrollTop]);
   const [copied, setCopied] = useState(false);
   /** ref다 — 자동 생성은 한 번만 시도하면 되는 신호일 뿐 화면에 그릴 상태가 아니다. */
   const autoTried = useRef(false);
@@ -268,7 +272,7 @@ export default function PartnerScreen() {
     return (
       <Screen>
         <NavBar title={S.unlinkNav} onBack={() => setConfirmingUnlink(false)} />
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView ref={scrollRef} onScroll={onScrollTop} scrollEventThrottle={100} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.qBlock}>
             <ThemedText type="t2">{S.unlinkQTitle}</ThemedText>
           </View>
@@ -292,6 +296,7 @@ export default function PartnerScreen() {
 
           {errorLine}
         </ScrollView>
+        <ScrollToTopButton visible={scrollTopVisible} bottom={Layout.touchTarget + Spacing.two * 2 + 32} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
         <Dock>
           <ActionButton
             variant="danger"
@@ -311,6 +316,9 @@ export default function PartnerScreen() {
       <Screen>
         <NavBar title={S.linkedNav} />
         <ScrollView
+          ref={scrollRef}
+          onScroll={onScrollTop}
+          scrollEventThrottle={100}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
           refreshControl={pull.refreshControl}>
@@ -330,6 +338,7 @@ export default function PartnerScreen() {
             <NoteCard title={strings.journey.partnerShareTitle} body={strings.journey.partnerShareBody} />
           </View>
         </ScrollView>
+        <ScrollToTopButton visible={scrollTopVisible} bottom={Layout.touchTarget + Spacing.two * 2 + 32} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
         <Dock>
           <ActionButton variant="secondary" size="sheet" label="연결 끊기" onPress={() => setConfirmingUnlink(true)} />
         </Dock>
@@ -349,6 +358,9 @@ export default function PartnerScreen() {
       <NavBar title={S.inviteNav} />
 
       <ScrollView
+        ref={scrollRef}
+        onScroll={onScrollTop}
+        scrollEventThrottle={100}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={pull.refreshControl}>
@@ -424,6 +436,7 @@ export default function PartnerScreen() {
           </ThemedText>
         </Pressable>
       </ScrollView>
+      <ScrollToTopButton visible={scrollTopVisible} bottom={Layout.touchTarget + Spacing.two * 2 + 32} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
 
       <Dock>
         <ActionButton
