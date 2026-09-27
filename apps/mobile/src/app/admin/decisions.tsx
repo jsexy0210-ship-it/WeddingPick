@@ -8,6 +8,7 @@ import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { formatDateTimeDot } from '@/features/common/format-date';
 
 import { apiFetch } from './_api';
+import { EmptyState } from './_ui';
 
 /**
  * 자동 결정 현황 — 사람이 아니라 규칙이 내린 판단을 훑는다.
@@ -110,7 +111,7 @@ export function DecisionsPanel() {
               <Text style={[styles.th, styles.colCost]}>비용</Text>
             </View>
 
-            {briefing.length === 0 && <Text style={styles.emptyText}>집계가 없어요.</Text>}
+            {briefing.length === 0 && <EmptyState title="아직 집계가 없어요" />}
 
             {briefing.map((row) => (
               <View key={`${row.workflow}:${row.decider}`} style={styles.tableRow}>
@@ -147,7 +148,7 @@ export function DecisionsPanel() {
               <Text style={[styles.th, styles.colDate]}>시작</Text>
             </View>
 
-            {open.length === 0 && <Text style={styles.emptyText}>안 끝난 결정이 없어요.</Text>}
+            {open.length === 0 && <EmptyState title="확인할 것이 없어요" kind="success" />}
 
             {open.map((row) => (
               <View key={row.id} style={styles.tableRow}>

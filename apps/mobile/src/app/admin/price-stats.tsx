@@ -11,6 +11,7 @@ import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { WritePressable } from './_role';
+import { EmptyState } from './_ui';
 
 type VendorStat = {
   vendorId: string;
@@ -149,7 +150,7 @@ export function PriceStatsPanel() {
               <Text style={[styles.th, styles.colAction]} />
             </View>
             {filtered.length === 0 && (
-              <Text style={styles.emptyText}>일치하는 업체 없음</Text>
+              <EmptyState title={search.trim() ? '조건에 맞는 업체가 없어요' : '아직 가격통계가 없어요'} />
             )}
             {filtered.map((v, i) => (
               <View key={v.vendorId} style={[styles.tableRow, i % 2 === 1 && styles.tableRowZebra]}>

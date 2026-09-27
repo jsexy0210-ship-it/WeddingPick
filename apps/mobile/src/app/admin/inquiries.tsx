@@ -28,7 +28,7 @@ import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { formatDateTimeDot } from '@/features/common/format-date';
 import { apiFetch } from './_api';
 import { WritePressable } from './_role';
-import { AdminButtonLoader, compactSplit, useAdminCompact } from './_ui';
+import { AdminButtonLoader, EmptyState, compactSplit, useAdminCompact } from './_ui';
 
 type PendingInquiry = {
   id: string;
@@ -233,7 +233,7 @@ export function InquiryPanel() {
                   </View>
                 </Pressable>
               ))}
-              {items.length === 0 && <Text style={styles.emptyText}>확인할 문의가 없어요.</Text>}
+              {items.length === 0 && <EmptyState title="아직 문의가 없어요" />}
             </ScrollView>
           </View>
 

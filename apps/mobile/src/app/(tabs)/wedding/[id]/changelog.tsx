@@ -9,7 +9,7 @@ import { useDepthBack } from '@/features/navigation/depth-back';
 import { ScrollToTopButton, useScrollToTopVisibility } from '@/features/navigation/scroll-to-top-button';
 import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import { noteMonthDayTime } from '@/features/wedding/note-format';
-import { Border, ErrorView, Layout, SkeletonView, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { Border, EmptyStateIcon, ErrorView, Layout, SkeletonView, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import { Hero, NavBar, Screen } from '@/features/wedding/screen-kit';
 
 /**
@@ -89,7 +89,10 @@ export default function ChangelogScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={pull.refreshControl}>
         {notifications.length === 0 ? (
-          <Hero title="아직 바뀐 것이 없어요" sub="일정 · 지출 · 메모가 바뀌면 여기에 쌓여요" />
+          <>
+            <View style={styles.emptyIcon}><EmptyStateIcon /></View>
+            <Hero title="아직 변경내역이 없어요" sub="새로운 변경이 생기면 여기서 확인할 수 있어요" />
+          </>
         ) : (
           <View style={styles.sec}>
             {notifications.map((item) => (
@@ -120,6 +123,7 @@ function ChangeRow({ item }: { item: Notification }) {
 const styles = StyleSheet.create({
   /* 프레임 끝 `height:24px` 빈 칸. */
   content: { paddingBottom: Spacing.four },
+  emptyIcon: { alignItems: 'center', paddingTop: Layout.gutter },
   sec: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.listGap, gap: Layout.inlineGap },
   /* `chRow` — `align-items:flex-start;justify-content:space-between;gap:12px`. */
   row: {

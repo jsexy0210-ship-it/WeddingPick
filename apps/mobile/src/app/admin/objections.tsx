@@ -9,7 +9,7 @@ import { formatDateTimeDot } from '@/features/common/format-date';
 import { apiFetch } from './_api';
 import { WritePressable } from './_role';
 import { ConfirmDecision } from '@/features/admin/confirm-decision';
-import { compactSplit, useAdminCompact } from './_ui';
+import { EmptyState, compactSplit, useAdminCompact } from './_ui';
 
 /**
  * 후기 이의제기 — 업체가 후기에 이의를 걸면 그 후기를 잠시 내리고 사람이 판단한다.
@@ -148,7 +148,7 @@ export function ObjectionsPanel() {
                 <Text style={[styles.th, styles.colUntil]}>판단 기한</Text>
               </View>
 
-              {items.length === 0 && <Text style={styles.emptyText}>확인 중인 이의가 없어요.</Text>}
+              {items.length === 0 && <EmptyState title="확인할 것이 없어요" kind="success" />}
 
               {items.map((item) => (
                 <Pressable

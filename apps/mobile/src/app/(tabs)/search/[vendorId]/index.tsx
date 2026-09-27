@@ -50,6 +50,7 @@ import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import {
   Badge,
   Border,
+  EmptyStateIcon,
   ErrorView,
   Layout,
   LineHeight,
@@ -72,8 +73,9 @@ import {
  */
 const EXPERIENCE_MIN_PEOPLE = 3;
 
-/** 후기 0건일 때의 한 줄(SPEC §2). 빈 섹션 대신 이 줄이 들어간다. */
-const NO_REVIEWS_YET = '아직 후기가 없어요 · 첫 후기를 남겨주세요';
+/** 후기 0건일 때의 제목과 다음 행동(SPEC §2). */
+const NO_REVIEWS_TITLE = '아직 후기가 없어요';
+const NO_REVIEWS_ACTION = '첫 후기를 남겨보세요';
 
 /** 공식정보 · 업체 안내 문구. spec/strings.ko.json vendor.* */
 const OFFICIAL_LAST_CHECK = '마지막 확인';
@@ -672,13 +674,15 @@ export default function VendorDetailScreen() {
                   </View>
                 ))
               ) : reviewsLoaded ? (
-                /* 후기 0건 — 빈 섹션 대신 한 줄. 누르면 첫 후기를 쓰는 자리로 간다. */
+                /* 후기 0건 — 누르면 첫 후기를 쓰는 자리로 간다. */
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={NO_REVIEWS_YET}
+                  accessibilityLabel={`${NO_REVIEWS_TITLE}. ${NO_REVIEWS_ACTION}`}
                   onPress={() => setWriteOpen(true)}
-                  style={[styles.revItem, { borderBottomColor: theme.border }]}>
-                  <ThemedText type="t6" themeColor="textSecondary">{NO_REVIEWS_YET}</ThemedText>
+                  style={[styles.revItem, styles.noReviewsRow, { borderBottomColor: theme.border }]}>
+                  <EmptyStateIcon />
+                  <ThemedText type="t6">{NO_REVIEWS_TITLE}</ThemedText>
+                  <ThemedText type="t7" themeColor="textSecondary">{NO_REVIEWS_ACTION}</ThemedText>
                 </Pressable>
               ) : null}
             </View>
@@ -1280,10 +1284,10 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
     gap: Spacing.one + Spacing.half,
   },
-  /* 후기 0건 한 줄. 행 최소 높이 44 — 눌러서 첫 후기로 간다. */
+  /* 후기 0건. 아이콘과 안내를 누르면 첫 후기로 간다. */
   noReviewsRow: {
     minHeight: Layout.touchTarget,
-    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   bottomPad: {
