@@ -106,14 +106,14 @@ describe('회원탈퇴 안내', () => {
     expect(withdrawalDoneItems(linked)).toEqual([
       '계정과 프로필을 삭제했어요',
       '준호님과의 연결을 해제했어요',
-      'Pick · 일정 · 지출 기록을 삭제했어요',
+      'Pick · 일정 · 지출내역을 삭제했어요',
       '후기와 실제보는 나를 알아볼 수 없도록 분리했어요',
     ]);
 
     // 분리한 것이 없으면 분리했다고 적지 않는다.
     expect(withdrawalDoneItems(solo)).toEqual([
       '계정과 프로필을 삭제했어요',
-      'Pick · 일정 · 지출 기록을 삭제했어요',
+      'Pick · 일정 · 지출내역을 삭제했어요',
     ]);
   });
 

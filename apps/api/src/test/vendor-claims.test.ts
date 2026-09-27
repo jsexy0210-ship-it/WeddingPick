@@ -81,7 +81,7 @@ describeWithDb('업체 관계자 인증', () => {
     const [claim] = mine.json<{ claims: { status: string; statusLabel: string }[] }>().claims;
 
     expect(claim?.status).toBe('pending');
-    expect(claim?.statusLabel).toBe('확인 중');
+    expect(claim?.statusLabel).toBe('확인중');
   });
 
   it('신청 응답에 상태를 정할 자리가 없다', async () => {

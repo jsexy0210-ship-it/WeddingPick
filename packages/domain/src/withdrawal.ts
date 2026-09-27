@@ -197,7 +197,7 @@ export function withdrawalDoneItems(counts: WithdrawalCounts): string[] {
     );
   }
 
-  items.push('Pick · 일정 · 지출 기록을 삭제했어요');
+  items.push('Pick · 일정 · 지출내역을 삭제했어요');
 
   if (counts.reviews > 0 || counts.confirmedReports > 0) {
     items.push('후기와 실제보는 나를 알아볼 수 없도록 분리했어요');

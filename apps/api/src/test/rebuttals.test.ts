@@ -277,7 +277,7 @@ describeWithDb('업체 반론', () => {
     }>();
 
     expect(mine.rebuttals).toHaveLength(1);
-    expect(mine.rebuttals[0]!.statusLabel).toBe('확인 중');
+    expect(mine.rebuttals[0]!.statusLabel).toBe('확인중');
     expect(mine.rebuttals[0]!.review.id).toBe(reviewId);
     expect(mine.rebuttals[0]!.review.vendorName).toBe('가온예식홀');
   });
