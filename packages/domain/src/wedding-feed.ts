@@ -57,21 +57,17 @@ export const WEDDING_FEED_LIMITS = {
  * 고쳐도 앱은 아무것도 바뀌지 않았고, 관리자 화면만 「앱은 여기 있는 것을 그린다」고
  * 적고 있었다.
  *
- * **칩은 정본이 정한다.** `docs/design/React_Native/my.js` `cats` — 전체 · 웨딩홀 ·
- * 스드메 · 본식 · 예물 · 신혼 · 예산. 앱 화면의 정본은 이 폴더 하나라(CLAUDE.md
- * 2026-09-24 절대 지침) 관리자가 바꿀 수 있는 값이 아니다. 그래서 표가 아니라 여기
- * 상수로 두고 서버 검사 · 관리자 화면 · 앱 칩이 전부 이것을 본다.
- *
- * **칩 키는 준비 현황 그룹 키와 같다**(`PREPARATION_GROUPS` — start · sdm · ceremony ·
- * goods). 라운지 후기 칩이 같은 줄을 쓰고 업종 묶음도 같다. «예산»만 업종이 아니다.
+ * 2026-09-27 대표 지시로 비슷한 읽을거리를 다섯 대분류에 다시 묶었다. 글의 소분류
+ * 이름과 자동 작성 주제 키는 그대로 두고 칩만 바꾼다. 모든 소분류가 한 칩에 든다.
+ * 서버 검사 · 관리자 화면 · 앱 피드 칩은 이 상수 하나를 본다.
  */
 export const WEDDING_FEED_CHIPS = [
   { key: 'all', label: '전체' },
-  { key: 'start', label: '웨딩홀' },
+  { key: 'preparation', label: '준비' },
+  { key: 'ceremony', label: '웨딩홀 · 본식' },
   { key: 'sdm', label: '스드메' },
-  { key: 'ceremony', label: '본식' },
-  { key: 'goods', label: '예물 · 신혼' },
-  { key: 'budget', label: '예산' },
+  { key: 'budget_contract', label: '예산·계약' },
+  { key: 'honeymoon', label: '신혼여행' },
 ] as const;
 
 export type WeddingFeedChipKey = (typeof WEDDING_FEED_CHIPS)[number]['key'];
@@ -82,10 +78,6 @@ export type WeddingFeedChipLabel = (typeof WEDDING_FEED_CHIPS)[number]['label'];
  *
  * **칩과 다른 층이다.** 칩은 추리는 도구이고 배지는 무엇에 관한 글인지를 말한다 —
  * 정본도 칩은 «스드메»인데 카드 배지는 «드레스» · «스튜디오»다(my.js `guides`).
- *
- * `chip`이 null이면 어느 칩에도 안 들고 «전체»에서만 보인다. 정본 칩 다섯에 맞는
- * 자리가 없는 넷(체크리스트 · 일정 · 하객 · 계약)이 그렇다 — 정본 카드도 «일정» ·
- * «체크리스트» 배지를 달지만 그 이름의 칩은 없다.
  *
  * 이름은 정본을 따른다. 업종은 `VENDOR_CATEGORY_LABEL`과 같은 글자다(본식스냅 ·
  * 헤어변형 — CLAUDE.md 2026-09-11). **«준비 순서»는 «일정»으로 바꿨다** — 같은 자리
@@ -99,25 +91,25 @@ export type WeddingFeedCategoryDef = {
   key: string;
   /** 배지 글자 = 표의 `category_label`. */
   label: string;
-  /** 어느 칩에 드는가. null이면 «전체»에서만. */
-  chip: Exclude<WeddingFeedChipKey, 'all'> | null;
+  /** 어느 칩에 드는가. */
+  chip: Exclude<WeddingFeedChipKey, 'all'>;
   /** 업종 이야기면 그 업종. 준비 단계가 업종으로 글을 찾을 때 쓴다. */
   vendorCategory: VendorCategory | null;
 };
 
 export const WEDDING_FEED_CATEGORIES = [
-  { key: 'hall', label: '웨딩홀', chip: 'start', vendorCategory: 'hall' },
+  { key: 'checklist', label: '체크리스트', chip: 'preparation', vendorCategory: null },
+  { key: 'schedule', label: '일정', chip: 'preparation', vendorCategory: null },
+  { key: 'hall', label: '웨딩홀', chip: 'ceremony', vendorCategory: 'hall' },
+  { key: 'snap', label: '본식스냅', chip: 'ceremony', vendorCategory: 'snap' },
+  { key: 'guest', label: '하객', chip: 'ceremony', vendorCategory: null },
   { key: 'studio', label: '스튜디오', chip: 'sdm', vendorCategory: 'studio' },
   { key: 'dress', label: '드레스', chip: 'sdm', vendorCategory: 'dress' },
   { key: 'makeup', label: '메이크업', chip: 'sdm', vendorCategory: 'makeup' },
   { key: 'hair', label: '헤어변형', chip: 'sdm', vendorCategory: 'hair' },
-  { key: 'snap', label: '본식스냅', chip: 'ceremony', vendorCategory: 'snap' },
-  { key: 'honeymoon', label: '허니문', chip: 'goods', vendorCategory: 'honeymoon' },
-  { key: 'budget', label: '예산', chip: 'budget', vendorCategory: null },
-  { key: 'checklist', label: '체크리스트', chip: null, vendorCategory: null },
-  { key: 'schedule', label: '일정', chip: null, vendorCategory: null },
-  { key: 'guest', label: '하객', chip: null, vendorCategory: null },
-  { key: 'contract', label: '계약', chip: null, vendorCategory: null },
+  { key: 'budget', label: '예산', chip: 'budget_contract', vendorCategory: null },
+  { key: 'contract', label: '계약', chip: 'budget_contract', vendorCategory: null },
+  { key: 'honeymoon', label: '허니문', chip: 'honeymoon', vendorCategory: 'honeymoon' },
 ] as const satisfies readonly WeddingFeedCategoryDef[];
 
 export type WeddingFeedCategoryEntry = (typeof WEDDING_FEED_CATEGORIES)[number];
@@ -140,7 +132,7 @@ export function isWeddingFeedCategoryLabel(label: string): label is WeddingFeedC
   return weddingFeedCategoryOf(label) !== null;
 }
 
-/** 이 이름의 글이 드는 칩. null이면 «전체»에서만 보인다(칩 없는 카테고리 · 목록 밖 이름). */
+/** 이 이름의 글이 드는 칩. 목록 밖 이름이면 null. */
 export function weddingFeedChipOf(label: string): Exclude<WeddingFeedChipKey, 'all'> | null {
   return weddingFeedCategoryOf(label)?.chip ?? null;
 }

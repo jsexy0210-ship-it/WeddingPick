@@ -11,10 +11,10 @@ import { WEDDING_FEED_TABS, type WeddingFeedTab } from '@weddingpick/domain';
  * 화면이라 지워졌고(#535), 남은 라운지 「웨딩정보」는 정본 칩(my.js `cats`)을 그렸다 —
  * 관리자가 무엇을 고쳐도 앱은 그대로였다.
  *
- * 칩은 정본이 정하는 값이라(CLAUDE.md 2026-09-24 절대 지침) 관리자가 바꿀 수 있는 자리가
- * 아니다. 목록은 domain `WEDDING_FEED_CHIPS` · `WEDDING_FEED_CATEGORIES` 하나이고, 서버
- * 검사(`checkWeddingFeedInput`) · 관리자 화면 · 앱 칩이 같은 것을 본다. 표 두 개(0421)는
- * 0442가 이 목록과 같게 맞춰 두었고, 글의 `category_id`를 잇는 데에만 쓴다.
+ * 2026-09-27 대표 지시로 앱 피드 칩을 다시 묶었다. 목록은 domain
+ * `WEDDING_FEED_CHIPS` · `WEDDING_FEED_CATEGORIES` 하나이고, 서버 검사
+ * (`checkWeddingFeedInput`) · 관리자 화면 · 앱 피드 칩이 같은 것을 본다.
+ * 표 두 개는 0448이 이 목록과 맞춰 두고, 글의 `category_id`를 잇는 데에도 쓴다.
  *
  * `pool`은 받기만 한다 — 부르는 쪽(`listPublished`)의 모양을 바꾸지 않으려고 둔다.
  */

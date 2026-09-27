@@ -8,14 +8,19 @@ import {
   type WeddingFeedChipLabel,
 } from '@weddingpick/domain';
 
-/**
- * 정본 my.js `cats` — 라운지 후기 · 웨딩정보가 함께 쓰는 칩 여섯.
- *
- * **값은 domain `WEDDING_FEED_CHIPS` 하나다**(2026-09-26 대표 지적 — 관리자와 앱의 웨딩피드
- * 카테고리가 전혀 달랐다). 관리자 화면 · 서버 검사 · 이 칩이 같은 상수를 본다.
- */
-export const LOUNGE_CATEGORIES: readonly WeddingFeedChipLabel[] = WEDDING_FEED_CHIPS.map((chip) => chip.label);
-export type LoungeCategory = WeddingFeedChipLabel;
+/** 후기 칩은 업종 묶음이다. 웨딩정보 칩은 글 소분류 묶음이라 각각 유지한다. */
+const REVIEW_CHIPS = [
+  { key: 'all', label: '전체' },
+  { key: 'start', label: '웨딩홀' },
+  { key: 'sdm', label: '스드메' },
+  { key: 'ceremony', label: '본식' },
+  { key: 'goods', label: '예물 · 신혼' },
+  { key: 'budget', label: '예산' },
+] as const;
+
+export const LOUNGE_CATEGORIES = REVIEW_CHIPS.map((chip) => chip.label);
+export const LOUNGE_FEED_CATEGORIES: readonly WeddingFeedChipLabel[] = WEDDING_FEED_CHIPS.map((chip) => chip.label);
+export type LoungeCategory = (typeof REVIEW_CHIPS)[number]['label'] | WeddingFeedChipLabel;
 
 function chipKeyOf(label: string): WeddingFeedChipKey | null {
   return WEDDING_FEED_CHIPS.find((chip) => chip.label === label)?.key ?? null;
@@ -23,7 +28,7 @@ function chipKeyOf(label: string): WeddingFeedChipKey | null {
 
 /** 칩 → 업종 묶음. 칩 키가 준비 현황 그룹 키와 같다(`PREPARATION_GROUPS`). «예산»은 업종이 아니다. */
 function groupOf(label: string): readonly VendorCategory[] | null {
-  const key = chipKeyOf(label);
+  const key = REVIEW_CHIPS.find((chip) => chip.label === label)?.key;
 
   return PREPARATION_GROUPS.find((group) => group.key === key)?.categories ?? null;
 }
@@ -45,8 +50,7 @@ export function loungeVendorMatches(label: string, category: VendorCategory): bo
 
 /**
  * 웨딩정보 글이 칩에 드는가 — domain 목록(`WEDDING_FEED_CATEGORIES`)의 칩 배정을 그대로 쓴다.
- * 목록 밖 이름 · 칩 없는 카테고리(체크리스트 · 일정 · 하객 · 계약)는 «전체»에서만 보인다 —
- * 관리자 글 목록의 «앱 칩» 칸이 같은 함수로 같은 말을 한다.
+ * 목록 밖 이름은 «전체»에서만 보인다. 등록된 소분류는 모두 대분류 칩에 속한다.
  */
 export function loungeFeedMatches(label: string, categoryLabel: string): boolean {
   const key = chipKeyOf(label);

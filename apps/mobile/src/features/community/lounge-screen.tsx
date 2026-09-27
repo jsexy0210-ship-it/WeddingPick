@@ -33,6 +33,7 @@ import { DelayedLoader, DelayedLoadingView } from '@/features/loading/delayed-lo
 import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import {
   LOUNGE_CATEGORIES,
+  LOUNGE_FEED_CATEGORIES,
   appendLoungeReviewPage,
   loungeFeedMatches,
   loungeReviewCategory,
@@ -62,8 +63,6 @@ const TITLE: Record<LoungeKind, string> = {
   feed: S['tab.feed'],
   expo: S['tab.expo'],
 };
-/** 정본 my.js `cats` — 전체 · 웨딩홀 · 스드메 · 본식 · 예물 · 신혼 · 예산(domain `WEDDING_FEED_CHIPS`). */
-const CATEGORIES = LOUNGE_CATEGORIES;
 type CategoryLabel = LoungeCategory;
 type Loaded<T> = { status: 'loading' } | { status: 'error' } | { status: 'ready'; value: T };
 type LoungeReview = LoungeReviewListResponse['reviews'][number];
@@ -278,7 +277,7 @@ export function LoungeScreen({ kind: tab }: { kind: LoungeKind }) {
 
         {hasCategoryChips ? (
           <CatChipBar
-            items={CATEGORIES}
+            items={tab === 'feed' ? LOUNGE_FEED_CATEGORIES : LOUNGE_CATEGORIES}
             selected={category}
             onSelect={(label) => {
               categoryRef.current = label;

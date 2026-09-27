@@ -93,13 +93,13 @@ function detailHarness(initialId='a', from) {
 const post = (id, body='body') => ({ id, title:`title-${id}`, categoryLabel:'예산', summary:'summary', body, imageUri:null,publishedAt:null });
 function loungeHarness(kind='review', params={}) {
   const h=hooks();const pushed=[];const replaced=[];const navigation={setParams:()=>{}};
-  /* 칩 · 카테고리 목록은 domain 상수 하나다(2026-09-26) — 흉내 내지 않고 실제 파일을 싣는다. */
+  /* 피드 칩과 소분류는 domain 상수를 실제로 싣고, 후기 칩은 앱의 별도 목록을 쓴다. */
   const feedDomain=load('packages/domain/src/wedding-feed.ts');
   const loungeReviewHelpers=load('apps/mobile/src/features/community/lounge-reviews.ts',{
     '@weddingpick/domain':{...feedDomain,PREPARATION_GROUPS:[{key:'start',categories:['hall']}]}});
   const items=[{id:'post/a?b',title:'첫 글',summary:'summary',imageUrl:null,categoryLabel:'예산'},
     {id:'second',title:'둘째 글',summary:'summary',imageUrl:null,categoryLabel:'체크리스트'}];
-  const feed={tabs:[{key:'all',label:'전체',categories:[]},{key:'budget',label:'예산',categories:['예산']}],items};
+  const feed={tabs:feedDomain.WEDDING_FEED_TABS,items};
   const {LoungeScreen}=load('apps/mobile/src/features/community/lounge-screen.tsx',{
     '@weddingpick/domain':{daysUntil:()=>2,VENDOR_CATEGORY_LABEL:{},WEDDING_FEED_LOUNGE_LIMIT:feedDomain.WEDDING_FEED_LOUNGE_LIMIT},'expo-router':{Redirect:'Redirect',router:{push:x=>pushed.push(x),replace:x=>replaced.push(x)},
       useFocusEffect:fn=>h.api.useEffect(fn,[fn]),useLocalSearchParams:()=>params,useNavigation:()=>navigation},react:h.api,'react-native':native,
@@ -212,7 +212,7 @@ function splitFixture(script,role,missingAdmin=false) {
   await check('lounge category filters preserve clickable detail',async()=>{
     const l=loungeHarness('feed');l.render();l.h.commit();await flush();
     /* 칩은 공용 칩바(CatChipBar · 2026-09-26)가 그린다 — 화면은 고른 이름만 받는다. */
-    find(l.render(),'CatChipBar')[0].props.onSelect('예산');const buttons=find(l.render(),'Pressable');
+    find(l.render(),'CatChipBar')[0].props.onSelect('예산·계약');const buttons=find(l.render(),'Pressable');
     assert.equal(buttons.length,1);assert.equal(buttons[0].props.accessibilityLabel,'첫 글');
   });
   await check('lounge verified review action is restricted to review tab',async()=>{
