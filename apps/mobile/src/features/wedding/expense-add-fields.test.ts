@@ -27,7 +27,8 @@ describe('지출추가 시트 — «예산» 칸 삭제', () => {
 
   it('CTA는 «지출만 넣기»가 아니라 한 단추 «지출 넣기» — 공용 ActionButton', () => {
     expect(code).not.toContain('지출만 넣기');
-    expect(code).toMatch(/\? '넣는 중…'\s*: copy\['expense.addCta'\]/);
+    expect(code).toContain("label={editing ? copy['expense.save'] : copy['expense.addCta']}");
+    expect(code).toContain('loading={saving}');
     expect(code).toMatch(/<ActionButton\s+variant="primary"/);
   });
 
