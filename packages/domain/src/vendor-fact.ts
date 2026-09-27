@@ -23,7 +23,7 @@ export type VendorFactSource = (typeof VENDOR_FACT_SOURCES)[number];
 
 /** 화면에 그대로 나가는 출처 표기. */
 export const VENDOR_FACT_SOURCE_LABEL: Record<VendorFactSource, string> = {
-  vendor_notice: '업체 안내',
+  vendor_notice: '업체안내',
   official_page: '업체 공식 페이지',
   pick_verified: 'Pick 인증으로 확인',
 };

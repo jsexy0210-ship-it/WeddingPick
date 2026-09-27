@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View, type PressableProps } from 'react-native';
 
 import { ThemedText } from './themed-text';
+import { LoaderSkeleton } from './loader-skeleton';
 import { Border, Layout, Motion, Radius, Spacing } from './theme';
 import { useTheme } from './use-theme';
 import { PRESS_TRANSITION, readWebInteractionState } from './web-interaction';
@@ -12,6 +13,8 @@ export type ActionButtonProps = Omit<PressableProps, 'children' | 'style'> & {
   icon?: ReactNode;
   /** 보조 설명. 라벨 아래 작은 글씨로 붙는다. */
   hint?: string;
+  /** 처리 중에는 기본 로더를 보여주고 중복 탭을 막는다. */
+  loading?: boolean;
   /**
    * 02-design-system «Button».
    *
@@ -65,12 +68,15 @@ export function ActionButton({
   size = 'auto',
   tone,
   disabled,
+  loading = false,
+  accessibilityLabel,
   ...rest
 }: ActionButtonProps) {
   const theme = useTheme();
+  const inactive = disabled === true || loading;
 
   const look: Look =
-    disabled === true
+    disabled === true && !loading
       ? { background: theme.backgroundSelected, text: theme.textDisabled, borderWidth: 0, hint: theme.textDisabled }
       : tone
         ? {
@@ -84,8 +90,9 @@ export function ActionButton({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityState={{ disabled: disabled === true }}
-      disabled={disabled}
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityState={{ disabled: inactive, busy: loading }}
+      disabled={inactive}
       style={(state) => {
         const { pressed, focused } = readWebInteractionState(state);
         return [
@@ -97,21 +104,21 @@ export function ActionButton({
             /* 키보드 포커스(웹)만 코랄 링을 얹는다 — 마우스 오버 · 누름은 색을 바꾸지 않는다. */
             borderWidth: focused ? Math.max(look.borderWidth, Border.focus) : look.borderWidth,
             borderColor: focused ? theme.tint : look.border ?? look.background,
-            transform: [{ scale: pressed && !disabled ? Motion.pressButton.scale : 1 }],
+            transform: [{ scale: pressed && !inactive ? Motion.pressButton.scale : 1 }],
           },
         ];
       }}
       {...rest}>
       <View style={styles.row}>
-        {icon}
-        <ThemedText
+        {loading ? <LoaderSkeleton size={20} shape="mark" /> : icon}
+        {loading ? null : <ThemedText
           type={size === 'xlarge' || size === 'sheet' ? 't5' : 't6'}
           numberOfLines={1}
           style={[styles.label, { color: look.text }]}>
           {label}
-        </ThemedText>
+        </ThemedText>}
       </View>
-      {hint ? (
+      {hint && !loading ? (
         <ThemedText type="t7" style={{ color: look.hint ?? look.text }}>
           {hint}
         </ThemedText>

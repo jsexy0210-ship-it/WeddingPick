@@ -34,7 +34,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { AdminSpacing as A, Colors, FontSize, LineHeight, Radius, Spacing } from '@weddingpick/ui';
+import { AdminSpacing as A, Colors, FontSize, LineHeight, LoaderSkeleton, Radius, Spacing } from '@weddingpick/ui';
 
 import { askSignOut, signOutWithConfirm } from '@/features/admin/sign-out';
 import { buttonA11y, headingA11y, tabA11y, TABLIST_A11Y } from '@/features/admin/web-a11y';
@@ -894,6 +894,7 @@ export type ConfirmCardProps = {
   /** 바뀌는 것을 항목으로. 「무엇이 바뀌는지 보여준 뒤 진행」이 이 목록이다. */
   items: string[];
   cta: string;
+  busy?: boolean;
   danger?: boolean;
   /** 확인 전에 값을 하나 받아야 할 때. 항목과 단추 사이에 온다. */
   children?: ReactNode;
@@ -905,9 +906,9 @@ export type ConfirmCardProps = {
  * 확인 카드. 항목이 비어 있으면 그리지 않는다 — 무엇이 바뀌는지 말하지 못하는
  * 확인 창은 「예」를 누르는 절차만 늘린다.
  */
-export function ConfirmCard({ title, body, items, cta, danger, children, onConfirm, onCancel }: ConfirmCardProps) {
+export function ConfirmCard({ title, body, items, cta, busy, danger, children, onConfirm, onCancel }: ConfirmCardProps) {
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={onCancel}>
+    <Modal visible transparent animationType="fade" onRequestClose={() => { if (!busy) onCancel(); }}>
       <View style={styles.confirmWrap}>
         <View style={styles.confirmCard}>
           <Text style={styles.confirmTitle}>{title}</Text>
@@ -922,18 +923,22 @@ export function ConfirmCard({ title, body, items, cta, danger, children, onConfi
           </View>
           {children}
           <View style={styles.confirmActions}>
-            <Pressable {...buttonA11y()} onPress={onCancel} style={styles.btnGhost}>
+            <Pressable {...buttonA11y()} onPress={onCancel} disabled={busy} style={styles.btnGhost}>
               <Text style={styles.btnGhostLabel}>취소</Text>
             </Pressable>
             {/* 확인 카드는 언제나 서버를 바꾸는 자리다 — 뷰어에게는 확인 단추가 잠긴다. */}
-            <WritePressable {...buttonA11y()} onPress={onConfirm} style={[styles.btnPrimary, danger && styles.btnDanger]}>
-              <Text style={styles.btnPrimaryLabel}>{cta}</Text>
+            <WritePressable {...buttonA11y()} onPress={onConfirm} disabled={busy} style={[styles.btnPrimary, danger && styles.btnDanger]}>
+              {busy ? <AdminButtonLoader /> : <Text style={styles.btnPrimaryLabel}>{cta}</Text>}
             </WritePressable>
           </View>
         </View>
       </View>
     </Modal>
   );
+}
+
+export function AdminButtonLoader() {
+  return <LoaderSkeleton size={20} shape="mark" style={styles.buttonLoader} />;
 }
 
 /* ── 불러오기 · 오류 ──────────────────────────────────────── */
@@ -950,6 +955,7 @@ export function LoadError({ message, onRetry }: { message: string; onRetry: () =
 }
 
 const styles = StyleSheet.create({
+  buttonLoader: { alignSelf: 'center' },
   page: { flex: 1, backgroundColor: C.backgroundSelected },
 
   topbar: {

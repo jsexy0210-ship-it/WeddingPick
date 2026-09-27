@@ -490,17 +490,12 @@ export default function SetupScreen() {
                 <ThemedText type="f14" themeColor="textAssistive" style={styles.summaryKey}>
                   {row.label}
                 </ThemedText>
-                {/*
-                  값은 줄을 넘긴다(2026-09-26 대표 감사 6). 정본 `sumV`는 375 캔버스에서
-                  한 줄 말줄임이지만 320 폭에서는 「아직 시작 전이…」처럼 답이 잘려 읽히지
-                  않았다 — 라벨 72 · 값 · 바꾸기 세 칸의 배치는 그대로 두고 값만 감싼다.
-                  줄은 글자가 아니라 어절에서 바꾼다(「아직 시작 / 전이에요」) — 웹 `keep-all` ·
-                  iOS `hangul-word`. 안드로이드는 이 선택지가 없어 글자 단위로 넘길 수 있다.
-                */}
+                {/* 준비현황·스타일은 첫 항목과 나머지 건수만 한 줄로 보인다. 다른 답은 좁은 화면에서 감싼다. */}
                 <ThemedText
                   type="f16"
                   numeric
                   lineBreakStrategyIOS="hangul-word"
+                  numberOfLines={row.step === 'prep' || row.step === 'style' ? 1 : undefined}
                   style={[styles.summaryValue, KEEP_WORDS]}>
                   {row.value}
                 </ThemedText>
@@ -591,7 +586,7 @@ export default function SetupScreen() {
           <View style={styles.selectionSection}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="지역 선택"
+              accessibilityLabel="지역선택"
               onPress={() => setRegionSheetOpen(true)}
               style={({ pressed }) => [
                 styles.selectionField,

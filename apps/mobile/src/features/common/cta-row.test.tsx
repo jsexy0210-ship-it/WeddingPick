@@ -3,7 +3,7 @@ import { StyleSheet } from 'react-native';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { ActionButton } from '@weddingpick/ui';
+import { ActionButton, LoaderSkeleton, ThemedText } from '@weddingpick/ui';
 
 import { Dock } from '@/features/wedding/screen-kit';
 
@@ -75,12 +75,27 @@ describe('CTA 줄 — 단일 CTA는 폭 전체, 두 개는 정본 1 : 1.4 (2026-
       tree.update(
         <SafeAreaProvider initialMetrics={METRICS}>
           <Dock>
-            <ActionButton variant="primary" size="sheet" label="카카오로 초대하기" onPress={() => undefined} />
+            <ActionButton variant="primary" size="sheet" label="초대하기" onPress={() => undefined} />
           </Dock>
         </SafeAreaProvider>
       );
     });
 
     expect(slotFlexes(tree)).toEqual([1]);
+  });
+
+  it('처리 중 CTA는 글자 대신 기본 로더를 보여주고 중복 탭을 막는다', () => {
+    let tree!: ReactTestRenderer;
+    act(() => {
+      tree = create(<ActionButton variant="primary" label="저장" loading onPress={() => undefined} />);
+    });
+
+    expect(tree.root.findByProps({ accessibilityLabel: '저장' }).props).toMatchObject({
+      disabled: true,
+      accessibilityLabel: '저장',
+      accessibilityState: { disabled: true, busy: true },
+    });
+    expect(tree.root.findAllByType(LoaderSkeleton)).toHaveLength(1);
+    expect(tree.root.findAllByType(ThemedText)).toHaveLength(0);
   });
 });

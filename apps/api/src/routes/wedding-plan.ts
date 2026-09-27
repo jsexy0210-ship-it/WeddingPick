@@ -22,6 +22,7 @@ import {
   manwon,
   resolveTaskState,
   summarizeExpenses,
+  taskDisplayLabel,
   taskProgress,
   type ExpenseRefundStatus,
   type ExpenseSource,
@@ -43,6 +44,7 @@ import { ApiError, notFound } from '../errors';
 type TaskRow = {
   id: string;
   label: string;
+  preset_key: string | null;
   due_date: Date | null;
   vendor_id: string | null;
   vendor_label: string | null;
@@ -159,7 +161,7 @@ export function registerWeddingPlanRoutes(app: FastifyInstance, context: AppCont
       await seedPresets(context.pool, request.params.weddingId);
 
       const { rows } = await context.pool.query<TaskRow>(
-        `SELECT id, label, due_date, vendor_id, vendor_label, state_override
+        `SELECT id, label, preset_key, due_date, vendor_id, vendor_label, state_override
          FROM structured.wedding_tasks
          WHERE wedding_id = $1
          ORDER BY due_date NULLS LAST, created_at`,
@@ -178,7 +180,7 @@ export function registerWeddingPlanRoutes(app: FastifyInstance, context: AppCont
 
           return {
             id: row.id,
-            label: row.label,
+            label: taskDisplayLabel(row.label, row.preset_key),
             dueDate,
             vendorId: row.vendor_id,
             vendorLabel: row.vendor_label,

@@ -145,12 +145,14 @@ export default function ContactScreen() {
   return (
     <SubScreen
       title="문의하기"
+      scrollToTop
       onBack={depthBack}
       dock={
         <Dock
           primary={{
-            label: busy ? '보내는 중…' : '문의 보내기',
-            disabled: busy || !ready || !isServerConfigured,
+            label: '문의 보내기',
+            loading: busy,
+            disabled: !ready || !isServerConfigured,
             onPress: () => void submit(),
           }}
         />
@@ -199,7 +201,7 @@ export default function ContactScreen() {
       {mine.length > 0 ? <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} /> : null}
 
       {/* 정본 qBlock — 26/35 700 두 줄. 서브 문구는 없다. */}
-      <Hero lines={['어떤 점이', '궁금하세요?']} />
+      <Hero lines={['궁금한 점이', '있으세요?']} />
 
       {!isServerConfigured ? (
         <Section>
@@ -263,7 +265,7 @@ export default function ContactScreen() {
           multiline
           placeholder="무엇이 잘못되었는지, 무엇을 원하시는지 적어주세요"
           placeholderTextColor={theme.textAssistive}
-          accessibilityLabel="문의 내용"
+          accessibilityLabel="문의내용"
         />
       </Section>
 

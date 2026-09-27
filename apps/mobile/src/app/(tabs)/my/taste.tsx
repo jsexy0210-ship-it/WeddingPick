@@ -21,7 +21,6 @@ import { ErrorView, Layout, LineHeight, ProductSymbol, Radius, ThemedText, useTh
 const S = {
   title: '스타일',
   save: '저장하기',
-  saving: '저장 중…',
   savedTitle: '스타일을 저장했어요',
   loadError: '지금 고른 스타일을 불러오지 못했어요.',
   saveError: '스타일을 저장하지 못했어요',
@@ -102,8 +101,9 @@ export default function StyleScreen() {
         /* 시안(WP-MY-014)은 헤더 오른쪽이 아니라 하단 고정 «저장하기» 한 개다. */
         <Dock
           primary={{
-            label: saving ? S.saving : S.save,
-            disabled: saving || count < STYLE_PICK_MIN,
+            label: S.save,
+            loading: saving,
+            disabled: count < STYLE_PICK_MIN,
             onPress: () => void handleSave(),
           }}
         />

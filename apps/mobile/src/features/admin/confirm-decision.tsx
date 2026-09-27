@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Colors, FontSize, Radius, Spacing } from '@weddingpick/ui';
+import { Colors, FontSize, LoaderSkeleton, Radius, Spacing } from '@weddingpick/ui';
 
 /**
  * 되돌릴 수 없는 결정을 한 번 더 묻는 자리.
@@ -60,7 +60,7 @@ export function ConfirmDecision({
           onPress={onConfirm}
           disabled={busy}
         >
-          <Text style={styles.confirmText}>{busy ? '처리 중…' : confirmLabel}</Text>
+          {busy ? <LoaderSkeleton size={20} shape="mark" style={styles.buttonLoader} /> : <Text style={styles.confirmText}>{confirmLabel}</Text>}
         </Pressable>
       </View>
     </View>
@@ -68,6 +68,7 @@ export function ConfirmDecision({
 }
 
 const styles = StyleSheet.create({
+  buttonLoader: { alignSelf: 'center' },
   box: {
     marginTop: Spacing.three,
     padding: Spacing.three,

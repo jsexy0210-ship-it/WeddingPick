@@ -81,6 +81,25 @@ describeWithDb('우리웨딩', () => {
       expect(body.progress).toEqual({ done: 0, total: TASK_PRESETS.length });
     });
 
+    it('옛 예복 프리셋 이름만 새 표기로 보여주고 직접 입력한 이름은 보존한다', async () => {
+      const { headers, weddingId } = await mine();
+      const seeded = (await tasks(headers, weddingId)).json<{ tasks: { id: string; label: string }[] }>();
+      const suit = seeded.tasks.find((task) => task.label === '예복맞춤')!;
+
+      await test.pool.query('UPDATE structured.wedding_tasks SET label = $1 WHERE id = $2', ['예복 맞춤', suit.id]);
+      const added = await test.app.inject({
+        method: 'POST',
+        url: `/v1/weddings/${weddingId}/tasks`,
+        headers,
+        payload: { label: '예복 맞춤' },
+      });
+      expect(added.statusCode).toBe(201);
+
+      const body = (await tasks(headers, weddingId)).json<{ tasks: { id: string; label: string }[] }>();
+      expect(body.tasks.find((task) => task.id === suit.id)?.label).toBe('예복맞춤');
+      expect(body.tasks.find((task) => task.id === added.json<{ taskId: string }>().taskId)?.label).toBe('예복 맞춤');
+    });
+
     it('지운 항목을 다시 깔지 않는다', async () => {
       // 다시 깔면 지우는 일이 아무 뜻이 없어진다.
       const { headers, weddingId } = await mine();
@@ -223,7 +242,7 @@ describeWithDb('우리웨딩', () => {
       const first = (await tasks(headers, weddingId)).json<{ tasks: { id: string }[] }>();
       const id = first.tasks[0]!.id;
 
-      // 지난 날이라 자동으로는 '완료'가 되지만, 사람이 아니라고 말했으면 그쪽이 맞다.
+      // 직접 고른 상태는 날짜와 무관하게 이긴다.
       await test.app.inject({
         method: 'PATCH',
         url: `/v1/weddings/${weddingId}/tasks/${id}`,
@@ -239,6 +258,34 @@ describeWithDb('우리웨딩', () => {
 
       expect(task.state).toBe('in_progress');
       expect(task.manualState).toBe(true);
+    });
+
+    it('지난 기한은 자동 완료하지 않고 직접 완료할 때만 진행률에 센다', async () => {
+      const { headers, weddingId } = await mine();
+      const first = (await tasks(headers, weddingId)).json<{ tasks: { id: string }[] }>();
+      const id = first.tasks[0]!.id;
+
+      await test.app.inject({
+        method: 'PATCH',
+        url: `/v1/weddings/${weddingId}/tasks/${id}`,
+        headers,
+        payload: { dueDate: at(-5) },
+      });
+      const overdue = (await tasks(headers, weddingId)).json<{
+        tasks: { id: string; state: string; manualState: boolean }[];
+        progress: { done: number; total: number };
+      }>();
+      expect(overdue.tasks.find((task) => task.id === id)).toMatchObject({ state: 'in_progress', manualState: false });
+      expect(overdue.progress.done).toBe(0);
+
+      await test.app.inject({
+        method: 'PATCH',
+        url: `/v1/weddings/${weddingId}/tasks/${id}`,
+        headers,
+        payload: { state: 'done' },
+      });
+      const completed = (await tasks(headers, weddingId)).json<{ progress: { done: number } }>();
+      expect(completed.progress.done).toBe(1);
     });
 
     it('보낸 칸만 고친다', async () => {

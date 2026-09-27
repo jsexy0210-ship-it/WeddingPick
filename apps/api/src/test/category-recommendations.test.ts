@@ -1,3 +1,4 @@
+import { recommendVendors } from '../routes/recommendations';
 import { createTestApp, createWedding, resetDatabase, signInAs, type TestApp } from './helpers';
 
 let test: TestApp;
@@ -82,6 +83,50 @@ describeWithDb('Pick 추천', () => {
     ]);
     expect(body.groups.some((group) => group.category === 'wedding_info_company')).toBe(false);
     expect(body.groups.every((group) => group.state === 'NOT_STARTED')).toBe(true);
+  });
+
+  it('준비 현황 체크만으로는 결정 완료가 되지 않는다', async () => {
+    const { headers } = await signInAs(test);
+    const weddingId = await createWedding(test, headers);
+    await test.pool.query(
+      `UPDATE structured.weddings SET prepared_categories = ARRAY['hall']::vendor_category[] WHERE id = $1`,
+      [weddingId]
+    );
+
+    const body = (await get(headers)).json<Body>();
+    expect(body.groups.find((group) => group.category === 'hall')?.state).toBe('NOT_STARTED');
+    expect(body.remainingCategories).toContain('hall');
+  });
+
+  it('직접 입력한 결정도 추천 목록에서 빠진다', async () => {
+    const { headers, userId } = await signInAs(test);
+    const weddingId = await createWedding(test, headers);
+    await test.pool.query(
+      `INSERT INTO structured.category_decisions (wedding_id, category, manual_name, decided_by)
+       VALUES ($1, 'hall', '직접 정한 웨딩홀', $2)`,
+      [weddingId, userId]
+    );
+
+    const body = (await get(headers)).json<Body>();
+    expect(body.remainingCategories).not.toContain('hall');
+  });
+
+  it('기본 추천 업종은 준비 현황 체크가 아니라 실제 결정을 따른다', async () => {
+    const { headers, userId } = await signInAs(test);
+    const weddingId = await createWedding(test, headers);
+    await test.pool.query(
+      `UPDATE structured.weddings SET prepared_categories = ARRAY['hall']::vendor_category[] WHERE id = $1`,
+      [weddingId]
+    );
+
+    expect((await recommendVendors(test.context, { userId })).category).toBe('hall');
+
+    await test.pool.query(
+      `INSERT INTO structured.category_decisions (wedding_id, category, manual_name, decided_by)
+       VALUES ($1, 'hall', '직접 정한 웨딩홀', $2)`,
+      [weddingId, userId]
+    );
+    expect((await recommendVendors(test.context, { userId })).category).toBe('studio');
   });
 
   it('담아둔 곳이 많은 업종이 먼저 선다 — 비교 → 담아둠 → 시작 전 (§11)', async () => {

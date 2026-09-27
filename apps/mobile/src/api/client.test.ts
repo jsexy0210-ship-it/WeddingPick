@@ -12,6 +12,8 @@ import {
   getAppBootstrap,
   getSignupState,
   getWeddingFeed,
+  getPublishedLegalDocument,
+  UnpublishedLegalDocumentError,
   updateSettings,
 } from '@/api/client';
 import { clearToken, loadToken, saveToken } from '@/api/session';
@@ -41,6 +43,30 @@ beforeEach(async () => {
 });
 
 describe('서버 응답 검사', () => {
+  it('개인정보처리방침 공개판을 로그인 없이 매번 읽고 표를 보존한다', async () => {
+    const document = {
+      version: 'v1.0', effectiveOn: '2026-09-01',
+      clauses: [{
+        id: 'clause-1', title: '처리 항목', body: '',
+        bodyTable: { lead: '안내', cols: [{ label: '항목' }], rows: [['이름']] },
+      }],
+    };
+    respondWith({ document });
+    await expect(getPublishedLegalDocument('privacy')).resolves.toEqual(document);
+    await expect(getPublishedLegalDocument('privacy')).resolves.toEqual(document);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+    const [url, init] = jest.mocked(globalThis.fetch).mock.calls[0]!;
+    expect(url).toBe('http://localhost:3000/v1/legal/privacy');
+    expect((init as RequestInit).headers).not.toHaveProperty('authorization');
+  });
+
+  it('공개판이 없거나 조문이 비어 있으면 빈 문서를 반환하지 않는다', async () => {
+    respondWith({ document: null });
+    await expect(getPublishedLegalDocument('privacy')).rejects.toBeInstanceOf(UnpublishedLegalDocumentError);
+    respondWith({ document: { version: 'v1.0', effectiveOn: '2026-09-01', clauses: [] } });
+    await expect(getPublishedLegalDocument('privacy')).rejects.toThrow();
+  });
+
   it('가입 상태는 직전 응답이 있어도 서버에서 다시 확인한다', async () => {
     const state = { activated: false, ageVerified: true, minimumAge: 14, items: [], missingRequired: ['terms', 'privacy'] };
     respondWith(state);

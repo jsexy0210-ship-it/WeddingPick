@@ -40,6 +40,7 @@ import { categoryStatuses, currentCategory } from '@/features/home/state';
 import { UpcomingSchedule } from '@/features/home/wedding-schedule';
 import { WeddingContent } from '@/features/home/wedding-content';
 import { usePullRefresh } from '@/features/refresh/use-pull-refresh';
+import { ScrollToTopButton, useScrollToTopVisibility } from '@/features/navigation/scroll-to-top-button';
 import { inStack } from '@/features/navigation/stack-alias';
 import strings from '../../../../../spec/strings.ko.json';
 
@@ -85,6 +86,8 @@ const EMPTY: HomeData = {
 
 export default function HomeScreen() {
   const theme = useTheme();
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollTop = useScrollToTopVisibility();
   const loadVersion = useRef(0);
   const bootLoadedOnce = useRef(false);
   const tasksLoadedOnce = useRef(false);
@@ -233,6 +236,9 @@ export default function HomeScreen() {
         <Header />
 
         <ScrollView
+          ref={scrollRef}
+          onScroll={scrollTop.onScroll}
+          scrollEventThrottle={100}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
           refreshControl={pull.refreshControl}>
@@ -305,6 +311,7 @@ export default function HomeScreen() {
             )}
           </View>
         </ScrollView>
+        <ScrollToTopButton visible={scrollTop.visible} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
       </SafeAreaView>
 
       <Toast message={toast} onHidden={() => setToast(null)} />

@@ -54,7 +54,7 @@ describe('registration routes use canonical overlays', () => {
        * 출처 스택 별칭(`features/navigation/stack-alias.ts`) — 원래 화면을 한 줄로 다시 내보낼 뿐이라
        * 시트 여부는 원래 화면이 정한다. 대신 다시 내보내는 대상이 이 목록 안의 화면인지 본다.
        */
-      .filter((path) => !/^\/\*\*[^\n]*\*\/\nexport \{ default \} from '[^']+';\n$/.test(source(path)))
+      .filter((path) => !/^\/\*\*[^\r\n]*\*\/\r?\nexport \{ default \} from '[^']+';\r?\n$/.test(source(path)))
       .filter((path) => {
         const name = basename(path);
         return (
@@ -85,9 +85,9 @@ describe('registration routes use canonical overlays', () => {
     expect(consult).not.toContain('<BackBar');
     expect(consult).not.toContain('<NavBar');
 
-    // 약관 상세(WP-AUTH-011)와 같은 머리를 쓴다.
+    // 약관상세(WP-AUTH-011)와 같은 머리를 쓴다.
     const terms = readFileSync(join(APP, '..', 'features', 'auth', 'terms-detail-modal.tsx'), 'utf8');
-    expect(terms).toContain('<FullPopupHeader title="약관 상세" onClose={onClose} />');
+    expect(terms).toContain('<FullPopupHeader title="약관상세" onClose={onClose} />');
   });
 
   it('데이터를 만드는 route는 이름이 등록이 아니어도 시트다', () => {

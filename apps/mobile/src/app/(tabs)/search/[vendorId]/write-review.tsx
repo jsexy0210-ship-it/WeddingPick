@@ -178,7 +178,7 @@ export function ReviewWriteSheet({
       testID="review-write-sheet">
         <SheetPanel>
           <View style={styles.sheetHead}>
-              <SheetHeader title="후기 작성" onClose={requestClose} />
+              <SheetHeader title="후기작성" onClose={requestClose} />
               <ThemedText type="t7" themeColor="textSecondary">
                 {supportingText}
               </ThemedText>
@@ -300,14 +300,14 @@ export function ReviewWriteSheet({
                 ) : null}
 
                 <ThemedView style={styles.section}>
-                  <ThemedText type="smallBold">한 줄 제목</ThemedText>
+                  <ThemedText type="smallBold">후기제목</ThemedText>
                   <TextInput
                     style={[styles.input, { color: theme.text, borderColor: theme.border }]}
                     value={title}
                     onChangeText={setTitle}
                     placeholder="예: 음식이 따뜻하게 나왔습니다"
                     placeholderTextColor={theme.textSecondary}
-                    accessibilityLabel="후기 제목"
+                    accessibilityLabel="후기제목"
                   />
                 </ThemedView>
 
@@ -327,7 +327,7 @@ export function ReviewWriteSheet({
                     multiline
                     placeholder="무엇이 좋았고 무엇이 아쉬웠는지 적어주세요"
                     placeholderTextColor={theme.textSecondary}
-                    accessibilityLabel="후기 내용"
+                    accessibilityLabel="후기내용"
                   />
                   {shortBody ? (
                     <ThemedText type="small" themeColor="textSecondary">
@@ -361,7 +361,7 @@ export function ReviewWriteSheet({
                     </ScrollView>
                   ) : null}
                   {photos.length < 3 ? (
-                    <ActionButton label="사진 추가" disabled={sending} onPress={() => void addPhotos()} />
+                    <ActionButton label="사진추가" disabled={sending} onPress={() => void addPhotos()} />
                   ) : null}
                   {photos.length > 0 ? (
                     <Pressable
@@ -396,7 +396,7 @@ export function ReviewWriteSheet({
                     onChangeText={setPros}
                     multiline
                     placeholderTextColor={theme.textSecondary}
-                    accessibilityLabel="좋았던 점"
+                    accessibilityLabel="좋았던 부분"
                   />
                 </ThemedView>
 
@@ -408,7 +408,7 @@ export function ReviewWriteSheet({
                     onChangeText={setCons}
                     multiline
                     placeholderTextColor={theme.textSecondary}
-                    accessibilityLabel="아쉬운 점"
+                    accessibilityLabel="아쉬웠던 부분"
                   />
                 </ThemedView>
 
@@ -430,8 +430,9 @@ export function ReviewWriteSheet({
                 <ActionButton label="취소" disabled={sending} onPress={requestClose} />
                 <ActionButton
                   variant="primary"
-                  label={sending ? '올리는 중…' : '후기 남기기'}
-                  disabled={!ready || sending}
+                  label="후기 남기기"
+                  loading={sending}
+                  disabled={!ready}
                   onPress={() => void submit()}
                 />
               </CtaRow>

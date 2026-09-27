@@ -8,9 +8,9 @@ import type { BadgeKind, useTheme } from '@weddingpick/ui';
 
 /** 정본 pastInquiries state «답변 완료» — 사용자 화면 문구. 도메인 라벨(관리자 공용)은 그대로 둔다. */
 export const INQUIRY_STATUS_TEXT: Record<InquiryStatus, string> = {
-  received: INQUIRY_STATUS_LABEL.received,
-  in_review: INQUIRY_STATUS_LABEL.in_review,
-  answered: '답변 완료',
+  received: '확인중',
+  in_review: '확인중',
+  answered: '답변완료',
   closed: INQUIRY_STATUS_LABEL.closed,
 };
 

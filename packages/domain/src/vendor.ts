@@ -104,10 +104,10 @@ export type PreparationGroup = {
 };
 
 export const PREPARATION_GROUPS: readonly PreparationGroup[] = [
-  { key: 'start', title: '시작 준비', categories: ['hall'] },
+  { key: 'start', title: '시작준비', categories: ['hall'] },
   { key: 'sdm', title: '스드메', categories: ['studio', 'dress', 'makeup', 'hair'] },
-  { key: 'ceremony', title: '본식 준비', categories: ['snap', 'bouquet', 'invitation'] },
-  { key: 'goods', title: '예물 · 신혼', categories: ['goods', 'dowry', 'honeymoon'] },
+  { key: 'ceremony', title: '본식준비', categories: ['snap', 'bouquet', 'invitation'] },
+  { key: 'goods', title: '예물·신혼', categories: ['goods', 'dowry', 'honeymoon'] },
 ];
 
 /**
@@ -137,12 +137,12 @@ export function preparationSkippedToast(skipped: readonly VendorCategory[]): str
 export const PREPARATION_NOT_STARTED_LABEL = '아직 시작 전이에요';
 
 /** 준비 현황 그룹 제목. 사용자 화면에 «기타 상태»로 적는다. */
-export const PREPARATION_OTHER_GROUP_TITLE = '기타 상태';
+export const PREPARATION_OTHER_GROUP_TITLE = '기타상태';
 
 /**
  * 준비 현황 라벨 — 완료 요약과 MY에 적는 이름(v3.19 «진행 상황 → 준비 현황»).
  */
-export const PREPARED_CATEGORIES_LABEL = '준비 현황';
+export const PREPARED_CATEGORIES_LABEL = '준비현황';
 
 /**
  * 고른 업종을 한 줄로 줄인다. 핸드오프 v3.21 «첫 항목 외 N» — «웨딩홀 외 2곳».

@@ -483,7 +483,8 @@ export function AdminsPanel() {
           title={confirmTitle(pending)}
           body={acting ? '바꾸는 중이에요…' : '이렇게 바뀌어요.'}
           items={confirmItems(pending)}
-          cta={acting ? '바꾸는 중…' : '진행'}
+          cta="진행"
+          busy={acting}
           danger={(pending.kind === 'disabled' && pending.disabled) || pending.kind === 'demote-others' || pending.kind === 'delete'}
           onCancel={() => {
             setPending(null);

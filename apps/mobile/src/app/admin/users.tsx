@@ -26,7 +26,7 @@ import {
 } from 'react-native';
 
 import { Colors, FontSize } from '@weddingpick/ui';
-import { AdminTabShell, type AdminTabDef } from './_ui';
+import { AdminButtonLoader, AdminTabShell, type AdminTabDef } from './_ui';
 import { AdminsPanel } from './admins';
 import { formatCount } from '@weddingpick/domain';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
@@ -282,7 +282,7 @@ function UsersPanel() {
                 </Text>
                 <Text style={styles.modalSub}>{selected.withdrawal.failure.message}</Text>
                 <WritePressable style={styles.retryAction} onPress={() => void retryDeletion()} disabled={acting}>
-                  <Text style={styles.retryActionText}>{acting ? '지우는 중…' : '삭제 다시 시도'}</Text>
+                  {acting ? <AdminButtonLoader /> : <Text style={styles.retryActionText}>삭제 다시 시도</Text>}
                 </WritePressable>
               </>
             )}
@@ -329,7 +329,7 @@ function UsersPanel() {
                     onPress={() => void forceWithdraw()}
                     disabled={acting}
                   >
-                    <Text style={styles.confirmGoText}>{acting ? '처리 중…' : '탈퇴시키기'}</Text>
+                    {acting ? <AdminButtonLoader /> : <Text style={styles.confirmGoText}>탈퇴시키기</Text>}
                   </WritePressable>
                 </View>
               </View>

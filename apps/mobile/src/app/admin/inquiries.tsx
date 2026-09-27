@@ -28,7 +28,7 @@ import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { formatDateTimeDot } from '@/features/common/format-date';
 import { apiFetch } from './_api';
 import { WritePressable } from './_role';
-import { compactSplit, useAdminCompact } from './_ui';
+import { AdminButtonLoader, compactSplit, useAdminCompact } from './_ui';
 
 type PendingInquiry = {
   id: string;
@@ -327,7 +327,7 @@ export function InquiryPanel() {
                       style={[styles.answerBtn, !canAnswer && styles.btnDisabled]}
                       onPress={() => void answer()}
                       disabled={!canAnswer}>
-                      <Text style={styles.answerBtnText}>{acting ? '처리 중…' : '답변 완료'}</Text>
+                      {acting ? <AdminButtonLoader /> : <Text style={styles.answerBtnText}>답변 완료</Text>}
                     </WritePressable>
                   </>
                 )}

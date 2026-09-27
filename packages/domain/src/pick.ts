@@ -24,9 +24,9 @@ export const PREPARATION_STATES = ['before', 'picking', 'decided'] as const;
 export type PreparationState = (typeof PREPARATION_STATES)[number];
 
 export const PREPARATION_STATE_LABEL: Record<PreparationState, string> = {
-  before: '준비 전',
+  before: '준비전',
   picking: '후보 Pick 중',
-  decided: '결정 완료',
+  decided: '결정완료',
 };
 
 /**

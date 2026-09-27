@@ -23,7 +23,7 @@ import AddWeddingEventRoute from '@/app/(tabs)/wedding/[id]/events/new';
 /**
  * 2026-09-26 대표 지시 — 웨딩노트 수정 시트 둘.
  *
- *   예산 추가 · 수정 시트   «낸 금액»을 만원 단위로 받는다(칸 오른쪽 «만원» · 저장 × 10,000)
+ *   지출추가 · 수정 시트   «지출금액»을 만원 단위로 받는다(칸 오른쪽 «만원» · 저장 × 10,000)
  *   일정 추가 시트 수정 모드 타임라인 줄의 수정 아이콘이 값이 채워진 채 연다(일정 · 할 일) · 삭제는 OS 확인창
  */
 
@@ -74,7 +74,7 @@ function expense(overrides: Partial<ExpenseSummaryResponse['expenses'][number]> 
     statusLabel: '지출완료',
     spentOn: '2026-09-10',
     source: 'manual',
-    sourceLabel: '직접 입력',
+    sourceLabel: '직접입력',
     refundStatus: 'normal',
     refundStatusLabel: '정상',
     ...overrides,
@@ -105,7 +105,7 @@ async function mount(element: React.ReactElement) {
 }
 
 function amountInput(): ReactTestInstance {
-  return view!.root.findAll((node) => node.type === TextInput && node.props.accessibilityLabel === '낸 금액')[0]!;
+  return view!.root.findAll((node) => node.type === TextInput && node.props.accessibilityLabel === '지출금액')[0]!;
 }
 
 function texts(): string[] {
@@ -132,7 +132,7 @@ afterEach(async () => {
   view = null;
 });
 
-describe('예산 추가 시트 — 낸 금액 만원 단위', () => {
+describe('지출추가 시트 — 지출금액 만원 단위', () => {
   it('숫자 키패드 · 칸 오른쪽 «만원» · 저장할 때 × 10,000(원)으로 보낸다', async () => {
     mockParams = { id: 'w-1', mode: 'manual' };
     jest.mocked(getExpenses).mockResolvedValue(page([]));
@@ -149,7 +149,7 @@ describe('예산 추가 시트 — 낸 금액 만원 단위', () => {
     /* 칸 아래 한 줄 — 실제로 저장될 원 금액. */
     expect(texts()).toContain('1,500,000원');
 
-    await act(async () => button('지출 넣기').props.onPress());
+    await act(async () => button('지출추가').props.onPress());
     expect(addExpense).toHaveBeenCalledWith('w-1', expect.objectContaining({ amount: 1_500_000, category: 'dress' }));
   });
 
@@ -217,7 +217,7 @@ function task(overrides: Partial<WeddingTask> = {}): WeddingTask {
   };
 }
 
-describe('일정 수정 시트 — 타임라인 줄의 수정 아이콘', () => {
+describe('일정수정 시트 — 타임라인 줄의 수정 아이콘', () => {
   it('상담 일정 — 날짜 · 제목 · 시간 · 알림을 채워 열고 PATCH /events로 저장한다', async () => {
     mockParams = { id: 'w-1', eventId: 'ev-1' };
     jest.mocked(listWeddingEvents).mockResolvedValue({ events: [event()] });
@@ -225,7 +225,7 @@ describe('일정 수정 시트 — 타임라인 줄의 수정 아이콘', () => 
     await mount(<AddWeddingEventRoute />);
 
     const header = view!.root.findByType('SheetHeader' as never);
-    expect(header.props.title).toBe('일정 수정');
+    expect(header.props.title).toBe('일정수정');
     const date = view!.root.findByType('OsDateField' as never);
     const time = view!.root.findByType('OsTimeField' as never);
     expect(date.props.value).toBe('2026-10-03');

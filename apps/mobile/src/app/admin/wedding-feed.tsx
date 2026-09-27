@@ -27,10 +27,11 @@
  */
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import {
   WEDDING_FEED_CATEGORIES,
+  WEDDING_FEED_CHIPS,
   WEDDING_FEED_LIMITS,
   WEDDING_FEED_SOURCE_LABEL,
   WEDDING_FEED_STATUSES,
@@ -54,6 +55,7 @@ import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { WritePressable } from './_role';
 import {
+  AdminButtonLoader,
   Card,
   CardGrid,
   AdminFormModal,
@@ -108,18 +110,18 @@ type FeedData = {
 
 /**
  * 앱 라운지 「웨딩정보」에서 이 카테고리의 글이 어디에 뜨는가 — 앱 칩(`loungeFeedMatches`)과
- * 같은 domain 함수로 센다. 칩이 없는 카테고리는 «전체»에만, 목록 밖 이름도 «전체»에만 뜬다.
+ * 같은 domain 함수로 센다. 목록 밖 이름은 «전체»에만 뜬다.
  */
 function appChipText(categoryLabel: string): string {
   if (!isWeddingFeedCategoryLabel(categoryLabel)) return '전체만 · 목록 밖';
   const chip = weddingFeedChipOf(categoryLabel);
 
-  return chip === null ? '전체만' : `${weddingFeedChipLabel(chip)} · 전체`;
+  return chip === null ? '전체만' : weddingFeedChipLabel(chip);
 }
 
 const CATEGORY_COLS: Col[] = [
-  { key: 'name', label: '카테고리', width: 140, grow: true },
   { key: 'chip', label: '앱 칩', width: 160 },
+  { key: 'name', label: '소분류', width: 140, grow: true },
   { key: 'published', label: '공개 글', width: 90, align: 'right' },
   { key: 'total', label: '전체 글', width: 90, align: 'right' },
 ];
@@ -562,7 +564,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
   }));
 
   /*
-   * 카테고리 표 — 고칠 수 없다. 목록과 칩 배정은 domain 상수(정본 my.js `cats`)라
+   * 카테고리 표 — 고칠 수 없다. 목록과 칩 배정은 앱과 공유하는 domain 상수라
    * 여기서 바꾸면 앱과 다시 갈라진다. 목록 밖 이름을 단 글이 있으면 끝에 따로 적는다.
    */
   const countOf = (label: string) => ({
@@ -573,7 +575,9 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
     (label) => !isWeddingFeedCategoryLabel(label)
   );
   const categoryRows: TableRow[] = [
-    ...WEDDING_FEED_CATEGORIES.map((category) => category.label),
+    ...WEDDING_FEED_CHIPS.filter((chip) => chip.key !== 'all').flatMap((chip) =>
+      WEDDING_FEED_CATEGORIES.filter((category) => category.chip === chip.key).map((category) => category.label)
+    ),
     ...unlisted,
   ].map((label) => {
     const count = countOf(label);
@@ -581,11 +585,11 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
     return {
       key: `category-${label}`,
       cells: [
-        { v: label, bold: true },
         {
           v: appChipText(label),
           badge: isWeddingFeedCategoryLabel(label) ? undefined : ('warn' as const),
         },
+        { v: label, bold: true },
         { v: `${count.published.toLocaleString('ko-KR')}편` },
         { v: `${count.total.toLocaleString('ko-KR')}편` },
       ],
@@ -642,7 +646,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
 
             <Card
               title="카테고리와 앱 칩"
-              sub="글 작성에서 고르는 값과 앱 라운지 칩. 정본 칩이라 여기서 바꾸지 않는다"
+              sub="앱 웨딩정보 칩과 글의 소분류 연결"
               full
             >
               <DataTable cols={CATEGORY_COLS} rows={categoryRows} empty="등록된 카테고리가 없어요" />
@@ -663,34 +667,39 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                   멀쩡해서 알아챌 방법이 없었다. 목록에서 고르면 그 문제가 뿌리에서 없어진다.
                 */}
                 <Text style={styles.fieldLabel}>카테고리</Text>
-                <View style={styles.pickRow}>
-                  {WEDDING_FEED_CATEGORIES.map((category) => (
-                    <Pressable
-                      key={category.key}
-                      accessibilityRole="button"
-                      accessibilityLabel={`카테고리 ${category.label}`}
-                      accessibilityState={{ selected: form.categoryLabel === category.label, disabled: draftGenerating }}
-                      disabled={draftGenerating}
-                      onPress={() => {
-                        setForm((f) => ({ ...f, categoryLabel: category.label }));
-                        setDraftError(null);
-                      }}
-                      style={[
-                        styles.statusChip,
-                        form.categoryLabel === category.label && styles.statusChipActive,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.statusChipLabel,
-                          form.categoryLabel === category.label && styles.statusChipLabelActive,
-                        ]}
-                      >
-                        {category.label}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
+                {WEDDING_FEED_CHIPS.filter((chip) => chip.key !== 'all').map((chip) => (
+                  <View key={chip.key}>
+                    <Text style={styles.categoryGroupLabel}>{chip.label}</Text>
+                    <View style={styles.pickRow}>
+                      {WEDDING_FEED_CATEGORIES.filter((category) => category.chip === chip.key).map((category) => (
+                        <Pressable
+                          key={category.key}
+                          accessibilityRole="button"
+                          accessibilityLabel={`${chip.label} ${category.label}`}
+                          accessibilityState={{ selected: form.categoryLabel === category.label, disabled: draftGenerating }}
+                          disabled={draftGenerating}
+                          onPress={() => {
+                            setForm((f) => ({ ...f, categoryLabel: category.label }));
+                            setDraftError(null);
+                          }}
+                          style={[
+                            styles.statusChip,
+                            form.categoryLabel === category.label && styles.statusChipActive,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.statusChipLabel,
+                              form.categoryLabel === category.label && styles.statusChipLabelActive,
+                            ]}
+                          >
+                            {category.label}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                ))}
                 {!needsPick ? (
                   <Text style={styles.hint}>앱 라운지 칩: {appChipText(form.categoryLabel)}</Text>
                 ) : null}
@@ -718,7 +727,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                       disabled={draftGenerating || uploadingImage !== null || generatingImage !== null}
                     >
                       {draftGenerating ? (
-                        <ActivityIndicator color={C.onTint} />
+                        <AdminButtonLoader />
                       ) : (
                         <Text style={styles.btnPrimaryLabel}>자동 작성</Text>
                       )}
@@ -762,7 +771,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                       disabled={draftGenerating || uploadingImage !== null || generatingImage !== null}
                     >
                       {uploadingImage === 'thumbnail' ? (
-                        <ActivityIndicator />
+                        <AdminButtonLoader />
                       ) : (
                         <Text style={styles.btnGhostLabel}>{form.imageKey ? '썸네일 교체' : '썸네일 올리기'}</Text>
                       )}
@@ -772,7 +781,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                       onPress={() => void generateFeedImage('thumbnail')}
                       disabled={draftGenerating || uploadingImage !== null || generatingImage !== null}
                     >
-                      {generatingImage === 'thumbnail' ? <ActivityIndicator /> :
+                      {generatingImage === 'thumbnail' ? <AdminButtonLoader /> :
                         <Text style={styles.btnGhostLabel}>이미지 생성</Text>}
                     </WritePressable>
                     {form.imageKey ? (
@@ -810,7 +819,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                       disabled={draftGenerating || uploadingImage !== null || generatingImage !== null}
                     >
                       {uploadingImage === 'body' ? (
-                        <ActivityIndicator />
+                        <AdminButtonLoader />
                       ) : (
                         <Text style={styles.btnGhostLabel}>{form.bodyImageKey ? '본문 이미지 교체' : '본문 이미지 올리기'}</Text>
                       )}
@@ -820,7 +829,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                       onPress={() => void generateFeedImage('body')}
                       disabled={draftGenerating || uploadingImage !== null || generatingImage !== null}
                     >
-                      {generatingImage === 'body' ? <ActivityIndicator /> :
+                      {generatingImage === 'body' ? <AdminButtonLoader /> :
                         <Text style={styles.btnGhostLabel}>이미지 생성</Text>}
                     </WritePressable>
                     {form.bodyImageKey ? (
@@ -877,7 +886,7 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                     onPress={() => void save()}
                     disabled={saving || needsPick}
                   >
-                    <Text style={styles.btnPrimaryLabel}>{saving ? '저장 중…' : '저장'}</Text>
+                    {saving ? <AdminButtonLoader /> : <Text style={styles.btnPrimaryLabel}>저장</Text>}
                   </WritePressable>
                 </View>
               </View>
@@ -930,7 +939,8 @@ export function WeddingFeedPanel({ embedded = true }: { embedded?: boolean }) {
                 `상태 ${WEDDING_FEED_STATUS_LABEL[deleting.status]} → 삭제됨`,
                 `출처 ${WEDDING_FEED_SOURCE_LABEL[deleting.source]}`,
               ]}
-              cta={deleteBusy ? '지우는 중…' : '삭제'}
+              cta="삭제"
+              busy={deleteBusy}
               danger
               onConfirm={() => void commitDelete()}
               onCancel={() => setDeleting(null)}
@@ -983,6 +993,7 @@ const styles = StyleSheet.create({
   previewBodyImage: { width: '100%', height: 190, borderRadius: Radius.control },
   previewBody: { fontSize: FontSize.t7, lineHeight: LineHeight.t7Loose, color: C.text },
   fieldLabel: { fontSize: FontSize.tab, fontWeight: '700', color: C.textAssistive, marginTop: Spacing.two },
+  categoryGroupLabel: { fontSize: FontSize.tab, fontWeight: '700', color: C.textSecondary, marginBottom: Spacing.two },
   input: {
     height: 40,
     paddingHorizontal: Spacing.three,

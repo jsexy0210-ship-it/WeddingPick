@@ -47,12 +47,12 @@ export type ReportState = (typeof REPORT_STATES)[number];
  * 방법이 없다 — 없는 구분을 이름으로 만들지 않는다.
  */
 export const REPORT_STATE_LABEL: Record<ReportState, string> = {
-  analyzing: '분석 중',
-  verifying: '확인 중',
+  analyzing: '분석중',
+  verifying: '확인중',
   need_user_confirm: '확인이 필요해요',
-  under_review: '확인 중',
-  needs_supplement: '보완 필요',
-  verified: '확인 완료',
+  under_review: '확인중',
+  needs_supplement: '보완필요',
+  verified: '확인완료',
   rejected: '반영되지 않았어요',
   canceled: '취소됨',
   deleted: '삭제됨',

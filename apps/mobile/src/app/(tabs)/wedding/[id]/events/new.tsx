@@ -235,7 +235,7 @@ export default function AddWeddingEventRoute() {
 
       <BottomSheet visible onRequestClose={requestClose} style={styles.sheetHost} testID="event-add-sheet">
         <SheetPanel>
-          <SheetHeader title={editing ? copy['event.editTitle'] : '일정 추가'} onClose={requestClose} closeDisabled={saving} />
+          <SheetHeader title={editing ? copy['event.editTitle'] : '일정추가'} onClose={requestClose} closeDisabled={saving} />
 
           <ScrollView
             style={[styles.scroll, { maxHeight: Math.max(280, height * 0.62) }]}
@@ -312,8 +312,9 @@ export default function AddWeddingEventRoute() {
               />
               <ActionButton
                 variant="primary"
-                label={saving ? '저장하는 중…' : copy['expense.save']}
-                disabled={!ready || saving}
+                label={copy['expense.save']}
+                loading={saving}
+                disabled={!ready}
                 onPress={() => void save()}
               />
             </CtaRow>
@@ -321,8 +322,9 @@ export default function AddWeddingEventRoute() {
             <ActionButton
               variant="primary"
               size="xlarge"
-              label={saving ? '넣는 중…' : '일정 넣기'}
-              disabled={!ready || saving}
+              label="일정추가"
+              loading={saving}
+              disabled={!ready}
               onPress={() => void save()}
             />
           )}

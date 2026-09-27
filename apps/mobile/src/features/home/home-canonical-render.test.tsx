@@ -66,7 +66,7 @@ describe('WP-HOME-001 정본 구조(v3.29)', () => {
     });
     views.push(view);
 
-    for (const label of ['웨딩홀', '스드메', '본식', '예물 · 신혼']) {
+    for (const label of ['웨딩홀', '스드메', '본식', '예물·신혼']) {
       expect(view.root.findAllByProps({ accessibilityLabel: label }).length).toBeGreaterThan(0);
     }
   });

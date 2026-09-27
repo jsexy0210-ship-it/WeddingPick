@@ -61,7 +61,7 @@ function verificationTable(): string {
       <table>
         <caption>확인 단계와 가격 비교 반영 여부</caption>
         <thead>
-          <tr><th scope="col">단계</th><th scope="col">조건</th><th scope="col">가격 비교</th></tr>
+          <tr><th scope="col">단계</th><th scope="col">조건</th><th scope="col">가격비교</th></tr>
         </thead>
         <tbody>${rows}</tbody>
       </table>
@@ -96,7 +96,7 @@ function cancellationTable(): string {
       <table>
         <caption>예식업 취소 위약금 기준 (공정거래위원회 소비자분쟁해결기준)</caption>
         <thead>
-          <tr><th scope="col">취소 시점</th><th scope="col">기준 위약금</th></tr>
+          <tr><th scope="col">취소시점</th><th scope="col">기준 위약금</th></tr>
         </thead>
         <tbody>${rows}</tbody>
       </table>
@@ -111,7 +111,7 @@ function sourceList(): string {
         <span>쓰이는 곳: ${escapeHtml(source.usedFor)}</span>
         ${
           source.url
-            ? `<a href="${escapeHtml(source.url)}" rel="noreferrer noopener">원문 보기</a>`
+            ? `<a href="${escapeHtml(source.url)}" rel="noreferrer noopener">원문보기</a>`
             : ''
         }
       </li>`
@@ -127,7 +127,7 @@ function policyList(): string {
         <span>${escapeHtml(policy.note)}</span>
         ${
           policy.url
-            ? `<a href="${escapeHtml(policy.url)}">전문 보기</a>`
+            ? `<a href="${escapeHtml(policy.url)}">전문보기</a>`
             : '<span class="pending">확정본이 없어 아직 게시하지 않았습니다.</span>'
         }
       </li>`
@@ -191,7 +191,7 @@ ${fontPreloadTag()}
   ${section(
     'comparison',
     '가격은 어떻게 비교하나요',
-    `<p>확인된 실제 계약만 모아 기준금액을 계산합니다. 실 제보가 ${
+    `<p>확인된 실제 계약만 모아 기준금액을 계산합니다. 실제보가 ${
       PRICING_POLICY.minimumSampleCount
     }건에 못 미치면 기준금액을 보여주지 않고, 왜 보여줄 수 없는지 알려드립니다. 가격을 보여드릴 때는 몇 건을 모았고 어느 기간인지 함께 적습니다.</p>
     ${verificationTable()}`
@@ -206,14 +206,14 @@ ${fontPreloadTag()}
 
   ${section(
     'analysis-notice',
-    '분석 안내',
+    '분석안내',
     `<p>웨딩픽이 견적서를 어떻게 읽고, 무엇을 보장하지 않는지입니다. 앱 안에서도 같은 글을 보여드립니다.</p>
     ${cards(ANALYSIS_FACTS)}`
   )}
 
   ${section(
     'sources',
-    '자료 출처',
+    '자료출처',
     `<p>웨딩픽이 비교와 대조에 쓰는 바깥 자료입니다. 기관이 자료를 고치면 내용도 달라질 수 있어 마지막으로 확인한 날짜를 함께 적습니다.</p>
     ${sourceList()}`
   )}

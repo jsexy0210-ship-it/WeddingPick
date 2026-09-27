@@ -106,9 +106,9 @@ describe('Pick', () => {
   describe('상태 이름', () => {
     it('세 가지가 정책이 적은 말과 같다', () => {
       expect(PREPARATION_STATE_LABEL).toEqual({
-        before: '준비 전',
+        before: '준비전',
         picking: '후보 Pick 중',
-        decided: '결정 완료',
+        decided: '결정완료',
       });
     });
   });

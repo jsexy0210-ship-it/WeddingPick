@@ -153,7 +153,7 @@ function ExpenseLine({
     expense.source === 'payment_proof'
       ? { label: 'Pick 인증', text: theme.positive, background: theme.positiveBackground }
       : expense.source === 'consultation'
-        ? { label: '상담 정리', text: theme.cautionary, background: theme.cautionaryBackground }
+        ? { label: '상담정리', text: theme.cautionary, background: theme.cautionaryBackground }
         : null;
 
   return (

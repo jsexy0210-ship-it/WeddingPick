@@ -23,14 +23,14 @@ import { EmptyBox, Section, SubScreen, SubScreenStatus } from '@/features/settin
 /** 정본 `docs/design/React_Native/my.jsx` 프레임 6 «내가 쓴 후기 · WP-MY-006». */
 const S = {
   title: '내가 쓴 후기',
-  written: '쓴 후기',
+  written: '작성한 후기',
   emptyWritten: '아직 쓴 후기가 없어요',
   writable: '쓸 수 있는 곳',
   write: '쓰기',
   /** 시안 «Pick 인증 완료 · 3월 4일». `REPORT_KIND_LABEL`은 배지용이라 띄어쓰지 않아 여기서는 쓰지 않는다. */
   verified: 'Pick 인증 완료',
   /** 아직 보이지 않는 후기 — 서버가 `inUse: false`로 알려준 것만 적는다. */
-  hidden: '확인 중',
+  hidden: '확인중',
   emptyWritable: 'Pick 인증을 하면 그 업체에 후기를 쓸 수 있어요',
   loadError: '내 후기를 불러오지 못했어요',
 } as const;
@@ -107,7 +107,7 @@ export default function MyReviewsScreen() {
   );
 
   return (
-    <SubScreen title={S.title} refreshControl={pull.refreshControl}>
+    <SubScreen title={S.title} scrollToTop refreshControl={pull.refreshControl}>
       <Section title={`${S.written} ${written.length}개`}>
         {written.length > 0 ? (
           <ListCard>

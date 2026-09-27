@@ -10,7 +10,7 @@ import {
   priceLine,
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams, usePathname } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -18,6 +18,7 @@ import { compareVendors, getCurrentUser, recordComparison } from '@/api/client';
 import { DepthHeader } from '@/components/depth-header';
 import { compareOrigin, useDepthBack } from '@/features/navigation/depth-back';
 import { inStack } from '@/features/navigation/stack-alias';
+import { ScrollToTopButton, useScrollToTopVisibility } from '@/features/navigation/scroll-to-top-button';
 import { savePendingAction } from '@/features/auth/pending-action';
 import { PickDoneSheet } from '@/features/pick/pick-sheets';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
@@ -28,6 +29,7 @@ import {
   Border,
   ErrorView,
   Layout,
+  LoaderSkeleton,
   MaxContentWidth,
   ProductSymbol,
   Radius,
@@ -93,15 +95,17 @@ import {
 const COUNT_GAP_NOTABLE = DISCLOSURE_THRESHOLDS.limited;
 
 const HEADER_TITLE = '비교';
-const ROW_PRICE = '제보 금액';
+const ROW_PRICE = '제보금액';
 const ROW_MEDIAN = TERMS.baseAmount;
 const ROW_COUNT = TERMS.verifiedData;
-const ROW_CATEGORY = '업종 · 지역';
+const ROW_CATEGORY = '업종·지역';
 const ROW_SOURCE = '업체 정보 출처';
 const SOURCE_FROM_DOCUMENT = '올려주신 문서에서 확인한 업체예요';
-const CTA_CONSULT = '상담 예약';
+const CTA_CONSULT = '상담예약';
 
 export default function CompareScreen() {
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollTop = useScrollToTopVisibility();
   const depthBack = useDepthBack();
   const pathname = usePathname();
   const { ids } = useLocalSearchParams<{ ids?: string }>();
@@ -303,6 +307,9 @@ export default function CompareScreen() {
         </View>
 
         <ScrollView
+          ref={scrollRef}
+          onScroll={scrollTop.onScroll}
+          scrollEventThrottle={100}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
           refreshControl={pull.refreshControl}>
@@ -399,6 +406,7 @@ export default function CompareScreen() {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={`${entry.vendor.name} ${TERMS.pick}`}
+                    accessibilityState={{ busy: candidates.busyVendorId === entry.vendor.id, disabled: candidates.busyVendorId === entry.vendor.id }}
                     disabled={candidates.busyVendorId === entry.vendor.id}
                     onPress={() => void pickVendor(entry.vendor)}
                     style={({ pressed }) => [
@@ -406,9 +414,9 @@ export default function CompareScreen() {
                       styles.ctaGhost,
                       { borderColor: theme.border, opacity: pressed ? 0.8 : 1 },
                     ]}>
-                    <ThemedText type="f14" style={styles.bold}>
-                      {candidates.busyVendorId === entry.vendor.id ? '담는 중…' : TERMS.pick}
-                    </ThemedText>
+                    {candidates.busyVendorId === entry.vendor.id ? <LoaderSkeleton size={20} shape="mark" /> : (
+                      <ThemedText type="f14" style={styles.bold}>{TERMS.pick}</ThemedText>
+                    )}
                   </Pressable>
                 )}
               </View>
@@ -430,6 +438,7 @@ export default function CompareScreen() {
           </View>
           <View style={styles.bottomPad} />
         </ScrollView>
+        <ScrollToTopButton visible={scrollTop.visible} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
       </SafeAreaView>
 
       <Toast message={toast} onHidden={() => setToast(null)} />

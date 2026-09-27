@@ -1,5 +1,5 @@
 import type { WeddingEvent, WeddingTask } from '@weddingpick/api-contract';
-import { TASK_PRESETS, daysUntil } from '@weddingpick/domain';
+import { TASK_PRESETS } from '@weddingpick/domain';
 
 import { TENTATIVE_META, tentativePlanItems } from '@/features/home/schedule-view';
 
@@ -24,7 +24,7 @@ function sameTitle(a: string, b: string): boolean {
  * 진짜 날짜가 이긴다:
  *   - 날짜를 넣은 할 일은 임시 날짜 대신 그 날짜로 선다(메타는 업체 이름, 없으면 빈 칸)
  *   - 같은 이름의 일정(직접 추가한 일정)이 있으면 그 할 일 줄은 세우지 않는다 — 일정이 이미 그 자리다
- *   - 끝낸 할 일과 이미 지난 날짜는 세우지 않는다
+ *   - 끝낸 할 일은 세우지 않는다. 지난 기한의 미완료 할 일은 별도 구간에서 보여 준다
  *
  * `tasks`가 null이면 아직 못 읽은 것이다 — 서버가 새 웨딩에 심는 기본 열셋으로 대신 보여 준다.
  */
@@ -38,7 +38,6 @@ export function notePlanEntries(
 
   const dated: TimelinePlan[] = (tasks ?? [])
     .filter((task) => task.dueDate !== null && task.state !== 'done' && !taken(task.label))
-    .filter((task) => daysUntil(task.dueDate!, now) >= 0)
     .map((task) => ({
       id: task.id,
       date: task.dueDate!,

@@ -1,4 +1,5 @@
 import type { CandidateListResponse } from '@weddingpick/api-contract';
+import { PREPARATION_CATEGORIES } from '@weddingpick/domain';
 import { AccessibilityInfo } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'react-test-renderer';
@@ -59,7 +60,7 @@ const PAGE: CandidateListResponse = {
       ],
       comparable: false,
       state: 'decided',
-      stateLabel: '결정 완료',
+      stateLabel: '결정완료',
       decidedVendorId: HALL_ID,
     },
   ],
@@ -134,11 +135,11 @@ describe('Pick — 온보딩에서 정한 곳', () => {
     );
   }
 
-  it('목록에서 고른 업체는 결정 카드로 서고 상담 예약으로 이어진다', () => {
+  it('목록에서 고른 업체는 결정 카드로 서고 상담예약으로 이어진다', () => {
     expect(texts()).toContain('강남 A 웨딩홀');
-    expect(pressables('강남 A 웨딩홀 결정 취소')).not.toHaveLength(0);
+    expect(pressables('강남 A 웨딩홀 결정취소')).not.toHaveLength(0);
 
-    const consult = pressables('강남 A 웨딩홀 상담 예약');
+    const consult = pressables('강남 A 웨딩홀 상담예약');
 
     expect(consult).not.toHaveLength(0);
 
@@ -146,46 +147,84 @@ describe('Pick — 온보딩에서 정한 곳', () => {
       consult[0]!.props.onPress();
     });
 
-    /* 상담 예약(WP-PICK-009)은 Pick 스택 별칭 안에서 민다(stack-alias.ts). */
+    /* 상담예약(WP-PICK-009)은 Pick 스택 별칭 안에서 민다(stack-alias.ts). */
     expect(mockPush).toHaveBeenCalledWith(`/pick/vendor/${HALL_ID}/consult?from=pick`);
   });
 
-  it('직접 입력한 곳은 스드메 묶음의 결정 카드로 서고, 업체 상세 · 상담 예약은 없다', () => {
-    expect(texts()).toEqual(expect.arrayContaining(['청담 스튜디오', '직접 입력한 곳', '스튜디오']));
-    // 스드메 묶음이 «1개»를 센다. 웨딩홀 묶음은 끝나 «결정 완료»가 그 자리에 선다.
-    expect(texts().filter((one) => one === '1개 · 최신순')).toHaveLength(1);
-    expect(pressables('청담 스튜디오 상담 예약')).toHaveLength(0);
-    expect(pressables('청담 스튜디오 빼기')).toHaveLength(0);
-    expect(pressables('청담 스튜디오 결정 취소')).toHaveLength(1);
+  it('홈과 같은 실제 결정 수와 다음 업종을 안내한다', () => {
+    expect(texts()).toContain('2개 결정 · 9개 남음 · 다음 본식스냅');
   });
 
-  it('결정이 끝난 웨딩홀 묶음은 «결정 완료»로 서고 «내 조건에 맞는 곳»을 내밀지 않는다', () => {
-    expect(texts().filter((one) => one === '결정 완료')).toHaveLength(1);
-    expect(tree.root.findAll((node) => node.props.accessibilityLabel === '웨딩홀 결정 완료')).not.toHaveLength(0);
+  it('모든 업종을 정했으면 완료를 안내하고 검색 빈 상태를 내지 않는다', async () => {
+    jest.mocked(listCandidates).mockResolvedValue({
+      ...PAGE,
+      groups: [],
+      total: 0,
+      manualDecisions: PREPARATION_CATEGORIES.map((category) => ({
+        category,
+        categoryLabel: category,
+        name: `${category} 업체`,
+        decidedAt: '2026-09-26T00:00:00.000Z',
+        decidedByPartner: false,
+      })),
+      progress: { decided: 11, total: 11, label: '11/11 완료' },
+      nextCategory: null,
+    });
+    jest.mocked(getPickRecommendations).mockResolvedValue({ groups: [] } as never);
+
+    await act(async () => {
+      tree.unmount();
+      tree = create(
+        <SafeAreaProvider initialMetrics={METRICS}>
+          <PickScreen />
+        </SafeAreaProvider>
+      );
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(texts()).toContain('정할 업종을 모두 마쳤어요');
+    expect(texts()).not.toContain('아직 담은 곳이 없어요');
+    expect(texts()).not.toContain('업체 검색하기');
+  });
+
+  it('직접 입력한 곳은 스드메 묶음의 결정 카드로 서고, 업체 상세 · 상담예약은 없다', () => {
+    expect(texts()).toEqual(expect.arrayContaining(['청담 스튜디오', '직접 입력한 곳', '스튜디오']));
+    // 스드메 묶음이 «1개»를 센다. 웨딩홀 묶음은 끝나 «결정완료»가 그 자리에 선다.
+    expect(texts().filter((one) => one === '1개 · 최신순')).toHaveLength(1);
+    expect(pressables('청담 스튜디오 상담예약')).toHaveLength(0);
+    expect(pressables('청담 스튜디오 빼기')).toHaveLength(0);
+    expect(pressables('청담 스튜디오 결정취소')).toHaveLength(1);
+  });
+
+  it('결정이 끝난 웨딩홀 묶음은 «결정완료»로 서고 «내 조건에 맞는 곳»을 내밀지 않는다', () => {
+    expect(texts().filter((one) => one === '결정완료')).toHaveLength(1);
+    expect(tree.root.findAll((node) => node.props.accessibilityLabel === '웨딩홀 결정완료')).not.toHaveLength(0);
     // 끝난 웨딩홀의 추천은 없고, 아직 스튜디오만 정한 스드메의 추천은 그대로다.
     expect(texts()).not.toContain('강남 B 웨딩홀');
     expect(texts()).toContain('블루밍 스튜디오');
     expect(texts().filter((one) => one === '내 조건에 맞는 곳')).toHaveLength(1);
   });
 
-  it('끝난 묶음 칩은 라벨 앞 체크와 «결정 완료» 읽기 라벨을 단다 — 끝나지 않은 스드메 칩은 그대로', () => {
+  it('끝난 묶음 칩은 라벨 앞 체크와 «결정완료» 읽기 라벨을 단다 — 끝나지 않은 스드메 칩은 그대로', () => {
     const chip = (label: string) =>
       tree.root.findAll((node) => node.props.accessibilityRole === 'radio' && node.props.accessibilityLabel === label);
 
-    expect(chip('웨딩홀 결정 완료')).not.toHaveLength(0);
+    expect(chip('웨딩홀 결정완료')).not.toHaveLength(0);
     expect(chip('스드메')).not.toHaveLength(0);
-    expect(chip('스드메 결정 완료')).toHaveLength(0);
+    expect(chip('스드메 결정완료')).toHaveLength(0);
   });
 
-  it('업체 결정을 취소하면 그 자리에서 «결정 완료»가 풀리고 추천이 다시 선다', async () => {
+  it('업체 결정을 취소하면 그 자리에서 «결정완료»가 풀리고 추천이 다시 선다', async () => {
     act(() => {
       tree.root
-        .findAll((node) => node.props.accessibilityLabel === '강남 A 웨딩홀 결정 취소' && typeof node.props.onPress === 'function')[0]!
+        .findAll((node) => node.props.accessibilityLabel === '강남 A 웨딩홀 결정취소' && typeof node.props.onPress === 'function')[0]!
         .props.onPress();
     });
 
     const [, , buttons] = jest.mocked(confirmAlert).mock.calls.at(-1)!;
-    const confirm = (buttons as { text: string; onPress?: () => void }[]).find((one) => one.text === '결정 취소')!;
+    const confirm = (buttons as { text: string; onPress?: () => void }[]).find((one) => one.text === '결정취소')!;
 
     // 다시 읽기(load)도 결정이 풀린 목록을 돌려준다.
     jest.mocked(listCandidates).mockResolvedValue({
@@ -198,18 +237,18 @@ describe('Pick — 온보딩에서 정한 곳', () => {
     });
 
     expect(removeDecision).toHaveBeenCalledWith('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'hall');
-    expect(texts()).not.toContain('결정 완료');
-    expect(tree.root.findAll((node) => node.props.accessibilityLabel === '웨딩홀 결정 완료')).toHaveLength(0);
+    expect(texts()).not.toContain('결정완료');
+    expect(tree.root.findAll((node) => node.props.accessibilityLabel === '웨딩홀 결정완료')).toHaveLength(0);
     expect(texts()).toContain('강남 B 웨딩홀');
   });
 
-  it('직접 입력한 결정도 결정 취소로 지운다', async () => {
+  it('직접 입력한 결정도 결정취소로 지운다', async () => {
     act(() => {
-      pressables('청담 스튜디오 결정 취소')[0]!.props.onPress();
+      pressables('청담 스튜디오 결정취소')[0]!.props.onPress();
     });
 
     const [, , buttons] = jest.mocked(confirmAlert).mock.calls.at(-1)!;
-    const confirm = (buttons as { text: string; onPress?: () => void }[]).find((one) => one.text === '결정 취소')!;
+    const confirm = (buttons as { text: string; onPress?: () => void }[]).find((one) => one.text === '결정취소')!;
 
     await act(async () => {
       confirm.onPress!();
@@ -221,7 +260,7 @@ describe('Pick — 온보딩에서 정한 곳', () => {
 });
 
 /**
- * 끝난 묶음에 결정 말고도 담아 둔 후보가 있으면 결정 카드가 맨 위에 서고 나머지는 «더 보기» 뒤로
+ * 끝난 묶음에 결정 말고도 담아 둔 후보가 있으면 결정 카드가 맨 위에 서고 나머지는 «더보기» 뒤로
  * 접힌다.
  */
 describe('Pick — 결정이 끝난 묶음의 후보', () => {
@@ -280,11 +319,11 @@ describe('Pick — 결정이 끝난 묶음의 후보', () => {
       .filter((text) => want.has(text));
   }
 
-  it('결정 카드만 먼저 보이고, «더 보기»를 누르면 결정 카드 아래로 최신순 후보가 선다', () => {
+  it('결정 카드만 먼저 보이고, «더보기»를 누르면 결정 카드 아래로 최신순 후보가 선다', () => {
     expect(names()).toEqual(['더채플 청담']);
 
     const more = tree.root.findAll(
-      (node) => node.props.accessibilityLabel === '웨딩홀 더 보기' && typeof node.props.onPress === 'function'
+      (node) => node.props.accessibilityLabel === '웨딩홀 더보기' && typeof node.props.onPress === 'function'
     );
 
     expect(more).not.toHaveLength(0);
@@ -329,10 +368,10 @@ describe('Pick — 준비 현황만 있는 묶음', () => {
     act(() => tree.unmount());
   });
 
-  it('«결정 완료» 표시가 어디에도 없다', () => {
+  it('«결정완료» 표시가 어디에도 없다', () => {
     expect(
       tree.root.findAll(
-        (node) => typeof node.props.accessibilityLabel === 'string' && node.props.accessibilityLabel.endsWith('결정 완료')
+        (node) => typeof node.props.accessibilityLabel === 'string' && node.props.accessibilityLabel.endsWith('결정완료')
       )
     ).toHaveLength(0);
   });

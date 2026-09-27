@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import {
   Layout,
+  LoaderSkeleton,
   Radius,
   Spacing,
   ThemedText,
@@ -35,12 +36,14 @@ function SheetButton({
   flex,
   onPress,
   disabled,
+  loading = false,
 }: {
   label: string;
   kind: 'ghost' | 'primary' | 'danger';
   flex: number;
   onPress: () => void;
   disabled?: boolean;
+  loading?: boolean;
 }) {
   const theme = useTheme();
   const background =
@@ -48,16 +51,19 @@ function SheetButton({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityState={{ disabled: disabled === true }}
-      disabled={disabled}
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: disabled === true || loading, busy: loading }}
+      disabled={disabled || loading}
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
-        { flex, backgroundColor: background, opacity: disabled ? 0.4 : pressed ? 0.8 : 1 },
+        { flex, backgroundColor: background, opacity: disabled && !loading ? 0.4 : pressed && !loading ? 0.8 : 1 },
       ]}>
-      <ThemedText type="t5" themeColor={kind === 'ghost' ? 'textStrong' : 'onTint'}>
-        {label}
-      </ThemedText>
+      {loading ? <LoaderSkeleton size={20} shape="mark" /> : (
+        <ThemedText type="t5" themeColor={kind === 'ghost' ? 'textStrong' : 'onTint'}>
+          {label}
+        </ThemedText>
+      )}
     </Pressable>
   );
 }
@@ -142,7 +148,7 @@ export function UnpickSheet({
         </ThemedText>
         <View style={styles.actions}>
           <SheetButton label="그대로 둘게요" kind="ghost" flex={1} onPress={onDismiss} disabled={busy} />
-          <SheetButton label={busy ? '빼는 중…' : '빼기'} kind="primary" flex={1.2} onPress={onConfirm} disabled={busy} />
+          <SheetButton label="빼기" kind="primary" flex={1.2} onPress={onConfirm} loading={busy} />
         </View>
       </SheetPanel>
     </BottomSheet>

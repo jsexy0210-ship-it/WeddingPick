@@ -22,7 +22,7 @@ export const VENDOR_DETAIL_SECTIONS = [
   { key: 'name', label: '업체명', ready: true },
   {
     key: 'key_conditions',
-    label: '핵심 조건',
+    label: '핵심조건',
     ready: true,
     /* v3.13 §O-4가 이 자리에 들어갈 항목을 열거했다. 목록은 `vendor-fact.ts`에 있다. */
     note: '주차·식대·보증인원 같은 항목은 vendor-fact.ts가 목록을 갖는다',
@@ -63,7 +63,7 @@ export const VENDOR_DETAIL_SECTIONS = [
   { key: 'reviews', label: TERMS.review, ready: true },
   {
     key: 'rebuttals',
-    label: '업체 반론',
+    label: '업체반론',
     ready: true,
     /* 후기 화면 안에 후기와 붙어 있다. 떼어내면 무엇에 대한 반론인지 사라진다. */
     note: '후기 화면 안에 함께 있어요',

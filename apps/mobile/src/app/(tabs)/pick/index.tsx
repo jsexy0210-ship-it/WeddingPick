@@ -73,7 +73,7 @@ import {
   regionLabel,
 } from '@weddingpick/domain';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -96,6 +96,7 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
+import { ScrollToTopButton, useScrollToTopVisibility } from '@/features/navigation/scroll-to-top-button';
 import {
   addCandidate,
   decideCategory,
@@ -109,6 +110,7 @@ import { confirmAlert } from '@/components/confirm-alert';
 import { ROOT_TAB_GUTTER, RootTabHeader } from '@/components/root-tab-header';
 import { DialogToast } from '@/components/confirm-alert-toast';
 import { HOME_PREP_GROUP_LABEL } from '@/features/home/prep-groups';
+import { categoryStatuses, currentCategory, decidedCount, HOME_TOTAL } from '@/features/home/state';
 import { pickOrigin } from '@/features/navigation/depth-back';
 import { showResultToast } from '@/features/navigation/result-toast';
 import { inStack } from '@/features/navigation/stack-alias';
@@ -133,11 +135,11 @@ const COMPARE_ALL = '비교하기';
 const CHIP_ALL = '전체';
 const ACTION_COMPARE = PICK_COMPARE_ADD_LABEL;
 const ACTION_COMPARING = PICK_COMPARE_REMOVE_LABEL;
-const ACTION_UNDECIDE = '결정 취소';
+const ACTION_UNDECIDE = '결정취소';
 /* 정본 pick.js `sv().labelB` «상담 예약». */
-const ACTION_CONSULT = '상담 예약';
+const ACTION_CONSULT = '상담예약';
 /* 정본 pick.jsx frame-001 `moreBtn2`. */
-const GROUP_MORE = '더 보기';
+const GROUP_MORE = '더보기';
 const BADGE_SHARED = '함께';
 const EMPTY_TITLE = '아직 담은 곳이 없어요';
 const EMPTY_BODY = '담아두면 여기서 비교할 수 있어요';
@@ -219,6 +221,8 @@ function pickSections(rows: readonly Row[], manual: readonly ManualDecision[] = 
 }
 
 export default function PickScreen() {
+  const scrollRef = useRef<ScrollView>(null);
+  const { visible: scrollTopVisible, onScroll: onScrollTop, reset: resetScrollTop } = useScrollToTopVisibility();
   const { group: groupParam } = useLocalSearchParams<{ group?: string | string[] }>();
   const rawGroup = Array.isArray(groupParam) ? groupParam[0] : groupParam;
   /* 홈 «내 웨딩 준비» 카드가 넘긴 묶음. 모르는 값이면 «전체». */
@@ -226,10 +230,15 @@ export default function PickScreen() {
   const theme = useTheme();
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [page, setPage] = useState<CandidateListResponse | null>(null);
+  const [loaded, setLoaded] = useState(false);
   /** 묶음별 «내 조건에 맞는 곳». 못 받아도 담은 목록은 그대로 보인다(null). */
   const [recs, setRecs] = useState<PickRecommendationsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>(requestedGroup ?? 'all');
+  useEffect(() => {
+    resetScrollTop();
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [filter, resetScrollTop]);
   /* 탭에 머문 채 홈에서 다른 묶음으로 다시 들어오면 그 칩으로 바꾼다(렌더 중 조정 — 이펙트 불필요). */
   const [seenGroup, setSeenGroup] = useState(requestedGroup);
   if (seenGroup !== requestedGroup) {
@@ -257,6 +266,7 @@ export default function PickScreen() {
         ]);
         setPage(candidates);
         setRecs(recommendations);
+        setLoaded(true);
       })
       .catch((caught: Error) => {
         if (keep) notifyRefreshFailed();
@@ -280,6 +290,11 @@ export default function PickScreen() {
   const sections = pickSections(rows, manualDecisions);
   /* 결정이 끝난 묶음 — 홈 «내 웨딩 준비»와 같은 규칙(features/pick/completed-groups). */
   const doneGroups = completedPickGroups(page);
+  /* 홈과 같은 실제 결정 기준으로 Pick의 완료·남은 업종을 계산한다. */
+  const statuses = categoryStatuses({ candidates: page });
+  const decided = decidedCount(statuses);
+  const next = currentCategory(statuses, page?.nextCategory ?? null);
+  const allDone = decided === HOME_TOTAL;
   const isDoneSection = (key: string) => doneGroups.has(key as PreparationGroupKey);
   /* 담은 곳이 없어도 직접 입력한 결정이 있으면 빈 화면이 아니다. */
   const hasItems = rows.length > 0 || manualDecisions.length > 0;
@@ -469,16 +484,24 @@ export default function PickScreen() {
                 <RetryLink onPress={() => load()} />
               </View>
             </ScrollView>
-          ) : !me ? (
+          ) : !me || !loaded ? (
             <View style={styles.loadingCenter}>
               <DelayedLoader size={40} />
             </View>
           ) : (
             <ScrollView
+              ref={scrollRef}
+              onScroll={onScrollTop}
+              scrollEventThrottle={100}
               contentContainerStyle={styles.scroll}
               showsVerticalScrollIndicator={false}
               refreshControl={pull.refreshControl}>
-              {!hasItems ? <Empty /> : null}
+              <ThemedText type="f13" themeColor="textSecondary" style={styles.progressLine}>
+                {allDone
+                  ? '정할 업종을 모두 마쳤어요'
+                  : `${decided}개 결정 · ${HOME_TOTAL - decided}개 남음${next ? ` · 다음 ${VENDOR_CATEGORY_LABEL[next]}` : ''}`}
+              </ThemedText>
+              {!hasItems && !hasRecs && !allDone ? <Empty /> : null}
               {hasItems || hasRecs ? (
                 <>
                   {/* 정본 chipBarSticky: 위 4 · 아래 16 · 칩 사이 8. 칩은 준비 묶음 넷(위 `Filter`). */}
@@ -635,6 +658,7 @@ export default function PickScreen() {
             </ScrollView>
           )}
         </View>
+        <ScrollToTopButton visible={scrollTopVisible && !error} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
       </SafeAreaView>
 
       <DialogToast
@@ -1022,7 +1046,7 @@ function Empty() {
   const theme = useTheme();
   return (
     <View style={styles.empty}>
-      <ThemedText type="f18" style={styles.bold}>담은 곳</ThemedText>
+      <ThemedText type="f18" style={styles.bold}>저장한 업체</ThemedText>
       <View style={styles.emptyCard}>
         <ThemedText type="f16" style={[styles.bold, styles.emptyText]}>
           {EMPTY_TITLE}
@@ -1059,7 +1083,7 @@ function RetryLink({ onPress }: { onPress: () => void }) {
         const { hovered } = readWebInteractionState(state);
         return (
           <ThemedText type="t6" style={{ color: theme.tint, textDecorationLine: hovered ? 'underline' : 'none' }}>
-            다시 시도
+            다시 시도하기
           </ThemedText>
         );
       }}
@@ -1081,6 +1105,7 @@ const styles = StyleSheet.create({
   errorBox: { padding: Layout.gutter, paddingHorizontal: ROOT_TAB_GUTTER, gap: Layout.rowPaddingY },
   /* 정본 frame-001 스크롤 끝 «height:24px». */
   bottomSpacer: { height: Spacing.four },
+  progressLine: { paddingHorizontal: ROOT_TAB_GUTTER, paddingVertical: Spacing.two },
 
   bold: { fontWeight: 700 },
   /* 규격서의 굵기 600 · 500 — spec/tokens.json typography.$weights의 피그마 예외. */

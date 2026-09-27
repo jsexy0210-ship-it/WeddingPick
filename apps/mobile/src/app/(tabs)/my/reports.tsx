@@ -12,13 +12,13 @@ import { won } from '@/features/quotes/quote-result-view';
 import { Badge, EmptyBox, Hero, Section, SubScreen, SubScreenStatus } from '@/features/settings/my-kit';
 
 const S = {
-  title: 'Pick 인증내역',
+  title: 'Pick 인증 내역',
   empty: '금액이 보이는 영수증이나 인증 화면으로 첫 Pick 인증을 시작해 보세요.',
   hero: (total: number, used: number) => [`${formatCount(total)}건 인증했고`, `${formatCount(used)}건이 반영됐어요`],
   heroEmpty: ['아직 Pick 인증내역이', '없어요'],
   inUse: '반영됨',
-  checking: '확인 중',
-  needsCheck: '보완 필요',
+  checking: '확인중',
+  needsCheck: '보완필요',
 } as const;
 
 /**
@@ -82,7 +82,7 @@ export default function MyReportsScreen() {
 
   return (
     /* 하단 «새로 인증하기 · 첫 Pick 인증하기»는 Pick 인증 촬영 삭제(2026-09-25)로 뺐다. */
-    <SubScreen title={S.title} refreshControl={pull.refreshControl}>
+    <SubScreen title={S.title} scrollToTop refreshControl={pull.refreshControl}>
       <Hero lines={empty ? S.heroEmpty : S.hero(proofs.length, used)} />
 
       {empty ? null : (

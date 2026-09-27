@@ -62,10 +62,10 @@ describe('업종', () => {
   it('준비 현황 그룹을 펼치면 준비 순서와 같다', () => {
     expect(PREPARATION_GROUPS.flatMap((group) => group.categories)).toEqual(PREPARATION_CATEGORIES);
     expect(PREPARATION_GROUPS.map((group) => group.title)).toEqual([
-      '시작 준비',
+      '시작준비',
       '스드메',
-      '본식 준비',
-      '예물 · 신혼',
+      '본식준비',
+      '예물·신혼',
     ]);
   });
 

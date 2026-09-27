@@ -96,7 +96,7 @@ describeWithDb('회원탈퇴', () => {
 
     expect(notice.lead).toBe('지금까지 준비한 기록이 사라져요');
     expect(notice.deleted).toContainEqual({ label: '일정 · 체크리스트', value: '1개' });
-    expect(notice.deleted).toContainEqual({ label: '지출 기록', value: '300만원' });
+    expect(notice.deleted).toContainEqual({ label: '지출내역', value: '300만원' });
   });
 
   it('탈퇴하면 원본 파일이 스토리지에 남지 않는다', async () => {
@@ -258,7 +258,7 @@ describeWithDb('회원탈퇴', () => {
     ).json<{ done: string[] }>();
 
     expect(result.done).toContain('계정과 프로필을 삭제했어요');
-    expect(result.done).toContain('후기와 실 제보는 나를 알아볼 수 없도록 분리했어요');
+    expect(result.done).toContain('후기와 실제보는 나를 알아볼 수 없도록 분리했어요');
   });
 
   it('운영자는 앱에서 탈퇴할 수 없다', async () => {

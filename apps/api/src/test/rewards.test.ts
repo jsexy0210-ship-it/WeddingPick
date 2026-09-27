@@ -194,7 +194,7 @@ describeWithDb('이벤트 보상', () => {
       }>();
 
       expect(mine.grants[0]?.status).toBe('held');
-      expect(mine.grants[0]?.statusLabel).toBe('확인 중');
+      expect(mine.grants[0]?.statusLabel).toBe('확인중');
 
       // 넘긴 건은 사람을 기다리는 줄로 남는다. 그래야 누가 본다.
       const open = await test.pool.query(
@@ -349,7 +349,7 @@ describeWithDb('이벤트 보상', () => {
       expect(grants).toHaveLength(1);
       expect(grants[0]).toMatchObject({
         kind: 'mission',
-        kindLabel: '미션 완주',
+        kindLabel: '미션완주',
         amountKrw: REWARDS.mission.amountKrw,
         status: 'earned',
       });

@@ -1,13 +1,14 @@
 import type { DecisionListResponse, ExpenseSummaryResponse, WeddingDetail } from '@weddingpick/api-contract';
 import { formatCount, manwon } from '@weddingpick/domain';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { getExpenses, getWedding, listDecisions } from '@/api/client';
 import { formatDateDot } from '@/features/common/format-date';
 import { ErrorView, Layout, ProgressBar, Spacing, ThemedText } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
+import { ScrollToTopButton, useScrollToTopVisibility } from '@/features/navigation/scroll-to-top-button';
 import { Badge, CheckBox, Hero, ListRow, NoteCard, RowValue, Section, StatCard } from '@/features/wedding/screen-kit';
 
 /** 핸드오프 08-schedule-sub #6: 진행바 6. */
@@ -32,6 +33,8 @@ type PageData = {
  * 시안의 «후기 3곳 남았어요»는 어느 업체에 후기를 썼는지 내려주는 API가 없어 넣지 않았다.
  */
 export function WeddingCompleteView({ weddingId }: { weddingId: string }) {
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollTop = useScrollToTopVisibility();
   const [data, setData] = useState<PageData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -74,9 +77,15 @@ export function WeddingCompleteView({ weddingId }: { weddingId: string }) {
     : `${paid.length}건을 적었어요`;
 
   return (
-    <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <View style={styles.container}>
+    <ScrollView
+      ref={scrollRef}
+      onScroll={scrollTop.onScroll}
+      scrollEventThrottle={100}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}>
       <Hero
-        eyebrow={wedding.weddingDate ? `${formatDateDot(wedding.weddingDate)} · 예식 완료` : '예식 완료'}
+        eyebrow={wedding.weddingDate ? `${formatDateDot(wedding.weddingDate)} · 예식완료` : '예식완료'}
         title="결혼 준비가 끝났어요"
       />
 
@@ -123,13 +132,13 @@ export function WeddingCompleteView({ weddingId }: { weddingId: string }) {
             left={<CheckBox checked />}
             title="Pick 인증을 마쳤어요"
             titleColor="textDisabled"
-            sub={`${formatCount(verifiedCount)}건 모두 실 제보가 됐어요`}
+            sub={`${formatCount(verifiedCount)}건 모두 실제보가 됐어요`}
             subLines={1}
           />
         )}
         <ListRow
           left={<CheckBox checked={paid.length > 0} />}
-          title="지출 정리"
+          title="지출정리"
           titleColor={paid.length > 0 ? 'textDisabled' : 'text'}
           sub={paid.length > 0 ? `${formatCount(paid.length)}건 · ${manwon(expenses.paidTotal)}` : '낸 금액을 넣어두면 여기 모여요'}
           subLines={1}
@@ -153,11 +162,14 @@ export function WeddingCompleteView({ weddingId }: { weddingId: string }) {
         <NoteCard title="준비 알림을 멈췄어요" body="기록은 그대로 남아 있어요. 언제든 다시 볼 수 있어요." />
       </View>
     </ScrollView>
+    <ScrollToTopButton visible={scrollTop.visible} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
+    </View>
   );
 }
 
 
 const styles = StyleSheet.create({
+  container: { flex: 1 },
   content: { paddingBottom: Spacing.two },
   block: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four },
   spendHead: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: Layout.rowPaddingY },

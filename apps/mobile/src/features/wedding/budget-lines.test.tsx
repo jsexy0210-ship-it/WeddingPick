@@ -34,7 +34,7 @@ function expense(category: Expense['category'], amount: number, overrides: Parti
     statusLabel: '지출완료',
     spentOn: '2026-09-20',
     source: 'manual',
-    sourceLabel: '직접 입력',
+    sourceLabel: '직접입력',
     refundStatus: 'normal',
     refundStatusLabel: '정상',
     ...overrides,
@@ -115,7 +115,7 @@ describe('예산현황 업종 목록 — 지출내역 흡수 · 건마다 수정
     kind: 'payment_proof',
     kindLabel: 'Pick 인증',
     use: '실 제보',
-    subject: '확인 중인 자료',
+    subject: '확인중인 자료',
     vendorId: null,
     amount: null,
     reportedAt: '2026-09-26T03:00:00.000Z',
@@ -124,10 +124,10 @@ describe('예산현황 업종 목록 — 지출내역 흡수 · 건마다 수정
     note: '사진에서 금액을 읽지 못했어요',
   } as MyReport;
 
-  it('직접 넣은 건에만 아이콘 · Pick 인증 · 상담 정리 건은 잠금 · 0원 줄은 아이콘 없음 · «확인 중» 줄은 맨 위', () => {
+  it('직접 넣은 건에만 아이콘 · Pick 인증 · 상담정리 건은 잠금 · 0원 줄은 아이콘 없음 · «확인중» 줄은 맨 위', () => {
     const manual = expense('dress', 1_500_000, { label: '드레스 예약금' });
     const proof = expense('hall', 10_000_000, { label: '청담 E 웨딩홀', source: 'payment_proof', sourceLabel: 'Pick 인증 자료' });
-    const consult = expense('studio', 1_500_000, { label: '블루밍 스튜디오', source: 'consultation', sourceLabel: '상담 정리' });
+    const consult = expense('studio', 1_500_000, { label: '블루밍 스튜디오', source: 'consultation', sourceLabel: '상담정리' });
     const rows = budgetCategoryRows({ buckets: BUCKETS, expenses: [manual, proof, consult] });
     const onEdit = jest.fn();
     const onDelete = jest.fn();
@@ -170,7 +170,7 @@ describe('예산현황 업종 목록 — 지출내역 흡수 · 건마다 수정
       .map((node) => node.props.testID as string);
     expect([...new Set(rowIds)]).toEqual(['budget-row-hall', 'budget-row-studio', 'budget-row-dress']);
     const labels = view!.root.findAll((node) => typeof node.props.children === 'string').map((node) => node.props.children);
-    expect(labels).toEqual(expect.arrayContaining(['Pick 인증', '상담 정리', '확인 중', '드레스', '스튜디오', '웨딩홀']));
+    expect(labels).toEqual(expect.arrayContaining(['Pick 인증', '상담정리', '확인중', '드레스', '스튜디오', '웨딩홀']));
 
     const pendingRow = view!.root.find((node) => node.props.testID === 'expense-pending-row' && typeof node.props.onPress === 'function');
     act(() => pendingRow.props.onPress());

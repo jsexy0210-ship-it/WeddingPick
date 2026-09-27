@@ -133,25 +133,25 @@ export default function ConsultationDetailRoute() {
                 <Lines label="포함" items={list(record.common, 'included')} />
                 <Lines label="별도로 확인할 비용" items={list(record.after, 'additionalCosts')} />
                 <Lines
-                  label="진행 조건"
+                  label="진행조건"
                   items={[str(record.common, 'scheduleNote'), str(record.common, 'changeCondition')].filter(
                     (v): v is string => v !== null
                   )}
                 />
                 <Lines
-                  label="취소 · 환불"
+                  label="취소·환불"
                   items={[str(record.common, 'cancelCondition'), str(record.common, 'refundCondition')].filter(
                     (v): v is string => v !== null
                   )}
                 />
-                <Lines label="확인 필요" items={list(record.after, 'missingInformation')} warn />
+                <Lines label="확인필요" items={list(record.after, 'missingInformation')} warn />
                 {/* 정본 5블록 밖의 실제 추출 값 — 지우면 있는 정보를 없는 것처럼 만든다.
                     DESIGN_UNRESOLVED: 정본 목업엔 없는 두 칸, 대표님 확인 전까지 유지. */}
                 <Lines label="혜택" items={list(record.after, 'benefits')} />
-                <Lines label="주의할 점" items={list(record.after, 'warnings')} />
+                <Lines label="주의사항" items={list(record.after, 'warnings')} />
 
                 {typeof record.after.summary === 'string' ? (
-                  <Lines label="상담 내용" items={[record.after.summary]} />
+                  <Lines label="상담내용" items={[record.after.summary]} />
                 ) : null}
 
                 {error ? (
@@ -164,8 +164,8 @@ export default function ConsultationDetailRoute() {
               {!record.confirmedAt ? (
                 <ActionButton
                   variant="primary"
-                  label={saving ? '저장하는 중…' : '저장'}
-                  disabled={saving}
+                  label="저장"
+                  loading={saving}
                   onPress={() => void save()}
                 />
               ) : null}

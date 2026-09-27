@@ -12,7 +12,7 @@ import { INQUIRY_STATUS_TEXT, inquiryBadgeTone, inquiryMonthDay } from '@/featur
 import { NoteBox, Section, SubScreen, SubScreenStatus } from '@/features/settings/my-kit';
 
 const S = {
-  title: '문의 내역',
+  title: '문의내역',
   mine: '내가 쓴 내용',
   evidence: '함께 보낸 주소',
   answer: '답변',
@@ -66,7 +66,7 @@ export default function InquiryDetailScreen() {
   const pending = inquiry.status === 'received' || inquiry.status === 'in_review';
 
   return (
-    <SubScreen title={S.title} refreshControl={pull.refreshControl}>
+    <SubScreen title={S.title} scrollToTop refreshControl={pull.refreshControl}>
       {/* 유형 · 상태 배지 · 보낸 날짜. */}
       <Section>
         <View style={styles.headRow}>

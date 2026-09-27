@@ -21,7 +21,7 @@ import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { WritePressable } from './_role';
-import { compactSplit, useAdminCompact } from './_ui';
+import { AdminButtonLoader, compactSplit, useAdminCompact } from './_ui';
 
 type BizStatus = 'pending' | 'approved' | 'rejected';
 type BizItem = {
@@ -257,14 +257,14 @@ export function BizQueuePanel() {
                       onPress={() => void decide('approve')}
                       disabled={!canDecide}
                     >
-                      <Text style={styles.approveBtnText}>{acting ? '처리 중…' : '승인'}</Text>
+                      {acting ? <AdminButtonLoader /> : <Text style={styles.approveBtnText}>승인</Text>}
                     </WritePressable>
                     <WritePressable
                       style={[styles.rejectBtn, !canDecide && styles.btnDisabled]}
                       onPress={() => void decide('reject')}
                       disabled={!canDecide}
                     >
-                      <Text style={styles.rejectBtnText}>{acting ? '처리 중…' : '반려'}</Text>
+                      {acting ? <AdminButtonLoader /> : <Text style={styles.rejectBtnText}>반려</Text>}
                     </WritePressable>
                   </View>
                 )}

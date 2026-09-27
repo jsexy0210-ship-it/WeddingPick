@@ -43,7 +43,7 @@ const ANCHORS: Record<string, string> = {
   reviews: 'styles.revItem',
   // 2026-09-23 v3.29 재검증(WP-VEND-004 `secTitle`)으로 「공식정보」→「기본 정보」로
   // 정정됐다. 「공식정보」는 다른 화면(WP-VEND-005, 아직 미구현)의 이름이다.
-  official_source: 'style={styles.bold}>기본 정보',
+  official_source: 'style={styles.bold}>기본정보',
   report_error: '{REPORT_ERROR}',
 };
 

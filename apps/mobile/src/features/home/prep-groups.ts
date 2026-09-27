@@ -34,12 +34,12 @@ const S = strings.home;
  */
 export type HomePrepGroupKey = PreparationGroupKey;
 
-/** .dc.html WP-HOME-001 `prep` 카드 문구 그대로. */
+/** WP-HOME-001 `prep` 카드의 그룹 이름. */
 export const HOME_PREP_GROUP_LABEL: Record<HomePrepGroupKey, string> = {
   start: '웨딩홀',
   sdm: '스드메',
   ceremony: '본식',
-  goods: '예물 · 신혼',
+  goods: '예물·신혼',
 };
 
 /** 그룹당 실제로 세는 업종. `PREPARATION_GROUPS` 그대로. */

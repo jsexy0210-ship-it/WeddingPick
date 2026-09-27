@@ -66,11 +66,11 @@ describe('최신 홈·추천 연결', () => {
     const hallCard = cards.find((card) => card.key === 'start')!;
     expect(hallCard.label).toBe('웨딩홀');
     expect(hallCard.state).toBe('contracted');
-    expect(hallCard.detail).toBe('계약 완료 · 테스트 웨딩홀');
+    expect(hallCard.detail).toBe('계약완료 · 테스트 웨딩홀');
 
     const view = mount(<MyWeddingPrep cards={cards} sub="지금은 스튜디오 차례예요" onOpen={jest.fn()} onMore={jest.fn()} />);
     expect(text(view)).toContain('웨딩홀');
-    expect(text(view)).toContain('계약 완료 · 테스트 웨딩홀');
+    expect(text(view)).toContain('계약완료 · 테스트 웨딩홀');
     expect(text(view)).toContain('아직 정하지 않았어요');
     expect(view.root.findAllByProps({ accessibilityLabel: '웨딩홀' }).length).toBeGreaterThan(0);
   });

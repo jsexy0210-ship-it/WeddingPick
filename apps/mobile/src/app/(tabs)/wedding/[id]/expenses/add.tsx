@@ -297,7 +297,7 @@ export default function AddExpenseRoute() {
                 </View>
               </View>
               <Field
-                label="낸 금액"
+                label="지출금액"
                 value={amountText}
                 onChangeText={(text) => {
                   setAmountTouched(true);
@@ -308,7 +308,7 @@ export default function AddExpenseRoute() {
                 keyboardType="number-pad"
                 inputMode="numeric"
                 maxLength={MANWON_MAX_DIGITS + Math.floor((MANWON_MAX_DIGITS - 1) / 3)}
-                accessibilityHint="만원 단위"
+                accessibilityHint="만원 단위로 입력"
                 trailing={
                   <ThemedText type="t6" themeColor="textSecondary">
                     만원
@@ -349,16 +349,9 @@ export default function AddExpenseRoute() {
             ) : null}
             <ActionButton
               variant="primary"
-              label={
-                editing
-                  ? saving
-                    ? '저장하는 중…'
-                    : copy['expense.save']
-                  : saving
-                    ? '넣는 중…'
-                    : copy['expense.addCta']
-              }
-              disabled={!ready || saving}
+              label={editing ? copy['expense.save'] : copy['expense.addCta']}
+              loading={saving}
+              disabled={!ready}
               onPress={() => void saveOnly()}
             />
           </CtaRow>

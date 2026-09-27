@@ -113,14 +113,14 @@ export const CONSENT_ITEMS = [
   },
   {
     key: 'pick_certification',
-    label: 'Pick 인증 자료 수집 · 이용',
+    label: 'Pick인증자료수집·이용',
     required: true,
     doc: 'pick_verification',
     version: 'draft-2026-09-01',
   },
   {
     key: 'consultation_recording',
-    label: '상담 녹음 수집 · 이용',
+    label: '상담녹음수집·이용',
     required: true,
     doc: 'consultation_recording',
     version: 'draft-2026-09-01',

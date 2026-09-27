@@ -17,8 +17,9 @@ import { shareOrCopy } from '@/components/share-or-copy';
 import { formatDateTimeDot } from '@/features/common/format-date';
 import { APP_WEB_ORIGIN } from '@/features/social-meta';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { ScrollToTopButton, useScrollToTopVisibility } from '@/features/navigation/scroll-to-top-button';
 import { partnerJoinHref } from '@/features/partner/routes';
-import { ActionButton, Border, ErrorView, Layout, Radius, SocialColors, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { ActionButton, Border, ErrorView, Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import { Badge, Dock, Hero, ListRow, NavBar, NoteCard, Screen, Section } from '@/features/wedding/screen-kit';
@@ -32,14 +33,14 @@ import { Badge, Dock, Hero, ListRow, NavBar, NoteCard, Screen, Section } from '@
 const S = {
   inviteNav: '배우자 초대',
   linkedNav: '연결관리',
-  unlinkNav: '연결 해제',
+  unlinkNav: '연결해제',
   qTitle: '같이 준비할\n사람을 초대해요',
-  inviteCode: '초대 코드',
-  copy: '코드 복사',
+  inviteCode: '초대코드',
+  copy: '코드복사',
   copied: '복사했어요',
   remake: '코드 다시 받기',
   make: '초대 코드 만들기',
-  kakao: '카카오로 초대하기',
+  kakao: '초대하기',
   sharedLabel: '연결하면 같이 봐요',
   scopeNote: '검색 기록과 알림 설정은 각자 봐요.',
   haveCode: '코드 받았어요',
@@ -54,10 +55,10 @@ const S = {
 const SHARE_SCOPE = ['고른 곳 · Pick', '일정', '지출', '메모'];
 
 /** WP-CPL-006 cutRows(끝나요) — 3행, 회색 점 + 라벨만. */
-const CUT_ROWS = ['일정 · 지출 공유', 'Pick 비교 같이 보기', '변경 알림'];
+const CUT_ROWS = ['일정 · 지출 공유', 'Pick 비교 같이 보기', '변경알림'];
 
 /** WP-CPL-006 keepRows(그대로예요) — 3행, 라벨 + 「그대로 남아요」. */
-const KEEP_ROWS = ['내가 쓴 일정 · 지출', '내 Pick', 'Pick 인증내역'];
+const KEEP_ROWS = ['내가 쓴 일정 · 지출', '내 Pick', 'Pick 인증 내역'];
 
 /** 정본 listCard 행 — 코랄/회색 점 + 라벨. WP-CPL-001·002·006이 함께 쓰는 모양이다. */
 function DotList({ items, tone }: { items: string[]; tone: 'brand' | 'muted' }) {
@@ -112,13 +113,15 @@ function InfoList({ items }: { items: { label: string; sub: string }[] }) {
  * (보낸 초대는 있는데 이 화면을 나갔다 돌아온 경우)에는 마스킹값을 보여주고 "코드 다시 받기"
  * 하나만 남긴다. 혼자인 상태를 결핍으로 적지 않는다.
  *
- * DESIGN_UNRESOLVED — 정본 dockSingle의 «카카오로 초대하기»는 카카오톡 공유 SDK 전용
+ * DESIGN_UNRESOLVED — 정본 dockSingle의 카카오톡 공유 동작은 카카오톡 공유 SDK 전용
  * 버튼이다. 이 저장소에는 콘텐츠 공유용 카카오 SDK가 없고(로그인만 카카오를 쓴다),
  * 새로 붙이는 것은 이번 디자인 대조 범위를 넘는 인프라 작업이라 기존 `shareOrCopy`
- * (OS 공유 시트 — 카카오톡을 포함해 고를 수 있다)를 그대로 연결한다. 버튼 라벨·색은
- * 정본 그대로(`SocialColors.kakao`) 쓰되, 실제로 카카오톡으로 강제 전달하지는 않는다.
+ * (OS 공유 시트 — 카카오톡을 포함해 고를 수 있다)를 그대로 연결한다. 버튼은
+ * 최신 지시의 「초대하기」·키 컬러를 쓰며, 실제로 카카오톡으로 강제 전달하지는 않는다.
  */
 export default function PartnerScreen() {
+  const scrollRef = useRef<ScrollView>(null);
+  const { visible: scrollTopVisible, onScroll: onScrollTop, reset: resetScrollTop } = useScrollToTopVisibility();
   const depthBack = useDepthBack();
   /* 초대 수락으로 넘어가도 이 화면의 출처(MY · 알림 · 홈)를 이어 준다 — 돌아온 뒤 Back이 그리로 간다. */
   const { from } = useLocalSearchParams<{ from?: string | string[] }>();
@@ -137,6 +140,7 @@ export default function PartnerScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmingUnlink, setConfirmingUnlink] = useState(false);
+  useEffect(() => { resetScrollTop(); }, [confirmingUnlink, me?.spouseLinked, resetScrollTop]);
   const [copied, setCopied] = useState(false);
   /** ref다 — 자동 생성은 한 번만 시도하면 되는 신호일 뿐 화면에 그릴 상태가 아니다. */
   const autoTried = useRef(false);
@@ -268,7 +272,7 @@ export default function PartnerScreen() {
     return (
       <Screen>
         <NavBar title={S.unlinkNav} onBack={() => setConfirmingUnlink(false)} />
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView ref={scrollRef} onScroll={onScrollTop} scrollEventThrottle={100} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.qBlock}>
             <ThemedText type="t2">{S.unlinkQTitle}</ThemedText>
           </View>
@@ -292,12 +296,13 @@ export default function PartnerScreen() {
 
           {errorLine}
         </ScrollView>
+        <ScrollToTopButton visible={scrollTopVisible} bottom={Layout.touchTarget + Spacing.two * 2 + 32} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
         <Dock>
           <ActionButton
             variant="danger"
             size="sheet"
-            label={busy ? '끊는 중…' : S.unlink}
-            disabled={busy}
+            label={S.unlink}
+            loading={busy}
             onPress={() => void unlink()}
           />
         </Dock>
@@ -311,6 +316,9 @@ export default function PartnerScreen() {
       <Screen>
         <NavBar title={S.linkedNav} />
         <ScrollView
+          ref={scrollRef}
+          onScroll={onScrollTop}
+          scrollEventThrottle={100}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
           refreshControl={pull.refreshControl}>
@@ -321,7 +329,7 @@ export default function PartnerScreen() {
             ))}
           </Section>
           <Section label="각자 남아요">
-            {['검색 기록', '알림 설정'].map((item) => (
+            {['검색기록', '알림설정'].map((item) => (
               <ListRow key={item} title={item} right={<Badge label="각자" tone="none" />} />
             ))}
           </Section>
@@ -330,8 +338,9 @@ export default function PartnerScreen() {
             <NoteCard title={strings.journey.partnerShareTitle} body={strings.journey.partnerShareBody} />
           </View>
         </ScrollView>
+        <ScrollToTopButton visible={scrollTopVisible} bottom={Layout.touchTarget + Spacing.two * 2 + 32} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
         <Dock>
-          <ActionButton variant="secondary" size="sheet" label="연결 끊기" onPress={() => setConfirmingUnlink(true)} />
+          <ActionButton variant="secondary" size="sheet" label="연결해제" onPress={() => setConfirmingUnlink(true)} />
         </Dock>
       </Screen>
     );
@@ -349,6 +358,9 @@ export default function PartnerScreen() {
       <NavBar title={S.inviteNav} />
 
       <ScrollView
+        ref={scrollRef}
+        onScroll={onScrollTop}
+        scrollEventThrottle={100}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={pull.refreshControl}>
@@ -380,8 +392,8 @@ export default function PartnerScreen() {
                 <ActionButton
                   variant="ghost"
                   size="large"
-                  label={busy ? '만드는 중…' : S.remake}
-                  disabled={busy}
+                  label={S.remake}
+                  loading={busy}
                   onPress={() => void makeInvite()}
                 />
               </View>
@@ -404,7 +416,7 @@ export default function PartnerScreen() {
         {/*
          * 정본(WP-CPL-001)에는 없는 보조 진입점이다 — 내가 초대를 만드는 화면과 별개로,
          * 상대에게 받은 코드를 입력하는 길(WP-CPL-002)이 따로 있어야 한다. 헤더가 아니라
-         * 화면 맨 아래 작은 밑줄 텍스트로 둬 Primary CTA(카카오로 초대하기)와 겹치지
+         * 화면 맨 아래 작은 밑줄 텍스트로 둬 Primary CTA(초대하기)와 겹치지
          * 않게 한다.
          *
          * **가운데 · 더 잘 보이게**(2026-09-26 대표 지시 「텍스트는 중앙에 배치하고 조금 더 눈에
@@ -412,7 +424,7 @@ export default function PartnerScreen() {
          * 이었다 — 그보다 강조한 것은 전부 대표 지시다: 가로 가운데 · f15(14→15) · 700 · 본문색
          * `text`(gray900 · 흰 바탕 16.9:1 — 이전 textAssistive gray600은 3.4:1로 4.5:1 미달) ·
          * 터치 영역 최소 44(`Layout.touchTarget`). 밑줄은 링크 표시로 그대로 둔다. Primary CTA는
-         * 여전히 Dock의 「카카오로 초대하기」 하나다.
+         * 여전히 Dock의 「초대하기」 하나다.
          */}
         <Pressable
           accessibilityRole="link"
@@ -424,14 +436,14 @@ export default function PartnerScreen() {
           </ThemedText>
         </Pressable>
       </ScrollView>
+      <ScrollToTopButton visible={scrollTopVisible} bottom={Layout.touchTarget + Spacing.two * 2 + 32} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
 
       <Dock>
         <ActionButton
           variant="primary"
           size="sheet"
-          tone={code ? { background: SocialColors.kakao.background, text: SocialColors.kakao.text } : undefined}
-          label={code ? S.kakao : busy ? '만드는 중…' : S.make}
-          disabled={busy && !code}
+          label={code ? S.kakao : S.make}
+          loading={busy && !code}
           onPress={() => (code ? void share() : void makeInvite())}
         />
       </Dock>

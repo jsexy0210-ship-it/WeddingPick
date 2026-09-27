@@ -10,7 +10,6 @@ import { Redirect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   Image,
   Platform,
   Pressable,
@@ -33,7 +32,7 @@ import {
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { WritePressable } from './_role';
-import { AdminFormModal } from './_ui';
+import { AdminButtonLoader, AdminFormModal } from './_ui';
 
 type Kind = 'app' | 'invite' | 'website';
 
@@ -541,7 +540,7 @@ export function OgCardPanel() {
             </WritePressable>
             {data.ogImageSource === 'upload' && !pending ? (
               <WritePressable style={styles.button} onPress={() => void removeImage()} disabled={saving || removing}>
-                {removing ? <ActivityIndicator color="#212124" /> : <Text style={styles.buttonText}>올린 그림 치우기</Text>}
+                {removing ? <AdminButtonLoader /> : <Text style={styles.buttonText}>올린 그림 치우기</Text>}
               </WritePressable>
             ) : null}
             <Text style={styles.fieldHint}>
@@ -598,7 +597,7 @@ export function OgCardPanel() {
             onPress={() => void save()}
             disabled={saving || removing}
           >
-            {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonPrimaryText}>저장</Text>}
+            {saving ? <AdminButtonLoader /> : <Text style={styles.buttonPrimaryText}>저장</Text>}
           </WritePressable>
         </View>
       </AdminFormModal>

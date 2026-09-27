@@ -31,7 +31,7 @@ const FIELD_LABEL: Record<string, string> = {
 const KIND_LABEL = {
   included: '포함',
   excluded: '별도',
-  additional_candidate: '추가 가능',
+  additional_candidate: '추가가능',
 } as const;
 
 const UNAVAILABLE_MESSAGE = {
@@ -161,7 +161,7 @@ export function QuoteResultView({
           계약금액
         </ThemedText>
         <ThemedText type="subtitle">
-          {quote.totalAmount === null ? '읽지 못함' : won(quote.totalAmount)}
+          {quote.totalAmount === null ? '금액을 읽지 못했어요' : won(quote.totalAmount)}
         </ThemedText>
         {quote.depositAmount !== null || quote.balanceAmount !== null ? (
           <ThemedText type="small" themeColor="textSecondary">
@@ -248,8 +248,8 @@ export function QuoteResultView({
           {confirm ? (
             <ActionButton
               variant="primary"
-              label={confirm.busy ? '확인 중…' : '전부 맞아요'}
-              disabled={confirm.busy}
+              label="전부 맞아요"
+              loading={confirm.busy}
               onPress={() => confirm.onConfirm(pending.map((field) => field.path))}
             />
           ) : null}
@@ -327,7 +327,7 @@ export function QuoteResultView({
 
       {quote.documents.length > 0 ? (
         <ThemedView style={styles.section}>
-          <ThemedText type="smallBold">원본 보관</ThemedText>
+          <ThemedText type="smallBold">원본보관</ThemedText>
           {quote.documents.map((document) => (
             <ThemedView
               key={document.rawDocumentId}

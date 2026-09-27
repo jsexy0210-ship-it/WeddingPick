@@ -76,6 +76,7 @@ import { noteMonthDayWeekdayTime } from '@/features/wedding/note-format';
 import { useSession } from '@/features/auth/use-session';
 import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import { inStack } from '@/features/navigation/stack-alias';
+import { ScrollToTopButton, useScrollToTopVisibility } from '@/features/navigation/scroll-to-top-button';
 import { WeddingCompleteView } from '@/features/wedding/complete-view';
 import { forecastLine } from '@/features/wedding/public-calendar-lines';
 import { buildUpcomingTimelineGroups, type TimelineItem } from '@/features/wedding/timeline-groups';
@@ -101,9 +102,9 @@ const TABS: readonly { key: Tab; label: string }[] = [
 ];
 const CONSULT_SAVED = '저장됨';
 /* note.js `consults` — 정리가 끝났고 아직 저장하지 않은 기록. */
-const CONSULT_DONE = '정리 완료';
-/* 헤더 우측 액션 — React_Native/note.jsx headAdd «일정 추가 · 상담 추가 · 예산 추가». */
-const ADD_LABEL: Record<Tab, string> = { calendar: '일정 추가', budget: '예산 추가', consult: '상담 추가' };
+const CONSULT_DONE = '정리완료';
+/* 헤더 우측 액션 — 정본의 추가 동선을 유지하며 일정추가 · 녹음 올리기 · 지출추가로 표시한다. */
+const ADD_LABEL: Record<Tab, string> = { calendar: '일정추가', budget: '지출추가', consult: '녹음 올리기' };
 const DECIDED_LINK = '예약현황';
 const PAST_EVENTS_SHOW = '보기';
 const PAST_EVENTS_HIDE = '접기';
@@ -120,6 +121,8 @@ export default function WeddingScreen({
   suppressBudgetPrompt?: boolean;
 } = {}) {
   const theme = useTheme();
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollTop = useScrollToTopVisibility();
   const params = useLocalSearchParams<{ tab?: string }>();
   const { state, refresh } = useSession();
   const [me, setMe] = useState<CurrentUser | null>(null);
@@ -427,6 +430,9 @@ export default function WeddingScreen({
         {header}
 
         <ScrollView
+          ref={scrollRef}
+          onScroll={scrollTop.onScroll}
+          scrollEventThrottle={100}
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -441,7 +447,11 @@ export default function WeddingScreen({
                   accessibilityRole="tab"
                   accessibilityState={{ selected }}
                   accessibilityLabel={item.label}
-                  onPress={() => setTab(item.key)}
+                  onPress={() => {
+                    setTab(item.key);
+                    scrollTop.reset();
+                    scrollRef.current?.scrollTo({ y: 0, animated: false });
+                  }}
                   style={[styles.tab, selected ? [styles.tabActive, { borderBottomColor: theme.text }] : null]}>
                   <ThemedText type="t6" style={[styles.bold, { color: selected ? theme.text : theme.textAssistive }]}>
                     {item.label}
@@ -489,6 +499,7 @@ export default function WeddingScreen({
             />
           )}
         </ScrollView>
+        <ScrollToTopButton visible={scrollTop.visible} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
 
       </SafeAreaView>
 
@@ -531,8 +542,9 @@ export default function WeddingScreen({
           <ActionButton
             variant="primary"
             size="xlarge"
-            label={budgetSaving ? '저장하는 중…' : budgetIsSet ? '변경 내용 저장' : '총예산 등록'}
-            disabled={!budgetReady || budgetSaving}
+            label={budgetIsSet ? '변경 내용 저장' : '총예산 등록'}
+            loading={budgetSaving}
+            disabled={!budgetReady}
             onPress={() => void saveBudget()}
           />
           {budgetIsSet ? (
@@ -568,7 +580,7 @@ function EmptyNoteView({
   const theme = useTheme();
   const rows = [
     ...(expenses.budget.set ? [{ k: '총예산', v: manwon(expenses.budget.budget) }] : []),
-    { k: '쓴 금액', v: manwon(expenses.paidTotal) },
+    { k: '쓴금액', v: manwon(expenses.paidTotal) },
   ];
 
   return (
@@ -645,11 +657,15 @@ function CalendarPanel({
   const past = events
     .filter((event) => new Date(event.startsAt) < today)
     .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+  const plans = notePlanEntries(tasks, events, weddingDate, now);
+  const overduePlans = plans
+    .filter((plan) => daysUntil(plan.date, now) < 0)
+    .sort((a, b) => b.date.localeCompare(a.date));
   const upcomingGroups = buildUpcomingTimelineGroups(
     events,
     weddingDate,
     now,
-    notePlanEntries(tasks, events, weddingDate, now)
+    plans
   );
 
   const days = weddingDate !== null ? daysUntil(weddingDate, now) : null;
@@ -696,6 +712,17 @@ function CalendarPanel({
         </View>
       ) : null}
 
+      {overduePlans.length > 0 ? (
+        <TimelineGroupView
+          title="기한 지난 할 일"
+          range=""
+          items={overduePlans.map((plan) => ({ ...plan, event: null, kind: 'plan' as const }))}
+          busy={busy}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
+      ) : null}
+
       {past.length > 0 ? (
         <Pressable
           accessibilityRole="button"
@@ -713,7 +740,7 @@ function CalendarPanel({
 
       {showPast && past.length > 0 ? (
         <TimelineGroupView
-          title="지난 일정"
+          title="지난일정"
           range=""
           items={past.map((event) => ({ event, kind: 'event' as const }))}
           dimmed

@@ -36,7 +36,7 @@ export const TASK_PRESETS: readonly TaskPreset[] = [
   { key: 'makeup_trial', label: '메이크업 시연', category: 'makeup' },
   { key: 'snap_video', label: '본식 스냅·영상', category: 'snap' },
   { key: 'invitation_draft', label: '청첩장 시안', category: 'invitation' },
-  { key: 'suit_fitting', label: '예복 맞춤', category: 'goods' },
+  { key: 'suit_fitting', label: '예복맞춤', category: 'goods' },
   { key: 'gifts', label: '예물·예단', category: 'goods' },
   { key: 'honeymoon', label: '신혼여행 예약', category: 'honeymoon' },
   { key: 'marriage_papers', label: '혼인신고 서류', category: null },
@@ -66,7 +66,8 @@ export const TENTATIVE_DAYS_BEFORE: Readonly<Record<string, number>> = {
   '스튜디오 촬영일': 150,
   '예물·예단': 120,
   '신혼여행 예약': 120,
-  '예복 맞춤': 90,
+  '예복맞춤': 90,
+  '예복 맞춤': 90, // 이전 프리셋 이름으로 저장된 일정도 같은 날짜를 계산한다.
   '청첩장 시안': 75,
   '메이크업 시연': 60,
   '하객 명단 정리': 45,
@@ -74,6 +75,11 @@ export const TENTATIVE_DAYS_BEFORE: Readonly<Record<string, number>> = {
   '혼인신고 서류': 14,
   '웨딩홀 잔금 납부': 7,
 };
+
+/** 옛 기본 일정만 새 표기로 보여준다. 직접 입력하거나 이름을 바꾼 일정은 보존한다. */
+export function taskDisplayLabel(label: string, presetKey: string | null): string {
+  return presetKey === 'suit_fitting' && label === '예복 맞춤' ? '예복맞춤' : label;
+}
 
 /** `YYYY-MM-DD` 예식일에서 할 일 이름의 임시 날짜를 계산한다. 모르는 이름이면 null. */
 export function tentativeDueDate(weddingDate: string, label: string): string | null {
@@ -90,7 +96,7 @@ export function tentativeDueDate(weddingDate: string, label: string): string | n
  *
  *   4일 이상 남음 → 예정
  *   3일 이내      → 진행중
- *   지남          → 완료
+ *   지남          → 진행중(사용자가 직접 완료해야 완료)
  */
 export const IN_PROGRESS_WITHIN_DAYS = 3;
 
@@ -128,14 +134,7 @@ export function resolveTaskState(input: {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const days = Math.round((target - today) / (24 * 60 * 60 * 1000));
 
-  /*
-   * 지난 날을 '완료'로 본다. 핸드오프가 정한 규칙이다.
-   *
-   * 짐작인 것은 맞다 — 날이 지났다고 실제로 했는지는 모른다. 다만 사용자가
-   * 직접 지정하면 그 값이 이기므로, 틀렸을 때 고칠 방법이 화면에 있다.
-   */
-  if (days < 0) return { state: 'done', manual: false };
-
+  // 기한 경과는 실제 완료의 증거가 아니다. 완료는 사용자가 직접 지정한 때에만 센다.
   return {
     state: days <= IN_PROGRESS_WITHIN_DAYS ? 'in_progress' : 'upcoming',
     manual: false,

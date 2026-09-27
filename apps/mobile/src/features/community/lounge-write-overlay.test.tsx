@@ -1,8 +1,10 @@
 import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 
-import { listLoungeReviews } from '@/api/client';
+import { getWeddingFeed, listLoungeReviews } from '@/api/client';
 import { LoungeScreen } from '@/features/community/lounge-screen';
+import { CatChipBar } from '@/features/settings/my-kit';
+import { WEDDING_FEED_CHIPS } from '@weddingpick/domain';
 
 /**
  * 리얼후기 글쓰기 — 바닥 목록을 **한 번만** 읽는다(2026-09-26 대표 제보 「리얼후기 → 글쓰기
@@ -90,6 +92,22 @@ beforeEach(() => {
 afterEach(async () => {
   jest.clearAllMocks();
   if (tree) await act(async () => tree.unmount());
+});
+
+describe('웨딩정보 앱 칩', () => {
+  it('후기 칩 대신 웨딩피드 대분류를 그린다', async () => {
+    jest.mocked(getWeddingFeed).mockResolvedValue({ items: [], nextCursor: null } as never);
+    await act(async () => {
+      tree = create(<LoungeScreen kind="feed" />);
+    });
+    await flush();
+
+    const bar = tree.root.findByType(CatChipBar);
+    expect(bar.props.items).toEqual(WEDDING_FEED_CHIPS.map((chip) => chip.label));
+    expect(bar.props.items).toContain('준비');
+    expect(bar.props.items).toContain('예산·계약');
+    expect(bar.props.items).not.toContain('예물 · 신혼');
+  });
 });
 
 describe('리얼후기 글쓰기 — 같은 화면 위의 오버레이', () => {

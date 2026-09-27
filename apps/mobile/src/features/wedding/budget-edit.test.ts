@@ -20,7 +20,8 @@ describe('웨딩노트 총예산 수정', () => {
     expect(source).toContain('accessibilityLabel="총예산 수정"');
     expect(source).toContain('총예산을 바꿨어요');
     expect(source).toContain('총예산을 바꾸지 못했어요. 잠시 후 다시 시도해 주세요.');
-    expect(source).toContain('label={budgetSaving ? \'저장하는 중…\'');
+    expect(source).toContain("label={budgetIsSet ? '변경 내용 저장' : '총예산 등록'}");
+    expect(source).toContain('loading={budgetSaving}');
   });
 
   it('불러오기 상태와 재시도 동작을 제공한다', () => {

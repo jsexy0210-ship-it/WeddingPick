@@ -190,7 +190,7 @@ const REFERENCE_PATHS = new Set(['/v1/vendors/regions', '/v1/planners/regions', 
  * 확인 요청도 같은 흐름 위에 있어 함께 뺀다 — 이 화면들은 값이 바뀌기를 기다리는
  * 자리라 «방금 받은 답»이 오히려 틀린 답이다.
  */
-const NEVER_CACHED = ['/v1/me/signup', '/v1/analyses/', '/v1/documents/', '/v1/quotes/', '/v1/verification-requests/'];
+const NEVER_CACHED = ['/v1/me/signup', '/v1/legal/', '/v1/analyses/', '/v1/documents/', '/v1/quotes/', '/v1/verification-requests/'];
 
 type ReadRefresh<T> = {
   force?: boolean;
@@ -624,6 +624,39 @@ async function cachedRequest<T>(
  */
 export async function listFaq(): Promise<FaqListResponse> {
   return request('/v1/faq', faqListResponseSchema, { auth: false });
+}
+
+const publishedLegalDocumentSchema = z.object({
+  document: z.object({
+    version: z.string().min(1),
+    effectiveOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    clauses: z.array(z.object({
+      id: z.string(),
+      title: z.string().min(1),
+      body: z.string(),
+      bodyTable: z.object({
+        lead: z.string().nullable(),
+        cols: z.array(z.object({ label: z.string() })).min(1),
+        rows: z.array(z.array(z.string())).min(1),
+      }).nullable(),
+    })).min(1),
+  }).nullable(),
+});
+
+export type PublishedLegalDocument = NonNullable<z.infer<typeof publishedLegalDocumentSchema>['document']>;
+
+export class UnpublishedLegalDocumentError extends Error {
+  constructor() {
+    super('공개된 문서가 없어요.');
+    this.name = 'UnpublishedLegalDocumentError';
+  }
+}
+
+/** 관리자 공개판을 열 때마다 읽는다. 웹 문서와 같은 공개 데이터이며 앱에 조문 사본은 없다. */
+export async function getPublishedLegalDocument(doc: 'terms' | 'privacy'): Promise<PublishedLegalDocument> {
+  const { document } = await request(`/v1/legal/${doc}`, publishedLegalDocumentSchema, { auth: false });
+  if (!document) throw new UnpublishedLegalDocumentError();
+  return document;
 }
 
 /** 서버가 켜둔 로그인 방법. 앱이 짐작하지 않는다. */

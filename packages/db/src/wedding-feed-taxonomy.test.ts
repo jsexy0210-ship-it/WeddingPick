@@ -4,10 +4,10 @@ import { migrate } from './migrate';
 import { resetSchema } from './reset';
 
 /**
- * 웨딩피드의 탭과 카테고리 표(0421 → 0442).
+ * 웨딩피드의 탭과 카테고리 표(0421 → 0442 → 0448).
  *
  * **2026-09-26부터 목록은 domain 상수 하나다**(`WEDDING_FEED_CHIPS` · `WEDDING_FEED_CATEGORIES`
- * — 정본 my.js `cats`). 대표 지적 「관리자 웨딩피드 카테고리와 앱웹 카테고리와 정보가 전혀
+ * — 현재 피드 대분류). 대표 지적 「관리자 웨딩피드 카테고리와 앱웹 카테고리와 정보가 전혀
  * 다르다」에서 나왔다 — 관리자가 표에서 고친 탭을 그리는 앱 화면이 없었다. 표는 글이
  * `category_id`로 가리키는 자리라 남기고, 0442가 상수와 같은 모양으로 맞춘다.
  *
@@ -24,22 +24,22 @@ if (!connectionString) {
 
 let client: Client;
 
-const CHIPS = ['웨딩홀', '스드메', '본식', '예물 · 신혼', '예산'];
+const CHIPS = ['준비', '웨딩홀 · 본식', '스드메', '예산·계약', '신혼여행'];
 
-/** 카테고리 → 칩(없으면 null). domain `WEDDING_FEED_CATEGORIES`와 같은 줄이다. */
-const CATEGORY_CHIP: Record<string, string | null> = {
-  웨딩홀: '웨딩홀',
+/** 카테고리 → 칩. domain `WEDDING_FEED_CATEGORIES`와 같은 줄이다. */
+const CATEGORY_CHIP: Record<string, string> = {
+  체크리스트: '준비',
+  일정: '준비',
+  웨딩홀: '웨딩홀 · 본식',
+  본식스냅: '웨딩홀 · 본식',
+  하객: '웨딩홀 · 본식',
   스튜디오: '스드메',
   드레스: '스드메',
   메이크업: '스드메',
   헤어변형: '스드메',
-  본식스냅: '본식',
-  허니문: '예물 · 신혼',
-  예산: '예산',
-  체크리스트: null,
-  일정: null,
-  하객: null,
-  계약: null,
+  예산: '예산·계약',
+  계약: '예산·계약',
+  허니문: '신혼여행',
 };
 
 async function categories(): Promise<{ name: string; chip: string | null; active: boolean }[]> {
@@ -74,7 +74,7 @@ describeWithDb('웨딩피드 — 탭과 카테고리 표', () => {
 
   beforeEach(() => resetSchema(client));
 
-  describe('0442 뒤 — 표가 정본 칩과 같다', () => {
+  describe('0448 뒤 — 표가 앱 칩과 같다', () => {
     it('탭은 정본 칩 다섯이다(«전체»는 표에 없다)', async () => {
       const { rows } = await client.query<{ name: string }>(
         'SELECT name FROM structured.wedding_feed_groups ORDER BY sort_order'
@@ -86,7 +86,7 @@ describeWithDb('웨딩피드 — 탭과 카테고리 표', () => {
     it('카테고리 열둘이 켜져 있고 칩 배정이 목록과 같다', async () => {
       const rows = await categories();
 
-      expect(rows.every((r) => r.active)).toBe(true);
+      expect(rows.every((r) => r.active && r.chip !== null)).toBe(true);
       expect(Object.fromEntries(rows.map((r) => [r.name, r.chip]))).toEqual(CATEGORY_CHIP);
     });
 
@@ -100,13 +100,13 @@ describeWithDb('웨딩피드 — 탭과 카테고리 표', () => {
     });
   });
 
-  describe('0442가 이미 쌓인 값을 옮긴다', () => {
+  describe('0442와 0448이 이미 쌓인 값을 옮긴다', () => {
     /**
      * 0442 전 운영 상태를 흉내 낸다 — 0421의 옛 탭 셋, «준비 순서» 카테고리와 그 글,
-     * 관리자가 따로 만든 탭 · 카테고리. 그다음 0442만 다시 돌린다.
+     * 관리자가 따로 만든 탭 · 카테고리. 그다음 두 마이그레이션을 다시 돌린다.
      */
-    async function rerun0442() {
-      await client.query(`DELETE FROM public.schema_migrations WHERE version LIKE '0442%'`);
+    async function rerunTaxonomy() {
+      await client.query(`DELETE FROM public.schema_migrations WHERE version LIKE '0442%' OR version LIKE '0448%'`);
       await migrate(client);
     }
 
@@ -136,10 +136,16 @@ describeWithDb('웨딩피드 — 탭과 카테고리 표', () => {
             '운영 소식', 'published', now()),
            ('웨딩홀 ', NULL, '뒤에 공백이 붙은 글', 'draft', NULL)`
       );
+      await client.query(
+        `INSERT INTO structured.wedding_feed_posts
+           (category_label, category_id, title, topic, status, published_at)
+         VALUES ('하객', (SELECT id FROM structured.wedding_feed_categories WHERE name = '하객'),
+                 '하객 수 가늠하기', 'guest-count', 'published', now())`
+      );
     });
 
     it('«준비 순서» 글과 카테고리는 «일정»으로 옮겨 가고 연결이 유지된다', async () => {
-      await rerun0442();
+      await rerunTaxonomy();
 
       const { rows } = await client.query<{ category_label: string; name: string | null }>(
         `SELECT p.category_label, c.name
@@ -152,7 +158,7 @@ describeWithDb('웨딩피드 — 탭과 카테고리 표', () => {
     });
 
     it('옛 탭은 지우고 칩 다섯만 남긴다 · 칩 배정을 목록대로 다시 건다', async () => {
-      await rerun0442();
+      await rerunTaxonomy();
 
       const groups = await client.query<{ name: string }>(
         'SELECT name FROM structured.wedding_feed_groups ORDER BY sort_order'
@@ -163,8 +169,34 @@ describeWithDb('웨딩피드 — 탭과 카테고리 표', () => {
       expect(Object.fromEntries(rows.map((r) => [r.name, r.chip]))).toEqual(CATEGORY_CHIP);
     });
 
+    it('전체에서만 보이던 하객 글은 내용과 연결을 보존한 채 새 칩에 든다', async () => {
+      const before = await client.query<{
+        id: string;
+        category_label: string;
+        category_id: string;
+        topic: string;
+      }>(`SELECT id, category_label, category_id, topic
+          FROM structured.wedding_feed_posts WHERE title = '하객 수 가늠하기'`);
+
+      await rerunTaxonomy();
+
+      const after = await client.query<{
+        id: string;
+        category_label: string;
+        category_id: string;
+        topic: string;
+        chip: string;
+      }>(`SELECT p.id, p.category_label, p.category_id, p.topic, g.name AS chip
+          FROM structured.wedding_feed_posts p
+          JOIN structured.wedding_feed_categories c ON c.id = p.category_id
+          JOIN structured.wedding_feed_groups g ON g.id = c.group_id
+          WHERE p.title = '하객 수 가늠하기'`);
+
+      expect(after.rows[0]).toEqual({ ...before.rows[0], chip: '웨딩홀 · 본식' });
+    });
+
     it('목록 밖 카테고리는 지우지 않고 끈다 — 그 글도 그대로 남는다', async () => {
-      await rerun0442();
+      await rerunTaxonomy();
 
       const extra = (await categories()).find((r) => r.name === '웨딩 소식');
       const { rows } = await client.query<{ n: string }>(
@@ -176,7 +208,7 @@ describeWithDb('웨딩피드 — 탭과 카테고리 표', () => {
     });
 
     it('이름이 어긋난 글은 추측해서 붙이지 않는다', async () => {
-      await rerun0442();
+      await rerunTaxonomy();
 
       const { rows } = await client.query<{ category_id: string | null }>(
         `SELECT category_id FROM structured.wedding_feed_posts WHERE title = '뒤에 공백이 붙은 글'`
@@ -188,7 +220,7 @@ describeWithDb('웨딩피드 — 탭과 카테고리 표', () => {
     it('«일정»이 이미 따로 있었으면 이름은 두고 글만 옮겨 «일정»에 잇는다', async () => {
       await client.query(`INSERT INTO structured.wedding_feed_categories (name) VALUES ('일정')`);
 
-      await rerun0442();
+      await rerunTaxonomy();
 
       const { rows } = await client.query<{ name: string | null }>(
         `SELECT c.name

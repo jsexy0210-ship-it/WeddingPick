@@ -30,9 +30,8 @@ import { PolicyDocumentBody } from '@/features/settings/policy-document-body';
  *
  * **동의 화면에서 열었을 때만** 하단에 «동의하기»가 붙는다(`onAgree`가 있을 때).
  *
- * **«개인정보처리방침» 탭**(2026-09-26 대표 지시)은 조문 목록이 아니라 웹사이트 원문을
- * 그린다 — `/my/privacy-policy`가 그리던 것과 같은 `PolicyDocumentBody`다(사본을 두지
- * 않는다). MY 「개인정보처리방침」 행이 이 탭으로 연다.
+ * «개인정보처리방침» 탭은 관리자 공개판을 같은 풀팝업 안에 그린다.
+ * 조문 사본을 두지 않으며 MY와 저장된 링크가 이 탭으로 연다.
  *
  * 조문은 아직 법무 확정 전 임시 문구다(`packages/domain/src/consent-terms.ts`).
  */
@@ -59,7 +58,7 @@ export function TermsDetailModal({
       <ThemedView style={styles.container}>
         {/* 동의 도크가 있으면 도크가 아래 inset을 직접 챙긴다(정본 CTA y 828). */}
         <SafeAreaView style={styles.safeArea} edges={onAgree ? ['top'] : ['top', 'bottom']}>
-          <FullPopupHeader title="약관 상세" onClose={onClose} />
+          <FullPopupHeader title="약관상세" onClose={onClose} />
 
           <ScrollView
             horizontal

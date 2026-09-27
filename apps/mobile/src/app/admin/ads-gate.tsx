@@ -16,7 +16,7 @@ import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { WritePressable } from './_role';
 import { formatDateDot } from '@/features/common/format-date';
-import { ConfirmCard } from './_ui';
+import { AdminButtonLoader, ConfirmCard } from './_ui';
 
 type GateStepStatus = 'done' | 'in_progress' | 'pending' | 'blocked';
 
@@ -224,9 +224,7 @@ export function AdsGatePanel() {
                 onPress={() => { setActionError(null); setAsking({ kind: 'approve' }); }}
                 disabled={confirming}
               >
-                <Text style={styles.approvalBtnText}>
-                  {confirming ? '처리 중…' : '실운영 전환 확정'}
-                </Text>
+                {confirming ? <AdminButtonLoader /> : <Text style={styles.approvalBtnText}>실운영 전환 확정</Text>}
               </WritePressable>
             </View>
           )}
@@ -258,9 +256,7 @@ export function AdsGatePanel() {
                 }}
                 disabled={confirming}
               >
-                <Text style={styles.approvalBtnText}>
-                  {confirming ? '처리 중…' : data.activated ? '광고 끄기' : '광고 켜기'}
-                </Text>
+                {confirming ? <AdminButtonLoader /> : <Text style={styles.approvalBtnText}>{data.activated ? '광고 끄기' : '광고 켜기'}</Text>}
               </WritePressable>
             </View>
           )}

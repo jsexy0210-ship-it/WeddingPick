@@ -1,6 +1,6 @@
 import { VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -17,6 +17,7 @@ import {
 } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { useDepthBack } from '@/features/navigation/depth-back';
+import { ScrollToTopButton, useScrollToTopVisibility } from '@/features/navigation/scroll-to-top-button';
 import { inStack } from '@/features/navigation/stack-alias';
 import { notifyRefreshFailed, usePullRefresh } from '@/features/refresh/use-pull-refresh';
 import { openExternal } from '@/features/open-external';
@@ -44,6 +45,8 @@ type PinnedVendor = {
 };
 
 export default function WeddingMapScreen() {
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollTop = useScrollToTopVisibility();
   const depthBack = useDepthBack();
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme();
@@ -73,7 +76,7 @@ export default function WeddingMapScreen() {
         title="지도를 불러오지 못했어요"
         message={error}
         onRetry={() => load()}
-        retryLabel="다시 시도"
+        retryLabel="다시 시도하기"
         onBack={depthBack}
         backLabel="돌아가기"
       />
@@ -96,7 +99,12 @@ export default function WeddingMapScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
         <BackBar />
-        <ScrollView contentContainerStyle={styles.scroll} refreshControl={pull.refreshControl}>
+        <ScrollView
+          ref={scrollRef}
+          onScroll={scrollTop.onScroll}
+          scrollEventThrottle={100}
+          contentContainerStyle={styles.scroll}
+          refreshControl={pull.refreshControl}>
           <ThemedView style={styles.header}>
             <ThemedText type="t5">Pick한 업체 위치</ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">
@@ -157,6 +165,7 @@ export default function WeddingMapScreen() {
             })
           )}
         </ScrollView>
+        <ScrollToTopButton visible={scrollTop.visible} bottom={Layout.touchTarget + Spacing.two * 2 + 32} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
 
         <ThemedView style={styles.footer}>
           {selected ? (

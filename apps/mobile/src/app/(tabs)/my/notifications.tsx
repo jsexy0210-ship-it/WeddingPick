@@ -15,7 +15,7 @@ import { partnerRouteFor } from '@/features/partner/routes';
 
 const S = {
   title: '알림',
-  readAll: '모두 읽음',
+  readAll: '전부 읽음 표시',
   readFailed: '읽음 상태를 저장하지 못했어요',
 } as const;
 
@@ -138,6 +138,7 @@ export default function NotificationsScreen() {
   return (
     <SubScreen
       title={S.title}
+      scrollToTop
       refreshControl={pull.refreshControl}
       contentStyle={{ paddingTop: Layout.rowPaddingY }}
       right={

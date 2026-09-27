@@ -19,7 +19,7 @@ import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { WritePressable } from './_role';
 import { formatDateDot } from '@/features/common/format-date';
-import { ConfirmCard } from './_ui';
+import { AdminButtonLoader, ConfirmCard } from './_ui';
 
 /*
  * **2026-09-16에 이 화면이 열렸다.** 대표 지시 — 「개인정보처리방침 이용약관 마케팅
@@ -295,7 +295,7 @@ export function TermsPanel() {
             disabled={saving}
             onPress={() => void createDraft()}
           >
-            <Text style={styles.addBtnText}>{saving ? '만드는 중…' : '새 초안 만들기'}</Text>
+            {saving ? <AdminButtonLoader /> : <Text style={styles.addBtnText}>새 초안 만들기</Text>}
           </WritePressable>
         )}
         {activeDocData?.latestDraftVersion && (
@@ -391,9 +391,7 @@ export function TermsPanel() {
                       onPress={() => { setActionError(null); setAskingPublish(true); }}
                       disabled={publishing || effectiveOn.trim() === ''}
                     >
-                      <Text style={styles.publishBtnText}>
-                        {publishing ? '공개 중…' : '초안 공개'}
-                      </Text>
+                      {publishing ? <AdminButtonLoader /> : <Text style={styles.publishBtnText}>초안 공개</Text>}
                     </WritePressable>
                   </View>
                 )}
@@ -542,7 +540,7 @@ export function TermsPanel() {
                 onPress={() => void saveClause()}
                 disabled={saving}
               >
-                <Text style={styles.saveBtnText}>{saving ? '저장 중…' : '저장'}</Text>
+                {saving ? <AdminButtonLoader /> : <Text style={styles.saveBtnText}>저장</Text>}
               </WritePressable>
             </View>
           </ScrollView>
@@ -583,7 +581,7 @@ export function TermsPanel() {
                 onPress={() => void addClause()}
                 disabled={saving}
               >
-                <Text style={styles.saveBtnText}>{saving ? '추가 중…' : '추가'}</Text>
+                {saving ? <AdminButtonLoader /> : <Text style={styles.saveBtnText}>추가</Text>}
               </WritePressable>
             </View>
           </ScrollView>

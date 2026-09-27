@@ -29,7 +29,8 @@ describe('관리자 웨딩피드 비동기 폼 회귀', () => {
  */
 describe('관리자 웨딩피드 — 앱과 같은 카테고리 목록', () => {
   it('고르는 목록과 앱 칩 칸이 domain 상수에서 온다', () => {
-    expect(source).toContain('WEDDING_FEED_CATEGORIES.map((category) => (');
+    expect(source).toContain("WEDDING_FEED_CHIPS.filter((chip) => chip.key !== 'all').map((chip) => (");
+    expect(source).toContain('WEDDING_FEED_CATEGORIES.filter((category) => category.chip === chip.key).map((category) => (');
     expect(source).toContain('weddingFeedChipOf(categoryLabel)');
     expect(source).toContain('isWeddingFeedCategoryLabel(form.categoryLabel)');
   });

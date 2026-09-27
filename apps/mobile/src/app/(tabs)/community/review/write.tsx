@@ -78,7 +78,7 @@ export function LoungeReviewVendorSheet({
     <BottomSheet visible onRequestClose={onClose} closeOnBrowserBack testID="lounge-review-write-sheet">
         <SheetPanel style={styles.sheet}>
           <View style={styles.head}>
-            <SheetHeader title="후기 쓰기" closeLabel="후기 작성 닫기" onClose={onClose} />
+            <SheetHeader title="후기쓰기" closeLabel="후기 작성 닫기" onClose={onClose} />
             <ThemedText type="t7" themeColor="textSecondary">
               이용한 업체를 먼저 골라주세요.
             </ThemedText>
