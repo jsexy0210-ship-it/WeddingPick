@@ -6,6 +6,7 @@ import {
   formatTaskDate,
   nextTask,
   resolveTaskState,
+  taskDisplayLabel,
   taskProgress,
 } from './wedding-plan';
 
@@ -154,5 +155,17 @@ describe('tentativeDueDate — 예식일 역산 임시 날짜(2026-09-25 대표 
 
   it('기본 열셋 이름은 전부 임시 날짜가 있다', () => {
     for (const preset of TASK_PRESETS) expect(tentativeDueDate('2027-05-15', preset.label)).not.toBeNull();
+  });
+
+  it('이전 예복 프리셋 이름으로 저장된 일정도 같은 임시 날짜를 계산한다', () => {
+    expect(tentativeDueDate('2027-05-15', '예복 맞춤')).toBe(
+      tentativeDueDate('2027-05-15', '예복맞춤')
+    );
+  });
+
+  it('이전 예복 프리셋만 새 표기로 보여주고 직접 입력한 이름은 보존한다', () => {
+    expect(taskDisplayLabel('예복 맞춤', 'suit_fitting')).toBe('예복맞춤');
+    expect(taskDisplayLabel('예복 맞춤', null)).toBe('예복 맞춤');
+    expect(taskDisplayLabel('예복 맞춤 2차', 'suit_fitting')).toBe('예복 맞춤 2차');
   });
 });

@@ -51,7 +51,7 @@ export const REWARD_KINDS = [
 ] as const satisfies readonly RewardKind[];
 
 export const REWARD_LABEL: Record<RewardKind, string> = {
-  mission: '미션 완주',
+  mission: '미션완주',
   referral: '친구초대',
   promotion: '홍보인증',
   monthly_draw: '웨딩지원금',
@@ -140,9 +140,9 @@ export const REWARD_STATUSES = ['earned', 'held', 'paid', 'blocked'] as const;
 export type RewardStatus = (typeof REWARD_STATUSES)[number];
 
 export const REWARD_STATUS_LABEL: Record<RewardStatus, string> = {
-  earned: '지급 대기',
-  held: '확인 중',
-  paid: '지급 완료',
+  earned: '지급대기',
+  held: '확인중',
+  paid: '지급완료',
   blocked: '지급하지 않음',
 };
 

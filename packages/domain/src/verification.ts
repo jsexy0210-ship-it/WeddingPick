@@ -141,10 +141,10 @@ export type VerificationStatus = (typeof VERIFICATION_STATUSES)[number];
  * 일인 줄 안다.
  */
 export const VERIFICATION_STATUS_LABEL: Record<VerificationStatus, string> = {
-  received: '확인 중',
-  in_review: '확인 중',
-  needs_supplement: '보완 필요',
-  approved: '확인 완료',
+  received: '확인중',
+  in_review: '확인중',
+  needs_supplement: '보완필요',
+  approved: '확인완료',
   rejected: '반영되지 않았어요',
 };
 

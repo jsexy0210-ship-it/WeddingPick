@@ -38,7 +38,7 @@ const S = {
 const ITEMS = [
   { key: 'price', label: '가격 · 요금 정보', needsValue: true },
   { key: 'contact', label: '영업시간 · 연락처', needsValue: true },
-  { key: 'address', label: '주소 · 위치', needsValue: true },
+  { key: 'address', label: '주소·위치', needsValue: true },
   { key: 'closed', label: '영업 종료 · 폐업', needsValue: false },
 ] as const;
 

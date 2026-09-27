@@ -102,9 +102,9 @@ const TABS: readonly { key: Tab; label: string }[] = [
 ];
 const CONSULT_SAVED = '저장됨';
 /* note.js `consults` — 정리가 끝났고 아직 저장하지 않은 기록. */
-const CONSULT_DONE = '정리 완료';
-/* 헤더 우측 액션 — React_Native/note.jsx headAdd «일정 추가 · 상담 추가 · 예산 추가». */
-const ADD_LABEL: Record<Tab, string> = { calendar: '일정 추가', budget: '예산 추가', consult: '상담 추가' };
+const CONSULT_DONE = '정리완료';
+/* 헤더 우측 액션 — 정본의 추가 동선을 유지하며 일정추가 · 녹음 올리기 · 지출추가로 표시한다. */
+const ADD_LABEL: Record<Tab, string> = { calendar: '일정추가', budget: '지출추가', consult: '녹음 올리기' };
 const DECIDED_LINK = '예약현황';
 const PAST_EVENTS_SHOW = '보기';
 const PAST_EVENTS_HIDE = '접기';
@@ -579,7 +579,7 @@ function EmptyNoteView({
   const theme = useTheme();
   const rows = [
     ...(expenses.budget.set ? [{ k: '총예산', v: manwon(expenses.budget.budget) }] : []),
-    { k: '쓴 금액', v: manwon(expenses.paidTotal) },
+    { k: '쓴금액', v: manwon(expenses.paidTotal) },
   ];
 
   return (
@@ -739,7 +739,7 @@ function CalendarPanel({
 
       {showPast && past.length > 0 ? (
         <TimelineGroupView
-          title="지난 일정"
+          title="지난일정"
           range=""
           items={past.map((event) => ({ event, kind: 'event' as const }))}
           dimmed

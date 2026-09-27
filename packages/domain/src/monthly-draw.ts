@@ -39,9 +39,9 @@ export const MONTHLY_DRAW_STATUSES = [
 export type MonthlyDrawStatus = (typeof MONTHLY_DRAW_STATUSES)[number];
 
 export const MONTHLY_DRAW_STATUS_LABEL: Record<MonthlyDrawStatus, string> = {
-  not_entered: '응모 전',
-  entered: '응모 완료',
-  pending: '발표 대기',
+  not_entered: '응모전',
+  entered: '응모완료',
+  pending: '발표대기',
   won: '당첨',
   not_won: '미당첨',
 };

@@ -177,7 +177,7 @@ describe('예산 추가 — 고르는 시트 · 자동 등록', () => {
   it('타이틀 «예산 추가» + X · 두 칸 — 자동 등록(Pick 인증) · 직접 입력(정본 note.js `modes` 보조 문구)', async () => {
     const { onManual } = await render(true);
     expect(texts()).toEqual(
-      expect.arrayContaining(['예산 추가', '자동 등록(Pick 인증)', '사진 한 장이면 돼요', '직접 입력', '금액을 적어요'])
+      expect.arrayContaining(['지출추가', '자동 등록(Pick 인증)', '사진 한 장이면 돼요', '직접입력', '금액을 적어요'])
     );
     expect(view!.root.findAll((node) => node.props.accessibilityLabel === '닫기' && node.props.onPress).length).toBeGreaterThan(0);
 
@@ -204,7 +204,7 @@ describe('예산 추가 — 고르는 시트 · 자동 등록', () => {
 
     expect(view!.root.findAll((node) => node.props.testID === 'expense-auto-accepted').length).toBeGreaterThan(0);
     expect(texts()).toEqual(
-      expect.arrayContaining(['지출에 넣었어요', '업체', '청담 E 웨딩홀', '낸 금액', '500만원', '낸 날짜', '9.20', '읽었어요', '확인'])
+      expect.arrayContaining(['지출에 넣었어요', '업체', '청담 E 웨딩홀', '지출금액', '500만원', '지출일', '9.20', '읽었어요', '확인'])
     );
     expect(texts()).not.toContain('확인 필요');
   });
@@ -288,7 +288,7 @@ describe('예산 추가 — 고르는 시트 · 자동 등록', () => {
     expect(view!.root.findAll((node) => node.props.testID === 'expense-auto-pending').length).toBeGreaterThan(0);
     const shown = texts();
     expect(shown).toEqual(expect.arrayContaining(['확인 중이에요', '사진이 흐려 금액을 읽지 못했어요. 확인 뒤 알려드려요']));
-    expect(shown.filter((text) => text === '확인 필요').length).toBe(3); // 딱지 셋
+    expect(shown.filter((text) => text === '확인필요').length).toBe(3); // 딱지 셋
     expect(shown.filter((text) => text === '확인하고 있어요').length).toBe(3); // 값을 지어내지 않는다
     expect(shown).not.toContain('읽었어요');
   });
@@ -341,8 +341,8 @@ describe('예산 추가 — 고르는 시트 · 자동 등록', () => {
     const fields = autoResultFields(proof({ status: 'pending_review', pendingFields: ['paidAmount'], paidAmount: 1_540_000 }));
     expect(fields.map((field) => [field.label, field.value, field.tag])).toEqual([
       ['업체', '청담 E 웨딩홀', '읽었어요'],
-      ['낸 금액', '154만원', '확인 필요'],
-      ['낸 날짜', '9.20', '읽었어요'],
+      ['지출금액', '154만원', '확인필요'],
+      ['지출일', '9.20', '읽었어요'],
     ]);
   });
 

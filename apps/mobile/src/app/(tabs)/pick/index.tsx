@@ -135,11 +135,11 @@ const COMPARE_ALL = '비교하기';
 const CHIP_ALL = '전체';
 const ACTION_COMPARE = PICK_COMPARE_ADD_LABEL;
 const ACTION_COMPARING = PICK_COMPARE_REMOVE_LABEL;
-const ACTION_UNDECIDE = '결정 취소';
+const ACTION_UNDECIDE = '결정취소';
 /* 정본 pick.js `sv().labelB` «상담 예약». */
-const ACTION_CONSULT = '상담 예약';
+const ACTION_CONSULT = '상담예약';
 /* 정본 pick.jsx frame-001 `moreBtn2`. */
-const GROUP_MORE = '더 보기';
+const GROUP_MORE = '더보기';
 const BADGE_SHARED = '함께';
 const EMPTY_TITLE = '아직 담은 곳이 없어요';
 const EMPTY_BODY = '담아두면 여기서 비교할 수 있어요';
@@ -1046,7 +1046,7 @@ function Empty() {
   const theme = useTheme();
   return (
     <View style={styles.empty}>
-      <ThemedText type="f18" style={styles.bold}>담은 곳</ThemedText>
+      <ThemedText type="f18" style={styles.bold}>저장한 업체</ThemedText>
       <View style={styles.emptyCard}>
         <ThemedText type="f16" style={[styles.bold, styles.emptyText]}>
           {EMPTY_TITLE}
@@ -1083,7 +1083,7 @@ function RetryLink({ onPress }: { onPress: () => void }) {
         const { hovered } = readWebInteractionState(state);
         return (
           <ThemedText type="t6" style={{ color: theme.tint, textDecorationLine: hovered ? 'underline' : 'none' }}>
-            다시 시도
+            다시 시도하기
           </ThemedText>
         );
       }}

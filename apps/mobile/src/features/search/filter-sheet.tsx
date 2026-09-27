@@ -75,7 +75,7 @@ import { SHEET_SORTS } from '@/features/search/sort-panel';
 /** spec/strings.ko.json search.filter.* */
 const S = {
   title: '필터',
-  reset: '전체 해제',
+  reset: '전체해제',
   /** «{n}개 업체 보기» — 정본 `sheetCta` «7개 업체 보기». */
   apply: (count: number) => `${count}개 업체 보기`,
   groupCategory: '카테고리',
@@ -94,7 +94,7 @@ const CATEGORY_OPTIONS: readonly { label: string; category: VendorCategory | nul
   { label: VENDOR_CATEGORY_LABEL.hall, category: 'hall' },
   { label: '스드메', category: null },
   { label: '본식', category: null },
-  { label: '예물 · 신혼', category: null },
+  { label: '예물·신혼', category: null },
 ];
 
 /** 정본 `groups[2]` — 예산(총예산 구간). 서버 `budget`과 뜻이 달라 전부 BACKEND_PENDING. */

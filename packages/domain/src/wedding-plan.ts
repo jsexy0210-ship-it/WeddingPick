@@ -36,7 +36,7 @@ export const TASK_PRESETS: readonly TaskPreset[] = [
   { key: 'makeup_trial', label: '메이크업 시연', category: 'makeup' },
   { key: 'snap_video', label: '본식 스냅·영상', category: 'snap' },
   { key: 'invitation_draft', label: '청첩장 시안', category: 'invitation' },
-  { key: 'suit_fitting', label: '예복 맞춤', category: 'goods' },
+  { key: 'suit_fitting', label: '예복맞춤', category: 'goods' },
   { key: 'gifts', label: '예물·예단', category: 'goods' },
   { key: 'honeymoon', label: '신혼여행 예약', category: 'honeymoon' },
   { key: 'marriage_papers', label: '혼인신고 서류', category: null },
@@ -66,7 +66,8 @@ export const TENTATIVE_DAYS_BEFORE: Readonly<Record<string, number>> = {
   '스튜디오 촬영일': 150,
   '예물·예단': 120,
   '신혼여행 예약': 120,
-  '예복 맞춤': 90,
+  '예복맞춤': 90,
+  '예복 맞춤': 90, // 이전 프리셋 이름으로 저장된 일정도 같은 날짜를 계산한다.
   '청첩장 시안': 75,
   '메이크업 시연': 60,
   '하객 명단 정리': 45,
@@ -74,6 +75,11 @@ export const TENTATIVE_DAYS_BEFORE: Readonly<Record<string, number>> = {
   '혼인신고 서류': 14,
   '웨딩홀 잔금 납부': 7,
 };
+
+/** 옛 기본 일정만 새 표기로 보여준다. 직접 입력하거나 이름을 바꾼 일정은 보존한다. */
+export function taskDisplayLabel(label: string, presetKey: string | null): string {
+  return presetKey === 'suit_fitting' && label === '예복 맞춤' ? '예복맞춤' : label;
+}
 
 /** `YYYY-MM-DD` 예식일에서 할 일 이름의 임시 날짜를 계산한다. 모르는 이름이면 null. */
 export function tentativeDueDate(weddingDate: string, label: string): string | null {

@@ -42,18 +42,18 @@ describe('업체 위치 UI', () => {
     expect(source).toContain("openExternal(mapUrl, { title: '지도' })");
   });
 
-  it('주소는 줄임 없이 선택 가능하고 주소 복사를 제공한다', () => {
+  it('주소는 줄임 없이 선택 가능하고 주소복사를 제공한다', () => {
     expect(source).toContain('selectable');
     expect(source).toContain('Clipboard.setStringAsync(normalizedAddress)');
     expect(source).toContain('copiedAddress === normalizedAddress');
-    expect(source).toContain('주소 복사');
+    expect(source).toContain('주소복사');
     expect(source).toContain('복사됨');
     expect(source).not.toContain('numberOfLines=');
   });
 
   it('지도와 복사 동작에 접근성 라벨이 있다', () => {
     expect(source).toContain('accessibilityLabel={mapActionLabel}');
-    expect(source).toContain('accessibilityLabel="주소 복사"');
+    expect(source).toContain('accessibilityLabel="주소복사"');
     expect(source).toContain('accessibilityLiveRegion="polite"');
   });
 });

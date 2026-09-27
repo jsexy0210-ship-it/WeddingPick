@@ -39,7 +39,7 @@ function depthHeaderTitle(pathname: string): string {
     [/^\/feed(?:\/|$)/, '웨딩피드'],
     [/^\/search\/autocomplete(?:\/|$)/, '검색'],
     [/^\/search\/expo(?:\/|$)/, '박람회'],
-    [/^\/wedding\/[^/]+\/map(?:\/|$)/, '업체 위치'],
+    [/^\/wedding\/[^/]+\/map(?:\/|$)/, '업체위치'],
     [/^\/wedding\/[^/]+(?:\/|$)/, '웨딩노트'],
   ];
 

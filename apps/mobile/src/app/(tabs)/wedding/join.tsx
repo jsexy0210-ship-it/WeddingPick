@@ -21,10 +21,10 @@ import { Avatar, Dock, Field, Hero, NavBar, NoteCard, Screen } from '@/features/
  * WP-CPL-002(초대 수락) · WP-CPL-003(연결 완료).
  */
 const S = {
-  nav: '초대 받음',
+  nav: '초대받음',
   codeTitle: '초대 코드를 넣어주세요',
   codeSub: `배우자에게 받은 숫자 ${INVITE_CODE_LENGTH}자리를 넣어주세요`,
-  codeField: '초대 코드',
+  codeField: '초대코드',
   check: '확인하기',
   /* WP-CPL-002 avatarSec — 초대자 이름 · 예식일은 서버가 안 준다(개인정보). 아래 참고. */
   acceptTitle: '함께 준비하자고 해요',

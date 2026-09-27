@@ -14,9 +14,9 @@ export const REWARD_PAYOUT_STATUSES = ['requested', 'sent', 'failed'] as const;
 export type RewardPayoutStatus = (typeof REWARD_PAYOUT_STATUSES)[number];
 
 export const REWARD_PAYOUT_STATUS_LABEL: Record<RewardPayoutStatus, string> = {
-  requested: '확인 중',
-  sent: '지급 완료',
-  failed: '지급 실패',
+  requested: '확인중',
+  sent: '지급완료',
+  failed: '지급실패',
 };
 
 export const REWARD_PAYOUT_STATUS_NOTE: Record<RewardPayoutStatus, string> = {

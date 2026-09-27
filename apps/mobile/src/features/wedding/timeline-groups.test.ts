@@ -33,7 +33,7 @@ describe('buildUpcomingTimelineGroups', () => {
       NOW
     );
 
-    expect(groups.map((g) => g.title)).toEqual(['이번 주', '다음 주', '11월', '예식']);
+    expect(groups.map((g) => g.title)).toEqual(['이번주', '다음주', '11월', '예식']);
     expect(groups[0]!.items).toHaveLength(1);
     expect(groups[0]!.items[0]).toMatchObject({ kind: 'event' });
     expect(groups.at(-1)).toMatchObject({ title: '예식', items: [{ kind: 'wedding', date: '2027-05-16' }] });
@@ -59,7 +59,7 @@ describe('buildUpcomingTimelineGroups', () => {
   it('예식일이 없으면 예식 줄도, D-day 표시도 만들지 않는다', () => {
     const groups = buildUpcomingTimelineGroups([event('this-week', '2026-09-23T05:00:00.000Z')], null, NOW);
     expect(groups).toEqual([
-      { title: '이번 주', range: '9.22~9.27', items: [{ event: expect.objectContaining({ id: 'this-week' }), kind: 'event' }] },
+      { title: '이번주', range: '9.22~9.27', items: [{ event: expect.objectContaining({ id: 'this-week' }), kind: 'event' }] },
     ]);
   });
 
@@ -70,8 +70,8 @@ describe('buildUpcomingTimelineGroups', () => {
       NOW
     );
     expect(groups.map((g) => [g.title, g.items.length])).toEqual([
-      ['이번 주', 1],
-      ['다음 주', 1],
+      ['이번주', 1],
+      ['다음주', 1],
     ]);
   });
 

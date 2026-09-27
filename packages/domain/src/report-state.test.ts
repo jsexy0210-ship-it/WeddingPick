@@ -18,8 +18,8 @@ describe('제보 상태 표시 정책', () => {
 
   it('분석 중과 확인 중을 가른다', () => {
     // 앞은 기계가 읽는 중이고 뒤는 사람이 맞춰보는 중이다. 걸리는 시간이 다르다.
-    expect(REPORT_STATE_LABEL.analyzing).toBe('분석 중');
-    expect(REPORT_STATE_LABEL.verifying).toBe('확인 중');
+    expect(REPORT_STATE_LABEL.analyzing).toBe('분석중');
+    expect(REPORT_STATE_LABEL.verifying).toBe('확인중');
   });
 
   it('안에서 다른 두 상태가 밖에서는 같은 말이 된다', () => {

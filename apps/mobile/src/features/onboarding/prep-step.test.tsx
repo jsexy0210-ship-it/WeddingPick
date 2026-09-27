@@ -219,7 +219,7 @@ describe('준비 현황 카드 → 업체 검색 시트', () => {
     press(tree, '웨딩홀. 예식장 · 식대 · 대관');
     search.mockResolvedValue({ vendors: [], sponsored: [], nextCursor: null, total: 0 } as never);
     await type(tree, query);
-    press(tree, '직접 입력');
+    press(tree, '직접입력');
   }
 
   function manualInput(tree: ReactTestRenderer): ReactTestInstance {
@@ -266,7 +266,7 @@ describe('준비 현황 카드 → 업체 검색 시트', () => {
     press(tree, '웨딩홀. 예식장 · 식대 · 대관');
     await type(tree, '강남');
 
-    expect(texts(tree)).toEqual(expect.arrayContaining(['강남 A 웨딩홀', '직접 입력']));
+    expect(texts(tree)).toEqual(expect.arrayContaining(['강남 A 웨딩홀', '직접입력']));
   });
 
   it('이름이 비었으면 «이 이름으로 정하기»가 잠긴다', async () => {

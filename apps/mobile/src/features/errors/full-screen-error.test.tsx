@@ -25,7 +25,7 @@ describe('전면 오류의 복구 행동', () => {
     const retry = jest.fn();
     act(() => { screen = create(<FullScreenError kind="maintenance" onRetry={retry} />); });
     const button = screen.root.findByType(ActionButton);
-    expect(button.props.label).toBe('다시 시도');
+    expect(button.props.label).toBe('다시 시도하기');
     act(() => button.props.onPress());
     expect(retry).toHaveBeenCalledTimes(1);
   });

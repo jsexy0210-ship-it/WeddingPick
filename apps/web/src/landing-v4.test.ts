@@ -34,7 +34,7 @@ describe('서비스 웹 — 랜딩', () => {
 
       /* 기능 2 — 3곳 비교. */
       expect(html).toContain('한눈에 살펴볼 비교 항목');
-      expect(html).toContain('계약 조건');
+      expect(html).toContain('계약조건');
 
       /* 기능 3 — 둘이 함께 고른 Pick. */
       expect(html).toContain('함께 마음에 든 곳');

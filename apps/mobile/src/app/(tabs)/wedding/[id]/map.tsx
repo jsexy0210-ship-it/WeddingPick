@@ -76,7 +76,7 @@ export default function WeddingMapScreen() {
         title="지도를 불러오지 못했어요"
         message={error}
         onRetry={() => load()}
-        retryLabel="다시 시도"
+        retryLabel="다시 시도하기"
         onBack={depthBack}
         backLabel="돌아가기"
       />

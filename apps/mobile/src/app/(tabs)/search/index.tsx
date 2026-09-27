@@ -121,8 +121,8 @@ const AUTOCOMPLETE_REGIONS = 1;
 /** 추천 검색어 — v3.29 WP-SRCH-004 `acLabel`. */
 const AC_GROUP_SUGGEST = '추천 검색어';
 /** 최근 검색 — v3.29 WP-SRCH-004 `acLabel` · `acClearAll`. */
-const AC_GROUP_RECENT = '최근 검색';
-const AC_CLEAR_ALL = '전체 삭제';
+const AC_GROUP_RECENT = '최근검색';
+const AC_CLEAR_ALL = '전체삭제';
 
 /** 결과 없음 — RN 정본 WP-SRCH-003 `emptyTitle` · `nearLabel`(search.jsx frame-003). */
 const EMPTY_TITLE = '조건에 맞는 곳이 없어요';
@@ -131,7 +131,7 @@ const EMPTY_SIMILAR_TITLE = '조건이 비슷한 곳';
 const SIMILAR_LIMIT = 3;
 const EMPTY_REPORT_TITLE = '찾는 곳이 없나요?';
 const EMPTY_REPORT_BODY = '업체를 알려주시면 등록하고 알려드릴게요.';
-const EMPTY_REPORT_CTA = '업체 제보';
+const EMPTY_REPORT_CTA = '업체제보';
 
 function isVendorCategory(value: string | undefined): value is VendorCategory {
   return value !== undefined && value in VENDOR_CATEGORY_LABEL;
@@ -935,7 +935,7 @@ export default function SearchScreen() {
         {/* 패널 바깥을 누르면 닫는다 — 목록 위에 깔리는 투명 막. */}
         {sortOpen ? (
           <Pressable
-            accessibilityLabel="정렬 닫기"
+            accessibilityLabel="정렬창 닫기"
             onPress={() => setSortOpen(false)}
             style={styles.sortDismiss}
           />

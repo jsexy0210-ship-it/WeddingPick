@@ -31,7 +31,7 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 
-const TITLE = '상담 예약';
+const TITLE = '상담예약';
 /* 정본 pick.jsx WP-PICK-009 h1 «언제 만나면 / 좋을까요?». */
 const HEADLINE = '언제 만나면\n좋을까요?';
 /* 정본 textarea 문구. */

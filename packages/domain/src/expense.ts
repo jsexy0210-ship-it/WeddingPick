@@ -24,8 +24,8 @@ export type ExpenseSource = (typeof EXPENSE_SOURCES)[number];
  */
 export const EXPENSE_SOURCE_LABEL: Record<ExpenseSource, string> = {
   payment_proof: 'Pick 인증 자료',
-  manual: '직접 입력',
-  consultation: '상담 정리',
+  manual: '직접입력',
+  consultation: '상담정리',
 };
 
 export const EXPENSE_STATUSES = ['paid', 'scheduled'] as const;

@@ -18,7 +18,7 @@ import glossary from '../../../spec/glossary.json';
  * 금지어 하나.
  *
  * `allow`는 그 낱말을 품고도 그대로 두는 **문구**다. 낱말 단위가 아니라 문장 단위여야
- * 한다 — 「중앙값」을 통째로 풀어주면 「중앙값 168만원」까지 통과하지만, 「실 제보의
+ * 한다 — 「중앙값」을 통째로 풀어주면 「중앙값 168만원」까지 통과하지만, 「실제보의
  * 중앙값이에요」만 풀어주면 그 한 문장만 지나간다. 이미 승인된 카피만 들어간다.
  *
  * `pending`은 아직 강제하지 않는 항목과 그 이유다. 조용히 빠지는 것을 막으려고
@@ -58,8 +58,8 @@ export const BANNED_PHRASES: readonly string[] = BANNED_ENTRIES.filter(
 
 /** 그 자리에 대신 쓰는 말. */
 export const PREFERRED_PHRASES = [
-  '실 제보',
-  '가격 차이',
+  '실제보',
+  '가격차이',
   /*
    * v3.13 §O-1이 사용자 앱에서 `결제`를 막으면서 이 셋도 함께 못 쓰게 됐다. 권장어
    * 자리에 남겨두면 다음 사람이 그대로 갖다 쓴다 — 대신 Pick 언어를 둔다.
@@ -69,8 +69,8 @@ export const PREFERRED_PHRASES = [
   'Pick 인증',
   /** v3.1 §11. 통계는 그대로 중앙값이고 화면에 적는 이름만 바꾼다. */
   '기준금액',
-  /** v3.18. 금액은 `제보 금액`, 행동은 `Pick 인증`, 상위 개념은 `실 제보`다. */
-  '제보 금액',
+  /** v3.18. 금액은 `제보금액`, 행동은 `Pick 인증`, 상위 개념은 `실제보`다. */
+  '제보금액',
 ] as const;
 
 export type CopyViolation = { phrase: string; index: number };

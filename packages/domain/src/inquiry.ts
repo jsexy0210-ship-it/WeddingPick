@@ -90,9 +90,9 @@ export type InquiryStatus = (typeof INQUIRY_STATUSES)[number];
  * 상태 모두 표의 말을 쓰되 `answered`가 `확인 완료`다.
  */
 export const INQUIRY_STATUS_LABEL: Record<InquiryStatus, string> = {
-  received: '확인 중',
-  in_review: '확인 중',
-  answered: '확인 완료',
+  received: '확인중',
+  in_review: '확인중',
+  answered: '확인완료',
   closed: '종료됨',
 };
 

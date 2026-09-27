@@ -342,7 +342,7 @@ const S = {
   year: '연도',
   month: '월',
   day: '일',
-  meridiem: '오전 오후',
+  meridiem: '오전·오후',
   hour: '시',
   minute: '분',
   confirm: '확인',

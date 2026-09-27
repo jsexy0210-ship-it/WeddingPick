@@ -10,7 +10,7 @@
  * `관심업체`와 `후보`와 `찜`이 한 앱 안에 같이 있었다.
  *
  * v3.3이 v3.1을 덮어쓴 자리가 있고(`추천 이유` → `이런 점이 잘 맞아요`), v3.18이
- * 다시 덮어쓴 자리가 있다(옛 «확인된 ~» 표기 → `실 제보`). 뒤에 온 쪽을 쓴다.
+ * 다시 덮어쓴 자리가 있다(옛 «확인된 ~» 표기 → `실제보`). 뒤에 온 쪽을 쓴다.
  */
 
 export const TERMS = {
@@ -21,10 +21,10 @@ export const TERMS = {
   /** 골라둔 곳 목록. */
   picked: 'Pick한 곳',
   /**
-   * 검증된 결제정보. 정보 체계의 상위 개념(실 제보 → 제보 금액 → Pick 인증).
+   * 검증된 결제정보. 정보 체계의 상위 개념(실제보 → 제보금액 → Pick 인증).
    * v3.18이 옛 «확인된 ~» 표기 둘을 이 한 말로 합쳤다.
    */
-  verifiedData: '실 제보',
+  verifiedData: '실제보',
   /** 중앙값의 사용자 표기. 통계는 그대로 중앙값이고 이름만 바꾼다. */
   baseAmount: '기준금액',
   /** 집계 기간. */
@@ -32,17 +32,17 @@ export const TERMS = {
   /** 추가비용. */
   extraCost: '별도로 확인할 비용',
   /** 업체가 제공한 내용. */
-  vendorNotice: '업체 안내',
+  vendorNotice: '업체안내',
   /** 사용자 평가 영역. */
   experience: '이용한 사람들의 경험',
   /** 사용자가 쓴 글. `리뷰`를 쓰지 않는다. */
   review: '후기',
-  reviewWrite: '후기 작성',
+  reviewWrite: '후기작성',
   /** 자료 제공 행동. */
   report: '제보',
   reportCta: '제보하기',
   myReports: '내 제보내역',
-  priceReport: '가격 제보',
+  priceReport: '가격제보',
   directInput: '직접입력',
   /**
    * 커플 공동 공간. 라우트는 `/wedding` 그대로다 — 이 자리는 «우리웨딩 →
@@ -61,7 +61,7 @@ export const TERMS = {
 } as const;
 
 /** `기준금액`이 무슨 값인지 묻는 사람에게. 정책이 문장까지 정했다. */
-export const BASE_AMOUNT_HELP = '실 제보의 중앙값이에요.';
+export const BASE_AMOUNT_HELP = '실제보의 중앙값이에요.';
 
 /**
  * 자료가 모자랄 때.
@@ -73,8 +73,8 @@ export const BASE_AMOUNT_HELP = '실 제보의 중앙값이에요.';
 export const NOT_ENOUGH_DATA = '아직 정보가 적어요';
 /** 아직 모으는 중. 두 화면이 같은 말을 각자 적고 있었다. */
 export const STILL_COLLECTING = '정보를 모으는 중이에요';
-/** 금액 자리의 «수집 중»(SPEC §2 1층). 회색 #868B94로 낮춘다. */
-export const COLLECTING_LABEL = '수집 중';
+/** 금액 자리의 «정보 모으는 중»(SPEC §2 1층). 회색 #868B94로 낮춘다. */
+export const COLLECTING_LABEL = '정보 모으는 중';
 export const CANNOT_COMPARE_YET = '아직 비교하기 어려워요';
 export const COMPARE_LATER = '조금 더 모이면 비교할 수 있어요';
 export const MANY_CONFIRMED = '많이 확인된 곳';

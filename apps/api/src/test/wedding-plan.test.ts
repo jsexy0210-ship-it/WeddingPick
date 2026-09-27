@@ -81,6 +81,25 @@ describeWithDb('우리웨딩', () => {
       expect(body.progress).toEqual({ done: 0, total: TASK_PRESETS.length });
     });
 
+    it('옛 예복 프리셋 이름만 새 표기로 보여주고 직접 입력한 이름은 보존한다', async () => {
+      const { headers, weddingId } = await mine();
+      const seeded = (await tasks(headers, weddingId)).json<{ tasks: { id: string; label: string }[] }>();
+      const suit = seeded.tasks.find((task) => task.label === '예복맞춤')!;
+
+      await test.pool.query('UPDATE structured.wedding_tasks SET label = $1 WHERE id = $2', ['예복 맞춤', suit.id]);
+      const added = await test.app.inject({
+        method: 'POST',
+        url: `/v1/weddings/${weddingId}/tasks`,
+        headers,
+        payload: { label: '예복 맞춤' },
+      });
+      expect(added.statusCode).toBe(201);
+
+      const body = (await tasks(headers, weddingId)).json<{ tasks: { id: string; label: string }[] }>();
+      expect(body.tasks.find((task) => task.id === suit.id)?.label).toBe('예복맞춤');
+      expect(body.tasks.find((task) => task.id === added.json<{ taskId: string }>().taskId)?.label).toBe('예복 맞춤');
+    });
+
     it('지운 항목을 다시 깔지 않는다', async () => {
       // 다시 깔면 지우는 일이 아무 뜻이 없어진다.
       const { headers, weddingId } = await mine();

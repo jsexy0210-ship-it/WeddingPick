@@ -29,12 +29,13 @@ describe('라운지 후기와 웨딩정보 카테고리', () => {
   const canonMy = read('docs', 'design', 'React_Native', 'my.js');
   const canonHome = read('docs', 'design', 'React_Native', 'home.js');
 
-  it('후기 칩은 정본 my.js `cats`와 글자까지 같다', () => {
+  it('후기 칩은 정본 my.js `cats`를 최신 사용자 표기로 보여준다', () => {
     const line = canonMy.split('\n').find((l: string) => l.trim().startsWith('cats:')) ?? '';
     const canon = [...line.matchAll(/cat\('([^']+)'/g)].map((m) => m[1]);
 
     expect(canon).toEqual(['전체', '웨딩홀', '스드메', '본식', '예물 · 신혼', '예산']);
-    expect(LOUNGE_CATEGORIES).toEqual(canon);
+    const displayLabels = canon.map((label) => label === '예물 · 신혼' ? '예물·신혼' : label);
+    expect(LOUNGE_CATEGORIES).toEqual(displayLabels);
   });
 
   it('웨딩정보 칩은 같은 대분류 상수를 그리고 모든 소분류가 정확히 한 칩에 든다', () => {

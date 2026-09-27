@@ -142,7 +142,7 @@ export function VendorLocationSection({
         {normalizedAddress ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="주소 복사"
+            accessibilityLabel="주소복사"
             onPress={() => void copyAddress()}
             style={({ pressed }) => [
               styles.actionButton,
@@ -150,7 +150,7 @@ export function VendorLocationSection({
               pressed ? styles.pressed : null,
             ]}>
             <ThemedText type="t7" accessibilityLiveRegion="polite">
-              {addressCopied ? '복사됨' : '주소 복사'}
+              {addressCopied ? '복사됨' : '주소복사'}
             </ThemedText>
           </Pressable>
         ) : null}

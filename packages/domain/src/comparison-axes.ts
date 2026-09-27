@@ -67,7 +67,7 @@ export const COMPARISON_AXES = [
   },
   {
     key: 'included_or_separate',
-    label: '포함 · 별도',
+    label: '포함·별도',
     kind: 'terms',
     ready: false,
     note: '무엇이 포함인지 갈라 적을 자료가 아직 없어요',

@@ -19,9 +19,9 @@ export const NOTIFICATION_KINDS = [
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
 export const NOTIFICATION_KIND_LABEL: Record<NotificationKind, string> = {
-  verification: '자료 확인',
-  inquiry: '문의 답변',
-  rebuttal: '반론 심사',
+  verification: '자료확인',
+  inquiry: '문의답변',
+  rebuttal: '반론심사',
   partner: '배우자 연결',
   notice: '안내',
 };
