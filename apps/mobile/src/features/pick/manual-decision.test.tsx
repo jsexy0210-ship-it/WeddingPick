@@ -162,8 +162,10 @@ describe('Pick — 온보딩에서 정한 곳', () => {
     expect(mockPush).toHaveBeenCalledWith(`/pick/vendor/${HALL_ID}/consult?from=pick`);
   });
 
-  it('홈과 같은 실제 결정 수와 다음 업종을 안내한다', () => {
-    expect(texts()).toContain('2개 결정 · 9개 남음 · 다음 본식스냅');
+  it('결정 수 요약 없이 담은 업체와 추천을 구분해 보여준다', () => {
+    expect(texts()).not.toContain('2개 결정 · 9개 남음 · 다음 본식스냅');
+    expect(texts().filter((one) => one === '이런 곳은 어떠세요?')).toHaveLength(1);
+    expect(texts()).toContain('블루밍 스튜디오');
   });
 
   it('홈에서 이미 결정한 묶음을 열면 완료 탭으로 바로 이동한다', async () => {
@@ -206,7 +208,7 @@ describe('Pick — 온보딩에서 정한 곳', () => {
       await Promise.resolve();
     });
 
-    expect(texts()).toContain('정할 업종을 모두 마쳤어요');
+    expect(texts()).not.toContain('정할 업종을 모두 마쳤어요');
     expect(texts()).not.toContain('아직 담은 곳이 없어요');
     expect(texts()).not.toContain('업체 검색하기');
     act(() => {
@@ -224,25 +226,22 @@ describe('Pick — 온보딩에서 정한 곳', () => {
     expect(pressables('청담 스튜디오 결정취소')).toHaveLength(1);
   });
 
-  it('결정이 끝난 웨딩홀 묶음은 «결정완료»로 서고 «내 조건에 맞는 곳»을 내밀지 않는다', () => {
+  it('결정이 끝난 웨딩홀 묶음은 «결정완료»로 서고 완료 탭에는 추천을 내밀지 않는다', () => {
     showCompleted();
     expect(texts().filter((one) => one === '결정완료')).toHaveLength(1);
     expect(tree.root.findAll((node) => node.props.accessibilityLabel === '웨딩홀 결정완료')).not.toHaveLength(0);
     // 끝난 웨딩홀의 추천은 없고, 아직 스튜디오만 정한 스드메의 추천은 그대로다.
     expect(texts()).not.toContain('강남 B 웨딩홀');
     expect(texts()).not.toContain('블루밍 스튜디오');
-    expect(texts()).not.toContain('내 조건에 맞는 곳');
+    expect(texts()).not.toContain('이런 곳은 어떠세요?');
   });
 
-  it('진행 중에는 남은 묶음만, 완료에는 결정한 묶음과 완료 표시를 둔다', () => {
-    const chip = (label: string) =>
-      tree.root.findAll((node) => node.props.accessibilityRole === 'radio' && node.props.accessibilityLabel === label);
-
-    expect(chip('웨딩홀 결정완료')).toHaveLength(0);
-    expect(chip('스드메')).not.toHaveLength(0);
+  it('카테고리 칩 없이 진행 중 목록과 완료 묶음을 구분한다', () => {
+    expect(tree.root.findAll((node) => node.props.accessibilityRole === 'radio')).toHaveLength(0);
+    expect(texts()).toContain('이런 곳은 어떠세요?');
     showCompleted();
-    expect(chip('웨딩홀 결정완료')).not.toHaveLength(0);
-    expect(chip('스드메')).not.toHaveLength(0);
+    expect(tree.root.findAll((node) => node.props.accessibilityLabel === '웨딩홀 결정완료')).not.toHaveLength(0);
+    expect(texts()).toContain('스드메');
   });
 
   it('업체 결정을 취소하면 그 자리에서 «결정완료»가 풀리고 추천이 다시 선다', async () => {
@@ -371,7 +370,10 @@ describe('Pick — 결정이 끝난 묶음의 후보', () => {
       (node) => node.props.accessibilityLabel === label && typeof node.props.onPress === 'function'
     )[0]!;
     expect(action('비교 닫기')).toBeUndefined();
+    expect(action('강남 B 웨딩홀 비교에 담기').props.accessibilityRole).toBe('checkbox');
+    expect(action('강남 B 웨딩홀 비교에 담기').props.accessibilityState.checked).toBe(false);
     act(() => action('강남 B 웨딩홀 비교에 담기').props.onPress());
+    expect(action('강남 B 웨딩홀 비교에서 빼기').props.accessibilityState.checked).toBe(true);
     expect(action('비교 닫기')).toBeUndefined();
     act(() => action('루이비스스퀘어 비교에 담기').props.onPress());
     expect(action('비교 닫기')).toBeDefined();
