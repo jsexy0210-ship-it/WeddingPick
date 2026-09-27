@@ -6,6 +6,11 @@
   "baselineCommit": "e34193ee1644c664f107d529002ae53ef775389a",
   "items": [
     {
+      "id": "home-pick-note-navigation-20260928",
+      "status": "local-verified-ci-and-deployment-pending",
+      "evidence": "screen-audit.json#homePickNoteNavigation20260928, master-status.json#homePickNoteNavigation20260928"
+    },
+    {
       "id": "canonical-design-20260920",
       "status": "source-locked-and-screen-inventory-tracked-visual-audit-pending",
       "evidence": "../design/canonical-manifest.json, design-screen-map.json, master-status.json#canonicalDesign20260920"

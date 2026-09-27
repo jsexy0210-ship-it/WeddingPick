@@ -26,15 +26,12 @@ import type {
   WeddingTask,
 } from '@weddingpick/api-contract';
 import {
-  PREPARATION_CATEGORIES,
   TERMS,
   budgetView,
   daysUntil,
   isBeforeWedding,
   lifecycle,
   manwon,
-  formatDday,
-  formatRemainingUntilWedding,
 } from '@weddingpick/domain';
 import { Redirect, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
@@ -46,7 +43,6 @@ import {
   Border,
   DonutChart,
   EmptyStateIcon,
-  FontSize,
   Layout,
   LineHeight,
   ProductSymbol,
@@ -64,7 +60,6 @@ import {
   getWeddingForecast,
   listConsultations,
   removeConsultation,
-  listDecisions,
   listMyReports,
   listWeddingEvents,
   listWeddingTasks,
@@ -108,9 +103,9 @@ const CONSULT_SAVED = '저장됨';
 const CONSULT_DONE = '정리완료';
 /* 헤더 우측 액션 — 정본의 추가 동선을 유지하며 일정추가 · 녹음 올리기 · 지출추가로 표시한다. */
 const ADD_LABEL: Record<Tab, string> = { calendar: '일정추가', budget: '지출추가', consult: '녹음 올리기' };
-const DECIDED_LINK = '예약현황';
 const PAST_EVENTS_SHOW = '보기';
 const PAST_EVENTS_HIDE = '접기';
+const PAST_GUIDES_TITLE = '지난 준비 가이드';
 
 function parseTab(value: string | undefined): Tab | null {
   return value === 'calendar' || value === 'consult' || value === 'budget' ? value : null;
@@ -142,7 +137,6 @@ export default function WeddingScreen({
   const [expenses, setExpenses] = useState<ExpenseSummaryResponse | null>(null);
   const [expensesError, setExpensesError] = useState(false);
   const [consults, setConsults] = useState<ConsultationRecord[] | null>(null);
-  const [decidedCount, setDecidedCount] = useState<number | null>(null);
   const [forecast, setForecast] = useState<WeddingForecast | null>(null);
   const [tab, setTab] = useState<Tab>(initialTab ?? parseTab(params.tab) ?? 'calendar');
   const [toast, setToast] = useState<string | null>(null);
@@ -184,7 +178,6 @@ export default function WeddingScreen({
             else if (active) setExpensesError(true);
           });
         void listConsultations(weddingId).then((r) => { if (active) setConsults(r.records); }).catch(failed);
-        void listDecisions(weddingId).then((r) => { if (active) setDecidedCount(r.decisions.length); }).catch(failed);
         // «확인 중» 줄은 보조다 — 못 읽으면 그 줄만 빠진다(지출 목록은 그대로).
         void listMyReports().then((r) => { if (active) setPending(pendingProofs(r.reports)); }).catch(() => undefined);
         // 예보는 보조 줄이다 — 못 받으면 줄을 그리지 않을 뿐 화면을 막지 않는다.
@@ -239,7 +232,8 @@ export default function WeddingScreen({
     <RootTabHeader
       title={TERMS.ourWedding}
       right={
-        !weddingOver && weddingId ? (
+        !weddingOver && weddingId && !(tab === 'consult' && consults?.length === 0) &&
+        !(tab === 'budget' && expenses?.expenses.length === 0 && pending.length === 0) ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={headerAddLabel}
@@ -491,12 +485,10 @@ export default function WeddingScreen({
               events={events ?? []}
               tasks={tasks}
               weddingDate={me?.weddingDate ?? null}
-              decidedCount={decidedCount}
               forecast={forecast}
               busy={deleting}
               onEdit={editTimeline}
               onDelete={deleteTimeline}
-              onOpenDecided={() => (weddingId ? router.push(`/wedding/${weddingId}/decided` as never) : null)}
             />
           ) : tab === 'budget' ? (
             <BudgetPanel
@@ -505,6 +497,7 @@ export default function WeddingScreen({
               pending={pending}
               busy={deleting}
               onEditBudget={openBudgetEditor}
+              onAddExpense={() => onAddAction()}
               onRetry={retryExpenses}
               onEditExpense={(expense) => editExpense(expense.id)}
               onDeleteExpense={deleteExpense}
@@ -612,7 +605,7 @@ function EmptyNoteView({
   const theme = useTheme();
   const rows = [
     ...(expenses.budget.set ? [{ k: '총예산', v: manwon(expenses.budget.budget) }] : []),
-    { k: '쓴금액', v: manwon(expenses.paidTotal) },
+    ...(expenses.paidTotal > 0 ? [{ k: '쓴금액', v: manwon(expenses.paidTotal) }] : []),
   ];
 
   return (
@@ -640,17 +633,19 @@ function EmptyNoteView({
             </Pressable>
           </View>
         </View>
-        <View style={styles.emptySection}>
-          <ThemedText type="f18" style={styles.bold}>예산</ThemedText>
-          <View>
-            {rows.map((row) => (
-              <View key={row.k} style={[styles.emptyDataRow, { borderBottomColor: theme.border }]}>
-                <ThemedText type="f15" themeColor="textSecondary">{row.k}</ThemedText>
-                <ThemedText type="f15" numeric style={styles.bold}>{row.v}</ThemedText>
-              </View>
-            ))}
+        {rows.length > 0 ? (
+          <View style={styles.emptySection}>
+            <ThemedText type="f18" style={styles.bold}>예산</ThemedText>
+            <View>
+              {rows.map((row) => (
+                <View key={row.k} style={[styles.emptyDataRow, { borderBottomColor: theme.border }]}>
+                  <ThemedText type="f15" themeColor="textSecondary">{row.k}</ThemedText>
+                  <ThemedText type="f15" numeric style={styles.bold}>{row.v}</ThemedText>
+                </View>
+              ))}
+            </View>
           </View>
-        </View>
+        ) : null}
       </ScrollView>
     </>
   );
@@ -665,34 +660,34 @@ function CalendarPanel({
   events,
   tasks,
   weddingDate,
-  decidedCount,
   forecast,
   busy,
   onEdit,
   onDelete,
-  onOpenDecided,
 }: {
   events: WeddingEvent[];
   tasks: WeddingTask[] | null;
   weddingDate: string | null;
-  decidedCount: number | null;
   forecast: WeddingForecast | null;
   busy: boolean;
   onEdit: (target: TimelineTarget, date?: string) => void;
   onDelete: (target: TimelineTarget) => void;
-  onOpenDecided: () => void;
 }) {
   const theme = useTheme();
   const [now] = useState(() => new Date());
   const [showPast, setShowPast] = useState(false);
+  const [showPastGuides, setShowPastGuides] = useState(false);
 
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const past = events
     .filter((event) => new Date(event.startsAt) < today)
     .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
   const plans = notePlanEntries(tasks, events, weddingDate, now);
-  const overduePlans = plans
-    .filter((plan) => daysUntil(plan.date, now) < 0)
+  const overdueTasks = plans
+    .filter((plan) => !plan.tentative && daysUntil(plan.date, now) < 0)
+    .sort((a, b) => b.date.localeCompare(a.date));
+  const pastGuides = plans
+    .filter((plan) => plan.tentative && daysUntil(plan.date, now) < 0)
     .sort((a, b) => b.date.localeCompare(a.date));
   const upcomingGroups = buildUpcomingTimelineGroups(
     events,
@@ -701,55 +696,56 @@ function CalendarPanel({
     plans
   );
 
-  const days = weddingDate !== null ? daysUntil(weddingDate, now) : null;
-  /* 부호 · 당일 · 주/일 단위는 domain `formatDday` · `formatRemainingUntilWedding` 한 곳이 정한다. */
-  const ddayText = days === null ? null : formatDday(days);
-  const remaining = days === null ? null : formatRemainingUntilWedding(days);
-  /* 예식일 예보 한 줄(A안 · 정본 밖) — ddayNote와 같은 13px · textSecondary. 값이 없으면 줄이 없다. */
+  /* 홈에서 D-day를 보여 주므로 여기서는 예식일과 예보만 짧게 둔다. */
   const forecastText = forecastLine(forecast);
   return (
     <View style={styles.calendarStack}>
       {weddingDate !== null ? (
-        <View style={[styles.ddayCard, { backgroundColor: theme.backgroundElement }]}>
-          <View style={styles.ddayTop}>
-            <ThemedText type="f18" numeric style={[styles.bold, styles.ddayValue]}>
-              {formatDateDot(weddingDate)}
-            </ThemedText>
-            <ThemedText type="f18" themeColor="tint" numeric style={[styles.bold, styles.ddayValue]}>
-              {ddayText}
-            </ThemedText>
-          </View>
-          {remaining !== null ? (
-            <ThemedText type="f13" themeColor="textSecondary" numeric>
-              {remaining}
-            </ThemedText>
-          ) : null}
+        <View style={[styles.weddingDateRow, { backgroundColor: theme.backgroundElement }]}>
+          <ThemedText type="f14" numeric style={styles.bold}>
+            {`예식일 ${formatDateDot(weddingDate)}`}
+          </ThemedText>
           {forecastText ? (
             <ThemedText type="f13" themeColor="textSecondary" numeric>
               {forecastText}
             </ThemedText>
           ) : null}
-          {decidedCount !== null ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={DECIDED_LINK}
-              onPress={onOpenDecided}
-              hitSlop={Spacing.two}
-              style={[styles.decidedLinkRow, { borderTopColor: theme.border }]}>
-              <ThemedText type="f14" numeric style={styles.bold}>
-                {`${DECIDED_LINK} ${decidedCount}/${PREPARATION_CATEGORIES.length}`}
-              </ThemedText>
-              <ProductSymbol name="chevronRight" size={Layout.iconInline} color={theme.textAssistive} />
-            </Pressable>
-          ) : null}
         </View>
       ) : null}
 
-      {overduePlans.length > 0 ? (
+      {overdueTasks.length > 0 ? (
         <TimelineGroupView
-          title="아직 못 끝낸 일이 있어요"
+          title="기한이 지난 할 일이에요"
           range=""
-          items={overduePlans.map((plan) => ({ ...plan, event: null, kind: 'plan' as const }))}
+          items={overdueTasks.map((plan) => ({ ...plan, event: null, kind: 'plan' as const }))}
+          busy={busy}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
+      ) : null}
+
+      {pastGuides.length > 0 ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${PAST_GUIDES_TITLE} ${pastGuides.length}건 ${showPastGuides ? PAST_EVENTS_HIDE : PAST_EVENTS_SHOW}`}
+          accessibilityState={{ expanded: showPastGuides }}
+          onPress={() => setShowPastGuides((prev) => !prev)}
+          style={[styles.pastRow, { borderBottomColor: theme.border }]}>
+          <ThemedText type="f14" themeColor="textAssistive" numeric>
+            {`${PAST_GUIDES_TITLE} ${pastGuides.length}건`}
+          </ThemedText>
+          <ThemedText type="f14" themeColor="textSecondary" style={styles.bold}>
+            {showPastGuides ? PAST_EVENTS_HIDE : PAST_EVENTS_SHOW}
+          </ThemedText>
+        </Pressable>
+      ) : null}
+
+      {showPastGuides && pastGuides.length > 0 ? (
+        <TimelineGroupView
+          title={PAST_GUIDES_TITLE}
+          range=""
+          items={pastGuides.map((plan) => ({ ...plan, event: null, kind: 'plan' as const }))}
+          dimmed
           busy={busy}
           onEdit={onEdit}
           onDelete={onDelete}
@@ -904,6 +900,7 @@ function BudgetPanel({
   pending,
   busy,
   onEditBudget,
+  onAddExpense,
   onRetry,
   onEditExpense,
   onDeleteExpense,
@@ -914,6 +911,7 @@ function BudgetPanel({
   pending: MyReport[];
   busy: boolean;
   onEditBudget: () => void;
+  onAddExpense: () => void;
   onRetry: () => void;
   onEditExpense: (expense: ExpenseSummaryResponse['expenses'][number]) => void;
   onDeleteExpense: (expense: ExpenseSummaryResponse['expenses'][number]) => void;
@@ -946,6 +944,19 @@ function BudgetPanel({
   const percentage = total > 0 ? Math.round((spent / total) * 100) : 0;
   const progress = Math.max(0, Math.min(100, percentage));
   const rows = budgetCategoryRows(expenses);
+
+  if (expenses.expenses.length === 0 && pending.length === 0) {
+    return (
+      <View style={[styles.panel, styles.zeroPanel, { backgroundColor: theme.background, borderColor: theme.border }]}>
+        <EmptyStateIcon />
+        <ThemedText type="f16" style={styles.bold}>아직 지출이 없어요</ThemedText>
+        <ThemedText type="f13" themeColor="textAssistive">첫 지출을 남겨볼까요?</ThemedText>
+        {set ? <ThemedText type="f13" themeColor="textSecondary" numeric>{`총예산 ${manwon(total)}`}</ThemedText> : null}
+        <ActionButton variant="primary" size="medium" label="지출추가" onPress={onAddExpense} />
+        {set ? <ActionButton variant="ghost" size="medium" label="총예산 수정" onPress={onEditBudget} /> : null}
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.panel, { backgroundColor: theme.background, borderColor: theme.border }]}>
@@ -1031,16 +1042,15 @@ function ConsultPanel({
 
   return (
     <View style={[styles.panel, { backgroundColor: theme.background, borderColor: theme.border }]}>
-      <View style={styles.consultHead}>
-        <ThemedText type="f20" style={styles.bold}>
-          {records.length > 0 ? `상담 ${records.length}건` : TABS[1].label}
-        </ThemedText>
-        <ThemedText type="f13" themeColor="textAssistive">
-          정리된 내용은 예산에 반영해요
-        </ThemedText>
-      </View>
-
-      <View style={[styles.divider, { backgroundColor: theme.border }]} />
+      {records.length > 0 ? (
+        <>
+          <View style={styles.consultHead}>
+            <ThemedText type="f20" style={styles.bold}>{`상담 ${records.length}건`}</ThemedText>
+            <ThemedText type="f13" themeColor="textAssistive">정리된 내용은 예산에 반영해요</ThemedText>
+          </View>
+          <View style={[styles.divider, { backgroundColor: theme.border }]} />
+        </>
+      ) : null}
 
       {records.length > 0 ? (
         <View>
@@ -1172,6 +1182,7 @@ const styles = StyleSheet.create({
     borderWidth: Border.hairline,
     padding: Layout.cardPadding,
   },
+  zeroPanel: { alignItems: 'center', gap: Spacing.two, paddingVertical: Spacing.five },
 
   // ── 웨딩노트 · 처음(WP-EMPTY-NOTE) ──
   /*
@@ -1210,26 +1221,14 @@ const styles = StyleSheet.create({
 
   // ── 캘린더 — v3.29 주 단위 흐름 ──
   calendarStack: { gap: 0 },
-  /* WP-NOTE-001 D-day: margin 4px 20px 0(Root 거터) · padding 18px 20px · radius 12. */
-  ddayCard: {
+  /* 홈의 D-day와 겹치지 않게 예식일·예보만 간단히 표시한다. */
+  weddingDateRow: {
     marginHorizontal: ROOT_TAB_GUTTER,
     marginTop: Spacing.one,
-    paddingVertical: Layout.cardPaddingCompactY,
+    paddingVertical: Spacing.three,
     paddingHorizontal: Layout.cardPadding,
     borderRadius: 12,
-    gap: 5,
-  },
-  /* D-day 카드 위 줄 — 날짜 · D-N 양끝 정렬. */
-  ddayTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: Layout.inlineGap },
-  ddayValue: { fontSize: FontSize.noteDday },
-  /* note.js `decidedLinkRow` «예약현황 4/12» — `margin-top:10px;padding-top:10px`, 선 위 · 양끝 정렬. */
-  decidedLinkRow: {
-    marginTop: 10,
-    paddingTop: 10,
-    borderTopWidth: Border.hairline,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: Spacing.one,
   },
   /* WP-NOTE-001 지난 일정: 좌우 20(Root 거터) · 최소 46 · 아래 구분선. */
   pastRow: {

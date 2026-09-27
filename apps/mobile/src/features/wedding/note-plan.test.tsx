@@ -164,7 +164,8 @@ describe('웨딩노트 웨딩일정 — 임시 날짜 줄', () => {
     const screen = readFileSync(join(__dirname, '..', '..', 'app', '(tabs)', 'wedding', 'index.tsx'), 'utf8');
     expect(screen).toContain('listWeddingTasks(weddingId)');
     expect(screen).toContain('notePlanEntries(tasks, events, weddingDate, now)');
-    expect(screen).toContain('overduePlans.map');
+    expect(screen).toContain('overdueTasks.map');
+    expect(screen).toContain('pastGuides.map');
     expect(screen).toContain("item.kind === 'plan'");
     const plan = readFileSync(join(__dirname, 'note-plan.ts'), 'utf8');
     expect(plan).not.toMatch(/updateWeddingTask|patchWeddingTask|createWeddingTask/);

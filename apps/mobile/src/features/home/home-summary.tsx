@@ -1,6 +1,7 @@
 import type { AppBootstrapResponse } from '@weddingpick/api-contract';
 import { manwon } from '@weddingpick/domain';
 import { Pressable, StyleSheet, View } from 'react-native';
+import type { SeedIconName } from '@weddingpick/ui';
 import {
   Border,
   CanonGray,
@@ -21,8 +22,36 @@ import { HOME_PAGE_X } from '@/features/home/home-layout';
 
 const S = strings.home;
 
-/** home.js `icoMoreChev` — 「자세히」 옆 꺾쇠 14px. */
+/** 홈 섹션 목적지 행의 꺾쇠. */
 export const MORE_CHEVRON = 14;
+
+/** 모든 홈 섹션에서 미리보기 아래 같은 자리와 크기로 쓰는 이동 행. */
+export function HomeDestinationLink({
+  destination, action, icon, onPress,
+}: {
+  destination: string;
+  action: string;
+  icon: SeedIconName;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${destination} ${action}`}
+      onPress={onPress}
+      style={({ pressed }) => [styles.destination, { borderTopColor: theme.border }, pressed && styles.pressed]}>
+      <View style={styles.destinationLabel}>
+        <SeedIcon name={icon} size={Layout.iconField} color={theme.textAssistive} />
+        <ThemedText type="f13" style={styles.bold}>{destination}</ThemedText>
+      </View>
+      <View style={styles.destinationAction}>
+        <ThemedText type="f13" themeColor="tint" style={styles.bold}>{action}</ThemedText>
+        <SeedIcon name="chevronRightRegular" size={MORE_CHEVRON} color={theme.tint} />
+      </View>
+    </Pressable>
+  );
+}
 
 /**
  * 홈 「내 웨딩 준비」 — 항상 4칸(웨딩홀 · 스드메 · 본식 · 예물 · 신혼). home.jsx
@@ -43,7 +72,7 @@ export function MyWeddingPrep({
 
   return (
     <View style={styles.section}>
-      <SummaryHeading title={S['section.myPrep']} sub={sub} onMore={onMore} />
+      <SummaryHeading title={S['section.myPrep']} sub={sub} />
       <View style={styles.grid}>
       {rows.map((row) => (
         <View key={row[0]!.key} style={styles.row}>
@@ -96,17 +125,18 @@ export function MyWeddingPrep({
         </View>
       ))}
       </View>
+      <HomeDestinationLink destination="Pick" action="담은곳 보기" icon="heartRegular" onPress={onMore} />
     </View>
   );
 }
 
 /** 히어로와 분리된 예산현황. bootstrap의 실제 예산만 보여준다. */
-export function HomeBudget({ budget, onOpen }: {
-  budget: AppBootstrapResponse['budget']; onOpen: () => void;
+export function HomeBudget({ budget, hasWedding = true, onOpen }: {
+  budget: AppBootstrapResponse['budget']; hasWedding?: boolean; onOpen: () => void;
 }) {
   const theme = useTheme();
   const progress = budgetProgress(budget);
-  /* WP-HOME-002 — 아직 쓴 돈이 없으면 서브 「온보딩에서 등록한 예산이에요」 · 비고 「아직 예산 정보가 없어요」. */
+  /* 예산만 등록하고 지출이 없으면 예산 미입력으로 오해하지 않게 지출 부재를 말한다. */
   const noSpend = budget !== null && budget.spent === 0;
   /*
    * 2026-09-25 대표 지시 — 「홈화면의 예산현황 그대로 노출한다. 정보가 없을 경우 서브 문구에
@@ -124,19 +154,11 @@ export function HomeBudget({ budget, onOpen }: {
 
   return (
     <View style={styles.section}>
-      <SummaryHeading
-        title={S['section.budget']}
-        sub={budgetSub}
-        onMore={onOpen}
-      />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="예산현황 자세히"
-        onPress={onOpen}
-        style={({ pressed }) => [
+      <SummaryHeading title={S['section.budget']} sub={budgetSub} />
+      <View
+        style={[
           styles.budget,
           { backgroundColor: theme.background, borderColor: theme.border },
-          pressed && styles.pressed,
         ]}>
         <View
           accessibilityRole="progressbar"
@@ -167,17 +189,21 @@ export function HomeBudget({ budget, onOpen }: {
           themeColor={hasBudget && budget.spent > budget.total ? 'negative' : 'textAssistive'}>
           {!hasBudget ? S['budget.noteEmpty'] : budget.spent > budget.total ? S['budget.exceeded'] : noSpend ? S['budget.noSpend'] : S['budget.note']}
         </ThemedText>
-      </Pressable>
+      </View>
+      <HomeDestinationLink
+        destination={hasWedding ? '웨딩노트' : 'MY'}
+        action={hasWedding ? '예산현황 보기' : '내 웨딩 설정'}
+        icon={hasWedding ? 'calendarRegular' : 'profileRegular'}
+        onPress={onOpen}
+      />
     </View>
   );
 }
 
 /**
- * 섹션 제목 줄 — home.jsx `secHeadPad`/`secHead`(타이틀 14/20/700 + 서브 12/17/뮤트,
- * 우측 「자세히」). `sub`가 null이면(예산현황) 서브카피 없이 제목만 쓴다.
+ * 섹션 제목 줄 — 제목과 서브카피. 이동 행은 미리보기 아래에 따로 둔다.
  */
-function SummaryHeading({ title, sub, onMore }: { title: string; sub: string | null; onMore: () => void }) {
-  const theme = useTheme();
+function SummaryHeading({ title, sub }: { title: string; sub: string | null }) {
   return (
     <View style={styles.heading}>
       <View style={styles.headingCol}>
@@ -186,15 +212,6 @@ function SummaryHeading({ title, sub, onMore }: { title: string; sub: string | n
           <ThemedText type="f12" themeColor="textAssistive" style={styles.sub}>{sub}</ThemedText>
         )}
       </View>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${title} ${S.more}`}
-        onPress={onMore}
-        hitSlop={Spacing.two}
-        style={({ pressed }) => [styles.more, pressed && styles.pressed]}>
-        <ThemedText type="f13" themeColor="textAssistive" style={styles.bold}>{S.more}</ThemedText>
-        <SeedIcon name="chevronRightRegular" size={MORE_CHEVRON} color={theme.textAssistive} />
-      </Pressable>
     </View>
   );
 }
@@ -216,18 +233,27 @@ const styles = StyleSheet.create({
     gap: Layout.inlineGap,
     marginBottom: Layout.inlineGap,
   },
-  /* home.js `moreRow` — 13/700 · gap 2 · `icoMoreChev` 14. */
-  more: { flexDirection: 'row', alignItems: 'center', gap: Spacing.half },
+  destination: {
+    minHeight: 48,
+    marginTop: Layout.inlineGap,
+    paddingVertical: Spacing.three,
+    borderTopWidth: Border.hairline,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Layout.inlineGap,
+  },
+  destinationLabel: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, flexShrink: 1 },
+  destinationAction: { flexDirection: 'row', alignItems: 'center', gap: Spacing.half },
   /* home.js `secSub` 12/17. */
   sub: { lineHeight: LineHeight.lh17 },
   /* home.js `prepDetail` 12/17 · 500 · margin-top 2. */
   detail: { lineHeight: LineHeight.lh17, fontWeight: 500, marginTop: Spacing.half },
   headingCol: { flex: 1, minWidth: 0, gap: Spacing.half },
   /*
-   * home.jsx frame-012 `prepGridPad` — grid gap 8(가로·세로) · 아래 14. 섹션(`secNoPad`)의
-   * 아래 24와 더해져 다음 섹션까지 38이 벌어진다.
+   * 준비 카드의 2×2 gap. 아래 간격은 공통 목적지 행이 갖는다.
    */
-  grid: { gap: Spacing.two, paddingBottom: 14 },
+  grid: { gap: Spacing.two },
   row: { flexDirection: 'row', gap: Spacing.two },
   /*
    * home.jsx `prepCard(kind)` — 세 상태 모두 `padding:14px;...gap:2px`다(스크립트로

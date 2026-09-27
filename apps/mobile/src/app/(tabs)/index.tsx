@@ -31,7 +31,7 @@ import {
 import { listWeddingContent, type WeddingContentItem } from '@/features/home/content';
 import { Hero } from '@/features/home/hero';
 import { HOME_PARTNER_ROUTE } from '@/features/partner/routes';
-import { HomeBudget, MORE_CHEVRON, MyWeddingPrep } from '@/features/home/home-summary';
+import { HomeBudget, HomeDestinationLink, MyWeddingPrep } from '@/features/home/home-summary';
 import { HOME_PAGE_X } from '@/features/home/home-layout';
 import { endHomeHandoff, useHomeHandoffActive } from '@/features/home/home-handoff';
 import { HomeSkeleton } from '@/features/home/home-skeleton';
@@ -87,7 +87,6 @@ const EMPTY: HomeData = {
 };
 
 export default function HomeScreen() {
-  const theme = useTheme();
   const scrollRef = useRef<ScrollView>(null);
   const scrollTop = useScrollToTopVisibility();
   const loadVersion = useRef(0);
@@ -257,7 +256,7 @@ export default function HomeScreen() {
             cards={prepCards}
             sub={prepSub}
             onOpen={(card) => router.push(`/pick?group=${card.key}` as never)}
-            onMore={() => router.push('/pick')}
+            onMore={() => router.push('/pick?tab=progress' as never)}
           />
 
           {taskStatus === 'loading' ? (
@@ -271,12 +270,13 @@ export default function HomeScreen() {
             <UpcomingSchedule
               rows={schedule}
               hasDate={scheduleHasDate}
-              onMore={() => router.push('/wedding')}
+              onMore={() => router.push('/wedding?tab=calendar' as never)}
             />
           )}
 
           <HomeBudget
             budget={data.budget}
+            hasWedding={data.me?.weddingId != null}
             onOpen={() => router.push(
               (data.me?.weddingId == null
                 ? inStack('/', '/my/wedding-settings')
@@ -285,20 +285,12 @@ export default function HomeScreen() {
           />
 
           <View style={[styles.block, styles.lastBlock]}>
-            {/* home.jsx frame-012 `secLast` — 제목 14/20 · 서브 12/17(`secSub`) · 우측 「자세히」. */}
+            {/* 섹션 제목은 읽는 자리로 두고, 이동은 아래 공통 목적지 행에서 한다. */}
             <View style={styles.sectionHead}>
               <View style={styles.sectionHeadCol}>
                 <ThemedText type="f14" style={styles.bold}>웨딩 준비 팁</ThemedText>
                 <ThemedText type="f12" themeColor="textAssistive" style={styles.sub}>{S['section.tipsSub']}</ThemedText>
               </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="웨딩 준비 팁 자세히"
-                onPress={() => router.push('/community/feed' as never)}
-                style={({ pressed }) => [styles.feedMore, pressed && styles.pressed]}>
-                <ThemedText type="f13" themeColor="textAssistive" style={styles.bold}>{S.more}</ThemedText>
-                <SeedIcon name="chevronRightRegular" size={MORE_CHEVRON} color={theme.textAssistive} />
-              </Pressable>
             </View>
             {contentStatus === 'loading' ? (
               <DelayedLoader active size={28} />
@@ -321,6 +313,12 @@ export default function HomeScreen() {
                 onPressItem={(id) => router.push(`/feed/${encodeURIComponent(id)}`)}
               />
             )}
+            <HomeDestinationLink
+              destination="웨딩정보"
+              action="콘텐츠 보기"
+              icon="communityRegular"
+              onPress={() => router.push('/community/feed' as never)}
+            />
           </View>
         </ScrollView>
         <ScrollToTopButton visible={scrollTop.visible} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
@@ -403,8 +401,6 @@ const styles = StyleSheet.create({
   },
   sectionHeadCol: { flex: 1, minWidth: 0, gap: Spacing.half },
   bold: { fontWeight: 700 },
-  /* home.js `moreRow` — 13/700 · gap 2 · 꺾쇠 14. */
-  feedMore: { flexDirection: 'row', alignItems: 'center', gap: Spacing.half },
   sub: { lineHeight: LineHeight.lh17 },
   pressed: { opacity: 0.8 },
 });
