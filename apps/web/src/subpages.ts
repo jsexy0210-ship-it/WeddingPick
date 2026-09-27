@@ -319,7 +319,7 @@ function legalDocument(articles: LegalSection[]): string {
   }).join('');
 
   return `<div class="sp-legal">
-    <details class="sp-toc"><summary>목차 보기</summary><nav aria-label="문서 목차">${toc}</nav></details>
+    <details class="sp-toc"><summary>목차보기</summary><nav aria-label="문서목차">${toc}</nav></details>
     <div class="sp-content">${content}</div>
   </div>`;
 }
@@ -361,7 +361,7 @@ function privacyDocument(sections: LegalSection[]): string {
   }).join('');
 
   return `<div class="sp-legal">
-    <details class="sp-toc"><summary>목차 보기</summary><nav aria-label="문서 목차">${toc}</nav></details>
+    <details class="sp-toc"><summary>목차보기</summary><nav aria-label="문서목차">${toc}</nav></details>
     <div class="sp-content">${content}</div>
   </div>`;
 }

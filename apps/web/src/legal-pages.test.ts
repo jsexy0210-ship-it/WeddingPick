@@ -70,7 +70,7 @@ describe('공개 법적 문서', () => {
 
     expect(links.length).toBeGreaterThan(10);
     for (const [, id] of links) expect(html).toContain(`id="${id}"`);
-    expect(html).toContain('<summary>목차 보기</summary>');
+    expect(html).toContain('<summary>목차보기</summary>');
   });
 
   /*
